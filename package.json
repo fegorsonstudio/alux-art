@@ -1,0 +1,13 @@
+{
+  "name": "alux-art",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Alux Art AI photoshoot orchestration platform",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
