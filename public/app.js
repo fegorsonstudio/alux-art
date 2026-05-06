@@ -29,13 +29,49 @@ const MODELS = [
 ];
 
 const $ = (sel) => document.querySelector(sel);
+const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  "\"": "&quot;",
+  "'": "&#39;"
+})[char]);
+const normalizeUrl = (value = "") => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(raw)) return raw;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return raw;
+  } catch {
+    return "";
+  }
+  return "";
+};
+const safeUrl = (value = "") => escapeHtml(normalizeUrl(value));
+const pathPart = (value = "") => encodeURIComponent(String(value || ""));
+const safeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+const safePercent = (value) => Math.min(100, Math.max(0, safeNumber(value)));
+const formatDate = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "unknown" : date.toLocaleDateString();
+};
+const formatDateTime = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "unknown" : date.toLocaleString();
+};
 const money = (amount, currency) => currency === "NGN"
-  ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(amount)
-  : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
+  ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(safeNumber(amount))
+  : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(safeNumber(amount));
 const size = (bytes = 0) => {
   if (!bytes) return "locked";
   const units = ["B", "KB", "MB", "GB"];
-  let value = bytes;
+  let value = safeNumber(bytes);
+  if (!value) return "locked";
   let index = 0;
   while (value > 1024 && index < units.length - 1) { value /= 1024; index++; }
   return `${value.toFixed(index ? 1 : 0)} ${units[index]}`;
@@ -66,6 +102,29 @@ function toast(message) {
   document.body.appendChild(el);
   state.toastTimer = setTimeout(() => el.remove(), 3600);
 }
+
+function renderFatal(error) {
+  const message = error?.message || "The app could not finish loading.";
+  document.body.innerHTML = `<main class="fatal">
+    <section class="panel fatal-panel">
+      <img class="hero-logo" src="/assets/alux-art-logo.png" alt="Alux Art logo" width="150" height="150" />
+      <h1>Alux Art could not load</h1>
+      <p>${escapeHtml(message)}</p>
+      <button class="btn primary" id="retryLoad">Retry</button>
+    </section>
+  </main>`;
+  $("#retryLoad")?.addEventListener("click", () => location.reload());
+}
+
+window.addEventListener("error", (event) => {
+  console.error(event.error || event.message);
+  toast("Something went wrong. Please retry the action.");
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error(event.reason);
+  toast(event.reason?.message || "Something went wrong. Please retry the action.");
+});
 
 async function init() {
   captureSupabaseSession();
@@ -101,21 +160,24 @@ function captureSupabaseSession() {
 }
 
 function render() {
+  const userInitial = escapeHtml((state.user?.name || state.user?.email || "?").trim()[0] || "?");
+  const userEmail = escapeHtml(state.user?.email || "");
+  const currency = escapeHtml(state.currency || "NGN");
   document.body.innerHTML = `<div class="app-shell">
     <header class="topbar">
       <div class="brand">
-        <div class="mark"><img src="/assets/alux-art-logo.png" alt="Alux Art logo" /></div>
+        <div class="mark"><img src="/assets/alux-art-logo.png" alt="Alux Art logo" width="42" height="42" decoding="async" /></div>
         <div><h1>Alux Art</h1><span>AI Photoshoot Orchestration Platform</span></div>
       </div>
       <nav class="nav-actions">
         ${state.user ? `
-          <button class="btn ghost ${location.hash !== "#admin" ? "active-nav" : ""}" data-view="shoot">＋ <span>New Shoot</span></button>
-          ${state.user.role === "admin" ? `<button class="btn ghost ${location.hash === "#admin" ? "active-nav" : ""}" data-view="admin">⌘ <span>Admin</span></button>` : ""}
-          <button class="btn small" id="currencyToggle">${state.currency}</button>
+          <button class="btn ghost ${location.hash !== "#admin" ? "active-nav" : ""}" data-view="shoot">+ <span>New Shoot</span></button>
+          ${state.user.role === "admin" ? `<button class="btn ghost ${location.hash === "#admin" ? "active-nav" : ""}" data-view="admin">A <span>Admin</span></button>` : ""}
+          <button class="btn small" id="currencyToggle">${currency}</button>
           <button class="btn small" id="logout">Sign out</button>
         ` : ""}
       </nav>
-      ${state.user ? `<div class="sidebar-user"><div class="avatar">${state.user.name?.[0] || state.user.email[0]}</div><span>${state.user.email}</span></div>` : ""}
+      ${state.user ? `<div class="sidebar-user"><div class="avatar">${userInitial}</div><span>${userEmail}</span></div>` : ""}
     </header>
     <main id="view"></main>
   </div>`;
@@ -148,9 +210,10 @@ function render() {
 }
 
 function renderHero() {
+  const adminEmail = escapeHtml(state.config.adminEmail || "");
   $("#view").innerHTML = `<section class="hero">
     <div class="hero-copy">
-      <img class="hero-logo" src="/assets/alux-art-logo.png" alt="Alux Art logo" />
+      <img class="hero-logo" src="/assets/alux-art-logo.png" alt="Alux Art logo" width="150" height="150" decoding="async" fetchpriority="high" />
       <h2>Alux Art</h2>
       <p>A zero-prompt virtual photo studio. Upload identity and inspiration images, choose a quote, and the orchestration pipeline produces a 10-image professional shoot with 4K downloads.</p>
       <div class="hero-grid">
@@ -161,10 +224,10 @@ function renderHero() {
     </div>
     <form class="auth-panel" id="loginForm">
       <h3>Continue with Google</h3>
-      <p class="muted">${state.config.supabase?.enabled ? "Production mode uses Supabase Google OAuth. Only Google sign-in is available." : `Local development uses your Google email as a simulated OAuth identity. Use ${state.config.adminEmail} for admin access.`}</p>
+      <p class="muted">${state.config.supabase?.enabled ? "Production mode uses Supabase Google OAuth. Only Google sign-in is available." : `Local development uses your Google email as a simulated OAuth identity. Use ${adminEmail} for admin access.`}</p>
       <div class="field">
         <label>Google email</label>
-        <input class="input" type="email" name="email" value="${state.config.adminEmail}" required />
+        <input class="input" type="email" name="email" value="${adminEmail}" required />
       </div>
       <div class="field">
         <label>Name</label>
@@ -175,23 +238,27 @@ function renderHero() {
   </section>`;
   $("#loginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const auth = await request("/api/auth/google", { method: "POST", body: { email: form.get("email"), name: form.get("name") } });
-    if (auth.url) {
-      location.href = auth.url;
-      return;
+    try {
+      const form = new FormData(event.currentTarget);
+      const auth = await request("/api/auth/google", { method: "POST", body: { email: form.get("email"), name: form.get("name") } });
+      if (auth.url) {
+        location.href = auth.url;
+        return;
+      }
+      const { user } = auth;
+      state.user = user;
+      state.currency = user.currency;
+      const [library, shoots] = await Promise.all([
+        request("/api/identity-library"),
+        request("/api/shoots")
+      ]);
+      state.savedIdentityImages = library.images || [];
+      state.shoots = shoots.shoots || [];
+      toast(`Signed in as ${user.email}`);
+      render();
+    } catch (err) {
+      toast(err.message || "Could not start Google sign-in.");
     }
-    const { user } = auth;
-    state.user = user;
-    state.currency = user.currency;
-    const [library, shoots] = await Promise.all([
-      request("/api/identity-library"),
-      request("/api/shoots")
-    ]);
-    state.savedIdentityImages = library.images || [];
-    state.shoots = shoots.shoots || [];
-    toast(`Signed in as ${user.email}`);
-    render();
   });
 }
 
@@ -220,7 +287,7 @@ function renderWorkspace() {
 
 function panel(title, subtitle, body) {
   return `<section class="panel">
-    <div class="panel-head"><div><h3>${title}</h3>${subtitle ? `<p>${subtitle}</p>` : ""}</div></div>
+    <div class="panel-head"><div><h3>${escapeHtml(title)}</h3>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}</div></div>
     ${body}
   </section>`;
 }
@@ -247,8 +314,8 @@ function advancedPanel() {
 
 function uploadTiles(kind, list, minimum) {
   const existing = list.map((item, index) => `<div>
-    <div class="upload-card"><img class="thumb" src="${item.dataUrl}" alt="${item.name}"></div>
-    ${kind === "tagged" ? customReferenceControls(item, index, kind) : `<div class="tag-row"><span class="chip">${item.name}</span><button class="btn icon remove-upload" data-kind="${kind}" data-index="${index}" title="Remove">x</button></div>`}
+    <div class="upload-card"><img class="thumb" src="${safeUrl(item.dataUrl)}" alt="${escapeHtml(item.name)}"></div>
+    ${kind === "tagged" ? customReferenceControls(item, index, kind) : `<div class="tag-row"><span class="chip">${escapeHtml(item.name)}</span><button class="btn icon remove-upload" data-kind="${kind}" data-index="${index}" title="Remove">x</button></div>`}
   </div>`).join("");
   const slots = Math.max(1, minimum - list.length);
   return `${existing}${Array.from({ length: slots }, () => `<label class="drop">Click to upload<input type="file" accept="image/*" multiple data-kind="${kind}"></label>`).join("")}`;
@@ -271,24 +338,21 @@ function customReferenceControls(item, index, kind) {
   </div>`;
 }
 
-function escapeHtml(value) {
-  return String(value || "").replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "\"": "&quot;", "'": "&#039;" }[c]));
-}
-
 function savedIdentityTiles() {
   if (!state.savedIdentityImages.length) {
     return `<div class="empty-library">No saved identity uploads yet. Upload identity images above and they will be saved here.</div>`;
   }
   return state.savedIdentityImages.map((item) => {
     const selected = state.identityImages.some((image) => image.id === item.id);
+    const itemId = escapeHtml(item.id);
     return `<article class="saved-card">
-      <img class="thumb" src="${item.dataUrl}" alt="${item.name}">
+      <img class="thumb" src="${safeUrl(item.dataUrl)}" alt="${escapeHtml(item.name)}">
       <div class="saved-card-body">
-        <strong>${item.name}</strong>
-        <span class="muted">${size(item.size)} - saved ${new Date(item.createdAt).toLocaleDateString()}</span>
+        <strong>${escapeHtml(item.name)}</strong>
+        <span class="muted">${size(item.size)} - saved ${formatDate(item.createdAt)}</span>
         <div class="tag-row">
-          <button class="btn small reuse-identity" data-id="${item.id}" ${selected ? "disabled" : ""}>${selected ? "Selected" : "Reuse"}</button>
-          <button class="btn small remove-saved-identity" data-id="${item.id}">Remove saved</button>
+          <button class="btn small reuse-identity" data-id="${itemId}" ${selected ? "disabled" : ""}>${selected ? "Selected" : "Reuse"}</button>
+          <button class="btn small remove-saved-identity" data-id="${itemId}">Remove saved</button>
         </div>
       </div>
     </article>`;
@@ -298,11 +362,11 @@ function savedIdentityTiles() {
 function quoteEditor() {
   return `<div class="field">
     <label>Quote text</label>
-    <textarea id="quoteText">${state.quote.text}</textarea>
+    <textarea id="quoteText">${escapeHtml(state.quote.text)}</textarea>
   </div>
   <div class="field">
     <label>Attribution</label>
-    <input class="input" id="quoteAttribution" value="${state.quote.attribution || ""}">
+    <input class="input" id="quoteAttribution" value="${escapeHtml(state.quote.attribution || "")}">
   </div>
   <button class="btn" id="generateQuote">Generate Quote with AI</button>`;
 }
@@ -314,7 +378,7 @@ function controls() {
   </div>
   <div class="field">
     <label>Aspect ratio</label>
-    <select class="select" id="aspectRatio">${Object.entries(state.config.aspects).map(([key, value]) => `<option value="${key}" ${state.aspectRatio === key ? "selected" : ""}>${value.label} - ${value.width}x${value.height}</option>`).join("")}</select>
+    <select class="select" id="aspectRatio">${Object.entries(state.config.aspects).map(([key, value]) => `<option value="${escapeHtml(key)}" ${state.aspectRatio === key ? "selected" : ""}>${escapeHtml(value.label)} - ${safeNumber(value.width)}x${safeNumber(value.height)}</option>`).join("")}</select>
   </div>
   <div class="field action-field"><label>&nbsp;</label><button class="btn primary" id="createShoot" ${ready() ? "" : "disabled"}>${state.user.role === "admin" ? "Start Admin Test Shoot" : "Generate & Pay"}</button></div></div>`;
 }
@@ -322,8 +386,8 @@ function controls() {
 function quickStatus() {
   const latest = state.shoots[0];
   return `<div class="summary-list">
-    <div class="summary-row"><span>Selected</span><strong>${state.currentShoot ? state.currentShoot.status : "None"}</strong></div>
-    <div class="summary-row"><span>Latest shoot</span><strong>${latest ? latest.status : "None"}</strong></div>
+    <div class="summary-row"><span>Selected</span><strong>${state.currentShoot ? escapeHtml(state.currentShoot.status) : "None"}</strong></div>
+    <div class="summary-row"><span>Latest shoot</span><strong>${latest ? escapeHtml(latest.status) : "None"}</strong></div>
     <div class="summary-row"><span>Recent shoots</span><strong>${state.shoots.length}</strong></div>
   </div>
   <p class="muted">Completed images are under Recent Shoots. Click Open to restore the gallery.</p>`;
@@ -335,10 +399,10 @@ function recentShoots() {
   }
   return `<div class="recent-list">${state.shoots.slice(0, 6).map((shoot) => `<article class="recent-shoot">
     <div>
-      <strong>${shoot.id}</strong>
-      <span class="muted">${shoot.status} - ${shoot.completeImages}/10 images - ${shoot.aspectRatio} - ${new Date(shoot.createdAt).toLocaleString()}</span>
+      <strong>${escapeHtml(shoot.id)}</strong>
+      <span class="muted">${escapeHtml(shoot.status)} - ${safeNumber(shoot.completeImages)}/10 images - ${escapeHtml(shoot.aspectRatio)} - ${formatDateTime(shoot.createdAt)}</span>
     </div>
-    <button class="btn small open-shoot" data-id="${shoot.id}">Open</button>
+    <button class="btn small open-shoot" data-id="${escapeHtml(shoot.id)}">Open</button>
   </article>`).join("")}</div>`;
 }
 
@@ -350,9 +414,9 @@ function summary() {
     <div class="summary-row"><span>Identity images</span><strong>${state.identityImages.length}</strong></div>
     <div class="summary-row"><span>Inspiration images</span><strong>${state.inspirationImages.length}</strong></div>
     <div class="summary-row"><span>Tagged overrides</span><strong>${state.taggedReferences.length}</strong></div>
-    <div class="summary-row"><span>Aspect ratio</span><strong>${state.aspectRatio}</strong></div>
+    <div class="summary-row"><span>Aspect ratio</span><strong>${escapeHtml(state.aspectRatio)}</strong></div>
     <div class="summary-row"><span>Output</span><strong>10 images</strong></div>
-    <div class="summary-row"><span>Image provider</span><strong>${provider}</strong></div>
+    <div class="summary-row"><span>Image provider</span><strong>${escapeHtml(provider)}</strong></div>
     <div class="summary-row"><span>Download</span><strong>True 4K PNG + ZIP</strong></div>
   </div>
   <div class="price"><div><span class="muted">Shoot price</span><strong>${primary}</strong><div class="muted">${secondary} secondary</div></div><span class="chip ok">Paystack</span></div>
@@ -393,7 +457,7 @@ function bindWorkspace() {
   }));
   document.querySelectorAll(".remove-saved-identity").forEach((btn) => btn.addEventListener("click", async () => {
     if (!confirm("Remove this saved identity upload from your library?")) return;
-    const { images } = await request(`/api/identity-library/${btn.dataset.id}`, { method: "DELETE" });
+      const { images } = await request(`/api/identity-library/${pathPart(btn.dataset.id)}`, { method: "DELETE" });
     state.savedIdentityImages = images || [];
     state.identityImages = state.identityImages.filter((image) => image.id !== btn.dataset.id);
     renderWorkspace();
@@ -418,7 +482,7 @@ function bindWorkspace() {
     renderWorkspace();
   });
   document.querySelectorAll(".open-shoot").forEach((btn) => btn.addEventListener("click", async () => {
-    const { shoot } = await request(`/api/shoots/${btn.dataset.id}`);
+      const { shoot } = await request(`/api/shoots/${pathPart(btn.dataset.id)}`);
     state.currentShoot = shoot;
     $("#galleryHost").innerHTML = gallery(shoot);
     bindGallery();
@@ -484,7 +548,7 @@ async function createShoot() {
     state.shoots = [shootSummary(shoot), ...state.shoots.filter((item) => item.id !== shoot.id)];
     renderWorkspace();
     $("#galleryHost")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    const payment = await request(`/api/shoots/${shoot.id}/pay`, { method: "POST" });
+  const payment = await request(`/api/shoots/${pathPart(shoot.id)}/pay`, { method: "POST" });
     if (payment.authorization_url) {
       toast("Opening secure Paystack checkout.");
       location.href = payment.authorization_url;
@@ -529,7 +593,7 @@ function stripImage(img, includeData = false) {
 }
 
 function connectEvents(shootId) {
-  const events = new EventSource(`/api/shoots/${shootId}/events`);
+  const events = new EventSource(`/api/shoots/${pathPart(shootId)}/events`);
   ["snapshot", "queued", "stage", "slot_update", "slot_complete", "zip_ready", "complete"].forEach((type) => {
     events.addEventListener(type, (event) => {
       const data = JSON.parse(event.data);
@@ -557,65 +621,79 @@ function connectEvents(shootId) {
 }
 
 function gallery(shoot) {
+  const progress = safePercent(shoot.progress);
+  const shootId = escapeHtml(shoot.id);
   return `<section class="panel gallery">
     <div class="gallery-top">
-      <div><h3>Generation Gallery</h3><p class="muted">${shoot.pipelineStage || shoot.status} - ${shoot.status}</p></div>
+      <div><h3>Generation Gallery</h3><p class="muted">${escapeHtml(shoot.pipelineStage || shoot.status)} - ${escapeHtml(shoot.status)}</p></div>
       <div class="nav-actions">
-        <button class="btn download-zip" data-shoot-id="${shoot.id}" ${shoot.zipStatus === "READY" ? "" : "disabled"}>Download All ${shoot.zipFileSize ? `(${size(shoot.zipFileSize)})` : ""}</button>
+        <button class="btn download-zip" data-shoot-id="${shootId}" ${shoot.zipStatus === "READY" ? "" : "disabled"}>Download All ${shoot.zipFileSize ? `(${size(shoot.zipFileSize)})` : ""}</button>
       </div>
     </div>
-    <div class="progress-shell"><div class="progress-bar" style="width:${shoot.progress || 0}%"></div></div>
+    <div class="progress-shell"><div class="progress-bar" style="width:${progress}%"></div></div>
     <div class="shot-grid" style="margin-top:16px">${shoot.images.map((image) => shotCard(image, shoot.id)).join("")}</div>
   </section>`;
 }
 
 function shotCard(image, shootId) {
   const ready = image.status === "COMPLETE";
+  const previewUrl = safeUrl(image.previewUrl);
+  const canPreview = ready && previewUrl;
+  const slot = safeNumber(image.slot);
+  const status = escapeHtml(image.status);
+  const dimensions = image.finalDimensions || {};
+  const sizeText = ready ? `${safeNumber(dimensions.width)}x${safeNumber(dimensions.height)} - ${size(image.fileSize)}` : status;
   return `<article class="shot-card">
     <div class="shot-media">
-      ${ready ? `<img src="${image.previewUrl}" alt="Generated slot ${image.slot}">` : `<div class="loader">${image.stage || image.status}</div>`}
-      <div class="slot">${image.slot}</div>
+      ${canPreview ? `<img src="${previewUrl}" alt="Generated slot ${slot}">` : `<div class="loader">${escapeHtml(image.stage || image.status || "Preview unavailable")}</div>`}
+      <div class="slot">${slot}</div>
     </div>
     <div class="shot-body">
       <strong>${image.kind === "quote" ? "Quote Graphic" : image.kind === "mood" ? "Aesthetic Mood" : "Identity Portrait"}</strong>
-      <span class="muted">${ready ? `${image.finalDimensions.width}x${image.finalDimensions.height} - ${size(image.fileSize)}` : image.status}</span>
+      <span class="muted">${sizeText}</span>
       ${ready ? `<span class="chip">${image.provider === "openai" ? "OpenAI" : "Mock"}${image.providerError ? " fallback" : ""}</span>` : ""}
       <div class="shot-actions ${image.kind === "quote" ? "quote" : ""}">
-        <button class="btn small preview" data-url="${image.previewUrl || ""}" ${ready ? "" : "disabled"}>Preview</button>
-        <button class="btn small download" data-id="${image.id}" data-shoot-id="${shootId}" ${ready ? "" : "disabled"}>4K</button>
-        ${image.kind === "quote" ? `<button class="btn small instagram" data-shoot-id="${shootId}" ${ready ? "" : "disabled"}>Instagram 1080</button>` : ""}
+        <button class="btn small preview" data-url="${previewUrl}" ${canPreview ? "" : "disabled"}>Preview</button>
+        <button class="btn small download" data-id="${escapeHtml(image.id)}" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>4K</button>
+        ${image.kind === "quote" ? `<button class="btn small instagram" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>Instagram 1080</button>` : ""}
       </div>
     </div>
   </article>`;
 }
 
 function bindGallery() {
-  $(".preview") && document.querySelectorAll(".preview").forEach((btn) => btn.addEventListener("click", () => window.open(btn.dataset.url, "_blank")));
+  $(".preview") && document.querySelectorAll(".preview").forEach((btn) => btn.addEventListener("click", () => {
+    const url = normalizeUrl(btn.dataset.url);
+    if (!url) return toast("Preview link is unavailable.");
+    window.open(url, "_blank", "noopener,noreferrer");
+  }));
   document.querySelectorAll(".download").forEach((btn) => btn.addEventListener("click", async () => {
     const shootId = btn.dataset.shootId || state.currentShoot?.id;
     if (!shootId) return toast("Open a shoot first.");
-    const data = await request(`/api/shoots/${shootId}/images/${btn.dataset.id}?download=1`);
+    const data = await request(`/api/shoots/${pathPart(shootId)}/images/${pathPart(btn.dataset.id)}?download=1`);
     download(data.url, data.filename);
     toast(`Signed URL generated. Expires at ${new Date(data.expiresAt).toLocaleTimeString()}.`);
   }));
   document.querySelectorAll(".instagram").forEach((btn) => btn.addEventListener("click", async () => {
     const shootId = btn.dataset.shootId || state.currentShoot?.id;
     if (!shootId) return toast("Open a shoot first.");
-    const data = await request(`/api/shoots/${shootId}/quote-instagram-download`);
+    const data = await request(`/api/shoots/${pathPart(shootId)}/quote-instagram-download`);
     download(data.url, data.filename);
   }));
   document.querySelectorAll(".download-zip").forEach((btn) => btn.addEventListener("click", async () => {
     const shootId = btn.dataset.shootId || state.currentShoot?.id;
     if (!shootId) return toast("Open a shoot first.");
-    const data = await request(`/api/shoots/${shootId}/download-zip`);
+    const data = await request(`/api/shoots/${pathPart(shootId)}/download-zip`);
     download(data.url, data.filename);
   }));
 }
 
 function download(url, filename) {
+  const safeDownloadUrl = normalizeUrl(url);
+  if (!safeDownloadUrl) return toast("Download link is unavailable.");
   const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
+  a.href = safeDownloadUrl;
+  a.download = String(filename || "alux-art-download");
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -624,18 +702,20 @@ function download(url, filename) {
 async function renderAdmin() {
   const data = await request("/api/admin/overview");
   state.admin = data;
+  const metrics = data.metrics || {};
+  const downloadLogs = Array.isArray(data.downloadLogs) ? data.downloadLogs : [];
   $("#view").innerHTML = `<section class="main-stack">
     <div class="panel">
-      <div class="panel-head"><div><h3>Admin Dashboard</h3><p>Only ${state.config.adminEmail} can access this route.</p></div></div>
+      <div class="panel-head"><div><h3>Admin Dashboard</h3><p>Only ${escapeHtml(state.config.adminEmail)} can access this route.</p></div></div>
       <div class="admin-grid">
-        <div class="metric"><span>Queue depth</span><strong>${data.metrics.queueDepth}</strong></div>
-        <div class="metric"><span>Revenue NGN</span><strong>${money(data.metrics.totalRevenueNGN, "NGN")}</strong></div>
-        <div class="metric"><span>Revenue USD</span><strong>${money(data.metrics.totalRevenueUSD, "USD")}</strong></div>
-        <div class="metric"><span>Storage</span><strong>${size(data.metrics.storageBytes)}</strong></div>
-        <div class="metric"><span>Model credits</span><strong>${data.metrics.modelCredits}%</strong></div>
-        <div class="metric"><span>Error rate</span><strong>${data.metrics.apiErrorRate}%</strong></div>
-        <div class="metric"><span>GPU seconds</span><strong>${data.metrics.upscalingGpuSeconds}</strong></div>
-        <div class="metric"><span>Downloads</span><strong>${data.downloadLogs.length}</strong></div>
+        <div class="metric"><span>Queue depth</span><strong>${safeNumber(metrics.queueDepth)}</strong></div>
+        <div class="metric"><span>Revenue NGN</span><strong>${money(safeNumber(metrics.totalRevenueNGN), "NGN")}</strong></div>
+        <div class="metric"><span>Revenue USD</span><strong>${money(safeNumber(metrics.totalRevenueUSD), "USD")}</strong></div>
+        <div class="metric"><span>Storage</span><strong>${size(metrics.storageBytes)}</strong></div>
+        <div class="metric"><span>Model credits</span><strong>${safeNumber(metrics.modelCredits)}%</strong></div>
+        <div class="metric"><span>Error rate</span><strong>${safeNumber(metrics.apiErrorRate)}%</strong></div>
+        <div class="metric"><span>GPU seconds</span><strong>${safeNumber(metrics.upscalingGpuSeconds)}</strong></div>
+        <div class="metric"><span>Downloads</span><strong>${downloadLogs.length}</strong></div>
         <div class="metric"><span>OpenAI</span><strong>${state.config.openai?.enabled ? "On" : "Off"}</strong></div>
       </div>
     </div>
@@ -652,42 +732,47 @@ async function renderAdmin() {
 }
 
 function adminPricing(pricing) {
+  const safePricing = pricing || {};
   return `<section class="panel">
     <h3>Pricing Control</h3>
-    <div class="field"><label>NGN price</label><input class="input" id="adminNgn" type="number" value="${pricing.ngn}"></div>
-    <div class="field"><label>USD price</label><input class="input" id="adminUsd" type="number" value="${pricing.usd}"></div>
+    <div class="field"><label>NGN price</label><input class="input" id="adminNgn" type="number" value="${safeNumber(safePricing.ngn)}"></div>
+    <div class="field"><label>USD price</label><input class="input" id="adminUsd" type="number" value="${safeNumber(safePricing.usd)}"></div>
     <button class="btn primary" id="savePricing">Save Pricing</button>
   </section>`;
 }
 
 function adminModels(slots) {
+  const safeSlots = Array.isArray(slots) ? slots : [];
   return `<section class="panel">
     <h3>Model Selection</h3>
     <p class="muted">Default: ${DEFAULT_IMAGE_MODEL}. Secondary fallback: ${SECONDARY_IMAGE_MODEL}.</p>
-    <div class="summary-list">${slots.map((slot, index) => `<div class="summary-row"><span>Slot ${slot.slot}</span><div class="model-row"><select class="select model-slot" data-index="${index}">${modelOptions(slot.model)}</select><select class="select fallback-slot" data-index="${index}">${modelOptions(slot.fallback || SECONDARY_IMAGE_MODEL)}</select></div></div>`).join("")}</div>
+    <div class="summary-list">${safeSlots.map((slot, index) => `<div class="summary-row"><span>Slot ${safeNumber(slot.slot)}</span><div class="model-row"><select class="select model-slot" data-index="${index}">${modelOptions(slot.model)}</select><select class="select fallback-slot" data-index="${index}">${modelOptions(slot.fallback || SECONDARY_IMAGE_MODEL)}</select></div></div>`).join("")}</div>
     <button class="btn primary" id="saveModels">Save Models</button>
   </section>`;
 }
 
 function modelOptions(current) {
-  const choices = MODELS.includes(current) ? MODELS : [current, ...MODELS];
-  return choices.map((m) => `<option ${current === m ? "selected" : ""}>${m}</option>`).join("");
+  const selected = current || DEFAULT_IMAGE_MODEL;
+  const choices = MODELS.includes(selected) ? MODELS : [selected, ...MODELS];
+  return choices.map((m) => `<option ${selected === m ? "selected" : ""}>${escapeHtml(m)}</option>`).join("");
 }
 
 function adminUsers(users) {
+  const safeUsers = Array.isArray(users) ? users : [];
   return `<section class="panel">
     <h3>User Management</h3>
     <div class="table-card"><table><thead><tr><th>Email</th><th>Role</th><th>Currency</th><th>Status</th><th></th></tr></thead><tbody>
-      ${users.map((u) => `<tr><td>${u.email}</td><td>${u.role}</td><td>${u.currency}</td><td>${u.banned ? "Banned" : "Active"}</td><td><button class="btn small ban-user" data-id="${u.id}" data-banned="${!u.banned}">${u.banned ? "Unban" : "Ban"}</button></td></tr>`).join("")}
+      ${safeUsers.map((u) => `<tr><td>${escapeHtml(u.email)}</td><td>${escapeHtml(u.role)}</td><td>${escapeHtml(u.currency)}</td><td>${u.banned ? "Banned" : "Active"}</td><td><button class="btn small ban-user" data-id="${escapeHtml(u.id)}" data-banned="${!u.banned}">${u.banned ? "Unban" : "Ban"}</button></td></tr>`).join("") || `<tr><td colspan="5">No users found</td></tr>`}
     </tbody></table></div>
   </section>`;
 }
 
 function adminShoots(shoots) {
+  const safeShoots = Array.isArray(shoots) ? shoots : [];
   return `<section class="panel">
     <h3>Shoot Monitoring</h3>
     <div class="table-card"><table><thead><tr><th>ID</th><th>Owner</th><th>Status</th><th>Mode</th><th>Progress</th></tr></thead><tbody>
-      ${shoots.map((s) => `<tr><td>${s.id}</td><td>${s.ownerEmail}</td><td>${s.status}</td><td>${s.mode}</td><td>${s.progress}%</td></tr>`).join("") || `<tr><td colspan="5">No shoots yet</td></tr>`}
+      ${safeShoots.map((s) => `<tr><td>${escapeHtml(s.id)}</td><td>${escapeHtml(s.ownerEmail)}</td><td>${escapeHtml(s.status)}</td><td>${escapeHtml(s.mode)}</td><td>${safePercent(s.progress)}%</td></tr>`).join("") || `<tr><td colspan="5">No shoots yet</td></tr>`}
     </tbody></table></div>
   </section>`;
 }
@@ -715,5 +800,5 @@ function bindAdmin() {
 
 window.addEventListener("hashchange", render);
 init().catch((err) => {
-  document.body.innerHTML = `<pre style="padding:20px;color:white">${err.stack || err.message}</pre>`;
+  renderFatal(err);
 });

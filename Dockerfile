@@ -3,6 +3,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV ALUX_PROCESS_ROLE=web
 
 COPY package.json ./
 COPY server.js ./

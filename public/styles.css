@@ -615,6 +615,23 @@ th { color: var(--muted); font-weight: 600; background: rgba(255,255,255,.03); }
 }
 
 .hidden { display: none !important; }
+
+.fatal {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.fatal-panel {
+  width: min(520px, 100%);
+  text-align: center;
+}
+
+.fatal-panel p {
+  color: var(--muted);
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1120px) {

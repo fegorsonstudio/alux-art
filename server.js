@@ -13,6 +13,9 @@ const DATA_DIR = path.join(ROOT, "data");
 const STORAGE = path.join(ROOT, "storage");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 const PORT = Number(process.env.PORT || 3000);
+const PROCESS_ROLE = (process.env.ALUX_PROCESS_ROLE || process.env.PROCESS_ROLE || (process.env.NODE_ENV === "production" ? "web" : "all")).toLowerCase();
+const HTTP_ENABLED = PROCESS_ROLE !== "worker";
+const WORKER_ENABLED = process.env.RUN_WORKER === "true" || (process.env.RUN_WORKER !== "false" && PROCESS_ROLE !== "web");
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "fegorsonphotography@gmail.com").toLowerCase();
 const DEFAULT_IMAGE_MODEL = "openai/gpt-5.4-image-2";
 const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
@@ -133,9 +136,19 @@ function cookies(req) {
   }));
 }
 
+function securityHeaders() {
+  return {
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=()"
+  };
+}
+
 function send(res, status, payload, headers = {}) {
   const body = payload === undefined ? "" : JSON.stringify(payload);
   res.writeHead(status, {
+    ...securityHeaders(),
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
     ...headers
@@ -144,7 +157,10 @@ function send(res, status, payload, headers = {}) {
 }
 
 function sendText(res, status, body, headers = {}) {
-  res.writeHead(status, headers);
+  res.writeHead(status, {
+    ...securityHeaders(),
+    ...headers
+  });
   res.end(body);
 }
 
@@ -1122,6 +1138,7 @@ async function api(req, res, url) {
       supabase: supabaseStatus(),
       openai: openAiStatus(),
       paystack: { configured: Boolean(process.env.PAYSTACK_SECRET_KEY) },
+      process: { role: PROCESS_ROLE, httpEnabled: HTTP_ENABLED, workerEnabled: WORKER_ENABLED },
       worker: { running: workerRunning }
     });
   }
@@ -1598,36 +1615,53 @@ async function staticFile(req, res, url) {
   if (url.pathname.startsWith("/storage/")) filePath = path.join(ROOT, url.pathname);
   else filePath = path.join(PUBLIC, url.pathname === "/" ? "index.html" : url.pathname);
   const resolved = path.resolve(filePath);
-  if (!resolved.startsWith(PUBLIC) && !resolved.startsWith(STORAGE)) return sendText(res, 403, "Forbidden");
+  const relativePublic = path.relative(PUBLIC, resolved);
+  const relativeStorage = path.relative(STORAGE, resolved);
+  const insidePublic = relativePublic === "" || (!relativePublic.startsWith("..") && !path.isAbsolute(relativePublic));
+  const insideStorage = relativeStorage === "" || (!relativeStorage.startsWith("..") && !path.isAbsolute(relativeStorage));
+  if (!insidePublic && !insideStorage) return sendText(res, 403, req.method === "HEAD" ? undefined : "Forbidden");
   try {
     const data = await fsp.readFile(resolved);
     const ext = path.extname(resolved).toLowerCase();
     const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".zip": "application/zip" };
-    sendText(res, 200, data, { "content-type": types[ext] || "application/octet-stream", "cache-control": url.pathname.startsWith("/storage/") ? "public, max-age=3600" : "no-store" });
+    const cacheControl = url.pathname.startsWith("/assets/")
+      ? "public, max-age=86400"
+      : url.pathname.startsWith("/storage/")
+        ? "public, max-age=3600"
+        : "no-store";
+    sendText(res, 200, req.method === "HEAD" ? undefined : data, { "content-type": types[ext] || "application/octet-stream", "cache-control": cacheControl });
   } catch {
     if (!url.pathname.includes(".")) {
       const data = await fsp.readFile(path.join(PUBLIC, "index.html"));
-      sendText(res, 200, data, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      sendText(res, 200, req.method === "HEAD" ? undefined : data, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     } else {
-      sendText(res, 404, "Not found");
+      sendText(res, 404, req.method === "HEAD" ? undefined : "Not found");
     }
   }
 }
 
 async function main() {
   await loadDb();
-  startWorkerLoop();
-  const server = http.createServer(async (req, res) => {
-    try {
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      if (url.pathname.startsWith("/api/")) return api(req, res, url);
-      return staticFile(req, res, url);
-    } catch (err) {
-      console.error(err);
-      send(res, 500, { error: "Internal server error" });
-    }
-  });
-  server.listen(PORT, () => console.log(`Alux Art running at http://localhost:${PORT}`));
+  if (WORKER_ENABLED) startWorkerLoop();
+  if (HTTP_ENABLED) {
+    const server = http.createServer(async (req, res) => {
+      try {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        if (url.pathname.startsWith("/api/")) return api(req, res, url);
+        return staticFile(req, res, url);
+      } catch (err) {
+        console.error(err);
+        send(res, 500, { error: "Internal server error" });
+      }
+    });
+    server.listen(PORT, () => console.log(`Alux Art ${PROCESS_ROLE} process running at http://localhost:${PORT}`));
+    return;
+  }
+  if (WORKER_ENABLED) {
+    console.log(`Alux Art ${PROCESS_ROLE} process running without HTTP server.`);
+    return;
+  }
+  throw new Error(`Invalid ALUX_PROCESS_ROLE: ${PROCESS_ROLE}`);
 }
 
 main();
