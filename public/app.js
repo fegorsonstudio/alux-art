@@ -381,12 +381,39 @@ function advancedPanel() {
 }
 
 function uploadTiles(kind, list, minimum) {
-  const existing = list.map((item, index) => `<div>
-    <div class="upload-card"><img class="thumb" src="${safeUrl(item.dataUrl)}" alt="${escapeHtml(item.name)}"></div>
-    ${kind === "tagged" ? customReferenceControls(item, index, kind) : `<div class="tag-row"><span class="chip">${escapeHtml(item.name)}</span><button class="btn icon remove-upload" data-kind="${kind}" data-index="${index}" title="Remove">x</button></div>`}
-  </div>`).join("");
+  const existing = list.map((item, index) => uploadTileShell(item, kind, index)).join("");
   const slots = Math.max(1, minimum - list.length);
-  return `${existing}${Array.from({ length: slots }, () => `<label class="drop">Click to upload<input type="file" accept="image/*" multiple data-kind="${kind}"></label>`).join("")}`;
+  return `${existing}${Array.from({ length: slots }, () => `<label class="drop">Click to upload<span>JPG, PNG, WebP, HEIC</span><input type="file" accept="image/*,.heic,.heif" multiple data-kind="${kind}"></label>`).join("")}`;
+}
+
+function uploadTileShell(item, kind, index) {
+  return `<div data-upload-id="${escapeHtml(item.id || "")}">
+    <div class="upload-card">${uploadPreview(item)}</div>
+    ${uploadStatus(item)}
+    ${kind === "tagged" ? customReferenceControls(item, index, kind) : `<div class="tag-row"><span class="chip">${escapeHtml(item.name)}</span><button class="btn icon remove-upload" data-kind="${kind}" data-index="${index}" title="Remove">x</button></div>`}
+  </div>`;
+}
+
+function uploadPreview(item) {
+  const dataUrl = safeUrl(item.dataUrl);
+  if (dataUrl && /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(dataUrl)) {
+    return `<img class="thumb" src="${dataUrl}" alt="${escapeHtml(item.name)}">`;
+  }
+  if (dataUrl && item.type && !/^image\/(png|jpe?g|webp|gif)$/i.test(item.type)) {
+    return `<div class="upload-placeholder"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.type)} selected</span></div>`;
+  }
+  return `<div class="upload-placeholder"><strong>${escapeHtml(item.name || "Reading image")}</strong><span>${escapeHtml(item.uploadStatus || "Preparing preview")}</span></div>`;
+}
+
+function uploadStatus(item) {
+  if (!item.uploadStatus && item.uploadProgress === undefined) return "";
+  const progress = safePercent(item.uploadProgress ?? 0);
+  const errorClass = item.uploadError ? " upload-status-error" : "";
+  return `<div class="upload-status${errorClass}">
+    <div class="upload-status-top"><span>${escapeHtml(item.uploadStatus || "Selected")}</span><span>${progress}%</span></div>
+    <div class="upload-progress-shell"><div class="upload-progress-bar" style="width:${progress}%"></div></div>
+    ${item.uploadError ? `<p>${escapeHtml(item.uploadError)}</p>` : ""}
+  </div>`;
 }
 
 function customReferenceControls(item, index, kind) {
@@ -569,16 +596,45 @@ function listFor(kind) {
 async function readFiles(event) {
   const kind = event.target.dataset.kind;
   const list = listFor(kind);
+  const files = Array.from(event.target.files || []);
+  event.target.value = "";
+  if (!files.length) return;
   const uploaded = [];
-  for (const file of Array.from(event.target.files)) {
-    const dataUrl = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    });
-    const image = { id: crypto.randomUUID(), name: file.name, size: file.size, type: file.type, dataUrl, fingerprint: `${file.name}:${file.size}:${file.lastModified}`, tag: TAGS[0], customName: "", note: "" };
+  toast(`Loading ${files.length} ${files.length === 1 ? "image" : "images"}...`);
+  for (const file of files) {
+    const image = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type: file.type || "image/*",
+      dataUrl: "",
+      fingerprint: `${file.name}:${file.size}:${file.lastModified}`,
+      tag: TAGS[0],
+      customName: "",
+      note: "",
+      uploadKind: kind,
+      uploadProgress: 5,
+      uploadStatus: "Reading file"
+    };
     list.push(image);
-    if (kind === "identity") uploaded.push(image);
+    renderWorkspace();
+    try {
+      image.dataUrl = await readImageFile(file, (progress) => {
+        image.uploadProgress = progress;
+        image.uploadStatus = "Reading file";
+        updateUploadCard(image);
+      });
+      image.uploadProgress = kind === "identity" ? 80 : 100;
+      image.uploadStatus = kind === "identity" ? "Saving to identity library" : "Ready";
+      updateUploadCard(image);
+      if (kind === "identity") uploaded.push(image);
+    } catch (err) {
+      image.uploadProgress = 100;
+      image.uploadStatus = "Could not read file";
+      image.uploadError = err.message;
+      updateUploadCard(image);
+      toast(`Could not read ${file.name}: ${err.message}`);
+    }
   }
   if (uploaded.length) {
     try {
@@ -586,16 +642,52 @@ async function readFiles(event) {
       state.savedIdentityImages = images || [];
       uploaded.forEach((local) => {
         const savedMatch = (saved || []).find((item) => item.fingerprint === local.fingerprint);
+        local.uploadProgress = 100;
+        local.uploadStatus = savedMatch ? "Saved" : "Selected";
+        local.uploadError = "";
         if (!savedMatch) return;
         const index = state.identityImages.findIndex((item) => item.id === local.id);
-        if (index >= 0) state.identityImages[index] = { ...savedMatch };
+        if (index >= 0) state.identityImages[index] = { ...savedMatch, uploadProgress: 100, uploadStatus: "Saved" };
       });
       toast("Identity upload saved for reuse.");
     } catch (err) {
+      uploaded.forEach((image) => {
+        image.uploadProgress = 100;
+        image.uploadStatus = "Selected, save failed";
+        image.uploadError = err.message;
+      });
       toast(`Identity image selected, but could not save it: ${err.message}`);
     }
   }
   renderWorkspace();
+}
+
+function readImageFile(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) {
+      reject(new Error("Only image files are supported"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      onProgress(Math.max(8, Math.min(75, Math.round((event.loaded / event.total) * 75))));
+    };
+    reader.onerror = () => reject(new Error(reader.error?.message || "Browser could not read this file"));
+    reader.onload = () => {
+      onProgress(78);
+      resolve(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function updateUploadCard(image) {
+  const card = document.querySelector(`[data-upload-id="${image.id}"]`);
+  if (!card) return;
+  const kind = image.uploadKind || "identity";
+  const index = listFor(kind).findIndex((item) => item.id === image.id);
+  card.outerHTML = uploadTileShell(image, kind, Math.max(0, index));
 }
 
 async function createShoot() {

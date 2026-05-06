@@ -352,12 +352,85 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.45; }
   background: rgba(16, 185, 129, .04);
 }
 
+.drop span {
+  display: block;
+  margin-top: 6px;
+  color: var(--soft);
+  font-size: 12px;
+}
+
 .drop input { display: none; }
 .thumb {
   width: 100%;
   height: 178px;
   object-fit: cover;
   display: block;
+}
+
+.upload-placeholder {
+  min-height: 178px;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.upload-placeholder strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.upload-placeholder span {
+  font-size: 13px;
+}
+
+.upload-status {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  background: var(--bg);
+}
+
+.upload-status-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.upload-progress-shell {
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+}
+
+.upload-progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--green-soft);
+  transition: width .2s ease;
+}
+
+.upload-status-error {
+  border-color: rgba(239, 68, 68, .4);
+}
+
+.upload-status-error .upload-progress-bar {
+  background: var(--red);
+}
+
+.upload-status p {
+  margin: 8px 0 0;
+  color: #fecaca;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .tag-row {
