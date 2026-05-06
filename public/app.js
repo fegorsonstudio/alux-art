@@ -18,8 +18,8 @@ const state = {
 let supabaseClient = null;
 
 const TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"];
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2";
-const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
+const DEFAULT_IMAGE_MODEL = "openai/gpt-image-1.5";
+const SECONDARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const TERTIARY_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
 const MODELS = [
   DEFAULT_IMAGE_MODEL,

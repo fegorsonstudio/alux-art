@@ -18,8 +18,8 @@ const HTTP_ENABLED = PROCESS_ROLE !== "worker";
 const RUN_WORKER = env("RUN_WORKER");
 const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2";
-const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
+const DEFAULT_IMAGE_MODEL = "openai/gpt-image-1.5";
+const SECONDARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const TERTIARY_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
 const OPENAI_IMAGE_QUALITY = env("OPENAI_IMAGE_QUALITY", "low");
@@ -37,8 +37,11 @@ const LEGACY_MODELS = new Set([
   "Future Model Slot",
   "openai/gpt-5.4-image-2",
   "gpt-5.4-image-2",
-  "openai/gpt-image-1.5",
-  "gpt-image-1.5",
+  "openai/gpt-image-2",
+  "gpt-image-2",
+  "openai/gemini-3.1-flash-image-preview",
+  "google/gemini-3.1-flash-image-preview",
+  "gemini-3.1-flash-image-preview",
   "openai/gpt-image-1",
   "gpt-image-1",
   "openai/gpt-image-1-mini",
