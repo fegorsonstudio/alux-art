@@ -1589,7 +1589,7 @@ async function api(req, res, url) {
     }
     return send(res, 200, { user: publicUser(user) });
   }
-  if (req.method === "GET" && url.pathname === "/api/config") return send(res, 200, { aspects: ASPECTS, pricing: store.db.pricing, adminEmail: ADMIN_EMAIL, openai: openAiStatus(), supabase: supabaseStatus() });
+  if (req.method === "GET" && url.pathname === "/api/config") return send(res, 200, { aspects: ASPECTS, pricing: store.db.pricing, adminEmail: ADMIN_EMAIL, openai: openAiStatus(), gemini: geminiStatus(), supabase: supabaseStatus() });
   if (req.method === "GET" && url.pathname === "/api/pricing") {
     if (SUPABASE_ENABLED) {
       const rows = await supabaseRows("pricing_configs", "id=eq.true&select=*", { headers: { prefer: "" } }).catch(() => []);
