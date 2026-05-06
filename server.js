@@ -18,10 +18,9 @@ const HTTP_ENABLED = PROCESS_ROLE !== "worker";
 const RUN_WORKER = env("RUN_WORKER");
 const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-1";
+const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2";
 const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
-const OPENAI_IMAGE_MODEL = env("OPENAI_IMAGE_MODEL", DEFAULT_IMAGE_MODEL);
 const OPENAI_IMAGE_QUALITY = env("OPENAI_IMAGE_QUALITY", "low");
 const OPENAI_IMAGE_TIMEOUT_MS = Number(env("OPENAI_IMAGE_TIMEOUT_MS", "120000"));
 const OPENAI_GENERATION_ENABLED = env("OPENAI_IMAGE_GENERATION") !== "mock";
@@ -33,9 +32,14 @@ const LEGACY_MODELS = new Set([
   "Future Model Slot",
   "openai/gpt-5.4-image-2",
   "gpt-5.4-image-2",
-  "openai/gpt-image-2",
-  "gpt-image-2"
+  "openai/gpt-image-1.5",
+  "gpt-image-1.5",
+  "openai/gpt-image-1",
+  "gpt-image-1",
+  "openai/gpt-image-1-mini",
+  "gpt-image-1-mini"
 ]);
+const OPENAI_IMAGE_MODEL = normalizeImageModel(env("OPENAI_IMAGE_MODEL", DEFAULT_IMAGE_MODEL), DEFAULT_IMAGE_MODEL);
 const SUPABASE_URL = env("SUPABASE_URL").replace(/\/+$/, "");
 const SUPABASE_PUBLIC_KEY_FALLBACKS = {
   owdfoxglbxrqhgqbvkon: "sb_publishable_zo4Dxes0P6-t2Z1KD4jAtg_QnhzutOg"
@@ -775,10 +779,10 @@ async function generateImageFiles(shoot, image) {
   }
 }
 
-function openAiImageSize(aspectRatio) {
-  if (OPENAI_IMAGE_MODEL === "gpt-image-2") {
+function openAiImageSize(aspectRatio, model = OPENAI_IMAGE_MODEL) {
+  if (openAiApiModelName(model) === "gpt-image-2") {
     const dims = targetDims(aspectRatio);
-    const scale = Math.min(3840 / dims.width, 3840 / dims.height, 1);
+    const scale = Math.min(3840 / dims.width, 3840 / dims.height, Math.sqrt(8294400 / (dims.width * dims.height)), 1);
     const width = Math.max(1024, Math.floor((dims.width * scale) / 16) * 16);
     const height = Math.max(1024, Math.floor((dims.height * scale) / 16) * 16);
     return `${width}x${height}`;
@@ -818,7 +822,7 @@ async function generateOpenAiImage(shoot, image) {
   if (!apiModel) {
     throw new Error(`Selected model ${selected.model} is not an OpenAI image model for this local provider`);
   }
-  const size = openAiImageSize(shoot.aspectRatio);
+  const size = openAiImageSize(shoot.aspectRatio, apiModel);
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -1691,7 +1695,7 @@ async function api(req, res, url) {
     }
     if (req.method === "PATCH" && url.pathname === "/api/admin/model-slots") {
       const payload = await body(req);
-      store.db.modelSlots = payload.modelSlots || store.db.modelSlots;
+      store.db.modelSlots = normalizeModelSlots(payload.modelSlots || store.db.modelSlots);
       store.db.auditLogs.push({ id: id("audit"), actor: user.email, action: "models.update", at: now() });
       await saveDb();
       return send(res, 200, { modelSlots: store.db.modelSlots });
