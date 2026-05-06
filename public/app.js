@@ -116,9 +116,25 @@ function getSupabaseClient() {
 async function syncSupabaseSession() {
   const client = getSupabaseClient();
   if (!client) return null;
+  const params = new URLSearchParams(location.search);
+  const authError = params.get("error_description") || params.get("error");
+  if (authError) {
+    history.replaceState(null, "", location.pathname + location.hash);
+    throw new Error(authError);
+  }
+  const code = params.get("code");
+  if (code) {
+    const { data, error } = await client.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    history.replaceState(null, "", location.pathname + location.hash);
+    return persistSupabaseSession(data?.session);
+  }
   const { data, error } = await client.auth.getSession();
   if (error) throw error;
-  const session = data?.session;
+  return persistSupabaseSession(data?.session);
+}
+
+function persistSupabaseSession(session) {
   if (session?.access_token) {
     localStorage.setItem("alux_supabase_token", session.access_token);
     if (session.refresh_token) localStorage.setItem("alux_supabase_refresh", session.refresh_token);
