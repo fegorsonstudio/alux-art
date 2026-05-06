@@ -287,12 +287,13 @@ function safeStorageName(name, fallback = "image") {
   return clean || fallback;
 }
 
-async function supabaseUpload(bucket, objectPath, data, contentType) {
+async function supabaseUpload(bucket, objectPath, data, contentType, token = "") {
+  const key = token ? SUPABASE_ANON_KEY : SUPABASE_SERVICE_ROLE_KEY;
   const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${objectPath}`, {
     method: "POST",
     headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: key,
+      authorization: `Bearer ${token || key}`,
       "content-type": contentType || "application/octet-stream",
       "x-upsert": "true"
     },
@@ -304,15 +305,17 @@ async function supabaseUpload(bucket, objectPath, data, contentType) {
   return payload;
 }
 
-async function supabaseRemove(bucket, objectPath) {
+async function supabaseRemove(bucket, objectPath, token = "") {
   return supabaseJson(`/storage/v1/object/${bucket}`, {
+    token,
     method: "DELETE",
     body: { prefixes: [objectPath] }
   });
 }
 
-async function supabaseSignedUrl(bucket, objectPath, expiresIn = 3600) {
+async function supabaseSignedUrl(bucket, objectPath, expiresIn = 3600, token = "") {
   const payload = await supabaseJson(`/storage/v1/object/sign/${bucket}/${objectPath}`, {
+    token,
     method: "POST",
     body: { expiresIn }
   });
@@ -330,7 +333,7 @@ async function supabaseIdentityLibrary(user) {
     name: row.name,
     size: Number(row.size || 0),
     type: row.type,
-    dataUrl: await supabaseSignedUrl(row.storage_bucket, row.storage_path).catch(() => ""),
+    dataUrl: await supabaseSignedUrl(row.storage_bucket, row.storage_path, 3600, user.token).catch(() => ""),
     fingerprint: row.fingerprint,
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
@@ -1061,8 +1064,9 @@ async function createSupabaseShoot(payload, user) {
     shoot_brief: shoot.shootBrief,
     zip_status: shoot.zipStatus
   };
-  await supabaseRows("shoots", "", { method: "POST", body: [shootRow] });
+  await supabaseRows("shoots", "", { token: user.token, method: "POST", body: [shootRow] });
   await supabaseRows("shoot_images", "", {
+    token: user.token,
     method: "POST",
     body: shoot.images.map((image) => ({
       id: image.id,
@@ -1104,14 +1108,14 @@ async function persistSupabaseReferences(shoot, payload, user) {
     const stored = await storeSupabaseReferenceFile(user, shoot.id, "custom-references", "custom", image);
     if (stored) rows.push(stored);
   }
-  if (rows.length) await supabaseRows("shoot_references", "", { method: "POST", body: rows });
+  if (rows.length) await supabaseRows("shoot_references", "", { token: user.token, method: "POST", body: rows });
 }
 
 async function storeSupabaseReferenceFile(user, shootId, bucket, purpose, image) {
   const file = dataUrlToFile(image?.dataUrl);
   if (!file) return null;
   const objectPath = `${user.id}/shoots/${shootId}/${purpose}/${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeStorageName(image.name, "reference.jpg")}`;
-  await supabaseUpload(bucket, objectPath, file.buffer, file.contentType);
+  await supabaseUpload(bucket, objectPath, file.buffer, file.contentType, user.token);
   return {
     shoot_id: shootId,
     user_id: user.id,
@@ -1129,11 +1133,11 @@ async function storeSupabaseReferenceFile(user, shootId, bucket, purpose, image)
 }
 
 async function loadSupabaseShootForApp(shootId, user) {
-  const rows = await supabaseRows("shoots", `id=eq.${encodeURIComponent(shootId)}&select=*`, { headers: { prefer: "" } });
+  const rows = await supabaseRows("shoots", `id=eq.${encodeURIComponent(shootId)}&select=*`, { token: user.token, headers: { prefer: "" } });
   const row = rows?.[0];
   if (!row) return null;
   if (row.user_id !== user.id && !isAdmin(user)) return null;
-  const imageRows = await supabaseRows("shoot_images", `shoot_id=eq.${encodeURIComponent(shootId)}&select=*&order=slot.asc`, { headers: { prefer: "" } });
+  const imageRows = await supabaseRows("shoot_images", `shoot_id=eq.${encodeURIComponent(shootId)}&select=*&order=slot.asc`, { token: user.token, headers: { prefer: "" } });
   const images = await Promise.all((imageRows || []).map(async (image) => ({
     id: image.id,
     slot: image.slot,
@@ -1145,9 +1149,9 @@ async function loadSupabaseShootForApp(shootId, user) {
     configuredModel: image.configured_model,
     apiModel: image.api_model,
     fallbackModel: image.fallback_model,
-    previewUrl: image.preview_storage_bucket && image.preview_storage_path ? await supabaseSignedUrl(image.preview_storage_bucket, image.preview_storage_path).catch(() => "") : "",
-    downloadUrl: image.download_storage_bucket && image.download_storage_path ? await supabaseSignedUrl(image.download_storage_bucket, image.download_storage_path).catch(() => "") : "",
-    instagramUrl: image.instagram_storage_bucket && image.instagram_storage_path ? await supabaseSignedUrl(image.instagram_storage_bucket, image.instagram_storage_path).catch(() => "") : "",
+    previewUrl: image.preview_storage_bucket && image.preview_storage_path ? await supabaseSignedUrl(image.preview_storage_bucket, image.preview_storage_path, 3600, user.token).catch(() => "") : "",
+    downloadUrl: image.download_storage_bucket && image.download_storage_path ? await supabaseSignedUrl(image.download_storage_bucket, image.download_storage_path, 3600, user.token).catch(() => "") : "",
+    instagramUrl: image.instagram_storage_bucket && image.instagram_storage_path ? await supabaseSignedUrl(image.instagram_storage_bucket, image.instagram_storage_path, 3600, user.token).catch(() => "") : "",
     previewStorageBucket: image.preview_storage_bucket,
     previewStoragePath: image.preview_storage_path,
     downloadStorageBucket: image.download_storage_bucket,
@@ -1183,7 +1187,7 @@ async function loadSupabaseShootForApp(shootId, user) {
     zipStatus: row.zip_status,
     zipStorageBucket: row.zip_storage_bucket,
     zipStoragePath: row.zip_storage_path,
-    zipUrl: row.zip_storage_bucket && row.zip_storage_path ? await supabaseSignedUrl(row.zip_storage_bucket, row.zip_storage_path).catch(() => "") : "",
+    zipUrl: row.zip_storage_bucket && row.zip_storage_path ? await supabaseSignedUrl(row.zip_storage_bucket, row.zip_storage_path, 3600, user.token).catch(() => "") : "",
     zipFileSize: Number(row.zip_file_size || 0),
     zipReadyAt: row.zip_ready_at,
     createdAt: row.created_at,
@@ -1376,7 +1380,7 @@ async function api(req, res, url) {
           continue;
         }
         const objectPath = `${user.id}/identity/${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeStorageName(image.name, "identity.jpg")}`;
-        await supabaseUpload("identity-images", objectPath, file.buffer, file.contentType);
+        await supabaseUpload("identity-images", objectPath, file.buffer, file.contentType, user.token);
         const rows = await supabaseRows("identity_images", "", {
           token: user.token,
           method: "POST",
@@ -1397,7 +1401,7 @@ async function api(req, res, url) {
             name: row.name,
             size: Number(row.size || 0),
             type: row.type,
-            dataUrl: await supabaseSignedUrl(row.storage_bucket, row.storage_path).catch(() => ""),
+            dataUrl: await supabaseSignedUrl(row.storage_bucket, row.storage_path, 3600, user.token).catch(() => ""),
             fingerprint: row.fingerprint,
             createdAt: row.created_at,
             lastUsedAt: row.last_used_at,
@@ -1441,12 +1445,14 @@ async function api(req, res, url) {
     if (!user) return;
     if (SUPABASE_ENABLED) {
       const rows = await supabaseRows("identity_images", `id=eq.${encodeURIComponent(identityMatch[1])}&user_id=eq.${encodeURIComponent(user.id)}&select=*`, {
+        token: user.token,
         headers: { prefer: "" }
       });
       const image = rows?.[0];
       if (!image) return send(res, 404, { error: "Identity image not found" });
-      await supabaseRemove(image.storage_bucket, image.storage_path).catch(() => {});
+      await supabaseRemove(image.storage_bucket, image.storage_path, user.token).catch(() => {});
       await supabaseRows("identity_images", `id=eq.${encodeURIComponent(image.id)}`, {
+        token: user.token,
         method: "DELETE",
         headers: { prefer: "" }
       });
@@ -1512,6 +1518,7 @@ async function api(req, res, url) {
           
           if (SUPABASE_ENABLED) {
             await supabaseRows("payments", "", {
+              token: user.token,
               method: "POST",
               body: [{
                 shoot_id: shoot.id,
@@ -1550,6 +1557,7 @@ async function api(req, res, url) {
       if (SUPABASE_ENABLED) {
         const amount = shoot.currency === "NGN" ? store.db.pricing.ngn : store.db.pricing.usd;
         await supabaseRows("payments", "", {
+          token: user.token,
           method: "POST",
           body: [{
             shoot_id: shoot.id,
@@ -1564,6 +1572,7 @@ async function api(req, res, url) {
           }]
         }).catch(() => {});
         await supabaseRows("shoots", `id=eq.${encodeURIComponent(shoot.id)}`, {
+          token: user.token,
           method: "PATCH",
           body: { status: "QUEUED", zip_status: "LOCKED", updated_at: now() }
         }).catch(() => {});
