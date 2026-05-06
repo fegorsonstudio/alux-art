@@ -719,14 +719,20 @@ async function createShoot() {
         identityImages: state.identityImages.map(stripImage),
         inspirationImages: state.inspirationImages.map(stripImage),
         taggedReferences: state.taggedReferences.map(stripImage),
-        quote: state.quote
+        quote: state.quote,
+        adminBypass: state.user?.role === "admin"
       }
     });
     state.currentShoot = shoot;
     state.shoots = [shootSummary(shoot), ...state.shoots.filter((item) => item.id !== shoot.id)];
     renderWorkspace();
     $("#galleryHost")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const payment = await request(`/api/shoots/${pathPart(shoot.id)}/pay`, { method: "POST" });
+    if (state.user?.role === "admin") {
+      connectEvents(shoot.id);
+      toast("Admin test shoot queued. Generation progress is streaming.");
+      return;
+    }
+    const payment = await request(`/api/shoots/${pathPart(shoot.id)}/pay`, { method: "POST" });
     if (payment.authorization_url) {
       toast("Opening secure Paystack checkout.");
       location.href = payment.authorization_url;

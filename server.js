@@ -1318,6 +1318,7 @@ async function createSupabaseShoot(payload, user) {
   shoot.ownerId = user.id;
   shoot.ownerEmail = user.email;
   shoot.images = shoot.images.map((image) => ({ ...image, id: crypto.randomUUID() }));
+  if (isAdmin(user) || payload.adminBypass === true) applyAdminBypass(shoot);
   const shootRow = {
     id: shoot.id,
     user_id: user.id,
@@ -1350,6 +1351,25 @@ async function createSupabaseShoot(payload, user) {
   });
   await persistSupabaseReferences(shoot, payload, user);
   return shoot;
+}
+
+function applyAdminBypass(shoot) {
+  shoot.status = "QUEUED";
+  shoot.zipStatus = "LOCKED";
+  shoot.pipelineStage = "Queued";
+  shoot.updatedAt = now();
+  shoot.images.forEach((img) => {
+    img.status = "PROCESSING";
+    img.stage = "Queued";
+  });
+  shoot.payment = {
+    id: id("pay"),
+    status: "BYPASSED",
+    currency: shoot.currency,
+    amount: shoot.currency === "NGN" ? store.db.pricing.ngn : store.db.pricing.usd,
+    provider: "admin-bypass",
+    paidAt: now()
+  };
 }
 
 async function persistSupabaseReferences(shoot, payload, user) {
@@ -1822,8 +1842,31 @@ async function api(req, res, url) {
     if (!Array.isArray(payload.identityImages) || payload.identityImages.length < 3) return send(res, 400, { error: "Upload at least 3 identity images" });
     if (!Array.isArray(payload.inspirationImages) || payload.inspirationImages.length < 1) return send(res, 400, { error: "Upload at least 1 inspiration image" });
     const shoot = SUPABASE_ENABLED ? await createSupabaseShoot(payload, user) : newShoot(payload, user);
+    if (!SUPABASE_ENABLED && (isAdmin(user) || payload.adminBypass === true)) applyAdminBypass(shoot);
     store.db.shoots.unshift(shoot);
     await saveDb();
+    if (shoot.status === "QUEUED") {
+      store.db.metrics.queueDepth += 1;
+      if (SUPABASE_ENABLED) {
+        await supabaseRows("payments", "", {
+          token: user.token,
+          method: "POST",
+          body: [{
+            shoot_id: shoot.id,
+            user_id: shoot.ownerId,
+            status: shoot.payment.status,
+            currency: shoot.payment.currency,
+            amount: shoot.payment.amount,
+            provider: shoot.payment.provider,
+            provider_reference: shoot.payment.id,
+            paid_at: shoot.payment.paidAt,
+            metadata: { admin_creation_bypass: true }
+          }]
+        }).catch(() => {});
+      }
+      queueEvent(shoot.id, { type: "queued", shootId: shoot.id, shoot });
+      runShootPipeline(shoot).catch((err) => console.error("Admin creation bypass generation failed", err));
+    }
     return send(res, 201, { shoot });
   }
   const shootMatch = url.pathname.match(/^\/api\/shoots\/([^/]+)(?:\/([^/]+))?(?:\/([^/]+))?$/);
