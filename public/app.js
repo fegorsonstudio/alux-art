@@ -606,7 +606,7 @@ async function readFiles(event) {
       id: crypto.randomUUID(),
       name: file.name,
       size: file.size,
-      type: file.type || "image/*",
+      type: normalizeImageType(file) || "image/*",
       dataUrl: "",
       fingerprint: `${file.name}:${file.size}:${file.lastModified}`,
       tag: TAGS[0],
@@ -662,9 +662,29 @@ async function readFiles(event) {
   renderWorkspace();
 }
 
+function normalizeImageType(file) {
+  const explicitType = String(file.type || "").toLowerCase();
+  if (explicitType.startsWith("image/")) return explicitType;
+  const name = String(file.name || "").toLowerCase();
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
+  if (name.endsWith(".png")) return "image/png";
+  if (name.endsWith(".webp")) return "image/webp";
+  if (name.endsWith(".gif")) return "image/gif";
+  if (name.endsWith(".heic")) return "image/heic";
+  if (name.endsWith(".heif")) return "image/heif";
+  return "";
+}
+
+function withImageDataUrlType(dataUrl, contentType) {
+  const value = String(dataUrl || "");
+  if (!contentType || value.startsWith(`data:${contentType};base64,`)) return value;
+  return value.replace(/^data:[^;]*;base64,/i, `data:${contentType};base64,`);
+}
+
 function readImageFile(file, onProgress) {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) {
+    const contentType = normalizeImageType(file);
+    if (!contentType) {
       reject(new Error("Only image files are supported"));
       return;
     }
@@ -676,7 +696,7 @@ function readImageFile(file, onProgress) {
     reader.onerror = () => reject(new Error(reader.error?.message || "Browser could not read this file"));
     reader.onload = () => {
       onProgress(78);
-      resolve(reader.result);
+      resolve(withImageDataUrlType(reader.result, contentType));
     };
     reader.readAsDataURL(file);
   });
