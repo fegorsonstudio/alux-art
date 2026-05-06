@@ -738,26 +738,30 @@ async function generateImageFiles(shoot, image) {
     image.instagramFileSize = insta.length;
   }
   if (SUPABASE_ENABLED && shoot.ownerId) {
-    const ownerPath = `${shoot.ownerId}/shoots/${shoot.id}`;
-    const previewBuffer = provider === "openai"
-      ? full
-      : Buffer.from(svgPreview(shoot, image));
-    const previewExt = provider === "openai" ? "png" : "svg";
-    const previewType = provider === "openai" ? "image/png" : "image/svg+xml";
-    image.previewStorageBucket = "generated-previews";
-    image.previewStoragePath = `${ownerPath}/slot-${image.slot}.${previewExt}`;
-    image.downloadStorageBucket = "generated-4k";
-    image.downloadStoragePath = `${ownerPath}/slot-${image.slot}-4k.png`;
-    await supabaseUpload(image.previewStorageBucket, image.previewStoragePath, previewBuffer, previewType);
-    await supabaseUpload(image.downloadStorageBucket, image.downloadStoragePath, full, "image/png");
-    image.previewUrl = await supabaseSignedUrl(image.previewStorageBucket, image.previewStoragePath).catch(() => image.previewUrl);
-    image.downloadUrl = await supabaseSignedUrl(image.downloadStorageBucket, image.downloadStoragePath).catch(() => image.downloadUrl);
-    if (image.kind === "quote") {
-      const instagramBuffer = await fsp.readFile(path.join(STORAGE, "instagram", `${image.id}-instagram.png`));
-      image.instagramStorageBucket = "quote-instagram";
-      image.instagramStoragePath = `${ownerPath}/quote-instagram.png`;
-      await supabaseUpload(image.instagramStorageBucket, image.instagramStoragePath, instagramBuffer, "image/png");
-      image.instagramUrl = await supabaseSignedUrl(image.instagramStorageBucket, image.instagramStoragePath).catch(() => image.instagramUrl);
+    try {
+      const ownerPath = `${shoot.ownerId}/shoots/${shoot.id}`;
+      const previewBuffer = provider === "openai"
+        ? full
+        : Buffer.from(svgPreview(shoot, image));
+      const previewExt = provider === "openai" ? "png" : "svg";
+      const previewType = provider === "openai" ? "image/png" : "image/svg+xml";
+      image.previewStorageBucket = "generated-previews";
+      image.previewStoragePath = `${ownerPath}/slot-${image.slot}.${previewExt}`;
+      image.downloadStorageBucket = "generated-4k";
+      image.downloadStoragePath = `${ownerPath}/slot-${image.slot}-4k.png`;
+      await supabaseUpload(image.previewStorageBucket, image.previewStoragePath, previewBuffer, previewType);
+      await supabaseUpload(image.downloadStorageBucket, image.downloadStoragePath, full, "image/png");
+      image.previewUrl = await supabaseSignedUrl(image.previewStorageBucket, image.previewStoragePath).catch(() => image.previewUrl);
+      image.downloadUrl = await supabaseSignedUrl(image.downloadStorageBucket, image.downloadStoragePath).catch(() => image.downloadUrl);
+      if (image.kind === "quote") {
+        const instagramBuffer = await fsp.readFile(path.join(STORAGE, "instagram", `${image.id}-instagram.png`));
+        image.instagramStorageBucket = "quote-instagram";
+        image.instagramStoragePath = `${ownerPath}/quote-instagram.png`;
+        await supabaseUpload(image.instagramStorageBucket, image.instagramStoragePath, instagramBuffer, "image/png");
+        image.instagramUrl = await supabaseSignedUrl(image.instagramStorageBucket, image.instagramStoragePath).catch(() => image.instagramUrl);
+      }
+    } catch (err) {
+      console.error("Supabase generated image upload failed; using local file URLs", err);
     }
   }
 }
@@ -885,10 +889,14 @@ async function packageZip(shoot) {
   shoot.zipFileSize = out.length;
   shoot.zipReadyAt = now();
   if (SUPABASE_ENABLED && shoot.ownerId) {
-    shoot.zipStorageBucket = "shoot-zips";
-    shoot.zipStoragePath = `${shoot.ownerId}/shoots/${shoot.id}/alux-art-${shoot.id}-4k.zip`;
-    await supabaseUpload(shoot.zipStorageBucket, shoot.zipStoragePath, out, "application/zip");
-    shoot.zipUrl = await supabaseSignedUrl(shoot.zipStorageBucket, shoot.zipStoragePath).catch(() => shoot.zipUrl);
+    try {
+      shoot.zipStorageBucket = "shoot-zips";
+      shoot.zipStoragePath = `${shoot.ownerId}/shoots/${shoot.id}/alux-art-${shoot.id}-4k.zip`;
+      await supabaseUpload(shoot.zipStorageBucket, shoot.zipStoragePath, out, "application/zip");
+      shoot.zipUrl = await supabaseSignedUrl(shoot.zipStorageBucket, shoot.zipStoragePath).catch(() => shoot.zipUrl);
+    } catch (err) {
+      console.error("Supabase ZIP upload failed; using local ZIP URL", err);
+    }
   }
   store.db.metrics.storageBytes = store.db.shoots.flatMap((s) => s.images).reduce((sum, img) => sum + (img.fileSize || 0) + (img.previewFileSize || 0) + (img.instagramFileSize || 0), 0) + out.length;
   queueEvent(shoot.id, { type: "zip_ready", shootId: shoot.id, zipUrl: shoot.zipUrl, zipFileSize: shoot.zipFileSize });
@@ -1581,6 +1589,7 @@ async function api(req, res, url) {
       store.db.metrics.queueDepth += 1;
       await saveDb();
       queueEvent(shoot.id, { type: "queued", shootId: shoot.id, shoot });
+      runShootPipeline(shoot).catch((err) => console.error("Admin bypass generation failed", err));
       return send(res, 200, { shoot, payment: shoot.payment });
     }
     if (req.method === "GET" && action === "events") {
