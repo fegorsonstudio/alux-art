@@ -778,9 +778,7 @@ async function generateImageFiles(shoot, image) {
   try {
     if (openAiStatus().enabled || geminiStatus().enabled) {
       const selected = selectedGenerationModel(image);
-      image.stage = generationStage(selected.model);
-      queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
-      const generated = await generateProviderImage(shoot, image, selected);
+      const generated = await generateWithProviderFallback(shoot, image, selected);
       full = generated.buffer;
       provider = generated.provider;
       originalDimensions = generated.dimensions || originalDimensions;
@@ -847,6 +845,30 @@ async function generateImageFiles(shoot, image) {
       console.error("Supabase generated image upload failed; using local file URLs", err);
     }
   }
+}
+
+async function generateWithProviderFallback(shoot, image, selected) {
+  const models = [selected.model, selected.fallback].filter(Boolean);
+  const uniqueModels = models.filter((model, index) => models.indexOf(model) === index);
+  let lastError;
+  for (const model of uniqueModels) {
+    try {
+      image.stage = generationStage(model);
+      if (lastError) image.providerError = `Retrying with ${model} after ${lastError.message}`;
+      queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
+      const generated = await generateProviderImage(shoot, image, {
+        model,
+        fallback: selected.fallback
+      });
+      image.providerError = lastError ? `Primary provider failed: ${lastError.message}` : "";
+      return generated;
+    } catch (err) {
+      lastError = err;
+      image.providerError = `${model}: ${err.message}`;
+      queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
+    }
+  }
+  throw lastError || new Error("No image generation provider is configured");
 }
 
 function openAiImageSize(aspectRatio, model = OPENAI_IMAGE_MODEL) {

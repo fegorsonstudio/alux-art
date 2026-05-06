@@ -870,7 +870,7 @@ function shotCard(image, shootId) {
     <div class="shot-body">
       <strong>${image.kind === "quote" ? "Quote Graphic" : image.kind === "mood" ? "Aesthetic Mood" : "Identity Portrait"}</strong>
       <span class="muted">${sizeText}</span>
-      ${ready ? `<span class="chip">${image.provider === "openai" ? "OpenAI" : "Mock"}${image.providerError ? " fallback" : ""}</span>` : ""}
+      ${ready ? `<span class="chip">${providerLabel(image.provider)}${image.providerError ? " fallback" : ""}</span>` : ""}
       <div class="shot-actions ${image.kind === "quote" ? "quote" : ""}">
         <button class="btn small preview" data-url="${previewUrl}" ${canPreview ? "" : "disabled"}>Preview</button>
         <button class="btn small download" data-id="${escapeHtml(image.id)}" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>4K</button>
@@ -878,6 +878,13 @@ function shotCard(image, shootId) {
       </div>
     </div>
   </article>`;
+}
+
+function providerLabel(provider) {
+  if (provider === "openai") return "OpenAI";
+  if (provider === "google") return "Google";
+  if (provider === "local-mock") return "Local fallback";
+  return "AI";
 }
 
 function bindGallery() {
