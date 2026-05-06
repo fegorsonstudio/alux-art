@@ -13,19 +13,38 @@ const DATA_DIR = path.join(ROOT, "data");
 const STORAGE = path.join(ROOT, "storage");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 const PORT = Number(process.env.PORT || 3000);
-const PROCESS_ROLE = (process.env.ALUX_PROCESS_ROLE || process.env.PROCESS_ROLE || "all").toLowerCase();
+const PROCESS_ROLE = env("ALUX_PROCESS_ROLE", env("PROCESS_ROLE", "all")).toLowerCase();
 const HTTP_ENABLED = PROCESS_ROLE !== "worker";
-const WORKER_ENABLED = process.env.RUN_WORKER === "true" || process.env.RUN_WORKER !== "false";
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "fegorsonphotography@gmail.com").toLowerCase();
+const RUN_WORKER = env("RUN_WORKER");
+const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
+const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
 const DEFAULT_IMAGE_MODEL = "openai/gpt-5.4-image-2";
 const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || DEFAULT_IMAGE_MODEL;
-const OPENAI_GENERATION_ENABLED = process.env.OPENAI_IMAGE_GENERATION !== "mock";
+const OPENAI_API_KEY = env("OPENAI_API_KEY");
+const OPENAI_IMAGE_MODEL = env("OPENAI_IMAGE_MODEL", DEFAULT_IMAGE_MODEL);
+const OPENAI_IMAGE_QUALITY = env("OPENAI_IMAGE_QUALITY", "low");
+const OPENAI_IMAGE_TIMEOUT_MS = Number(env("OPENAI_IMAGE_TIMEOUT_MS", "120000"));
+const OPENAI_GENERATION_ENABLED = env("OPENAI_IMAGE_GENERATION") !== "mock";
+const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
 const LEGACY_MODELS = new Set(["OpenAI GPT-Image-1", "Google Imagen 3", "Google Imagen 4", "Future Model Slot"]);
-const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_URL = env("SUPABASE_URL").replace(/\/+$/, "");
+const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY", env("NEXT_PUBLIC_SUPABASE_ANON_KEY"));
+const SUPABASE_SERVICE_ROLE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE_KEY);
+
+function cleanEnv(value) {
+  if (value === undefined || value === null) return "";
+  let cleaned = String(value).trim();
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned.replace(/^["']+|["']+$/g, "");
+}
+
+function env(name, fallback = "") {
+  const value = cleanEnv(process.env[name]);
+  return value || fallback;
+}
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -36,10 +55,7 @@ function loadEnvFile(filePath) {
     const equals = trimmed.indexOf("=");
     if (equals === -1) continue;
     const key = trimmed.slice(0, equals).trim();
-    let value = trimmed.slice(equals + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
+    const value = cleanEnv(trimmed.slice(equals + 1));
     if (key && process.env[key] === undefined) process.env[key] = value;
   }
 }
@@ -493,7 +509,7 @@ function targetDims(aspectRatio) {
 
 function openAiStatus() {
   return {
-    enabled: Boolean(process.env.OPENAI_API_KEY) && OPENAI_GENERATION_ENABLED,
+    enabled: Boolean(OPENAI_API_KEY) && OPENAI_GENERATION_ENABLED,
     model: OPENAI_IMAGE_MODEL,
     defaultModel: DEFAULT_IMAGE_MODEL,
     secondaryModel: SECONDARY_IMAGE_MODEL,
@@ -745,7 +761,7 @@ function shotPrompt(shoot, image) {
 }
 
 async function generateOpenAiImage(shoot, image) {
-  const key = process.env.OPENAI_API_KEY;
+  const key = OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY is not set");
   const selected = selectedGenerationModel(image);
   const apiModel = openAiApiModelName(selected.model);
@@ -764,9 +780,9 @@ async function generateOpenAiImage(shoot, image) {
       prompt: shotPrompt(shoot, image),
       n: 1,
       size,
-      quality: process.env.OPENAI_IMAGE_QUALITY || "low"
+      quality: OPENAI_IMAGE_QUALITY
     }),
-    signal: AbortSignal.timeout(Number(process.env.OPENAI_IMAGE_TIMEOUT_MS || 120000))
+    signal: AbortSignal.timeout(OPENAI_IMAGE_TIMEOUT_MS)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -1150,7 +1166,7 @@ async function api(req, res, url) {
       time: now(),
       supabase: supabaseStatus(),
       openai: openAiStatus(),
-      paystack: { configured: Boolean(process.env.PAYSTACK_SECRET_KEY) },
+      paystack: { configured: Boolean(PAYSTACK_SECRET_KEY) },
       process: { role: PROCESS_ROLE, httpEnabled: HTTP_ENABLED, workerEnabled: WORKER_ENABLED },
       worker: { running: workerRunning }
     });
@@ -1179,10 +1195,10 @@ async function api(req, res, url) {
   }
 
   if (req.method === "POST" && url.pathname === "/api/webhooks/paystack") {
-    if (!process.env.PAYSTACK_SECRET_KEY) return sendText(res, 503, "PAYSTACK_SECRET_KEY is not configured");
+    if (!PAYSTACK_SECRET_KEY) return sendText(res, 503, "PAYSTACK_SECRET_KEY is not configured");
     const payload = await body(req);
     const signature = req.headers["x-paystack-signature"];
-    const hash = crypto.createHmac("sha512", process.env.PAYSTACK_SECRET_KEY || "").update(req.rawBody || "").digest("hex");
+    const hash = crypto.createHmac("sha512", PAYSTACK_SECRET_KEY).update(req.rawBody || "").digest("hex");
     if (hash !== signature) return sendText(res, 400, "Invalid signature");
     
     if (payload.event === "charge.success") {
@@ -1429,7 +1445,7 @@ async function api(req, res, url) {
     if (req.method === "GET" && !action) return send(res, 200, { shoot });
     if (req.method === "POST" && action === "pay") {
       if (!isAdmin(user)) {
-        if (!process.env.PAYSTACK_SECRET_KEY) {
+        if (!PAYSTACK_SECRET_KEY) {
           return send(res, 503, { error: "PAYSTACK_SECRET_KEY is not configured" });
         }
         const amount = shoot.currency === "NGN" ? store.db.pricing.ngn : store.db.pricing.usd;
@@ -1440,7 +1456,7 @@ async function api(req, res, url) {
           const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+              "Authorization": `Bearer ${PAYSTACK_SECRET_KEY}`,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
