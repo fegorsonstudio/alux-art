@@ -184,6 +184,15 @@ function bearerToken(req) {
   return auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
 }
 
+function requestOrigin(req) {
+  if (req.headers.origin) return req.headers.origin;
+  const host = String(req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`).split(",")[0].trim();
+  const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1") || host.startsWith("[::1]");
+  const protocol = forwardedProto || (isLocal ? "http" : "https");
+  return `${protocol}://${host}`;
+}
+
 async function supabaseJson(pathname, options = {}) {
   if (!SUPABASE_ENABLED) throw new Error("Supabase is not configured");
   const url = pathname.startsWith("http") ? pathname : `${SUPABASE_URL}${pathname}`;
@@ -1148,7 +1157,7 @@ async function api(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/auth/google") {
     if (SUPABASE_ENABLED) {
-      const origin = req.headers.origin || `http://${req.headers.host || `localhost:${PORT}`}`;
+      const origin = requestOrigin(req);
       const redirectTo = encodeURIComponent(origin.endsWith("/") ? origin : `${origin}/`);
       const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
       return send(res, 200, { provider: "supabase", url: authUrl });
@@ -1424,8 +1433,7 @@ async function api(req, res, url) {
         }
         const amount = shoot.currency === "NGN" ? store.db.pricing.ngn : store.db.pricing.usd;
         const amountInSubunits = Math.round(amount * 100);
-        const fallbackHost = req.headers.host || `localhost:${PORT}`;
-        const origin = req.headers.origin || `http://${fallbackHost}`;
+        const origin = requestOrigin(req);
         
         try {
           const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
