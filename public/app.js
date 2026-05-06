@@ -382,7 +382,7 @@ function advancedPanel() {
 function uploadTiles(kind, list, minimum) {
   const existing = list.map((item, index) => uploadTileShell(item, kind, index)).join("");
   const slots = Math.max(1, minimum - list.length);
-  return `${existing}${Array.from({ length: slots }, () => `<label class="drop">Click to upload<span>JPG, PNG, WebP, HEIC</span><input type="file" accept="image/*,.heic,.heif" multiple data-kind="${kind}"></label>`).join("")}`;
+  return `${existing}${Array.from({ length: slots }, () => `<label class="drop">Click to upload<span>JPG, PNG, WebP</span><input type="file" accept="image/png,image/jpeg,image/webp" multiple data-kind="${kind}"></label>`).join("")}`;
 }
 
 function uploadTileShell(item, kind, index) {
@@ -663,14 +663,11 @@ async function readFiles(event) {
 
 function normalizeImageType(file) {
   const explicitType = String(file.type || "").toLowerCase();
-  if (explicitType.startsWith("image/")) return explicitType;
+  if (["image/jpeg", "image/png", "image/webp"].includes(explicitType)) return explicitType;
   const name = String(file.name || "").toLowerCase();
   if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
   if (name.endsWith(".png")) return "image/png";
   if (name.endsWith(".webp")) return "image/webp";
-  if (name.endsWith(".gif")) return "image/gif";
-  if (name.endsWith(".heic")) return "image/heic";
-  if (name.endsWith(".heif")) return "image/heif";
   return "";
 }
 
@@ -684,7 +681,7 @@ function readImageFile(file, onProgress) {
   return new Promise((resolve, reject) => {
     const contentType = normalizeImageType(file);
     if (!contentType) {
-      reject(new Error("Only image files are supported"));
+      reject(new Error("Use JPG, PNG, or WebP for AI reference generation"));
       return;
     }
     const reader = new FileReader();
