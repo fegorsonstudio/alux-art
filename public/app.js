@@ -89,6 +89,10 @@ async function request(path, options = {}) {
     body: options.body && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("alux_supabase_token");
+    localStorage.removeItem("alux_supabase_refresh");
+  }
   if (!res.ok) throw Object.assign(new Error(data.error || data.reason || "Request failed"), { status: res.status, data });
   return data;
 }

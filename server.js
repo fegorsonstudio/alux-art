@@ -284,7 +284,10 @@ async function supabaseIdentityLibrary(user) {
 async function supabaseCurrentUser(req) {
   const token = bearerToken(req);
   if (!token) return null;
-  const authUser = await supabaseJson("/auth/v1/user", { service: false, token });
+  const authUser = await supabaseJson("/auth/v1/user", { service: false, token }).catch((err) => {
+    if (err.status === 401 || err.status === 403) return null;
+    throw err;
+  });
   if (!authUser?.id || !authUser?.email) return null;
   const user = {
     id: authUser.id,
