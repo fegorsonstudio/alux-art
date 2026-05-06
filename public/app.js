@@ -708,6 +708,8 @@ function updateUploadCard(image) {
 
 async function createShoot() {
   try {
+    toast("Preparing reference uploads...");
+    await prepareReferencesForShoot();
     const { shoot } = await request("/api/shoots", {
       method: "POST",
       body: {
@@ -715,8 +717,8 @@ async function createShoot() {
         aspectRatio: state.aspectRatio,
         currency: state.currency,
         identityImages: state.identityImages.map(stripImage),
-        inspirationImages: state.inspirationImages.map((img) => stripImage(img, true)),
-        taggedReferences: state.taggedReferences.map((img) => stripImage(img, true)),
+        inspirationImages: state.inspirationImages.map(stripImage),
+        taggedReferences: state.taggedReferences.map(stripImage),
         quote: state.quote
       }
     });
@@ -734,6 +736,39 @@ async function createShoot() {
     toast("Shoot queued. Generation progress is streaming.");
   } catch (err) {
     toast(err.message);
+  }
+}
+
+async function prepareReferencesForShoot() {
+  await stageReferenceList("inspiration", state.inspirationImages);
+  await stageReferenceList("custom", state.taggedReferences);
+}
+
+async function stageReferenceList(purpose, list) {
+  const pending = list.filter((image) => image.dataUrl && (!image.storageBucket || !image.storagePath));
+  if (!pending.length) return;
+  pending.forEach((image) => {
+    image.uploadProgress = Math.max(Number(image.uploadProgress || 0), 82);
+    image.uploadStatus = "Saving reference";
+    updateUploadCard(image);
+  });
+  for (const local of pending) {
+    const { saved } = await request("/api/reference-uploads", {
+      method: "POST",
+      body: {
+        purpose,
+        images: [stripImage(local, true)]
+      }
+    });
+    const staged = (saved || [])[0];
+    if (!staged) throw new Error(`Could not save ${local.name || "reference image"}`);
+    Object.assign(local, staged, {
+      dataUrl: staged.dataUrl || local.dataUrl,
+      uploadProgress: 100,
+      uploadStatus: "Reference saved",
+      uploadError: ""
+    });
+    updateUploadCard(local);
   }
 }
 

@@ -1356,31 +1356,42 @@ async function persistSupabaseReferences(shoot, payload, user) {
   const rows = [];
   for (const image of payload.identityImages || []) {
     if (image.storageBucket && image.storagePath) {
-      rows.push({
-        shoot_id: shoot.id,
-        user_id: user.id,
-        purpose: "identity",
-        name: image.name || "identity image",
-        type: image.type || "image/jpeg",
-        size: Number(image.size || 0),
-        storage_bucket: image.storageBucket,
-        storage_path: image.storagePath,
-        metadata: { identity_image_id: image.id }
-      });
+      rows.push(storedReferenceRow(shoot.id, user, "identity", image, { identity_image_id: image.id }));
     } else {
       const stored = await storeSupabaseReferenceFile(user, shoot.id, "identity-images", "identity", image);
       if (stored) rows.push(stored);
     }
   }
   for (const image of payload.inspirationImages || []) {
-    const stored = await storeSupabaseReferenceFile(user, shoot.id, "inspiration-images", "inspiration", image);
+    const stored = image.storageBucket && image.storagePath
+      ? storedReferenceRow(shoot.id, user, "inspiration", image)
+      : await storeSupabaseReferenceFile(user, shoot.id, "inspiration-images", "inspiration", image);
     if (stored) rows.push(stored);
   }
   for (const image of payload.taggedReferences || []) {
-    const stored = await storeSupabaseReferenceFile(user, shoot.id, "custom-references", "custom", image);
+    const stored = image.storageBucket && image.storagePath
+      ? storedReferenceRow(shoot.id, user, "custom", image)
+      : await storeSupabaseReferenceFile(user, shoot.id, "custom-references", "custom", image);
     if (stored) rows.push(stored);
   }
   if (rows.length) await supabaseRows("shoot_references", "", { token: user.token, method: "POST", body: rows });
+}
+
+function storedReferenceRow(shootId, user, purpose, image, metadata = {}) {
+  return {
+    shoot_id: shootId,
+    user_id: user.id,
+    purpose,
+    tag: image.tag || null,
+    custom_name: image.customName || null,
+    note: image.note || null,
+    name: image.name || `${purpose} image`,
+    type: image.type || "image/jpeg",
+    size: Number(image.size || 0),
+    storage_bucket: image.storageBucket,
+    storage_path: image.storagePath,
+    metadata: { fingerprint: image.fingerprint || null, ...metadata }
+  };
 }
 
 async function storeSupabaseReferenceFile(user, shootId, bucket, purpose, image) {
@@ -1647,6 +1658,50 @@ async function api(req, res, url) {
     }
     user.identityLibrary = user.identityLibrary || [];
     return send(res, 200, { images: user.identityLibrary });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/reference-uploads") {
+    const user = await requireUser(req, res);
+    if (!user) return;
+    const payload = await body(req);
+    const purpose = ["inspiration", "custom"].includes(payload.purpose) ? payload.purpose : "inspiration";
+    const bucket = purpose === "custom" ? "custom-references" : "inspiration-images";
+    const images = Array.isArray(payload.images) ? payload.images : [];
+    if (!SUPABASE_ENABLED) {
+      return send(res, 201, {
+        saved: images.map((image) => ({
+          ...image,
+          clientId: image.id,
+          purpose,
+          storageBucket: "",
+          storagePath: "",
+          dataUrl: image.dataUrl || ""
+        }))
+      });
+    }
+    const saved = [];
+    for (const image of images) {
+      const file = dataUrlToFile(image?.dataUrl);
+      if (!file || !isSupportedReferenceImage(file.contentType)) continue;
+      const objectPath = `${user.id}/staged-references/${purpose}/${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeStorageName(image.name, "reference.jpg")}`;
+      await supabaseUpload(bucket, objectPath, file.buffer, file.contentType, user.token);
+      saved.push({
+        id: image.id || id("ref"),
+        clientId: image.id || "",
+        purpose,
+        name: image.name || `${purpose} image`,
+        size: Number(image.size || file.buffer.length),
+        type: image.type || file.contentType,
+        tag: image.tag || "",
+        customName: image.customName || "",
+        note: image.note || "",
+        fingerprint: image.fingerprint || id("fp"),
+        storageBucket: bucket,
+        storagePath: objectPath,
+        dataUrl: await supabaseSignedUrl(bucket, objectPath, 3600, user.token).catch(() => "")
+      });
+    }
+    return send(res, 201, { saved });
   }
 
   if (req.method === "POST" && url.pathname === "/api/identity-library") {
