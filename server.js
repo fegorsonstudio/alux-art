@@ -28,7 +28,13 @@ const OPENAI_GENERATION_ENABLED = env("OPENAI_IMAGE_GENERATION") !== "mock";
 const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
 const LEGACY_MODELS = new Set(["OpenAI GPT-Image-1", "Google Imagen 3", "Google Imagen 4", "Future Model Slot"]);
 const SUPABASE_URL = env("SUPABASE_URL").replace(/\/+$/, "");
-const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY", env("NEXT_PUBLIC_SUPABASE_ANON_KEY"));
+const SUPABASE_PUBLIC_KEY_FALLBACKS = {
+  owdfoxglbxrqhgqbvkon: "sb_publishable_zo4Dxes0P6-t2Z1KD4jAtg_QnhzutOg"
+};
+const CONFIGURED_SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY", env("NEXT_PUBLIC_SUPABASE_ANON_KEY"));
+const SUPABASE_ANON_KEY = usableSupabasePublicKey(CONFIGURED_SUPABASE_ANON_KEY)
+  ? CONFIGURED_SUPABASE_ANON_KEY
+  : supabasePublicKeyFallback(SUPABASE_URL, CONFIGURED_SUPABASE_ANON_KEY);
 const SUPABASE_SERVICE_ROLE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE_KEY);
 
@@ -44,6 +50,32 @@ function cleanEnv(value) {
 function env(name, fallback = "") {
   const value = cleanEnv(process.env[name]);
   return value || fallback;
+}
+
+function supabaseProjectRef(url) {
+  try {
+    return new URL(url).hostname.split(".")[0] || "";
+  } catch {
+    return "";
+  }
+}
+
+function usableSupabasePublicKey(key) {
+  if (!key) return false;
+  if (key.startsWith("sb_publishable_")) return true;
+  const parts = key.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    return payload.iss === "supabase" && payload.role === "anon";
+  } catch {
+    return false;
+  }
+}
+
+function supabasePublicKeyFallback(url, configuredKey) {
+  const fallback = SUPABASE_PUBLIC_KEY_FALLBACKS[supabaseProjectRef(url)];
+  return fallback || configuredKey;
 }
 
 function loadEnvFile(filePath) {
