@@ -241,14 +241,23 @@ values
 on conflict (id) do update set public = false;
 
 drop policy if exists "users upload own source files" on storage.objects;
+drop policy if exists "users upload own generated files" on storage.objects;
 drop policy if exists "users read own private files" on storage.objects;
 drop policy if exists "users update own source files" on storage.objects;
+drop policy if exists "users update own generated files" on storage.objects;
 drop policy if exists "users delete own source files" on storage.objects;
 
 create policy "users upload own source files"
 on storage.objects for insert
 with check (
   bucket_id in ('identity-images', 'inspiration-images', 'custom-references')
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+
+create policy "users upload own generated files"
+on storage.objects for insert
+with check (
+  bucket_id in ('generated-previews', 'generated-4k', 'shoot-zips', 'quote-instagram')
   and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
@@ -270,6 +279,17 @@ using (
 )
 with check (
   bucket_id in ('identity-images', 'inspiration-images', 'custom-references')
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+
+create policy "users update own generated files"
+on storage.objects for update
+using (
+  bucket_id in ('generated-previews', 'generated-4k', 'shoot-zips', 'quote-instagram')
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+)
+with check (
+  bucket_id in ('generated-previews', 'generated-4k', 'shoot-zips', 'quote-instagram')
   and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 

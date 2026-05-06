@@ -493,9 +493,38 @@ function queueEvent(shootId, event) {
   }
 }
 
+function attachOwnerToken(shoot, user) {
+  if (!shoot || !user?.token) return shoot;
+  Object.defineProperty(shoot, "ownerToken", {
+    value: user.token,
+    enumerable: false,
+    configurable: true,
+    writable: true
+  });
+  return shoot;
+}
+
+function trackShoot(shoot, user) {
+  if (!shoot) return shoot;
+  const existing = store.db.shoots.find((item) => item.id === shoot.id);
+  if (existing) {
+    attachOwnerToken(existing, user);
+    return existing;
+  }
+  attachOwnerToken(shoot, user);
+  store.db.shoots.unshift(shoot);
+  return shoot;
+}
+
+function shootSupabaseToken(shoot) {
+  return shoot?.ownerToken || "";
+}
+
 async function syncSupabaseProgress(shoot, event) {
   if (!SUPABASE_ENABLED || !shoot?.ownerId) return;
+  const token = shootSupabaseToken(shoot);
   await supabaseRows("generation_events", "", {
+    token,
     method: "POST",
     body: [{
       shoot_id: shoot.id,
@@ -505,6 +534,7 @@ async function syncSupabaseProgress(shoot, event) {
     }]
   }).catch(() => {});
   await supabaseRows("shoots", `id=eq.${encodeURIComponent(shoot.id)}`, {
+    token,
     method: "PATCH",
     body: {
       status: shoot.status,
@@ -522,12 +552,14 @@ async function syncSupabaseProgress(shoot, event) {
   const image = event.image;
   if (image?.id) {
     await supabaseRows("shoot_images", `id=eq.${encodeURIComponent(image.id)}`, {
+      token,
       method: "PATCH",
       body: supabaseImagePatch(image)
     }).catch(() => {});
   } else if (event.type === "complete" && Array.isArray(shoot.images)) {
     for (const img of shoot.images) {
       await supabaseRows("shoot_images", `id=eq.${encodeURIComponent(img.id)}`, {
+        token,
         method: "PATCH",
         body: supabaseImagePatch(img)
       }).catch(() => {});
@@ -789,6 +821,7 @@ async function generateImageFiles(shoot, image) {
   }
   if (SUPABASE_ENABLED && shoot.ownerId) {
     try {
+      const token = shootSupabaseToken(shoot);
       const ownerPath = `${shoot.ownerId}/shoots/${shoot.id}`;
       const previewBuffer = isAiImageProvider(provider)
         ? full
@@ -799,16 +832,16 @@ async function generateImageFiles(shoot, image) {
       image.previewStoragePath = `${ownerPath}/slot-${image.slot}.${previewExt}`;
       image.downloadStorageBucket = "generated-4k";
       image.downloadStoragePath = `${ownerPath}/slot-${image.slot}-4k.png`;
-      await supabaseUpload(image.previewStorageBucket, image.previewStoragePath, previewBuffer, previewType);
-      await supabaseUpload(image.downloadStorageBucket, image.downloadStoragePath, full, "image/png");
-      image.previewUrl = await supabaseSignedUrl(image.previewStorageBucket, image.previewStoragePath).catch(() => image.previewUrl);
-      image.downloadUrl = await supabaseSignedUrl(image.downloadStorageBucket, image.downloadStoragePath).catch(() => image.downloadUrl);
+      await supabaseUpload(image.previewStorageBucket, image.previewStoragePath, previewBuffer, previewType, token);
+      await supabaseUpload(image.downloadStorageBucket, image.downloadStoragePath, full, "image/png", token);
+      image.previewUrl = await supabaseSignedUrl(image.previewStorageBucket, image.previewStoragePath, 3600, token).catch(() => image.previewUrl);
+      image.downloadUrl = await supabaseSignedUrl(image.downloadStorageBucket, image.downloadStoragePath, 3600, token).catch(() => image.downloadUrl);
       if (image.kind === "quote") {
         const instagramBuffer = await fsp.readFile(path.join(STORAGE, "instagram", `${image.id}-instagram.png`));
         image.instagramStorageBucket = "quote-instagram";
         image.instagramStoragePath = `${ownerPath}/quote-instagram.png`;
-        await supabaseUpload(image.instagramStorageBucket, image.instagramStoragePath, instagramBuffer, "image/png");
-        image.instagramUrl = await supabaseSignedUrl(image.instagramStorageBucket, image.instagramStoragePath).catch(() => image.instagramUrl);
+        await supabaseUpload(image.instagramStorageBucket, image.instagramStoragePath, instagramBuffer, "image/png", token);
+        image.instagramUrl = await supabaseSignedUrl(image.instagramStorageBucket, image.instagramStoragePath, 3600, token).catch(() => image.instagramUrl);
       }
     } catch (err) {
       console.error("Supabase generated image upload failed; using local file URLs", err);
@@ -1151,10 +1184,11 @@ async function packageZip(shoot) {
   shoot.zipReadyAt = now();
   if (SUPABASE_ENABLED && shoot.ownerId) {
     try {
+      const token = shootSupabaseToken(shoot);
       shoot.zipStorageBucket = "shoot-zips";
       shoot.zipStoragePath = `${shoot.ownerId}/shoots/${shoot.id}/alux-art-${shoot.id}-4k.zip`;
-      await supabaseUpload(shoot.zipStorageBucket, shoot.zipStoragePath, out, "application/zip");
-      shoot.zipUrl = await supabaseSignedUrl(shoot.zipStorageBucket, shoot.zipStoragePath).catch(() => shoot.zipUrl);
+      await supabaseUpload(shoot.zipStorageBucket, shoot.zipStoragePath, out, "application/zip", token);
+      shoot.zipUrl = await supabaseSignedUrl(shoot.zipStorageBucket, shoot.zipStoragePath, 3600, token).catch(() => shoot.zipUrl);
     } catch (err) {
       console.error("Supabase ZIP upload failed; using local ZIP URL", err);
     }
@@ -1168,6 +1202,8 @@ async function runShootPipeline(shoot) {
   if (store.workers.has(shoot.id)) return;
   store.workers.set(shoot.id, true);
   try {
+    if (shoot.status === "QUEUED") shoot.status = "PROCESSING";
+    shoot.updatedAt = now();
     const stages = ["Vision analysis", "Character sheet", "Shoot brief", "Prompt engineering", "4K validation"];
     for (let i = 0; i < stages.length; i++) {
       shoot.pipelineStage = stages[i];
@@ -1314,6 +1350,7 @@ function newShoot(payload, user) {
 
 async function createSupabaseShoot(payload, user) {
   const shoot = newShoot(payload, user);
+  attachOwnerToken(shoot, user);
   shoot.id = crypto.randomUUID();
   shoot.ownerId = user.id;
   shoot.ownerEmail = user.email;
@@ -1490,7 +1527,7 @@ async function loadSupabaseShootForApp(shootId, user) {
     previewFileSize: Number(image.preview_file_size || 0),
     instagramFileSize: Number(image.instagram_file_size || 0)
   })));
-  return {
+  const shoot = {
     id: row.id,
     ownerId: row.user_id,
     ownerEmail: row.owner_email,
@@ -1518,6 +1555,7 @@ async function loadSupabaseShootForApp(shootId, user) {
     updatedAt: row.updated_at,
     completedAt: row.completed_at
   };
+  return attachOwnerToken(shoot, user);
 }
 
 async function api(req, res, url) {
@@ -1873,12 +1911,49 @@ async function api(req, res, url) {
   if (shootMatch) {
     const user = await requireUser(req, res);
     if (!user) return;
-    const shoot = store.db.shoots.find((s) => s.id === shootMatch[1]) || (SUPABASE_ENABLED ? await loadSupabaseShootForApp(shootMatch[1], user) : null);
+    let shoot = store.db.shoots.find((s) => s.id === shootMatch[1]) || (SUPABASE_ENABLED ? await loadSupabaseShootForApp(shootMatch[1], user) : null);
     if (!shoot) return send(res, 404, { error: "Shoot not found" });
     if (shoot.ownerId !== user.id && !isAdmin(user)) return send(res, 403, { error: "Not allowed" });
+    shoot = trackShoot(shoot, user);
     const action = shootMatch[2];
     const leaf = shootMatch[3];
     if (req.method === "GET" && !action) return send(res, 200, { shoot });
+    if (req.method === "POST" && action === "resume") {
+      if (!isAdmin(user)) return send(res, 403, { error: "Admin only" });
+      if (shoot.status === "COMPLETE") return send(res, 409, { error: "Shoot is already complete" });
+      if (store.workers.has(shoot.id)) return send(res, 202, { shoot, running: true });
+      shoot.status = "QUEUED";
+      shoot.progress = Math.max(1, Number(shoot.progress || 0));
+      shoot.pipelineStage = "Queued";
+      shoot.zipStatus = "LOCKED";
+      shoot.updatedAt = now();
+      shoot.images.forEach((img) => {
+        if (img.status !== "COMPLETE") {
+          img.status = "PROCESSING";
+          img.stage = img.stage && img.stage !== "Locked" ? img.stage : "Queued";
+        }
+      });
+      if (SUPABASE_ENABLED) {
+        await supabaseRows("shoots", `id=eq.${encodeURIComponent(shoot.id)}`, {
+          token: user.token,
+          method: "PATCH",
+          body: { status: "QUEUED", progress: shoot.progress, pipeline_stage: "Queued", zip_status: "LOCKED", updated_at: now() }
+        }).catch(() => {});
+        for (const image of shoot.images) {
+          if (image.status !== "COMPLETE") {
+            await supabaseRows("shoot_images", `id=eq.${encodeURIComponent(image.id)}`, {
+              token: user.token,
+              method: "PATCH",
+              body: { status: image.status, stage: image.stage, updated_at: now() }
+            }).catch(() => {});
+          }
+        }
+      }
+      await saveDb();
+      queueEvent(shoot.id, { type: "queued", shootId: shoot.id, shoot });
+      runShootPipeline(shoot).catch((err) => console.error("Admin resume generation failed", err));
+      return send(res, 202, { shoot, running: true });
+    }
     if (req.method === "POST" && action === "pay") {
       if (!isAdmin(user)) {
         if (!PAYSTACK_SECRET_KEY) {

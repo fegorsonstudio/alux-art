@@ -840,10 +840,12 @@ function connectEvents(shootId) {
 function gallery(shoot) {
   const progress = safePercent(shoot.progress);
   const shootId = escapeHtml(shoot.id);
+  const canResume = state.user?.role === "admin" && !["COMPLETE", "PACKAGING"].includes(shoot.status);
   return `<section class="panel gallery">
     <div class="gallery-top">
       <div><h3>Generation Gallery</h3><p class="muted">${escapeHtml(shoot.pipelineStage || shoot.status)} - ${escapeHtml(shoot.status)}</p></div>
       <div class="nav-actions">
+        ${canResume ? `<button class="btn small resume-shoot" data-shoot-id="${shootId}">Resume</button>` : ""}
         <button class="btn download-zip" data-shoot-id="${shootId}" ${shoot.zipStatus === "READY" ? "" : "disabled"}>Download All ${shoot.zipFileSize ? `(${size(shoot.zipFileSize)})` : ""}</button>
       </div>
     </div>
@@ -879,6 +881,22 @@ function shotCard(image, shootId) {
 }
 
 function bindGallery() {
+  document.querySelectorAll(".resume-shoot").forEach((btn) => btn.addEventListener("click", async () => {
+    const shootId = btn.dataset.shootId || state.currentShoot?.id;
+    if (!shootId) return toast("Open a shoot first.");
+    btn.disabled = true;
+    try {
+      const { shoot } = await request(`/api/shoots/${pathPart(shootId)}/resume`, { method: "POST" });
+      state.currentShoot = shoot;
+      $("#galleryHost").innerHTML = gallery(shoot);
+      bindGallery();
+      connectEvents(shoot.id);
+      toast("Generation resumed.");
+    } catch (err) {
+      btn.disabled = false;
+      toast(err.message || "Could not resume generation.");
+    }
+  }));
   $(".preview") && document.querySelectorAll(".preview").forEach((btn) => btn.addEventListener("click", () => {
     const url = normalizeUrl(btn.dataset.url);
     if (!url) return toast("Preview link is unavailable.");
