@@ -367,6 +367,7 @@ function supabaseStatus() {
   return {
     enabled: SUPABASE_ENABLED,
     url: SUPABASE_ENABLED ? SUPABASE_URL : "",
+    anonKey: SUPABASE_ENABLED ? SUPABASE_ANON_KEY : "",
     authMode: SUPABASE_ENABLED ? "google-oauth" : "local-dev"
   };
 }

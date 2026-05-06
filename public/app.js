@@ -15,6 +15,7 @@ const state = {
   admin: null,
   toastTimer: null
 };
+let supabaseClient = null;
 
 const TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"];
 const DEFAULT_IMAGE_MODEL = "openai/gpt-5.4-image-2";
@@ -97,6 +98,35 @@ async function request(path, options = {}) {
   return data;
 }
 
+function getSupabaseClient() {
+  const supabaseConfig = state.config?.supabase;
+  if (!supabaseConfig?.enabled || !supabaseConfig.anonKey || !window.supabase?.createClient) return null;
+  if (!supabaseClient) {
+    supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+  }
+  return supabaseClient;
+}
+
+async function syncSupabaseSession() {
+  const client = getSupabaseClient();
+  if (!client) return null;
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
+  const session = data?.session;
+  if (session?.access_token) {
+    localStorage.setItem("alux_supabase_token", session.access_token);
+    if (session.refresh_token) localStorage.setItem("alux_supabase_refresh", session.refresh_token);
+    return session;
+  }
+  return null;
+}
+
 function toast(message) {
   clearTimeout(state.toastTimer);
   $(".toast")?.remove();
@@ -131,14 +161,15 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 async function init() {
+  const config = await request("/api/config");
+  state.config = config;
   captureSupabaseSession();
-  const [me, config, pricing] = await Promise.all([
+  await syncSupabaseSession();
+  const [me, pricing] = await Promise.all([
     request("/api/me"),
-    request("/api/config"),
     request("/api/pricing")
   ]);
   state.user = me.user;
-  state.config = config;
   state.pricing = pricing;
   state.currency = state.user?.currency || "NGN";
   if (state.user) {
@@ -244,6 +275,22 @@ function renderHero() {
     event.preventDefault();
     try {
       const form = new FormData(event.currentTarget);
+      const client = getSupabaseClient();
+      if (client) {
+        const { data, error } = await client.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${location.origin}/`,
+            queryParams: {
+              login_hint: String(form.get("email") || ""),
+              prompt: "select_account"
+            }
+          }
+        });
+        if (error) throw error;
+        if (data?.url) location.href = data.url;
+        return;
+      }
       const auth = await request("/api/auth/google", { method: "POST", body: { email: form.get("email"), name: form.get("name") } });
       if (auth.url) {
         location.href = auth.url;
