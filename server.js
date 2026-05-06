@@ -244,7 +244,7 @@ function requestOrigin(req) {
 async function supabaseJson(pathname, options = {}) {
   if (!SUPABASE_ENABLED) throw new Error("Supabase is not configured");
   const url = pathname.startsWith("http") ? pathname : `${SUPABASE_URL}${pathname}`;
-  const key = options.service === false ? SUPABASE_ANON_KEY : SUPABASE_SERVICE_ROLE_KEY;
+  const key = options.service === false || options.token ? SUPABASE_ANON_KEY : SUPABASE_SERVICE_ROLE_KEY;
   const headers = {
     apikey: key,
     authorization: `Bearer ${options.token || key}`,
@@ -322,6 +322,7 @@ async function supabaseSignedUrl(bucket, objectPath, expiresIn = 3600) {
 
 async function supabaseIdentityLibrary(user) {
   const rows = await supabaseRows("identity_images", `user_id=eq.${encodeURIComponent(user.id)}&select=*&order=created_at.desc`, {
+    token: user.token,
     headers: { prefer: "" }
   });
   return Promise.all((rows || []).map(async (row) => ({
@@ -349,6 +350,7 @@ async function supabaseCurrentUser(req) {
   const user = {
     id: authUser.id,
     email: authUser.email,
+    token,
     name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email.split("@")[0],
     currency: authUser.email.endsWith(".ng") ? "NGN" : "USD",
     region: "NG",
@@ -1279,6 +1281,7 @@ async function api(req, res, url) {
       user.currency = payload.currency;
       if (SUPABASE_ENABLED) {
         await supabaseRows("profiles", `id=eq.${encodeURIComponent(user.id)}`, {
+          token: user.token,
           method: "PATCH",
           body: { currency: user.currency, updated_at: now() }
         });
@@ -1302,7 +1305,7 @@ async function api(req, res, url) {
     if (!user) return;
     if (SUPABASE_ENABLED) {
       const filter = isAdmin(user) ? "" : `user_id=eq.${encodeURIComponent(user.id)}&`;
-      const rows = await supabaseRows("shoots", `${filter}select=*&order=created_at.desc`, { headers: { prefer: "" } });
+      const rows = await supabaseRows("shoots", `${filter}select=*&order=created_at.desc`, { token: user.token, headers: { prefer: "" } });
       const shoots = (rows || []).map((row) => {
         const local = store.db.shoots.find((shoot) => shoot.id === row.id);
         return {
@@ -1360,10 +1363,12 @@ async function api(req, res, url) {
         if (!file || !file.contentType.startsWith("image/")) continue;
         const fingerprint = image.fingerprint || id("fp");
         const existing = await supabaseRows("identity_images", `user_id=eq.${encodeURIComponent(user.id)}&fingerprint=eq.${encodeURIComponent(fingerprint)}&select=*`, {
+          token: user.token,
           headers: { prefer: "" }
         });
         if (existing?.[0]) {
           await supabaseRows("identity_images", `id=eq.${encodeURIComponent(existing[0].id)}`, {
+            token: user.token,
             method: "PATCH",
             body: { last_used_at: now() }
           });
@@ -1373,6 +1378,7 @@ async function api(req, res, url) {
         const objectPath = `${user.id}/identity/${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeStorageName(image.name, "identity.jpg")}`;
         await supabaseUpload("identity-images", objectPath, file.buffer, file.contentType);
         const rows = await supabaseRows("identity_images", "", {
+          token: user.token,
           method: "POST",
           body: [{
             user_id: user.id,
@@ -1707,7 +1713,7 @@ async function main() {
     const server = http.createServer(async (req, res) => {
       try {
         const url = new URL(req.url, `http://${req.headers.host}`);
-        if (url.pathname.startsWith("/api/")) return api(req, res, url);
+        if (url.pathname.startsWith("/api/")) return await api(req, res, url);
         return staticFile(req, res, url);
       } catch (err) {
         console.error(err);
