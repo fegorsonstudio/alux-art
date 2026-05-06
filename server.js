@@ -20,10 +20,15 @@ const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
 const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2";
 const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
+const TERTIARY_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
 const OPENAI_IMAGE_QUALITY = env("OPENAI_IMAGE_QUALITY", "low");
 const OPENAI_IMAGE_TIMEOUT_MS = Number(env("OPENAI_IMAGE_TIMEOUT_MS", "120000"));
 const OPENAI_GENERATION_ENABLED = env("OPENAI_IMAGE_GENERATION") !== "mock";
+const GEMINI_API_KEY = env("GEMINI_API_KEY", env("GOOGLE_API_KEY"));
+const GEMINI_IMAGE_SIZE = env("GEMINI_IMAGE_SIZE", "2K");
+const CONFIGURED_REFERENCE_IMAGE_LIMIT = Number(env("REFERENCE_IMAGE_LIMIT", "6"));
+const REFERENCE_IMAGE_LIMIT = Number.isFinite(CONFIGURED_REFERENCE_IMAGE_LIMIT) ? Math.max(1, CONFIGURED_REFERENCE_IMAGE_LIMIT) : 6;
 const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
 const LEGACY_MODELS = new Set([
   "OpenAI GPT-Image-1",
@@ -318,6 +323,21 @@ async function supabaseUpload(bucket, objectPath, data, contentType, token = "")
   return payload;
 }
 
+async function supabaseDownload(bucket, objectPath, token = "") {
+  const key = token ? SUPABASE_ANON_KEY : SUPABASE_SERVICE_ROLE_KEY;
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${objectPath}`, {
+    headers: {
+      apikey: key,
+      authorization: `Bearer ${token || key}`
+    }
+  });
+  if (!response.ok) throw new Error(`Storage download failed (${response.status})`);
+  return {
+    buffer: Buffer.from(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type") || "application/octet-stream"
+  };
+}
+
 async function supabaseRemove(bucket, objectPath, token = "") {
   return supabaseJson(`/storage/v1/object/${bucket}`, {
     token,
@@ -563,7 +583,19 @@ function openAiStatus() {
     model: OPENAI_IMAGE_MODEL,
     defaultModel: DEFAULT_IMAGE_MODEL,
     secondaryModel: SECONDARY_IMAGE_MODEL,
-    referencesEnabled: false
+    referencesEnabled: Boolean(OPENAI_API_KEY) && OPENAI_GENERATION_ENABLED,
+    referenceImageLimit: REFERENCE_IMAGE_LIMIT
+  };
+}
+
+function geminiStatus() {
+  return {
+    enabled: Boolean(GEMINI_API_KEY),
+    model: SECONDARY_IMAGE_MODEL,
+    proModel: TERTIARY_IMAGE_MODEL,
+    referencesEnabled: Boolean(GEMINI_API_KEY),
+    imageSize: GEMINI_IMAGE_SIZE,
+    referenceImageLimit: REFERENCE_IMAGE_LIMIT
   };
 }
 
@@ -709,16 +741,18 @@ async function generateImageFiles(shoot, image) {
   let previewUrl = `/storage/previews/${image.id}.svg`;
 
   try {
-    if (openAiStatus().enabled) {
-      image.stage = "OpenAI generation";
+    if (openAiStatus().enabled || geminiStatus().enabled) {
+      const selected = selectedGenerationModel(image);
+      image.stage = generationStage(selected.model);
       queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
-      const generated = await generateOpenAiImage(shoot, image);
+      const generated = await generateProviderImage(shoot, image, selected);
       full = generated.buffer;
       provider = generated.provider;
       originalDimensions = generated.dimensions || originalDimensions;
       image.configuredModel = generated.configuredModel;
       image.apiModel = generated.apiModel;
       image.fallbackModel = generated.fallbackModel;
+      image.referenceCount = generated.referenceCount || 0;
       const previewPngKey = path.join(STORAGE, "previews", `${image.id}.png`);
       await fsp.writeFile(previewPngKey, full);
       previewUrl = `/storage/previews/${image.id}.png`;
@@ -737,12 +771,12 @@ async function generateImageFiles(shoot, image) {
   image.previewUrl = previewUrl;
   image.downloadUrl = `/storage/downloads/${image.id}-4k.png`;
   image.provider = provider;
-  image.finalDimensions = provider === "openai" ? originalDimensions : dims;
+  image.finalDimensions = isAiImageProvider(provider) ? originalDimensions : dims;
   image.targetDimensions = dims;
   image.originalDimensions = originalDimensions;
   image.upscaled = image.originalDimensions.width < dims.width || image.originalDimensions.height < dims.height;
   image.fileSize = full.length;
-  image.previewFileSize = provider === "openai" ? full.length : Buffer.byteLength(svgPreview(shoot, image));
+  image.previewFileSize = isAiImageProvider(provider) ? full.length : Buffer.byteLength(svgPreview(shoot, image));
   if (image.kind === "quote") {
     const insta = makePng(1080, 1080, image.slot);
     const instagramKey = path.join(STORAGE, "instagram", `${image.id}-instagram.png`);
@@ -753,11 +787,11 @@ async function generateImageFiles(shoot, image) {
   if (SUPABASE_ENABLED && shoot.ownerId) {
     try {
       const ownerPath = `${shoot.ownerId}/shoots/${shoot.id}`;
-      const previewBuffer = provider === "openai"
+      const previewBuffer = isAiImageProvider(provider)
         ? full
         : Buffer.from(svgPreview(shoot, image));
-      const previewExt = provider === "openai" ? "png" : "svg";
-      const previewType = provider === "openai" ? "image/png" : "image/svg+xml";
+      const previewExt = isAiImageProvider(provider) ? "png" : "svg";
+      const previewType = isAiImageProvider(provider) ? "image/png" : "image/svg+xml";
       image.previewStorageBucket = "generated-previews";
       image.previewStoragePath = `${ownerPath}/slot-${image.slot}.${previewExt}`;
       image.downloadStorageBucket = "generated-4k";
@@ -792,15 +826,34 @@ function openAiImageSize(aspectRatio, model = OPENAI_IMAGE_MODEL) {
   return "1024x1536";
 }
 
-function shotPrompt(shoot, image) {
+function generationStage(model) {
+  if (openAiApiModelName(model)) return "OpenAI reference generation";
+  if (geminiApiModelName(model)) return "Google Nano Banana reference generation";
+  return "AI generation";
+}
+
+function isAiImageProvider(provider) {
+  return provider === "openai" || provider === "google";
+}
+
+function shotPrompt(shoot, image, references = []) {
   const ratio = targetDims(shoot.aspectRatio);
   const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
   const base = [
     "Create a premium editorial photoshoot image for Alux Art.",
     `Aspect ratio target: ${shoot.aspectRatio}, production target ${ratio.width}x${ratio.height}.`,
-    "Style: luxury AI photography, polished studio-quality lighting, refined fashion campaign composition, realistic camera depth, no text, no watermark.",
-    "Important privacy note: uploaded user reference images are not sent to this provider in this local build; create a tasteful non-identifying editorial result."
+    "Style: luxury AI photography, polished studio-quality lighting, refined fashion campaign composition, realistic camera depth, no text, no watermark."
   ];
+  if (references.length) {
+    base.push("Uploaded reference images are attached directly to this request. Use identity references as authoritative guidance for the subject's likeness, and use inspiration/custom references only for styling, mood, wardrobe, background, lighting, or color grade.");
+    base.push(`Attached reference map: ${references.map((ref, index) => {
+      const tag = ref.tag ? ` ${ref.tag}` : "";
+      const note = ref.note ? ` - ${ref.note}` : "";
+      return `Reference ${index + 1}: ${ref.purpose || "reference"}${tag} (${ref.name || "image"})${note}`;
+    }).join("; ")}.`);
+  } else {
+    base.push("No reference images were available to attach for this slot; create a tasteful non-identifying editorial result.");
+  }
   if (image.kind === "identity") {
     base.push(`Shot ${image.slot}: a confident subject-focused editorial portrait with varied pose, elegant styling, cinematic lighting, premium backdrop, natural human proportions.`);
   } else if (image.kind === "mood") {
@@ -814,30 +867,25 @@ function shotPrompt(shoot, image) {
   return base.join(" ");
 }
 
-async function generateOpenAiImage(shoot, image) {
+async function generateProviderImage(shoot, image, selected = selectedGenerationModel(image)) {
+  if (openAiApiModelName(selected.model)) return generateOpenAiImage(shoot, image, selected);
+  if (geminiApiModelName(selected.model)) return generateGeminiImage(shoot, image, selected);
+  throw new Error(`Selected model ${selected.model} is not configured for direct reference generation`);
+}
+
+async function generateOpenAiImage(shoot, image, selected = selectedGenerationModel(image)) {
   const key = OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY is not set");
-  const selected = selectedGenerationModel(image);
   const apiModel = openAiApiModelName(selected.model);
   if (!apiModel) {
     throw new Error(`Selected model ${selected.model} is not an OpenAI image model for this local provider`);
   }
+  const references = await resolveReferenceFiles(shoot, image);
   const size = openAiImageSize(shoot.aspectRatio, apiModel);
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${key}`,
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      model: apiModel,
-      prompt: shotPrompt(shoot, image),
-      n: 1,
-      size,
-      quality: OPENAI_IMAGE_QUALITY
-    }),
-    signal: AbortSignal.timeout(OPENAI_IMAGE_TIMEOUT_MS)
-  });
+  const prompt = shotPrompt(shoot, image, references);
+  const response = references.length
+    ? await openAiEditRequest(key, apiModel, prompt, size, references)
+    : await openAiGenerationRequest(key, apiModel, prompt, size);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data.error?.message || `OpenAI image request failed with HTTP ${response.status}`;
@@ -858,8 +906,187 @@ async function generateOpenAiImage(shoot, image) {
     configuredModel: selected.model,
     apiModel,
     fallbackModel: selected.fallback,
+    referenceCount: references.length,
     dimensions: readPngDimensions(buffer) || sizeToDimensions(size)
   };
+}
+
+function openAiGenerationRequest(key, apiModel, prompt, size) {
+  return fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${key}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model: apiModel,
+      prompt,
+      n: 1,
+      size,
+      quality: OPENAI_IMAGE_QUALITY
+    }),
+    signal: AbortSignal.timeout(OPENAI_IMAGE_TIMEOUT_MS)
+  });
+}
+
+function openAiEditRequest(key, apiModel, prompt, size, references) {
+  const form = new FormData();
+  form.append("model", apiModel);
+  form.append("prompt", prompt);
+  form.append("n", "1");
+  form.append("size", size);
+  form.append("quality", OPENAI_IMAGE_QUALITY);
+  references.forEach((reference, index) => {
+    form.append("image[]", new Blob([reference.buffer], { type: reference.contentType }), referenceFileName(reference, index));
+  });
+  return fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}` },
+    body: form,
+    signal: AbortSignal.timeout(OPENAI_IMAGE_TIMEOUT_MS)
+  });
+}
+
+async function generateGeminiImage(shoot, image, selected = selectedGenerationModel(image)) {
+  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY is not set");
+  const apiModel = geminiApiModelName(selected.model);
+  if (!apiModel) throw new Error(`Selected model ${selected.model} is not a Gemini image model`);
+  const references = await resolveReferenceFiles(shoot, image);
+  const parts = [
+    { text: shotPrompt(shoot, image, references) },
+    ...references.map((reference) => ({
+      inlineData: {
+        mimeType: reference.contentType,
+        data: reference.buffer.toString("base64")
+      }
+    }))
+  ];
+  const generationConfig = {
+    responseModalities: ["Image"],
+    imageConfig: {
+      aspectRatio: geminiAspectRatio(shoot.aspectRatio),
+      imageSize: GEMINI_IMAGE_SIZE
+    }
+  };
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(apiModel)}:generateContent`, {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": GEMINI_API_KEY,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts }],
+      generationConfig
+    }),
+    signal: AbortSignal.timeout(OPENAI_IMAGE_TIMEOUT_MS)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data.error?.message || `Gemini image request failed with HTTP ${response.status}`;
+    throw new Error(message);
+  }
+  const imagePart = (data.candidates?.[0]?.content?.parts || []).find((part) => part.inlineData?.data || part.inline_data?.data);
+  const encoded = imagePart?.inlineData?.data || imagePart?.inline_data?.data;
+  if (!encoded) throw new Error("Gemini did not return image data");
+  const buffer = Buffer.from(encoded, "base64");
+  return {
+    buffer,
+    provider: "google",
+    configuredModel: selected.model,
+    apiModel,
+    fallbackModel: selected.fallback,
+    referenceCount: references.length,
+    dimensions: readPngDimensions(buffer) || targetDims(shoot.aspectRatio)
+  };
+}
+
+function referencesForShot(shoot, image) {
+  const identity = normalizeReferences(shoot.identityImages, "identity");
+  const inspiration = normalizeReferences(shoot.inspirationImages, "inspiration");
+  const custom = normalizeReferences(shoot.taggedReferences, "custom");
+  const ordered = image.kind === "identity"
+    ? [...identity, ...custom, ...inspiration]
+    : image.kind === "mood"
+      ? [...inspiration, ...custom, ...identity]
+      : [...identity, ...inspiration, ...custom];
+  const seen = new Set();
+  return ordered.filter((reference) => {
+    const key = reference.storageBucket && reference.storagePath
+      ? `${reference.storageBucket}/${reference.storagePath}`
+      : reference.fingerprint || `${reference.name}:${reference.size}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, Math.max(1, REFERENCE_IMAGE_LIMIT));
+}
+
+function normalizeReferences(list, purpose) {
+  return (Array.isArray(list) ? list : []).map((reference) => ({
+    ...reference,
+    purpose: reference.purpose || purpose,
+    name: reference.name || `${purpose} reference`,
+    type: reference.type || "image/jpeg"
+  }));
+}
+
+async function resolveReferenceFiles(shoot, image) {
+  const files = [];
+  for (const reference of referencesForShot(shoot, image)) {
+    try {
+      const file = await referenceToFile(reference);
+      if (!file || !isSupportedReferenceImage(file.contentType) || file.buffer.length > 50 * 1024 * 1024) continue;
+      files.push({
+        ...reference,
+        buffer: file.buffer,
+        contentType: canonicalImageType(file.contentType || reference.type)
+      });
+    } catch (err) {
+      console.warn(`Skipping reference ${reference.name || "image"}: ${err.message}`);
+    }
+  }
+  return files;
+}
+
+async function referenceToFile(reference) {
+  if (reference?.dataUrl && String(reference.dataUrl).startsWith("data:")) {
+    return dataUrlToFile(reference.dataUrl);
+  }
+  if (reference?.storageBucket && reference?.storagePath && SUPABASE_ENABLED) {
+    const file = await supabaseDownload(reference.storageBucket, reference.storagePath);
+    return {
+      buffer: file.buffer,
+      contentType: reference.type || file.contentType
+    };
+  }
+  if (reference?.dataUrl && /^https?:\/\//i.test(reference.dataUrl)) {
+    const response = await fetch(reference.dataUrl, { signal: AbortSignal.timeout(60000) });
+    if (!response.ok) throw new Error(`Reference URL failed with HTTP ${response.status}`);
+    return {
+      buffer: Buffer.from(await response.arrayBuffer()),
+      contentType: reference.type || response.headers.get("content-type") || "application/octet-stream"
+    };
+  }
+  return null;
+}
+
+function canonicalImageType(contentType) {
+  const type = String(contentType || "").split(";")[0].trim().toLowerCase();
+  if (type === "image/jpg") return "image/jpeg";
+  return type;
+}
+
+function isSupportedReferenceImage(contentType) {
+  return ["image/jpeg", "image/png", "image/webp"].includes(canonicalImageType(contentType));
+}
+
+function referenceFileName(reference, index) {
+  const ext = canonicalImageType(reference.contentType || reference.type) === "image/png"
+    ? ".png"
+    : canonicalImageType(reference.contentType || reference.type) === "image/webp"
+      ? ".webp"
+      : ".jpg";
+  const base = safeStorageName(reference.name || `reference-${index + 1}`, `reference-${index + 1}${ext}`);
+  return /\.[a-z0-9]+$/i.test(base) ? base : `${base}${ext}`;
 }
 
 function selectedGenerationModel(image) {
@@ -881,6 +1108,18 @@ function openAiApiModelName(model) {
   if (value.startsWith("openai/")) return value.slice("openai/".length);
   if (value.startsWith("gpt-image-")) return value;
   return null;
+}
+
+function geminiApiModelName(model) {
+  const value = String(model || "");
+  const name = value.startsWith("google/") ? value.slice("google/".length) : value;
+  return name.startsWith("gemini-") && name.includes("image") ? name : null;
+}
+
+function geminiAspectRatio(aspectRatio) {
+  return ["1:1", "3:4", "4:3", "9:16", "16:9", "4:5", "5:4", "2:3", "3:2", "21:9"].includes(aspectRatio)
+    ? aspectRatio
+    : "3:4";
 }
 
 function sizeToDimensions(size) {
@@ -1125,6 +1364,9 @@ async function persistSupabaseReferences(shoot, payload, user) {
         storage_path: image.storagePath,
         metadata: { identity_image_id: image.id }
       });
+    } else {
+      const stored = await storeSupabaseReferenceFile(user, shoot.id, "identity-images", "identity", image);
+      if (stored) rows.push(stored);
     }
   }
   for (const image of payload.inspirationImages || []) {
@@ -1159,12 +1401,33 @@ async function storeSupabaseReferenceFile(user, shootId, bucket, purpose, image)
   };
 }
 
+async function loadSupabaseShootReferences(shootId, user) {
+  const rows = await supabaseRows("shoot_references", `shoot_id=eq.${encodeURIComponent(shootId)}&select=*`, {
+    token: user.token,
+    headers: { prefer: "" }
+  }).catch(() => []);
+  return (rows || []).map((reference) => ({
+    id: reference.id,
+    purpose: reference.purpose,
+    name: reference.name,
+    type: reference.type,
+    size: Number(reference.size || 0),
+    storageBucket: reference.storage_bucket,
+    storagePath: reference.storage_path,
+    tag: reference.tag,
+    customName: reference.custom_name,
+    note: reference.note,
+    metadata: reference.metadata || {}
+  }));
+}
+
 async function loadSupabaseShootForApp(shootId, user) {
   const rows = await supabaseRows("shoots", `id=eq.${encodeURIComponent(shootId)}&select=*`, { token: user.token, headers: { prefer: "" } });
   const row = rows?.[0];
   if (!row) return null;
   if (row.user_id !== user.id && !isAdmin(user)) return null;
   const imageRows = await supabaseRows("shoot_images", `shoot_id=eq.${encodeURIComponent(shootId)}&select=*&order=slot.asc`, { token: user.token, headers: { prefer: "" } });
+  const references = await loadSupabaseShootReferences(row.id, user);
   const images = await Promise.all((imageRows || []).map(async (image) => ({
     id: image.id,
     slot: image.slot,
@@ -1206,9 +1469,9 @@ async function loadSupabaseShootForApp(shootId, user) {
     quote: row.quote,
     identityProfile: row.identity_profile,
     shootBrief: row.shoot_brief,
-    identityImages: [],
-    inspirationImages: [],
-    taggedReferences: [],
+    identityImages: references.filter((reference) => reference.purpose === "identity"),
+    inspirationImages: references.filter((reference) => reference.purpose === "inspiration"),
+    taggedReferences: references.filter((reference) => reference.purpose === "custom"),
     images,
     events: [],
     zipStatus: row.zip_status,
@@ -1231,6 +1494,7 @@ async function api(req, res, url) {
       time: now(),
       supabase: supabaseStatus(),
       openai: openAiStatus(),
+      gemini: geminiStatus(),
       paystack: { configured: Boolean(PAYSTACK_SECRET_KEY) },
       process: { role: PROCESS_ROLE, httpEnabled: HTTP_ENABLED, workerEnabled: WORKER_ENABLED },
       worker: { running: workerRunning }
