@@ -15,7 +15,7 @@ const DB_FILE = path.join(DATA_DIR, "db.json");
 const PORT = Number(process.env.PORT || 3000);
 const PROCESS_ROLE = (process.env.ALUX_PROCESS_ROLE || process.env.PROCESS_ROLE || "all").toLowerCase();
 const HTTP_ENABLED = PROCESS_ROLE !== "worker";
-const WORKER_ENABLED = process.env.RUN_WORKER === "true" || (process.env.RUN_WORKER !== "false" && PROCESS_ROLE !== "web");
+const WORKER_ENABLED = process.env.RUN_WORKER === "true" || process.env.RUN_WORKER !== "false";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "fegorsonphotography@gmail.com").toLowerCase();
 const DEFAULT_IMAGE_MODEL = "openai/gpt-5.4-image-2";
 const SECONDARY_IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
