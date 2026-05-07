@@ -3,7 +3,7 @@ const state = {
   config: null,
   pricing: null,
   mode: "fast",
-  aspectRatio: "3:4",
+  aspectRatio: "4:5",
   currency: "NGN",
   identityImages: [],
   savedIdentityImages: [],

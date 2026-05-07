@@ -614,7 +614,7 @@ function sanitizeEvent(event) {
 }
 
 function targetDims(aspectRatio) {
-  return ASPECTS[aspectRatio] || ASPECTS["3:4"];
+  return ASPECTS[aspectRatio] || ASPECTS["4:5"];
 }
 
 function openAiStatus() {
@@ -1148,6 +1148,9 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
 }
 
 function buildFalPrompt(shoot, image, references) {
+  if (shoot.shootBrief?.shots?.length) {
+    return engineerPromptForShot(shoot, image, shoot.shootBrief, shoot.visionData);
+  }
   const dims = targetDims(shoot.aspectRatio);
   const identityRefs = references.filter((r) => r.purpose === "identity");
   const inspirationRefs = references.filter((r) => r.purpose === "inspiration" || r.purpose === "custom");
@@ -1424,38 +1427,211 @@ async function packageZip(shoot) {
   await saveDb();
 }
 
+// ── Stage 1: Vision Analysis ─────────────────────────────────────────────────
+async function visionAnalysisStage(shoot) {
+  if (!OPENAI_API_KEY) return null;
+  const identityRefs = normalizeReferences(shoot.identityImages, "identity").slice(0, 3);
+  const inspirationRefs = normalizeReferences(shoot.inspirationImages, "inspiration").slice(0, 3);
+  const imageBlocks = [];
+  for (const ref of [...identityRefs, ...inspirationRefs]) {
+    try {
+      const file = await referenceToFile(ref);
+      if (!file || !isSupportedReferenceImage(file.contentType)) continue;
+      const mimeType = canonicalImageType(file.contentType || ref.type);
+      imageBlocks.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${mimeType};base64,${file.buffer.toString("base64")}`,
+          detail: ref.purpose === "identity" ? "high" : "low"
+        }
+      });
+    } catch (err) {
+      console.warn(`Vision analysis: skipping ref ${ref.name}: ${err.message}`);
+    }
+  }
+  if (!imageBlocks.length) return null;
+  const prompt = `You are a professional photography director and AI vision analyst for Alux Art luxury photoshoot platform.
+Analyze the provided images and return ONLY a JSON object with exactly these fields:
+{
+  "subject_identity_profile": "Detailed physical description: apparent gender, skin tone (Fitzpatrick scale I-VI), approximate age range, facial features, bone structure, eye shape and color, hair color/texture/length — enough specificity for any AI image model to reproduce this exact person consistently across 8 portrait shots",
+  "inspiration_scene_breakdown": ["scene element 1", "scene element 2", "scene element 3"],
+  "color_palette": ["#hex1", "#hex2", "#hex3"],
+  "mood_keywords": ["keyword1", "keyword2", "keyword3"],
+  "style_notes": "Overall aesthetic: lighting style, wardrobe aesthetic, mood, setting preferences derived from inspiration images"
+}
+Return only valid JSON, no markdown.`;
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        response_format: { type: "json_object" },
+        max_tokens: 800,
+        messages: [{ role: "user", content: [{ type: "text", text: prompt }, ...imageBlocks] }]
+      }),
+      signal: AbortSignal.timeout(60000)
+    });
+    if (!res.ok) throw new Error(`Vision API ${res.status}`);
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    return content ? JSON.parse(content) : null;
+  } catch (err) {
+    console.error("Vision analysis failed:", err.message);
+    return null;
+  }
+}
+
+// ── Stage 2+3: Character Sheet + Shoot Brief ──────────────────────────────────
+async function generateShootBriefStage(shoot, visionData) {
+  if (!OPENAI_API_KEY) return generateFallbackShootBrief(shoot);
+  const visionCtx = visionData ? JSON.stringify(visionData) : "No vision data available.";
+  const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
+  const prompt = `You are a luxury fashion photography director creating a 10-shot AI photoshoot brief for Alux Art.
+
+Vision analysis: ${visionCtx}
+
+Return ONLY a JSON object with this exact structure:
+{
+  "character_sheet": "One paragraph: complete physical description of the subject for AI identity consistency — include all relevant details from vision analysis so any AI model can reproduce the same person across all shots",
+  "theme": "Overall shoot theme in 3-5 words",
+  "shots": [
+    {
+      "shot_number": 1,
+      "shot_type": "close-up portrait",
+      "camera_angle": "straight-on eye level",
+      "pose_description": "specific pose details",
+      "scene_description": "background and environment",
+      "lighting_setup": "specific lighting description",
+      "outfit_and_styling": "wardrobe and styling details",
+      "mood_keywords": ["word1", "word2"],
+      "special_notes": "technical or creative notes"
+    }
+  ]
+}
+
+Rules:
+- Shots 1–8: Subject prominently featured. Vary angles: close-up, medium, full-body, 3/4 profile, side, low angle, dramatic, candid.
+- Shot 9: Aesthetic mood — NO person. Luxury still-life or atmospheric scene. Theme: shoot color palette and mood.
+- Shot 10: Quote graphic background. Atmospheric scene with significant negative space in lower third for text overlay. DO NOT describe or render text in image. Quote to be composited: "${quote}"
+- Each shot must feel distinctly different.
+- All styling derived from inspiration image analysis.
+Return only valid JSON, no markdown.`;
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        response_format: { type: "json_object" },
+        max_tokens: 3000,
+        messages: [{ role: "user", content: prompt }]
+      }),
+      signal: AbortSignal.timeout(90000)
+    });
+    if (!res.ok) throw new Error(`Brief generation API ${res.status}`);
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    const parsed = content ? JSON.parse(content) : null;
+    return parsed?.shots?.length === 10 ? parsed : generateFallbackShootBrief(shoot);
+  } catch (err) {
+    console.error("Shoot brief generation failed:", err.message);
+    return generateFallbackShootBrief(shoot);
+  }
+}
+
+function generateFallbackShootBrief(shoot) {
+  const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
+  const poses = [
+    { shot_type: "close-up portrait", camera_angle: "straight-on eye level", pose_description: "Direct gaze, relaxed jaw, shoulders back, slight chin tilt", lighting_setup: "Rembrandt lighting, soft key 45 degrees", outfit_and_styling: "Minimal luxe, clean lines" },
+    { shot_type: "medium portrait", camera_angle: "3/4 angle", pose_description: "Turned 45 degrees, over-shoulder gaze, one hand raised to face", lighting_setup: "Split lighting, dramatic side shadows", outfit_and_styling: "Statement fashion piece, bold accessory" },
+    { shot_type: "full body editorial", camera_angle: "low angle looking up", pose_description: "Power stance, confident mid-step walk, arms relaxed", lighting_setup: "Three-point studio, clean gradient backdrop", outfit_and_styling: "Full outfit head to toe, coordinated styling" },
+    { shot_type: "close-up beauty", camera_angle: "slight upward tilt", pose_description: "Eyes closed or downward gaze, serene, neck elongated", lighting_setup: "Soft butterfly lighting, minimal shadows", outfit_and_styling: "Focus on makeup, hair, and jewelry details" },
+    { shot_type: "editorial profile", camera_angle: "side profile", pose_description: "Strong profile, chin forward, looking off-frame with intent", lighting_setup: "Rim lighting from behind, subtle fill from front", outfit_and_styling: "Structured garment with sharp silhouette" },
+    { shot_type: "dramatic editorial", camera_angle: "high angle looking down", pose_description: "Seated or reclining, looking up at camera, powerful vulnerability", lighting_setup: "High-contrast cinematic, deep directional shadows", outfit_and_styling: "Layered textures, luxury fabric details" },
+    { shot_type: "environmental portrait", camera_angle: "wide establishing shot", pose_description: "Natural movement in context with environment, candid expression", lighting_setup: "Natural or ambient light, golden warmth", outfit_and_styling: "Casual luxury, environment-appropriate" },
+    { shot_type: "artistic detail close-up", camera_angle: "extreme close-up", pose_description: "Focus on hands, eyes, or lips — expressive partial composition", lighting_setup: "Macro soft box, crisp detail", outfit_and_styling: "Jewelry, nail art, or texture focus" }
+  ];
+  return {
+    character_sheet: "A refined editorial subject. Maintain consistent facial geometry, skin tone, proportions and defining features across all shots. Apply only pose, wardrobe, lighting and background changes as directed per shot.",
+    theme: "premium luxury editorial",
+    shots: Array.from({ length: 10 }, (_, i) => {
+      const slot = i + 1;
+      if (slot === 9) return { shot_number: 9, shot_type: "aesthetic mood", camera_angle: "artistic", pose_description: "No person — luxury still-life or environmental abstraction", scene_description: "Aspirational luxury setting: marble surface detail, silk fabric, floral arrangement, or architectural geometry", lighting_setup: "Soft product lighting, clean shadows", outfit_and_styling: "Objects and environment only", mood_keywords: ["aspirational", "luxury", "refined"], special_notes: "No person in this image." };
+      if (slot === 10) return { shot_number: 10, shot_type: "quote graphic background", camera_angle: "artistic", pose_description: "No person or text — atmospheric background only", scene_description: "Cinematic atmospheric scene with significant negative space in lower third for text overlay", lighting_setup: "Atmospheric, minimal, aspirational", outfit_and_styling: "N/A", mood_keywords: ["aspirational", "cinematic", "minimal"], special_notes: `DO NOT render text. Quote to be composited: "${quote}"` };
+      const p = poses[i] || poses[0];
+      return { shot_number: slot, ...p, scene_description: "Premium studio or location backdrop, luxury campaign quality", mood_keywords: ["confident", "editorial", "luxury"], special_notes: `Shot ${slot} of 8 identity portraits.` };
+    })
+  };
+}
+
+// ── Stage 4: Prompt Engineering per shot ─────────────────────────────────────
+function engineerPromptForShot(shoot, image, brief, visionData) {
+  const dims = targetDims(shoot.aspectRatio);
+  const directive = brief?.shots?.find((s) => Number(s.shot_number) === Number(image.slot));
+  const characterSheet = brief?.character_sheet || "";
+  const sections = ["Premium editorial AI photoshoot for Alux Art luxury photography."];
+  if (characterSheet) {
+    sections.push(`SUBJECT IDENTITY [CRITICAL — MAXIMUM WEIGHT]: ${characterSheet}`);
+    sections.push("IDENTITY LOCK: Preserve exact facial geometry, skin tone, eye shape, nose profile, lip contour, and hairline from reference images. ONLY change: pose, outfit, lighting, and background as directed.");
+  }
+  if (directive) {
+    const d = directive;
+    sections.push(`SHOT ${image.slot} — ${(d.shot_type || "").toUpperCase()}:`);
+    if (d.scene_description) sections.push(d.scene_description);
+    if (d.camera_angle) sections.push(`Camera: ${d.camera_angle}.`);
+    if (d.pose_description) sections.push(`Pose: ${d.pose_description}.`);
+    if (d.lighting_setup) sections.push(`Lighting: ${d.lighting_setup}.`);
+    if (d.outfit_and_styling) sections.push(`Styling: ${d.outfit_and_styling}.`);
+    if (d.mood_keywords?.length) sections.push(`Mood: ${d.mood_keywords.join(", ")}.`);
+    if (d.special_notes) sections.push(`Note: ${d.special_notes}.`);
+  }
+  if (visionData?.color_palette?.length) sections.push(`Color palette: ${visionData.color_palette.join(", ")}.`);
+  if (visionData?.style_notes) sections.push(`Style: ${visionData.style_notes}`);
+  sections.push(`Technical: ${dims.width}x${dims.height} (${shoot.aspectRatio}). Luxury fashion photography quality. No text, no watermarks, no artifacts.`);
+  return sections.join(" ");
+}
+
 async function runShootPipeline(shoot) {
   if (store.workers.has(shoot.id)) return;
   store.workers.set(shoot.id, true);
   try {
     if (shoot.status === "QUEUED") shoot.status = "PROCESSING";
     shoot.updatedAt = now();
-    const stages = ["Vision analysis", "Character sheet", "Shoot brief", "Prompt engineering", "4K validation"];
-    for (let i = 0; i < stages.length; i++) {
-      shoot.pipelineStage = stages[i];
-      shoot.progress = Math.min(18 + i * 7, 45);
-      queueEvent(shoot.id, { type: "stage", shootId: shoot.id, stage: stages[i], progress: shoot.progress });
-      await new Promise(r => setTimeout(r, 650));
-    }
-    
+    // Stage 1: Vision Analysis — GPT-4o examines identity + inspiration images
+    shoot.pipelineStage = "Vision analysis";
+    shoot.progress = 4;
+    queueEvent(shoot.id, { type: "stage", shootId: shoot.id, stage: "Vision analysis", progress: 4 });
+    const visionData = await visionAnalysisStage(shoot);
+    shoot.visionData = visionData || {};
+
+    // Stage 2+3: Character Sheet + Shoot Brief — GPT-4o generates 10 shot directives
+    shoot.pipelineStage = "Generating shoot brief";
+    shoot.progress = 10;
+    queueEvent(shoot.id, { type: "stage", shootId: shoot.id, stage: "Generating shoot brief", progress: 10 });
+    const brief = await generateShootBriefStage(shoot, visionData);
+    shoot.shootBrief = brief;
+
+    // Stage 4: Prompt Engineering + Stage 5: Image Generation (per-shot, parallel)
+    shoot.pipelineStage = "Generating images";
+    shoot.progress = 15;
+    queueEvent(shoot.id, { type: "stage", shootId: shoot.id, stage: "Generating images", progress: 15 });
+
     const imagePromises = shoot.images.map(async (image, i) => {
-      await new Promise(r => setTimeout(r, i * 750));
+      await new Promise(r => setTimeout(r, i * 500));
       image.status = "PROCESSING";
       image.stage = "Generating";
       queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
-      await new Promise(r => setTimeout(r, 600));
-      image.stage = "Upscaling to 4K";
-      queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
-      
+
       await generateImageFiles(shoot, image);
-      
+
       image.status = "COMPLETE";
       image.stage = "Ready";
-      shoot.progress = Math.min(95, 45 + shoot.images.filter((img) => img.status === "COMPLETE").length * 5);
+      shoot.progress = Math.min(95, 15 + shoot.images.filter((img) => img.status === "COMPLETE").length * 8);
       store.db.metrics.upscalingGpuSeconds += image.upscaled ? 22 : 0;
       queueEvent(shoot.id, { type: "slot_complete", shootId: shoot.id, image, progress: shoot.progress });
     });
-    
+
     await Promise.all(imagePromises);
     
     shoot.status = "PACKAGING";
@@ -1529,7 +1705,7 @@ async function startWorkerLoop() {
 function newShoot(payload, user) {
   const shootId = id("shoot");
   const mode = payload.mode === "advanced" ? "advanced" : "fast";
-  const aspectRatio = ASPECTS[payload.aspectRatio] ? payload.aspectRatio : "3:4";
+  const aspectRatio = ASPECTS[payload.aspectRatio] ? payload.aspectRatio : "4:5";
   const images = Array.from({ length: 10 }, (_, i) => ({
     id: id("img"),
     slot: i + 1,
