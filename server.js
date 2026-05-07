@@ -18,7 +18,7 @@ const HTTP_ENABLED = PROCESS_ROLE !== "worker";
 const RUN_WORKER = env("RUN_WORKER");
 const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
-const DEFAULT_IMAGE_MODEL = "fal-ai/nano-banana-2/edit";
+const DEFAULT_IMAGE_MODEL = "fal-ai/flux-pro/kontext";
 const SECONDARY_IMAGE_MODEL = "openai/gpt-image-2/edit";
 const TERTIARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
@@ -33,8 +33,8 @@ const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
 const FAL_KEY = env("FAL_KEY", "75f63914-cfb0-4a7d-a85d-2da7160b6bd7:755e7a1583ad210cfa971c1e0d1cfaf3");
 const FAL_API_BASE = "https://fal.run";
 const FAL_TIMEOUT_MS = Number(env("FAL_TIMEOUT_MS", "180000"));
-const FAL_PRIMARY_MODEL = "fal-ai/nano-banana-2/edit";
-const FAL_SECONDARY_MODEL = "openai/gpt-image-2/edit";
+const FAL_PRIMARY_MODEL = "fal-ai/flux-pro/kontext";
+const FAL_SECONDARY_MODEL = "fal-ai/flux/dev";
 const LEGACY_MODELS = new Set([
   "OpenAI GPT-Image-1",
   "Google Imagen 3",
@@ -1086,13 +1086,23 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     ? `data:${primaryIdentity.contentType};base64,${primaryIdentity.buffer.toString("base64")}`
     : null;
 
-  const input = {
+  const isKontext = modelId.includes("kontext");
+  const input = isKontext ? {
+    prompt,
+    aspect_ratio: shoot.aspectRatio || "3:4",
+    guidance_scale: 3.5,
+    num_images: 1,
+    output_format: "png",
+    safety_tolerance: "2",
+    ...(inputImageDataUrl ? { image_url: inputImageDataUrl } : {})
+  } : {
     prompt,
     image_size: { width: imageWidth, height: imageHeight },
-    num_inference_steps: 30,
+    num_inference_steps: 28,
     guidance_scale: 3.5,
     num_images: 1,
     enable_safety_checker: false,
+    sync_mode: true,
     ...(inputImageDataUrl ? { image_url: inputImageDataUrl } : {})
   };
 

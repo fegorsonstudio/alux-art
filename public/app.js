@@ -19,8 +19,8 @@ const state = {
 let supabaseClient = null;
 
 const TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"];
-const FAL_MODEL_PRIMARY = "fal-ai/nano-banana-2/edit";
-const FAL_MODEL_SECONDARY = "openai/gpt-image-2/edit";
+const FAL_MODEL_PRIMARY = "fal-ai/flux-pro/kontext";
+const FAL_MODEL_SECONDARY = "fal-ai/flux/dev";
 const DEFAULT_IMAGE_MODEL = FAL_MODEL_PRIMARY;
 const SECONDARY_IMAGE_MODEL = FAL_MODEL_SECONDARY;
 const MODELS = [
@@ -952,9 +952,9 @@ function shotCard(image, shootId) {
       <strong>${image.kind === "quote" ? "Quote Graphic" : image.kind === "mood" ? "Aesthetic Mood" : "Identity Portrait"}</strong>
       <span class="muted">${sizeText}</span>
       ${ready ? `<span class="chip">${providerLabel(image.provider)}${image.providerError ? " fallback" : ""}</span>` : ""}
-      <div class="shot-actions ${image.kind === "quote" ? "quote" : ""}">
+      <div class="shot-actions">
+        <button class="btn ${ready ? "primary" : "small"} download" data-id="${escapeHtml(image.id)}" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>↓ Download 4K</button>
         <button class="btn small preview" data-url="${previewUrl}" ${canPreview ? "" : "disabled"}>Preview</button>
-        <button class="btn small download" data-id="${escapeHtml(image.id)}" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>4K</button>
         ${image.kind === "quote" ? `<button class="btn small instagram" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>Instagram 1080</button>` : ""}
       </div>
     </div>
