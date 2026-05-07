@@ -1086,15 +1086,19 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     ? `data:${primaryIdentity.contentType};base64,${primaryIdentity.buffer.toString("base64")}`
     : null;
 
+  // kontext requires image_url (edit model); fall back to flux/dev for text-to-image slots
   const isKontext = modelId.includes("kontext");
-  const input = isKontext ? {
+  const useKontext = isKontext && Boolean(inputImageDataUrl);
+  const effectiveModelId = useKontext ? modelId : "fal-ai/flux/dev";
+
+  const input = useKontext ? {
     prompt,
-    aspect_ratio: shoot.aspectRatio || "3:4",
+    image_url: inputImageDataUrl,
+    aspect_ratio: kontextAspectRatio(shoot.aspectRatio),
     guidance_scale: 3.5,
     num_images: 1,
     output_format: "png",
-    safety_tolerance: "2",
-    ...(inputImageDataUrl ? { image_url: inputImageDataUrl } : {})
+    safety_tolerance: "2"
   } : {
     prompt,
     image_size: { width: imageWidth, height: imageHeight },
@@ -1102,11 +1106,10 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     guidance_scale: 3.5,
     num_images: 1,
     enable_safety_checker: false,
-    sync_mode: true,
-    ...(inputImageDataUrl ? { image_url: inputImageDataUrl } : {})
+    sync_mode: true
   };
 
-  const response = await fetch(`${FAL_API_BASE}/${modelId}`, {
+  const response = await fetch(`${FAL_API_BASE}/${effectiveModelId}`, {
     method: "POST",
     headers: {
       "Authorization": `Key ${FAL_KEY}`,
@@ -1118,7 +1121,8 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = data.detail || data.error?.message || data.error || data.message || `fal.ai request failed (${response.status})`;
+    const raw = data.detail || data.error?.message || data.error || data.message || `fal.ai request failed (${response.status})`;
+    const message = Array.isArray(raw) ? raw.map((e) => e.msg || JSON.stringify(e)).join("; ") : String(raw);
     throw new Error(message);
   }
 
@@ -1140,7 +1144,7 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     buffer,
     provider: "fal",
     configuredModel: selected.model,
-    apiModel: modelId,
+    apiModel: effectiveModelId,
     fallbackModel: selected.fallback,
     referenceCount: references.length,
     dimensions: readPngDimensions(buffer) || { width: imageWidth, height: imageHeight }
@@ -1375,6 +1379,13 @@ function geminiApiModelName(model) {
 function falApiModelName(model) {
   const value = String(model || "");
   return value.startsWith("fal-ai/") || value.startsWith("fal/") ? value : null;
+}
+
+function kontextAspectRatio(aspectRatio) {
+  const valid = new Set(["21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"]);
+  if (valid.has(aspectRatio)) return aspectRatio;
+  const map = { "4:5": "3:4", "5:4": "4:3", "2:3": "2:3" };
+  return map[aspectRatio] || "3:4";
 }
 
 function falStatus() {
