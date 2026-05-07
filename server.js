@@ -1588,23 +1588,23 @@ function engineerPromptForShot(shoot, image, brief, visionData) {
   const sections = [];
 
   if (image.kind === "identity") {
-    // Frame as an edit instruction — kontext responds better to "change X, keep Y"
-    sections.push("Edit the attached reference photo.");
-    if (gender) sections.push(`SUBJECT IS ${gender.toUpperCase()}. DO NOT change gender. DO NOT replace the subject with a different person.`);
-    if (characterSheet) sections.push(`Preserve exactly: ${characterSheet}`);
-    sections.push("Change ONLY: outfit, background, pose, and lighting as listed below. Face, skin tone, hair color, body proportions must stay identical to the reference image.");
-    if (directive) {
-      const d = directive;
-      if (d.outfit_and_styling) sections.push(`New outfit: ${d.outfit_and_styling}.`);
-      if (d.scene_description) sections.push(`New background/scene: ${d.scene_description}.`);
-      if (d.pose_description) sections.push(`New pose: ${d.pose_description}.`);
-      if (d.lighting_setup) sections.push(`Lighting: ${d.lighting_setup}.`);
-      if (d.camera_angle) sections.push(`Camera angle: ${d.camera_angle}.`);
-      if (d.mood_keywords?.length) sections.push(`Mood: ${d.mood_keywords.join(", ")}.`);
-    } else {
-      sections.push(`Shot ${image.slot}: confident editorial portrait, cinematic lighting, luxury backdrop.`);
-    }
-    if (visionData?.style_notes) sections.push(`Style inspiration: ${visionData.style_notes}`);
+    const d = directive || {};
+    const shotType = d.shot_type || "editorial portrait";
+    const colorGrading = visionData?.color_palette?.length
+      ? `Tones derived from palette ${visionData.color_palette.join(", ")}${d.mood_keywords?.length ? "; " + d.mood_keywords.join(", ") + " feel" : ""}`
+      : (d.mood_keywords?.length ? d.mood_keywords.join(", ") + " color grade" : "Natural cinematic color grade");
+    const photoStyle = visionData?.style_notes || "Luxury fashion editorial, medium-format camera look, shallow depth of field";
+
+    sections.push(`Use the attached face photo as the subject. Generate a hyper-realistic ${shotType} photo matching this reference exactly. PRIORITY: The subject's face and hair style must be taken directly and accurately from the attached face photo preserve all facial features, as they appear.`);
+    if (gender) sections.push(`Subject is ${gender}. Gender must not change.`);
+    sections.push(`Background: ${d.scene_description || "Premium studio backdrop, luxury campaign quality"}`);
+    sections.push(`Lighting: ${d.lighting_setup || "Cinematic three-point studio lighting"}`);
+    sections.push(`Color Grading: ${colorGrading}`);
+    sections.push(`Mood & Vibe: ${d.mood_keywords?.length ? d.mood_keywords.join(", ") : "confident, editorial, luxury"}`);
+    sections.push(`Photography style: ${photoStyle}`);
+    sections.push(`Pose: ${d.pose_description || "Confident editorial pose"}`);
+    sections.push(`Shot type: ${shotType}${d.camera_angle ? ", " + d.camera_angle : ""}`);
+    sections.push(`Outfit/look: ${d.outfit_and_styling || "Luxury fashion styling"}`);
   } else if (image.kind === "mood") {
     sections.push("Generate a luxury editorial mood image. No person in this image.");
     if (directive?.scene_description) sections.push(directive.scene_description);
