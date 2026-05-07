@@ -951,7 +951,6 @@ function shotCard(image, shootId) {
     <div class="shot-body">
       <strong>${image.kind === "quote" ? "Quote Graphic" : image.kind === "mood" ? "Aesthetic Mood" : "Identity Portrait"}</strong>
       <span class="muted">${sizeText}</span>
-      ${ready ? `<span class="chip">${providerLabel(image.provider)}${image.providerError ? " fallback" : ""}</span>` : ""}
       <div class="shot-actions">
         <button class="btn ${ready ? "primary" : "small"} download" data-id="${escapeHtml(image.id)}" data-shoot-id="${escapeHtml(shootId)}" ${ready ? "" : "disabled"}>↓ Download 4K</button>
         <button class="btn small preview" data-url="${previewUrl}" ${canPreview ? "" : "disabled"}>Preview</button>

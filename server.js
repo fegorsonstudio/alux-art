@@ -1462,14 +1462,17 @@ async function visionAnalysisStage(shoot) {
   }
   if (!imageBlocks.length) return null;
   const prompt = `You are a professional photography director and AI vision analyst for Alux Art luxury photoshoot platform.
-Analyze the provided images and return ONLY a JSON object with exactly these fields:
+Analyze the provided images. The FIRST image(s) are the IDENTITY references (the actual subject). The remaining images are inspiration/style references only.
+Return ONLY a JSON object with exactly these fields:
 {
-  "subject_identity_profile": "Detailed physical description: apparent gender, skin tone (Fitzpatrick scale I-VI), approximate age range, facial features, bone structure, eye shape and color, hair color/texture/length — enough specificity for any AI image model to reproduce this exact person consistently across 8 portrait shots",
-  "inspiration_scene_breakdown": ["scene element 1", "scene element 2", "scene element 3"],
+  "subject_gender": "male OR female OR non-binary — determined strictly from the identity reference images, NOT from inspiration images",
+  "subject_identity_profile": "Detailed physical description of the IDENTITY subject only: gender, skin tone (Fitzpatrick I-VI), age range, facial features, bone structure, eye shape and color, hair color/texture/length, distinctive features — enough for any AI to reproduce THIS EXACT person across 8 portraits",
+  "inspiration_scene_breakdown": ["style element from inspiration 1", "style element 2", "style element 3"],
   "color_palette": ["#hex1", "#hex2", "#hex3"],
   "mood_keywords": ["keyword1", "keyword2", "keyword3"],
-  "style_notes": "Overall aesthetic: lighting style, wardrobe aesthetic, mood, setting preferences derived from inspiration images"
+  "style_notes": "Styling direction derived ONLY from inspiration images: wardrobe aesthetic, lighting style, mood, setting preferences"
 }
+CRITICAL: subject_gender and subject_identity_profile must describe the IDENTITY image subject, never the inspiration images.
 Return only valid JSON, no markdown.`;
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1581,25 +1584,43 @@ function engineerPromptForShot(shoot, image, brief, visionData) {
   const dims = targetDims(shoot.aspectRatio);
   const directive = brief?.shots?.find((s) => Number(s.shot_number) === Number(image.slot));
   const characterSheet = brief?.character_sheet || "";
-  const sections = ["Premium editorial AI photoshoot for Alux Art luxury photography."];
-  if (characterSheet) {
-    sections.push(`SUBJECT IDENTITY [CRITICAL — MAXIMUM WEIGHT]: ${characterSheet}`);
-    sections.push("IDENTITY LOCK: Preserve exact facial geometry, skin tone, eye shape, nose profile, lip contour, and hairline from reference images. ONLY change: pose, outfit, lighting, and background as directed.");
+  const gender = (visionData?.subject_gender || "").toLowerCase();
+  const sections = [];
+
+  if (image.kind === "identity") {
+    // Frame as an edit instruction — kontext responds better to "change X, keep Y"
+    sections.push("Edit the attached reference photo.");
+    if (gender) sections.push(`SUBJECT IS ${gender.toUpperCase()}. DO NOT change gender. DO NOT replace the subject with a different person.`);
+    if (characterSheet) sections.push(`Preserve exactly: ${characterSheet}`);
+    sections.push("Change ONLY: outfit, background, pose, and lighting as listed below. Face, skin tone, hair color, body proportions must stay identical to the reference image.");
+    if (directive) {
+      const d = directive;
+      if (d.outfit_and_styling) sections.push(`New outfit: ${d.outfit_and_styling}.`);
+      if (d.scene_description) sections.push(`New background/scene: ${d.scene_description}.`);
+      if (d.pose_description) sections.push(`New pose: ${d.pose_description}.`);
+      if (d.lighting_setup) sections.push(`Lighting: ${d.lighting_setup}.`);
+      if (d.camera_angle) sections.push(`Camera angle: ${d.camera_angle}.`);
+      if (d.mood_keywords?.length) sections.push(`Mood: ${d.mood_keywords.join(", ")}.`);
+    } else {
+      sections.push(`Shot ${image.slot}: confident editorial portrait, cinematic lighting, luxury backdrop.`);
+    }
+    if (visionData?.style_notes) sections.push(`Style inspiration: ${visionData.style_notes}`);
+  } else if (image.kind === "mood") {
+    sections.push("Generate a luxury editorial mood image. No person in this image.");
+    if (directive?.scene_description) sections.push(directive.scene_description);
+    if (directive?.lighting_setup) sections.push(`Lighting: ${directive.lighting_setup}.`);
+    if (directive?.mood_keywords?.length) sections.push(`Mood: ${directive.mood_keywords.join(", ")}.`);
+    else sections.push("Aspirational luxury still-life or atmospheric environment. Refined color palette.");
+  } else {
+    sections.push("Generate a cinematic atmospheric background image. No person, no text, no letters, no symbols.");
+    sections.push("Leave significant negative space in the lower third for a text quote overlay.");
+    if (directive?.scene_description) sections.push(directive.scene_description);
+    if (directive?.mood_keywords?.length) sections.push(`Mood: ${directive.mood_keywords.join(", ")}.`);
+    else sections.push("Aspirational, cinematic, minimal.");
   }
-  if (directive) {
-    const d = directive;
-    sections.push(`SHOT ${image.slot} — ${(d.shot_type || "").toUpperCase()}:`);
-    if (d.scene_description) sections.push(d.scene_description);
-    if (d.camera_angle) sections.push(`Camera: ${d.camera_angle}.`);
-    if (d.pose_description) sections.push(`Pose: ${d.pose_description}.`);
-    if (d.lighting_setup) sections.push(`Lighting: ${d.lighting_setup}.`);
-    if (d.outfit_and_styling) sections.push(`Styling: ${d.outfit_and_styling}.`);
-    if (d.mood_keywords?.length) sections.push(`Mood: ${d.mood_keywords.join(", ")}.`);
-    if (d.special_notes) sections.push(`Note: ${d.special_notes}.`);
-  }
+
   if (visionData?.color_palette?.length) sections.push(`Color palette: ${visionData.color_palette.join(", ")}.`);
-  if (visionData?.style_notes) sections.push(`Style: ${visionData.style_notes}`);
-  sections.push(`Technical: ${dims.width}x${dims.height} (${shoot.aspectRatio}). Luxury fashion photography quality. No text, no watermarks, no artifacts.`);
+  sections.push(`${dims.width}x${dims.height} (${shoot.aspectRatio}). Luxury fashion photography quality. No watermarks, no artifacts.`);
   return sections.join(" ");
 }
 
