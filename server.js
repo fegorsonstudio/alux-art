@@ -18,7 +18,7 @@ const HTTP_ENABLED = PROCESS_ROLE !== "worker";
 const RUN_WORKER = env("RUN_WORKER");
 const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
-const DEFAULT_IMAGE_MODEL = "fal-ai/flux-pro/kontext";
+const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2/edit";
 const SECONDARY_IMAGE_MODEL = "openai/gpt-image-2/edit";
 const TERTIARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
@@ -33,7 +33,7 @@ const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
 const FAL_KEY = env("FAL_KEY", "75f63914-cfb0-4a7d-a85d-2da7160b6bd7:755e7a1583ad210cfa971c1e0d1cfaf3");
 const FAL_API_BASE = "https://fal.run";
 const FAL_TIMEOUT_MS = Number(env("FAL_TIMEOUT_MS", "180000"));
-const FAL_PRIMARY_MODEL = "fal-ai/flux-pro/kontext";
+const FAL_PRIMARY_MODEL = "openai/gpt-image-2/edit";
 const FAL_SECONDARY_MODEL = "fal-ai/flux/dev";
 const LEGACY_MODELS = new Set([
   "OpenAI GPT-Image-1",
@@ -1074,31 +1074,30 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
   const prompt = buildFalPrompt(shoot, image, references);
   const dims = targetDims(shoot.aspectRatio);
 
-  // Cap to fal.ai max (many models cap at 1440 per side)
+  // Cap dimensions for flux/dev fallback (many models cap at 1440 per side)
   const maxSide = 1440;
   const scale = Math.min(maxSide / dims.width, maxSide / dims.height, 1);
   const imageWidth = Math.floor(dims.width * scale / 8) * 8;
   const imageHeight = Math.floor(dims.height * scale / 8) * 8;
 
-  // For edit models, attach the primary identity reference as input image
-  const primaryIdentity = references.find((r) => r.purpose === "identity");
-  const inputImageDataUrl = primaryIdentity
-    ? `data:${primaryIdentity.contentType};base64,${primaryIdentity.buffer.toString("base64")}`
-    : null;
+  // Build image_urls: identity images first, then inspiration/custom as style reference
+  const identityRefs = references.filter((r) => r.purpose === "identity");
+  const otherRefs = references.filter((r) => r.purpose !== "identity");
+  const refsToUse = identityRefs.length ? identityRefs : otherRefs;
+  const imageUrls = refsToUse.map((r) => `data:${r.contentType};base64,${r.buffer.toString("base64")}`);
 
-  // kontext requires image_url (edit model); fall back to flux/dev for text-to-image slots
-  const isKontext = modelId.includes("kontext");
-  const useKontext = isKontext && Boolean(inputImageDataUrl);
-  const effectiveModelId = useKontext ? modelId : "fal-ai/flux/dev";
+  // gpt-image-2/edit requires at least one input image; fall back to flux/dev only when none available
+  const isGptEdit = modelId.includes("gpt-image-2/edit");
+  const useGptEdit = isGptEdit && imageUrls.length > 0;
+  const effectiveModelId = useGptEdit ? modelId : "fal-ai/flux/dev";
 
-  const input = useKontext ? {
+  const input = useGptEdit ? {
     prompt,
-    image_url: inputImageDataUrl,
-    aspect_ratio: kontextAspectRatio(shoot.aspectRatio),
-    guidance_scale: 3.5,
-    num_images: 1,
+    image_urls: imageUrls,
+    image_size: gptImage2Size(shoot.aspectRatio),
+    quality: "high",
     output_format: "png",
-    safety_tolerance: "2"
+    sync_mode: true
   } : {
     prompt,
     image_size: { width: imageWidth, height: imageHeight },
@@ -1378,14 +1377,22 @@ function geminiApiModelName(model) {
 
 function falApiModelName(model) {
   const value = String(model || "");
-  return value.startsWith("fal-ai/") || value.startsWith("fal/") ? value : null;
+  if (value.startsWith("fal-ai/") || value.startsWith("fal/")) return value;
+  if (value === "openai/gpt-image-2/edit") return value;
+  return null;
 }
 
-function kontextAspectRatio(aspectRatio) {
-  const valid = new Set(["21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"]);
-  if (valid.has(aspectRatio)) return aspectRatio;
-  const map = { "4:5": "3:4", "5:4": "4:3", "2:3": "2:3" };
-  return map[aspectRatio] || "3:4";
+function gptImage2Size(aspectRatio) {
+  const map = {
+    "3:4": "portrait_4_3",
+    "4:5": "portrait_4_3",
+    "2:3": "portrait_4_3",
+    "9:16": "portrait_16_9",
+    "1:1": "square_hd",
+    "16:9": "landscape_16_9",
+    "4:3": "landscape_4_3"
+  };
+  return map[aspectRatio] || "portrait_4_3";
 }
 
 function falStatus() {

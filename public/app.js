@@ -19,7 +19,7 @@ const state = {
 let supabaseClient = null;
 
 const TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"];
-const FAL_MODEL_PRIMARY = "fal-ai/flux-pro/kontext";
+const FAL_MODEL_PRIMARY = "openai/gpt-image-2/edit";
 const FAL_MODEL_SECONDARY = "fal-ai/flux/dev";
 const DEFAULT_IMAGE_MODEL = FAL_MODEL_PRIMARY;
 const SECONDARY_IMAGE_MODEL = FAL_MODEL_SECONDARY;
