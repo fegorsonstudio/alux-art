@@ -7,6 +7,9 @@
     "dev": "node server.js",
     "start": "node server.js"
   },
+  "dependencies": {
+    "@fal-ai/client": "^1.5.0"
+  },
   "engines": {
     "node": ">=18"
   }

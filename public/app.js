@@ -13,19 +13,21 @@ const state = {
   quote: { text: "Luxury is becoming the best version of yourself.", attribution: "Alux Art" },
   currentShoot: null,
   admin: null,
-  toastTimer: null
+  toastTimer: null,
+  realtimeChannel: null
 };
 let supabaseClient = null;
 
 const TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"];
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-1.5";
-const SECONDARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
-const TERTIARY_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
+const FAL_MODEL_PRIMARY = "fal-ai/nano-banana-2/edit";
+const FAL_MODEL_SECONDARY = "openai/gpt-image-2/edit";
+const DEFAULT_IMAGE_MODEL = FAL_MODEL_PRIMARY;
+const SECONDARY_IMAGE_MODEL = FAL_MODEL_SECONDARY;
 const MODELS = [
-  DEFAULT_IMAGE_MODEL,
-  SECONDARY_IMAGE_MODEL,
-  TERTIARY_IMAGE_MODEL,
-  "google/imagen-4",
+  FAL_MODEL_PRIMARY,
+  FAL_MODEL_SECONDARY,
+  "fal-ai/flux-pro/v1.1",
+  "fal-ai/flux/dev",
   "future/custom-model-slot"
 ];
 
@@ -195,6 +197,10 @@ async function init() {
     ]);
     state.savedIdentityImages = library.images || [];
     state.shoots = shoots.shoots || [];
+    // Auto-preload saved identity images if zone is empty
+    if (!state.identityImages.length && state.savedIdentityImages.length) {
+      state.identityImages = state.savedIdentityImages.map((img) => ({ ...img }));
+    }
   }
   render();
 }
@@ -212,13 +218,12 @@ function captureSupabaseSession() {
 
 function render() {
   const userInitial = escapeHtml((state.user?.name || state.user?.email || "?").trim()[0] || "?");
-  const userEmail = escapeHtml(state.user?.email || "");
   const currency = escapeHtml(state.currency || "NGN");
   document.body.innerHTML = `<div class="app-shell">
     <header class="topbar">
       <div class="brand">
         <div class="mark"><img src="/assets/alux-art-logo.png" alt="Alux Art logo" width="42" height="42" decoding="async" /></div>
-        <div><h1>Alux Art</h1><span>AI Photoshoot Orchestration Platform</span></div>
+        <div><h1>Alux Art</h1><span>AI Photoshoot Studio</span></div>
       </div>
       <nav class="nav-actions">
         ${state.user ? `
@@ -228,7 +233,7 @@ function render() {
           <button class="btn small" id="logout">Sign out</button>
         ` : ""}
       </nav>
-      ${state.user ? `<div class="sidebar-user"><div class="avatar">${userInitial}</div><span>${userEmail}</span></div>` : ""}
+      ${state.user ? `<div class="sidebar-user"><div class="avatar">${userInitial}</div></div>` : ""}
     </header>
     <main id="view"></main>
   </div>`;
@@ -249,6 +254,8 @@ function render() {
     localStorage.removeItem("alux_supabase_refresh");
     state.user = null;
     state.currentShoot = null;
+    state.identityImages = [];
+    state.savedIdentityImages = [];
     history.replaceState(null, "", location.pathname);
     render();
   });
@@ -261,32 +268,44 @@ function render() {
 }
 
 function renderHero() {
-  const adminEmail = escapeHtml(state.config.adminEmail || "");
+  const devMode = !state.config?.supabase?.enabled;
+  const adminEmail = escapeHtml(state.config?.adminEmail || "");
   $("#view").innerHTML = `<section class="hero">
     <div class="hero-copy">
       <img class="hero-logo" src="/assets/alux-art-logo.png" alt="Alux Art logo" width="150" height="150" decoding="async" fetchpriority="high" />
       <h2>Alux Art</h2>
       <p>A zero-prompt virtual photo studio. Upload identity and inspiration images, choose a quote, and the orchestration pipeline produces a 10-image professional shoot with 4K downloads.</p>
       <div class="hero-grid">
-        <div class="feature-tile"><strong>Identity Lock-In</strong><span>Minimum 3 identity references create a reusable subject profile.</span></div>
-        <div class="feature-tile"><strong>Agent Pipeline</strong><span>Vision analysis, character sheet, shoot brief, model routing, and quote composition.</span></div>
-        <div class="feature-tile"><strong>4K Delivery</strong><span>Each completed image exposes signed-style 4K downloads and a ZIP package.</span></div>
+        <div class="feature-tile"><strong>1. Identity Lock-In</strong></div>
+        <div class="feature-tile"><strong>2. Agentic Pipeline</strong></div>
+        <div class="feature-tile"><strong>3. 4K Delivery</strong></div>
       </div>
     </div>
     <form class="auth-panel" id="loginForm">
-      <h3>Continue with Google</h3>
-      <p class="muted">${state.config.supabase?.enabled ? "Production mode uses Supabase Google OAuth. Only Google sign-in is available." : `Local development uses your Google email as a simulated OAuth identity. Use ${adminEmail} for admin access.`}</p>
-      <div class="field">
-        <label>Google email</label>
-        <input class="input" type="email" name="email" value="${adminEmail}" required />
-      </div>
-      <div class="field">
-        <label>Name</label>
-        <input class="input" name="name" value="Fegorson Photography" required />
-      </div>
-      <button class="btn primary" type="submit">Sign in with Google</button>
+      <h3>Get started</h3>
+      ${devMode ? `
+        <p class="muted" style="margin:0 0 16px;font-size:13px;">Local dev mode — enter your Google email to simulate OAuth.</p>
+        <div class="field">
+          <label>Google email</label>
+          <input class="input" type="email" name="email" value="${adminEmail}" required />
+        </div>
+        <div class="field">
+          <label>Name</label>
+          <input class="input" name="name" value="Fegorson Photography" required />
+        </div>
+      ` : ""}
+      <button class="btn primary google-btn" type="submit">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908C16.658 14.126 17.64 11.818 17.64 9.205z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Sign up with Google
+      </button>
     </form>
   </section>`;
+
   $("#loginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     try {
@@ -297,10 +316,7 @@ function renderHero() {
           provider: "google",
           options: {
             redirectTo: `${location.origin}/`,
-            queryParams: {
-              login_hint: String(form.get("email") || ""),
-              prompt: "select_account"
-            }
+            queryParams: { prompt: "select_account" }
           }
         });
         if (error) throw error;
@@ -308,20 +324,19 @@ function renderHero() {
         return;
       }
       const auth = await request("/api/auth/google", { method: "POST", body: { email: form.get("email"), name: form.get("name") } });
-      if (auth.url) {
-        location.href = auth.url;
-        return;
-      }
-      const { user } = auth;
-      state.user = user;
-      state.currency = user.currency;
+      if (auth.url) { location.href = auth.url; return; }
+      state.user = auth.user;
+      state.currency = auth.user.currency;
       const [library, shoots] = await Promise.all([
         request("/api/identity-library"),
         request("/api/shoots")
       ]);
       state.savedIdentityImages = library.images || [];
       state.shoots = shoots.shoots || [];
-      toast(`Signed in as ${user.email}`);
+      if (!state.identityImages.length && state.savedIdentityImages.length) {
+        state.identityImages = state.savedIdentityImages.map((img) => ({ ...img }));
+      }
+      toast(`Signed in as ${auth.user.email}`);
       render();
     } catch (err) {
       toast(err.message || "Could not start Google sign-in.");
@@ -336,13 +351,13 @@ function renderWorkspace() {
     </section>
     <section class="workspace">
       <div class="main-stack">
-      ${panel("Identity Lock-In", "Upload at least 3 identity images. The app creates a locked profile for the shoot.", identityUploader())}
-      ${panel("Inspiration Upload", "Add editorial references, campaign images, mood boards, or lighting examples.", inspirationUploader())}
-      ${advancedPanel()}
-      ${panel("Quote", "Generate an AI quote from the mood, or write a custom one.", quoteEditor())}
-      ${panel("Summary", "Review your shoot before generation.", summary())}
-      ${panel("Recent Shoots", "Open a previous shoot to view generated images and downloads.", recentShoots())}
-      <section id="galleryHost">${state.currentShoot ? gallery(state.currentShoot) : ""}</section>
+        ${panel("1. Identity Lock-In", "Upload your identity photos. The pipeline locks your facial profile for every shot.", identityUploader())}
+        ${panel("Inspiration Upload", "Add editorial references, mood boards, or lighting examples.", inspirationUploader())}
+        ${advancedPanel()}
+        ${panel("Quote", "Generate an AI quote from the mood, or write a custom one.", quoteEditor())}
+        ${panel("Shoot Summary", "", summary())}
+        ${panel("Recent Shoots", "Open a previous shoot to view generated images and downloads.", recentShoots())}
+        <section id="galleryHost">${state.currentShoot ? gallery(state.currentShoot) : ""}</section>
       </div>
       <aside class="side-stack">
         ${panel("Quick Status", "", quickStatus())}
@@ -360,23 +375,47 @@ function panel(title, subtitle, body) {
 }
 
 function identityUploader() {
-  return `<div class="chips"><span class="chip ${state.identityImages.length >= 3 ? "ok" : "warn"}">${state.identityImages.length}/3 selected</span><span class="chip">${state.savedIdentityImages.length} saved</span><span class="chip">Reusable identity library</span><span class="chip">Face geometry</span></div>
-  <div class="upload-grid" id="identityGrid">${uploadTiles("identity", state.identityImages, 3)}</div>
-  <div class="library-head">
-    <div><strong>Saved Identity Uploads</strong><p class="muted">Reuse old identity photos for another shoot, or remove ones you do not want kept.</p></div>
-    <button class="btn small" id="useAllSaved" ${state.savedIdentityImages.length ? "" : "disabled"}>Use saved</button>
+  const images = state.identityImages;
+  const hasEnough = images.length >= 3;
+  return `<div class="chips" style="margin-bottom:12px">
+    <span class="chip ${hasEnough ? "ok" : "warn"}">${images.length}/3 minimum</span>
+    ${images.length ? `<span class="chip">${images.length} image${images.length !== 1 ? "s" : ""} loaded</span>` : ""}
   </div>
-  <div class="saved-grid">${savedIdentityTiles()}</div>`;
+  <label class="identity-zone ${images.length ? "has-images" : ""}" id="identityZone">
+    ${images.length ? `<div class="identity-thumbs-grid">${images.map((item, i) => identityThumbCard(item, i)).join("")}</div>` : ""}
+    <div class="drop-zone-hint">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>${images.length ? "Click or drop to add more" : "Drag & drop or click to upload"}</span>
+      <span class="hint-sub">You can upload multiple images at once.</span>
+    </div>
+    <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-kind="identity">
+  </label>
+  <div class="identity-zone-footer">
+    <button class="btn small" id="clearIdentity" type="button" ${images.length ? "" : "disabled"}>Clear identity</button>
+  </div>`;
+}
+
+function identityThumbCard(item, index) {
+  const dataUrl = safeUrl(item.dataUrl);
+  const progress = safePercent(item.uploadProgress ?? 100);
+  const isUploading = item.uploadProgress !== undefined && item.uploadProgress < 100;
+  return `<div class="id-thumb" data-upload-id="${escapeHtml(item.id || "")}">
+    ${dataUrl && /^data:image/i.test(item.dataUrl || "")
+      ? `<img src="${dataUrl}" alt="${escapeHtml(item.name)}">`
+      : `<div class="id-thumb-placeholder">${escapeHtml((item.name || "?").slice(0, 6))}</div>`}
+    ${isUploading ? `<div class="id-thumb-progress"><div class="id-thumb-bar" style="width:${progress}%"></div></div>` : ""}
+    <button class="id-thumb-x remove-upload" data-kind="identity" data-index="${index}" type="button" title="Remove">×</button>
+  </div>`;
 }
 
 function inspirationUploader() {
-  return `<div class="chips"><span class="chip ${state.inspirationImages.length >= 1 ? "ok" : "warn"}">${state.inspirationImages.length}/1 required</span><span class="chip">Lighting</span><span class="chip">Palette</span><span class="chip">Pose</span><span class="chip">Scene</span></div>
+  return `<div class="chips"><span class="chip ${state.inspirationImages.length >= 1 ? "ok" : "warn"}">${state.inspirationImages.length}/1 required</span><span class="chip">Lighting</span><span class="chip">Palette</span><span class="chip">Pose</span></div>
   <div class="upload-grid" id="inspirationGrid">${uploadTiles("inspiration", state.inspirationImages, 3)}</div>`;
 }
 
 function advancedPanel() {
   if (state.mode !== "advanced") return "";
-  return panel("Advanced References", "Upload references, name them, and add notes so the AI knows exactly how to use each one.", `<div class="chips">${TAGS.map((tag) => `<span class="chip">${tag}</span>`).join("")}</div><div class="upload-grid tagged-grid">${uploadTiles("tagged", state.taggedReferences, 6)}</div>`);
+  return panel("Advanced References", "Upload references and tag them so the AI knows exactly how to use each one.", `<div class="chips">${TAGS.map((tag) => `<span class="chip">${tag}</span>`).join("")}</div><div class="upload-grid tagged-grid">${uploadTiles("tagged", state.taggedReferences, 6)}</div>`);
 }
 
 function uploadTiles(kind, list, minimum) {
@@ -432,27 +471,6 @@ function customReferenceControls(item, index, kind) {
   </div>`;
 }
 
-function savedIdentityTiles() {
-  if (!state.savedIdentityImages.length) {
-    return `<div class="empty-library">No saved identity uploads yet. Upload identity images above and they will be saved here.</div>`;
-  }
-  return state.savedIdentityImages.map((item) => {
-    const selected = state.identityImages.some((image) => image.id === item.id);
-    const itemId = escapeHtml(item.id);
-    return `<article class="saved-card">
-      <img class="thumb" src="${safeUrl(item.dataUrl)}" alt="${escapeHtml(item.name)}">
-      <div class="saved-card-body">
-        <strong>${escapeHtml(item.name)}</strong>
-        <span class="muted">${size(item.size)} - saved ${formatDate(item.createdAt)}</span>
-        <div class="tag-row">
-          <button class="btn small reuse-identity" data-id="${itemId}" ${selected ? "disabled" : ""}>${selected ? "Selected" : "Reuse"}</button>
-          <button class="btn small remove-saved-identity" data-id="${itemId}">Remove saved</button>
-        </div>
-      </div>
-    </article>`;
-  }).join("");
-}
-
 function quoteEditor() {
   return `<div class="field">
     <label>Quote text</label>
@@ -466,15 +484,16 @@ function quoteEditor() {
 }
 
 function controls() {
-  return `<div class="controls-grid"><div class="field">
-    <label>Mode</label>
-    <div class="segmented"><button class="${state.mode === "fast" ? "active" : ""}" data-mode="fast">Fast</button><button class="${state.mode === "advanced" ? "active" : ""}" data-mode="advanced">Advanced</button></div>
-  </div>
-  <div class="field">
-    <label>Aspect ratio</label>
-    <select class="select" id="aspectRatio">${Object.entries(state.config.aspects).map(([key, value]) => `<option value="${escapeHtml(key)}" ${state.aspectRatio === key ? "selected" : ""}>${escapeHtml(value.label)} - ${safeNumber(value.width)}x${safeNumber(value.height)}</option>`).join("")}</select>
-  </div>
-  <div class="field action-field"><label>&nbsp;</label><button class="btn primary" id="createShoot" ${ready() ? "" : "disabled"}>${state.user.role === "admin" ? "Start Admin Test Shoot" : "Generate & Pay"}</button></div></div>`;
+  return `<div class="controls-grid">
+    <div class="field">
+      <label>Mode</label>
+      <div class="segmented"><button class="${state.mode === "fast" ? "active" : ""}" data-mode="fast">Fast</button><button class="${state.mode === "advanced" ? "active" : ""}" data-mode="advanced">Advanced</button></div>
+    </div>
+    <div class="field">
+      <label>Aspect ratio</label>
+      <select class="select" id="aspectRatio">${Object.entries(state.config.aspects).map(([key, value]) => `<option value="${escapeHtml(key)}" ${state.aspectRatio === key ? "selected" : ""}>${escapeHtml(value.label)} - ${safeNumber(value.width)}x${safeNumber(value.height)}</option>`).join("")}</select>
+    </div>
+  </div>`;
 }
 
 function quickStatus() {
@@ -503,18 +522,25 @@ function recentShoots() {
 function summary() {
   const primary = state.currency === "NGN" ? money(state.pricing.ngn, "NGN") : money(state.pricing.usd, "USD");
   const secondary = state.currency === "NGN" ? money(state.pricing.usd, "USD") : money(state.pricing.ngn, "NGN");
-  const provider = state.config.openai?.enabled ? `OpenAI ${state.config.openai.model}` : "Local mock";
+  const isAdminUser = state.user?.role === "admin";
+  const canGenerate = ready() || isAdminUser;
   return `<div class="summary-list">
     <div class="summary-row"><span>Identity images</span><strong>${state.identityImages.length}</strong></div>
     <div class="summary-row"><span>Inspiration images</span><strong>${state.inspirationImages.length}</strong></div>
     <div class="summary-row"><span>Tagged overrides</span><strong>${state.taggedReferences.length}</strong></div>
     <div class="summary-row"><span>Aspect ratio</span><strong>${escapeHtml(state.aspectRatio)}</strong></div>
     <div class="summary-row"><span>Output</span><strong>10 images</strong></div>
-    <div class="summary-row"><span>Image provider</span><strong>${escapeHtml(provider)}</strong></div>
+    <div class="summary-row"><span>Image provider</span><strong>fal.ai</strong></div>
     <div class="summary-row"><span>Download</span><strong>True 4K PNG + ZIP</strong></div>
   </div>
-  <div class="price"><div><span class="muted">Shoot price</span><strong>${primary}</strong><div class="muted">${secondary} secondary</div></div><span class="chip ok">Paystack</span></div>
-  <p class="muted">${ready() ? "Ready to start. Gallery progress will stream in real time." : "Complete identity and inspiration uploads to unlock generation."}</p>`;
+  <div class="price">
+    <div><span class="muted">Shoot price</span><strong>${primary}</strong><div class="muted">${secondary} secondary</div></div>
+    <span class="chip ok">Paystack</span>
+  </div>
+  <p class="muted">${ready() ? "Ready to start. Gallery progress will stream in real time." : "Complete identity and inspiration uploads to unlock generation."}</p>
+  <button class="btn primary summary-pay-btn" id="createShoot" ${canGenerate ? "" : "disabled"}>
+    ${isAdminUser ? "Start Admin Test Shoot" : "Pay and generate"}
+  </button>`;
 }
 
 function ready() {
@@ -527,12 +553,40 @@ function bindWorkspace() {
     renderWorkspace();
   }));
   $("#aspectRatio")?.addEventListener("change", (e) => { state.aspectRatio = e.target.value; renderWorkspace(); });
+
+  // Identity zone: click/drop on the label triggers the hidden file input
   document.querySelectorAll("input[type=file]").forEach((input) => input.addEventListener("change", readFiles));
-  document.querySelectorAll(".remove-upload").forEach((btn) => btn.addEventListener("click", () => {
+
+  // Drag-and-drop on identity zone
+  const identityZone = $("#identityZone");
+  if (identityZone) {
+    identityZone.addEventListener("dragover", (e) => { e.preventDefault(); identityZone.classList.add("drag-over"); });
+    identityZone.addEventListener("dragleave", () => identityZone.classList.remove("drag-over"));
+    identityZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      identityZone.classList.remove("drag-over");
+      const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
+      if (!files.length) return;
+      const fakeEvent = { target: { dataset: { kind: "identity" }, files, value: "" } };
+      readFiles(fakeEvent);
+    });
+  }
+
+  // Remove buttons (identity thumbnails and inspiration tiles)
+  document.querySelectorAll(".remove-upload").forEach((btn) => btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     const list = listFor(btn.dataset.kind);
     list.splice(Number(btn.dataset.index), 1);
     renderWorkspace();
   }));
+
+  // Clear identity button
+  $("#clearIdentity")?.addEventListener("click", () => {
+    state.identityImages = [];
+    renderWorkspace();
+  });
+
   document.querySelectorAll(".tag-select").forEach((select) => select.addEventListener("change", () => {
     state.taggedReferences[Number(select.dataset.index)].tag = select.value;
   }));
@@ -542,27 +596,6 @@ function bindWorkspace() {
   document.querySelectorAll(".custom-ref-note").forEach((textarea) => textarea.addEventListener("input", () => {
     state.taggedReferences[Number(textarea.dataset.index)].note = textarea.value;
   }));
-  document.querySelectorAll(".reuse-identity").forEach((btn) => btn.addEventListener("click", () => {
-    const image = state.savedIdentityImages.find((item) => item.id === btn.dataset.id);
-    if (image && !state.identityImages.some((item) => item.id === image.id)) {
-      state.identityImages.push({ ...image });
-      renderWorkspace();
-    }
-  }));
-  document.querySelectorAll(".remove-saved-identity").forEach((btn) => btn.addEventListener("click", async () => {
-    if (!confirm("Remove this saved identity upload from your library?")) return;
-      const { images } = await request(`/api/identity-library/${pathPart(btn.dataset.id)}`, { method: "DELETE" });
-    state.savedIdentityImages = images || [];
-    state.identityImages = state.identityImages.filter((image) => image.id !== btn.dataset.id);
-    renderWorkspace();
-    toast("Saved identity upload removed.");
-  }));
-  $("#useAllSaved")?.addEventListener("click", () => {
-    state.savedIdentityImages.forEach((image) => {
-      if (!state.identityImages.some((item) => item.id === image.id)) state.identityImages.push({ ...image });
-    });
-    renderWorkspace();
-  });
   $("#quoteText")?.addEventListener("input", (e) => { state.quote.text = e.target.value; });
   $("#quoteAttribution")?.addEventListener("input", (e) => { state.quote.attribution = e.target.value; });
   $("#generateQuote")?.addEventListener("click", () => {
@@ -576,7 +609,7 @@ function bindWorkspace() {
     renderWorkspace();
   });
   document.querySelectorAll(".open-shoot").forEach((btn) => btn.addEventListener("click", async () => {
-      const { shoot } = await request(`/api/shoots/${pathPart(btn.dataset.id)}`);
+    const { shoot } = await request(`/api/shoots/${pathPart(btn.dataset.id)}`);
     state.currentShoot = shoot;
     $("#galleryHost").innerHTML = gallery(shoot);
     bindGallery();
@@ -596,7 +629,7 @@ async function readFiles(event) {
   const kind = event.target.dataset.kind;
   const list = listFor(kind);
   const files = Array.from(event.target.files || []);
-  event.target.value = "";
+  if (event.target.value !== undefined) event.target.value = "";
   if (!files.length) return;
   const uploaded = [];
   toast(`Loading ${files.length} ${files.length === 1 ? "image" : "images"}...`);
@@ -699,9 +732,16 @@ function readImageFile(file, onProgress) {
 }
 
 function updateUploadCard(image) {
+  const kind = image.uploadKind || "identity";
+  if (kind === "identity") {
+    const card = document.querySelector(`[data-upload-id="${image.id}"]`);
+    if (!card) return;
+    const index = state.identityImages.findIndex((item) => item.id === image.id);
+    card.outerHTML = identityThumbCard(image, Math.max(0, index));
+    return;
+  }
   const card = document.querySelector(`[data-upload-id="${image.id}"]`);
   if (!card) return;
-  const kind = image.uploadKind || "identity";
   const index = listFor(kind).findIndex((item) => item.id === image.id);
   card.outerHTML = uploadTileShell(image, kind, Math.max(0, index));
 }
@@ -728,17 +768,18 @@ async function createShoot() {
     renderWorkspace();
     $("#galleryHost")?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (state.user?.role === "admin") {
-      connectEvents(shoot.id);
+      connectShootUpdates(shoot.id);
       toast("Admin test shoot queued. Generation progress is streaming.");
       return;
     }
+    // Paystack payment gate
     const payment = await request(`/api/shoots/${pathPart(shoot.id)}/pay`, { method: "POST" });
     if (payment.authorization_url) {
       toast("Opening secure Paystack checkout.");
       location.href = payment.authorization_url;
       return;
     }
-    connectEvents(shoot.id);
+    connectShootUpdates(shoot.id);
     toast("Shoot queued. Generation progress is streaming.");
   } catch (err) {
     toast(err.message);
@@ -761,10 +802,7 @@ async function stageReferenceList(purpose, list) {
   for (const local of pending) {
     const { saved } = await request("/api/reference-uploads", {
       method: "POST",
-      body: {
-        purpose,
-        images: [stripImage(local, true)]
-      }
+      body: { purpose, images: [stripImage(local, true)] }
     });
     const staged = (saved || [])[0];
     if (!staged) throw new Error(`Could not save ${local.name || "reference image"}`);
@@ -809,32 +847,75 @@ function stripImage(img, includeData = false) {
   };
 }
 
+// Supabase Realtime subscription with SSE fallback
+function connectShootUpdates(shootId) {
+  const client = getSupabaseClient();
+  if (client) {
+    // Unsubscribe any existing channel
+    if (state.realtimeChannel) {
+      client.removeChannel(state.realtimeChannel);
+      state.realtimeChannel = null;
+    }
+    const channel = client
+      .channel(`shoot-events-${shootId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "generation_events",
+        filter: `shoot_id=eq.${shootId}`
+      }, (payload) => {
+        const event = payload.new?.payload;
+        if (event) handleShootEvent(event);
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          toast("Real-time updates connected.");
+        }
+      });
+    state.realtimeChannel = channel;
+    return;
+  }
+  // SSE fallback for local dev
+  connectEvents(shootId);
+}
+
 function connectEvents(shootId) {
   const events = new EventSource(`/api/shoots/${pathPart(shootId)}/events`);
   ["snapshot", "queued", "stage", "slot_update", "slot_complete", "zip_ready", "complete"].forEach((type) => {
     events.addEventListener(type, (event) => {
       const data = JSON.parse(event.data);
-      if (data.shoot) state.currentShoot = data.shoot;
-      if (data.image && state.currentShoot) {
-        const index = state.currentShoot.images.findIndex((img) => img.id === data.image.id);
-        if (index >= 0) state.currentShoot.images[index] = data.image;
-      }
-      if (data.progress && state.currentShoot) state.currentShoot.progress = data.progress;
-      if (data.stage && state.currentShoot) state.currentShoot.pipelineStage = data.stage;
-      if (type === "zip_ready" && state.currentShoot) {
-        state.currentShoot.zipStatus = "READY";
-        state.currentShoot.zipUrl = data.zipUrl;
-        state.currentShoot.zipFileSize = data.zipFileSize;
-      }
-      if (type === "complete") {
-        events.close();
-        state.shoots = [shootSummary(state.currentShoot), ...state.shoots.filter((item) => item.id !== state.currentShoot.id)];
-        toast("Shoot complete. 4K downloads are ready.");
-      }
-      $("#galleryHost").innerHTML = gallery(state.currentShoot);
-      bindGallery();
+      handleShootEvent({ ...data, type });
+      if (type === "complete") events.close();
     });
   });
+}
+
+function handleShootEvent(event) {
+  if (event.shoot) state.currentShoot = event.shoot;
+  if (event.image && state.currentShoot) {
+    const index = state.currentShoot.images.findIndex((img) => img.id === event.image.id);
+    if (index >= 0) state.currentShoot.images[index] = event.image;
+  }
+  if (event.progress && state.currentShoot) state.currentShoot.progress = event.progress;
+  if (event.stage && state.currentShoot) state.currentShoot.pipelineStage = event.stage;
+  if (event.type === "zip_ready" && state.currentShoot) {
+    state.currentShoot.zipStatus = "READY";
+    state.currentShoot.zipUrl = event.zipUrl;
+    state.currentShoot.zipFileSize = event.zipFileSize;
+  }
+  if (event.type === "complete") {
+    const client = getSupabaseClient();
+    if (client && state.realtimeChannel) {
+      client.removeChannel(state.realtimeChannel);
+      state.realtimeChannel = null;
+    }
+    state.shoots = [shootSummary(state.currentShoot), ...state.shoots.filter((item) => item.id !== state.currentShoot.id)];
+    toast("Shoot complete. 4K downloads are ready.");
+  }
+  if ($("#galleryHost") && state.currentShoot) {
+    $("#galleryHost").innerHTML = gallery(state.currentShoot);
+    bindGallery();
+  }
 }
 
 function gallery(shoot) {
@@ -881,6 +962,7 @@ function shotCard(image, shootId) {
 }
 
 function providerLabel(provider) {
+  if (provider === "fal") return "fal.ai";
   if (provider === "openai") return "OpenAI";
   if (provider === "google") return "Google";
   if (provider === "local-mock") return "Local fallback";
@@ -897,14 +979,14 @@ function bindGallery() {
       state.currentShoot = shoot;
       $("#galleryHost").innerHTML = gallery(shoot);
       bindGallery();
-      connectEvents(shoot.id);
+      connectShootUpdates(shoot.id);
       toast("Generation resumed.");
     } catch (err) {
       btn.disabled = false;
       toast(err.message || "Could not resume generation.");
     }
   }));
-  $(".preview") && document.querySelectorAll(".preview").forEach((btn) => btn.addEventListener("click", () => {
+  document.querySelectorAll(".preview").forEach((btn) => btn.addEventListener("click", () => {
     const url = normalizeUrl(btn.dataset.url);
     if (!url) return toast("Preview link is unavailable.");
     window.open(url, "_blank", "noopener,noreferrer");
@@ -948,7 +1030,7 @@ async function renderAdmin() {
   const downloadLogs = Array.isArray(data.downloadLogs) ? data.downloadLogs : [];
   $("#view").innerHTML = `<section class="main-stack">
     <div class="panel">
-      <div class="panel-head"><div><h3>Admin Dashboard</h3><p>Only ${escapeHtml(state.config.adminEmail)} can access this route.</p></div></div>
+      <div class="panel-head"><div><h3>Admin Dashboard</h3></div></div>
       <div class="admin-grid">
         <div class="metric"><span>Queue depth</span><strong>${safeNumber(metrics.queueDepth)}</strong></div>
         <div class="metric"><span>Revenue NGN</span><strong>${money(safeNumber(metrics.totalRevenueNGN), "NGN")}</strong></div>
@@ -958,7 +1040,6 @@ async function renderAdmin() {
         <div class="metric"><span>Error rate</span><strong>${safeNumber(metrics.apiErrorRate)}%</strong></div>
         <div class="metric"><span>GPU seconds</span><strong>${safeNumber(metrics.upscalingGpuSeconds)}</strong></div>
         <div class="metric"><span>Downloads</span><strong>${downloadLogs.length}</strong></div>
-        <div class="metric"><span>OpenAI</span><strong>${state.config.openai?.enabled ? "On" : "Off"}</strong></div>
       </div>
     </div>
     <div class="admin-columns">
@@ -987,7 +1068,7 @@ function adminModels(slots) {
   const safeSlots = Array.isArray(slots) ? slots : [];
   return `<section class="panel">
     <h3>Model Selection</h3>
-    <p class="muted">Default: ${DEFAULT_IMAGE_MODEL}. Secondary fallback: ${SECONDARY_IMAGE_MODEL}.</p>
+    <p class="muted">Primary: ${DEFAULT_IMAGE_MODEL}. Fallback: ${SECONDARY_IMAGE_MODEL}.</p>
     <div class="summary-list">${safeSlots.map((slot, index) => `<div class="summary-row"><span>Slot ${safeNumber(slot.slot)}</span><div class="model-row"><select class="select model-slot" data-index="${index}">${modelOptions(slot.model)}</select><select class="select fallback-slot" data-index="${index}">${modelOptions(slot.fallback || SECONDARY_IMAGE_MODEL)}</select></div></div>`).join("")}</div>
     <button class="btn primary" id="saveModels">Save Models</button>
   </section>`;

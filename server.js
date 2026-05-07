@@ -18,9 +18,9 @@ const HTTP_ENABLED = PROCESS_ROLE !== "worker";
 const RUN_WORKER = env("RUN_WORKER");
 const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-1.5";
-const SECONDARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
-const TERTIARY_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
+const DEFAULT_IMAGE_MODEL = "fal-ai/nano-banana-2/edit";
+const SECONDARY_IMAGE_MODEL = "openai/gpt-image-2/edit";
+const TERTIARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
 const OPENAI_IMAGE_QUALITY = env("OPENAI_IMAGE_QUALITY", "low");
 const OPENAI_IMAGE_TIMEOUT_MS = Number(env("OPENAI_IMAGE_TIMEOUT_MS", "120000"));
@@ -30,6 +30,11 @@ const GEMINI_IMAGE_SIZE = env("GEMINI_IMAGE_SIZE", "2K");
 const CONFIGURED_REFERENCE_IMAGE_LIMIT = Number(env("REFERENCE_IMAGE_LIMIT", "6"));
 const REFERENCE_IMAGE_LIMIT = Number.isFinite(CONFIGURED_REFERENCE_IMAGE_LIMIT) ? Math.max(1, CONFIGURED_REFERENCE_IMAGE_LIMIT) : 6;
 const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
+const FAL_KEY = env("FAL_KEY", "75f63914-cfb0-4a7d-a85d-2da7160b6bd7:755e7a1583ad210cfa971c1e0d1cfaf3");
+const FAL_API_BASE = "https://fal.run";
+const FAL_TIMEOUT_MS = Number(env("FAL_TIMEOUT_MS", "180000"));
+const FAL_PRIMARY_MODEL = "fal-ai/nano-banana-2/edit";
+const FAL_SECONDARY_MODEL = "openai/gpt-image-2/edit";
 const LEGACY_MODELS = new Set([
   "OpenAI GPT-Image-1",
   "Google Imagen 3",
@@ -776,7 +781,7 @@ async function generateImageFiles(shoot, image) {
   let previewUrl = `/storage/previews/${image.id}.svg`;
 
   try {
-    if (openAiStatus().enabled || geminiStatus().enabled) {
+    if (FAL_KEY || openAiStatus().enabled || geminiStatus().enabled) {
       const selected = selectedGenerationModel(image);
       const generated = await generateWithProviderFallback(shoot, image, selected);
       full = generated.buffer;
@@ -811,11 +816,13 @@ async function generateImageFiles(shoot, image) {
   image.fileSize = full.length;
   image.previewFileSize = isAiImageProvider(provider) ? full.length : Buffer.byteLength(svgPreview(shoot, image));
   if (image.kind === "quote") {
-    const insta = makePng(1080, 1080, image.slot);
-    const instagramKey = path.join(STORAGE, "instagram", `${image.id}-instagram.png`);
-    await fsp.writeFile(instagramKey, insta);
-    image.instagramUrl = `/storage/instagram/${image.id}-instagram.png`;
-    image.instagramFileSize = insta.length;
+    // Composite the quote text over the AI-generated (or fallback) background
+    const svgComposite = compositeQuoteSvg(full, shoot.quote, dims);
+    const svgBuf = Buffer.from(svgComposite);
+    const instagramKey = path.join(STORAGE, "instagram", `${image.id}-instagram.svg`);
+    await fsp.writeFile(instagramKey, svgBuf);
+    image.instagramUrl = `/storage/instagram/${image.id}-instagram.svg`;
+    image.instagramFileSize = svgBuf.length;
   }
   if (SUPABASE_ENABLED && shoot.ownerId) {
     try {
@@ -835,10 +842,10 @@ async function generateImageFiles(shoot, image) {
       image.previewUrl = await supabaseSignedUrl(image.previewStorageBucket, image.previewStoragePath, 3600, token).catch(() => image.previewUrl);
       image.downloadUrl = await supabaseSignedUrl(image.downloadStorageBucket, image.downloadStoragePath, 3600, token).catch(() => image.downloadUrl);
       if (image.kind === "quote") {
-        const instagramBuffer = await fsp.readFile(path.join(STORAGE, "instagram", `${image.id}-instagram.png`));
+        const instagramBuffer = await fsp.readFile(path.join(STORAGE, "instagram", `${image.id}-instagram.svg`));
         image.instagramStorageBucket = "quote-instagram";
-        image.instagramStoragePath = `${ownerPath}/quote-instagram.png`;
-        await supabaseUpload(image.instagramStorageBucket, image.instagramStoragePath, instagramBuffer, "image/png", token);
+        image.instagramStoragePath = `${ownerPath}/quote-instagram.svg`;
+        await supabaseUpload(image.instagramStorageBucket, image.instagramStoragePath, instagramBuffer, "image/svg+xml", token);
         image.instagramUrl = await supabaseSignedUrl(image.instagramStorageBucket, image.instagramStoragePath, 3600, token).catch(() => image.instagramUrl);
       }
     } catch (err) {
@@ -885,13 +892,14 @@ function openAiImageSize(aspectRatio, model = OPENAI_IMAGE_MODEL) {
 }
 
 function generationStage(model) {
+  if (falApiModelName(model)) return "fal.ai identity-locked generation";
   if (openAiApiModelName(model)) return "OpenAI reference generation";
-  if (geminiApiModelName(model)) return "Google Nano Banana reference generation";
+  if (geminiApiModelName(model)) return "Google image generation";
   return "AI generation";
 }
 
 function isAiImageProvider(provider) {
-  return provider === "openai" || provider === "google";
+  return provider === "fal" || provider === "openai" || provider === "google";
 }
 
 function shotPrompt(shoot, image, references = []) {
@@ -926,6 +934,7 @@ function shotPrompt(shoot, image, references = []) {
 }
 
 async function generateProviderImage(shoot, image, selected = selectedGenerationModel(image)) {
+  if (falApiModelName(selected.model)) return generateFalImage(shoot, image, selected);
   if (openAiApiModelName(selected.model)) return generateOpenAiImage(shoot, image, selected);
   if (geminiApiModelName(selected.model)) return generateGeminiImage(shoot, image, selected);
   throw new Error(`Selected model ${selected.model} is not configured for direct reference generation`);
@@ -1058,6 +1067,182 @@ async function generateGeminiImage(shoot, image, selected = selectedGenerationMo
   };
 }
 
+async function generateFalImage(shoot, image, selected = selectedGenerationModel(image)) {
+  if (!FAL_KEY) throw new Error("FAL_KEY is not set");
+  const modelId = selected.model;
+  const references = await resolveReferenceFiles(shoot, image);
+  const prompt = buildFalPrompt(shoot, image, references);
+  const dims = targetDims(shoot.aspectRatio);
+
+  // Cap to fal.ai max (many models cap at 1440 per side)
+  const maxSide = 1440;
+  const scale = Math.min(maxSide / dims.width, maxSide / dims.height, 1);
+  const imageWidth = Math.floor(dims.width * scale / 8) * 8;
+  const imageHeight = Math.floor(dims.height * scale / 8) * 8;
+
+  // For edit models, attach the primary identity reference as input image
+  const primaryIdentity = references.find((r) => r.purpose === "identity");
+  const inputImageDataUrl = primaryIdentity
+    ? `data:${primaryIdentity.contentType};base64,${primaryIdentity.buffer.toString("base64")}`
+    : null;
+
+  const input = {
+    prompt,
+    image_size: { width: imageWidth, height: imageHeight },
+    num_inference_steps: 30,
+    guidance_scale: 3.5,
+    num_images: 1,
+    enable_safety_checker: false,
+    ...(inputImageDataUrl ? { image_url: inputImageDataUrl } : {})
+  };
+
+  const response = await fetch(`${FAL_API_BASE}/${modelId}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Key ${FAL_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(input),
+    signal: AbortSignal.timeout(FAL_TIMEOUT_MS)
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data.detail || data.error?.message || data.error || data.message || `fal.ai request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  const imageOutput = (data.images || [])[0] || data.image;
+  if (!imageOutput) throw new Error("fal.ai did not return image data");
+
+  let buffer;
+  if (imageOutput.url) {
+    const imgRes = await fetch(imageOutput.url, { signal: AbortSignal.timeout(60000) });
+    if (!imgRes.ok) throw new Error(`fal.ai image download failed (${imgRes.status})`);
+    buffer = Buffer.from(await imgRes.arrayBuffer());
+  } else if (imageOutput.content) {
+    buffer = Buffer.from(imageOutput.content, "base64");
+  }
+
+  if (!buffer?.length) throw new Error("fal.ai did not return image data");
+
+  return {
+    buffer,
+    provider: "fal",
+    configuredModel: selected.model,
+    apiModel: modelId,
+    fallbackModel: selected.fallback,
+    referenceCount: references.length,
+    dimensions: readPngDimensions(buffer) || { width: imageWidth, height: imageHeight }
+  };
+}
+
+function buildFalPrompt(shoot, image, references) {
+  const dims = targetDims(shoot.aspectRatio);
+  const identityRefs = references.filter((r) => r.purpose === "identity");
+  const inspirationRefs = references.filter((r) => r.purpose === "inspiration" || r.purpose === "custom");
+
+  const sections = [
+    "Premium editorial AI photoshoot for Alux Art."
+  ];
+
+  if (identityRefs.length > 0) {
+    sections.push(
+      "IDENTITY PRESERVATION DIRECTIVE [CRITICAL WEIGHT: MAXIMUM]:",
+      "The subject in the attached reference image(s) must be reproduced with exact facial fidelity.",
+      "PRESERVE without alteration: facial bone structure, eye shape, eye color, nose shape, lip contour, skin tone, skin undertone, natural hairline, face proportions.",
+      "APPLY ONLY: new pose variation, lighting direction, wardrobe change, background environment as directed below.",
+      "DO NOT alter or reinterpret: face shape, eye spacing, skin color, any defining facial geometry.",
+      `Reference images provided: ${identityRefs.length} identity reference(s).`
+    );
+  } else {
+    sections.push("No identity reference attached — generate a refined non-identifying editorial subject.");
+  }
+
+  if (inspirationRefs.length > 0) {
+    const directives = inspirationRefs.map((r, i) =>
+      `[${r.tag || "inspiration"} ref ${i + 1}: ${r.customName || r.name}${r.note ? " — " + r.note : ""}]`
+    ).join(", ");
+    sections.push(`STYLING AND CREATIVE BRIEF: Apply styling from these references — ${directives}.`);
+  }
+
+  if (image.kind === "identity") {
+    sections.push(
+      `SHOT ${image.slot}/8 — IDENTITY PORTRAIT:`,
+      "Confident fashion-forward editorial pose. Cinematic three-point lighting. Premium studio or location backdrop.",
+      "Natural human proportions. Luxury campaign quality. No text, no watermarks, no artifacts.",
+      "Camera: medium-format editorial look, shallow depth of field, sharp on face."
+    );
+  } else if (image.kind === "mood") {
+    sections.push(
+      "SHOT 9 — AESTHETIC MOOD IMAGE:",
+      "No person required. Luxury still-life or atmospheric scene. Refined color palette.",
+      "High-end editorial styling. Cinematic lighting. Abstract or environmental composition."
+    );
+  } else {
+    const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
+    sections.push(
+      "SHOT 10 — QUOTE GRAPHIC BACKGROUND:",
+      `Clean atmospheric luxury background for quote overlay. Leave significant negative space in the center/lower area.`,
+      `The following quote will be composited over this image: "${quote}"`,
+      "Do NOT render any text, numbers, or symbols in the image. Background only.",
+      "Mood: aspirational, cinematic, minimal."
+    );
+  }
+
+  if (shoot.mode === "advanced" && shoot.taggedReferences?.length) {
+    const tags = shoot.taggedReferences.map((r) => r.tag).filter(Boolean).join(", ");
+    sections.push(`Advanced creative overrides applied: ${tags}.`);
+  }
+
+  sections.push(
+    `Technical: ${dims.width}x${dims.height} target (${shoot.aspectRatio} aspect ratio).`,
+    "Style: luxury fashion photography, polished studio quality, no watermarks."
+  );
+
+  return sections.join(" ");
+}
+
+function compositeQuoteSvg(pngBuffer, quote, dims) {
+  const base64 = pngBuffer.toString("base64");
+  const w = 1080;
+  const h = 1080;
+  const text = escapeXml(String(quote?.text || "Luxury is becoming the best version of yourself."));
+  const attribution = escapeXml(String(quote?.attribution || "Alux Art").toUpperCase());
+
+  // Word-wrap the quote into lines
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+  const maxCharsPerLine = 32;
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (candidate.length > maxCharsPerLine) {
+      if (line) lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+
+  const fontSize = lines.length > 3 ? 30 : lines.length > 2 ? 36 : 42;
+  const lineHeight = fontSize * 1.4;
+  const blockHeight = lines.length * lineHeight + 50;
+  const blockY = h * 0.68;
+
+  const textLines = lines.map((l, i) =>
+    `<text x="${w / 2}" y="${blockY + 30 + i * lineHeight}" text-anchor="middle" fill="#ffffff" font-size="${fontSize}" font-family="Georgia, 'Times New Roman', serif" font-weight="600" letter-spacing="0.8">${l}</text>`
+  ).join("\n  ");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+  <image href="data:image/png;base64,${base64}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="${blockY - 10}" width="${w}" height="${blockHeight + 20}" fill="rgba(0,0,0,0.62)"/>
+  ${textLines}
+  <text x="${w / 2}" y="${blockY + blockHeight - 4}" text-anchor="middle" fill="rgba(255,255,255,0.65)" font-size="16" font-family="Arial, sans-serif" letter-spacing="3">${attribution}</text>
+</svg>`;
+}
+
 function referencesForShot(shoot, image) {
   const identity = normalizeReferences(shoot.identityImages, "identity");
   const inspiration = normalizeReferences(shoot.inspirationImages, "inspiration");
@@ -1172,6 +1357,15 @@ function geminiApiModelName(model) {
   const value = String(model || "");
   const name = value.startsWith("google/") ? value.slice("google/".length) : value;
   return name.startsWith("gemini-") && name.includes("image") ? name : null;
+}
+
+function falApiModelName(model) {
+  const value = String(model || "");
+  return value.startsWith("fal-ai/") || value.startsWith("fal/") ? value : null;
+}
+
+function falStatus() {
+  return { enabled: Boolean(FAL_KEY), primaryModel: FAL_PRIMARY_MODEL, secondaryModel: FAL_SECONDARY_MODEL };
 }
 
 function geminiAspectRatio(aspectRatio) {
@@ -1587,6 +1781,7 @@ async function api(req, res, url) {
       service: "alux-art",
       time: now(),
       supabase: supabaseStatus(),
+      fal: falStatus(),
       openai: openAiStatus(),
       gemini: geminiStatus(),
       paystack: { configured: Boolean(PAYSTACK_SECRET_KEY) },
@@ -1615,6 +1810,64 @@ async function api(req, res, url) {
     store.sessions.set(sid, user.id);
     await saveDb();
     return send(res, 200, { user: publicUser(user) }, { "set-cookie": `alux_session=${encodeURIComponent(sid)}; Path=/; HttpOnly; SameSite=Lax` });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/webhooks/fal") {
+    // fal.ai async queue webhook — fires when a queued generation job completes
+    const payload = await body(req);
+    const requestId = payload.request_id || payload.requestId;
+    const status = payload.status;
+
+    // Find the shoot slot waiting for this request_id
+    const shoot = store.db.shoots.find((s) => s.images?.some((img) => img.falRequestId === requestId));
+    if (!shoot) return sendText(res, 200, "OK");
+
+    const image = shoot.images.find((img) => img.falRequestId === requestId);
+    if (!image) return sendText(res, 200, "OK");
+
+    if (status === "COMPLETED" && payload.payload?.images?.[0]) {
+      try {
+        const imageOutput = payload.payload.images[0];
+        let buffer;
+        if (imageOutput.url) {
+          const imgRes = await fetch(imageOutput.url, { signal: AbortSignal.timeout(60000) });
+          if (imgRes.ok) buffer = Buffer.from(await imgRes.arrayBuffer());
+        } else if (imageOutput.content) {
+          buffer = Buffer.from(imageOutput.content, "base64");
+        }
+        if (buffer?.length) {
+          const dims = targetDims(shoot.aspectRatio);
+          const fullKey = path.join(STORAGE, "downloads", `${image.id}-4k.png`);
+          await fsp.writeFile(fullKey, buffer);
+          const previewPngKey = path.join(STORAGE, "previews", `${image.id}.png`);
+          await fsp.writeFile(previewPngKey, buffer);
+          image.provider = "fal";
+          image.apiModel = image.falRequestModel || DEFAULT_IMAGE_MODEL;
+          image.previewUrl = `/storage/previews/${image.id}.png`;
+          image.downloadUrl = `/storage/downloads/${image.id}-4k.png`;
+          image.finalDimensions = readPngDimensions(buffer) || dims;
+          image.fileSize = buffer.length;
+          image.status = "COMPLETE";
+          image.stage = "Ready";
+          if (image.kind === "quote") {
+            const svgBuf = Buffer.from(compositeQuoteSvg(buffer, shoot.quote, dims));
+            await fsp.writeFile(path.join(STORAGE, "instagram", `${image.id}-instagram.svg`), svgBuf);
+            image.instagramUrl = `/storage/instagram/${image.id}-instagram.svg`;
+            image.instagramFileSize = svgBuf.length;
+          }
+          queueEvent(shoot.id, { type: "slot_complete", shootId: shoot.id, image, progress: shoot.progress });
+          await saveDb();
+        }
+      } catch (err) {
+        console.error(`fal.ai webhook processing failed for request ${requestId}:`, err);
+      }
+    } else if (status === "FAILED") {
+      image.providerError = payload.error || "fal.ai generation failed";
+      image.status = "FAILED";
+      queueEvent(shoot.id, { type: "slot_update", shootId: shoot.id, image });
+      await saveDb();
+    }
+    return sendText(res, 200, "OK");
   }
 
   if (req.method === "POST" && url.pathname === "/api/webhooks/paystack") {
@@ -1680,7 +1933,7 @@ async function api(req, res, url) {
     }
     return send(res, 200, { user: publicUser(user) });
   }
-  if (req.method === "GET" && url.pathname === "/api/config") return send(res, 200, { aspects: ASPECTS, pricing: store.db.pricing, adminEmail: ADMIN_EMAIL, openai: openAiStatus(), gemini: geminiStatus(), supabase: supabaseStatus() });
+  if (req.method === "GET" && url.pathname === "/api/config") return send(res, 200, { aspects: ASPECTS, pricing: store.db.pricing, adminEmail: ADMIN_EMAIL, fal: falStatus(), openai: openAiStatus(), gemini: geminiStatus(), supabase: supabaseStatus() });
   if (req.method === "GET" && url.pathname === "/api/pricing") {
     if (SUPABASE_ENABLED) {
       const rows = await supabaseRows("pricing_configs", "id=eq.true&select=*", { headers: { prefer: "" } }).catch(() => []);
@@ -2112,7 +2365,8 @@ async function api(req, res, url) {
       }
       await saveDb();
       const instagramUrl = SUPABASE_ENABLED && image.instagramStorageBucket && image.instagramStoragePath ? await supabaseSignedUrl(image.instagramStorageBucket, image.instagramStoragePath).catch(() => image.instagramUrl) : image.instagramUrl;
-      return send(res, 200, { url: instagramUrl, expiresAt: new Date(Date.now() + 3600000).toISOString(), fileSize: image.instagramFileSize, dimensions: { width: 1080, height: 1080 }, filename: `alux-art-${shoot.id}-quote-instagram.png` });
+      const instagramExt = String(instagramUrl || "").endsWith(".svg") ? "svg" : "png";
+      return send(res, 200, { url: instagramUrl, expiresAt: new Date(Date.now() + 3600000).toISOString(), fileSize: image.instagramFileSize, dimensions: { width: 1080, height: 1080 }, filename: `alux-art-${shoot.id}-quote-instagram.${instagramExt}` });
     }
     if (req.method === "GET" && action === "images" && leaf) {
       const image = shoot.images.find((img) => img.id === leaf);
