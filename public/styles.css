@@ -132,6 +132,8 @@ a { color: inherit; }
 .btn.ghost.active-nav { background: var(--panel-2); border-color: var(--line-strong); }
 .btn.icon { width: 42px; padding: 0; }
 .btn.small { min-height: 34px; padding: 0 10px; font-size: 13px; }
+.btn.danger { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color: #ef4444; }
+.btn.danger:hover { background: rgba(239,68,68,.22); }
 .topbar .btn { width: 50px; padding: 0; }
 .topbar .btn span { display: none; }
 .topbar .btn.small { width: 50px; font-size: 11px; }
@@ -574,6 +576,16 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.45; }
   align-items: center;
   gap: 10px;
   margin-top: 12px;
+}
+.save-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--soft);
+  cursor: pointer;
+  user-select: none;
+  margin-right: auto;
 }
 
 /* ── Google button ── */

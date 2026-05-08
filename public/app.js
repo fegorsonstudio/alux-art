@@ -7,6 +7,7 @@ const state = {
   currency: "NGN",
   identityImages: [],
   savedIdentityImages: [],
+  saveIdentity: true,
   shoots: [],
   inspirationImages: [],
   taggedReferences: [],
@@ -19,7 +20,7 @@ const state = {
 let supabaseClient = null;
 
 const TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"];
-const FAL_MODEL_PRIMARY = "openai/gpt-image-2/edit";
+const FAL_MODEL_PRIMARY = "fal-ai/nano-banana-2/edit";
 const FAL_MODEL_SECONDARY = "fal-ai/flux/dev";
 const DEFAULT_IMAGE_MODEL = FAL_MODEL_PRIMARY;
 const SECONDARY_IMAGE_MODEL = FAL_MODEL_SECONDARY;
@@ -391,7 +392,10 @@ function identityUploader() {
     <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-kind="identity">
   </label>
   <div class="identity-zone-footer">
-    <button class="btn small" id="clearIdentity" type="button" ${images.length ? "" : "disabled"}>Clear identity</button>
+    <label class="save-toggle" title="Save photos to your identity library for reuse">
+      <input type="checkbox" id="saveIdentityToggle" ${state.saveIdentity ? "checked" : ""}> Save to library
+    </label>
+    <button class="btn small danger" id="clearIdentity" type="button" ${images.length ? "" : "disabled"}>Clear identity</button>
   </div>`;
 }
 
@@ -581,10 +585,24 @@ function bindWorkspace() {
     renderWorkspace();
   }));
 
-  // Clear identity button
-  $("#clearIdentity")?.addEventListener("click", () => {
+  // Save-to-library toggle
+  $("#saveIdentityToggle")?.addEventListener("change", (e) => {
+    state.saveIdentity = e.target.checked;
+  });
+
+  // Clear identity button — clears session and database library
+  $("#clearIdentity")?.addEventListener("click", async () => {
     state.identityImages = [];
+    state.savedIdentityImages = [];
     renderWorkspace();
+    if (state.user) {
+      try {
+        await request("/api/identity-library", { method: "DELETE" });
+        toast("Identity library cleared.");
+      } catch (err) {
+        toast(`Cleared from session. Database clear failed: ${err.message}`);
+      }
+    }
   });
 
   document.querySelectorAll(".tag-select").forEach((select) => select.addEventListener("change", () => {
@@ -669,26 +687,33 @@ async function readFiles(event) {
     }
   }
   if (uploaded.length) {
-    try {
-      const { images, saved } = await request("/api/identity-library", { method: "POST", body: { images: uploaded } });
-      state.savedIdentityImages = images || [];
-      uploaded.forEach((local) => {
-        const savedMatch = (saved || []).find((item) => item.fingerprint === local.fingerprint);
-        local.uploadProgress = 100;
-        local.uploadStatus = savedMatch ? "Saved" : "Selected";
-        local.uploadError = "";
-        if (!savedMatch) return;
-        const index = state.identityImages.findIndex((item) => item.id === local.id);
-        if (index >= 0) state.identityImages[index] = { ...savedMatch, uploadProgress: 100, uploadStatus: "Saved" };
-      });
-      toast("Identity upload saved for reuse.");
-    } catch (err) {
+    if (state.saveIdentity) {
+      try {
+        const { images, saved } = await request("/api/identity-library", { method: "POST", body: { images: uploaded } });
+        state.savedIdentityImages = images || [];
+        uploaded.forEach((local) => {
+          const savedMatch = (saved || []).find((item) => item.fingerprint === local.fingerprint);
+          local.uploadProgress = 100;
+          local.uploadStatus = savedMatch ? "Saved" : "Selected";
+          local.uploadError = "";
+          if (!savedMatch) return;
+          const index = state.identityImages.findIndex((item) => item.id === local.id);
+          if (index >= 0) state.identityImages[index] = { ...savedMatch, uploadProgress: 100, uploadStatus: "Saved" };
+        });
+        toast("Identity upload saved for reuse.");
+      } catch (err) {
+        uploaded.forEach((image) => {
+          image.uploadProgress = 100;
+          image.uploadStatus = "Selected, save failed";
+          image.uploadError = err.message;
+        });
+        toast(`Identity image selected, but could not save it: ${err.message}`);
+      }
+    } else {
       uploaded.forEach((image) => {
         image.uploadProgress = 100;
-        image.uploadStatus = "Selected, save failed";
-        image.uploadError = err.message;
+        image.uploadStatus = "Selected (not saved)";
       });
-      toast(`Identity image selected, but could not save it: ${err.message}`);
     }
   }
   renderWorkspace();

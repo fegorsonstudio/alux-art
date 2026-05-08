@@ -18,7 +18,7 @@ const HTTP_ENABLED = PROCESS_ROLE !== "worker";
 const RUN_WORKER = env("RUN_WORKER");
 const WORKER_ENABLED = RUN_WORKER === "true" || RUN_WORKER !== "false";
 const ADMIN_EMAIL = env("ADMIN_EMAIL", "fegorsonphotography@gmail.com").toLowerCase();
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2/edit";
+const DEFAULT_IMAGE_MODEL = "fal-ai/nano-banana-2/edit";
 const SECONDARY_IMAGE_MODEL = "openai/gpt-image-2/edit";
 const TERTIARY_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const OPENAI_API_KEY = env("OPENAI_API_KEY");
@@ -33,7 +33,7 @@ const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
 const FAL_KEY = env("FAL_KEY", "75f63914-cfb0-4a7d-a85d-2da7160b6bd7:755e7a1583ad210cfa971c1e0d1cfaf3");
 const FAL_API_BASE = "https://fal.run";
 const FAL_TIMEOUT_MS = Number(env("FAL_TIMEOUT_MS", "180000"));
-const FAL_PRIMARY_MODEL = "openai/gpt-image-2/edit";
+const FAL_PRIMARY_MODEL = "fal-ai/nano-banana-2/edit";
 const FAL_SECONDARY_MODEL = "fal-ai/flux/dev";
 const LEGACY_MODELS = new Set([
   "OpenAI GPT-Image-1",
@@ -1080,60 +1080,61 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
   const imageWidth = Math.floor(dims.width * scale / 8) * 8;
   const imageHeight = Math.floor(dims.height * scale / 8) * 8;
 
-  // Build image_urls: identity images first, then inspiration/custom as style reference
+  // Build image_urls: identity first (face), then inspiration/custom (style/outfit).
+  // Both must be present so the model preserves face AND matches the look.
   const identityRefs = references.filter((r) => r.purpose === "identity");
-  const otherRefs = references.filter((r) => r.purpose !== "identity");
-  const refsToUse = identityRefs.length ? identityRefs : otherRefs;
+  const inspirationRefs = references.filter((r) => r.purpose !== "identity");
+  const refsToUse = identityRefs.length
+    ? [...identityRefs, ...inspirationRefs]  // identity shots: face + style
+    : inspirationRefs;                        // mood/quote shots: style only
 
-  // Use Supabase signed URLs (HTTPS) instead of base64 so fal.ai can download them directly.
-  // Base64 data URLs make the JSON payload huge and some fal.ai models reject them.
+  // Build signed HTTPS URLs — fal.ai downloads them directly (avoids huge base64 payloads)
   const imageUrls = [];
   for (const r of refsToUse) {
     if (r.storageBucket && r.storagePath && SUPABASE_ENABLED) {
       const signed = await supabaseSignedUrl(r.storageBucket, r.storagePath, 7200, "").catch(() => null);
       if (signed) { imageUrls.push(signed); continue; }
     }
-    // Fall back to base64 data URL when no storage path or signing fails
     if (r.buffer) imageUrls.push(`data:${r.contentType};base64,${r.buffer.toString("base64")}`);
   }
 
-  // gpt-image-2/edit requires at least one input image; fall back to flux/dev only when none available
-  const isGptEdit = modelId.includes("gpt-image-2/edit");
-  const useGptEdit = isGptEdit && imageUrls.length > 0;
-  const effectiveModelId = useGptEdit ? modelId : "fal-ai/flux/dev";
+  const isNanoBanana = modelId.includes("nano-banana");
+  const useNanoBanana = isNanoBanana && imageUrls.length > 0;
+  const effectiveModelId = useNanoBanana ? modelId : "fal-ai/flux/dev";
 
-  const input = useGptEdit ? {
-    prompt,
-    image_urls: imageUrls,
-    image_size: gptImage2Size(shoot.aspectRatio),
-    quality: "high",
-    output_format: "png",
-    sync_mode: true
-  } : {
-    prompt,
-    image_size: { width: imageWidth, height: imageHeight },
-    num_inference_steps: 28,
-    guidance_scale: 3.5,
-    num_images: 1,
-    enable_safety_checker: false,
-    sync_mode: true
-  };
-
-  const response = await fetch(`${FAL_API_BASE}/${effectiveModelId}`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Key ${FAL_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(input),
-    signal: AbortSignal.timeout(FAL_TIMEOUT_MS)
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const raw = data.detail || data.error?.message || data.error || data.message || `fal.ai request failed (${response.status})`;
-    const message = Array.isArray(raw) ? raw.map((e) => e.msg || JSON.stringify(e)).join("; ") : String(raw);
-    throw new Error(message);
+  let data;
+  if (useNanoBanana) {
+    data = await falQueueRun(effectiveModelId, {
+      prompt,
+      image_urls: imageUrls,
+      aspect_ratio: shoot.aspectRatio in { "21:9":1,"16:9":1,"3:2":1,"4:3":1,"5:4":1,"1:1":1,"4:5":1,"3:4":1,"2:3":1,"9:16":1 }
+        ? shoot.aspectRatio : "4:5",
+      output_format: "png",
+      resolution: "4K",
+      safety_tolerance: "4",
+      num_images: 1
+    });
+  } else {
+    const fallbackInput = {
+      prompt,
+      image_size: { width: imageWidth, height: imageHeight },
+      num_inference_steps: 28,
+      guidance_scale: 3.5,
+      num_images: 1,
+      enable_safety_checker: false,
+      sync_mode: true
+    };
+    const response = await fetch(`${FAL_API_BASE}/fal-ai/flux/dev`, {
+      method: "POST",
+      headers: { "Authorization": `Key ${FAL_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify(fallbackInput),
+      signal: AbortSignal.timeout(FAL_TIMEOUT_MS)
+    });
+    data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const raw = data.detail || data.error?.message || data.error || data.message || `fal.ai request failed (${response.status})`;
+      throw new Error(Array.isArray(raw) ? raw.map((e) => e.msg || JSON.stringify(e)).join("; ") : String(raw));
+    }
   }
 
   const imageOutput = (data.images || [])[0] || data.image;
@@ -1159,6 +1160,47 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     referenceCount: references.length,
     dimensions: readPngDimensions(buffer) || { width: imageWidth, height: imageHeight }
   };
+}
+
+async function falQueueRun(modelId, input) {
+  // Submit to fal.ai queue
+  const submitRes = await fetch(`https://queue.fal.run/${modelId}`, {
+    method: "POST",
+    headers: { "Authorization": `Key ${FAL_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+    signal: AbortSignal.timeout(30000)
+  });
+  const submitData = await submitRes.json().catch(() => ({}));
+  if (!submitRes.ok) {
+    const raw = submitData.detail || submitData.error?.message || submitData.error || `fal.ai submit failed (${submitRes.status})`;
+    throw new Error(Array.isArray(raw) ? raw.map((e) => e.msg || JSON.stringify(e)).join("; ") : String(raw));
+  }
+  const requestId = submitData.request_id;
+  if (!requestId) throw new Error("fal.ai did not return a request_id");
+
+  // Poll until COMPLETED or timeout
+  const deadline = Date.now() + FAL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const statusRes = await fetch(
+      `https://queue.fal.run/${modelId}/requests/${requestId}/status`,
+      { headers: { "Authorization": `Key ${FAL_KEY}` }, signal: AbortSignal.timeout(15000) }
+    ).catch(() => null);
+    if (!statusRes?.ok) continue;
+    const statusData = await statusRes.json().catch(() => ({}));
+    if (statusData.status === "COMPLETED") {
+      const resultRes = await fetch(`https://queue.fal.run/${modelId}/requests/${requestId}`, {
+        headers: { "Authorization": `Key ${FAL_KEY}` },
+        signal: AbortSignal.timeout(30000)
+      });
+      if (!resultRes.ok) throw new Error(`fal.ai result fetch failed (${resultRes.status})`);
+      return resultRes.json();
+    }
+    if (statusData.status === "FAILED") {
+      throw new Error(`fal.ai generation failed: ${statusData.error || statusData.detail || "unknown error"}`);
+    }
+  }
+  throw new Error(`fal.ai generation timed out after ${Math.round(FAL_TIMEOUT_MS / 1000)}s`);
 }
 
 function buildFalPrompt(shoot, image, references) {
@@ -2301,6 +2343,28 @@ async function api(req, res, url) {
       });
     }
     return send(res, 201, { saved });
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/api/identity-library") {
+    const user = await requireUser(req, res);
+    if (!user) return;
+    if (SUPABASE_ENABLED) {
+      const rows = await supabaseRows("identity_images", `user_id=eq.${encodeURIComponent(user.id)}&select=id,storage_bucket,storage_path`, {
+        token: user.token, headers: { prefer: "" }
+      }).catch(() => []);
+      for (const row of rows || []) {
+        if (row.storage_bucket && row.storage_path) {
+          await supabaseRemove(row.storage_bucket, row.storage_path, user.token).catch(() => {});
+        }
+      }
+      await supabaseRows("identity_images", `user_id=eq.${encodeURIComponent(user.id)}`, {
+        token: user.token, method: "DELETE"
+      }).catch(() => {});
+      return send(res, 200, { cleared: true });
+    }
+    user.identityLibrary = [];
+    await saveDb();
+    return send(res, 200, { cleared: true });
   }
 
   if (req.method === "POST" && url.pathname === "/api/identity-library") {
