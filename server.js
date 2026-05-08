@@ -1069,7 +1069,6 @@ async function generateGeminiImage(shoot, image, selected = selectedGenerationMo
 
 async function generateFalImage(shoot, image, selected = selectedGenerationModel(image)) {
   if (!FAL_KEY) throw new Error("FAL_KEY is not set");
-  const modelId = selected.model;
   const references = await resolveReferenceFiles(shoot, image);
   const prompt = buildFalPrompt(shoot, image, references);
   const dims = targetDims(shoot.aspectRatio);
@@ -1080,13 +1079,18 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
   const imageWidth = Math.floor(dims.width * scale / 8) * 8;
   const imageHeight = Math.floor(dims.height * scale / 8) * 8;
 
-  // Build image_urls: identity first (face), then inspiration/custom (style/outfit).
-  // Both must be present so the model preserves face AND matches the look.
+  // Slots 1-5: openai/gpt-image-2/edit (direct sync, identity refs only — proven to preserve faces)
+  // Slots 6-10: fal-ai/nano-banana-2/edit (queue, identity + inspiration for creative variety)
+  const slot = Number(image.slot) || 1;
+  const useGptImage2 = slot <= 5;
+
   const identityRefs = references.filter((r) => r.purpose === "identity");
   const inspirationRefs = references.filter((r) => r.purpose !== "identity");
-  const refsToUse = identityRefs.length
-    ? [...identityRefs, ...inspirationRefs]  // identity shots: face + style
-    : inspirationRefs;                        // mood/quote shots: style only
+
+  // gpt-image-2: identity refs only (face lock). nano-banana: both for look+style.
+  const refsToUse = useGptImage2
+    ? identityRefs
+    : (identityRefs.length ? [...identityRefs, ...inspirationRefs] : inspirationRefs);
 
   // Build signed HTTPS URLs — fal.ai downloads them directly (avoids huge base64 payloads)
   const imageUrls = [];
@@ -1098,12 +1102,33 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     if (r.buffer) imageUrls.push(`data:${r.contentType};base64,${r.buffer.toString("base64")}`);
   }
 
-  const isNanoBanana = modelId.includes("nano-banana");
-  const useNanoBanana = isNanoBanana && imageUrls.length > 0;
-  const effectiveModelId = useNanoBanana ? modelId : "fal-ai/flux/dev";
-
   let data;
-  if (useNanoBanana) {
+  let effectiveModelId;
+
+  if (useGptImage2 && imageUrls.length > 0) {
+    // Slots 1-5: openai/gpt-image-2/edit via fal.ai (direct sync call — proven face-preserving)
+    effectiveModelId = "openai/gpt-image-2/edit";
+    const response = await fetch(`${FAL_API_BASE}/openai/gpt-image-2/edit`, {
+      method: "POST",
+      headers: { "Authorization": `Key ${FAL_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt,
+        image_urls: imageUrls,
+        image_size: gptImage2Size(shoot.aspectRatio),
+        quality: "high",
+        output_format: "png",
+        sync_mode: true
+      }),
+      signal: AbortSignal.timeout(FAL_TIMEOUT_MS)
+    });
+    data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const raw = data.detail || data.error?.message || data.error || data.message || `fal.ai gpt-image-2 failed (${response.status})`;
+      throw new Error(Array.isArray(raw) ? raw.map((e) => e.msg || JSON.stringify(e)).join("; ") : String(raw));
+    }
+  } else if (!useGptImage2 && imageUrls.length > 0) {
+    // Slots 6-10: fal-ai/nano-banana-2/edit via queue
+    effectiveModelId = "fal-ai/nano-banana-2/edit";
     data = await falQueueRun(effectiveModelId, {
       prompt,
       image_urls: imageUrls,
@@ -1115,19 +1140,20 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
       num_images: 1
     });
   } else {
-    const fallbackInput = {
-      prompt,
-      image_size: { width: imageWidth, height: imageHeight },
-      num_inference_steps: 28,
-      guidance_scale: 3.5,
-      num_images: 1,
-      enable_safety_checker: false,
-      sync_mode: true
-    };
+    // No references: fall back to flux/dev text-to-image
+    effectiveModelId = "fal-ai/flux/dev";
     const response = await fetch(`${FAL_API_BASE}/fal-ai/flux/dev`, {
       method: "POST",
       headers: { "Authorization": `Key ${FAL_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify(fallbackInput),
+      body: JSON.stringify({
+        prompt,
+        image_size: { width: imageWidth, height: imageHeight },
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
+        enable_safety_checker: false,
+        sync_mode: true
+      }),
       signal: AbortSignal.timeout(FAL_TIMEOUT_MS)
     });
     data = await response.json().catch(() => ({}));
