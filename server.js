@@ -1290,18 +1290,29 @@ function normalizeReferences(list, purpose) {
 
 async function resolveReferenceFiles(shoot, image) {
   const files = [];
-  for (const reference of referencesForShot(shoot, image)) {
+  const refs = referencesForShot(shoot, image);
+  for (const reference of refs) {
     try {
       const file = await referenceToFile(reference);
-      if (!file || !isSupportedReferenceImage(file.contentType) || file.buffer.length > 50 * 1024 * 1024) continue;
-      files.push({
-        ...reference,
-        buffer: file.buffer,
-        contentType: canonicalImageType(file.contentType || reference.type)
-      });
+      if (!file) {
+        console.warn(`[refs] ${shoot.id} slot ${image.slot}: no data source for "${reference.name}" (storageBucket=${reference.storageBucket || "none"}, hasDataUrl=${Boolean(reference.dataUrl)})`);
+        continue;
+      }
+      if (!isSupportedReferenceImage(file.contentType)) {
+        console.warn(`[refs] ${shoot.id} slot ${image.slot}: unsupported type ${file.contentType} for "${reference.name}"`);
+        continue;
+      }
+      if (file.buffer.length > 50 * 1024 * 1024) {
+        console.warn(`[refs] ${shoot.id} slot ${image.slot}: file too large (${file.buffer.length} bytes) for "${reference.name}"`);
+        continue;
+      }
+      files.push({ ...reference, buffer: file.buffer, contentType: canonicalImageType(file.contentType || reference.type) });
     } catch (err) {
-      console.warn(`Skipping reference ${reference.name || "image"}: ${err.message}`);
+      console.warn(`[refs] ${shoot.id} slot ${image.slot}: error loading "${reference.name || "image"}": ${err.message}`);
     }
+  }
+  if (refs.length > 0 && files.length === 0) {
+    console.error(`[refs] ${shoot.id} slot ${image.slot} (${image.kind}): ALL ${refs.length} references failed — generation will run without identity images`);
   }
   return files;
 }
@@ -2684,8 +2695,47 @@ async function staticFile(req, res, url) {
   }
 }
 
+async function ensureSupabaseBuckets() {
+  const buckets = [
+    "identity-images",
+    "inspiration-images",
+    "custom-references",
+    "generated-previews",
+    "generated-4k",
+    "quote-instagram",
+    "shoot-zips"
+  ];
+  for (const name of buckets) {
+    try {
+      const check = await fetch(`${SUPABASE_URL}/storage/v1/bucket/${name}`, {
+        headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+      });
+      if (check.ok) continue;
+      if (check.status !== 400 && check.status !== 404) continue;
+      const create = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({ id: name, name, public: false })
+      });
+      if (create.ok) {
+        console.log(`[storage] Created bucket: ${name}`);
+      } else {
+        const text = await create.text().catch(() => "");
+        console.warn(`[storage] Could not create bucket ${name}: ${create.status} ${text.slice(0, 200)}`);
+      }
+    } catch (err) {
+      console.warn(`[storage] Bucket check failed for ${name}: ${err.message}`);
+    }
+  }
+}
+
 async function main() {
   await loadDb();
+  if (SUPABASE_ENABLED) ensureSupabaseBuckets().catch((err) => console.warn("[storage] Bucket setup error:", err.message));
   if (WORKER_ENABLED) startWorkerLoop();
   if (HTTP_ENABLED) {
     const server = http.createServer(async (req, res) => {

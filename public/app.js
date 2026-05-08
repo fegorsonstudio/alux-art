@@ -400,7 +400,7 @@ function identityThumbCard(item, index) {
   const progress = safePercent(item.uploadProgress ?? 100);
   const isUploading = item.uploadProgress !== undefined && item.uploadProgress < 100;
   return `<div class="id-thumb" data-upload-id="${escapeHtml(item.id || "")}">
-    ${dataUrl && /^data:image/i.test(item.dataUrl || "")
+    ${dataUrl
       ? `<img src="${dataUrl}" alt="${escapeHtml(item.name)}">`
       : `<div class="id-thumb-placeholder">${escapeHtml((item.name || "?").slice(0, 6))}</div>`}
     ${isUploading ? `<div class="id-thumb-progress"><div class="id-thumb-bar" style="width:${progress}%"></div></div>` : ""}
@@ -434,7 +434,7 @@ function uploadTileShell(item, kind, index) {
 
 function uploadPreview(item) {
   const dataUrl = safeUrl(item.dataUrl);
-  if (dataUrl && /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(dataUrl)) {
+  if (dataUrl && (/^data:image\//i.test(item.dataUrl || "") || /^https?:\/\//i.test(item.dataUrl || ""))) {
     return `<img class="thumb" src="${dataUrl}" alt="${escapeHtml(item.name)}">`;
   }
   if (dataUrl && item.type && !/^image\/(png|jpe?g|webp|gif)$/i.test(item.type)) {
