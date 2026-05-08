@@ -382,7 +382,7 @@ function identityUploader() {
     <span class="chip ${hasEnough ? "ok" : "warn"}">${images.length}/3 minimum</span>
     ${images.length ? `<span class="chip">${images.length} image${images.length !== 1 ? "s" : ""} loaded</span>` : ""}
   </div>
-  <label class="identity-zone ${images.length ? "has-images" : ""}" id="identityZone">
+  <label class="ref-zone identity-zone ${images.length ? "has-images" : ""}" id="identityZone">
     ${images.length ? `<div class="identity-thumbs-grid">${images.map((item, i) => identityThumbCard(item, i)).join("")}</div>` : ""}
     <div class="drop-zone-hint">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -413,13 +413,73 @@ function identityThumbCard(item, index) {
 }
 
 function inspirationUploader() {
-  return `<div class="chips"><span class="chip ${state.inspirationImages.length >= 1 ? "ok" : "warn"}">${state.inspirationImages.length}/1 required</span><span class="chip">Lighting</span><span class="chip">Palette</span><span class="chip">Pose</span></div>
-  <div class="upload-grid" id="inspirationGrid">${uploadTiles("inspiration", state.inspirationImages, 3)}</div>`;
+  const images = state.inspirationImages;
+  const hasEnough = images.length >= 1;
+  return `<div class="chips" style="margin-bottom:12px">
+    <span class="chip ${hasEnough ? "ok insp-ok" : "warn"}">${images.length}/1 minimum</span>
+    ${images.length ? `<span class="chip">${images.length} image${images.length !== 1 ? "s" : ""} loaded</span>` : ""}
+    <span class="chip">Lighting</span><span class="chip">Palette</span><span class="chip">Pose</span>
+  </div>
+  <label class="ref-zone insp-zone ${images.length ? "has-images" : ""}" id="inspirationZone">
+    ${images.length ? `<div class="ref-thumbs-grid">${images.map((item, i) => refThumbCard(item, i, "inspiration")).join("")}</div>` : ""}
+    <div class="drop-zone-hint">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>${images.length ? "Click or drop to add more" : "Drag & drop or click to upload"}</span>
+      <span class="hint-sub">Lighting, palette, pose and mood references. Multiple images welcome.</span>
+    </div>
+    <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-kind="inspiration">
+  </label>`;
 }
 
 function advancedPanel() {
   if (state.mode !== "advanced") return "";
-  return panel("Advanced References", "Upload references and tag them so the AI knows exactly how to use each one.", `<div class="chips">${TAGS.map((tag) => `<span class="chip">${tag}</span>`).join("")}</div><div class="upload-grid tagged-grid">${uploadTiles("tagged", state.taggedReferences, 6)}</div>`);
+  const refs = state.taggedReferences;
+  const body = `<div class="chips" style="margin-bottom:12px">
+    <span class="chip ${refs.length >= 1 ? "ok adv-ok" : "warn"}">${refs.length} loaded</span>
+    ${TAGS.map((tag) => `<span class="chip">${tag}</span>`).join("")}
+  </div>
+  <label class="ref-zone adv-zone ${refs.length ? "has-images" : ""}" id="advancedZone">
+    ${refs.length ? `<div class="ref-thumbs-grid">${refs.map((item, i) => refThumbCard(item, i, "tagged")).join("")}</div>` : ""}
+    <div class="drop-zone-hint">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>${refs.length ? "Click or drop to add more" : "Drag & drop or click to upload"}</span>
+      <span class="hint-sub">Tag each reference so the AI knows exactly what to copy.</span>
+    </div>
+    <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-kind="tagged">
+  </label>
+  ${refs.length ? `<div class="adv-controls-list">${refs.map((item, i) => advRefControlRow(item, i)).join("")}</div>` : ""}`;
+  return panel("Advanced References", "Upload references and tag them so the AI knows exactly how to use each one.", body);
+}
+
+function refThumbCard(item, index, kind) {
+  const dataUrl = safeUrl(item.dataUrl);
+  const progress = safePercent(item.uploadProgress ?? 100);
+  const isUploading = item.uploadProgress !== undefined && item.uploadProgress < 100;
+  return `<div class="id-thumb" data-upload-id="${escapeHtml(item.id || "")}">
+    ${dataUrl
+      ? `<img src="${dataUrl}" alt="${escapeHtml(item.name)}">`
+      : `<div class="id-thumb-placeholder">${escapeHtml((item.name || "?").slice(0, 6))}</div>`}
+    ${kind === "tagged" && item.tag ? `<span class="ref-thumb-tag">${escapeHtml(item.tag)}</span>` : ""}
+    ${isUploading ? `<div class="id-thumb-progress"><div class="id-thumb-bar" style="width:${progress}%"></div></div>` : ""}
+    <button class="id-thumb-x remove-upload" data-kind="${kind}" data-index="${index}" type="button" title="Remove">×</button>
+  </div>`;
+}
+
+function advRefControlRow(item, index) {
+  const dataUrl = safeUrl(item.dataUrl);
+  return `<div class="adv-ref-row">
+    <div class="adv-ref-mini">
+      ${dataUrl ? `<img src="${dataUrl}" alt="${escapeHtml(item.name)}">` : `<div class="adv-ref-mini-empty">${escapeHtml((item.name || "?").slice(0, 4))}</div>`}
+    </div>
+    <div class="adv-ref-details">
+      <div class="adv-ref-label">${escapeHtml(item.name || "Reference")}</div>
+      <div class="adv-ref-inputs">
+        <select class="select tag-select" data-index="${index}">${TAGS.map((tag) => `<option ${item.tag === tag ? "selected" : ""}>${tag}</option>`).join("")}</select>
+        <input class="input custom-ref-name" data-index="${index}" value="${escapeHtml(item.customName || "")}" placeholder="Custom name tag">
+      </div>
+      <textarea class="custom-ref-note" data-index="${index}" placeholder="Notes for AI — what to copy or avoid.">${escapeHtml(item.note || "")}</textarea>
+    </div>
+  </div>`;
 }
 
 function uploadTiles(kind, list, minimum) {
@@ -561,20 +621,20 @@ function bindWorkspace() {
   // Identity zone: click/drop on the label triggers the hidden file input
   document.querySelectorAll("input[type=file]").forEach((input) => input.addEventListener("change", readFiles));
 
-  // Drag-and-drop on identity zone
-  const identityZone = $("#identityZone");
-  if (identityZone) {
-    identityZone.addEventListener("dragover", (e) => { e.preventDefault(); identityZone.classList.add("drag-over"); });
-    identityZone.addEventListener("dragleave", () => identityZone.classList.remove("drag-over"));
-    identityZone.addEventListener("drop", (e) => {
+  // Drag-and-drop on all upload zones
+  [["identityZone", "identity"], ["inspirationZone", "inspiration"], ["advancedZone", "tagged"]].forEach(([id, kind]) => {
+    const zone = $(`#${id}`);
+    if (!zone) return;
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", (e) => {
       e.preventDefault();
-      identityZone.classList.remove("drag-over");
+      zone.classList.remove("drag-over");
       const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
       if (!files.length) return;
-      const fakeEvent = { target: { dataset: { kind: "identity" }, files, value: "" } };
-      readFiles(fakeEvent);
+      readFiles({ target: { dataset: { kind }, files, value: "" } });
     });
-  }
+  });
 
   // Remove buttons (identity thumbnails and inspiration tiles)
   document.querySelectorAll(".remove-upload").forEach((btn) => btn.addEventListener("click", (e) => {
@@ -758,17 +818,16 @@ function readImageFile(file, onProgress) {
 
 function updateUploadCard(image) {
   const kind = image.uploadKind || "identity";
-  if (kind === "identity") {
-    const card = document.querySelector(`[data-upload-id="${image.id}"]`);
-    if (!card) return;
-    const index = state.identityImages.findIndex((item) => item.id === image.id);
-    card.outerHTML = identityThumbCard(image, Math.max(0, index));
-    return;
-  }
   const card = document.querySelector(`[data-upload-id="${image.id}"]`);
   if (!card) return;
-  const index = listFor(kind).findIndex((item) => item.id === image.id);
-  card.outerHTML = uploadTileShell(image, kind, Math.max(0, index));
+  const index = Math.max(0, listFor(kind).findIndex((item) => item.id === image.id));
+  if (kind === "identity") {
+    card.outerHTML = identityThumbCard(image, index);
+  } else if (kind === "inspiration" || kind === "tagged") {
+    card.outerHTML = refThumbCard(image, index, kind);
+  } else {
+    card.outerHTML = uploadTileShell(image, kind, index);
+  }
 }
 
 async function createShoot() {
