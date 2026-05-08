@@ -1084,7 +1084,18 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
   const identityRefs = references.filter((r) => r.purpose === "identity");
   const otherRefs = references.filter((r) => r.purpose !== "identity");
   const refsToUse = identityRefs.length ? identityRefs : otherRefs;
-  const imageUrls = refsToUse.map((r) => `data:${r.contentType};base64,${r.buffer.toString("base64")}`);
+
+  // Use Supabase signed URLs (HTTPS) instead of base64 so fal.ai can download them directly.
+  // Base64 data URLs make the JSON payload huge and some fal.ai models reject them.
+  const imageUrls = [];
+  for (const r of refsToUse) {
+    if (r.storageBucket && r.storagePath && SUPABASE_ENABLED) {
+      const signed = await supabaseSignedUrl(r.storageBucket, r.storagePath, 7200, "").catch(() => null);
+      if (signed) { imageUrls.push(signed); continue; }
+    }
+    // Fall back to base64 data URL when no storage path or signing fails
+    if (r.buffer) imageUrls.push(`data:${r.contentType};base64,${r.buffer.toString("base64")}`);
+  }
 
   // gpt-image-2/edit requires at least one input image; fall back to flux/dev only when none available
   const isGptEdit = modelId.includes("gpt-image-2/edit");
@@ -1808,6 +1819,15 @@ async function createSupabaseShoot(payload, user) {
   shoot.ownerEmail = user.email;
   shoot.images = shoot.images.map((image) => ({ ...image, id: crypto.randomUUID() }));
   if (isAdmin(user) || payload.adminBypass === true) applyAdminBypass(shoot);
+
+  // Embed reference storage paths into identity_profile so the worker can find them
+  // even if the shoot_references table is unavailable.
+  const embeddedRefs = [
+    ...(payload.identityImages || []).map((img) => ({ storageBucket: img.storageBucket || "", storagePath: img.storagePath || "", type: img.type || "image/jpeg", name: img.name || "identity", purpose: "identity" })),
+    ...(payload.inspirationImages || []).map((img) => ({ storageBucket: img.storageBucket || "", storagePath: img.storagePath || "", type: img.type || "image/jpeg", name: img.name || "inspiration", purpose: "inspiration" }))
+  ].filter((r) => r.storageBucket && r.storagePath);
+  shoot.identityProfile = { ...shoot.identityProfile, refs: embeddedRefs };
+
   const shootRow = {
     id: shoot.id,
     user_id: user.id,
@@ -1838,7 +1858,9 @@ async function createSupabaseShoot(payload, user) {
       file_size: image.fileSize || 0
     }))
   });
-  await persistSupabaseReferences(shoot, payload, user);
+  await persistSupabaseReferences(shoot, payload, user).catch((err) =>
+    console.warn(`[refs] shoot_references save failed (table may not exist): ${err.message}`)
+  );
   return shoot;
 }
 
@@ -1950,7 +1972,15 @@ async function loadSupabaseShootForApp(shootId, user) {
   if (!row) return null;
   if (row.user_id !== user.id && !isAdmin(user)) return null;
   const imageRows = await supabaseRows("shoot_images", `shoot_id=eq.${encodeURIComponent(shootId)}&select=*&order=slot.asc`, { token: user.token, headers: { prefer: "" } });
-  const references = await loadSupabaseShootReferences(row.id, user);
+  let references = await loadSupabaseShootReferences(row.id, user);
+  if (!references.length && row.identity_profile?.refs?.length) {
+    references = row.identity_profile.refs.map((r) => ({
+      id: null, purpose: r.purpose || "identity", name: r.name || "reference",
+      type: r.type || "image/jpeg", size: 0,
+      storageBucket: r.storageBucket, storagePath: r.storagePath,
+      tag: null, customName: null, note: null, metadata: {}
+    }));
+  }
   const images = await Promise.all((imageRows || []).map(async (image) => ({
     id: image.id,
     slot: image.slot,
