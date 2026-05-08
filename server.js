@@ -892,10 +892,10 @@ function openAiImageSize(aspectRatio, model = OPENAI_IMAGE_MODEL) {
 }
 
 function generationStage(model) {
-  if (falApiModelName(model)) return "fal.ai identity-locked generation";
-  if (openAiApiModelName(model)) return "OpenAI reference generation";
-  if (geminiApiModelName(model)) return "Google image generation";
-  return "AI generation";
+  if (falApiModelName(model)) return "Generating your portrait";
+  if (openAiApiModelName(model)) return "Generating your portrait";
+  if (geminiApiModelName(model)) return "Generating your portrait";
+  return "Generating your portrait";
 }
 
 function isAiImageProvider(provider) {
@@ -1099,7 +1099,10 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
   const imageUrls = [];
   for (const r of refsToUse) {
     if (r.storageBucket && r.storagePath && SUPABASE_ENABLED) {
-      const signed = await supabaseSignedUrl(r.storageBucket, r.storagePath, 7200, "").catch(() => null);
+      const signed = await supabaseSignedUrl(r.storageBucket, r.storagePath, 7200, "").catch((e) => {
+        console.warn(`[fal] slot ${slot}: signed URL failed for "${r.name}" (${r.storageBucket}/${r.storagePath}): ${e.message}`);
+        return null;
+      });
       if (signed) { imageUrls.push(signed); continue; }
       // Signed URL failed — download and base64 encode as fallback
       try {
@@ -1107,13 +1110,17 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
         const ct = canonicalImageType(file.contentType || r.type);
         if (file?.buffer?.length && isSupportedReferenceImage(ct)) {
           imageUrls.push(`data:${ct};base64,${file.buffer.toString("base64")}`);
+          console.log(`[fal] slot ${slot}: using base64 fallback for "${r.name}"`);
           continue;
         }
+        console.warn(`[fal] slot ${slot}: downloaded "${r.name}" but type ${ct} is unsupported or empty`);
       } catch (dlErr) {
-        console.warn(`[fal] slot ${slot}: ref download fallback failed for "${r.name}": ${dlErr.message}`);
+        console.warn(`[fal] slot ${slot}: download fallback also failed for "${r.name}": ${dlErr.message}`);
       }
     } else if (r.dataUrl) {
       if (/^data:image\//i.test(r.dataUrl) || /^https?:\/\//i.test(r.dataUrl)) imageUrls.push(r.dataUrl);
+    } else {
+      console.warn(`[fal] slot ${slot}: ref "${r.name}" has no storageBucket/storagePath and no dataUrl — SUPABASE_ENABLED=${SUPABASE_ENABLED}`);
     }
   }
 
@@ -1157,27 +1164,13 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
       num_images: 1
     });
   } else {
-    // No references: fall back to flux/dev text-to-image
-    effectiveModelId = "fal-ai/flux/dev";
-    const response = await fetch(`${FAL_API_BASE}/fal-ai/flux/dev`, {
-      method: "POST",
-      headers: { "Authorization": `Key ${FAL_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt,
-        image_size: { width: imageWidth, height: imageHeight },
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-        num_images: 1,
-        enable_safety_checker: false,
-        sync_mode: true
-      }),
-      signal: AbortSignal.timeout(FAL_TIMEOUT_MS)
-    });
-    data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const raw = data.detail || data.error?.message || data.error || data.message || `fal.ai request failed (${response.status})`;
-      throw new Error(Array.isArray(raw) ? raw.map((e) => e.msg || JSON.stringify(e)).join("; ") : String(raw));
-    }
+    // No reference images could be loaded — fail explicitly so the error is visible in the gallery card.
+    // Identity-locked generation requires at least one reference; silently generating without refs would produce wrong results.
+    const msg = refsToUse.length > 0
+      ? `Slot ${slot}: ${refsToUse.length} reference(s) found but none could be loaded (Supabase signed URL and download both failed — check bucket permissions and storage paths in Railway logs).`
+      : `Slot ${slot}: no identity references found in shoot record. Ensure identity images are uploaded and staged before starting a shoot.`;
+    console.error(`[fal] ${msg}`);
+    throw new Error(msg);
   }
 
   const imageOutput = (data.images || [])[0] || data.image;
@@ -1582,8 +1575,22 @@ async function packageZip(shoot) {
 }
 
 // ── Stage 1: Vision Analysis ─────────────────────────────────────────────────
-async function visionAnalysisStage(shoot) {
-  if (!OPENAI_API_KEY) return null;
+
+const VISION_ANALYSIS_PROMPT = `You are a professional photography director and AI vision analyst for Alux Art luxury photoshoot platform.
+Analyze the provided images. The FIRST image(s) are the IDENTITY references (the actual subject). The remaining images are inspiration/style references only.
+Return ONLY a JSON object with exactly these fields:
+{
+  "subject_gender": "male OR female OR non-binary — determined strictly from the identity reference images, NOT from inspiration images",
+  "subject_identity_profile": "Detailed physical description of the IDENTITY subject only: gender, skin tone (Fitzpatrick I-VI), age range, facial features, bone structure, eye shape and color, hair color/texture/length, distinctive features — enough for any AI to reproduce THIS EXACT person across 8 portraits",
+  "inspiration_scene_breakdown": ["style element from inspiration 1", "style element 2", "style element 3"],
+  "color_palette": ["#hex1", "#hex2", "#hex3"],
+  "mood_keywords": ["keyword1", "keyword2", "keyword3"],
+  "style_notes": "Styling direction derived ONLY from inspiration images: wardrobe aesthetic, lighting style, mood, setting preferences"
+}
+CRITICAL: subject_gender and subject_identity_profile must describe the IDENTITY image subject, never the inspiration images.
+Return only valid JSON, no markdown.`;
+
+async function visionAnalysisOpenAI(shoot) {
   const identityRefs = normalizeReferences(shoot.identityImages, "identity").slice(0, 3);
   const inspirationRefs = normalizeReferences(shoot.inspirationImages, "inspiration").slice(0, 3);
   const imageBlocks = [];
@@ -1600,51 +1607,85 @@ async function visionAnalysisStage(shoot) {
         }
       });
     } catch (err) {
-      console.warn(`Vision analysis: skipping ref ${ref.name}: ${err.message}`);
+      console.warn(`[vision/openai] skipping ref ${ref.name}: ${err.message}`);
     }
   }
   if (!imageBlocks.length) return null;
-  const prompt = `You are a professional photography director and AI vision analyst for Alux Art luxury photoshoot platform.
-Analyze the provided images. The FIRST image(s) are the IDENTITY references (the actual subject). The remaining images are inspiration/style references only.
-Return ONLY a JSON object with exactly these fields:
-{
-  "subject_gender": "male OR female OR non-binary — determined strictly from the identity reference images, NOT from inspiration images",
-  "subject_identity_profile": "Detailed physical description of the IDENTITY subject only: gender, skin tone (Fitzpatrick I-VI), age range, facial features, bone structure, eye shape and color, hair color/texture/length, distinctive features — enough for any AI to reproduce THIS EXACT person across 8 portraits",
-  "inspiration_scene_breakdown": ["style element from inspiration 1", "style element 2", "style element 3"],
-  "color_palette": ["#hex1", "#hex2", "#hex3"],
-  "mood_keywords": ["keyword1", "keyword2", "keyword3"],
-  "style_notes": "Styling direction derived ONLY from inspiration images: wardrobe aesthetic, lighting style, mood, setting preferences"
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      response_format: { type: "json_object" },
+      max_tokens: 800,
+      messages: [{ role: "user", content: [{ type: "text", text: VISION_ANALYSIS_PROMPT }, ...imageBlocks] }]
+    }),
+    signal: AbortSignal.timeout(60000)
+  });
+  if (!res.ok) throw new Error(`OpenAI vision API ${res.status}`);
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content;
+  return content ? JSON.parse(content) : null;
 }
-CRITICAL: subject_gender and subject_identity_profile must describe the IDENTITY image subject, never the inspiration images.
-Return only valid JSON, no markdown.`;
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+
+async function visionAnalysisGemini(shoot) {
+  const identityRefs = normalizeReferences(shoot.identityImages, "identity").slice(0, 3);
+  const inspirationRefs = normalizeReferences(shoot.inspirationImages, "inspiration").slice(0, 3);
+  const parts = [{ text: VISION_ANALYSIS_PROMPT }];
+  for (const ref of [...identityRefs, ...inspirationRefs]) {
+    try {
+      const file = await referenceToFile(ref);
+      if (!file || !isSupportedReferenceImage(file.contentType)) continue;
+      const mimeType = canonicalImageType(file.contentType || ref.type);
+      parts.push({ inlineData: { mimeType, data: file.buffer.toString("base64") } });
+    } catch (err) {
+      console.warn(`[vision/gemini] skipping ref ${ref.name}: ${err.message}`);
+    }
+  }
+  if (parts.length < 2) return null;
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
       method: "POST",
-      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o",
-        response_format: { type: "json_object" },
-        max_tokens: 800,
-        messages: [{ role: "user", content: [{ type: "text", text: prompt }, ...imageBlocks] }]
+        contents: [{ parts }],
+        generationConfig: { responseMimeType: "application/json" }
       }),
       signal: AbortSignal.timeout(60000)
-    });
-    if (!res.ok) throw new Error(`Vision API ${res.status}`);
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-    return content ? JSON.parse(content) : null;
-  } catch (err) {
-    console.error("Vision analysis failed:", err.message);
-    return null;
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini vision API ${res.status}`);
+  const data = await res.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return content ? JSON.parse(content) : null;
+}
+
+async function visionAnalysisStage(shoot) {
+  if (OPENAI_API_KEY) {
+    try {
+      const result = await visionAnalysisOpenAI(shoot);
+      if (result) { console.log("[vision] OpenAI vision analysis succeeded"); return result; }
+    } catch (err) {
+      console.warn("[vision] OpenAI vision failed, trying Gemini:", err.message);
+    }
   }
+  if (GEMINI_API_KEY) {
+    try {
+      const result = await visionAnalysisGemini(shoot);
+      if (result) { console.log("[vision] Gemini vision analysis succeeded"); return result; }
+    } catch (err) {
+      console.warn("[vision] Gemini vision failed:", err.message);
+    }
+  }
+  console.warn("[vision] No vision API available — using fallback brief");
+  return null;
 }
 
 // ── Stage 2+3: Character Sheet + Shoot Brief ──────────────────────────────────
-async function generateShootBriefStage(shoot, visionData) {
-  if (!OPENAI_API_KEY) return generateFallbackShootBrief(shoot);
-  const visionCtx = visionData ? JSON.stringify(visionData) : "No vision data available.";
-  const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
-  const prompt = `You are a luxury fashion photography director creating a 10-shot AI photoshoot brief for Alux Art.
+
+function buildBriefPrompt(visionCtx, quote) {
+  return `You are a luxury fashion photography director creating a 10-shot AI photoshoot brief for Alux Art.
 
 Vision analysis: ${visionCtx}
 
@@ -1674,27 +1715,70 @@ Rules:
 - Each shot must feel distinctly different.
 - All styling derived from inspiration image analysis.
 Return only valid JSON, no markdown.`;
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+}
+
+async function generateShootBriefOpenAI(shoot, visionData) {
+  const visionCtx = visionData ? JSON.stringify(visionData) : "No vision data available.";
+  const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      response_format: { type: "json_object" },
+      max_tokens: 3000,
+      messages: [{ role: "user", content: buildBriefPrompt(visionCtx, quote) }]
+    }),
+    signal: AbortSignal.timeout(90000)
+  });
+  if (!res.ok) throw new Error(`OpenAI brief API ${res.status}`);
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content;
+  const parsed = content ? JSON.parse(content) : null;
+  return parsed?.shots?.length === 10 ? parsed : null;
+}
+
+async function generateShootBriefGemini(shoot, visionData) {
+  const visionCtx = visionData ? JSON.stringify(visionData) : "No vision data available.";
+  const quote = shoot.quote?.text || "Luxury is becoming the best version of yourself.";
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
       method: "POST",
-      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o",
-        response_format: { type: "json_object" },
-        max_tokens: 3000,
-        messages: [{ role: "user", content: prompt }]
+        contents: [{ parts: [{ text: buildBriefPrompt(visionCtx, quote) }] }],
+        generationConfig: { responseMimeType: "application/json" }
       }),
       signal: AbortSignal.timeout(90000)
-    });
-    if (!res.ok) throw new Error(`Brief generation API ${res.status}`);
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = content ? JSON.parse(content) : null;
-    return parsed?.shots?.length === 10 ? parsed : generateFallbackShootBrief(shoot);
-  } catch (err) {
-    console.error("Shoot brief generation failed:", err.message);
-    return generateFallbackShootBrief(shoot);
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini brief API ${res.status}`);
+  const data = await res.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const parsed = content ? JSON.parse(content) : null;
+  return parsed?.shots?.length === 10 ? parsed : null;
+}
+
+async function generateShootBriefStage(shoot, visionData) {
+  if (OPENAI_API_KEY) {
+    try {
+      const result = await generateShootBriefOpenAI(shoot, visionData);
+      if (result) { console.log("[brief] OpenAI brief generation succeeded"); return result; }
+    } catch (err) {
+      console.warn("[brief] OpenAI brief failed, trying Gemini:", err.message);
+    }
   }
+  if (GEMINI_API_KEY) {
+    try {
+      const result = await generateShootBriefGemini(shoot, visionData);
+      if (result) { console.log("[brief] Gemini brief generation succeeded"); return result; }
+    } catch (err) {
+      console.warn("[brief] Gemini brief failed:", err.message);
+    }
+  }
+  console.warn("[brief] No brief API available — using fallback brief");
+  return generateFallbackShootBrief(shoot);
 }
 
 function generateFallbackShootBrief(shoot) {

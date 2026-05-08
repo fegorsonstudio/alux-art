@@ -964,15 +964,23 @@ function stripImage(img, includeData = false) {
   };
 }
 
-// Supabase Realtime subscription with SSE fallback
+// Supabase Realtime subscription with SSE fallback.
+// If Realtime doesn't confirm SUBSCRIBED within 4 s (e.g. table replication not enabled),
+// we silently switch to the always-available SSE endpoint.
 function connectShootUpdates(shootId) {
   const client = getSupabaseClient();
   if (client) {
-    // Unsubscribe any existing channel
     if (state.realtimeChannel) {
       client.removeChannel(state.realtimeChannel);
       state.realtimeChannel = null;
     }
+    let liveConnected = false;
+    const sseTimer = setTimeout(() => {
+      if (!liveConnected) {
+        if (state.realtimeChannel) { client.removeChannel(state.realtimeChannel); state.realtimeChannel = null; }
+        connectEvents(shootId);
+      }
+    }, 4000);
     const channel = client
       .channel(`shoot-events-${shootId}`)
       .on("postgres_changes", {
@@ -986,13 +994,18 @@ function connectShootUpdates(shootId) {
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          toast("Real-time updates connected.");
+          liveConnected = true;
+          clearTimeout(sseTimer);
+        } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+          clearTimeout(sseTimer);
+          client.removeChannel(channel);
+          state.realtimeChannel = null;
+          if (!liveConnected) connectEvents(shootId);
         }
       });
     state.realtimeChannel = channel;
     return;
   }
-  // SSE fallback for local dev
   connectEvents(shootId);
 }
 
