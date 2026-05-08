@@ -749,6 +749,7 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.45; }
 
 .recent-shoot strong, .recent-shoot span { display: block; }
 .recent-shoot strong { margin-bottom: 5px; overflow-wrap: anywhere; }
+.recent-shoot-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
 .summary-row {
   display: flex;

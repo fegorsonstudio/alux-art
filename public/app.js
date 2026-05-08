@@ -579,7 +579,10 @@ function recentShoots() {
       <strong>${escapeHtml(shoot.id)}</strong>
       <span class="muted">${escapeHtml(shoot.status)} - ${safeNumber(shoot.completeImages)}/10 images - ${escapeHtml(shoot.aspectRatio)} - ${formatDateTime(shoot.createdAt)}</span>
     </div>
-    <button class="btn small open-shoot" data-id="${escapeHtml(shoot.id)}">Open</button>
+    <div class="recent-shoot-actions">
+      <button class="btn small open-shoot" data-id="${escapeHtml(shoot.id)}">Open</button>
+      ${shoot.completeImages > 0 ? `<button class="btn small download-all-4k" data-id="${escapeHtml(shoot.id)}">&#8595; All 4K</button>` : ""}
+    </div>
   </article>`).join("")}</div>`;
 }
 
@@ -594,7 +597,6 @@ function summary() {
     <div class="summary-row"><span>Tagged overrides</span><strong>${state.taggedReferences.length}</strong></div>
     <div class="summary-row"><span>Aspect ratio</span><strong>${escapeHtml(state.aspectRatio)}</strong></div>
     <div class="summary-row"><span>Output</span><strong>2 images (test mode)</strong></div>
-    <div class="summary-row"><span>Image provider</span><strong>fal.ai</strong></div>
     <div class="summary-row"><span>Download</span><strong>True 4K PNG + ZIP</strong></div>
   </div>
   <div class="price">
@@ -692,6 +694,9 @@ function bindWorkspace() {
     $("#galleryHost").innerHTML = gallery(shoot);
     bindGallery();
     $("#galleryHost")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  document.querySelectorAll(".download-all-4k").forEach((btn) => btn.addEventListener("click", () => {
+    downloadAllShootImages(btn.dataset.id);
   }));
   $("#createShoot")?.addEventListener("click", createShoot);
   bindGallery();
@@ -834,6 +839,14 @@ async function createShoot() {
   try {
     toast("Preparing reference uploads...");
     await prepareReferencesForShoot();
+    // Identity gate: all uploads must be staged before proceeding to payment
+    if (!state.identityImages.length) {
+      throw new Error("Identity images are required. Please upload at least 3 clear face photos before proceeding.");
+    }
+    const unstaged = state.identityImages.filter((img) => !img.storagePath);
+    if (unstaged.length) {
+      throw new Error(`${unstaged.length} identity image${unstaged.length > 1 ? "s" : ""} could not be verified. Please remove and re-upload them before proceeding.`);
+    }
     const { shoot } = await request("/api/shoots", {
       method: "POST",
       body: {
@@ -1125,6 +1138,42 @@ function download(url, filename) {
   document.body.appendChild(a);
   a.click();
   a.remove();
+}
+
+async function downloadAllShootImages(shootId) {
+  try {
+    toast("Preparing 4K images...");
+    const canShareFiles = typeof navigator.share === "function" && typeof navigator.canShare === "function";
+    if (canShareFiles) {
+      const { shoot } = await request(`/api/shoots/${pathPart(shootId)}`);
+      const completed = (shoot.images || []).filter((img) => img.status === "COMPLETE");
+      if (!completed.length) return toast("No completed images available.");
+      toast(`Fetching ${completed.length} 4K images for gallery save...`);
+      const files = [];
+      for (const img of completed) {
+        try {
+          const data = await request(`/api/shoots/${pathPart(shootId)}/images/${pathPart(img.id)}?download=1`);
+          const res = await fetch(normalizeUrl(data.url));
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          files.push(new File([blob], data.filename || `alux-art-${img.id}.png`, { type: blob.type || "image/png" }));
+        } catch {
+          // Skip failed images
+        }
+      }
+      if (files.length && navigator.canShare({ files })) {
+        await navigator.share({ files, title: "Alux Art 4K Shoot" });
+        return;
+      }
+    }
+    // Desktop or unsupported: trigger ZIP download
+    const data = await request(`/api/shoots/${pathPart(shootId)}/download-zip`);
+    download(data.url, data.filename);
+    if (data.expiresAt) toast(`ZIP ready. Link expires at ${new Date(data.expiresAt).toLocaleTimeString()}.`);
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    toast(`Download failed: ${err.message}`);
+  }
 }
 
 async function renderAdmin() {

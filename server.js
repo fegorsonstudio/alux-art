@@ -1185,9 +1185,15 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
 
   let buffer;
   if (imageOutput.url) {
-    const imgRes = await fetch(imageOutput.url, { signal: AbortSignal.timeout(60000) });
-    if (!imgRes.ok) throw new Error(`fal.ai image download failed (${imgRes.status})`);
-    buffer = Buffer.from(await imgRes.arrayBuffer());
+    // Upscale to true 4K before downloading — passes the fal.ai CDN URL directly to the upscaler
+    const upscaled = await upscaleFalImage(imageOutput.url, slot);
+    if (upscaled) {
+      buffer = upscaled;
+    } else {
+      const imgRes = await fetch(imageOutput.url, { signal: AbortSignal.timeout(60000) });
+      if (!imgRes.ok) throw new Error(`fal.ai image download failed (${imgRes.status})`);
+      buffer = Buffer.from(await imgRes.arrayBuffer());
+    }
   } else if (imageOutput.content) {
     buffer = Buffer.from(imageOutput.content, "base64");
   }
@@ -1203,6 +1209,29 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     referenceCount: rawRefs.length,
     dimensions: readPngDimensions(buffer) || { width: imageWidth, height: imageHeight }
   };
+}
+
+async function upscaleFalImage(imageUrl, slot = "?") {
+  if (!FAL_KEY || !imageUrl) return null;
+  try {
+    console.log(`[upscale] slot ${slot}: starting 4x upscale via fal-ai/aura-sr`);
+    const result = await falQueueRun("fal-ai/aura-sr", {
+      image_url: imageUrl,
+      upscaling_factor: 4,
+      overlapping_tiles: true
+    });
+    const output = (result.images || [])[0] || result.image;
+    if (!output?.url) { console.warn(`[upscale] slot ${slot}: no output URL from upscaler`); return null; }
+    const res = await fetch(output.url, { signal: AbortSignal.timeout(120000) });
+    if (!res.ok) { console.warn(`[upscale] slot ${slot}: download of upscaled image failed (${res.status})`); return null; }
+    const buf = Buffer.from(await res.arrayBuffer());
+    const dims = readPngDimensions(buf);
+    console.log(`[upscale] slot ${slot}: ✓ ${dims?.width ?? "?"}×${dims?.height ?? "?"} (${(buf.length / 1024 / 1024).toFixed(1)} MB)`);
+    return buf;
+  } catch (err) {
+    console.warn(`[upscale] slot ${slot}: fal-ai/aura-sr failed — using original: ${err.message}`);
+    return null;
+  }
 }
 
 async function falQueueRun(modelId, input) {
