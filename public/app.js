@@ -843,9 +843,11 @@ async function createShoot() {
     if (!state.identityImages.length) {
       throw new Error("Identity images are required. Please upload at least 3 clear face photos before proceeding.");
     }
-    const unstaged = state.identityImages.filter((img) => !img.storagePath);
-    if (unstaged.length) {
-      throw new Error(`${unstaged.length} identity image${unstaged.length > 1 ? "s" : ""} could not be verified. Please remove and re-upload them before proceeding.`);
+    // Identity gate: each image must have either a Supabase storage path OR a local dataUrl.
+    // (dataUrl is the fallback when Supabase storage is unavailable.)
+    const cannotAccess = state.identityImages.filter((img) => !img.storagePath && !img.dataUrl);
+    if (cannotAccess.length) {
+      throw new Error(`${cannotAccess.length} identity image${cannotAccess.length > 1 ? "s" : ""} failed to upload and have no local data. Please remove and re-upload them.`);
     }
     const { shoot } = await request("/api/shoots", {
       method: "POST",
@@ -853,9 +855,10 @@ async function createShoot() {
         mode: state.mode,
         aspectRatio: state.aspectRatio,
         currency: state.currency,
-        identityImages: state.identityImages.map(stripImage),
-        inspirationImages: state.inspirationImages.map(stripImage),
-        taggedReferences: state.taggedReferences.map(stripImage),
+        // Include dataUrl for images without a Supabase storage path so the worker can access them
+        identityImages: state.identityImages.map((img) => stripImage(img, !img.storagePath)),
+        inspirationImages: state.inspirationImages.map((img) => stripImage(img, !img.storagePath)),
+        taggedReferences: state.taggedReferences.map((img) => stripImage(img, !img.storagePath)),
         quote: state.quote,
         adminBypass: state.user?.role === "admin"
       }
