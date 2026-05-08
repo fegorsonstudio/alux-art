@@ -1069,8 +1069,6 @@ async function generateGeminiImage(shoot, image, selected = selectedGenerationMo
 
 async function generateFalImage(shoot, image, selected = selectedGenerationModel(image)) {
   if (!FAL_KEY) throw new Error("FAL_KEY is not set");
-  const references = await resolveReferenceFiles(shoot, image);
-  const prompt = buildFalPrompt(shoot, image, references);
   const dims = targetDims(shoot.aspectRatio);
 
   // Cap dimensions for flux/dev fallback (many models cap at 1440 per side)
@@ -1084,23 +1082,42 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
   const slot = Number(image.slot) || 1;
   const useGptImage2 = slot <= 5;
 
-  const identityRefs = references.filter((r) => r.purpose === "identity");
-  const inspirationRefs = references.filter((r) => r.purpose !== "identity");
+  // Use raw refs (paths only) — avoids an unnecessary download; we build signed URLs directly below
+  const rawRefs = referencesForShot(shoot, image);
+  const prompt = buildFalPrompt(shoot, image, rawRefs);
+
+  const identityRefs = rawRefs.filter((r) => r.purpose === "identity");
+  const inspirationRefs = rawRefs.filter((r) => r.purpose !== "identity");
 
   // gpt-image-2: identity refs only (face lock). nano-banana: both for look+style.
   const refsToUse = useGptImage2
     ? identityRefs
     : (identityRefs.length ? [...identityRefs, ...inspirationRefs] : inspirationRefs);
 
-  // Build signed HTTPS URLs — fal.ai downloads them directly (avoids huge base64 payloads)
+  // Build image_urls: signed HTTPS URLs preferred (fal.ai fetches directly);
+  // fall back to downloading and base64-encoding if signing fails.
   const imageUrls = [];
   for (const r of refsToUse) {
     if (r.storageBucket && r.storagePath && SUPABASE_ENABLED) {
       const signed = await supabaseSignedUrl(r.storageBucket, r.storagePath, 7200, "").catch(() => null);
       if (signed) { imageUrls.push(signed); continue; }
+      // Signed URL failed — download and base64 encode as fallback
+      try {
+        const file = await supabaseDownload(r.storageBucket, r.storagePath);
+        const ct = canonicalImageType(file.contentType || r.type);
+        if (file?.buffer?.length && isSupportedReferenceImage(ct)) {
+          imageUrls.push(`data:${ct};base64,${file.buffer.toString("base64")}`);
+          continue;
+        }
+      } catch (dlErr) {
+        console.warn(`[fal] slot ${slot}: ref download fallback failed for "${r.name}": ${dlErr.message}`);
+      }
+    } else if (r.dataUrl) {
+      if (/^data:image\//i.test(r.dataUrl) || /^https?:\/\//i.test(r.dataUrl)) imageUrls.push(r.dataUrl);
     }
-    if (r.buffer) imageUrls.push(`data:${r.contentType};base64,${r.buffer.toString("base64")}`);
   }
+
+  console.log(`[fal] slot ${slot}: model=${useGptImage2 ? "gpt-image-2" : "nano-banana"}, rawRefs=${rawRefs.length}, refsToUse=${refsToUse.length}, imageUrls=${imageUrls.length}`);
 
   let data;
   let effectiveModelId;
@@ -1183,7 +1200,7 @@ async function generateFalImage(shoot, image, selected = selectedGenerationModel
     configuredModel: selected.model,
     apiModel: effectiveModelId,
     fallbackModel: selected.fallback,
-    referenceCount: references.length,
+    referenceCount: rawRefs.length,
     dimensions: readPngDimensions(buffer) || { width: imageWidth, height: imageHeight }
   };
 }
