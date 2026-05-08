@@ -1906,25 +1906,6 @@ async function createSupabaseShoot(payload, user) {
   shoot.images = shoot.images.map((image) => ({ ...image, id: crypto.randomUUID() }));
   if (isAdmin(user) || payload.adminBypass === true) applyAdminBypass(shoot);
 
-  // Upload any reference images that have dataUrl but no storage path yet.
-  // This handles the case where the user skipped the identity library or the library save failed.
-  const inlineUploadList = [
-    ...(payload.identityImages || []).map((img) => ({ img, bucket: "identity-images", dir: "identity" })),
-    ...(payload.inspirationImages || []).map((img) => ({ img, bucket: "inspiration-images", dir: "inspiration" }))
-  ];
-  for (const { img, bucket, dir } of inlineUploadList) {
-    if (img.storageBucket && img.storagePath) continue;
-    const file = dataUrlToFile(img.dataUrl);
-    if (!file || !isSupportedReferenceImage(file.contentType)) continue;
-    const objectPath = `${user.id}/shoots/${shoot.id}/${dir}/${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeStorageName(img.name, `${dir}.jpg`)}`;
-    await supabaseUpload(bucket, objectPath, file.buffer, file.contentType, user.token).catch((err) =>
-      console.warn(`[refs] inline upload failed for "${img.name}": ${err.message}`)
-    );
-    img.storageBucket = bucket;
-    img.storagePath = objectPath;
-    console.log(`[refs] inline uploaded "${img.name}" → ${bucket}/${objectPath}`);
-  }
-
   // Embed reference storage paths into identity_profile so the worker can find them
   // even if the shoot_references table is unavailable.
   const embeddedRefs = [

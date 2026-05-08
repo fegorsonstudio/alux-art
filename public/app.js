@@ -781,10 +781,9 @@ async function createShoot() {
         mode: state.mode,
         aspectRatio: state.aspectRatio,
         currency: state.currency,
-        // Include dataUrl when image has no storage path so server can upload it inline
-        identityImages: state.identityImages.map((img) => stripImage(img, !img.storagePath)),
-        inspirationImages: state.inspirationImages.map((img) => stripImage(img, !img.storagePath)),
-        taggedReferences: state.taggedReferences.map((img) => stripImage(img, !img.storagePath)),
+        identityImages: state.identityImages.map(stripImage),
+        inspirationImages: state.inspirationImages.map(stripImage),
+        taggedReferences: state.taggedReferences.map(stripImage),
         quote: state.quote,
         adminBypass: state.user?.role === "admin"
       }
@@ -813,6 +812,26 @@ async function createShoot() {
 }
 
 async function prepareReferencesForShoot() {
+  // Pre-upload identity images that haven't been saved to the library yet.
+  // This keeps the shoot creation payload lean (no large base64 blobs).
+  const unstagedIdentity = state.identityImages.filter((img) => img.dataUrl && (!img.storageBucket || !img.storagePath));
+  if (unstagedIdentity.length) {
+    toast(`Uploading ${unstagedIdentity.length} identity image${unstagedIdentity.length > 1 ? "s" : ""}...`);
+    unstagedIdentity.forEach((img) => { img.uploadProgress = 82; img.uploadStatus = "Uploading"; });
+    try {
+      const { saved } = await request("/api/identity-library", {
+        method: "POST",
+        body: { images: unstagedIdentity }
+      });
+      (saved || []).forEach((savedImg) => {
+        const local = state.identityImages.find((img) => img.fingerprint === savedImg.fingerprint || img.id === savedImg.id);
+        if (local) Object.assign(local, savedImg, { uploadProgress: 100, uploadStatus: "Saved" });
+      });
+    } catch (err) {
+      unstagedIdentity.forEach((img) => { img.uploadProgress = 100; img.uploadStatus = "Upload failed"; img.uploadError = err.message; });
+      throw new Error(`Identity upload failed: ${err.message}`);
+    }
+  }
   await stageReferenceList("inspiration", state.inspirationImages);
   await stageReferenceList("custom", state.taggedReferences);
 }
