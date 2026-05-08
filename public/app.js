@@ -533,7 +533,7 @@ function summary() {
     <div class="summary-row"><span>Inspiration images</span><strong>${state.inspirationImages.length}</strong></div>
     <div class="summary-row"><span>Tagged overrides</span><strong>${state.taggedReferences.length}</strong></div>
     <div class="summary-row"><span>Aspect ratio</span><strong>${escapeHtml(state.aspectRatio)}</strong></div>
-    <div class="summary-row"><span>Output</span><strong>10 images</strong></div>
+    <div class="summary-row"><span>Output</span><strong>2 images (test mode)</strong></div>
     <div class="summary-row"><span>Image provider</span><strong>fal.ai</strong></div>
     <div class="summary-row"><span>Download</span><strong>True 4K PNG + ZIP</strong></div>
   </div>
@@ -781,9 +781,10 @@ async function createShoot() {
         mode: state.mode,
         aspectRatio: state.aspectRatio,
         currency: state.currency,
-        identityImages: state.identityImages.map(stripImage),
-        inspirationImages: state.inspirationImages.map(stripImage),
-        taggedReferences: state.taggedReferences.map(stripImage),
+        // Include dataUrl when image has no storage path so server can upload it inline
+        identityImages: state.identityImages.map((img) => stripImage(img, !img.storagePath)),
+        inspirationImages: state.inspirationImages.map((img) => stripImage(img, !img.storagePath)),
+        taggedReferences: state.taggedReferences.map((img) => stripImage(img, !img.storagePath)),
         quote: state.quote,
         adminBypass: state.user?.role === "admin"
       }
