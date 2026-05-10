@@ -1,0 +1,150 @@
+/* ---- Layout ---- */
+.app { min-height: 100vh; background: #050505; color: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-x: hidden; box-sizing: border-box; }
+
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #111; position: sticky; top: 0; background: #050505; z-index: 10; }
+.navBrand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+.navLogo { width: 32px; height: 32px; object-fit: contain; border-radius: 7px; }
+.navRight { display: flex; align-items: center; gap: 12px; }
+.navEmail { color: #555; font-size: 0.8rem; }
+.signOutBtn { background: none; border: 1px solid #222; border-radius: 8px; color: #666; font-size: 0.8rem; padding: 6px 12px; cursor: pointer; }
+.signOutBtn:hover { border-color: #444; color: #aaa; }
+.adminLink { color: #c9a96e; font-size: 0.8rem; text-decoration: none; padding: 6px 12px; border: 1px solid #2a2318; border-radius: 8px; }
+
+.main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
+@media (max-width: 800px) { .main { grid-template-columns: 1fr; } }
+
+/* ---- Cards ---- */
+.panel { background: #0e0e0e; border: 1px solid #1a1a1a; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.panelTitle { font-size: 0.75rem; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ---- Upload zone ---- */
+.uploadZone { border: 2px dashed #1e1e1e; border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.15s; }
+.uploadZone:hover, .uploadZoneActive { border-color: #333; }
+.uploadZone p { margin: 6px 0 0; color: #555; font-size: 0.82rem; }
+.uploadCount { font-size: 0.75rem; color: #c9a96e; font-weight: 600; margin-top: 8px; }
+
+/* ---- Thumbnails ---- */
+.thumbGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.thumb { position: relative; aspect-ratio: 1; border-radius: 7px; overflow: hidden; background: #141414; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumbRemove { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.7); border: none; border-radius: 4px; color: #fff; font-size: 0.65rem; padding: 2px 4px; cursor: pointer; line-height: 1; }
+
+/* ---- Identity library ---- */
+.panelTitleRow { display: flex; align-items: center; justify-content: space-between; }
+.clearLibBtn { background: none; border: 1px solid #2a1a1a; border-radius: 6px; color: #885544; font-size: 0.72rem; padding: 3px 9px; cursor: pointer; transition: all 0.15s; }
+.clearLibBtn:hover { border-color: #cc3333; color: #cc3333; }
+.libLabel { font-size: 0.7rem; color: #444; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.thumbSelected { outline: 2px solid #c9a96e; outline-offset: 2px; }
+.thumbCheck { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #c9a96e; font-size: 0.9rem; font-weight: 700; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+
+/* ---- Upload progress ---- */
+.progressList { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 4px 0; }
+.progressItem { display: flex; align-items: center; gap: 8px; }
+.progressName { font-size: 0.72rem; color: #666; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.progressTrack { flex: 1; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; }
+.progressFill { height: 100%; background: linear-gradient(90deg, #c9a96e, #e8c99e); border-radius: 2px; transition: width 0.15s ease; }
+.progressPct { font-size: 0.7rem; color: #c9a96e; width: 30px; text-align: right; flex-shrink: 0; }
+
+/* ---- Save to library toggle ---- */
+.saveToggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.8rem; color: #555; user-select: none; }
+.saveToggle input { accent-color: #c9a96e; cursor: pointer; }
+.saveToggle:hover span { color: #888; }
+
+/* ---- Custom tag input ---- */
+.customTagInput { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 7px; color: #ccc; font-size: 0.75rem; padding: 5px 10px; width: 100%; box-sizing: border-box; font-family: inherit; }
+.customTagInput:focus { outline: none; border-color: #c9a96e55; }
+.customTagInput::placeholder { color: #333; }
+
+/* ---- Tagged references ---- */
+.taggedList { display: flex; flex-direction: column; gap: 12px; }
+.taggedRow { display: flex; gap: 12px; align-items: flex-start; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 10px; }
+.taggedThumb { width: 56px; height: 56px; border-radius: 7px; overflow: hidden; flex-shrink: 0; background: #141414; }
+.taggedThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.taggedControls { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.tagPills { display: flex; flex-wrap: wrap; gap: 4px; }
+.tagPill { background: #141414; border: 1px solid #1e1e1e; border-radius: 14px; color: #555; font-size: 0.7rem; padding: 3px 9px; cursor: pointer; transition: all 0.1s; }
+.tagPill:hover { border-color: #333; color: #aaa; }
+.tagPillActive { background: #1a1a0a; border-color: #c9a96e44; color: #c9a96e; }
+
+/* ---- Selectors ---- */
+.row { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 0.75rem; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+.pillGroup { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { background: #141414; border: 1px solid #1e1e1e; border-radius: 20px; color: #666; font-size: 0.8rem; padding: 5px 12px; cursor: pointer; transition: all 0.1s; }
+.pill:hover { border-color: #333; color: #aaa; }
+.pillActive { background: #1c1c2e; border-color: #4a4aff44; color: #8888ff; }
+
+/* ---- Quote editor ---- */
+.quoteInput { width: 100%; background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 8px; color: #ccc; font-size: 0.875rem; padding: 10px 12px; resize: none; font-family: inherit; box-sizing: border-box; }
+.quoteInput:focus { outline: none; border-color: #333; }
+
+/* ---- CTA ---- */
+.ctaSection { display: flex; flex-direction: column; gap: 10px; }
+.pricingNote { font-size: 0.8rem; color: #555; text-align: center; }
+.payBtn { background: #c9a96e; color: #0a0a0a; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; padding: 14px; cursor: pointer; width: 100%; transition: opacity 0.15s; }
+.payBtn:hover:not(:disabled) { opacity: 0.85; }
+.payBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.adminBypassBtn { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; color: #888; font-size: 0.875rem; padding: 10px; cursor: pointer; width: 100%; }
+.adminBypassBtn:hover { border-color: #444; color: #ccc; }
+.validationNote { font-size: 0.78rem; color: #c9a96e; text-align: center; }
+
+/* ---- Shoots list ---- */
+.shootsList { display: flex; flex-direction: column; gap: 10px; }
+.shootCard { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: border-color 0.15s; }
+.shootCard:hover { border-color: #2a2a2a; }
+.shootCardActive { border-color: #4a4aff44 !important; }
+.shootMeta { display: flex; flex-direction: column; gap: 3px; }
+.shootDate { font-size: 0.78rem; color: #555; }
+.statusBadge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+.statusPending { background: #1a1a0a; color: #c9a96e; }
+.statusQueued { background: #0a0a1a; color: #6666ff; }
+.statusProcessing { background: #0a1a0a; color: #44cc66; }
+.statusComplete { background: #0a1a0a; color: #44ff88; }
+.statusFailed { background: #1a0a0a; color: #ff6666; }
+
+/* ---- Gallery ---- */
+.galleryHeader { display: flex; align-items: center; justify-content: space-between; }
+.galleryMeta { font-size: 0.8rem; color: #555; }
+.progressBar { height: 3px; background: #111; border-radius: 2px; overflow: hidden; }
+.galleryFill { height: 100%; background: #c9a96e; transition: width 0.5s ease; border-radius: 2px; }
+.slotGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.slotCard { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; overflow: hidden; }
+.slotPreview { aspect-ratio: 4/5; background: #111; display: flex; align-items: center; justify-content: center; position: relative; }
+.slotPreview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.slotSpinner { width: 20px; height: 20px; border: 2px solid #22222244; border-top-color: #c9a96e; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.slotInfo { padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; }
+.slotNum { font-size: 0.75rem; color: #555; }
+.slotStatus { font-size: 0.7rem; color: #555; }
+.slotStatusDone { color: #44ff88; }
+.slotStatusFailed { color: #ff6666; }
+.dlBtn { background: none; border: 1px solid #1e1e1e; border-radius: 6px; color: #666; font-size: 0.7rem; padding: 3px 8px; cursor: pointer; }
+.dlBtn:hover { border-color: #444; color: #ccc; }
+.zipBtn { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; color: #c9a96e; font-size: 0.85rem; font-weight: 600; padding: 10px 16px; cursor: pointer; width: 100%; }
+.zipBtn:hover { border-color: #c9a96e44; }
+
+/* ---- Status bar ---- */
+.statusBar { background: #0a0a1a; border: 1px solid #1a1a2e; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #8888ff; display: flex; align-items: center; gap: 8px; }
+.statusBarError { background: #1a0a0a; border-color: #2a1a1a; color: #ff6666; }
+.statusBarOk { background: #0a1a0a; border-color: #1a2a1a; color: #44ff88; }
+.miniSpinner { width: 12px; height: 12px; border: 2px solid #4a4aff22; border-top-color: #8888ff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  .nav { padding: 10px 14px; }
+  .navEmail { display: none; }
+  .navBrand { font-size: 0.95rem; gap: 6px; }
+  .navLogo { width: 26px; height: 26px; }
+  .signOutBtn { padding: 5px 10px; font-size: 0.75rem; }
+  .adminLink { padding: 5px 10px; font-size: 0.75rem; }
+  .main { padding: 12px 10px; gap: 12px; }
+  .panel { padding: 14px 12px; gap: 14px; }
+  .pill { font-size: 0.75rem; padding: 4px 10px; }
+  .pillGroup { gap: 4px; }
+  .payBtn { font-size: 0.9rem; padding: 12px; }
+  .slotGrid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .thumbGrid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px; }
+  .taggedRow { flex-direction: column; }
+  .taggedThumb { width: 100%; height: 80px; }
+  .progressName { max-width: 80px; }
+}

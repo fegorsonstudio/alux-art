@@ -1,0 +1,26 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/upload/presign/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/upload/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/shoots/[id]/events/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/shoots/[id]/start/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/shoots/[id]/pay/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/webhooks/paystack/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

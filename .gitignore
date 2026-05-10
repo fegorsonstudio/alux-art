@@ -1,0 +1,42 @@
+# Environment — never commit secrets
+.env.local
+.env*.local
+.env
+
+# Local deployment metadata
+.vercel/
+
+# Dependencies
+node_modules/
+.next/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Build outputs
+out/
+dist/
+build/
+tsconfig.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# n8n workflow exports (may contain webhook URLs)
+*.n8n.json
