@@ -41,6 +41,16 @@ export async function POST(req: NextRequest) {
     }
 
     const service = createServiceClient();
+    const { data: storedObject, error: objectErr } = await service.storage
+      .from(storageBucket)
+      .info(storagePath);
+    if (objectErr || !storedObject) {
+      return NextResponse.json(
+        { error: objectErr?.message ?? "Uploaded image was not found in storage" },
+        { status: 400 }
+      );
+    }
+
     const now = new Date().toISOString();
     const { error: dbErr } = await service.from("identity_images").upsert({
       id: imageId,

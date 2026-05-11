@@ -124,26 +124,24 @@ export default function WorkspacePage() {
       if (!presignRes.ok) { done(); return null; }
       const meta = await presignRes.json();
 
-      // Step 2: PUT file bytes directly to Supabase CDN via XHR for progress tracking
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener("progress", (e) => {
-          if (e.lengthComputable)
-            setUploadProgress(prev => ({ ...prev, [key]: Math.round(e.loaded / e.total * 100) }));
-        });
-        xhr.addEventListener("load", () => xhr.status < 300 ? resolve() : reject(new Error(`PUT ${xhr.status}`)));
-        xhr.addEventListener("error", () => reject(new Error("network error")));
-        xhr.open("PUT", meta.uploadUrl);
-        xhr.setRequestHeader("Content-Type", file.type);
-        xhr.send(file);
-      });
+      // Step 2: upload using Supabase's signed-upload contract. The storage API
+      // expects browser File bodies to be wrapped the same way the SDK does it.
+      const uploadResult = await supabase.storage
+        .from(meta.storageBucket)
+        .uploadToSignedUrl(meta.storagePath, meta.uploadToken, file, { contentType: file.type });
+      if (uploadResult.error) throw new Error(uploadResult.error.message);
+      setUploadProgress(prev => ({ ...prev, [key]: 100 }));
 
       // Step 3: after upload succeeds, record saved identity images in the library.
       if (saveLib && bucket === "identity-images") {
-        await fetch("/api/upload", {
+        const persistRes = await fetch("/api/upload", {
           method: "POST",
           body: (() => { const f = new FormData(); f.append("id", meta.id); f.append("filename", file.name); f.append("contentType", file.type); f.append("size", String(file.size)); f.append("storageBucket", meta.storageBucket); f.append("storagePath", meta.storagePath); f.append("saveToLibrary", "true"); return f; })(),
         });
+        if (!persistRes.ok) {
+          const persistData = await persistRes.json().catch(() => null);
+          throw new Error(persistData?.error ?? "Failed to save identity image");
+        }
       }
 
       done();
@@ -156,11 +154,15 @@ export default function WorkspacePage() {
         storagePath: meta.storagePath,
         url: meta.readUrl,
       } as UploadedRef;
-    } catch {
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Upload failed",
+      });
       done();
       return null;
     }
-  }, []);
+  }, [supabase]);
 
   const handleIdentityFiles = async (files: FileList) => {
     setUploading("identity");

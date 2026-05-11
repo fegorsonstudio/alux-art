@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     uploadUrl:     uploadData.signedUrl,
+    uploadToken:   uploadData.token,
     readUrl:       readData.signedUrl,
     id:            uniqueId,
     name:          filename,
