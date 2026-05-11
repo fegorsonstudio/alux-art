@@ -26,7 +26,8 @@ export async function middleware(request: NextRequest) {
   const isAuthPath = request.nextUrl.pathname.startsWith("/login");
   const isApiPath = request.nextUrl.pathname.startsWith("/api");
   const isPublicAsset = request.nextUrl.pathname.startsWith("/_next") ||
-    request.nextUrl.pathname.startsWith("/favicon");
+    request.nextUrl.pathname.startsWith("/favicon") ||
+    /\.(?:avif|gif|ico|jpg|jpeg|png|svg|webp|css|js|map|txt|xml|json|webmanifest)$/i.test(request.nextUrl.pathname);
 
   if (!user && !isAuthPath && !isApiPath && !isPublicAsset) {
     const url = request.nextUrl.clone();

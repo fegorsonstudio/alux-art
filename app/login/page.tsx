@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import styles from "./login.module.css";
 
@@ -8,6 +8,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const supabase = createClient();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.has("code")) {
+      window.location.replace(`/api/auth/callback${location.search}`);
+    }
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
