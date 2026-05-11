@@ -135,21 +135,48 @@ export default function WorkspacePage() {
     setUploadProgress(prev => ({ ...prev, [key]: 0 }));
     const done = () => setUploadProgress(prev => { const n = { ...prev }; delete n[key]; return n; });
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("bucket", bucket);
-      if (saveLib) form.append("saveToLibrary", "true");
-
       setUploadProgress(prev => ({ ...prev, [key]: 35 }));
-      const uploadRes = await fetch("/api/upload", {
+      const presignRes = await fetch("/api/upload/presign", {
         method: "POST",
-        body: form,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          size: file.size,
+          bucket,
+        }),
       });
 
-      const data = await uploadRes.json().catch(() => null);
-      if (!uploadRes.ok || !data?.image) {
-        throw new Error(data?.error ?? `Upload failed with ${uploadRes.status}`);
+      const presign = await presignRes.json().catch(() => null);
+      if (!presignRes.ok || !presign?.uploadToken || !presign?.storagePath) {
+        throw new Error(presign?.error ?? `Upload setup failed with ${presignRes.status}`);
       }
+
+      const { error: directUploadError } = await supabase.storage
+        .from(bucket)
+        .uploadToSignedUrl(presign.storagePath, presign.uploadToken, file, {
+          contentType: file.type,
+          upsert: true,
+        });
+      if (directUploadError) throw new Error(directUploadError.message);
+
+      setUploadProgress(prev => ({ ...prev, [key]: 75 }));
+      const finalizeRes = await fetch("/api/upload", {
+        method: "POST",
+        body: new URLSearchParams({
+          saveToLibrary: saveLib ? "true" : "false",
+          id: presign.id,
+          filename: presign.name,
+          contentType: presign.type,
+          size: String(presign.size),
+          storageBucket: presign.storageBucket,
+          storagePath: presign.storagePath,
+        }),
+      });
+
+      const data = await finalizeRes.json().catch(() => null);
+      if (!finalizeRes.ok || !data?.image) throw new Error(data?.error ?? `Upload finalize failed with ${finalizeRes.status}`);
+
       setUploadProgress(prev => ({ ...prev, [key]: 100 }));
 
       done();
@@ -164,7 +191,7 @@ export default function WorkspacePage() {
       done();
       return null;
     }
-  }, []);
+  }, [supabase]);
 
   const handleIdentityFiles = async (files: FileList) => {
     setUploading("identity");

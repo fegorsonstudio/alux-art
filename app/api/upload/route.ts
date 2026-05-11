@@ -11,25 +11,6 @@ function sanitizeFileName(name: string) {
   return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");
 }
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function waitForStoredObject(bucket: string, path: string) {
-  const service = createServiceClient();
-  let lastError = "";
-
-  for (let attempt = 1; attempt <= 8; attempt++) {
-    const { data, error } = await service.storage.from(bucket).exists(path);
-    if (data === true) return { ok: true, error: "" };
-
-    lastError = error?.message ?? "Object not found";
-    if (attempt < 8) await sleep(250);
-  }
-
-  return { ok: false, error: lastError };
-}
-
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -62,36 +43,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid image metadata" }, { status: 400 });
     }
 
-    const objectCheck = await waitForStoredObject(storageBucket, storagePath);
-    if (!objectCheck.ok) {
-      console.error("[upload] storage verification failed:", {
-        imageId,
-        storageBucket,
-        storagePath,
-        error: objectCheck.error,
-      });
-      return NextResponse.json(
-        { error: `Storage verification failed after upload: ${objectCheck.error}. Try uploading the image again.` },
-        { status: 409 }
-      );
-    }
-
     const service = createServiceClient();
     const now = new Date().toISOString();
-    const { error: dbErr } = await service.from("identity_images").upsert({
-      id: imageId,
-      user_id: user.id,
-      name: filename,
-      type: contentType,
-      size,
-      storage_bucket: storageBucket,
-      storage_path: storagePath,
-      created_at: now,
-      last_used_at: now,
-    }, { onConflict: "id" });
+    if (saveToLibrary) {
+      const { error: dbErr } = await service.from("identity_images").upsert({
+        id: imageId,
+        user_id: user.id,
+        name: filename,
+        type: contentType,
+        size,
+        storage_bucket: storageBucket,
+        storage_path: storagePath,
+        created_at: now,
+        last_used_at: now,
+      }, { onConflict: "id" });
 
-    if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
+      if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
+    }
+
+    const { data: signed, error: signedErr } = await service.storage.from(storageBucket).createSignedUrl(storagePath, 3600);
+    if (signedErr || !signed?.signedUrl) {
+      return NextResponse.json({ error: signedErr?.message ?? "Unable to sign uploaded image" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      image: {
+        id: imageId,
+        name: filename,
+        type: contentType,
+        size,
+        storageBucket,
+        storagePath,
+        url: signed.signedUrl,
+      },
+    });
   }
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
