@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid bucket" }, { status: 400 });
   }
 
-  if (!file && saveToLibrary) {
+  if (!file && form.has("storagePath")) {
     const imageId = form.get("id") as string | null;
     const filename = form.get("filename") as string | null;
     const contentType = form.get("contentType") as string | null;
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!imageId || !filename || !contentType || !storageBucket || !storagePath) {
       return NextResponse.json({ error: "Missing image metadata" }, { status: 400 });
     }
-    if (storageBucket !== "identity-images" || !storagePath.startsWith(`${user.id}/`)) {
+    if (!ALLOWED_BUCKETS.has(storageBucket) || !storagePath.startsWith(`${user.id}/`)) {
       return NextResponse.json({ error: "Invalid image metadata" }, { status: 400 });
     }
     if (!contentType.startsWith("image/") || !Number.isFinite(size) || size <= 0 || size > MAX_SIZE) {
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const service = createServiceClient();
     const now = new Date().toISOString();
-    if (saveToLibrary) {
+    if (saveToLibrary && storageBucket === "identity-images") {
       const { error: dbErr } = await service.from("identity_images").upsert({
         id: imageId,
         user_id: user.id,
