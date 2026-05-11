@@ -63,6 +63,10 @@ export default function WorkspacePage() {
         fetch("/api/shoots"),
         fetch("/api/identity-library"),
       ]);
+      if (meRes.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       if (meRes.ok) setUser((await meRes.json()).user);
       if (configRes.ok) { const c = await configRes.json(); setPricing(c.pricing); }
       if (shootsRes.ok) {
