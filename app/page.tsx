@@ -204,7 +204,7 @@ export default function WorkspacePage() {
   };
 
   const handleCreateAndPay = async (adminBypass = false) => {
-    setStatus({ type: "loading", message: "Creating shoot…" });
+    setStatus({ type: "loading", message: "Creating shoot..." });
     try {
       const res = await fetch("/api/shoots", {
         method: "POST",
@@ -225,18 +225,18 @@ export default function WorkspacePage() {
       setCurrentShoot(shoot);
 
       if (adminBypass) {
-        setStatus({ type: "ok", message: "Generating…" });
-        // Fire-and-forget — start endpoint runs in its own 300s Vercel function context
+        setStatus({ type: "ok", message: "Generating..." });
+        // Fire-and-forget: start endpoint runs in its own 300s Vercel function context.
         fetch(`/api/shoots/${shoot.id}/start`, { method: "POST" }).catch(() => {});
         return;
       }
 
       // Initiate payment
-      setStatus({ type: "loading", message: "Opening payment…" });
+      setStatus({ type: "loading", message: "Opening payment..." });
       const payRes = await fetch(`/api/shoots/${shoot.id}/pay`, { method: "POST" });
       const payData = await payRes.json();
       if (!payRes.ok) { setStatus({ type: "error", message: payData.error }); return; }
-      if (payData.bypass) { setStatus({ type: "ok", message: "Generating…" }); return; }
+      if (payData.bypass) { setStatus({ type: "ok", message: "Generating..." }); return; }
 
       // Open Paystack
       window.location.href = payData.authorization_url;
@@ -257,7 +257,7 @@ export default function WorkspacePage() {
   };
 
   const downloadZip = async (shoot: Shoot) => {
-    setStatus({ type: "loading", message: "Preparing ZIP…" });
+    setStatus({ type: "loading", message: "Preparing ZIP..." });
     const res = await fetch(`/api/shoots/${shoot.id}/download-zip`);
     const { url } = await res.json();
     if (url) { window.open(url, "_blank"); setStatus({ type: "ok", message: "ZIP ready!" }); }
@@ -267,7 +267,7 @@ export default function WorkspacePage() {
   const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/login"; };
   const isAdmin = user?.role === "admin";
   const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
-  const price = currency === "USD" ? `$${pricing.usd}` : `₦${pricing.ngn.toLocaleString()}`;
+  const price = currency === "USD" ? `$${pricing.usd}` : `NGN ${pricing.ngn.toLocaleString()}`;
 
   return (
     <div className={styles.app}>
@@ -301,7 +301,7 @@ export default function WorkspacePage() {
             {/* Saved library */}
             {libraryImages.length > 0 && (
               <div>
-                <p className={styles.libLabel}>Your library — tap to select/deselect</p>
+                <p className={styles.libLabel}>Your library - tap to select/deselect</p>
                 <div className={styles.thumbGrid}>
                   {libraryImages.map(img => {
                     const selected = identityImages.some(i => i.id === img.id);
@@ -310,7 +310,7 @@ export default function WorkspacePage() {
                         onClick={() => handleAddFromLibrary(img)}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt={img.name} />
-                        {selected && <span className={styles.thumbCheck}>✓</span>}
+                        {selected && <span className={styles.thumbCheck}>OK</span>}
                       </div>
                     );
                   })}
@@ -325,7 +325,7 @@ export default function WorkspacePage() {
                   <div key={img.id} className={styles.thumb}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img.url} alt={img.name} />
-                    <button className={styles.thumbRemove} onClick={() => setIdentityImages(p => p.filter(i => i.id !== img.id))}>✕</button>
+                    <button className={styles.thumbRemove} onClick={() => setIdentityImages(p => p.filter(i => i.id !== img.id))}>x</button>
                   </div>
                 ))}
               </div>
@@ -346,7 +346,7 @@ export default function WorkspacePage() {
                   ))}
                 </div>
               ) : (
-                <p>{uploading === "identity" ? "Processing…" : "Click to add identity photos"}</p>
+                <p>{uploading === "identity" ? "Processing..." : "Click to add identity photos"}</p>
               )}
               <p className={styles.uploadCount}>{identityImages.length}/3 minimum</p>
             </div>
@@ -367,7 +367,7 @@ export default function WorkspacePage() {
                   <div key={img.id} className={styles.thumb}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img.url} alt={img.name} />
-                    <button className={styles.thumbRemove} onClick={() => setInspirationImages(p => p.filter(i => i.id !== img.id))}>✕</button>
+                    <button className={styles.thumbRemove} onClick={() => setInspirationImages(p => p.filter(i => i.id !== img.id))}>x</button>
                   </div>
                 ))}
               </div>
@@ -375,11 +375,11 @@ export default function WorkspacePage() {
             <div className={styles.uploadZone} onClick={() => inspirationRef.current?.click()}>
               <input ref={inspirationRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                 onChange={e => e.target.files && handleInspirationFiles(e.target.files)} />
-              <p>{uploading === "inspiration" ? "Uploading…" : "Click to add mood/inspiration photos"}</p>
+              <p>{uploading === "inspiration" ? "Uploading..." : "Click to add mood/inspiration photos"}</p>
             </div>
           </div>
 
-          {/* Tagged References — advanced mode only */}
+          {/* Tagged References - advanced mode only */}
           {mode === "advanced" && (
             <div className={styles.panel}>
               <p className={styles.panelTitle}>Tagged References</p>
@@ -402,11 +402,11 @@ export default function WorkspacePage() {
                         </div>
                         <input
                           className={styles.customTagInput}
-                          placeholder="Custom tag…"
+                          placeholder="Custom tag..."
                           value={ref.customTag ?? ""}
                           onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, customTag: e.target.value, tag: undefined } : r))}
                         />
-                        <button className={styles.thumbRemove} style={{ position: "static" }} onClick={() => setTaggedRefs(p => p.filter(r => r.id !== ref.id))}>✕ Remove</button>
+                        <button className={styles.thumbRemove} style={{ position: "static" }} onClick={() => setTaggedRefs(p => p.filter(r => r.id !== ref.id))}>x Remove</button>
                       </div>
                     </div>
                   ))}
@@ -415,8 +415,8 @@ export default function WorkspacePage() {
               <div className={styles.uploadZone} onClick={() => taggedRef.current?.click()}>
                 <input ref={taggedRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                   onChange={e => e.target.files && handleTaggedFiles(e.target.files)} />
-                <p>{uploading === "tagged" ? "Uploading…" : "Add reference images and tag each one"}</p>
-                <p className={styles.uploadCount}>OUTFIT · HAIRSTYLE · MAKEUP · LIGHTING · BACKGROUND</p>
+                <p>{uploading === "tagged" ? "Uploading..." : "Add reference images and tag each one"}</p>
+                <p className={styles.uploadCount}>OUTFIT / HAIRSTYLE / MAKEUP / LIGHTING / BACKGROUND</p>
               </div>
             </div>
           )}
@@ -452,8 +452,8 @@ export default function WorkspacePage() {
           {/* Quote */}
           <div className={styles.panel}>
             <p className={styles.panelTitle}>Quote (optional)</p>
-            <textarea className={styles.quoteInput} rows={2} placeholder="Inspirational quote text…" value={quote.text} onChange={e => setQuote(q => ({ ...q, text: e.target.value }))} />
-            <input className={styles.quoteInput} placeholder="— Attribution" value={quote.attribution} onChange={e => setQuote(q => ({ ...q, attribution: e.target.value }))} />
+            <textarea className={styles.quoteInput} rows={2} placeholder="Inspirational quote text..." value={quote.text} onChange={e => setQuote(q => ({ ...q, text: e.target.value }))} />
+            <input className={styles.quoteInput} placeholder="- Attribution" value={quote.attribution} onChange={e => setQuote(q => ({ ...q, attribution: e.target.value }))} />
           </div>
 
           {/* CTA */}
@@ -468,7 +468,7 @@ export default function WorkspacePage() {
             </button>
             {isAdmin && (
               <button className={styles.adminBypassBtn} onClick={() => handleCreateAndPay(true)}>
-                ⚡ Admin: Generate Free
+                Admin: Generate Free
               </button>
             )}
           </div>
@@ -503,7 +503,7 @@ export default function WorkspacePage() {
                     }
                   }}>
                     <div className={styles.shootMeta}>
-                      <span style={{ fontSize: "0.85rem" }}>{(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} · {s.mode}</span>
+                      <span style={{ fontSize: "0.85rem" }}>{(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode}</span>
                       <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
                     </div>
                     <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").charAt(0) + (s.status ?? "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
@@ -546,7 +546,7 @@ export default function WorkspacePage() {
                       <span className={styles.slotNum}>#{img.slot} {img.kind}</span>
                       <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`}>
                         {img.status === "COMPLETE" ? (
-                          <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)}>↓ 4K</button>
+                          <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)}>4K</button>
                         ) : img.status?.toLowerCase()}
                       </span>
                     </div>
@@ -556,7 +556,7 @@ export default function WorkspacePage() {
 
               {currentShoot.status === "COMPLETE" && (
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
-                  ↓ Download All 10 (ZIP)
+                  Download All 10 (ZIP)
                 </button>
               )}
             </div>

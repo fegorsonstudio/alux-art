@@ -38,7 +38,7 @@ export default function LoginPage() {
         </div>
         <h1 className={styles.headline}>Your AI Photoshoot Studio</h1>
         <p className={styles.sub}>
-          Upload your photos. We generate a 10-image professional shoot — no prompts needed.
+          Upload your photos. We generate a 10-image professional shoot - no prompts needed.
         </p>
         <button
           className={styles.googleBtn}
@@ -55,7 +55,7 @@ export default function LoginPage() {
               <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
             </svg>
           )}
-          {loading ? "Signing in…" : "Continue with Google"}
+          {loading ? "Signing in..." : "Continue with Google"}
         </button>
         {error && <p className={styles.error}>{error}</p>}
         <p className={styles.fine}>
