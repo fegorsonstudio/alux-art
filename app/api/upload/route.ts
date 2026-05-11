@@ -4,6 +4,9 @@ import { createClient, createServiceClient } from "@/lib/supabase-server";
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 function sanitizeFileName(name: string) {
   return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");
 }
