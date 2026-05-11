@@ -37,15 +37,9 @@ export async function POST(req: NextRequest) {
   if (uploadErr || !uploadData)
     return NextResponse.json({ error: uploadErr?.message ?? "presign failed" }, { status: 500 });
 
-  const { data: readData, error: readErr } = await service.storage
-    .from(bucket).createSignedUrl(path, 3600);
-  if (readErr || !readData)
-    return NextResponse.json({ error: readErr?.message ?? "read URL failed" }, { status: 500 });
-
   return NextResponse.json({
     uploadUrl:     uploadData.signedUrl,
     uploadToken:   uploadData.token,
-    readUrl:       readData.signedUrl,
     id:            uniqueId,
     name:          filename,
     type:          contentType,
