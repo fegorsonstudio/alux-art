@@ -100,17 +100,15 @@ async function generateImage(
 ): Promise<string> {
   const size = GPT_SIZE[aspectRatio] ?? "1024x1536";
 
-  // Primary: fal.ai — openai/gpt-image-2/edit
+  // Primary: fal.ai — Nano Banana 2 edit
   // SDK v1 wraps response as { data: { images: [...] }, requestId }
   if (process.env.FAL_KEY && referenceUrls.length > 0) {
     try {
-      const raw = await fal.run("openai/gpt-image-2/edit", {
+      const raw = await fal.run("fal-ai/nano-banana-2/edit", {
         input: {
           prompt,
           image_urls: referenceUrls.slice(0, 4),
-          size,
-          quality: "high",
-          n: 1,
+          output_format: "png",
         },
       }) as Record<string, unknown>;
       // Handle both unwrapped { images } and wrapped { data: { images } }
