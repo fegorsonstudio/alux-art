@@ -8,6 +8,25 @@ function sanitizeFileName(name: string) {
   return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");
 }
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function waitForStoredObject(bucket: string, path: string) {
+  const service = createServiceClient();
+  let lastError = "";
+
+  for (let attempt = 1; attempt <= 8; attempt++) {
+    const { data, error } = await service.storage.from(bucket).exists(path);
+    if (data === true) return { ok: true, error: "" };
+
+    lastError = error?.message ?? "Object not found";
+    if (attempt < 8) await sleep(250);
+  }
+
+  return { ok: false, error: lastError };
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -40,17 +59,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid image metadata" }, { status: 400 });
     }
 
-    const service = createServiceClient();
-    const { data: storedObject, error: objectErr } = await service.storage
-      .from(storageBucket)
-      .info(storagePath);
-    if (objectErr || !storedObject) {
+    const objectCheck = await waitForStoredObject(storageBucket, storagePath);
+    if (!objectCheck.ok) {
+      console.error("[upload] storage verification failed:", {
+        imageId,
+        storageBucket,
+        storagePath,
+        error: objectCheck.error,
+      });
       return NextResponse.json(
-        { error: objectErr?.message ?? "Uploaded image was not found in storage" },
-        { status: 400 }
+        { error: `Storage verification failed after upload: ${objectCheck.error}. Try uploading the image again.` },
+        { status: 409 }
       );
     }
 
+    const service = createServiceClient();
     const now = new Date().toISOString();
     const { error: dbErr } = await service.from("identity_images").upsert({
       id: imageId,

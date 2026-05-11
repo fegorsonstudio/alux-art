@@ -149,6 +149,9 @@ export default function WorkspacePage() {
         .from(meta.storageBucket)
         .uploadToSignedUrl(meta.storagePath, meta.uploadToken, file, { contentType: file.type });
       if (uploadResult.error) throw new Error(uploadResult.error.message);
+      if (uploadResult.data?.path && uploadResult.data.path !== meta.storagePath) {
+        throw new Error(`Storage path mismatch: expected ${meta.storagePath}, got ${uploadResult.data.path}`);
+      }
       setUploadProgress(prev => ({ ...prev, [key]: 100 }));
 
       // Step 3: after upload succeeds, record saved identity images in the library.
