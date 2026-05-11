@@ -33,11 +33,26 @@ export default function WorkspacePage() {
   const [status, setStatus] = useState<{ type: "idle" | "loading" | "ok" | "error"; message?: string }>({ type: "idle" });
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadIssue, setUploadIssue] = useState<string>("");
   const [libraryImages, setLibraryImages] = useState<UploadedRef[]>([]);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
   const taggedRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("studio-theme");
+    if (stored === "dark" || stored === "light") setTheme(stored);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("studio-theme", next);
+      return next;
+    });
+  };
 
   // Load user + config + shoots
   useEffect(() => {
@@ -112,6 +127,7 @@ export default function WorkspacePage() {
 
   const uploadFile = useCallback(async (file: File, bucket: string, saveLib = false): Promise<UploadedRef | null> => {
     const key = `${file.name}-${file.size}`;
+    setUploadIssue("");
     setUploadProgress(prev => ({ ...prev, [key]: 0 }));
     const done = () => setUploadProgress(prev => { const n = { ...prev }; delete n[key]; return n; });
     try {
@@ -121,7 +137,10 @@ export default function WorkspacePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket }),
       });
-      if (!presignRes.ok) { done(); return null; }
+      if (!presignRes.ok) {
+        const presignData = await presignRes.json().catch(() => null);
+        throw new Error(presignData?.error ?? `Presign failed with ${presignRes.status}`);
+      }
       const meta = await presignRes.json();
 
       // Step 2: upload using Supabase's signed-upload contract. The storage API
@@ -155,9 +174,11 @@ export default function WorkspacePage() {
         url: meta.readUrl,
       } as UploadedRef;
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      setUploadIssue(`${file.name}: ${message}`);
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Upload failed",
+        message,
       });
       done();
       return null;
@@ -270,7 +291,7 @@ export default function WorkspacePage() {
   const price = currency === "USD" ? `$${pricing.usd}` : `NGN ${pricing.ngn.toLocaleString()}`;
 
   return (
-    <div className={styles.app}>
+    <div className={styles.app} data-theme={theme}>
       {/* Nav */}
       <nav className={styles.nav}>
         <div className={styles.navBrand}>
@@ -281,6 +302,9 @@ export default function WorkspacePage() {
         <div className={styles.navRight}>
           {isAdmin && <a href="/admin" className={styles.adminLink}>Admin</a>}
           <span className={styles.navEmail}>{user?.email}</span>
+          <button className={styles.themeToggle} onClick={toggleTheme} aria-pressed={theme === "dark"}>
+            {theme === "dark" ? "Light" : "Dark"}
+          </button>
           <button className={styles.signOutBtn} onClick={signOut}>Sign out</button>
         </div>
       </nav>
@@ -356,6 +380,7 @@ export default function WorkspacePage() {
               <input type="checkbox" checked={saveToLibrary} onChange={e => setSaveToLibrary(e.target.checked)} />
               <span>Save to my identity library</span>
             </label>
+            {uploadIssue && <p className={styles.uploadIssue}>{uploadIssue}</p>}
           </div>
 
           {/* Inspiration photos */}
