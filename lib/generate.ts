@@ -38,6 +38,10 @@ async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string
     const content = [
       {
         type: "text",
+        text: "Critical wardrobe requirement: treat the outfit shown in the inspiration images as a locked styling reference. Identify the exact garments, color, silhouette, texture, fit, and accessories. The generated shoot must maintain that same inspiration outfit across every person image; only pose, lighting, camera angle, and setting may change.",
+      },
+      {
+        type: "text",
         text: "You are a professional photography director's assistant. Study these reference photos and write a casting brief for a photo shoot. Describe: (1) the subject's appearance — skin tone, hair color/texture/length, build, approximate age range, personal style from clothing; (2) the mood, lighting style, color palette, and aesthetic from the inspiration images. Be specific and vivid. This brief will be used to generate AI photoshoot images that match this person's look.",
       },
       ...identityUrls.slice(0, 3).map(url => ({ type: "image_url", image_url: { url, detail: "high" } })),
@@ -58,7 +62,7 @@ async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string
 // Shoot Brief — GPT-4o generates 10 shot directives
 // ---------------------------------------------------------------------------
 async function generateShootBrief(identityProfile: string, mode: string): Promise<string[]> {
-  if (!process.env.OPENAI_API_KEY) return Array(10).fill("professional photoshoot portrait");
+  if (!process.env.OPENAI_API_KEY) return fallbackShootDirectives();
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -75,8 +79,25 @@ async function generateShootBrief(identityProfile: string, mode: string): Promis
     });
     const data = await res.json();
     const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
-    return parsed.shots ?? Array(10).fill("professional photoshoot portrait");
-  } catch { return Array(10).fill("professional photoshoot portrait"); }
+    return enforceOutfitContinuity(parsed.shots ?? fallbackShootDirectives());
+  } catch { return fallbackShootDirectives(); }
+}
+
+function fallbackShootDirectives() {
+  return Array(10).fill("professional photoshoot portrait with the locked inspiration outfit maintained");
+}
+
+function enforceOutfitContinuity(shots: string[]) {
+  return Array.from({ length: 10 }, (_, index) => {
+    const directive = shots[index] ?? "professional photoshoot portrait";
+    if (index <= 7) {
+      return `${directive} Wardrobe continuity: keep the exact same inspiration outfit throughout the shoot - same garments, colors, silhouette, fit, fabric texture, styling, and accessories. Do not change or replace the outfit.`;
+    }
+    if (index === 8) {
+      return `${directive} Match the still-life props, materials, and color palette to the locked inspiration outfit.`;
+    }
+    return `${directive} Match the minimalist background and quote-overlay palette to the locked inspiration outfit.`;
+  });
 }
 
 // openai/gpt-image-2/edit uses OpenAI size strings, not fal aspect ratios
@@ -336,8 +357,7 @@ export async function startGenerationWorker(
   }
 
   // Resolve reference signed URLs
-  const getSignedUrls = async (purpose: string) => {
-    const refs = (shoot.shoot_references ?? []).filter((r: Record<string, unknown>) => r.purpose === purpose);
+  const getSignedUrls = async (refs: Record<string, unknown>[]) => {
     return Promise.all(refs.map(async (r: Record<string, unknown>) => {
       const { data } = await service.storage
         .from(r.storage_bucket as string)
@@ -346,9 +366,19 @@ export async function startGenerationWorker(
     }));
   };
 
-  const identityUrls = await getSignedUrls("identity");
-  const inspirationUrls = await getSignedUrls("inspiration");
-  const allRefUrls = [...identityUrls, ...inspirationUrls];
+  const referenceRows = (shoot.shoot_references ?? []) as Record<string, unknown>[];
+  const identityRefs = referenceRows.filter((r) => r.purpose === "identity");
+  const inspirationRefs = referenceRows.filter((r) => r.purpose === "inspiration");
+  const taggedRefs = referenceRows.filter((r) => r.purpose === "tagged");
+  const outfitRefs = [
+    ...inspirationRefs,
+    ...taggedRefs.filter((r) => r.tag === "OUTFIT" || r.custom_name === "OUTFIT"),
+  ];
+
+  const identityUrls = await getSignedUrls(identityRefs);
+  const inspirationUrls = await getSignedUrls(inspirationRefs);
+  const outfitUrls = await getSignedUrls(outfitRefs);
+  const generationRefUrls = [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
 
   // Vision analysis
   let identityProfile = (shoot.identity_profile as string | null) ?? "";
@@ -365,8 +395,9 @@ export async function startGenerationWorker(
   }
 
   // Shoot brief
-  let directives: string[] = parseStoredDirectives(shoot.shoot_brief) ??
-    Array(10).fill("professional photoshoot portrait, studio lighting, identity-preserved");
+  let directives: string[] = enforceOutfitContinuity(
+    parseStoredDirectives(shoot.shoot_brief) ?? fallbackShootDirectives()
+  );
   if (!shoot.shoot_brief) {
     try {
       directives = await generateShootBrief(identityProfile, shoot.mode);
@@ -385,13 +416,14 @@ export async function startGenerationWorker(
 
     const slot = img.slot as number;
     const directive = directives[slot - 1] ?? "professional photoshoot portrait";
-    const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} Identity-locked, photorealistic, high quality.`;
+    const outfitLock = "Maintain the inspiration outfit consistently across this image: same garment pieces, colors, silhouette, fabric texture, fit, styling, and accessories as the outfit reference. Do not change wardrobe.";
+    const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} ${slot <= 8 ? outfitLock : "Use the locked outfit reference as the visual palette anchor."} Identity-locked, photorealistic, high quality.`;
 
     await updateImage(img.id as string, { status: "GENERATING", stage: `Generating slot ${slot}` });
     await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "GENERATING" } });
 
     try {
-      let imageUrl = await generateImage(fullPrompt, allRefUrls, shoot.aspect_ratio as AspectRatio, slot);
+      let imageUrl = await generateImage(fullPrompt, generationRefUrls, shoot.aspect_ratio as AspectRatio, slot);
 
       // Upscale portraits (slots 1-9)
       if (slot <= 9) {
