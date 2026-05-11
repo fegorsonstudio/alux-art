@@ -131,51 +131,25 @@ export default function WorkspacePage() {
     setUploadProgress(prev => ({ ...prev, [key]: 0 }));
     const done = () => setUploadProgress(prev => { const n = { ...prev }; delete n[key]; return n; });
     try {
-      // Step 1: get presigned URL (only metadata travels through server)
-      const presignRes = await fetch("/api/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket }),
-      });
-      if (!presignRes.ok) {
-        const presignData = await presignRes.json().catch(() => null);
-        throw new Error(presignData?.error ?? `Presign failed with ${presignRes.status}`);
-      }
-      const meta = await presignRes.json();
+      const form = new FormData();
+      form.append("file", file);
+      form.append("bucket", bucket);
+      if (saveLib) form.append("saveToLibrary", "true");
 
-      // Step 2: upload using Supabase's signed-upload contract. The storage API
-      // expects browser File bodies to be wrapped the same way the SDK does it.
-      const uploadResult = await supabase.storage
-        .from(meta.storageBucket)
-        .uploadToSignedUrl(meta.storagePath, meta.uploadToken, file, { contentType: file.type });
-      if (uploadResult.error) throw new Error(uploadResult.error.message);
-      if (uploadResult.data?.path && uploadResult.data.path !== meta.storagePath) {
-        throw new Error(`Storage path mismatch: expected ${meta.storagePath}, got ${uploadResult.data.path}`);
+      setUploadProgress(prev => ({ ...prev, [key]: 35 }));
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: form,
+      });
+
+      const data = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok || !data?.image) {
+        throw new Error(data?.error ?? `Upload failed with ${uploadRes.status}`);
       }
       setUploadProgress(prev => ({ ...prev, [key]: 100 }));
 
-      // Step 3: after upload succeeds, record saved identity images in the library.
-      if (saveLib && bucket === "identity-images") {
-        const persistRes = await fetch("/api/upload", {
-          method: "POST",
-          body: (() => { const f = new FormData(); f.append("id", meta.id); f.append("filename", file.name); f.append("contentType", file.type); f.append("size", String(file.size)); f.append("storageBucket", meta.storageBucket); f.append("storagePath", meta.storagePath); f.append("saveToLibrary", "true"); return f; })(),
-        });
-        if (!persistRes.ok) {
-          const persistData = await persistRes.json().catch(() => null);
-          throw new Error(persistData?.error ?? "Failed to save identity image");
-        }
-      }
-
       done();
-      return {
-        id: meta.id,
-        name: meta.name,
-        type: meta.type,
-        size: meta.size,
-        storageBucket: meta.storageBucket,
-        storagePath: meta.storagePath,
-        url: meta.readUrl,
-      } as UploadedRef;
+      return data.image as UploadedRef;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       setUploadIssue(`${file.name}: ${message}`);
@@ -186,7 +160,7 @@ export default function WorkspacePage() {
       done();
       return null;
     }
-  }, [supabase]);
+  }, []);
 
   const handleIdentityFiles = async (files: FileList) => {
     setUploading("identity");
