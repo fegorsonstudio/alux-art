@@ -31,7 +31,25 @@ export async function POST(
     if (!isOwner && !isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const result = await startGenerationWorker(id, { maxSlots: 1 });
+  let result;
+  try {
+    result = await startGenerationWorker(id, { maxSlots: 1 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[start] generation worker failed:", message);
+
+    const service = createServiceClient();
+    await service
+      .from("shoots")
+      .update({
+        status: "FAILED",
+        pipeline_stage: `Generation failed: ${message}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
 
   if (!result.done && process.env.INTERNAL_API_SECRET) {
     const origin = new URL(req.url).origin;

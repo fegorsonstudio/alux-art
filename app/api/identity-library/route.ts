@@ -17,12 +17,13 @@ export async function GET() {
     .order("last_used_at", { ascending: false });
 
   // Generate signed URLs for each image
-  const images = await Promise.all((data ?? []).map(async (img) => {
+  const signedImages = await Promise.all((data ?? []).map(async (img) => {
     const { data: signed } = await service.storage
       .from(img.storage_bucket)
       .createSignedUrl(img.storage_path, 3600);
-    return { ...img, url: signed?.signedUrl };
+    return signed?.signedUrl ? { ...img, url: signed.signedUrl } : null;
   }));
+  const images = signedImages.filter(Boolean);
 
   return NextResponse.json({ images });
 }

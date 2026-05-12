@@ -92,8 +92,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid reference image metadata" }, { status: 400 });
   }
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
   const service = createServiceClient();
+
+  const referenceChecks = await Promise.all(allRefs.map(async (ref) => {
+    const { data } = await service.storage
+      .from(ref.storageBucket as string)
+      .createSignedUrl(ref.storagePath as string, 60);
+    return Boolean(data?.signedUrl);
+  }));
+
+  if (!referenceChecks.every(Boolean)) {
+    return NextResponse.json({ error: "One or more selected reference images no longer exists. Refresh and choose saved images that still show previews." }, { status: 400 });
+  }
+
+  const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
   // Create shoot record
   const shootId = crypto.randomUUID();

@@ -295,6 +295,10 @@ function parseStoredDirectives(value: unknown): string[] | null {
   }
 }
 
+function asStoredText(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
 async function summarizeShootProgress(shootId: string, userId: string, total: number): Promise<GenerationWorkerResult> {
   const service = createServiceClient();
   const { data: latestImages } = await service
@@ -358,12 +362,13 @@ export async function startGenerationWorker(
 
   // Resolve reference signed URLs
   const getSignedUrls = async (refs: Record<string, unknown>[]) => {
-    return Promise.all(refs.map(async (r: Record<string, unknown>) => {
+    const urls = await Promise.all(refs.map(async (r: Record<string, unknown>) => {
       const { data } = await service.storage
         .from(r.storage_bucket as string)
         .createSignedUrl(r.storage_path as string, 7200);
       return data?.signedUrl ?? "";
     }));
+    return urls.filter((url) => /^https?:\/\//i.test(url));
   };
 
   const referenceRows = (shoot.shoot_references ?? []) as Record<string, unknown>[];
@@ -381,7 +386,7 @@ export async function startGenerationWorker(
   const generationRefUrls = [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
 
   // Vision analysis
-  let identityProfile = (shoot.identity_profile as string | null) ?? "";
+  let identityProfile = asStoredText(shoot.identity_profile);
   if (!identityProfile) {
     await updateShoot(shootId, { status: "PROCESSING", pipeline_stage: "Analyzing identity" });
     await emit(shootId, userId, "stage", { stage: "Analyzing identity", progress: 5 });
