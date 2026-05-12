@@ -531,6 +531,7 @@ export default function WorkspacePage() {
           {mode === "advanced" && (
             <div className={styles.panel}>
               <p className={styles.panelTitle}>Tagged References</p>
+              <p className={styles.helperText}>We extract only the tagged element from each image. For best results, use clear, well-lit references.</p>
               {taggedRefs.length > 0 && (
                 <div className={styles.taggedList}>
                   {taggedRefs.map(ref => (

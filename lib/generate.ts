@@ -113,11 +113,11 @@ async function runVisionAnalysis(
     const content = [
       {
         type: "text",
-        text: "Critical wardrobe requirement: treat the outfit shown in the inspiration images as a locked styling reference. Identify the exact garments, color, silhouette, texture, fit, and accessories. The generated shoot must maintain that same inspiration outfit across every person image; only pose, lighting, camera angle, and setting may change.",
+        text: "Critical wardrobe requirement: identity images are identity-only references. Use them for facial identity, skin tone, build, and stable likeness only. Do not copy clothing, accessories, background, lighting, pose, or styling from identity images. Wardrobe must come only from the [OUTFIT] tagged reference in advanced mode, or from the inspiration image in fast mode. Identify the exact wardrobe source garments, color, silhouette, texture, fit, and accessories. The generated shoot must maintain that locked wardrobe source across every person image; only pose, lighting, camera angle, and setting may change unless a tagged reference controls that category.",
       },
       {
         type: "text",
-        text: "You are a professional photography director's assistant. Study these reference photos and write a casting brief for a photo shoot. Describe: (1) the subject's appearance — skin tone, hair color/texture/length, build, approximate age range, personal style from clothing; (2) the mood, lighting style, color palette, and aesthetic from the inspiration images. Be specific and vivid. This brief will be used to generate AI photoshoot images that match this person's look.",
+        text: "You are a professional photography director's assistant. Study these reference photos and write a casting brief for a photo shoot. Describe: (1) the subject's appearance - skin tone, hair color/texture/length, build, approximate age range, and biometric likeness. Do not treat identity-image clothing as personal style or wardrobe direction; (2) the wardrobe source and tagged overrides; (3) the mood, lighting style, color palette, camera/lens feel, and aesthetic from the inspiration images. Use concrete photographic language such as lens feel, lighting direction, realistic skin texture, subtle film grain, depth of field, and color balance. Do not use subjective hype words like stunning, beautiful, masterpiece, epic, insane detail, or ultra-detailed.",
       },
       ...(await Promise.all(identityUrls.slice(0, 3).map(url => anthropicImageBlock(url, "high")))),
       ...(await Promise.all(inspirationUrls.slice(0, 2).map(url => anthropicImageBlock(url, "low")))),
@@ -171,6 +171,40 @@ function enforceOutfitContinuity(shots: string[]) {
 
 function referenceTag(ref: Record<string, unknown>) {
   return String(ref.tag ?? ref.custom_name ?? "").trim().toUpperCase().replace(/\s+/g, "_");
+}
+
+function buildFinalImagePrompt(args: {
+  directive: string;
+  identityProfile: string;
+  mode: string;
+  slot: number;
+  hasOutfitOverride: boolean;
+}) {
+  const identitySummary = args.identityProfile
+    ? args.identityProfile.slice(0, 450)
+    : "same person from identity references";
+  const wardrobeSource = args.mode === "advanced" && args.hasOutfitOverride
+    ? "advanced [OUTFIT] tagged reference"
+    : "base inspiration wardrobe";
+  const preserveBlock = [
+    "Preserve facial identity from identity references: face shape, eye spacing, nose shape, lips, jawline, skin tone, hairline, body build, and recognizable likeness.",
+    "Do not copy clothing, accessories, background, lighting, pose, or styling from identity images.",
+    "Treat identity-image clothing as incidental capture context.",
+  ].join(" ");
+  const changeBlock = args.slot <= 8
+    ? `Apply wardrobe only from the ${wardrobeSource}. Maintain exact garments, colors, silhouette, fit, fabric texture, folds, styling, and accessories from that wardrobe source.`
+    : `Use the ${wardrobeSource} only as the visual palette anchor for props, materials, and color harmony.`;
+  const advancedBlock = args.mode === "advanced"
+    ? "Advanced tagged references override only their category. Extract only the tagged attribute from each tagged reference; ignore non-tagged elements in that image."
+    : "Use the inspiration image as the base art direction and wardrobe source.";
+
+  return [
+    `Scene: ${args.directive}`,
+    `Subject: ${identitySummary}`,
+    `Important Details: ${changeBlock} ${advancedBlock} Use concrete photographic realism: natural skin texture, subtle film grain, realistic fabric behavior, physically plausible light direction, natural asymmetry, and editorial lens feel.`,
+    "Use Case: Professional editorial virtual photoshoot image.",
+    `Constraints: ${preserveBlock} Avoid CGI/plastic skin, waxy smoothing, identity drift, outfit bleed from identity images, random logos, extra text, watermarks, distorted hands, and invented wardrobe changes.`,
+  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -481,10 +515,13 @@ export async function startGenerationWorker(
     }
 
     const directive = directives[slot - 1] ?? "professional photoshoot portrait";
-    const outfitLock = shoot.mode === "advanced"
-      ? "Maintain the advanced layered art direction: locked identity, tagged reference overrides by category, and exact locked wardrobe reference. If an [OUTFIT] reference exists, use it instead of the base inspiration outfit. Do not change wardrobe between portrait shots."
-      : "Maintain the inspiration outfit consistently across this image: same garment pieces, colors, silhouette, fabric texture, fit, styling, and accessories as the outfit reference. Do not change wardrobe.";
-    const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} ${slot <= 8 ? outfitLock : "Use the locked wardrobe reference as the visual palette anchor."} Identity-locked, photorealistic, high quality.`;
+    const fullPrompt = buildFinalImagePrompt({
+      directive,
+      identityProfile,
+      mode: shoot.mode,
+      slot,
+      hasOutfitOverride: taggedOutfitRefs.length > 0,
+    });
 
     const claimed = await claimImageForGeneration(img.id as string, slot);
     if (!claimed) continue;

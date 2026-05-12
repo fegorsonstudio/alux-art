@@ -310,11 +310,13 @@
 /* ---- Selectors ---- */
 .row { display: flex; flex-direction: column; gap: 8px; }
 .label { font-size: 0.75rem; color: #4e7076; font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; }
+.helperText { margin: -4px 0 2px; color: #5d7a80; font-size: 0.76rem; line-height: 1.4; }
 .pillGroup { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(67, 159, 169, 0.24); border-radius: 8px; color: #506e73; font-size: 0.8rem; padding: 6px 12px; cursor: pointer; transition: all 0.1s; }
 .pill:hover { border-color: rgba(67, 159, 169, 0.52); color: #263235; background: #ffffff; }
 .pillActive { background: #ffffff; border-color: rgba(65, 199, 184, 0.72); color: #1d727c; box-shadow: inset 0 -12px 20px rgba(188, 245, 235, 0.62); }
 .app[data-theme="dark"] .label { color: #acd4d7; }
+.app[data-theme="dark"] .helperText { color: #a7cfd1; }
 .app[data-theme="dark"] .pill { background: rgba(255, 255, 255, 0.08); border-color: rgba(155, 232, 226, 0.18); color: #c6e6e7; }
 .app[data-theme="dark"] .pill:hover { background: rgba(255,255,255,0.12); color: #ffffff; }
 .app[data-theme="dark"] .pillActive { background: rgba(155, 232, 226, 0.16); border-color: rgba(155, 232, 226, 0.55); color: #ffffff; box-shadow: inset 0 -12px 20px rgba(65, 199, 184, 0.14); }
