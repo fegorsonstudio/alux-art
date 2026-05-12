@@ -29,6 +29,23 @@ async function updateImage(imageId: string, data: Record<string, unknown>) {
   await service.from("shoot_images").update({ ...data, updated_at: new Date().toISOString() }).eq("id", imageId);
 }
 
+async function claimImageForGeneration(imageId: string, slot: number) {
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("shoot_images")
+    .update({ status: "GENERATING", stage: `Generating slot ${slot}`, updated_at: new Date().toISOString() })
+    .eq("id", imageId)
+    .in("status", ["PENDING", "QUEUED"])
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[generate] Slot ${slot} claim failed:`, error.message);
+    return false;
+  }
+  return Boolean(data);
+}
+
 // ---------------------------------------------------------------------------
 // Vision Analysis — GPT-4o analyzes identity + inspiration photos
 // ---------------------------------------------------------------------------
@@ -120,6 +137,12 @@ async function generateImage(
   slot: number
 ): Promise<string> {
   const size = GPT_SIZE[aspectRatio] ?? "1024x1536";
+  const failures: string[] = [];
+  const errorMessage = (provider: string, error: unknown) => {
+    if (error instanceof Error) return `${provider}: ${error.message}`;
+    try { return `${provider}: ${JSON.stringify(error)}`; }
+    catch { return `${provider}: ${String(error)}`; }
+  };
 
   // Primary: fal.ai — Nano Banana 2 edit
   // SDK v1 wraps response as { data: { images: [...] }, requestId }
@@ -138,7 +161,9 @@ async function generateImage(
       console.log(`[generate] fal.ai slot ${slot} raw keys:`, Object.keys(raw ?? {}), "url:", url);
       if (url) return url;
     } catch (e) {
-      console.error(`[generate] fal.ai slot ${slot} failed:`, e instanceof Error ? e.message : String(e));
+      const message = errorMessage("fal.ai", e);
+      failures.push(message);
+      console.error(`[generate] fal.ai slot ${slot} failed:`, message);
     }
   }
 
@@ -186,6 +211,7 @@ async function generateImage(
         }
       }
     } catch (e) {
+      failures.push(errorMessage("OpenAI", e));
       console.error(`[generate] OpenAI slot ${slot} failed:`, e);
     }
   }
@@ -218,11 +244,12 @@ async function generateImage(
         return await fal.storage.upload(blob);
       }
     } catch (e) {
+      failures.push(errorMessage("Gemini", e));
       console.error(`[generate] Gemini slot ${slot} failed:`, e);
     }
   }
 
-  throw new Error(`All providers failed for slot ${slot}`);
+  throw new Error(`All providers failed for slot ${slot}: ${failures.join(" | ") || "no provider attempted"}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -437,7 +464,8 @@ export async function startGenerationWorker(
     const outfitLock = "Maintain the inspiration outfit consistently across this image: same garment pieces, colors, silhouette, fabric texture, fit, styling, and accessories as the outfit reference. Do not change wardrobe.";
     const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} ${slot <= 8 ? outfitLock : "Use the locked outfit reference as the visual palette anchor."} Identity-locked, photorealistic, high quality.`;
 
-    await updateImage(img.id as string, { status: "GENERATING", stage: `Generating slot ${slot}` });
+    const claimed = await claimImageForGeneration(img.id as string, slot);
+    if (!claimed) continue;
     await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "GENERATING" } });
 
     try {
@@ -467,6 +495,7 @@ export async function startGenerationWorker(
       await updateImage(img.id as string, {
         status: "COMPLETE",
         stage: `Completed slot ${slot}`,
+        provider_error: null,
         preview_storage_bucket: "generated-4k",
         preview_storage_path: storagePath,
         download_storage_bucket: "generated-4k",
