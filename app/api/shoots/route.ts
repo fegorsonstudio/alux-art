@@ -30,7 +30,20 @@ export async function GET() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  return NextResponse.json({ shoots: shoots ?? [] });
+  const hydrated = await Promise.all((shoots ?? []).map(async (shoot: Record<string, unknown>) => {
+    const images = await Promise.all(((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
+      if (img.preview_storage_bucket && img.preview_storage_path) {
+        const { data } = await service.storage
+          .from(img.preview_storage_bucket as string)
+          .createSignedUrl(img.preview_storage_path as string, 3600);
+        return { ...img, previewUrl: data?.signedUrl };
+      }
+      return img;
+    }));
+    return { ...shoot, shoot_images: images };
+  }));
+
+  return NextResponse.json({ shoots: hydrated });
 }
 
 export async function POST(request: NextRequest) {

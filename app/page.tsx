@@ -9,6 +9,13 @@ import styles from "./workspace.module.css";
 interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; }
 interface Pricing { ngn: number; usd: number; }
 
+function getShootImages(shoot: Shoot | null): Array<ShootImage & Record<string, unknown>> {
+  if (!shoot) return [];
+  const canonical = shoot.images;
+  const dbImages = (shoot as unknown as { shoot_images?: Array<ShootImage & Record<string, unknown>> }).shoot_images;
+  return ((canonical?.length ? canonical : dbImages) ?? []) as Array<ShootImage & Record<string, unknown>>;
+}
+
 export default function WorkspacePage() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
@@ -130,10 +137,10 @@ export default function WorkspacePage() {
       } else if (event.type === "slot_complete" || event.type === "slot_update") {
         setCurrentShoot(prev => {
           if (!prev) return prev;
-          const imgs = (prev.images ?? []).map(img =>
+          const imgs = getShootImages(prev).map(img =>
             img.id === event.image?.id ? { ...img, ...event.image } : img
           );
-          return { ...prev, images: imgs, progress: event.progress ?? prev.progress };
+          return { ...prev, images: imgs, shoot_images: imgs, progress: event.progress ?? prev.progress } as unknown as Shoot;
         });
       } else if (event.type === "stage") {
         setCurrentShoot(prev => prev ? { ...prev, pipelineStage: event.stage, progress: event.progress ?? prev.progress } : prev);
@@ -311,6 +318,7 @@ export default function WorkspacePage() {
   const isAdmin = user?.role === "admin";
   const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
   const price = currency === "USD" ? `$${pricing.usd}` : `NGN ${pricing.ngn.toLocaleString()}`;
+  const galleryImages = getShootImages(currentShoot);
 
   return (
     <div className={styles.app} data-theme={theme}>
@@ -579,7 +587,7 @@ export default function WorkspacePage() {
 
               {/* Image grid */}
               <div className={styles.slotGrid}>
-                {((currentShoot.images ?? (currentShoot as unknown as Record<string, unknown>).shoot_images ?? []) as Array<ShootImage & Record<string, unknown>>).map((img) => (
+                {galleryImages.map((img) => (
                   <div key={img.id} className={styles.slotCard}>
                     <div className={styles.slotPreview}>
                       {(img.previewUrl || img.preview_url) ? (
