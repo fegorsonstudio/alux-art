@@ -46,11 +46,51 @@ async function claimImageForGeneration(imageId: string, slot: number) {
   return Boolean(data);
 }
 
+async function anthropicImageBlock(url: string, detail: "high" | "low") {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download reference image: ${res.status}`);
+  const contentType = res.headers.get("content-type") ?? "image/jpeg";
+  const data = Buffer.from(await res.arrayBuffer()).toString("base64");
+  return {
+    type: "image",
+    source: {
+      type: "base64",
+      media_type: contentType.startsWith("image/") ? contentType : "image/jpeg",
+      data,
+    },
+    cache_control: detail === "high" ? { type: "ephemeral" } : undefined,
+  };
+}
+
+async function runClaude(content: Record<string, unknown>[], maxTokens: number) {
+  if (!process.env.ANTHROPIC_API_KEY) return "";
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content }],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? `Claude API error: ${res.status}`);
+  return (data.content ?? [])
+    .filter((part: Record<string, unknown>) => part.type === "text")
+    .map((part: Record<string, unknown>) => part.text)
+    .join("\n")
+    .trim();
+}
+
 // ---------------------------------------------------------------------------
-// Vision Analysis — GPT-4o analyzes identity + inspiration photos
+// Vision Analysis - Claude analyzes identity + inspiration photos
 // ---------------------------------------------------------------------------
 async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string[]): Promise<string> {
-  if (!process.env.OPENAI_API_KEY) return "";
+  if (!process.env.ANTHROPIC_API_KEY) return "";
   try {
     const content = [
       {
@@ -61,43 +101,33 @@ async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string
         type: "text",
         text: "You are a professional photography director's assistant. Study these reference photos and write a casting brief for a photo shoot. Describe: (1) the subject's appearance — skin tone, hair color/texture/length, build, approximate age range, personal style from clothing; (2) the mood, lighting style, color palette, and aesthetic from the inspiration images. Be specific and vivid. This brief will be used to generate AI photoshoot images that match this person's look.",
       },
-      ...identityUrls.slice(0, 3).map(url => ({ type: "image_url", image_url: { url, detail: "high" } })),
-      ...inspirationUrls.slice(0, 2).map(url => ({ type: "image_url", image_url: { url, detail: "low" } })),
+      ...(await Promise.all(identityUrls.slice(0, 3).map(url => anthropicImageBlock(url, "high")))),
+      ...(await Promise.all(inspirationUrls.slice(0, 2).map(url => anthropicImageBlock(url, "low")))),
     ];
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content }], max_tokens: 600 }),
-    });
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? "";
-  } catch { return ""; }
+    return await runClaude(content, 600);
+  } catch (e) {
+    console.error("[generate] Claude vision analysis failed:", e);
+    return "";
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Shoot Brief — GPT-4o generates 10 shot directives
+// Shoot Brief - Claude generates 10 shot directives
 // ---------------------------------------------------------------------------
 async function generateShootBrief(identityProfile: string, mode: string): Promise<string[]> {
-  if (!process.env.OPENAI_API_KEY) return fallbackShootDirectives();
+  if (!process.env.ANTHROPIC_API_KEY) return fallbackShootDirectives();
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [{
-          role: "user",
-          content: `You are a creative photography director. Based on this subject casting brief:\n\n${identityProfile}\n\nGenerate exactly 10 photoshoot shot directives as a JSON object with a "shots" array of strings. Each directive is 1-2 sentences describing: pose, lighting style, wardrobe, background/setting. Make each shot distinct and cinematic.\n\n- Shots 1-3: close-up or half-body portraits, varied lighting (studio, golden hour, dramatic side-light)\n- Shots 4-6: full-body or environmental portraits, varied settings (urban, studio, natural)\n- Shots 7-8: editorial/fashion style, bold or conceptual\n- Shot 9: luxury mood still-life flat lay (no person, products/props that match the aesthetic)\n- Shot 10: clean minimalist background with soft texture (for a quote overlay, no person)\n\nMode: ${mode}. Make the prompts rich and specific to the subject's look described above.`,
-        }],
-        max_tokens: 800,
-        response_format: { type: "json_object" },
-      }),
-    });
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+    const text = await runClaude([{
+      type: "text",
+      text: `You are a creative photography director. Based on this subject casting brief:\n\n${identityProfile}\n\nGenerate exactly 10 photoshoot shot directives as a JSON object with a "shots" array of strings. Each directive is 1-2 sentences describing: pose, lighting style, wardrobe, background/setting. Make each shot distinct and cinematic.\n\n- Shots 1-3: close-up or half-body portraits, varied lighting (studio, golden hour, dramatic side-light)\n- Shots 4-6: full-body or environmental portraits, varied settings (urban, studio, natural)\n- Shots 7-8: editorial/fashion style, bold or conceptual\n- Shot 9: luxury mood still-life flat lay (no person, products/props that match the aesthetic)\n- Shot 10: clean minimalist background with soft texture (for a quote overlay, no person)\n\nMode: ${mode}. Make the prompts rich and specific to the subject's look described above. Return only valid JSON with no markdown.`,
+    }], 800);
+    const parsed = JSON.parse(text || "{}");
     return enforceOutfitContinuity(parsed.shots ?? fallbackShootDirectives());
-  } catch { return fallbackShootDirectives(); }
+  } catch (e) {
+    console.error("[generate] Claude shoot brief failed:", e);
+    return fallbackShootDirectives();
+  }
 }
 
 function fallbackShootDirectives() {
@@ -117,18 +147,8 @@ function enforceOutfitContinuity(shots: string[]) {
   });
 }
 
-// openai/gpt-image-2/edit uses OpenAI size strings, not fal aspect ratios
-const GPT_SIZE: Record<AspectRatio, string> = {
-  "3:4":  "1024x1536",
-  "4:5":  "1024x1536",
-  "1:1":  "1024x1024",
-  "16:9": "1536x1024",
-  "9:16": "1024x1536",
-  "2:3":  "1024x1536",
-};
-
 // ---------------------------------------------------------------------------
-// Image generation — fal.ai → OpenAI → Gemini fallback
+// Image generation - fal.ai primary, Gemini fallback
 // ---------------------------------------------------------------------------
 async function generateImage(
   prompt: string,
@@ -136,7 +156,7 @@ async function generateImage(
   aspectRatio: AspectRatio,
   slot: number
 ): Promise<string> {
-  const size = GPT_SIZE[aspectRatio] ?? "1024x1536";
+  void aspectRatio;
   const failures: string[] = [];
   const errorMessage = (provider: string, error: unknown) => {
     if (error instanceof Error) return `${provider}: ${error.message}`;
@@ -167,56 +187,7 @@ async function generateImage(
     }
   }
 
-  // Fallback: OpenAI gpt-image-2 direct API
-  if (process.env.OPENAI_API_KEY) {
-    try {
-      if (referenceUrls.length > 0) {
-        const form = new FormData();
-        form.append("model", "gpt-image-2");
-        form.append("prompt", prompt);
-        form.append("n", "1");
-        form.append("size", size);
-        form.append("quality", "medium");
-        // Attach primary identity image
-        const imgRes = await fetch(referenceUrls[0]);
-        if (!imgRes.ok) throw new Error(`Failed to download reference image: ${imgRes.status}`);
-        const imgBlob = await imgRes.blob();
-        form.append("image", imgBlob, "identity.jpg");
-        const res = await fetch("https://api.openai.com/v1/images/edits", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-          body: form,
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(`OpenAI API error: ${data.error.message}`);
-        const b64 = data.data?.[0]?.b64_json;
-        if (b64) {
-          const bytes = Uint8Array.from(Buffer.from(b64, "base64"));
-          const blob = new Blob([bytes], { type: "image/png" });
-          return await fal.storage.upload(blob);
-        }
-      } else {
-        const res = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "gpt-image-2", prompt, n: 1, size, quality: "medium" }),
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(`OpenAI API error: ${data.error.message}`);
-        const b64 = data.data?.[0]?.b64_json;
-        if (b64) {
-          const bytes = Uint8Array.from(Buffer.from(b64, "base64"));
-          const blob = new Blob([bytes], { type: "image/png" });
-          return await fal.storage.upload(blob);
-        }
-      }
-    } catch (e) {
-      failures.push(errorMessage("OpenAI", e));
-      console.error(`[generate] OpenAI slot ${slot} failed:`, e);
-    }
-  }
-
-  // Last resort: Gemini
+  // Fallback: Gemini image generation
   if (process.env.GEMINI_API_KEY) {
     try {
       const parts: Record<string, unknown>[] = [{ text: prompt }];
