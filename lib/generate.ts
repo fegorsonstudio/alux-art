@@ -384,6 +384,7 @@ export async function startGenerationWorker(
   const inspirationUrls = await getSignedUrls(inspirationRefs);
   const outfitUrls = await getSignedUrls(outfitRefs);
   const generationRefUrls = [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
+  const hasValidIdentityReference = identityUrls.length > 0;
 
   // Vision analysis
   let identityProfile = asStoredText(shoot.identity_profile);
@@ -425,6 +426,13 @@ export async function startGenerationWorker(
     processed++;
 
     const slot = img.slot as number;
+    if (slot <= 8 && !hasValidIdentityReference) {
+      const errMsg = "No valid identity reference image is available for portrait generation. Refresh and select identity images that still show previews.";
+      await updateImage(img.id as string, { status: "FAILED", provider_error: errMsg });
+      await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "FAILED" }, error: errMsg });
+      continue;
+    }
+
     const directive = directives[slot - 1] ?? "professional photoshoot portrait";
     const outfitLock = "Maintain the inspiration outfit consistently across this image: same garment pieces, colors, silhouette, fabric texture, fit, styling, and accessories as the outfit reference. Do not change wardrobe.";
     const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} ${slot <= 8 ? outfitLock : "Use the locked outfit reference as the visual palette anchor."} Identity-locked, photorealistic, high quality.`;

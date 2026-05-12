@@ -305,6 +305,7 @@ export default function WorkspacePage() {
   };
 
   const handleCreateAndPay = async (adminBypass = false) => {
+    if (!canCreate || status.type === "loading") return;
     setStatus({ type: "loading", message: "Creating shoot..." });
     try {
       const res = await fetch("/api/shoots", {
@@ -411,12 +412,12 @@ export default function WorkspacePage() {
                   {libraryImages.map(img => {
                     const selected = identityImages.some(i => i.id === img.id);
                     return (
-                      <div key={img.id} className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
-                        onClick={() => handleAddFromLibrary(img)}>
+                      <button key={img.id} type="button" className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
+                        onClick={() => handleAddFromLibrary(img)} aria-pressed={selected}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt={img.name} />
                         {selected && <span className={styles.thumbCheck}>OK</span>}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -480,12 +481,12 @@ export default function WorkspacePage() {
                   {inspirationLibraryImages.map(img => {
                     const selected = inspirationImages.some(i => i.id === img.id);
                     return (
-                      <div key={img.id} className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
-                        onClick={() => handleAddFromInspirationLibrary(img)}>
+                      <button key={img.id} type="button" className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
+                        onClick={() => handleAddFromInspirationLibrary(img)} aria-pressed={selected}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt={img.name} />
                         {selected && <span className={styles.thumbCheck}>OK</span>}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -594,11 +595,11 @@ export default function WorkspacePage() {
                 {identityImages.length < 3 ? `Add ${3 - identityImages.length} more identity photo${3 - identityImages.length !== 1 ? "s" : ""}` : "Add at least 1 inspiration photo"}
               </p>
             )}
-            <button className={styles.payBtn} disabled={!canCreate} onClick={() => handleCreateAndPay(false)}>
+            <button className={styles.payBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(false)}>
               Pay {price} & Generate
             </button>
             {isAdmin && (
-              <button className={styles.adminBypassBtn} onClick={() => handleCreateAndPay(true)}>
+              <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
                 Admin: Generate Free
               </button>
             )}
@@ -678,9 +679,9 @@ export default function WorkspacePage() {
                 ))}
               </div>
 
-              {currentShoot.status === "COMPLETE" && (
+              {galleryImages.some((img) => img.status === "COMPLETE" && (img.download_storage_path || img.preview_storage_path)) && (
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
-                  Download All 10 (ZIP)
+                  {currentShoot.status === "COMPLETE" ? "Download All 10 (ZIP)" : "Download Completed Images (ZIP)"}
                 </button>
               )}
             </div>
