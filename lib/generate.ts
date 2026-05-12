@@ -158,11 +158,6 @@ async function generateImage(
 ): Promise<string> {
   void aspectRatio;
   const failures: string[] = [];
-  const errorMessage = (provider: string, error: unknown) => {
-    if (error instanceof Error) return `${provider}: ${error.message}`;
-    try { return `${provider}: ${JSON.stringify(error)}`; }
-    catch { return `${provider}: ${String(error)}`; }
-  };
 
   // Primary: fal.ai — Nano Banana 2 edit
   // SDK v1 wraps response as { data: { images: [...] }, requestId }
@@ -181,7 +176,7 @@ async function generateImage(
       console.log(`[generate] fal.ai slot ${slot} raw keys:`, Object.keys(raw ?? {}), "url:", url);
       if (url) return url;
     } catch (e) {
-      const message = errorMessage("fal.ai", e);
+      const message = providerFailureMessage("fal.ai", e);
       failures.push(message);
       console.error(`[generate] fal.ai slot ${slot} failed:`, message);
     }
@@ -215,8 +210,9 @@ async function generateImage(
         return await fal.storage.upload(blob);
       }
     } catch (e) {
-      failures.push(errorMessage("Gemini", e));
-      console.error(`[generate] Gemini slot ${slot} failed:`, e);
+      const message = providerFailureMessage("Gemini", e);
+      failures.push(message);
+      console.error(`[generate] Gemini slot ${slot} failed:`, message);
     }
   }
 
@@ -295,6 +291,18 @@ function parseStoredDirectives(value: unknown): string[] | null {
 
 function asStoredText(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function providerFailureMessage(provider: string, error: unknown) {
+  if (error instanceof Error) {
+    const extra = error.cause ? ` (${JSON.stringify(error.cause)})` : "";
+    return `${provider}: ${error.message}${extra}`;
+  }
+  if (typeof error === "object" && error !== null) {
+    const record = error as Record<string, unknown>;
+    return `${provider}: ${String(record.message ?? record.error ?? JSON.stringify(record))}`;
+  }
+  return `${provider}: ${String(error)}`;
 }
 
 async function summarizeShootProgress(shootId: string, userId: string, total: number): Promise<GenerationWorkerResult> {
@@ -405,9 +413,15 @@ export async function startGenerationWorker(
   if (!shoot.shoot_brief) {
     try {
       directives = await generateShootBrief(identityProfile, shoot.mode);
-      await updateShoot(shootId, { shoot_brief: JSON.stringify(directives) });
+      await updateShoot(shootId, {
+        shoot_brief: JSON.stringify(directives),
+        pipeline_stage: "Generating images",
+      });
+      await emit(shootId, userId, "stage", { stage: "Generating images", progress: 12 });
     } catch (e) {
       console.error("[generate] Shoot brief failed:", e);
+      await updateShoot(shootId, { pipeline_stage: "Generating images" });
+      await emit(shootId, userId, "stage", { stage: "Generating images", progress: 12 });
     }
   }
 

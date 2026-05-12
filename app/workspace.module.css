@@ -365,6 +365,7 @@
 .galleryFill { height: 100%; background: linear-gradient(90deg, #60d3c3, #ffffff, #92d1ff); transition: width 0.5s ease; border-radius: 3px; }
 .slotGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .slotCard { background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(255, 255, 255, 0.86); border-radius: 8px; overflow: hidden; box-shadow: 0 12px 28px rgba(54, 135, 147, 0.1); }
+.slotCardFailed { border-color: rgba(167, 70, 60, 0.38); }
 .slotPreview { aspect-ratio: 4/5; background: linear-gradient(135deg, #e5fbf6, #d9efff); display: flex; align-items: center; justify-content: center; position: relative; }
 .app[data-theme="dark"] .slotCard { background: rgba(255, 255, 255, 0.08); border-color: rgba(180, 242, 236, 0.12); box-shadow: 0 12px 28px rgba(0,0,0,0.2); }
 .app[data-theme="dark"] .slotPreview { background: linear-gradient(135deg, #193e43, #1c3349); }
@@ -378,8 +379,12 @@
 .app[data-theme="dark"] .slotStatus { color: #b8d3d5; }
 .slotStatusDone { color: #177767; }
 .slotStatusFailed { color: #a7463c; }
-.slotError { margin: 0; padding: 0 10px 10px; color: #a7463c; font-size: 0.68rem; line-height: 1.25; overflow-wrap: anywhere; }
+.slotErrorDetails { padding: 0 10px 10px; color: #a7463c; font-size: 0.68rem; line-height: 1.25; }
+.slotErrorDetails summary { cursor: pointer; font-weight: 750; }
+.slotError { margin: 6px 0 0; color: #a7463c; overflow-wrap: anywhere; }
 .app[data-theme="dark"] .slotError { color: #ffb8aa; }
+.app[data-theme="dark"] .slotCardFailed { border-color: rgba(255, 184, 170, 0.36); }
+.app[data-theme="dark"] .slotErrorDetails { color: #ffb8aa; }
 .dlBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.25); border-radius: 8px; color: #2d727b; font-size: 0.7rem; padding: 4px 8px; cursor: pointer; }
 .dlBtn:hover { border-color: rgba(67, 159, 169, 0.55); color: #184f58; }
 .zipBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.35); border-radius: 8px; color: #2d727b; font-size: 0.85rem; font-weight: 750; padding: 10px 16px; cursor: pointer; width: 100%; }

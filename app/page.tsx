@@ -20,6 +20,10 @@ function getShootImages(shoot: Shoot | null): Array<ShootImage & Record<string, 
   return ((canonical?.length ? canonical : dbImages) ?? []) as Array<ShootImage & Record<string, unknown>>;
 }
 
+function getProviderError(img: ShootImage & Record<string, unknown>) {
+  return String(img.providerError ?? img.provider_error ?? img.error ?? "").trim();
+}
+
 export default function WorkspacePage() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
@@ -160,7 +164,8 @@ export default function WorkspacePage() {
           const imgs = getShootImages(prev).map(img =>
             img.id === event.image?.id ? { ...img, ...event.image } : img
           );
-          return { ...prev, images: imgs, shoot_images: imgs, progress: event.progress ?? prev.progress } as unknown as Shoot;
+          const nextStage = event.stage ?? event.error ?? prev.pipelineStage ?? (prev as unknown as Record<string, string>).pipeline_stage;
+          return { ...prev, images: imgs, shoot_images: imgs, progress: event.progress ?? prev.progress, pipelineStage: nextStage } as unknown as Shoot;
         });
       } else if (event.type === "stage") {
         setCurrentShoot(prev => prev ? { ...prev, pipelineStage: event.stage, progress: event.progress ?? prev.progress } : prev);
@@ -373,9 +378,13 @@ export default function WorkspacePage() {
   const galleryImages = getShootImages(currentShoot);
   const completedCount = galleryImages.filter((img) => img.status === "COMPLETE").length;
   const failedCount = galleryImages.filter((img) => img.status === "FAILED").length;
+  const activeSlotCount = galleryImages.filter((img) => ["GENERATING", "UPSCALING"].includes(String(img.status))).length;
+  const queuedSlotCount = galleryImages.filter((img) => ["PENDING", "QUEUED"].includes(String(img.status))).length;
   const activeStage = currentShoot
     ? (completedCount || failedCount)
       ? `${completedCount}/${galleryImages.length} complete${failedCount ? `, ${failedCount} failed` : ""}`
+      : activeSlotCount
+        ? `${activeSlotCount} active, ${queuedSlotCount} queued`
       : (currentShoot.pipelineStage || (currentShoot as unknown as Record<string, string>).pipeline_stage || currentShoot.status)
     : "";
 
@@ -664,8 +673,10 @@ export default function WorkspacePage() {
 
               {/* Image grid */}
               <div className={styles.slotGrid}>
-                {galleryImages.map((img) => (
-                  <div key={img.id} className={styles.slotCard}>
+                {galleryImages.map((img) => {
+                  const providerError = getProviderError(img);
+                  return (
+                  <div key={img.id} className={`${styles.slotCard} ${img.status === "FAILED" ? styles.slotCardFailed : ""}`}>
                     <div className={styles.slotPreview}>
                       {(img.previewUrl || img.preview_url) ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -676,17 +687,20 @@ export default function WorkspacePage() {
                     </div>
                     <div className={styles.slotInfo}>
                       <span className={styles.slotNum}>#{img.slot} {img.kind}</span>
-                      <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`} title={(img.provider_error || img.providerError || "") as string}>
+                      <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`} title={providerError || "No provider error was saved for this failed slot"}>
                         {img.status === "COMPLETE" ? (
                           <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)}>4K</button>
                         ) : img.status?.toLowerCase()}
                       </span>
                     </div>
-                    {img.status === "FAILED" && (img.provider_error || img.providerError) && (
-                      <p className={styles.slotError}>{String(img.provider_error || img.providerError)}</p>
+                    {img.status === "FAILED" && (
+                      <details className={styles.slotErrorDetails}>
+                        <summary>Reason</summary>
+                        <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the generation_events and shoot_images rows for this shoot."}</p>
+                      </details>
                     )}
                   </div>
-                ))}
+                )})}
               </div>
 
               {galleryImages.some((img) => img.status === "COMPLETE" && (img.download_storage_path || img.preview_storage_path)) && (
