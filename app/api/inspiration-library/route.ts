@@ -35,23 +35,9 @@ export async function DELETE(request: NextRequest) {
   const service = createServiceClient();
 
   if (imageId) {
-    const { data: img } = await service
-      .from("inspiration_images")
-      .select("*")
-      .eq("id", imageId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (img) {
-      await service.storage.from(img.storage_bucket).remove([img.storage_path]);
-      await service.from("inspiration_images").delete().eq("id", imageId).eq("user_id", user.id);
-    }
+    await service.from("inspiration_images").delete().eq("id", imageId).eq("user_id", user.id);
   } else {
-    const { data: imgs } = await service.from("inspiration_images").select("*").eq("user_id", user.id);
-    if (imgs) {
-      await Promise.all(imgs.map(img => service.storage.from(img.storage_bucket).remove([img.storage_path])));
-      await service.from("inspiration_images").delete().eq("user_id", user.id);
-    }
+    await service.from("inspiration_images").delete().eq("user_id", user.id);
   }
 
   return NextResponse.json({ ok: true });
