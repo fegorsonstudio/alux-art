@@ -51,6 +51,7 @@ export default function WorkspacePage() {
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
   const taggedRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
   const resumeStartedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -252,6 +253,21 @@ export default function WorkspacePage() {
     const ok = results.filter((r): r is UploadedRef => r !== null);
     if (ok.length) setTaggedRefs(prev => [...prev, ...ok]);
     setUploading(null);
+  };
+
+  const openShootGallery = async (shoot: Shoot) => {
+    setCurrentShoot(shoot);
+    setTimeout(() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+
+    const res = await fetch(`/api/shoots/${shoot.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.shoot) {
+        setCurrentShoot(data.shoot);
+        setShoots(prev => prev.map(p => p.id === data.shoot.id ? data.shoot : p));
+        setTimeout(() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      }
+    }
   };
 
   const handleCreateAndPay = async (adminBypass = false) => {
@@ -547,25 +563,18 @@ export default function WorkspacePage() {
               <p className={styles.panelTitle}>Your Shoots</p>
               <div className={styles.shootsList}>
                 {shoots.slice(0, 5).map(s => (
-                  <div key={s.id} className={`${styles.shootCard} ${currentShoot?.id === s.id ? styles.shootCardActive : ""}`} onClick={async () => {
-                    setCurrentShoot(s);
-                    const res = await fetch(`/api/shoots/${s.id}`);
-                    if (res.ok) {
-                      const data = await res.json();
-                      if (data.shoot) {
-                        setCurrentShoot(data.shoot);
-                        setShoots(prev => prev.map(p => p.id === data.shoot.id ? data.shoot : p));
-                      }
-                    }
-                  }}>
+                  <button key={s.id} type="button" className={`${styles.shootCard} ${currentShoot?.id === s.id ? styles.shootCardActive : ""}`} onClick={() => openShootGallery(s)}>
                     <div className={styles.shootMeta}>
                       <span style={{ fontSize: "0.85rem" }}>{(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode}</span>
                       <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").charAt(0) + (s.status ?? "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
-                      {s.status}
+                    <span className={styles.shootActions}>
+                      <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").charAt(0) + (s.status ?? "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
+                        {s.status}
+                      </span>
+                      <span className={styles.openGalleryLabel}>Open gallery</span>
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -573,7 +582,7 @@ export default function WorkspacePage() {
 
           {/* Gallery */}
           {currentShoot && (
-            <div className={styles.panel}>
+            <div className={styles.panel} ref={galleryRef}>
               <div className={styles.galleryHeader}>
                 <p className={styles.panelTitle}>Gallery</p>
                 <span className={styles.galleryMeta}>{currentShoot.pipelineStage || (currentShoot as unknown as Record<string, string>).pipeline_stage || currentShoot.status}</span>
