@@ -411,6 +411,11 @@ export async function startGenerationWorker(
 
   for (const img of images) {
     if (hasStoredCompleteImage(img) || img.status === "FAILED") continue;
+    const updatedAt = Date.parse(String(img.updated_at ?? ""));
+    const isFreshInFlight = (img.status === "GENERATING" || img.status === "UPSCALING") &&
+      Number.isFinite(updatedAt) &&
+      Date.now() - updatedAt < 10 * 60 * 1000;
+    if (isFreshInFlight) continue;
     if (processed >= maxSlots) break;
     processed++;
 

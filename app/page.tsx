@@ -40,6 +40,7 @@ export default function WorkspacePage() {
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
   const taggedRef = useRef<HTMLInputElement>(null);
+  const resumeStartedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const stored = localStorage.getItem("studio-theme");
@@ -105,14 +106,27 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (!currentShoot) return;
     if (currentShoot.status === "COMPLETE" || currentShoot.status === "FAILED") return;
+    if ((currentShoot.status === "QUEUED" || currentShoot.status === "PROCESSING") && !resumeStartedRef.current.has(currentShoot.id)) {
+      resumeStartedRef.current.add(currentShoot.id);
+      fetch(`/api/shoots/${currentShoot.id}/start`, { method: "POST" }).catch(() => {});
+    }
     if (shootIdRef.current === currentShoot.id) return; // already listening
     shootIdRef.current = currentShoot.id;
     const es = new EventSource(`/api/shoots/${currentShoot.id}/events`);
     es.onmessage = (e) => {
       const event = JSON.parse(e.data);
-      if (event.type === "snapshot" || event.type === "complete") {
-        setCurrentShoot(event.shoot ?? event);
-        setShoots(prev => prev.map(s => s.id === (event.shoot ?? event).id ? (event.shoot ?? event) : s));
+      if (event.type === "snapshot" && event.shoot) {
+        setCurrentShoot(event.shoot);
+        setShoots(prev => prev.map(s => s.id === event.shoot.id ? event.shoot : s));
+      } else if (event.type === "complete") {
+        fetch(`/api/shoots/${currentShoot.id}`).then(async (res) => {
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.shoot) {
+            setCurrentShoot(data.shoot);
+            setShoots(prev => prev.map(s => s.id === data.shoot.id ? data.shoot : s));
+          }
+        }).catch(() => {});
       } else if (event.type === "slot_complete" || event.type === "slot_update") {
         setCurrentShoot(prev => {
           if (!prev) return prev;

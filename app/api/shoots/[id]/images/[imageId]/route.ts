@@ -45,12 +45,7 @@ export async function GET(
 
   if (!signed?.signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
 
-  // For downloads, stream the file directly so the browser saves it at full resolution
   if (isDownload) {
-    const fileRes = await fetch(signed.signedUrl);
-    if (!fileRes.ok) return NextResponse.json({ error: "File fetch failed" }, { status: 502 });
-    const buf = await fileRes.arrayBuffer();
-
     await service.from("download_logs").insert({
       id: crypto.randomUUID(),
       user_id: user.id,
@@ -60,14 +55,7 @@ export async function GET(
       created_at: new Date().toISOString(),
     });
 
-    return new Response(buf, {
-      headers: {
-        "Content-Type": "image/png",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Content-Length": String(buf.byteLength),
-        "Cache-Control": "no-store",
-      },
-    });
+    return NextResponse.redirect(signed.signedUrl);
   }
 
   // For preview (no download param), just return the signed URL

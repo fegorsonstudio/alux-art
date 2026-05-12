@@ -1,6 +1,23 @@
 import { NextRequest } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 
+async function withSignedPreviewUrls(
+  service: ReturnType<typeof createServiceClient>,
+  shoot: Record<string, unknown> | null
+) {
+  if (!shoot) return shoot;
+  const images = await Promise.all(((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
+    if (img.preview_storage_bucket && img.preview_storage_path) {
+      const { data } = await service.storage
+        .from(img.preview_storage_bucket as string)
+        .createSignedUrl(img.preview_storage_path as string, 3600);
+      return { ...img, previewUrl: data?.signedUrl };
+    }
+    return img;
+  }));
+  return { ...shoot, shoot_images: images };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +45,8 @@ export async function GET(
         .eq("id", id)
         .single();
 
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "snapshot", shoot: fullShoot })}\n\n`));
+      const hydratedShoot = await withSignedPreviewUrls(service, fullShoot);
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "snapshot", shoot: hydratedShoot })}\n\n`));
 
       const { data: latestEvent } = await service
         .from("generation_events")
