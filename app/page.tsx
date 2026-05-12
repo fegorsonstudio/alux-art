@@ -9,6 +9,10 @@ import styles from "./workspace.module.css";
 interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; }
 interface Pricing { ngn: number; usd: number; }
 
+function sanitizeFileName(name: string) {
+  return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");
+}
+
 function getShootImages(shoot: Shoot | null): Array<ShootImage & Record<string, unknown>> {
   if (!shoot) return [];
   const canonical = shoot.images;
@@ -156,26 +160,23 @@ export default function WorkspacePage() {
     setUploadProgress(prev => ({ ...prev, [key]: 0 }));
     const done = () => setUploadProgress(prev => { const n = { ...prev }; delete n[key]; return n; });
     try {
+      if (!user?.id) throw new Error("Sign in again before uploading");
+
+      const imageId = crypto.randomUUID();
+      const storagePath = `${user.id}/${imageId}-${sanitizeFileName(file.name)}`;
+      const uploadedRef = {
+        id: imageId,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        storageBucket: bucket,
+        storagePath,
+      };
+
       setUploadProgress(prev => ({ ...prev, [key]: 35 }));
-      const presignRes = await fetch("/api/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          size: file.size,
-          bucket,
-        }),
-      });
-
-      const presign = await presignRes.json().catch(() => null);
-      if (!presignRes.ok || !presign?.uploadToken || !presign?.storagePath) {
-        throw new Error(presign?.error ?? `Upload setup failed with ${presignRes.status}`);
-      }
-
       const { error: directUploadError } = await supabase.storage
         .from(bucket)
-        .uploadToSignedUrl(presign.storagePath, presign.uploadToken, file, {
+        .upload(storagePath, file, {
           contentType: file.type,
           upsert: true,
         });
@@ -186,12 +187,12 @@ export default function WorkspacePage() {
         method: "POST",
         body: new URLSearchParams({
           saveToLibrary: saveLib ? "true" : "false",
-          id: presign.id,
-          filename: presign.name,
-          contentType: presign.type,
-          size: String(presign.size),
-          storageBucket: presign.storageBucket,
-          storagePath: presign.storagePath,
+          id: uploadedRef.id,
+          filename: uploadedRef.name,
+          contentType: uploadedRef.type,
+          size: String(uploadedRef.size),
+          storageBucket: uploadedRef.storageBucket,
+          storagePath: uploadedRef.storagePath,
         }),
       });
 
@@ -212,7 +213,7 @@ export default function WorkspacePage() {
       done();
       return null;
     }
-  }, [supabase]);
+  }, [supabase, user]);
 
   const handleIdentityFiles = async (files: FileList) => {
     setUploading("identity");
