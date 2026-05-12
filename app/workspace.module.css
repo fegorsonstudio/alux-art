@@ -378,6 +378,8 @@
 .app[data-theme="dark"] .slotStatus { color: #b8d3d5; }
 .slotStatusDone { color: #177767; }
 .slotStatusFailed { color: #a7463c; }
+.slotError { margin: 0; padding: 0 10px 10px; color: #a7463c; font-size: 0.68rem; line-height: 1.25; overflow-wrap: anywhere; }
+.app[data-theme="dark"] .slotError { color: #ffb8aa; }
 .dlBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.25); border-radius: 8px; color: #2d727b; font-size: 0.7rem; padding: 4px 8px; cursor: pointer; }
 .dlBtn:hover { border-color: rgba(67, 159, 169, 0.55); color: #184f58; }
 .zipBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.35); border-radius: 8px; color: #2d727b; font-size: 0.85rem; font-weight: 750; padding: 10px 16px; cursor: pointer; width: 100%; }

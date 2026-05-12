@@ -371,6 +371,13 @@ export default function WorkspacePage() {
   const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
   const price = currency === "USD" ? `$${pricing.usd}` : `NGN ${pricing.ngn.toLocaleString()}`;
   const galleryImages = getShootImages(currentShoot);
+  const completedCount = galleryImages.filter((img) => img.status === "COMPLETE").length;
+  const failedCount = galleryImages.filter((img) => img.status === "FAILED").length;
+  const activeStage = currentShoot
+    ? (completedCount || failedCount)
+      ? `${completedCount}/${galleryImages.length} complete${failedCount ? `, ${failedCount} failed` : ""}`
+      : (currentShoot.pipelineStage || (currentShoot as unknown as Record<string, string>).pipeline_stage || currentShoot.status)
+    : "";
 
   return (
     <div className={styles.app} data-theme={theme}>
@@ -645,7 +652,7 @@ export default function WorkspacePage() {
             <div className={styles.panel} ref={galleryRef}>
               <div className={styles.galleryHeader}>
                 <p className={styles.panelTitle}>Gallery</p>
-                <span className={styles.galleryMeta}>{currentShoot.pipelineStage || (currentShoot as unknown as Record<string, string>).pipeline_stage || currentShoot.status}</span>
+                <span className={styles.galleryMeta}>{activeStage}</span>
               </div>
 
               {/* Progress */}
@@ -669,12 +676,15 @@ export default function WorkspacePage() {
                     </div>
                     <div className={styles.slotInfo}>
                       <span className={styles.slotNum}>#{img.slot} {img.kind}</span>
-                      <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`}>
+                      <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`} title={(img.provider_error || img.providerError || "") as string}>
                         {img.status === "COMPLETE" ? (
                           <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)}>4K</button>
                         ) : img.status?.toLowerCase()}
                       </span>
                     </div>
+                    {img.status === "FAILED" && (img.provider_error || img.providerError) && (
+                      <p className={styles.slotError}>{String(img.provider_error || img.providerError)}</p>
+                    )}
                   </div>
                 ))}
               </div>

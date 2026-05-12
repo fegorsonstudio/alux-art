@@ -21,7 +21,7 @@ export async function GET(
 
   // Generate signed preview URLs for completed images
   const images = await Promise.all((shoot.shoot_images ?? []).map(async (img: Record<string, unknown>) => {
-    if (img.preview_storage_path) {
+    if (img.status === "COMPLETE" && img.preview_storage_bucket && img.preview_storage_path) {
       const { data } = await service.storage
         .from(img.preview_storage_bucket as string)
         .createSignedUrl(img.preview_storage_path as string, 3600);

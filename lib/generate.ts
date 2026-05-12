@@ -456,7 +456,7 @@ export async function startGenerationWorker(
     if (slot <= 8 && !hasValidIdentityReference) {
       const errMsg = "No valid identity reference image is available for portrait generation. Refresh and select identity images that still show previews.";
       await updateImage(img.id as string, { status: "FAILED", provider_error: errMsg });
-      await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "FAILED" }, error: errMsg });
+      await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "FAILED", provider_error: errMsg }, error: errMsg });
       continue;
     }
 
@@ -513,7 +513,7 @@ export async function startGenerationWorker(
       const errMsg = e instanceof Error ? e.message : String(e);
       console.error(`[generate] Slot ${slot} failed:`, errMsg);
       await updateImage(img.id as string, { status: "FAILED", provider_error: errMsg });
-      await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "FAILED" }, error: errMsg });
+      await emit(shootId, userId, "slot_update", { image: { id: img.id, slot, status: "FAILED", provider_error: errMsg }, error: errMsg });
     }
   }
 
