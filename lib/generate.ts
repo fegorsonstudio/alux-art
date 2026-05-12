@@ -86,12 +86,30 @@ async function runClaude(content: Record<string, unknown>[], maxTokens: number) 
     .trim();
 }
 
+interface TaggedReferenceInput {
+  tag: string;
+  url: string;
+  note?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Vision Analysis - Claude analyzes identity + inspiration photos
 // ---------------------------------------------------------------------------
-async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string[]): Promise<string> {
+async function runVisionAnalysis(
+  identityUrls: string[],
+  inspirationUrls: string[],
+  taggedReferences: TaggedReferenceInput[]
+): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) return "";
   try {
+    const taggedBlocks = (await Promise.all(taggedReferences.slice(0, 7).map(async (ref) => [
+      {
+        type: "text",
+        text: `Advanced tagged reference [${ref.tag}]. ${ref.note ? `User note: ${ref.note}. ` : ""}Analyze only the visual attribute controlled by this tag and explain how it should override or layer on top of the inspiration image.`,
+      },
+      await anthropicImageBlock(ref.url, "low"),
+    ]))).flat();
+
     const content = [
       {
         type: "text",
@@ -103,6 +121,7 @@ async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string
       },
       ...(await Promise.all(identityUrls.slice(0, 3).map(url => anthropicImageBlock(url, "high")))),
       ...(await Promise.all(inspirationUrls.slice(0, 2).map(url => anthropicImageBlock(url, "low")))),
+      ...taggedBlocks,
     ];
 
     return await runClaude(content, 600);
@@ -118,9 +137,12 @@ async function runVisionAnalysis(identityUrls: string[], inspirationUrls: string
 async function generateShootBrief(identityProfile: string, mode: string): Promise<string[]> {
   if (!process.env.ANTHROPIC_API_KEY) return fallbackShootDirectives();
   try {
+    const advancedRules = mode === "advanced"
+      ? `\n\nAdvanced mode rules:\n- Use a layered reference system, not a simple inspiration copy.\n- The locked identity profile is non-negotiable: preserve the same person across all portrait shots.\n- Tagged reference overrides have priority over the base inspiration image for their category.\n- [OUTFIT] replaces the outfit extracted from the inspiration image. Keep that replacement outfit consistent across all portrait shots.\n- [HAIRSTYLE] applies the tagged hair reference to the subject while preserving identity.\n- [MAKEUP] applies the tagged makeup or beauty styling.\n- [BACKGROUND] controls environment/backdrop choices.\n- [LIGHTING] controls lighting setup, direction, contrast, and mood.\n- [ACCESSORY] adds the tagged accessories without changing identity or outfit unless explicitly part of the accessory.\n- [COLOR_GRADE] controls film stock, color treatment, contrast, grain, and edit style.\n- If tagged references conflict with the base inspiration, the tagged reference wins only for its category.\n- Reconcile all layers into a coherent final art direction before writing the 10 shot directives.`
+      : "";
     const text = await runClaude([{
       type: "text",
-      text: `You are a creative photography director. Based on this subject casting brief:\n\n${identityProfile}\n\nGenerate exactly 10 photoshoot shot directives as a JSON object with a "shots" array of strings. Each directive is 1-2 sentences describing: pose, lighting style, wardrobe, background/setting. Make each shot distinct and cinematic.\n\n- Shots 1-3: close-up or half-body portraits, varied lighting (studio, golden hour, dramatic side-light)\n- Shots 4-6: full-body or environmental portraits, varied settings (urban, studio, natural)\n- Shots 7-8: editorial/fashion style, bold or conceptual\n- Shot 9: luxury mood still-life flat lay (no person, products/props that match the aesthetic)\n- Shot 10: clean minimalist background with soft texture (for a quote overlay, no person)\n\nMode: ${mode}. Make the prompts rich and specific to the subject's look described above. Return only valid JSON with no markdown.`,
+      text: `You are a creative photography director. Based on this subject casting brief:\n\n${identityProfile}${advancedRules}\n\nGenerate exactly 10 photoshoot shot directives as a JSON object with a "shots" array of strings. Each directive is 1-2 sentences describing: pose, lighting style, wardrobe, background/setting. Make each shot distinct and cinematic.\n\n- Shots 1-3: close-up or half-body portraits, varied lighting (studio, golden hour, dramatic side-light)\n- Shots 4-6: full-body or environmental portraits, varied settings (urban, studio, natural)\n- Shots 7-8: editorial/fashion style, bold or conceptual\n- Shot 9: luxury mood still-life flat lay (no person, products/props that match the aesthetic)\n- Shot 10: clean minimalist background with soft texture (for a quote overlay, no person)\n\nMode: ${mode}. Make the prompts rich and specific to the subject's look described above. Return only valid JSON with no markdown.`,
     }], 800);
     const parsed = JSON.parse(text || "{}");
     return enforceOutfitContinuity(parsed.shots ?? fallbackShootDirectives());
@@ -131,20 +153,24 @@ async function generateShootBrief(identityProfile: string, mode: string): Promis
 }
 
 function fallbackShootDirectives() {
-  return Array(10).fill("professional photoshoot portrait with the locked inspiration outfit maintained");
+  return Array(10).fill("professional photoshoot portrait with the locked wardrobe reference maintained");
 }
 
 function enforceOutfitContinuity(shots: string[]) {
   return Array.from({ length: 10 }, (_, index) => {
     const directive = shots[index] ?? "professional photoshoot portrait";
     if (index <= 7) {
-      return `${directive} Wardrobe continuity: keep the exact same inspiration outfit throughout the shoot - same garments, colors, silhouette, fit, fabric texture, styling, and accessories. Do not change or replace the outfit.`;
+      return `${directive} Wardrobe continuity: keep the exact same locked wardrobe reference throughout the shoot - same garments, colors, silhouette, fit, fabric texture, styling, and accessories. If advanced mode includes an [OUTFIT] reference, that outfit replaces the base inspiration outfit. Do not change or replace the locked outfit.`;
     }
     if (index === 8) {
-      return `${directive} Match the still-life props, materials, and color palette to the locked inspiration outfit.`;
+      return `${directive} Match the still-life props, materials, and color palette to the locked wardrobe reference.`;
     }
-    return `${directive} Match the minimalist background and quote-overlay palette to the locked inspiration outfit.`;
+    return `${directive} Match the minimalist background and quote-overlay palette to the locked wardrobe reference.`;
   });
+}
+
+function referenceTag(ref: Record<string, unknown>) {
+  return String(ref.tag ?? ref.custom_name ?? "").trim().toUpperCase().replace(/\s+/g, "_");
 }
 
 // ---------------------------------------------------------------------------
@@ -381,14 +407,23 @@ export async function startGenerationWorker(
   const identityRefs = referenceRows.filter((r) => r.purpose === "identity");
   const inspirationRefs = referenceRows.filter((r) => r.purpose === "inspiration");
   const taggedRefs = referenceRows.filter((r) => r.purpose === "tagged");
-  const outfitRefs = [
-    ...inspirationRefs,
-    ...taggedRefs.filter((r) => r.tag === "OUTFIT" || r.custom_name === "OUTFIT"),
-  ];
+  const taggedOutfitRefs = taggedRefs.filter((r) => referenceTag(r) === "OUTFIT");
+  const outfitRefs = taggedOutfitRefs.length > 0 ? taggedOutfitRefs : inspirationRefs;
 
   const identityUrls = await getSignedUrls(identityRefs);
   const inspirationUrls = await getSignedUrls(inspirationRefs);
   const outfitUrls = await getSignedUrls(outfitRefs);
+  const taggedReferenceInputs = shoot.mode === "advanced"
+    ? (await Promise.all(taggedRefs.map(async (ref): Promise<TaggedReferenceInput | null> => {
+      const [url] = await getSignedUrls([ref]);
+      if (!url) return null;
+      return {
+        tag: referenceTag(ref) || "CUSTOM",
+        url,
+        note: typeof ref.note === "string" ? ref.note : undefined,
+      };
+    }))).filter((ref): ref is TaggedReferenceInput => Boolean(ref))
+    : [];
   const generationRefUrls = [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
   const hasValidIdentityReference = identityUrls.length > 0;
 
@@ -398,7 +433,7 @@ export async function startGenerationWorker(
     await updateShoot(shootId, { status: "PROCESSING", pipeline_stage: "Analyzing identity" });
     await emit(shootId, userId, "stage", { stage: "Analyzing identity", progress: 5 });
     try {
-      identityProfile = await runVisionAnalysis(identityUrls, inspirationUrls);
+      identityProfile = await runVisionAnalysis(identityUrls, inspirationUrls, taggedReferenceInputs);
       await updateShoot(shootId, { identity_profile: identityProfile, pipeline_stage: "Generating shoot brief" });
       await emit(shootId, userId, "stage", { stage: "Generating shoot brief", progress: 10 });
     } catch (e) {
@@ -446,8 +481,10 @@ export async function startGenerationWorker(
     }
 
     const directive = directives[slot - 1] ?? "professional photoshoot portrait";
-    const outfitLock = "Maintain the inspiration outfit consistently across this image: same garment pieces, colors, silhouette, fabric texture, fit, styling, and accessories as the outfit reference. Do not change wardrobe.";
-    const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} ${slot <= 8 ? outfitLock : "Use the locked outfit reference as the visual palette anchor."} Identity-locked, photorealistic, high quality.`;
+    const outfitLock = shoot.mode === "advanced"
+      ? "Maintain the advanced layered art direction: locked identity, tagged reference overrides by category, and exact locked wardrobe reference. If an [OUTFIT] reference exists, use it instead of the base inspiration outfit. Do not change wardrobe between portrait shots."
+      : "Maintain the inspiration outfit consistently across this image: same garment pieces, colors, silhouette, fabric texture, fit, styling, and accessories as the outfit reference. Do not change wardrobe.";
+    const fullPrompt = `${directive}. ${identityProfile ? `Subject: ${identityProfile.slice(0, 200)}.` : ""} ${slot <= 8 ? outfitLock : "Use the locked wardrobe reference as the visual palette anchor."} Identity-locked, photorealistic, high quality.`;
 
     const claimed = await claimImageForGeneration(img.id as string, slot);
     if (!claimed) continue;
