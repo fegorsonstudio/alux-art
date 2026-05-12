@@ -46,6 +46,7 @@ export default function WorkspacePage() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadIssue, setUploadIssue] = useState<string>("");
   const [libraryImages, setLibraryImages] = useState<UploadedRef[]>([]);
+  const [inspirationLibraryImages, setInspirationLibraryImages] = useState<UploadedRef[]>([]);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const identityRef = useRef<HTMLInputElement>(null);
@@ -70,11 +71,12 @@ export default function WorkspacePage() {
   // Load user + config + shoots
   useEffect(() => {
     (async () => {
-      const [meRes, configRes, shootsRes, libRes] = await Promise.all([
+      const [meRes, configRes, shootsRes, libRes, inspirationLibRes] = await Promise.all([
         fetch("/api/me"),
         fetch("/api/config"),
         fetch("/api/shoots"),
         fetch("/api/identity-library"),
+        fetch("/api/inspiration-library"),
       ]);
       if (meRes.status === 401) {
         window.location.href = "/login";
@@ -109,6 +111,19 @@ export default function WorkspacePage() {
           url: img.url as string,
         }));
         setLibraryImages(imgs);
+      }
+      if (inspirationLibRes.ok) {
+        const libData = await inspirationLibRes.json();
+        const imgs: UploadedRef[] = (libData.images ?? []).map((img: Record<string, unknown>) => ({
+          id: img.id as string,
+          name: img.name as string,
+          type: img.type as string,
+          size: img.size as number,
+          storageBucket: img.storage_bucket as string,
+          storagePath: img.storage_path as string,
+          url: img.url as string,
+        }));
+        setInspirationLibraryImages(imgs);
       }
     })();
   }, []);
@@ -239,11 +254,30 @@ export default function WorkspacePage() {
     setIdentityImages(prev => prev.filter(img => !libraryImages.some(l => l.id === img.id)));
   };
 
+  const handleAddFromInspirationLibrary = async (img: UploadedRef) => {
+    setInspirationImages(prev =>
+      prev.some(i => i.id === img.id) ? prev.filter(i => i.id !== img.id) : [...prev, img]
+    );
+    fetch("/api/inspiration-library", {
+      method: "PATCH",
+      body: new URLSearchParams({ id: img.id }),
+    }).catch(() => {});
+  };
+
+  const handleClearInspirationLibrary = async () => {
+    await fetch("/api/inspiration-library", { method: "DELETE" });
+    setInspirationLibraryImages([]);
+    setInspirationImages(prev => prev.filter(img => !inspirationLibraryImages.some(l => l.id === img.id)));
+  };
+
   const handleInspirationFiles = async (files: FileList) => {
     setUploading("inspiration");
-    const results = await Promise.all(Array.from(files).map(f => uploadFile(f, "inspiration-images")));
+    const results = await Promise.all(Array.from(files).map(f => uploadFile(f, "inspiration-images", true)));
     const ok = results.filter((r): r is UploadedRef => r !== null);
-    if (ok.length) setInspirationImages(prev => [...prev, ...ok]);
+    if (ok.length) {
+      setInspirationImages(prev => [...prev, ...ok]);
+      setInspirationLibraryImages(prev => [...ok.filter(o => !prev.some(p => p.id === o.id)), ...prev]);
+    }
     setUploading(null);
   };
 
@@ -432,10 +466,35 @@ export default function WorkspacePage() {
 
           {/* Inspiration photos */}
           <div className={styles.panel}>
-            <p className={styles.panelTitle}>Inspiration (min. 1)</p>
-            {inspirationImages.length > 0 && (
+            <div className={styles.panelTitleRow}>
+              <p className={styles.panelTitle}>Inspiration (min. 1)</p>
+              {inspirationLibraryImages.length > 0 && (
+                <button className={styles.clearLibBtn} onClick={handleClearInspirationLibrary}>Clear library</button>
+              )}
+            </div>
+
+            {inspirationLibraryImages.length > 0 && (
+              <div>
+                <p className={styles.libLabel}>Saved inspiration - tap to select/deselect</p>
+                <div className={styles.thumbGrid}>
+                  {inspirationLibraryImages.map(img => {
+                    const selected = inspirationImages.some(i => i.id === img.id);
+                    return (
+                      <div key={img.id} className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
+                        onClick={() => handleAddFromInspirationLibrary(img)}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.url} alt={img.name} />
+                        {selected && <span className={styles.thumbCheck}>OK</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {inspirationImages.filter(img => !inspirationLibraryImages.some(l => l.id === img.id)).length > 0 && (
               <div className={styles.thumbGrid}>
-                {inspirationImages.map(img => (
+                {inspirationImages.filter(img => !inspirationLibraryImages.some(l => l.id === img.id)).map(img => (
                   <div key={img.id} className={styles.thumb}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img.url} alt={img.name} />

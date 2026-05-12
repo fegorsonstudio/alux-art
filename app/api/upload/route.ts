@@ -45,8 +45,14 @@ export async function POST(req: NextRequest) {
 
     const service = createServiceClient();
     const now = new Date().toISOString();
-    if (saveToLibrary && storageBucket === "identity-images") {
-      const { error: dbErr } = await service.from("identity_images").upsert({
+    const libraryTable = storageBucket === "identity-images"
+      ? "identity_images"
+      : storageBucket === "inspiration-images"
+        ? "inspiration_images"
+        : null;
+
+    if ((saveToLibrary || storageBucket === "inspiration-images") && libraryTable) {
+      const { error: dbErr } = await service.from(libraryTable).upsert({
         id: imageId,
         user_id: user.id,
         name: filename,
@@ -100,11 +106,16 @@ export async function POST(req: NextRequest) {
 
   const imageId = uniqueId;
 
-  // Optionally persist to identity library
-  if (saveToLibrary && bucket === "identity-images") {
+  const libraryTable = bucket === "identity-images"
+    ? "identity_images"
+    : bucket === "inspiration-images"
+      ? "inspiration_images"
+      : null;
+
+  if ((saveToLibrary || bucket === "inspiration-images") && libraryTable) {
     try {
       const now = new Date().toISOString();
-      const { error: dbErr } = await service.from("identity_images").insert({
+      const { error: dbErr } = await service.from(libraryTable).upsert({
         id: imageId,
         user_id: user.id,
         name: file.name,
@@ -114,10 +125,10 @@ export async function POST(req: NextRequest) {
         storage_path: path,
         created_at: now,
         last_used_at: now,
-      });
-      if (dbErr) console.error("[upload] identity_images insert error:", dbErr.message);
+      }, { onConflict: "id" });
+      if (dbErr) console.error(`[upload] ${libraryTable} upsert error:`, dbErr.message);
     } catch (e) {
-      console.error("[upload] identity_images insert threw:", e);
+      console.error(`[upload] ${libraryTable} upsert threw:`, e);
     }
   }
 
