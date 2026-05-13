@@ -179,6 +179,7 @@ function buildFinalImagePrompt(args: {
   mode: string;
   slot: number;
   hasOutfitOverride: boolean;
+  hasBackgroundOverride: boolean;
 }) {
   const identitySummary = args.identityProfile
     ? args.identityProfile.slice(0, 450)
@@ -186,10 +187,24 @@ function buildFinalImagePrompt(args: {
   const wardrobeSource = args.mode === "advanced" && args.hasOutfitOverride
     ? "advanced [OUTFIT] tagged reference"
     : "base inspiration wardrobe";
+  const referenceRoles = args.mode === "advanced" && args.hasOutfitOverride
+    ? [
+      "Reference Image 1 is IDENTITY ONLY: preserve face, skin tone, body build, and likeness.",
+      "Reference Image 2 is [OUTFIT] ONLY: apply this clothing exactly; it overrides all clothing visible in identity images and base inspiration.",
+      "Reference Image 3, if provided, is BASE INSPIRATION: use it as environment, mood, composition, and color anchor unless a tagged override replaces that category.",
+    ].join(" ")
+    : [
+      "Reference Images 1-3 are IDENTITY ONLY: preserve face, skin tone, body build, and likeness; ignore clothing and backgrounds.",
+      "The inspiration/wardrobe reference is the base wardrobe, environment, mood, and color anchor.",
+    ].join(" ");
+  const environmentRule = args.hasBackgroundOverride
+    ? "Use the advanced [BACKGROUND] tagged reference as the environment/backdrop source; ignore non-background elements in that reference."
+    : "Unless a specific [BACKGROUND] reference is provided, the base inspiration image is the environmental anchor. Preserve the setting, background composition, and texture from the inspiration image.";
   const preserveBlock = [
     "Preserve facial identity from identity references: face shape, eye spacing, nose shape, lips, jawline, skin tone, hairline, body build, and recognizable likeness.",
     "Do not copy clothing, accessories, background, lighting, pose, or styling from identity images.",
     "Treat identity-image clothing as incidental capture context.",
+    "Maintain the Change vs Preserve split: preserve identity and locked wardrobe source; change only pose, camera angle, expression, and category-specific tagged elements.",
   ].join(" ");
   const changeBlock = args.slot <= 8
     ? `Apply wardrobe only from the ${wardrobeSource}. Maintain exact garments, colors, silhouette, fit, fabric texture, folds, styling, and accessories from that wardrobe source.`
@@ -199,9 +214,10 @@ function buildFinalImagePrompt(args: {
     : "Use the inspiration image as the base art direction and wardrobe source.";
 
   return [
+    `Reference Roles: ${referenceRoles}`,
     `Scene: ${args.directive}`,
     `Subject: ${identitySummary}`,
-    `Important Details: ${changeBlock} ${advancedBlock} Use concrete photographic realism: natural skin texture, subtle film grain, realistic fabric behavior, physically plausible light direction, natural asymmetry, and editorial lens feel.`,
+    `Important Details: ${changeBlock} ${environmentRule} ${advancedBlock} Use concrete photographic realism: natural skin texture, subtle film grain, realistic fabric behavior, physically plausible light direction, natural asymmetry, and editorial lens feel.`,
     "Use Case: Professional editorial virtual photoshoot image.",
     `Constraints: ${preserveBlock} Avoid CGI/plastic skin, waxy smoothing, identity drift, outfit bleed from identity images, random logos, extra text, watermarks, distorted hands, and invented wardrobe changes.`,
   ].join("\n");
@@ -442,11 +458,13 @@ export async function startGenerationWorker(
   const inspirationRefs = referenceRows.filter((r) => r.purpose === "inspiration");
   const taggedRefs = referenceRows.filter((r) => r.purpose === "tagged");
   const taggedOutfitRefs = taggedRefs.filter((r) => referenceTag(r) === "OUTFIT");
+  const taggedBackgroundRefs = taggedRefs.filter((r) => referenceTag(r) === "BACKGROUND");
   const outfitRefs = taggedOutfitRefs.length > 0 ? taggedOutfitRefs : inspirationRefs;
 
   const identityUrls = await getSignedUrls(identityRefs);
   const inspirationUrls = await getSignedUrls(inspirationRefs);
   const outfitUrls = await getSignedUrls(outfitRefs);
+  const backgroundUrls = await getSignedUrls(taggedBackgroundRefs);
   const taggedReferenceInputs = shoot.mode === "advanced"
     ? (await Promise.all(taggedRefs.map(async (ref): Promise<TaggedReferenceInput | null> => {
       const [url] = await getSignedUrls([ref]);
@@ -458,7 +476,13 @@ export async function startGenerationWorker(
       };
     }))).filter((ref): ref is TaggedReferenceInput => Boolean(ref))
     : [];
-  const generationRefUrls = [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
+  const generationRefUrls = shoot.mode === "advanced" && taggedOutfitRefs.length > 0
+    ? [
+      ...identityUrls.slice(0, 1),
+      ...outfitUrls.slice(0, 1),
+      ...(backgroundUrls.length > 0 ? backgroundUrls.slice(0, 1) : inspirationUrls.slice(0, 1)),
+    ]
+    : [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
   const hasValidIdentityReference = identityUrls.length > 0;
 
   // Vision analysis
@@ -521,6 +545,7 @@ export async function startGenerationWorker(
       mode: shoot.mode,
       slot,
       hasOutfitOverride: taggedOutfitRefs.length > 0,
+      hasBackgroundOverride: taggedBackgroundRefs.length > 0,
     });
 
     const claimed = await claimImageForGeneration(img.id as string, slot);
