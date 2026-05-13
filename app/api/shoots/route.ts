@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { ASPECTS } from "@/lib/types";
+import { ASPECTS, REFERENCE_TAGS } from "@/lib/types";
 
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
+const ALLOWED_TAGS = new Set<string>(REFERENCE_TAGS);
 type ReferenceRecord = Record<string, unknown> & { purpose: string };
 
 function isValidReference(ref: Record<string, unknown>, userId: string) {
@@ -16,6 +17,21 @@ function isValidReference(ref: Record<string, unknown>, userId: string) {
     ALLOWED_BUCKETS.has(ref.storageBucket) &&
     typeof ref.storagePath === "string" &&
     ref.storagePath.startsWith(`${userId}/`);
+}
+
+function normalizeTag(ref: ReferenceRecord) {
+  const rawTag = typeof ref.tag === "string" ? ref.tag.trim() : "";
+  const rawCustom = typeof ref.customName === "string" ? ref.customName.trim() : "";
+  const normalized = rawTag.toUpperCase().replace(/\s+/g, "_");
+
+  if (ALLOWED_TAGS.has(normalized)) {
+    return { tag: normalized, customName: rawCustom || null };
+  }
+
+  return {
+    tag: null,
+    customName: rawCustom || rawTag || null,
+  };
 }
 
 export async function GET() {
@@ -117,14 +133,15 @@ export async function POST(request: NextRequest) {
   if (shootError) return NextResponse.json({ error: shootError.message }, { status: 500 });
 
   if (allRefs.length > 0) {
-    await service.from("shoot_references").insert(
-      allRefs.map((r) => ({
+    const referenceRows = allRefs.map((r) => {
+      const normalized = normalizeTag(r);
+      return {
         id: crypto.randomUUID(),
         shoot_id: shootId,
         user_id: user.id,
         purpose: r.purpose,
-        tag: r.tag ?? null,
-        custom_name: r.customName ?? null,
+        tag: normalized.tag,
+        custom_name: normalized.customName,
         note: r.note ?? null,
         name: r.name,
         type: r.type,
@@ -132,8 +149,13 @@ export async function POST(request: NextRequest) {
         storage_bucket: r.storageBucket,
         storage_path: r.storagePath,
         created_at: now,
-      }))
-    );
+      };
+    });
+    const { error: referenceError } = await service.from("shoot_references").insert(referenceRows);
+    if (referenceError) {
+      await service.from("shoots").delete().eq("id", shootId);
+      return NextResponse.json({ error: `Reference save failed: ${referenceError.message}` }, { status: 500 });
+    }
   }
 
   // Create 10 image slot records
@@ -147,7 +169,12 @@ export async function POST(request: NextRequest) {
     created_at: now,
     updated_at: now,
   }));
-  await service.from("shoot_images").insert(slots);
+  const { error: slotsError } = await service.from("shoot_images").insert(slots);
+  if (slotsError) {
+    await service.from("shoot_references").delete().eq("shoot_id", shootId);
+    await service.from("shoots").delete().eq("id", shootId);
+    return NextResponse.json({ error: `Image slot setup failed: ${slotsError.message}` }, { status: 500 });
+  }
 
   const { data: fullShoot } = await service
     .from("shoots")

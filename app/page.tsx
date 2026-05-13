@@ -320,7 +320,16 @@ export default function WorkspacePage() {
           mode, aspectRatio, currency,
           identityImages: identityImages.map(({ id, name, type, size, storageBucket, storagePath }) => ({ id, name, type, size, storageBucket, storagePath })),
           inspirationImages: inspirationImages.map(({ id, name, type, size, storageBucket, storagePath }) => ({ id, name, type, size, storageBucket, storagePath })),
-          taggedReferences: taggedRefs.map(({ id, name, type, size, storageBucket, storagePath, tag, customTag }) => ({ id, name, type, size, storageBucket, storagePath, tag: customTag?.trim() || tag || null })),
+          taggedReferences: taggedRefs.map(({ id, name, type, size, storageBucket, storagePath, tag, customTag }) => ({
+            id,
+            name,
+            type,
+            size,
+            storageBucket,
+            storagePath,
+            tag: customTag?.trim() ? null : tag || null,
+            customName: customTag?.trim() || null,
+          })),
           quote, adminBypass,
         }),
       });
