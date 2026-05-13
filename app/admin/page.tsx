@@ -20,23 +20,39 @@ export default function AdminPage() {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/overview").then(r => r.json()).then(d => {
-      setData(d);
-      setPricingNgn(String(d.pricing?.ngn ?? 15000));
-      setPricingUsd(String(d.pricing?.usd ?? 10));
-    });
+    fetch("/api/admin/overview")
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? "Unable to load dashboard");
+        return d;
+      })
+      .then(d => {
+        setData(d);
+        setPricingNgn(String(d.pricing?.ngn ?? 15000));
+        setPricingUsd(String(d.pricing?.usd ?? 10));
+      })
+      .catch(err => setMsg(err instanceof Error ? err.message : "Unable to load dashboard"));
   }, []);
 
   const savePricing = async () => {
     setSaving(true);
-    const res = await fetch("/api/admin/pricing", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ngn: Number(pricingNgn), usd: Number(pricingUsd) }),
-    });
-    setSaving(false);
-    setMsg(res.ok ? "Saved!" : "Error saving");
-    setTimeout(() => setMsg(""), 3000);
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/pricing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ngn: Number(pricingNgn), usd: Number(pricingUsd) }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error ?? "Error saving");
+      setData(prev => prev ? { ...prev, pricing: payload.pricing } : prev);
+      setMsg("Saved!");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Error saving");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMsg(""), 3000);
+    }
   };
 
   const toggleBan = async (userId: string, banned: boolean) => {
@@ -73,7 +89,7 @@ export default function AdminPage() {
           <input className={styles.priceInput} value={pricingNgn} onChange={e => setPricingNgn(e.target.value)} type="number" />
           <label className={styles.priceLabel}>USD ($)</label>
           <input className={styles.priceInput} value={pricingUsd} onChange={e => setPricingUsd(e.target.value)} type="number" />
-          <button className={styles.saveBtn} onClick={savePricing} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+          <button type="button" className={styles.saveBtn} onClick={savePricing} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
           {msg && <span className={styles.saveMsg}>{msg}</span>}
         </div>
       </div>
@@ -116,3 +132,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

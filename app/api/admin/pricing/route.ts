@@ -9,7 +9,28 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { ngn, usd } = await request.json();
+  const nextNgn = Number(ngn);
+  const nextUsd = Number(usd);
+  if (!Number.isFinite(nextNgn) || nextNgn <= 0 || !Number.isFinite(nextUsd) || nextUsd <= 0) {
+    return NextResponse.json({ error: "Enter valid positive prices" }, { status: 400 });
+  }
+
   const service = createServiceClient();
-  const { data } = await service.from("pricing_configs").insert({ ngn, usd, updated_at: new Date().toISOString() }).select().single();
+  const { data, error } = await service
+    .from("pricing_configs")
+    .upsert({
+      id: true,
+      ngn: nextNgn,
+      usd: nextUsd,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" })
+    .select("ngn, usd, updated_at")
+    .single();
+
+  if (error) {
+    console.error("[admin/pricing] save failed", error);
+    return NextResponse.json({ error: "Unable to save pricing" }, { status: 500 });
+  }
+
   return NextResponse.json({ pricing: data });
 }
