@@ -4,27 +4,30 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  let next = searchParams.get("next") ?? "/";
+  if (!next.startsWith("/")) next = "/";
 
   if (code) {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error && data.user) {
-      const service = createServiceClient();
-      const email = data.user.email ?? "";
-      const displayName = typeof data.user.user_metadata?.full_name === "string"
-        ? data.user.user_metadata.full_name
-        : email;
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const service = createServiceClient();
+        const displayName = typeof user.user_metadata?.full_name === "string"
+          ? user.user_metadata.full_name
+          : user.email ?? "";
 
-      await service.from("profiles").upsert({
-        id: data.user.id,
-        email,
-        display_name: displayName,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
-
+        const { error: profileError } = await service.from("profiles").upsert({
+          id: user.id,
+          display_name: displayName,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+        if (profileError) console.error("[auth callback] profile upsert failed:", profileError.message);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
+    console.error("[auth callback] code exchange failed:", error.message);
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);

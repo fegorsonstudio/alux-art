@@ -478,13 +478,13 @@ export async function startGenerationWorker(
       };
     }))).filter((ref): ref is TaggedReferenceInput => Boolean(ref))
     : [];
-  const generationRefUrls = shoot.mode === "advanced" && taggedOutfitRefs.length > 0
-    ? [
-      ...identityUrls.slice(0, 1),
-      ...outfitUrls.slice(0, 1),
-      ...(backgroundUrls.length > 0 ? backgroundUrls.slice(0, 1) : inspirationUrls.slice(0, 1)),
-    ]
-    : [...identityUrls.slice(0, 3), ...outfitUrls.slice(0, 1)];
+  const styleAnchorUrl = backgroundUrls[0] ?? inspirationUrls[0] ?? outfitUrls[0];
+  const generationRefUrls = [
+    ...identityUrls.slice(0, 3),
+    ...(shoot.mode === "advanced" && taggedOutfitRefs.length > 0
+      ? outfitUrls.slice(0, 1)
+      : styleAnchorUrl ? [styleAnchorUrl] : []),
+  ].slice(0, 4);
   const hasValidIdentityReference = identityUrls.length > 0;
 
   // Vision analysis

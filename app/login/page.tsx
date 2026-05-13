@@ -11,6 +11,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    const authError = params.get("error");
+    if (authError) {
+      setError(authError === "auth_failed"
+        ? "Sign in failed. Check that Google login is enabled and this app URL is allowed in Supabase."
+        : authError.replace(/_/g, " "));
+    }
     if (params.has("code")) {
       window.location.replace(`/api/auth/callback${location.search}`);
     }

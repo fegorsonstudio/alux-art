@@ -1,6 +1,14 @@
 // Enables Google OAuth provider in Supabase Auth settings via Management API
 const PAT = process.env.SUPABASE_ACCESS_TOKEN;
 const PROJECT_REF = process.env.SUPABASE_PROJECT_REF ?? "owdfoxglbxrqhgqbvkon";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://virtual-photo-studio-rho.vercel.app";
+const siteOrigin = SITE_URL.replace(/\/$/, "");
+const REDIRECT_URLS = Array.from(new Set([
+  "http://localhost:3000/api/auth/callback",
+  "https://virtual-photo-studio-rho.vercel.app/api/auth/callback",
+  "https://aluxartandframes.shop/api/auth/callback",
+  `${siteOrigin}/api/auth/callback`,
+]));
 
 if (!PAT) {
   console.error("SUPABASE_ACCESS_TOKEN is required. Run with your environment loaded, e.g. `node --env-file=.env.local scripts/setup-auth.mjs`.");
@@ -27,11 +35,8 @@ const patchRes = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF
   },
   body: JSON.stringify({
     external_google_enabled: true,
-    site_url: "https://aluxartandframes.shop",
-    additional_redirect_urls: [
-      "http://localhost:3000/api/auth/callback",
-      "https://aluxartandframes.shop/api/auth/callback",
-    ],
+    site_url: siteOrigin,
+    additional_redirect_urls: REDIRECT_URLS,
   }),
 });
 
