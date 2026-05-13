@@ -381,6 +381,7 @@
 .app[data-theme="dark"] .slotStatus { color: #b8d3d5; }
 .slotStatusDone { color: #177767; }
 .slotStatusFailed { color: #a7463c; }
+.downloadActions { display: flex; align-items: center; gap: 6px; }
 .slotErrorDetails { padding: 0 10px 10px; color: #a7463c; font-size: 0.68rem; line-height: 1.25; }
 .slotErrorDetails summary { cursor: pointer; font-weight: 750; }
 .slotError { margin: 6px 0 0; color: #a7463c; overflow-wrap: anywhere; }

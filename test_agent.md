@@ -317,70 +317,108 @@ GET .../net::ERR_QUIC_PROTOCOL_ERROR
 
 ---
 
-# Latest Test Report
+# Production Pipeline Prompt QA Report
 
 ## Summary
-- Result: PASS
-- Main blocker: None
-- Tested URL: https://virtual-photo-studio-rho.vercel.app/
-- Test date/time: 2026-05-12T20:38+01:00
-- Browser: Chrome Remote
+- Result: FAIL (Critical Blocker)
+- Main blockers: The backend fails to recognize uploaded identity images during an Advanced Shoot, completely halting generation.
+- Number of shoots tested: 1 (Advanced Shoot Retest)
+- Best shoot: N/A
+- Worst failure: All 10 slots failed instantly with "No valid identity reference image is available..."
 
-## Steps Completed
-- [x] Initial load
-- [x] Selected 3 identity images
-- [x] Selected saved inspiration image
-- [x] Created shoot
-- [x] Opened queued/processing gallery
-- [x] Observed generation
-- [x] Refreshed and re-opened gallery
-- [x] Tested downloads
+## Before/After Comparison (Advanced Mode Retest)
 
-## Findings
-1. Reason Expander Visibility
-- Bug: None (Fix Verified)
-  - Severity: info
-  - Evidence: Hovering on failed slots shows a reason expander stating "fal.ai: Unprocessable Entity".
-  - Expected: Reason expander should show provider-level detail without old error messages.
-  - Actual: Reason expander works correctly. No mentions of "OpenAI billing hard limit" found.
+**Before (Previous Run):**
+- **Symptom:** "Identity Clothing Bleed" & "Wrong Outfit Source".
+- **Result:** The system generated images but ignored the `[OUTFIT]` tag, prioritizing the clothing from the identity images.
 
-2. "Generating shoot brief" State
-- Bug: None (Fix Verified)
-  - Severity: info
-  - Evidence: "Generating shoot brief" header is no longer stuck. Gallery successfully updates to show generation status.
-  - Expected: Header should update correctly as the process advances.
-  - Actual: Header updates properly and does not remain pinned.
+**After (Current Retest):**
+- **Symptom:** Total Pipeline Failure.
+- **Result:** The system failed to generate *any* images. Even though 3 identity images, 1 inspiration image, and multiple tagged references (`[OUTFIT]`, nail design) were successfully selected and displayed in the UI, the backend threw an error for every slot: *"No valid identity reference image is available for portrait generation."*
 
-3. Initial Load Speed (/api/shoots)
-- Bug: None (Fix Verified)
-  - Severity: info
-  - Evidence: No significant lag or timeouts observed on hard refresh; Identity and Inspiration loaded quickly.
+## Advanced Shoot Results
 
-## Network Failures
-None reported.
+**Scenario:** 3 Identity images, 1 Inspiration image, 1 tagged `[OUTFIT]` reference, 1 tagged nail design reference.
 
-## Console Errors
-None reported.
+| Slot | Identity 0-5 | Wardrobe 0-5 | Tags 0-5 | Lighting 0-5 | Background 0-5 | Photorealism 0-5 | Artifact severity | Failure categories | Notes |
+|---:|---:|---:|---:|---:|---:|---:|---|---|---|
+| #1-10 | - | - | - | - | - | - | - | provider_error | Failed instantly with: "No valid identity reference image is available..." |
 
-## Provider Errors
-| Slot | Status | Visible provider reason | Notes |
-|---:|---|---|---|
-| Any Failed | FAILED | fal.ai: Unprocessable Entity | Error details correctly expanded |
+**Findings:** We could not verify if the prompt orchestration rules fixed the outfit bleed because the backend is no longer receiving or parsing the `purpose = "identity"` references correctly when a shoot is launched in Advanced Mode with multiple tags.
 
-## Screenshots
-- Screenshot name/path: gallery_progress_1778615249015.png
-- What it shows: Gallery showing generation progress and proper error tooltips on failed slots.
+## Rule Proposals For Codex
 
-## Saved Inspiration Library
-- Did saved inspiration images load? Yes.
-- Count visible: >0.
-- Could one be selected? Yes.
-- Did it remain after refresh? Yes.
+# Prompt Rule Proposal
 
-## Shoot/Gallery Result
-- Did gallery open when clicking queued/processing? Yes.
-- Did generated images appear in app? Yes.
-- Did downloads work? Yes (4K button functional).
+## Problem
+In Advanced Mode, the `generate.ts` pipeline fails to find valid identity references, instantly failing all slots with the error: "No valid identity reference image is available for portrait generation."
 
-## Suggestions
-- None. All requested fixes are functioning correctly in the production environment.
+## Evidence
+- Shoot ID: Latest Advanced Shoot
+- Slot numbers: 1-10
+- What happened: The `identityUrls` array in `lib/generate.ts` is resolving to empty, triggering the safeguard check on line 511.
+
+## Root Cause Hypothesis
+This is likely a frontend or database issue, not a prompt orchestration issue. When the user creates an Advanced shoot with tagged references, the frontend might be failing to correctly assign or save the `purpose: 'identity'` flag for the identity references in the `shoot_references` table. When `lib/generate.ts` filters for `r.purpose === "identity"`, it finds 0 rows.
+
+## Proposed Rule
+*This requires a code fix rather than a prompt rule.*
+Codex needs to investigate the `POST /api/shoots` or `POST /api/shoots/.../start` endpoint logic on the frontend to ensure that when `shoot_references` are inserted into Supabase, the identity images are explicitly receiving `purpose: 'identity'`, even when `[OUTFIT]` and other tagged references are present in the payload.
+
+## Rule Scope
+- Fast mode: N/A
+- Advanced mode: Yes
+- Tags affected: All
+
+## Implementation Target
+- Frontend API route (Shoot Creation logic)
+- Database insertion logic for `shoot_references`
+
+## Expected Outcome
+The backend generation worker will successfully locate the identity references, allowing the advanced orchestration prompt to run and test the outfit bleed fix.
+
+## Regression Risk
+None, this is fixing a broken pipeline state.
+
+## Suggested Test
+Relaunch an Advanced Shoot with 3 Identity, 1 Inspo, and 1 `[OUTFIT]` tag. Verify the generation starts and completes without throwing the "No valid identity reference image" error.
+
+---
+
+## Production Readiness Verdict
+**Verdict: NOT READY FOR FULL PRODUCTION (BLOCKED)**
+The Advanced Mode generation pipeline is currently broken. The backend cannot retrieve the user's uploaded identity images, causing a complete failure before prompt orchestration even begins. We need Codex to fix the reference tagging in the database insertion logic before we can resume testing the AI prompt rules.
+
+---
+
+# Test Entry: Advanced Mode Retest & Generation Process Observation
+
+## Date/Time
+2026-05-13
+
+## Mode Tested
+Advanced Mode (Admin Generate Free)
+
+## Test Setup
+- 3 Identity Photos (Subject in a distinct blue sequined dress)
+- 1 Inspiration Photo (Staircase environment)
+- Tagged Reference 1: `[OUTFIT]`
+- Tagged Reference 2: `[NAILS]`
+- Aspect Ratio: Instagram 4:5
+
+## Observations
+- **Database Fix**: The previous "violates check constraint" error was successfully resolved by the database update. Identity references were successfully parsed, and the generation pipeline kicked off normally.
+- **Outfit Bleed Fix (PASS)**: The prompt orchestration explicitly separated identity clothing from the wardrobe source. The `[OUTFIT]` override successfully replaced the identity clothing, confirming the prompt logic works as intended.
+- **Aspect Ratio Bug (FAIL)**: Images were generating in Landscape 16:9 instead of the chosen aspect ratio because the aspect ratio parameter was ignored when submitting to fal.ai.
+- **Quote Slot (FAIL)**: Slot 10 (the quote image) silently failed to generate the text overlay, returning just the background image. The `sharp` image processing library failed during SVG text composition in the serverless environment.
+- **Upscaling Quality**: The `fal-ai/aura-sr` upscaler with 4x magnification was producing sub-optimal results.
+- **UI/UX**: Users need an obvious way to download individual 4K images from the gallery.
+
+## Corrective Actions Implemented
+1. **Aspect Ratio Fix**: Updated `lib/generate.ts` to pass the correct `aspect_ratio` value to the `fal-ai/nano-banana-2/edit` model.
+2. **Upscaler Improvement**: Switched the upscaler from `fal-ai/aura-sr` to `fal-ai/clarity-upscaler` (2x scale with detail prompts) for higher quality production output.
+3. **Download Icon**: Added a prominent download icon next to the "4K" button in `app/page.tsx` so users can easily save individual images.
+4. **Quote Logging**: Added `console.error` to the `compositeQuote` function to track why `sharp` is failing silently during text rendering.
+
+## Next Steps
+We need to monitor the next shoot generation to see if the new `clarity-upscaler` performs better, verify the aspect ratio accurately maps to the fal model, and review the server logs to diagnose the `sharp` composite error for slot 10.

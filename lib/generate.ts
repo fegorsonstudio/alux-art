@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase-server";
 import { fal } from "@fal-ai/client";
-import { ASPECTS, type AspectRatio } from "@/lib/types";
+import type { AspectRatio } from "@/lib/types";
 
 fal.config({ credentials: process.env.FAL_KEY });
 
@@ -243,6 +243,7 @@ async function generateImage(
         input: {
           prompt,
           image_urls: referenceUrls.slice(0, 4),
+          aspect_ratio: aspectRatio,
           output_format: "png",
         },
       }) as Record<string, unknown>;
@@ -296,12 +297,12 @@ async function generateImage(
 }
 
 // ---------------------------------------------------------------------------
-// Upscale with fal-ai/aura-sr
+// Upscale with fal-ai/clarity-upscaler
 // ---------------------------------------------------------------------------
 async function upscaleImage(imageUrl: string): Promise<string> {
   try {
-    const raw = await fal.run("fal-ai/aura-sr", {
-      input: { image_url: imageUrl, upscale_factor: 4 },
+    const raw = await fal.run("fal-ai/clarity-upscaler", {
+      input: { image_url: imageUrl, prompt: "high quality, detailed photography, sharp focus", upscale_factor: 2 },
     }) as Record<string, unknown>;
     const img = (raw?.image ?? (raw?.data as Record<string, unknown>)?.image) as { url?: string } | undefined;
     return img?.url ?? imageUrl;
@@ -338,7 +339,8 @@ async function compositeQuote(
 
     const blob = new Blob([new Uint8Array(composite)], { type: "image/png" });
     return await fal.storage.upload(blob);
-  } catch {
+  } catch (e) {
+    console.error("[generate] compositeQuote failed:", e);
     return backgroundUrl;
   }
 }
