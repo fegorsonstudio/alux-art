@@ -392,17 +392,12 @@
 .slotStatusDone { color: #177767; }
 .slotStatusFailed { color: #a7463c; }
 .downloadActions { display: flex; align-items: center; gap: 6px; }
-.retryPanel { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
-.retryBtn { background: #ffffff; border: 1px solid rgba(167, 70, 60, 0.25); border-radius: 8px; color: #a7463c; font-size: 0.72rem; font-weight: 750; padding: 7px 9px; cursor: pointer; width: 100%; }
-.retryBtn:hover { border-color: rgba(167, 70, 60, 0.55); color: #7f3028; }
-.slotErrorDetails { color: #a7463c; font-size: 0.68rem; line-height: 1.25; }
+.slotErrorDetails { padding: 0 10px 10px; color: #a7463c; font-size: 0.68rem; line-height: 1.25; }
 .slotErrorDetails summary { cursor: pointer; font-weight: 750; }
 .slotError { margin: 6px 0 0; color: #a7463c; overflow-wrap: anywhere; }
 .app[data-theme="dark"] .slotError { color: #ffb8aa; }
 .app[data-theme="dark"] .slotCardFailed { border-color: rgba(255, 184, 170, 0.36); }
 .app[data-theme="dark"] .slotErrorDetails { color: #ffb8aa; }
-.app[data-theme="dark"] .retryBtn { background: rgba(255,255,255,0.08); border-color: rgba(255,184,170,0.28); color: #ffb8aa; }
-.app[data-theme="dark"] .retryBtn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,184,170,0.5); color: #ffffff; }
 .dlBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.25); border-radius: 8px; color: #2d727b; font-size: 0.7rem; padding: 4px 8px; cursor: pointer; }
 .dlBtn:hover { border-color: rgba(67, 159, 169, 0.55); color: #184f58; }
 .zipBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.35); border-radius: 8px; color: #2d727b; font-size: 0.85rem; font-weight: 750; padding: 10px 16px; cursor: pointer; width: 100%; }

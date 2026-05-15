@@ -19,9 +19,6 @@ export async function GET(
     .single();
 
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (shoot.expires_at && new Date(shoot.expires_at).getTime() <= Date.now()) {
-    return NextResponse.json({ error: "This shoot has expired. Downloads are available for 48 hours after creation." }, { status: 410 });
-  }
 
   const completedImages = (shoot.shoot_images ?? []).filter(
     (i: Record<string, unknown>) => i.status === "COMPLETE" && i.download_storage_path
@@ -36,7 +33,7 @@ export async function GET(
     return NextResponse.json({ url: signed?.signedUrl, expiresAt: new Date(Date.now() + 3600000).toISOString() });
   }
 
-  // Build ZIP from all completed images that are available inside the 48-hour retention window.
+  // Build ZIP from all completed images available for this shoot.
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 

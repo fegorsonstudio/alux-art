@@ -100,8 +100,6 @@ export interface ShootImage {
   originalDimensions?: { width: number; height: number };
   finalDimensions?: { width: number; height: number };
   upscaled?: boolean;
-  retryCount?: number;
-  lastRetryAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -114,9 +112,6 @@ export interface Shoot {
   aspectRatio: AspectRatio;
   currency: Currency;
   packageSize?: ShootPackageSize;
-  creditsRequired?: number;
-  creditsReserved?: number;
-  expiresAt?: string;
   status: ShootStatus;
   progress: number;
   pipelineStage?: string;

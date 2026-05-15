@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { fal } from "@fal-ai/client";
-
-fal.config({ credentials: process.env.FAL_KEY });
 
 export async function GET() {
   const supabase = await createClient();

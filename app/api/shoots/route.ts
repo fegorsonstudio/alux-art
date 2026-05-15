@@ -116,7 +116,6 @@ export async function POST(request: NextRequest) {
   // Create shoot record
   const shootId = crypto.randomUUID();
   const now = new Date().toISOString();
-  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   const initialStatus = (isAdmin && adminBypass) ? "QUEUED" : "PENDING_PAYMENT";
 
   const { data: shoot, error: shootError } = await service.from("shoots").insert({
@@ -127,9 +126,6 @@ export async function POST(request: NextRequest) {
     aspect_ratio: aspectRatio,
     currency,
     package_size: packageSize,
-    credits_required: packageSize,
-    credits_reserved: (isAdmin && adminBypass) ? packageSize : 0,
-    expires_at: expiresAt,
     status: initialStatus,
     progress: 0,
     quote,

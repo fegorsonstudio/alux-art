@@ -420,25 +420,6 @@ export default function WorkspacePage() {
     }
   };
 
-  const retryImage = async (shoot: Shoot, img: ShootImage) => {
-    setStatus({ type: "loading", message: `Restarting image ${img.slot}...` });
-    const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}/retry`, { method: "POST" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setStatus({ type: "error", message: data.error ?? "Retry failed" });
-      return;
-    }
-    setStatus({ type: "ok", message: `Image ${img.slot} queued again.` });
-    const refresh = await fetch(`/api/shoots/${shoot.id}`);
-    if (refresh.ok) {
-      const refreshed = await refresh.json();
-      if (refreshed.shoot) {
-        setCurrentShoot(refreshed.shoot);
-        setShoots(prev => prev.map(s => s.id === refreshed.shoot.id ? refreshed.shoot : s));
-      }
-    }
-  };
-
   const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/login"; };
   const isAdmin = user?.role === "admin";
   const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
@@ -793,13 +774,10 @@ export default function WorkspacePage() {
                       </span>
                     </div>
                     {img.status === "FAILED" && (
-                      <div className={styles.retryPanel}>
-                        <button className={styles.retryBtn} onClick={() => retryImage(currentShoot, img)}>Retry image</button>
-                        <details className={styles.slotErrorDetails}>
-                          <summary>Reason</summary>
-                          <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the generation_events and shoot_images rows for this shoot."}</p>
-                        </details>
-                      </div>
+                      <details className={styles.slotErrorDetails}>
+                        <summary>Reason</summary>
+                        <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the n8n execution and shoot_images rows for this shoot."}</p>
+                      </details>
                     )}
                   </div>
                 )})}

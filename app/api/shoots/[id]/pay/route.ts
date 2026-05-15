@@ -16,14 +16,12 @@ export async function POST(
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
-  const packageSize = normalizePackageSize(shoot.package_size ?? shoot.credits_required);
+  const packageSize = normalizePackageSize(shoot.package_size);
 
   // Admin bypass — no payment needed
   if (isAdmin) {
     await service.from("shoots").update({
       status: "QUEUED",
-      credits_reserved: packageSize,
-      expires_at: shoot.expires_at ?? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
       updated_at: new Date().toISOString(),
     }).eq("id", id);
     const origin = new URL(request.url).origin;
@@ -57,7 +55,7 @@ export async function POST(
       email: user.email,
       amount: price,
       currency: shoot.currency,
-      metadata: { shoot_id: id, user_id: user.id, package_size: packageSize, credits: packageSize },
+      metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
       callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin}/`,
     }),
   });

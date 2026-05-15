@@ -14,7 +14,7 @@
       "maxDuration": 300
     },
     "app/api/shoots/[id]/start/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 30
     },
     "app/api/shoots/[id]/pay/route.ts": {
       "maxDuration": 30
@@ -22,14 +22,8 @@
     "app/api/webhooks/paystack/route.ts": {
       "maxDuration": 30
     },
-    "app/api/cron/cleanup-expired/route.ts": {
+    "app/api/webhooks/n8n-images/route.ts": {
       "maxDuration": 300
     }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/cleanup-expired",
-      "schedule": "0 * * * *"
-    }
-  ]
+  }
 }

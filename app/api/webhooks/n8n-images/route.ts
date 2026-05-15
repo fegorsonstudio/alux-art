@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
+import { normalizePackageSize } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -61,13 +62,14 @@ export async function POST(request: NextRequest) {
 
   const { data: shoot } = await service
     .from("shoots")
-    .select("id, user_id")
+    .select("id, user_id, package_size")
     .eq("id", shootId)
     .maybeSingle();
 
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
 
-  const images = normalizeImageUrls(body).slice(0, 10);
+  const expectedCount = normalizePackageSize(body.image_count ?? body.package_size ?? shoot.package_size);
+  const images = normalizeImageUrls(body).slice(0, expectedCount);
   if (images.length === 0) return NextResponse.json({ error: "No generated image URLs supplied" }, { status: 400 });
 
   const saved: Array<{ slot: number; storagePath: string }> = [];
@@ -132,11 +134,11 @@ export async function POST(request: NextRequest) {
     .eq("status", "COMPLETE");
 
   const completed = completeCount ?? saved.length;
-  const isComplete = completed >= 10;
+  const isComplete = completed >= expectedCount;
   await service.from("shoots").update({
     status: isComplete ? "COMPLETE" : "PROCESSING",
-    progress: isComplete ? 100 : Math.max(10, Math.round((completed / 10) * 100)),
-    pipeline_stage: isComplete ? "Complete" : `Completed ${completed}/10 shots`,
+    progress: isComplete ? 100 : Math.max(10, Math.round((completed / expectedCount) * 100)),
+    pipeline_stage: isComplete ? "Complete" : `Completed ${completed}/${expectedCount} shots`,
     completed_at: isComplete ? new Date().toISOString() : null,
     updated_at: new Date().toISOString(),
   }).eq("id", shootId);
