@@ -2,6 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const isApiPath = request.nextUrl.pathname.startsWith("/api");
+  const isPublicAsset = request.nextUrl.pathname.startsWith("/_next") ||
+    request.nextUrl.pathname.startsWith("/favicon") ||
+    /\.(?:avif|gif|ico|jpg|jpeg|png|svg|webp|css|js|map|txt|xml|json|webmanifest)$/i.test(request.nextUrl.pathname);
+
+  if (isApiPath || isPublicAsset) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -23,15 +32,7 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const isApiPath = request.nextUrl.pathname.startsWith("/api");
   const isAuthPath = request.nextUrl.pathname.startsWith("/login");
-  const isPublicAsset = request.nextUrl.pathname.startsWith("/_next") ||
-    request.nextUrl.pathname.startsWith("/favicon") ||
-    /\.(?:avif|gif|ico|jpg|jpeg|png|svg|webp|css|js|map|txt|xml|json|webmanifest)$/i.test(request.nextUrl.pathname);
-
-  if (isApiPath || isPublicAsset) {
-    return supabaseResponse;
-  }
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -52,5 +53,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
