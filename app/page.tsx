@@ -160,7 +160,9 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (!currentShoot) return;
     if (currentShoot.status === "COMPLETE" || currentShoot.status === "FAILED") return;
-    if ((currentShoot.status === "QUEUED" || currentShoot.status === "PROCESSING") && !resumeStartedRef.current.has(currentShoot.id)) {
+    const hasPendingSlot = getShootImages(currentShoot).some(img => String(img.status) === "PENDING");
+    const hasActiveSlot = getShootImages(currentShoot).some(img => ["GENERATING", "UPSCALING"].includes(String(img.status)));
+    if (hasPendingSlot && !hasActiveSlot && !resumeStartedRef.current.has(currentShoot.id)) {
       resumeStartedRef.current.add(currentShoot.id);
       fetch(`/api/shoots/${currentShoot.id}/start`, { method: "POST" }).catch(() => {});
     }
@@ -206,58 +208,64 @@ export default function WorkspacePage() {
     try {
       if (!user?.id) throw new Error("Sign in again before uploading");
 
-      const imageId = crypto.randomUUID();
-      const storagePath = `${user.id}/${imageId}-${sanitizeFileName(file.name)}`;
-      const uploadedRef = {
-        id: imageId,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        storageBucket: bucket,
-        storagePath,
-      };
+      // Step 1: get presigned upload URL from server (auth only, no file bytes)
+      const presignRes = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket, saveToLibrary: saveLib }),
+      });
+      if (!presignRes.ok) {
+        const err = await presignRes.json().catch(() => ({}));
+        throw new Error(err.error ?? `Presign failed (${presignRes.status})`);
+      }
+      const meta = await presignRes.json();
 
-      setUploadProgress(prev => ({ ...prev, [key]: 35 }));
-      const { error: directUploadError } = await supabase.storage
-        .from(bucket)
-        .upload(storagePath, file, {
-          contentType: file.type,
-          upsert: true,
+      // Step 2: PUT bytes directly to Supabase CDN via XHR for real progress tracking
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable)
+            setUploadProgress(prev => ({ ...prev, [key]: Math.round((e.loaded / e.total) * 95) }));
         });
-      if (directUploadError) throw new Error(directUploadError.message);
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload failed (${xhr.status})`));
+        });
+        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.open("PUT", meta.uploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.send(file);
+      });
 
-      setUploadProgress(prev => ({ ...prev, [key]: 75 }));
+      setUploadProgress(prev => ({ ...prev, [key]: 96 }));
       const finalizeRes = await fetch("/api/upload", {
         method: "POST",
         body: new URLSearchParams({
           saveToLibrary: saveLib ? "true" : "false",
-          id: uploadedRef.id,
-          filename: uploadedRef.name,
-          contentType: uploadedRef.type,
-          size: String(uploadedRef.size),
-          storageBucket: uploadedRef.storageBucket,
-          storagePath: uploadedRef.storagePath,
+          id: meta.id,
+          filename: meta.name,
+          contentType: meta.type,
+          size: String(meta.size),
+          storageBucket: meta.storageBucket,
+          storagePath: meta.storagePath,
         }),
       });
-
-      const data = await finalizeRes.json().catch(() => null);
-      if (!finalizeRes.ok || !data?.image) throw new Error(data?.error ?? `Upload finalize failed with ${finalizeRes.status}`);
+      const finalizeData = await finalizeRes.json().catch(() => null);
+      if (!finalizeRes.ok || !finalizeData?.image) {
+        throw new Error(finalizeData?.error ?? `Upload finalize failed (${finalizeRes.status})`);
+      }
 
       setUploadProgress(prev => ({ ...prev, [key]: 100 }));
-
       done();
-      return data.image as UploadedRef;
+      return finalizeData.image as UploadedRef;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       setUploadIssue(`${file.name}: ${message}`);
-      setStatus({
-        type: "error",
-        message,
-      });
+      setStatus({ type: "error", message });
       done();
       return null;
     }
-  }, [supabase, user]);
+  }, [user]);
 
   const handleIdentityFiles = async (files: FileList) => {
     setUploading("identity");
@@ -400,8 +408,16 @@ export default function WorkspacePage() {
     setStatus({ type: "loading", message: "Preparing ZIP..." });
     const res = await fetch(`/api/shoots/${shoot.id}/download-zip`);
     const { url, error } = await res.json();
-    if (url) { window.open(url, "_blank"); setStatus({ type: "ok", message: "ZIP ready!" }); }
-    else setStatus({ type: "error", message: error ?? "ZIP failed" });
+    if (url) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `aluxart-shoot-${shoot.id.slice(0, 8)}.zip`;
+      a.target = "_blank";
+      a.click();
+      setStatus({ type: "ok", message: "ZIP ready!" });
+    } else {
+      setStatus({ type: "error", message: error ?? "ZIP failed" });
+    }
   };
 
   const retryImage = async (shoot: Shoot, img: ShootImage) => {

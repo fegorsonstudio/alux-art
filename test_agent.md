@@ -422,3 +422,47 @@ Advanced Mode (Admin Generate Free)
 
 ## Next Steps
 We need to monitor the next shoot generation to see if the new `clarity-upscaler` performs better, verify the aspect ratio accurately maps to the fal model, and review the server logs to diagnose the `sharp` composite error for slot 10.
+
+---
+
+# Alux Art Paid-Shoot Workflow QA Report
+
+## Summary
+- Result: **PASS**
+- Main blocker: None.
+- Identity quality rating from 1-10: **9** (Highly consistent results with uploaded subject).
+- Payment/package issues: None. 5 and 10 image packages display correctly; currency switching (NGN/USD) successfully updates prices and checkout buttons.
+- Signup/login issues: None. Session persistence verified.
+- Generation issues: None. "Admin: Generate Free" bypasses Paystack and creates the correct number of slots. Generation is sequential, while upscaling can occur concurrently.
+- Download issues: None. Individual 4K downloads and "Download Completed Images (ZIP)" are fully functional.
+- Console/network errors: Minor `401 Unauthorized` errors on `/api/shoots/[id]/events` streams (non-blocking). No `fal.ai` URL leaks detected.
+
+## Steps Completed
+- [x] Initial load & Login
+- [x] Package selection validation (NGN/USD)
+- [x] Shoot setup validation (<3 identity block, 3+1 allow)
+- [x] Admin free generation
+- [x] Observed sequential generation behavior
+- [x] Tested 4K individual downloads
+- [x] Tested "Download Completed Images (ZIP)"
+- [x] Technical audit (DevTools & URL leaks)
+
+## Findings
+1. Package & Currency Logic
+- Bug: None
+  - Severity: info
+  - Evidence: Switched between NGN and USD. Prices updated correctly from ₦12,500/₦25,000 to $15/$29.
+  - Actual: Checkout button and package labels update instantly.
+
+2. Generation Concurrency
+- Bug: Minor UX discrepancy
+  - Severity: low
+  - Evidence: Slots generate one-by-one, but the "upscaling" phase can trigger for multiple slots simultaneously.
+  - Expected: Purely sequential processing if requested, but concurrent upscaling improves speed without affecting stability.
+
+3. Resource Protection
+- Bug: None
+  - Severity: info
+  - Evidence: Network tab inspected during and after generation.
+  - Actual: No `fal.ai` or `fal.media` URLs are exposed to the browser. All assets are proxied through the application.
+

@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     await service.from("credit_balances").upsert({
       user_id: ownerId,
-      credits_balance: currentBalance,
+      credits_balance: currentBalance + credits,
       updated_at: now,
     });
 

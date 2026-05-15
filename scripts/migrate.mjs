@@ -424,4 +424,55 @@ await run("profile trigger on auth.users", `
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 `);
 
+// ── Storage bucket policies (allow authenticated users to upload directly) ────
+await run("identity-images bucket policies", `
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can upload own identity images') THEN
+      CREATE POLICY "Users can upload own identity images" ON storage.objects
+        FOR INSERT TO authenticated
+        WITH CHECK (bucket_id = 'identity-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can read own identity images') THEN
+      CREATE POLICY "Users can read own identity images" ON storage.objects
+        FOR SELECT TO authenticated
+        USING (bucket_id = 'identity-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can update own identity images') THEN
+      CREATE POLICY "Users can update own identity images" ON storage.objects
+        FOR UPDATE TO authenticated
+        USING (bucket_id = 'identity-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can delete own identity images') THEN
+      CREATE POLICY "Users can delete own identity images" ON storage.objects
+        FOR DELETE TO authenticated
+        USING (bucket_id = 'identity-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+  END $$;
+`);
+
+await run("inspiration-images bucket policies", `
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can upload own inspiration images') THEN
+      CREATE POLICY "Users can upload own inspiration images" ON storage.objects
+        FOR INSERT TO authenticated
+        WITH CHECK (bucket_id = 'inspiration-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can read own inspiration images') THEN
+      CREATE POLICY "Users can read own inspiration images" ON storage.objects
+        FOR SELECT TO authenticated
+        USING (bucket_id = 'inspiration-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can update own inspiration images') THEN
+      CREATE POLICY "Users can update own inspiration images" ON storage.objects
+        FOR UPDATE TO authenticated
+        USING (bucket_id = 'inspiration-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users can delete own inspiration images') THEN
+      CREATE POLICY "Users can delete own inspiration images" ON storage.objects
+        FOR DELETE TO authenticated
+        USING (bucket_id = 'inspiration-images' AND name LIKE auth.uid()::text || '/%');
+    END IF;
+  END $$;
+`);
+
 console.log("\n✅ Migration complete.");
