@@ -6,6 +6,20 @@ export type ImageStatus = "PENDING" | "GENERATING" | "UPSCALING" | "COMPLETE" | 
 export type ImageKind = "portrait" | "mood" | "quote";
 export type ReferenceTag = "OUTFIT" | "HAIRSTYLE" | "MAKEUP" | "BACKGROUND" | "LIGHTING" | "ACCESSORY" | "COLOR_GRADE";
 export type ReferencePurpose = "identity" | "inspiration" | "tagged";
+export type ShootPackageSize = 5 | 10;
+
+export const SHOOT_PACKAGES: Record<ShootPackageSize, { imageCount: ShootPackageSize; priceMultiplier: number; label: string }> = {
+  5: { imageCount: 5, priceMultiplier: 0.5, label: "5 images" },
+  10: { imageCount: 10, priceMultiplier: 1, label: "10 images" },
+};
+
+export function normalizePackageSize(value: unknown): ShootPackageSize {
+  return Number(value) === 5 ? 5 : 10;
+}
+
+export function packagePrice(basePrice: number, packageSize: ShootPackageSize): number {
+  return Math.ceil(basePrice * SHOOT_PACKAGES[packageSize].priceMultiplier);
+}
 
 export interface AspectConfig {
   width: number;
@@ -86,6 +100,8 @@ export interface ShootImage {
   originalDimensions?: { width: number; height: number };
   finalDimensions?: { width: number; height: number };
   upscaled?: boolean;
+  retryCount?: number;
+  lastRetryAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +113,10 @@ export interface Shoot {
   mode: ShootMode;
   aspectRatio: AspectRatio;
   currency: Currency;
+  packageSize?: ShootPackageSize;
+  creditsRequired?: number;
+  creditsReserved?: number;
+  expiresAt?: string;
   status: ShootStatus;
   progress: number;
   pipelineStage?: string;
@@ -119,6 +139,13 @@ export interface ModelSlot {
 }
 
 export interface Pricing {
+  ngn: number;
+  usd: number;
+}
+
+export interface PackagePricing {
+  imageCount: ShootPackageSize;
+  label: string;
   ngn: number;
   usd: number;
 }

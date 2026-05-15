@@ -2,12 +2,17 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
-import type { User, Shoot, ShootImage, AspectRatio, Currency, ShootMode, ReferenceTag } from "@/lib/types";
-import { ASPECTS, REFERENCE_TAGS } from "@/lib/types";
+import type { User, Shoot, ShootImage, AspectRatio, Currency, ShootMode, ReferenceTag, ShootPackageSize, PackagePricing } from "@/lib/types";
+import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packagePrice } from "@/lib/types";
 import styles from "./workspace.module.css";
 
 interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; }
-interface Pricing { ngn: number; usd: number; }
+const DEFAULT_PACKAGES: PackagePricing[] = Object.values(SHOOT_PACKAGES).map((pkg) => ({
+  imageCount: pkg.imageCount,
+  label: pkg.label,
+  ngn: packagePrice(15000, pkg.imageCount),
+  usd: packagePrice(10, pkg.imageCount),
+}));
 
 function sanitizeFileName(name: string) {
   return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");
@@ -24,10 +29,15 @@ function getProviderError(img: ShootImage & Record<string, unknown>) {
   return String(img.providerError ?? img.provider_error ?? img.error ?? "").trim();
 }
 
+function getShootPackageSize(shoot: Shoot | null): ShootPackageSize {
+  if (!shoot) return 10;
+  return normalizePackageSize(shoot.packageSize ?? (shoot as unknown as Record<string, unknown>).package_size);
+}
+
 export default function WorkspacePage() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
-  const [pricing, setPricing] = useState<Pricing>({ ngn: 15000, usd: 10 });
+  const [packages, setPackages] = useState<PackagePricing[]>(DEFAULT_PACKAGES);
 
   // Upload state
   const [identityImages, setIdentityImages] = useState<UploadedRef[]>([]);
@@ -38,6 +48,7 @@ export default function WorkspacePage() {
   const [mode, setMode] = useState<ShootMode>("fast");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [currency, setCurrency] = useState<Currency>("NGN");
+  const [packageSize, setPackageSize] = useState<ShootPackageSize>(10);
   const [quote, setQuote] = useState({ text: "", attribution: "" });
 
   // Shoots
@@ -87,7 +98,19 @@ export default function WorkspacePage() {
         return;
       }
       if (meRes.ok) setUser((await meRes.json()).user);
-      if (configRes.ok) { const c = await configRes.json(); setPricing(c.pricing); }
+      if (configRes.ok) {
+        const c = await configRes.json();
+        if (Array.isArray(c.packages) && c.packages.length > 0) {
+          setPackages(c.packages);
+        } else if (c.pricing) {
+          setPackages(Object.values(SHOOT_PACKAGES).map((pkg) => ({
+            imageCount: pkg.imageCount,
+            label: pkg.label,
+            ngn: packagePrice(c.pricing.ngn, pkg.imageCount),
+            usd: packagePrice(c.pricing.usd, pkg.imageCount),
+          })));
+        }
+      }
       if (shootsRes.ok) {
         const shootList: Shoot[] = (await shootsRes.json()).shoots ?? [];
         setShoots(shootList);
@@ -318,6 +341,7 @@ export default function WorkspacePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode, aspectRatio, currency,
+          packageSize,
           identityImages: identityImages.map(({ id, name, type, size, storageBucket, storagePath }) => ({ id, name, type, size, storageBucket, storagePath })),
           inspirationImages: inspirationImages.map(({ id, name, type, size, storageBucket, storagePath }) => ({ id, name, type, size, storageBucket, storagePath })),
           taggedReferences: taggedRefs.map(({ id, name, type, size, storageBucket, storagePath, tag, customTag }) => ({
@@ -375,15 +399,36 @@ export default function WorkspacePage() {
   const downloadZip = async (shoot: Shoot) => {
     setStatus({ type: "loading", message: "Preparing ZIP..." });
     const res = await fetch(`/api/shoots/${shoot.id}/download-zip`);
-    const { url } = await res.json();
+    const { url, error } = await res.json();
     if (url) { window.open(url, "_blank"); setStatus({ type: "ok", message: "ZIP ready!" }); }
-    else setStatus({ type: "error", message: "ZIP failed" });
+    else setStatus({ type: "error", message: error ?? "ZIP failed" });
+  };
+
+  const retryImage = async (shoot: Shoot, img: ShootImage) => {
+    setStatus({ type: "loading", message: `Restarting image ${img.slot}...` });
+    const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}/retry`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setStatus({ type: "error", message: data.error ?? "Retry failed" });
+      return;
+    }
+    setStatus({ type: "ok", message: `Image ${img.slot} queued again.` });
+    const refresh = await fetch(`/api/shoots/${shoot.id}`);
+    if (refresh.ok) {
+      const refreshed = await refresh.json();
+      if (refreshed.shoot) {
+        setCurrentShoot(refreshed.shoot);
+        setShoots(prev => prev.map(s => s.id === refreshed.shoot.id ? refreshed.shoot : s));
+      }
+    }
   };
 
   const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/login"; };
   const isAdmin = user?.role === "admin";
   const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
-  const price = currency === "USD" ? `$${pricing.usd}` : `NGN ${pricing.ngn.toLocaleString()}`;
+  const activePackage = packages.find((pkg) => pkg.imageCount === packageSize) ?? DEFAULT_PACKAGES.find((pkg) => pkg.imageCount === packageSize)!;
+  const activePrice = currency === "USD" ? activePackage.usd : activePackage.ngn;
+  const price = currency === "USD" ? `$${activePrice}` : `NGN ${activePrice.toLocaleString()}`;
   const galleryImages = getShootImages(currentShoot);
   const completedCount = galleryImages.filter((img) => img.status === "COMPLETE").length;
   const failedCount = galleryImages.filter((img) => img.status === "FAILED").length;
@@ -605,6 +650,27 @@ export default function WorkspacePage() {
                 ))}
               </div>
             </div>
+            <div className={styles.row}>
+              <p className={styles.label}>Package</p>
+              <div className={styles.packageGrid}>
+                {packages.map(pkg => {
+                  const selected = packageSize === pkg.imageCount;
+                  const pkgPrice = currency === "USD" ? `$${pkg.usd}` : `NGN ${pkg.ngn.toLocaleString()}`;
+                  return (
+                    <button
+                      key={pkg.imageCount}
+                      type="button"
+                      className={`${styles.packageOption} ${selected ? styles.packageOptionActive : ""}`}
+                      onClick={() => setPackageSize(pkg.imageCount)}
+                    >
+                      <span>{pkg.label}</span>
+                      <strong>{pkgPrice}</strong>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className={styles.pricingNote}>Paid slots stay retryable for 48 hours if a generation fails.</p>
+            </div>
           </div>
 
           {/* Quote */}
@@ -622,7 +688,7 @@ export default function WorkspacePage() {
               </p>
             )}
             <button className={styles.payBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(false)}>
-              Pay {price} & Generate
+              Pay {price} & Generate {packageSize}
             </button>
             {isAdmin && (
               <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
@@ -651,7 +717,9 @@ export default function WorkspacePage() {
                 {shoots.slice(0, 5).map(s => (
                   <button key={s.id} type="button" className={`${styles.shootCard} ${currentShoot?.id === s.id ? styles.shootCardActive : ""}`} onClick={() => openShootGallery(s)}>
                     <div className={styles.shootMeta}>
-                      <span style={{ fontSize: "0.85rem" }}>{(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode}</span>
+                      <span style={{ fontSize: "0.85rem" }}>
+                        {(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode} / {getShootPackageSize(s)} images
+                      </span>
                       <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
                     </div>
                     <span className={styles.shootActions}>
@@ -709,10 +777,13 @@ export default function WorkspacePage() {
                       </span>
                     </div>
                     {img.status === "FAILED" && (
-                      <details className={styles.slotErrorDetails}>
-                        <summary>Reason</summary>
-                        <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the generation_events and shoot_images rows for this shoot."}</p>
-                      </details>
+                      <div className={styles.retryPanel}>
+                        <button className={styles.retryBtn} onClick={() => retryImage(currentShoot, img)}>Retry image</button>
+                        <details className={styles.slotErrorDetails}>
+                          <summary>Reason</summary>
+                          <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the generation_events and shoot_images rows for this shoot."}</p>
+                        </details>
+                      </div>
                     )}
                   </div>
                 )})}
@@ -720,7 +791,7 @@ export default function WorkspacePage() {
 
               {galleryImages.some((img) => img.status === "COMPLETE" && (img.download_storage_path || img.preview_storage_path)) && (
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
-                  {currentShoot.status === "COMPLETE" ? "Download All 10 (ZIP)" : "Download Completed Images (ZIP)"}
+                  {currentShoot.status === "COMPLETE" ? `Download All ${getShootPackageSize(currentShoot)} (ZIP)` : "Download Completed Images (ZIP)"}
                 </button>
               )}
             </div>

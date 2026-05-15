@@ -22,12 +22,15 @@ export async function GET(
 
   const { data: shoot } = await service
     .from("shoots")
-    .select("user_id")
+    .select("user_id, expires_at")
     .eq("id", id)
     .single();
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
   if (!shoot || (!isAdmin && shoot.user_id !== user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (!isAdmin && shoot.expires_at && new Date(shoot.expires_at).getTime() <= Date.now()) {
+    return NextResponse.json({ error: "This shoot has expired. Downloads are available for 48 hours after creation." }, { status: 410 });
   }
 
   const storagePath = img.download_storage_path ?? img.preview_storage_path;

@@ -60,6 +60,20 @@ await run("identity_images table", `
   );
 `);
 
+await run("inspiration_images table", `
+  CREATE TABLE IF NOT EXISTS inspiration_images (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name            TEXT NOT NULL,
+    type            TEXT NOT NULL,
+    size            BIGINT NOT NULL,
+    storage_bucket  TEXT NOT NULL,
+    storage_path    TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_used_at    TIMESTAMPTZ
+  );
+`);
+
 // ── shoots ───────────────────────────────────────────────────────────────────
 await run("shoots table", `
   CREATE TABLE IF NOT EXISTS shoots (
@@ -69,6 +83,10 @@ await run("shoots table", `
     mode                TEXT NOT NULL DEFAULT 'fast',
     aspect_ratio        TEXT NOT NULL DEFAULT '4:5',
     currency            TEXT NOT NULL DEFAULT 'NGN',
+    package_size        INTEGER NOT NULL DEFAULT 10 CHECK (package_size IN (5, 10)),
+    credits_required    INTEGER NOT NULL DEFAULT 10,
+    credits_reserved    INTEGER NOT NULL DEFAULT 0,
+    expires_at          TIMESTAMPTZ,
     status              TEXT NOT NULL DEFAULT 'DRAFT',
     progress            INTEGER NOT NULL DEFAULT 0,
     pipeline_stage      TEXT,
@@ -82,6 +100,13 @@ await run("shoots table", `
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at        TIMESTAMPTZ
   );
+`);
+
+await run("shoots package/retention columns", `
+  ALTER TABLE shoots ADD COLUMN IF NOT EXISTS package_size INTEGER NOT NULL DEFAULT 10 CHECK (package_size IN (5, 10));
+  ALTER TABLE shoots ADD COLUMN IF NOT EXISTS credits_required INTEGER NOT NULL DEFAULT 10;
+  ALTER TABLE shoots ADD COLUMN IF NOT EXISTS credits_reserved INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE shoots ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 `);
 
 // ── shoot_images ─────────────────────────────────────────────────────────────
@@ -112,9 +137,16 @@ await run("shoot_images table", `
     file_size                 BIGINT,
     preview_file_size         BIGINT,
     instagram_file_size       BIGINT,
+    retry_count               INTEGER NOT NULL DEFAULT 0,
+    last_retry_at             TIMESTAMPTZ,
     created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+`);
+
+await run("shoot_images retry columns", `
+  ALTER TABLE shoot_images ADD COLUMN IF NOT EXISTS retry_count INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE shoot_images ADD COLUMN IF NOT EXISTS last_retry_at TIMESTAMPTZ;
 `);
 
 // ── shoot_references ─────────────────────────────────────────────────────────
@@ -150,6 +182,29 @@ await run("payments table", `
     provider_reference  TEXT,
     paid_at             TIMESTAMPTZ,
     metadata            JSONB,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+`);
+
+await run("credit_balances table", `
+  CREATE TABLE IF NOT EXISTS credit_balances (
+    user_id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    credits_balance  INTEGER NOT NULL DEFAULT 0,
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+`);
+
+await run("credit_transactions table", `
+  CREATE TABLE IF NOT EXISTS credit_transactions (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    shoot_id            UUID REFERENCES shoots(id) ON DELETE SET NULL,
+    image_id            UUID REFERENCES shoot_images(id) ON DELETE SET NULL,
+    amount              INTEGER NOT NULL,
+    reason              TEXT NOT NULL,
+    provider            TEXT,
+    provider_reference  TEXT,
+    metadata            JSONB NOT NULL DEFAULT '{}',
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 `);
@@ -196,13 +251,19 @@ await run("indexes", `
   CREATE INDEX IF NOT EXISTS idx_shoot_references_shoot_id ON shoot_references(shoot_id);
   CREATE INDEX IF NOT EXISTS idx_generation_events_shoot_id ON generation_events(shoot_id);
   CREATE INDEX IF NOT EXISTS idx_identity_images_user_id ON identity_images(user_id);
+  CREATE INDEX IF NOT EXISTS idx_inspiration_images_user_id ON inspiration_images(user_id);
   CREATE INDEX IF NOT EXISTS idx_payments_shoot_id ON payments(shoot_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_provider_reference ON payments(provider_reference) WHERE provider_reference IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id ON credit_transactions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_credit_transactions_shoot_id ON credit_transactions(shoot_id);
+  CREATE INDEX IF NOT EXISTS idx_shoots_expires_at ON shoots(expires_at);
 `);
 
 // ── RLS ──────────────────────────────────────────────────────────────────────
 await run("enable RLS", `
   ALTER TABLE profiles          ENABLE ROW LEVEL SECURITY;
   ALTER TABLE identity_images   ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE inspiration_images ENABLE ROW LEVEL SECURITY;
   ALTER TABLE shoots            ENABLE ROW LEVEL SECURITY;
   ALTER TABLE shoot_images      ENABLE ROW LEVEL SECURITY;
   ALTER TABLE shoot_references  ENABLE ROW LEVEL SECURITY;
@@ -210,6 +271,8 @@ await run("enable RLS", `
   ALTER TABLE generation_events ENABLE ROW LEVEL SECURITY;
   ALTER TABLE download_logs     ENABLE ROW LEVEL SECURITY;
   ALTER TABLE pricing_configs   ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE credit_balances   ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 `);
 
 // ── RLS policies ─────────────────────────────────────────────────────────────
@@ -259,10 +322,29 @@ await run("identity_images policies", `
   END $$;
 `);
 
+await run("inspiration_images policies", `
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='inspiration_images' AND policyname='Users can manage own inspiration images') THEN
+      CREATE POLICY "Users can manage own inspiration images" ON inspiration_images FOR ALL USING (auth.uid() = user_id);
+    END IF;
+  END $$;
+`);
+
 await run("payments policies", `
   DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='payments' AND policyname='Users can view own payments') THEN
       CREATE POLICY "Users can view own payments" ON payments FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+  END $$;
+`);
+
+await run("credit policies", `
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='credit_balances' AND policyname='Users can view own credit balance') THEN
+      CREATE POLICY "Users can view own credit balance" ON credit_balances FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='credit_transactions' AND policyname='Users can view own credit transactions') THEN
+      CREATE POLICY "Users can view own credit transactions" ON credit_transactions FOR SELECT USING (auth.uid() = user_id);
     END IF;
   END $$;
 `);

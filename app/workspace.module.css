@@ -315,11 +315,21 @@
 .pill { background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(67, 159, 169, 0.24); border-radius: 8px; color: #506e73; font-size: 0.8rem; padding: 6px 12px; cursor: pointer; transition: all 0.1s; }
 .pill:hover { border-color: rgba(67, 159, 169, 0.52); color: #263235; background: #ffffff; }
 .pillActive { background: #ffffff; border-color: rgba(65, 199, 184, 0.72); color: #1d727c; box-shadow: inset 0 -12px 20px rgba(188, 245, 235, 0.62); }
+.packageGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.packageOption { appearance: none; font: inherit; text-align: left; background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(67, 159, 169, 0.24); border-radius: 8px; color: #506e73; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: all 0.1s; }
+.packageOption span { font-size: 0.78rem; }
+.packageOption strong { font-size: 0.88rem; color: #263235; }
+.packageOption:hover { border-color: rgba(67, 159, 169, 0.52); background: #ffffff; }
+.packageOptionActive { background: #ffffff; border-color: rgba(65, 199, 184, 0.72); box-shadow: inset 0 -12px 20px rgba(188, 245, 235, 0.62); }
 .app[data-theme="dark"] .label { color: #acd4d7; }
 .app[data-theme="dark"] .helperText { color: #a7cfd1; }
 .app[data-theme="dark"] .pill { background: rgba(255, 255, 255, 0.08); border-color: rgba(155, 232, 226, 0.18); color: #c6e6e7; }
 .app[data-theme="dark"] .pill:hover { background: rgba(255,255,255,0.12); color: #ffffff; }
 .app[data-theme="dark"] .pillActive { background: rgba(155, 232, 226, 0.16); border-color: rgba(155, 232, 226, 0.55); color: #ffffff; box-shadow: inset 0 -12px 20px rgba(65, 199, 184, 0.14); }
+.app[data-theme="dark"] .packageOption { background: rgba(255, 255, 255, 0.08); border-color: rgba(155, 232, 226, 0.18); color: #c6e6e7; }
+.app[data-theme="dark"] .packageOption strong { color: #eefbf9; }
+.app[data-theme="dark"] .packageOption:hover { background: rgba(255,255,255,0.12); color: #ffffff; }
+.app[data-theme="dark"] .packageOptionActive { background: rgba(155, 232, 226, 0.16); border-color: rgba(155, 232, 226, 0.55); box-shadow: inset 0 -12px 20px rgba(65, 199, 184, 0.14); }
 
 /* ---- CTA ---- */
 .ctaSection { display: flex; flex-direction: column; gap: 10px; }
@@ -382,12 +392,17 @@
 .slotStatusDone { color: #177767; }
 .slotStatusFailed { color: #a7463c; }
 .downloadActions { display: flex; align-items: center; gap: 6px; }
-.slotErrorDetails { padding: 0 10px 10px; color: #a7463c; font-size: 0.68rem; line-height: 1.25; }
+.retryPanel { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.retryBtn { background: #ffffff; border: 1px solid rgba(167, 70, 60, 0.25); border-radius: 8px; color: #a7463c; font-size: 0.72rem; font-weight: 750; padding: 7px 9px; cursor: pointer; width: 100%; }
+.retryBtn:hover { border-color: rgba(167, 70, 60, 0.55); color: #7f3028; }
+.slotErrorDetails { color: #a7463c; font-size: 0.68rem; line-height: 1.25; }
 .slotErrorDetails summary { cursor: pointer; font-weight: 750; }
 .slotError { margin: 6px 0 0; color: #a7463c; overflow-wrap: anywhere; }
 .app[data-theme="dark"] .slotError { color: #ffb8aa; }
 .app[data-theme="dark"] .slotCardFailed { border-color: rgba(255, 184, 170, 0.36); }
 .app[data-theme="dark"] .slotErrorDetails { color: #ffb8aa; }
+.app[data-theme="dark"] .retryBtn { background: rgba(255,255,255,0.08); border-color: rgba(255,184,170,0.28); color: #ffb8aa; }
+.app[data-theme="dark"] .retryBtn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,184,170,0.5); color: #ffffff; }
 .dlBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.25); border-radius: 8px; color: #2d727b; font-size: 0.7rem; padding: 4px 8px; cursor: pointer; }
 .dlBtn:hover { border-color: rgba(67, 159, 169, 0.55); color: #184f58; }
 .zipBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.35); border-radius: 8px; color: #2d727b; font-size: 0.85rem; font-weight: 750; padding: 10px 16px; cursor: pointer; width: 100%; }

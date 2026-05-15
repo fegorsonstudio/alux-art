@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { ASPECTS, REFERENCE_TAGS } from "@/lib/types";
+import { ASPECTS, REFERENCE_TAGS, normalizePackageSize } from "@/lib/types";
 
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
 const ALLOWED_TAGS = new Set<string>(REFERENCE_TAGS);
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     inspirationImages = [],
     taggedReferences = [],
     quote = { text: "", attribution: "" },
+    packageSize: rawPackageSize = 10,
     adminBypass = false,
   } = body;
 
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
   if (!["NGN", "USD"].includes(currency)) {
     return NextResponse.json({ error: "Invalid currency" }, { status: 400 });
   }
+  const packageSize = normalizePackageSize(rawPackageSize);
 
   const allRefs: ReferenceRecord[] = [
     ...identityImages.map((r: Record<string, unknown>) => ({ ...r, purpose: "identity" })),
@@ -114,6 +116,7 @@ export async function POST(request: NextRequest) {
   // Create shoot record
   const shootId = crypto.randomUUID();
   const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   const initialStatus = (isAdmin && adminBypass) ? "QUEUED" : "PENDING_PAYMENT";
 
   const { data: shoot, error: shootError } = await service.from("shoots").insert({
@@ -123,6 +126,10 @@ export async function POST(request: NextRequest) {
     mode,
     aspect_ratio: aspectRatio,
     currency,
+    package_size: packageSize,
+    credits_required: packageSize,
+    credits_reserved: (isAdmin && adminBypass) ? packageSize : 0,
+    expires_at: expiresAt,
     status: initialStatus,
     progress: 0,
     quote,
@@ -158,8 +165,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Create 10 image slot records
-  const slots = Array.from({ length: 10 }, (_, i) => ({
+  // Create one slot per purchased package image.
+  const slots = Array.from({ length: packageSize }, (_, i) => ({
     id: crypto.randomUUID(),
     shoot_id: shootId,
     user_id: user.id,

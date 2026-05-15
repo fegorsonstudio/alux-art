@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { normalizePackageSize, packagePrice } from "@/lib/types";
 
 export async function POST(
   request: NextRequest,
@@ -15,10 +16,16 @@ export async function POST(
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const packageSize = normalizePackageSize(shoot.package_size ?? shoot.credits_required);
 
   // Admin bypass — no payment needed
   if (isAdmin) {
-    await service.from("shoots").update({ status: "QUEUED", updated_at: new Date().toISOString() }).eq("id", id);
+    await service.from("shoots").update({
+      status: "QUEUED",
+      credits_reserved: packageSize,
+      expires_at: shoot.expires_at ?? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", id);
     const origin = new URL(request.url).origin;
     fetch(`${origin}/api/shoots/${id}/start`, {
       method: "POST",
@@ -36,9 +43,8 @@ export async function POST(
     .limit(1)
     .single();
 
-  const price = shoot.currency === "USD"
-    ? (pricing?.usd ?? 10) * 100
-    : (pricing?.ngn ?? 15000) * 100;
+  const basePrice = shoot.currency === "USD" ? (pricing?.usd ?? 10) : (pricing?.ngn ?? 15000);
+  const price = packagePrice(basePrice, packageSize) * 100;
 
   // Initialize Paystack
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -51,8 +57,8 @@ export async function POST(
       email: user.email,
       amount: price,
       currency: shoot.currency,
-      metadata: { shoot_id: id, user_id: user.id },
-      callback_url: `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "https://aluxartandframes.shop" : "http://localhost:3000"}/api/webhooks/paystack-return`,
+      metadata: { shoot_id: id, user_id: user.id, package_size: packageSize, credits: packageSize },
+      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin}/`,
     }),
   });
 

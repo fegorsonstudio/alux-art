@@ -21,6 +21,15 @@
     },
     "app/api/webhooks/paystack/route.ts": {
       "maxDuration": 30
+    },
+    "app/api/cron/cleanup-expired/route.ts": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-expired",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

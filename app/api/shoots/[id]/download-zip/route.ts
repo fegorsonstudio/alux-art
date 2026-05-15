@@ -19,22 +19,28 @@ export async function GET(
     .single();
 
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (shoot.status !== "COMPLETE") return NextResponse.json({ error: "Shoot not complete" }, { status: 400 });
+  if (shoot.expires_at && new Date(shoot.expires_at).getTime() <= Date.now()) {
+    return NextResponse.json({ error: "This shoot has expired. Downloads are available for 48 hours after creation." }, { status: 410 });
+  }
+
+  const completedImages = (shoot.shoot_images ?? []).filter(
+    (i: Record<string, unknown>) => i.status === "COMPLETE" && i.download_storage_path
+  );
+  if (completedImages.length === 0) return NextResponse.json({ error: "No completed images are available to download yet." }, { status: 400 });
 
   // If ZIP already exists, return its signed URL
-  if (shoot.zip_storage_path) {
+  if (shoot.status === "COMPLETE" && shoot.zip_storage_path) {
     const { data: signed } = await service.storage
       .from(shoot.zip_storage_bucket)
       .createSignedUrl(shoot.zip_storage_path, 3600);
     return NextResponse.json({ url: signed?.signedUrl, expiresAt: new Date(Date.now() + 3600000).toISOString() });
   }
 
-  // Build ZIP from all completed images
+  // Build ZIP from all completed images that are available inside the 48-hour retention window.
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
-  for (const img of (shoot.shoot_images ?? []).filter((i: Record<string, unknown>) => i.status === "COMPLETE")) {
-    if (!img.download_storage_path) continue;
+  for (const img of completedImages) {
     const { data: fileData } = await service.storage
       .from(img.download_storage_bucket as string)
       .download(img.download_storage_path as string);
