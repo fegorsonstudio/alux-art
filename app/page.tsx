@@ -208,11 +208,34 @@ export default function WorkspacePage() {
     try {
       if (!user?.id) throw new Error("Sign in again before uploading");
 
+      // Resize files >10MB client-side before upload (preserves quality at max 4000px)
+      const TEN_MB = 10 * 1024 * 1024;
+      const fileToUpload = file.size <= TEN_MB ? file : await new Promise<File>((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const MAX_DIM = 4000;
+          const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error("Resize failed")); return; }
+            resolve(new File([blob], file.name, { type: "image/jpeg" }));
+          }, "image/jpeg", 0.85);
+        };
+        img.onerror = () => reject(new Error("Image load failed"));
+        img.src = url;
+      });
+
       // Step 1: get presigned upload URL from server (auth only, no file bytes)
       const presignRes = await fetch("/api/upload/presign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket, saveToLibrary: saveLib }),
+        body: JSON.stringify({ filename: fileToUpload.name, contentType: fileToUpload.type, size: fileToUpload.size, bucket, saveToLibrary: saveLib }),
       });
       if (!presignRes.ok) {
         const err = await presignRes.json().catch(() => ({}));
@@ -223,6 +246,7 @@ export default function WorkspacePage() {
       // Step 2: PUT bytes directly to Supabase CDN via XHR for real progress tracking
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        xhr.timeout = 120_000;
         xhr.upload.addEventListener("progress", (e) => {
           if (e.lengthComputable)
             setUploadProgress(prev => ({ ...prev, [key]: Math.round((e.loaded / e.total) * 95) }));
@@ -232,9 +256,10 @@ export default function WorkspacePage() {
           else reject(new Error(`Upload failed (${xhr.status})`));
         });
         xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.addEventListener("timeout", () => reject(new Error("Upload timed out — try again")));
         xhr.open("PUT", meta.uploadUrl);
-        xhr.setRequestHeader("Content-Type", file.type);
-        xhr.send(file);
+        xhr.setRequestHeader("Content-Type", fileToUpload.type);
+        xhr.send(fileToUpload);
       });
 
       setUploadProgress(prev => ({ ...prev, [key]: 96 }));
@@ -374,7 +399,7 @@ export default function WorkspacePage() {
 
       if (adminBypass) {
         setStatus({ type: "ok", message: "Generating..." });
-        // Fire-and-forget: start endpoint runs in its own 300s Vercel function context.
+        resumeStartedRef.current.add(shoot.id); // prevent useEffect double-start
         fetch(`/api/shoots/${shoot.id}/start`, { method: "POST" }).catch(() => {});
         return;
       }

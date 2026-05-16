@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
         const { error: profileError } = await service.from("profiles").upsert({
           id: user.id,
+          email: user.email ?? "",
           display_name: displayName,
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" });

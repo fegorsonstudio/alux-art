@@ -9,6 +9,18 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === retries - 1) throw err;
+      await new Promise(r => setTimeout(r, delayMs * Math.pow(2, attempt)));
+    }
+  }
+  throw new Error("unreachable");
+}
+
 // Fetch + resize an image to max 2000px before sending to Claude (Claude rejects >8000px)
 async function toBase64Block(url: string) {
   const res = await fetch(url);
@@ -63,9 +75,17 @@ async function signRefs(
 ): Promise<SignedRef[]> {
   return Promise.all(
     refs.map(async (ref) => {
-      const { data } = await service.storage
+      const { data, error } = await service.storage
         .from(ref.storage_bucket)
         .createSignedUrl(ref.storage_path, 60 * 60);
+      if (error || !data?.signedUrl) {
+        console.error("[generate] reference signing failed:", {
+          purpose: ref.purpose,
+          bucket: ref.storage_bucket,
+          path: ref.storage_path,
+          error: error?.message ?? "No signed URL returned",
+        });
+      }
       return {
         purpose: ref.purpose,
         tag: ref.tag,
@@ -304,10 +324,21 @@ export async function startGenerationWorker(
 
   const total = normalizePackageSize(shoot.package_size);
 
-  const refs = await signRefs(service, (shoot.shoot_references ?? []) as ShootRefRow[]);
+  const rawRefs = (shoot.shoot_references ?? []) as ShootRefRow[];
+  const refs = await signRefs(service, rawRefs);
+  const identityRefCount = rawRefs.filter((r) => r.purpose === "identity").length;
+  const signedIdentityCount = refs.filter((r) => r.purpose === "identity" && r.url).length;
+  console.log("[generate] reference URL counts:", {
+    shootId,
+    totalRefs: rawRefs.length,
+    identityRefCount,
+    signedIdentityCount,
+  });
+  if (identityRefCount > 0 && signedIdentityCount === 0) {
+    throw new Error(`Identity references exist but none could be signed for shoot ${shootId}`);
+  }
 
   // Log all reference uploads to Airtable — zip original rows with signed refs by index
-  const rawRefs = (shoot.shoot_references ?? []) as ShootRefRow[];
   Promise.all(
     rawRefs.map((raw, i) =>
       logReferenceUpload({
@@ -322,7 +353,7 @@ export async function startGenerationWorker(
         signedUrl: refs[i]?.url ?? "",
       })
     )
-  ).catch(() => {});
+  ).catch((err) => console.error("[airtable] logReferenceUpload failed:", err));
 
   // --- Step 1: Identity analysis ---
   // Supabase returns JSONB defaults as {} (object), not "" — normalize to string first
@@ -350,7 +381,7 @@ export async function startGenerationWorker(
       .filter(Boolean);
     if (identityUrls.length === 0) throw new Error("No identity images found");
 
-    identityProfile = await analyzeIdentityImages(identityUrls);
+    identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls));
 
     await service
       .from("shoots")
@@ -380,7 +411,7 @@ export async function startGenerationWorker(
       created_at: ts(),
     });
 
-    shootBrief = await buildShootBrief(shoot, identityProfile, refs);
+    shootBrief = await withRetry(() => buildShootBrief(shoot, identityProfile, refs));
     // Validate before storing — Claude truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -478,6 +509,14 @@ export async function startGenerationWorker(
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
       // Log to Airtable before calling fal.ai so the payload is always visible
+      console.log("[generate] Airtable payload URL counts:", {
+        shootId,
+        slot,
+        identityUrls: identityUrls.length,
+        inspirationUrls: inspirationUrls.length,
+        imageUrls: imageUrls.length,
+      });
+
       logFalPayload({
         shootId,
         slot,
@@ -494,9 +533,9 @@ export async function startGenerationWorker(
         shootBrief: typeof shootBrief === "string" ? shootBrief : "",
         quoteText: shoot.quote?.text,
         status: isTestMode ? "dry_run" : "sent_to_fal",
-      }).catch(() => {});
+      }).catch((err) => console.error("[airtable] logFalPayload failed:", err));
 
-      const falUrl = await generateImageWithFal(slotPrompt, imageUrls, aspectRatio);
+      const falUrl = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio));
 
       // In test mode skip uploading to Supabase storage (avoids Pollinations.ai rate limits)
       const storagePath = isTestMode

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 
-const MAX_SIZE = 10 * 1024 * 1024;
+const MAX_SIZE = 20 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
 
 function sanitizeFileName(name: string) {
@@ -10,7 +10,8 @@ function sanitizeFileName(name: string) {
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
