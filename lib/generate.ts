@@ -11,6 +11,7 @@ fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" }
 
 const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
 const SHOOT_BRIEF_TIMEOUT_MS = 90_000;
+const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -80,7 +81,7 @@ async function signRefs(
     refs.map(async (ref) => {
       const { data, error } = await service.storage
         .from(ref.storage_bucket)
-        .createSignedUrl(ref.storage_path, 60 * 60);
+        .createSignedUrl(ref.storage_path, REFERENCE_SIGNED_URL_TTL_SECONDS);
       if (error || !data?.signedUrl) {
         console.error("[generate] reference signing failed:", {
           purpose: ref.purpose,
