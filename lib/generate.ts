@@ -9,6 +9,9 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
+const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
+const SHOOT_BRIEF_TIMEOUT_MS = 90_000;
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -103,17 +106,18 @@ async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
     imageUrls.filter(Boolean).slice(0, 4).map(toBase64Block)
   );
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 512,
-    messages: [
-      {
-        role: "user",
-        content: [
-          ...imageBlocks,
-          {
-            type: "text",
-            text: `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
+  const response = await anthropic.messages.create(
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 512,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...imageBlocks,
+            {
+              type: "text",
+              text: `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
 Return ONLY this format:
 IDENTITY PROFILE:
@@ -125,11 +129,13 @@ Build: [body type, height impression, proportions]
 Distinctive: [any notable stable features]
 
 Clinical and precise. No subjective judgments. Stable biometric features only.`,
-          },
-        ],
-      },
-    ],
-  });
+            },
+          ],
+        },
+      ],
+    },
+    { timeout: IDENTITY_ANALYSIS_TIMEOUT_MS, maxRetries: 0 }
+  );
 
   return response.content[0].type === "text" ? response.content[0].text : "";
 }
@@ -174,17 +180,18 @@ async function buildShootBrief(
     .concat(hasQuote ? [`"${packageSize}": "Scene: ..."`] : [])
     .join(",\n    ");
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    messages: [
-      {
-        role: "user",
-        content: [
-          ...imageBlocks,
-          {
-            type: "text",
-            text: `You are a professional photography prompt engineer.
+  const response = await anthropic.messages.create(
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 8192,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...imageBlocks,
+            {
+              type: "text",
+              text: `You are a professional photography prompt engineer.
 
 IDENTITY PROFILE:
 ${identityProfile}
@@ -226,11 +233,13 @@ Return ONLY valid JSON (no markdown, no code fences):
     ${slotKeys}
   }
 }`,
-          },
-        ],
-      },
-    ],
-  });
+            },
+          ],
+        },
+      ],
+    },
+    { timeout: SHOOT_BRIEF_TIMEOUT_MS, maxRetries: 0 }
+  );
 
   const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
   // Strip markdown code fences Claude sometimes adds despite instructions
@@ -323,6 +332,13 @@ export async function startGenerationWorker(
   if (shootErr || !shoot) throw new Error(shootErr?.message ?? "Shoot not found");
 
   const total = normalizePackageSize(shoot.package_size);
+  // Supabase returns JSONB defaults as {} (object), not "" — normalize to string first.
+  const rawIdentity = shoot.identity_profile;
+  let identityProfile: string =
+    typeof rawIdentity === "string" ? rawIdentity : "";
+  const rawBrief = shoot.shoot_brief;
+  let shootBrief: string =
+    typeof rawBrief === "string" ? rawBrief : "";
 
   const rawRefs = (shoot.shoot_references ?? []) as ShootRefRow[];
   const refs = await signRefs(service, rawRefs);
@@ -338,28 +354,32 @@ export async function startGenerationWorker(
     throw new Error(`Identity references exist but none could be signed for shoot ${shootId}`);
   }
 
-  // Log all reference uploads to Airtable — zip original rows with signed refs by index
-  Promise.all(
-    rawRefs.map((raw, i) =>
-      logReferenceUpload({
-        shootId,
-        fileName: raw.name,
-        purpose: raw.purpose,
-        tag: raw.tag,
-        storageBucket: raw.storage_bucket,
-        storagePath: raw.storage_path,
-        fileSizeKB: 0,
-        contentType: "image/*",
-        signedUrl: refs[i]?.url ?? "",
-      })
-    )
-  ).catch((err) => console.error("[airtable] logReferenceUpload failed:", err));
+  if (!identityProfile && !shootBrief) {
+    // Log all reference uploads once before generation. Awaiting matters in serverless:
+    // fire-and-forget requests can be dropped when the function returns.
+    const refLogResults = await Promise.allSettled(
+      rawRefs.map((raw, i) =>
+        logReferenceUpload({
+          shootId,
+          fileName: raw.name,
+          purpose: raw.purpose,
+          tag: raw.tag,
+          storageBucket: raw.storage_bucket,
+          storagePath: raw.storage_path,
+          fileSizeKB: 0,
+          contentType: "image/*",
+          signedUrl: refs[i]?.url ?? "",
+        })
+      )
+    );
+    for (const result of refLogResults) {
+      if (result.status === "rejected") {
+        console.error("[airtable] logReferenceUpload failed:", result.reason);
+      }
+    }
+  }
 
   // --- Step 1: Identity analysis ---
-  // Supabase returns JSONB defaults as {} (object), not "" — normalize to string first
-  const rawIdentity = shoot.identity_profile;
-  let identityProfile: string =
-    typeof rawIdentity === "string" ? rawIdentity : "";
   if (!identityProfile) {
     await service
       .from("shoots")
@@ -381,7 +401,7 @@ export async function startGenerationWorker(
       .filter(Boolean);
     if (identityUrls.length === 0) throw new Error("No identity images found");
 
-    identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls));
+    identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls), 2);
 
     await service
       .from("shoots")
@@ -390,11 +410,6 @@ export async function startGenerationWorker(
   }
 
   // --- Step 2: Shoot brief ---
-  // Normalize JSONB {} default to empty string so the rebuild check works correctly
-  const rawBrief = shoot.shoot_brief;
-  let shootBrief: string =
-    typeof rawBrief === "string" ? rawBrief : "";
-
   if (!shootBrief) {
 
     await service
@@ -411,7 +426,7 @@ export async function startGenerationWorker(
       created_at: ts(),
     });
 
-    shootBrief = await withRetry(() => buildShootBrief(shoot, identityProfile, refs));
+    shootBrief = await withRetry(() => buildShootBrief(shoot, identityProfile, refs), 2);
     // Validate before storing — Claude truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -517,23 +532,27 @@ export async function startGenerationWorker(
         imageUrls: imageUrls.length,
       });
 
-      logFalPayload({
-        shootId,
-        slot,
-        mode: shoot.mode,
-        aspectRatio,
-        prompt: slotPrompt,
-        identityUrls,
-        inspirationUrls,
-        taggedRefs: refs
-          .filter((r) => r.purpose === "tagged")
-          .map((r) => ({ tag: r.tag ?? r.customName, url: r.url })),
-        imageUrls,
-        identityProfile: typeof identityProfile === "string" ? identityProfile : "",
-        shootBrief: typeof shootBrief === "string" ? shootBrief : "",
-        quoteText: shoot.quote?.text,
-        status: isTestMode ? "dry_run" : "sent_to_fal",
-      }).catch((err) => console.error("[airtable] logFalPayload failed:", err));
+      try {
+        await logFalPayload({
+          shootId,
+          slot,
+          mode: shoot.mode,
+          aspectRatio,
+          prompt: slotPrompt,
+          identityUrls,
+          inspirationUrls,
+          taggedRefs: refs
+            .filter((r) => r.purpose === "tagged")
+            .map((r) => ({ tag: r.tag ?? r.customName, url: r.url })),
+          imageUrls,
+          identityProfile: typeof identityProfile === "string" ? identityProfile : "",
+          shootBrief: typeof shootBrief === "string" ? shootBrief : "",
+          quoteText: shoot.quote?.text,
+          status: isTestMode ? "dry_run" : "sent_to_fal",
+        });
+      } catch (err) {
+        console.error("[airtable] logFalPayload failed:", err);
+      }
 
       const falUrl = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio));
 

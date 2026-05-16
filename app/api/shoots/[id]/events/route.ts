@@ -38,6 +38,17 @@ export async function GET(
 
   const stream = new ReadableStream({
     async start(controller) {
+      let closed = false;
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        controller.close();
+      };
+      const enqueue = (payload: unknown) => {
+        if (closed) return;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      };
+
       // Send initial snapshot
       const { data: fullShoot } = await service
         .from("shoots")
@@ -46,7 +57,7 @@ export async function GET(
         .single();
 
       const hydratedShoot = await withSignedPreviewUrls(service, fullShoot);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "snapshot", shoot: hydratedShoot })}\n\n`));
+      enqueue({ type: "snapshot", shoot: hydratedShoot });
 
       const { data: latestEvent } = await service
         .from("generation_events")
@@ -68,7 +79,7 @@ export async function GET(
             .order("created_at", { ascending: true });
 
           for (const event of events ?? []) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: event.type, ...event.payload })}\n\n`));
+            enqueue({ type: event.type, ...event.payload });
             lastEventCreatedAt = event.created_at;
           }
 
@@ -81,18 +92,18 @@ export async function GET(
 
           if (current?.status === "COMPLETE" || current?.status === "FAILED") {
             clearInterval(interval);
-            controller.close();
+            close();
           }
         } catch {
           clearInterval(interval);
-          controller.close();
+          close();
         }
       }, 2000);
 
       // Clean up on client disconnect
       request.signal.addEventListener("abort", () => {
         clearInterval(interval);
-        controller.close();
+        close();
       });
     },
   });
