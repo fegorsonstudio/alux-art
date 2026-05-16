@@ -20,7 +20,9 @@ async function createRecord(
         body: JSON.stringify({ fields }),
       }
     );
-    if (!res.ok) {
+    if (res.ok) {
+      console.log(`[airtable] ✓ ${table}`);
+    } else {
       const body = await res.text().catch(() => "");
       console.error(`[airtable] ${table} write failed ${res.status}:`, body.slice(0, 300));
     }

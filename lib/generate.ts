@@ -156,7 +156,7 @@ async function buildShootBrief(
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4096,
+    max_tokens: 8192,
     messages: [
       {
         role: "user",
@@ -325,7 +325,10 @@ export async function startGenerationWorker(
   ).catch(() => {});
 
   // --- Step 1: Identity analysis ---
-  let identityProfile: string = shoot.identity_profile ?? "";
+  // Supabase returns JSONB defaults as {} (object), not "" — normalize to string first
+  const rawIdentity = shoot.identity_profile;
+  let identityProfile: string =
+    typeof rawIdentity === "string" ? rawIdentity : "";
   if (!identityProfile) {
     await service
       .from("shoots")
@@ -356,12 +359,13 @@ export async function startGenerationWorker(
   }
 
   // --- Step 2: Shoot brief ---
-  let shootBrief: string = shoot.shoot_brief ?? "";
-  console.log("[generate] initial shootBrief type:", typeof shootBrief);
-  console.log("[generate] initial shootBrief value:", shootBrief);
+  // Normalize JSONB {} default to empty string so the rebuild check works correctly
+  const rawBrief = shoot.shoot_brief;
+  let shootBrief: string =
+    typeof rawBrief === "string" ? rawBrief : "";
 
-  if (!shootBrief || (typeof shootBrief === "object" && Object.keys(shootBrief).length === 0)) {
-    console.log("[generate] Building new shoot brief...");
+  if (!shootBrief) {
+
     await service
       .from("shoots")
       .update({ pipeline_stage: "Building shoot brief", progress: 20, updated_at: ts() })
@@ -377,9 +381,6 @@ export async function startGenerationWorker(
     });
 
     shootBrief = await buildShootBrief(shoot, identityProfile, refs);
-    console.log("[generate] buildShootBrief returned type:", typeof shootBrief);
-    console.log("[generate] buildShootBrief returned length:", shootBrief.length);
-
     // Validate before storing — Claude truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -400,8 +401,6 @@ export async function startGenerationWorker(
       ? shootBrief
       : JSON.stringify(shootBrief ?? {});
   
-  console.log("[generate] shootBriefStr type:", typeof shootBriefStr);
-  
   const shootBriefClean = shootBriefStr
     .replace(/^```(?:json)?\s*/im, "")
     .replace(/```\s*$/m, "")
@@ -411,9 +410,8 @@ export async function startGenerationWorker(
   try {
     const parsed = JSON.parse(shootBriefClean);
     prompts = (parsed.prompts as Record<string, string>) ?? {};
-    console.log("[generate] parsed prompts count:", Object.keys(prompts).length);
   } catch (e) {
-    console.log("[generate] JSON parse failed, falling back to regex", e);
+    console.error("[generate] JSON parse failed, falling back to regex", e);
     // Last-resort regex extraction if JSON is still malformed
     const match = shootBriefClean.match(/"1"\s*:\s*"([^"]+)"/);
     if (match) prompts["1"] = match[1];
@@ -492,8 +490,8 @@ export async function startGenerationWorker(
           .filter((r) => r.purpose === "tagged")
           .map((r) => ({ tag: r.tag ?? r.customName, url: r.url })),
         imageUrls,
-        identityProfile,
-        shootBrief,
+        identityProfile: typeof identityProfile === "string" ? identityProfile : "",
+        shootBrief: typeof shootBrief === "string" ? shootBrief : "",
         quoteText: shoot.quote?.text,
         status: isTestMode ? "dry_run" : "sent_to_fal",
       }).catch(() => {});
