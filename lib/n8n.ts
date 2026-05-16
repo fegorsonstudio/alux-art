@@ -1,58 +1,26 @@
 /**
- * n8n.ts — Master Webhook Helper
+ * n8n.ts — Post-generation notification helper
  *
- * Single-Door rule: ALL photoshoot requests go through ONE n8n webhook.
- * The `type` field is read by an n8n Switch node to route to the correct branch.
- * Never create a separate webhook per photoshoot type.
+ * Strategy B: Vercel does all generation. n8n receives a "shoot_complete"
+ * webhook and handles email delivery and any downstream logging.
  */
 
-const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
+export async function notifyShootComplete(shootId: string): Promise<void> {
+  const url =
+    process.env.N8N_WEBHOOK_URL ?? process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
+  if (!url) return;
 
-export type PhotoshootType =
-  | "headshot"
-  | "fashion"
-  | "product"
-  | "portrait"
-  | "editorial";
-
-export interface StudioRequest {
-  type: PhotoshootType;
-  referenceImageUrl: string;
-  sessionId: string;
-  payload?: Record<string, unknown>;
-}
-
-export interface StudioResponse {
-  success: boolean;
-  jobId?: string;
-  message?: string;
-}
-
-export async function triggerPhotoshoot(
-  request: StudioRequest
-): Promise<StudioResponse> {
-  if (!N8N_WEBHOOK_URL) {
-    throw new Error(
-      "NEXT_PUBLIC_N8N_WEBHOOK_URL is not configured. Add it to .env.local."
-    );
-  }
-
-  const response = await fetch(N8N_WEBHOOK_URL, {
+  await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.INTERNAL_API_SECRET
+        ? { Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}` }
+        : {}),
+    },
     body: JSON.stringify({
-      type: request.type,
-      referenceImageUrl: request.referenceImageUrl,
-      sessionId: request.sessionId,
-      payload: request.payload ?? {},
-      timestamp: new Date().toISOString(),
+      type: "shoot_complete",
+      shoot_id: shootId,
     }),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`n8n webhook returned ${response.status}: ${errorText}`);
-  }
-
-  return response.json() as Promise<StudioResponse>;
 }
