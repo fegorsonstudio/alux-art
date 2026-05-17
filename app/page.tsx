@@ -220,7 +220,8 @@ export default function WorkspacePage() {
     };
     es.onerror = () => es.close();
     return () => { es.close(); shootIdRef.current = null; };
-  }, [currentShoot]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentShoot?.id, currentShoot?.status]);
 
   // Fetch review base URL when opening a shoot already in BASE_REVIEW
   useEffect(() => {

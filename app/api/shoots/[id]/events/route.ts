@@ -24,7 +24,8 @@ export async function GET(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const service = createServiceClient();
@@ -58,6 +59,22 @@ export async function GET(
 
       const hydratedShoot = await withSignedPreviewUrls(service, fullShoot);
       enqueue({ type: "snapshot", shoot: hydratedShoot });
+
+      // If shoot is already in BASE_REVIEW, replay the last base_review_required event
+      // so the frontend gets the base_url even when connecting after the live event fired
+      if (fullShoot?.status === "BASE_REVIEW") {
+        const { data: reviewEvent } = await service
+          .from("generation_events")
+          .select("*")
+          .eq("shoot_id", id)
+          .eq("type", "base_review_required")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (reviewEvent) {
+          enqueue({ type: reviewEvent.type, ...(reviewEvent.payload as Record<string, unknown>) });
+        }
+      }
 
       const { data: latestEvent } = await service
         .from("generation_events")
