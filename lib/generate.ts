@@ -348,7 +348,7 @@ async function generateImageWithFal(
     return `https://image.pollinations.ai/prompt/${encoded}?width=${w}&height=${h}&nologo=1&seed=${Date.now()}`;
   }
 
-  const output = (await fal.subscribe("fal-ai/nano-banana-2/edit", {
+  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
     input: {
       prompt,
       num_images: 1,
@@ -360,8 +360,9 @@ async function generateImageWithFal(
       resolution: "4K",
       limit_generations: false,
     },
-  })) as FalOutput;
+  });
 
+  const output = response.data as FalOutput;
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL");
   return url;

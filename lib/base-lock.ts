@@ -243,7 +243,7 @@ export async function generateBaseWithFal(
   }
 
   // Cast through unknown to satisfy strict fal.ai SDK input type — same pattern used in generate.ts
-  const output = (await fal.subscribe("fal-ai/nano-banana-2/edit", {
+  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
     input: {
       prompt,
       num_images: 1,
@@ -255,7 +255,9 @@ export async function generateBaseWithFal(
       limit_generations: false,
       ...(seed !== undefined ? { seed } : {}),
     },
-  })) as FalOutput;
+  });
+  
+  const output = response.data as FalOutput;
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL for base lock");
   return url;
