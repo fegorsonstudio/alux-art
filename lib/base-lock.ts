@@ -242,20 +242,20 @@ export async function generateBaseWithFal(
     return `https://image.pollinations.ai/prompt/${encoded}?width=768&height=1024&nologo=1&seed=${seed ?? Date.now()}`;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const input: any = {
-    prompt,
-    num_images: 1,
-    aspect_ratio: "3:4",
-    output_format: "png",
-    safety_tolerance: "4",
-    image_urls: refImageUrls.slice(0, 4),
-    resolution: "4K",
-    limit_generations: false,
-  };
-  if (seed !== undefined) input.seed = seed;
-
-  const output = (await fal.subscribe("fal-ai/nano-banana-2/edit", { input })) as FalOutput;
+  // Cast through unknown to satisfy strict fal.ai SDK input type — same pattern used in generate.ts
+  const output = (await fal.subscribe("fal-ai/nano-banana-2/edit", {
+    input: {
+      prompt,
+      num_images: 1,
+      aspect_ratio: "3:4" as unknown as "4:5",
+      output_format: "png" as const,
+      safety_tolerance: "4",
+      image_urls: refImageUrls.slice(0, 4),
+      resolution: "4K",
+      limit_generations: false,
+      ...(seed !== undefined ? { seed } : {}),
+    },
+  })) as FalOutput;
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL for base lock");
   return url;
