@@ -173,9 +173,9 @@ export default function WorkspacePage() {
     if (!currentShoot) return;
     if (["COMPLETE", "FAILED", "BASE_REJECTED"].includes(currentShoot.status ?? "")) return;
     const isBaseLockState = ["BASE_LOCKING", "BASE_REVIEW"].includes(currentShoot.status ?? "");
-    const hasPendingSlot = getShootImages(currentShoot).some(img => String(img.status) === "PENDING");
+    const hasWorkableSlot = getShootImages(currentShoot).some(img => ["PENDING", "QUEUED"].includes(String(img.status)));
     const hasActiveSlot = getShootImages(currentShoot).some(img => ["GENERATING", "UPSCALING"].includes(String(img.status)));
-    if (hasPendingSlot && !hasActiveSlot && !isBaseLockState && !resumeStartedRef.current.has(currentShoot.id)) {
+    if (hasWorkableSlot && !hasActiveSlot && !isBaseLockState && !resumeStartedRef.current.has(currentShoot.id)) {
       resumeStartedRef.current.add(currentShoot.id);
       fetch(`/api/shoots/${currentShoot.id}/start`, { method: "POST" }).catch(() => {});
     }
