@@ -409,6 +409,54 @@
 .statusBarOk { background: rgba(228, 255, 248, 0.9); border-color: rgba(39, 132, 107, 0.22); color: #177767; }
 .miniSpinner { width: 12px; height: 12px; border: 2px solid rgba(47, 142, 154, 0.16); border-top-color: #2f8e9a; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 
+/* ---- Status badges for base-lock states ---- */
+.statusBaselocking { background: #fff9e0; color: #8a6d00; }
+.statusBasereview  { background: #fff0d6; color: #9b5c00; }
+.statusBaserejected { background: #ffe1dc; color: #a7463c; }
+.app[data-theme="dark"] .statusBaselocking  { background: rgba(255, 240, 100, 0.14); color: #ffd966; }
+.app[data-theme="dark"] .statusBasereview   { background: rgba(255, 185, 100, 0.14); color: #ffb84a; }
+.app[data-theme="dark"] .statusBaserejected { background: rgba(255, 100, 80, 0.14); color: #ff9a8e; }
+
+/* ---- Character base library ---- */
+.baseNoThumb { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #8aa0a4; background: linear-gradient(135deg, #e5fbf6, #d9efff); }
+.app[data-theme="dark"] .baseNoThumb { background: linear-gradient(135deg, #193e43, #1c3349); color: #7ab4b8; }
+
+/* ---- Base locking banner ---- */
+.baseLockingBanner { display: flex; align-items: center; gap: 14px; background: rgba(217, 239, 255, 0.7); border: 1px solid rgba(73, 151, 205, 0.2); border-radius: 8px; padding: 16px 18px; }
+.baseLockingTitle { font-size: 0.88rem; font-weight: 750; color: #1e5a7a; margin: 0 0 4px; }
+.baseLockingHint { font-size: 0.76rem; color: #4a7a96; margin: 0; line-height: 1.4; }
+.app[data-theme="dark"] .baseLockingBanner { background: rgba(60, 130, 180, 0.14); border-color: rgba(120, 190, 230, 0.2); }
+.app[data-theme="dark"] .baseLockingTitle { color: #a8d8f0; }
+.app[data-theme="dark"] .baseLockingHint  { color: #80b8d4; }
+
+/* ---- Base review banner ---- */
+.baseReviewBanner { display: flex; flex-direction: column; gap: 12px; background: rgba(255, 248, 224, 0.88); border: 1px solid rgba(220, 170, 40, 0.28); border-radius: 8px; padding: 18px; }
+.baseReviewTitle { font-size: 1rem; font-weight: 800; color: #7a5400; margin: 0; }
+.baseReviewHint  { font-size: 0.78rem; color: #8a6b1e; margin: 0; line-height: 1.5; }
+.baseReviewContent { display: flex; gap: 16px; align-items: flex-start; }
+.baseReviewImg { width: 160px; height: 200px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.baseReviewActions { display: flex; flex-direction: column; gap: 10px; flex: 1; padding-top: 4px; }
+.baseApproveBtn { background: linear-gradient(135deg, #ffffff 0%, #aff0e4 48%, #9fd7ff 100%); color: #1a4c52; border: 1px solid rgba(65, 199, 184, 0.5); border-radius: 8px; font-size: 0.88rem; font-weight: 800; padding: 12px 16px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 8px 20px rgba(48, 141, 151, 0.15); }
+.baseApproveBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(48, 141, 151, 0.22); }
+.baseApproveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.baseRejectBtn { background: rgba(255, 255, 255, 0.76); border: 1px solid rgba(213, 110, 98, 0.3); border-radius: 8px; color: #9d5149; font-size: 0.82rem; padding: 9px 14px; cursor: pointer; }
+.baseRejectBtn:hover:not(:disabled) { border-color: rgba(213, 110, 98, 0.62); background: #ffffff; }
+.baseRejectBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.app[data-theme="dark"] .baseReviewBanner { background: rgba(100, 70, 0, 0.2); border-color: rgba(220, 170, 40, 0.2); }
+.app[data-theme="dark"] .baseReviewTitle { color: #ffd97a; }
+.app[data-theme="dark"] .baseReviewHint  { color: #ccaa50; }
+.app[data-theme="dark"] .baseApproveBtn { background: linear-gradient(135deg, #ffffff 0%, #88eadb 48%, #83c9ff 100%); }
+.app[data-theme="dark"] .baseRejectBtn { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 176, 163, 0.26); color: #ffb8aa; }
+.app[data-theme="dark"] .baseRejectBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+
+/* ---- Base rejected banner ---- */
+.baseRejectedBanner { background: rgba(255, 225, 220, 0.88); border: 1px solid rgba(167, 70, 60, 0.24); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.baseRejectedTitle { font-size: 0.88rem; font-weight: 800; color: #8c3a33; margin: 0; }
+.baseRejectedHint  { font-size: 0.76rem; color: #a7463c; margin: 0; line-height: 1.5; }
+.app[data-theme="dark"] .baseRejectedBanner { background: rgba(167, 70, 60, 0.18); border-color: rgba(255, 184, 170, 0.22); }
+.app[data-theme="dark"] .baseRejectedTitle { color: #ffb8aa; }
+.app[data-theme="dark"] .baseRejectedHint  { color: #ff9a8e; }
+
 /* ---- Mobile ---- */
 @media (max-width: 600px) {
   .nav { padding: 10px 14px; }

@@ -7,6 +7,7 @@ import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packageP
 import styles from "./workspace.module.css";
 
 interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; }
+interface CharacterBaseItem { id: string; user_label?: string | null; base_url?: string | null; attempt_number: number; created_at: string; }
 const DEFAULT_PACKAGES: PackagePricing[] = Object.values(SHOOT_PACKAGES).map((pkg) => ({
   imageCount: pkg.imageCount,
   label: pkg.label,
@@ -64,6 +65,12 @@ export default function WorkspacePage() {
   const [inspirationLibraryImages, setInspirationLibraryImages] = useState<UploadedRef[]>([]);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [characterBases, setCharacterBases] = useState<CharacterBaseItem[]>([]);
+  const [selectedBase, setSelectedBase] = useState<CharacterBaseItem | null>(null);
+  const [reviewBaseUrl, setReviewBaseUrl] = useState<string | null>(null);
+  const [reviewAttemptsRemaining, setReviewAttemptsRemaining] = useState(4);
+  const [baseAction, setBaseAction] = useState<"idle" | "loading">("idle");
+
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
   const taggedRef = useRef<HTMLInputElement>(null);
@@ -86,12 +93,13 @@ export default function WorkspacePage() {
   // Load user + config + shoots
   useEffect(() => {
     (async () => {
-      const [meRes, configRes, shootsRes, libRes, inspirationLibRes] = await Promise.all([
+      const [meRes, configRes, shootsRes, libRes, inspirationLibRes, charsRes] = await Promise.all([
         fetch("/api/me"),
         fetch("/api/config"),
         fetch("/api/shoots"),
         fetch("/api/identity-library"),
         fetch("/api/inspiration-library"),
+        fetch("/api/characters"),
       ]);
       if (meRes.status === 401) {
         window.location.href = "/login";
@@ -152,6 +160,10 @@ export default function WorkspacePage() {
         }));
         setInspirationLibraryImages(imgs);
       }
+      if (charsRes.ok) {
+        const charsData = await charsRes.json();
+        setCharacterBases(charsData.characters ?? []);
+      }
     })();
   }, []);
 
@@ -159,10 +171,11 @@ export default function WorkspacePage() {
   const shootIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!currentShoot) return;
-    if (currentShoot.status === "COMPLETE" || currentShoot.status === "FAILED") return;
+    if (["COMPLETE", "FAILED", "BASE_REJECTED"].includes(currentShoot.status ?? "")) return;
+    const isBaseLockState = ["BASE_LOCKING", "BASE_REVIEW"].includes(currentShoot.status ?? "");
     const hasPendingSlot = getShootImages(currentShoot).some(img => String(img.status) === "PENDING");
     const hasActiveSlot = getShootImages(currentShoot).some(img => ["GENERATING", "UPSCALING"].includes(String(img.status)));
-    if (hasPendingSlot && !hasActiveSlot && !resumeStartedRef.current.has(currentShoot.id)) {
+    if (hasPendingSlot && !hasActiveSlot && !isBaseLockState && !resumeStartedRef.current.has(currentShoot.id)) {
       resumeStartedRef.current.add(currentShoot.id);
       fetch(`/api/shoots/${currentShoot.id}/start`, { method: "POST" }).catch(() => {});
     }
@@ -192,13 +205,39 @@ export default function WorkspacePage() {
           const nextStage = event.stage ?? event.error ?? prev.pipelineStage ?? (prev as unknown as Record<string, string>).pipeline_stage;
           return { ...prev, images: imgs, shoot_images: imgs, progress: event.progress ?? prev.progress, pipelineStage: nextStage } as unknown as Shoot;
         });
-      } else if (event.type === "stage") {
-        setCurrentShoot(prev => prev ? { ...prev, pipelineStage: event.stage, progress: event.progress ?? prev.progress } : prev);
+      } else if (event.type === "stage" || event.type === "base_locking") {
+        setCurrentShoot(prev => prev ? { ...prev, pipelineStage: event.stage ?? "Building character base...", progress: event.progress ?? prev.progress } : prev);
+      } else if (event.type === "base_review_required") {
+        if (event.base_url) setReviewBaseUrl(event.base_url as string);
+        setReviewAttemptsRemaining(typeof event.attempts_remaining === "number" ? event.attempts_remaining : 4);
+        setCurrentShoot(prev => prev ? { ...prev, status: "BASE_REVIEW" as Shoot["status"], pipelineStage: "Review required" } : prev);
+        setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "BASE_REVIEW" as Shoot["status"] } : s));
+      } else if (event.type === "base_approved") {
+        setReviewBaseUrl(null);
+        setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"], pipelineStage: "Base approved — starting generation" } : prev);
+        setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
       }
     };
     es.onerror = () => es.close();
     return () => { es.close(); shootIdRef.current = null; };
   }, [currentShoot]);
+
+  // Fetch review base URL when opening a shoot already in BASE_REVIEW
+  useEffect(() => {
+    if (!currentShoot || currentShoot.status !== "BASE_REVIEW") return;
+    if (reviewBaseUrl) return;
+    const baseId = (currentShoot as unknown as Record<string, unknown>).character_base_id as string | undefined;
+    if (!baseId) return;
+    fetch(`/api/characters/${baseId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.character?.base_url) setReviewBaseUrl(data.character.base_url);
+        if (typeof data.character?.attempt_number === "number") {
+          setReviewAttemptsRemaining(Math.max(0, 5 - data.character.attempt_number));
+        }
+      })
+      .catch(() => {});
+  }, [currentShoot?.status, currentShoot?.id]);
 
   const uploadFile = useCallback(async (file: File, bucket: string, saveLib = false): Promise<UploadedRef | null> => {
     const key = `${file.name}-${file.size}`;
@@ -350,6 +389,47 @@ export default function WorkspacePage() {
     setUploading(null);
   };
 
+  const handleApproveBase = async () => {
+    if (!currentShoot || baseAction === "loading") return;
+    setBaseAction("loading");
+    const res = await fetch(`/api/shoots/${currentShoot.id}/base-lock/approve`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      setReviewBaseUrl(null);
+      setStatus({ type: "ok", message: "Base approved — generating your photos now..." });
+      setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"] } : prev);
+      setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
+      // Re-fetch character bases so it appears in library
+      fetch("/api/characters").then(r => r.json()).then(d => setCharacterBases(d.characters ?? [])).catch(() => {});
+    } else {
+      setStatus({ type: "error", message: data.error ?? "Approve failed" });
+    }
+    setBaseAction("idle");
+  };
+
+  const handleRejectBase = async () => {
+    if (!currentShoot || baseAction === "loading") return;
+    setBaseAction("loading");
+    const res = await fetch(`/api/shoots/${currentShoot.id}/base-lock/reject`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      setReviewBaseUrl(null);
+      if (data.terminal) {
+        setStatus({ type: "error", message: "All 5 base attempts exhausted. Contact support for a refund." });
+        setCurrentShoot(prev => prev ? { ...prev, status: "BASE_REJECTED" as Shoot["status"] } : prev);
+        setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "BASE_REJECTED" as Shoot["status"] } : s));
+      } else {
+        const left = data.attemptsRemaining ?? 0;
+        setStatus({ type: "ok", message: `Re-rolling... ${left} attempt${left !== 1 ? "s" : ""} remaining.` });
+        setCurrentShoot(prev => prev ? { ...prev, status: "BASE_LOCKING" as Shoot["status"], pipelineStage: "Re-rolling character base..." } : prev);
+        setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "BASE_LOCKING" as Shoot["status"] } : s));
+      }
+    } else {
+      setStatus({ type: "error", message: data.error ?? "Re-roll failed" });
+    }
+    setBaseAction("idle");
+  };
+
   const openShootGallery = async (shoot: Shoot) => {
     setCurrentShoot(shoot);
     setTimeout(() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -388,6 +468,7 @@ export default function WorkspacePage() {
             customName: customTag?.trim() || null,
           })),
           quote, adminBypass,
+          characterBaseId: selectedBase?.id ?? null,
         }),
       });
       const data = await res.json();
@@ -486,6 +567,41 @@ export default function WorkspacePage() {
       <div className={styles.main}>
         {/* LEFT: Controls */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Saved character bases */}
+          {characterBases.length > 0 && (
+            <div className={styles.panel}>
+              <div className={styles.panelTitleRow}>
+                <p className={styles.panelTitle}>Saved Characters</p>
+                {selectedBase && (
+                  <button className={styles.clearLibBtn} onClick={() => setSelectedBase(null)}>Clear</button>
+                )}
+              </div>
+              <p className={styles.helperText}>Select a saved character to reuse — skips base generation entirely.</p>
+              <div className={styles.thumbGrid}>
+                {characterBases.map(base => {
+                  const isSelected = selectedBase?.id === base.id;
+                  return (
+                    <button key={base.id} type="button"
+                      className={`${styles.thumb} ${isSelected ? styles.thumbSelected : ""}`}
+                      onClick={() => setSelectedBase(isSelected ? null : base)}
+                      title={base.user_label ?? `Base from ${new Date(base.created_at).toLocaleDateString()}`}>
+                      {base.base_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={base.base_url} alt={base.user_label ?? "Character base"} />
+                      ) : (
+                        <span className={styles.baseNoThumb}>?</span>
+                      )}
+                      {isSelected && <span className={styles.thumbCheck}>OK</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedBase && (
+                <p className={styles.libLabel}>Using saved character — base generation skipped</p>
+              )}
+            </div>
+          )}
 
           {/* Identity photos */}
           <div className={styles.panel}>
@@ -745,8 +861,8 @@ export default function WorkspacePage() {
                       <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
                     </div>
                     <span className={styles.shootActions}>
-                      <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").charAt(0) + (s.status ?? "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
-                        {s.status}
+                      <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").replace(/_/g, "").charAt(0).toUpperCase() + (s.status ?? "").replace(/_/g, "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
+                        {s.status === "BASE_LOCKING" ? "Locking" : s.status === "BASE_REVIEW" ? "Review" : s.status === "BASE_REJECTED" ? "Rejected" : s.status}
                       </span>
                       <span className={styles.openGalleryLabel}>Open gallery</span>
                     </span>
@@ -768,6 +884,52 @@ export default function WorkspacePage() {
               {(currentShoot.status === "PROCESSING" || currentShoot.status === "QUEUED") && (
                 <div className={styles.progressBar}>
                   <div className={styles.galleryFill} style={{ width: `${currentShoot.progress ?? 0}%` }} />
+                </div>
+              )}
+
+              {/* Base locking — in progress */}
+              {currentShoot.status === "BASE_LOCKING" && (
+                <div className={styles.baseLockingBanner}>
+                  <span className={styles.slotSpinner} />
+                  <div>
+                    <p className={styles.baseLockingTitle}>Building your character base...</p>
+                    <p className={styles.baseLockingHint}>We&apos;re generating a canonical identity reference. This takes 30–90 seconds.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Base review — user approval required */}
+              {currentShoot.status === "BASE_REVIEW" && (
+                <div className={styles.baseReviewBanner}>
+                  <p className={styles.baseReviewTitle}>Does this look like you?</p>
+                  <p className={styles.baseReviewHint}>This is your character base — the identity anchor for all your generated photos. Approve if the likeness is accurate, or re-roll to generate a new one.</p>
+                  {reviewBaseUrl ? (
+                    <div className={styles.baseReviewContent}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={reviewBaseUrl} alt="Character base preview" className={styles.baseReviewImg} />
+                      <div className={styles.baseReviewActions}>
+                        <button className={styles.baseApproveBtn} onClick={handleApproveBase} disabled={baseAction === "loading"}>
+                          {baseAction === "loading" ? "..." : "Looks good — generate my photos"}
+                        </button>
+                        <button className={styles.baseRejectBtn} onClick={handleRejectBase} disabled={baseAction === "loading"}>
+                          {baseAction === "loading" ? "..." : `Re-roll${reviewAttemptsRemaining > 0 ? ` (${reviewAttemptsRemaining} left)` : ""}`}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.baseLockingBanner}>
+                      <span className={styles.slotSpinner} />
+                      <span>Loading preview...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Base rejected — terminal */}
+              {currentShoot.status === "BASE_REJECTED" && (
+                <div className={styles.baseRejectedBanner}>
+                  <p className={styles.baseRejectedTitle}>All base attempts exhausted</p>
+                  <p className={styles.baseRejectedHint}>Please upload clearer, well-lit front-facing identity photos and start a new shoot, or contact support for a refund.</p>
                 </div>
               )}
 
