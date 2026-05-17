@@ -70,6 +70,8 @@ export default function WorkspacePage() {
   const [reviewBaseUrl, setReviewBaseUrl] = useState<string | null>(null);
   const [reviewAttemptsRemaining, setReviewAttemptsRemaining] = useState(4);
   const [baseAction, setBaseAction] = useState<"idle" | "loading">("idle");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
@@ -443,6 +445,20 @@ export default function WorkspacePage() {
         setShoots(prev => prev.map(p => p.id === data.shoot.id ? data.shoot : p));
         setTimeout(() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
       }
+    }
+  };
+
+  const handleDeleteShoot = async (shootId: string) => {
+    setDeletingId(shootId);
+    try {
+      const res = await fetch(`/api/shoots/${shootId}`, { method: "DELETE" });
+      if (res.ok) {
+        setShoots(prev => prev.filter(s => s.id !== shootId));
+        if (currentShoot?.id === shootId) setCurrentShoot(null);
+      }
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -848,27 +864,53 @@ export default function WorkspacePage() {
         {/* RIGHT: Shoots + Gallery */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Recent shoots */}
+          {/* Shoots list */}
           {shoots.length > 0 && (
             <div className={styles.panel}>
-              <p className={styles.panelTitle}>Your Shoots</p>
+              <p className={styles.panelTitle}>Your Shoots ({shoots.length})</p>
               <div className={styles.shootsList}>
-                {shoots.slice(0, 5).map(s => (
-                  <button key={s.id} type="button" className={`${styles.shootCard} ${currentShoot?.id === s.id ? styles.shootCardActive : ""}`} onClick={() => openShootGallery(s)}>
-                    <div className={styles.shootMeta}>
-                      <span style={{ fontSize: "0.85rem" }}>
-                        {(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode} / {getShootPackageSize(s)} images
-                      </span>
-                      <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
+                {shoots.map(s => {
+                  const isActive = ["PROCESSING","QUEUED","BASE_LOCKING","BASE_REVIEW"].includes(s.status ?? "");
+                  const isConfirming = confirmDeleteId === s.id;
+                  const isDeleting = deletingId === s.id;
+                  return (
+                    <div key={s.id} className={`${styles.shootRow} ${currentShoot?.id === s.id ? styles.shootRowActive : ""}`}>
+                      <button type="button" className={styles.shootCard} onClick={() => openShootGallery(s)}>
+                        <div className={styles.shootMeta}>
+                          <span style={{ fontSize: "0.85rem" }}>
+                            {(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode} / {getShootPackageSize(s)} images
+                          </span>
+                          <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <span className={styles.shootActions}>
+                          <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").replace(/_/g, "").charAt(0).toUpperCase() + (s.status ?? "").replace(/_/g, "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
+                            {s.status === "BASE_LOCKING" ? "Locking" : s.status === "BASE_REVIEW" ? "Review" : s.status === "BASE_REJECTED" ? "Rejected" : s.status}
+                          </span>
+                          <span className={styles.openGalleryLabel}>Open gallery</span>
+                        </span>
+                      </button>
+                      {/* Delete controls */}
+                      {!isConfirming && (
+                        <button
+                          className={`${styles.deleteShootBtn} ${isActive ? styles.deleteShootBtnActive : ""}`}
+                          title={isActive ? "Stop & delete" : "Delete shoot"}
+                          onClick={() => setConfirmDeleteId(s.id)}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? "…" : isActive ? "Stop" : "✕"}
+                        </button>
+                      )}
+                      {isConfirming && (
+                        <span className={styles.deleteConfirm}>
+                          <button className={styles.deleteConfirmYes} onClick={() => handleDeleteShoot(s.id)} disabled={isDeleting}>
+                            {isDeleting ? "…" : "Delete"}
+                          </button>
+                          <button className={styles.deleteConfirmNo} onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+                        </span>
+                      )}
                     </div>
-                    <span className={styles.shootActions}>
-                      <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").replace(/_/g, "").charAt(0).toUpperCase() + (s.status ?? "").replace(/_/g, "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
-                        {s.status === "BASE_LOCKING" ? "Locking" : s.status === "BASE_REVIEW" ? "Review" : s.status === "BASE_REJECTED" ? "Rejected" : s.status}
-                      </span>
-                      <span className={styles.openGalleryLabel}>Open gallery</span>
-                    </span>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
