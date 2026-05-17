@@ -217,7 +217,7 @@ ${taggedDescriptions || "Inspiration image only — extract environment, lightin
 
 RULES:
 - Each slot must have a UNIQUE pose, shot type, and scene composition.
-- "scene_exclusions" must always include: "do not transfer white studio backdrop or neutral pose from base reference".
+- "scene_exclusions" must always include: "do not transfer white studio backdrop or neutral pose from base reference". Do NOT mention watermarks or text overlays.
 - Keep lighting consistent with the shoot mood unless a [LIGHTING] reference overrides it.
 - [BACKGROUND] reference controls environment only — ignore any clothing or people in it.
 - [COLOR_GRADE] reference controls film style and color palette only.
@@ -355,7 +355,7 @@ async function generateImageWithFal(
       // All our AspectRatio values are in fal's union; cast through unknown to satisfy strict type
       aspect_ratio: aspectRatio as unknown as "4:5",
       output_format: "png",
-      safety_tolerance: "4",
+      safety_tolerance: "6",
       image_urls: imageUrls.slice(0, 4),
       resolution: "4K",
       limit_generations: false,

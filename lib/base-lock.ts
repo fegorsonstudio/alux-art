@@ -93,7 +93,7 @@ Return ONLY valid JSON, no markdown fences, no prose:
   "makeup": "makeup look — lip color, eye treatment, skin finish, any notable techniques",
   "nails": "nail length, shape, color, finish, and any patterns or art",
   "accessories": ["item 1 description", "item 2 description"],
-  "outfit_ref_exclusions": ["list elements visible in the outfit reference that must NOT be transferred to the character — e.g. the model's own hair if overridden, props, backdrop, other people"]
+  "outfit_ref_exclusions": ["list elements visible in the outfit reference that must NOT be transferred to the character — e.g. the model's own hair if overridden, props, backdrop, other people. IMPORTANT: Do NOT include any mentions of watermarks, photographer credits, or text overlays in these exclusions. Ignore watermarks completely."]
 }`,
         },
       ],
@@ -249,7 +249,7 @@ export async function generateBaseWithFal(
       num_images: 1,
       aspect_ratio: "3:4" as unknown as "4:5",
       output_format: "png" as const,
-      safety_tolerance: "4",
+      safety_tolerance: "6",
       image_urls: refImageUrls.slice(0, 4),
       resolution: "4K",
       limit_generations: false,
