@@ -71,6 +71,52 @@ export async function logFalPayload(params: {
   });
 }
 
+export async function logBaseLockAttempt(params: {
+  shootId: string;
+  baseId: string;
+  attempt: number;
+  prompt: string;
+  refUrls: string[];
+  seed?: number;
+}): Promise<void> {
+  await createRecord("Base Lock Attempts", {
+    "Shoot ID": params.shootId,
+    "Base ID": params.baseId,
+    "Attempt": params.attempt,
+    "Prompt": params.prompt.slice(0, 2000),
+    "Ref URLs": params.refUrls.join("\n"),
+    "Seed": params.seed ?? "",
+    "Timestamp": new Date().toISOString(),
+  });
+}
+
+export async function logBaseLockResult(params: {
+  shootId: string;
+  baseId: string;
+  attempt: number;
+  status: string;
+  identityMatchScore: number;
+  technicalQualityScore: number;
+  faceDetected: boolean;
+  fullBodyVisible: boolean;
+  backgroundWhite: boolean;
+  notes: string;
+}): Promise<void> {
+  await createRecord("Base Lock Results", {
+    "Shoot ID": params.shootId,
+    "Base ID": params.baseId,
+    "Attempt": params.attempt,
+    "Status": params.status,
+    "Identity Match Score": params.identityMatchScore,
+    "Technical Quality Score": params.technicalQualityScore,
+    "Face Detected": params.faceDetected,
+    "Full Body Visible": params.fullBodyVisible,
+    "Background White": params.backgroundWhite,
+    "Notes": params.notes,
+    "Timestamp": new Date().toISOString(),
+  });
+}
+
 export async function logReferenceUpload(params: {
   shootId: string;
   fileName: string;

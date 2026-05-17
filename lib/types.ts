@@ -1,7 +1,63 @@
 export type Currency = "NGN" | "USD";
 export type ShootMode = "fast" | "advanced";
 export type AspectRatio = "3:4" | "4:5" | "1:1" | "16:9" | "9:16" | "2:3";
-export type ShootStatus = "DRAFT" | "PENDING_PAYMENT" | "QUEUED" | "PROCESSING" | "COMPLETE" | "FAILED";
+export type ShootStatus =
+  | "DRAFT" | "PENDING_PAYMENT" | "QUEUED" | "PROCESSING" | "COMPLETE" | "FAILED"
+  | "BASE_LOCKING" | "BASE_REVIEW" | "BASE_REJECTED";
+
+export type BaseLockStatus =
+  | "GENERATING" | "AUTO_APPROVED" | "PENDING_USER_APPROVAL"
+  | "USER_APPROVED" | "USER_REJECTED" | "FAILED";
+
+export interface StylingBrief {
+  outfit: string;
+  hair: string;
+  makeup: string;
+  nails: string;
+  accessories: string[];
+  outfit_ref_exclusions: string[];
+}
+
+export interface QualityGateResult {
+  face_detected: boolean;
+  face_count: number;
+  identity_match_score: number;   // 0-1; >=0.85 auto, 0.70-0.85 borderline, <0.70 fail
+  full_body_visible: boolean;
+  background_is_white_seamless: boolean;
+  no_crops: boolean;
+  technical_quality_score: number; // 0-1; >=0.75 auto
+  notes: string;
+}
+
+export interface CharacterBase {
+  id: string;
+  userId: string;
+  originShootId?: string;
+  cacheKey: string;
+  identityImagePaths: string[];
+  outfitRefPath?: string;
+  hairstyleRefPath?: string;
+  makeupRefPath?: string;
+  nailRefPath?: string;
+  accessoryRefPaths: string[];
+  customTagRefs: Record<string, string>;
+  identityProfile: string;
+  stylingBrief: StylingBrief;
+  baseStoragePath?: string;
+  base4kStoragePath?: string;
+  falSeed?: number;
+  status: BaseLockStatus;
+  qualityGateResult?: QualityGateResult;
+  attemptNumber: number;
+  failureReason?: string;
+  userLabel?: string;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // signed URLs (added server-side on demand)
+  baseUrl?: string;
+  base4kUrl?: string;
+}
 export type ImageStatus = "PENDING" | "GENERATING" | "UPSCALING" | "COMPLETE" | "FAILED";
 export type ImageKind = "portrait" | "mood" | "quote";
 export type ReferenceTag = "OUTFIT" | "HAIRSTYLE" | "MAKEUP" | "BACKGROUND" | "LIGHTING" | "ACCESSORY" | "COLOR_GRADE";
@@ -118,6 +174,11 @@ export interface Shoot {
   quote?: { text: string; attribution: string };
   identityProfile?: string;
   shootBrief?: string;
+  characterBaseId?: string;
+  baseLockStatus?: BaseLockStatus;
+  baseLockStartedAt?: string;
+  baseLockCompletedAt?: string;
+  characterBase?: CharacterBase;
   zipStatus?: "pending" | "ready" | "failed";
   zipUrl?: string;
   images: ShootImage[];
@@ -147,13 +208,10 @@ export interface PackagePricing {
 
 // SSE event types
 export type SSEEventType =
-  | "snapshot"
-  | "stage"
-  | "slot_update"
-  | "slot_complete"
-  | "zip_ready"
-  | "complete"
-  | "error";
+  | "snapshot" | "stage" | "slot_update" | "slot_complete"
+  | "zip_ready" | "complete" | "error"
+  | "base_locking" | "base_attempt" | "base_ready"
+  | "base_review_required" | "base_rerolling" | "base_approved";
 
 export interface SSEEvent {
   type: SSEEventType;

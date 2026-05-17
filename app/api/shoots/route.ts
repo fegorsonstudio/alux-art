@@ -36,7 +36,8 @@ function normalizeTag(ref: ReferenceRecord) {
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const service = createServiceClient();
@@ -52,7 +53,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
     quote = { text: "", attribution: "" },
     packageSize: rawPackageSize = 10,
     adminBypass = false,
+    characterBaseId = null,
   } = body;
 
   if (!Array.isArray(identityImages) || !Array.isArray(inspirationImages) || !Array.isArray(taggedReferences)) {
@@ -113,6 +116,25 @@ export async function POST(request: NextRequest) {
 
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
+  // Validate saved character base if provided
+  let resolvedBaseId: string | null = null;
+  let baseIdentityProfile: string | null = null;
+  if (characterBaseId && typeof characterBaseId === "string") {
+    const { data: base } = await service
+      .from("character_bases")
+      .select("id, user_id, status, identity_profile, is_archived")
+      .eq("id", characterBaseId)
+      .single();
+    if (!base || base.user_id !== user.id) {
+      return NextResponse.json({ error: "Character base not found" }, { status: 400 });
+    }
+    if (!["AUTO_APPROVED", "USER_APPROVED"].includes(base.status) || base.is_archived) {
+      return NextResponse.json({ error: "Character base is not approved or is archived" }, { status: 400 });
+    }
+    resolvedBaseId = base.id;
+    baseIdentityProfile = base.identity_profile ?? null;
+  }
+
   // Create shoot record
   const shootId = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -129,6 +151,10 @@ export async function POST(request: NextRequest) {
     status: initialStatus,
     progress: 0,
     quote,
+    // Saved character base shortcut — skips Stages 1 and 1.5 entirely
+    character_base_id: resolvedBaseId,
+    base_lock_status: resolvedBaseId ? "USER_APPROVED" : null,
+    identity_profile: baseIdentityProfile,
     created_at: now,
     updated_at: now,
   }).select().single();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { startGenerationWorker } from "@/lib/generate";
 import { notifyShootComplete } from "@/lib/n8n";
+import { isLockedBaseEnabled } from "@/lib/base-lock";
 
 export const maxDuration = 300;
 
@@ -17,9 +18,8 @@ export async function POST(
 
   if (!isInternal) {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: ownerCheck } = await service
@@ -46,7 +46,7 @@ export async function POST(
 
   const { data: shoot } = await service
     .from("shoots")
-    .select("status, user_id")
+    .select("status, user_id, character_base_id")
     .eq("id", id)
     .single();
 
@@ -54,7 +54,50 @@ export async function POST(
   if (shoot.status === "COMPLETE")
     return NextResponse.json({ ok: true, queued: false, status: "COMPLETE" });
 
+  // ── Base-lock terminal/waiting states — return early ────────────────────
+  if (shoot.status === "BASE_REJECTED") {
+    return NextResponse.json({ ok: false, status: "BASE_REJECTED" });
+  }
+  if (shoot.status === "BASE_LOCKING" || shoot.status === "BASE_REVIEW") {
+    return NextResponse.json({ ok: true, status: shoot.status });
+  }
+
   const now = new Date().toISOString();
+
+  // ── Base-lock dispatch — QUEUED shoots that need a base ─────────────────
+  if (
+    shoot.status === "QUEUED" &&
+    !shoot.character_base_id &&
+    isLockedBaseEnabled(id)
+  ) {
+    await service.from("shoots").update({
+      status: "BASE_LOCKING",
+      base_lock_status: "GENERATING",
+      base_lock_started_at: now,
+      updated_at: now,
+    }).eq("id", id);
+
+    await service.from("generation_events").insert({
+      id: crypto.randomUUID(),
+      shoot_id: id,
+      user_id: shoot.user_id,
+      type: "base_locking",
+      payload: { stage: "Locking character base", progress: 5 },
+      created_at: now,
+    });
+
+    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+    fetch(`${origin}/api/shoots/${id}/base-lock`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
+      },
+      body: JSON.stringify({ attempt: 1 }),
+    }).catch((err) => console.error("[start] base-lock dispatch failed:", err));
+
+    return NextResponse.json({ ok: true, status: "BASE_LOCKING" });
+  }
 
   // Claim the shoot only if it isn't already PROCESSING (continuation skips this)
   if (shoot.status !== "PROCESSING") {

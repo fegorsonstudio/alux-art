@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { createServiceClient } from "./supabase-server";
 import { normalizePackageSize, type AspectRatio } from "./types";
 import { logFalPayload, logReferenceUpload } from "./airtable";
+import { signBasePath } from "./base-lock";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -141,6 +142,16 @@ Clinical and precise. No subjective judgments. Stable biometric features only.`,
   return response.content[0].type === "text" ? response.content[0].text : "";
 }
 
+type SceneSlotPrompt = {
+  background: string;
+  lighting: string;
+  mood_vibe: string;
+  photography_style: string;
+  pose: string;
+  shot_type: string;
+  scene_exclusions: string;
+};
+
 async function buildShootBrief(
   shoot: {
     mode: string;
@@ -149,7 +160,8 @@ async function buildShootBrief(
     quote?: { text: string; attribution: string } | null;
   },
   identityProfile: string,
-  refs: SignedRef[]
+  refs: SignedRef[],
+  characterBaseUrl?: string
 ): Promise<string> {
   const packageSize = normalizePackageSize(shoot.package_size);
   const inspirationRefs = refs.filter((r) => r.purpose === "inspiration");
@@ -158,6 +170,78 @@ async function buildShootBrief(
   const hasQuote = !!shoot.quote?.text && packageSize === 10;
   const portraitCount = hasQuote ? packageSize - 1 : packageSize;
 
+  // ── Locked-base path: scene-only JSON per slot ──────────────────────────
+  if (characterBaseUrl) {
+    const sceneRefs = [
+      ...inspirationRefs.slice(0, 1),
+      ...taggedRefs.filter((r) => ["BACKGROUND", "LIGHTING", "COLOR_GRADE"].includes(r.tag ?? "")),
+    ].filter((r) => r.url);
+
+    const imageBlocks = await Promise.all(sceneRefs.map((r) => toBase64Block(r.url)));
+
+    const taggedDescriptions = [
+      ...inspirationRefs.map((r) => `- Inspiration (scene direction): ${r.name}`),
+      ...taggedRefs
+        .filter((r) => ["BACKGROUND", "LIGHTING", "COLOR_GRADE"].includes(r.tag ?? ""))
+        .map((r) => `- [${r.tag}]: ${r.name}${r.note ? ` (${r.note})` : ""}`),
+    ].join("\n");
+
+    const slotKeys = Array.from({ length: portraitCount }, (_, i) =>
+      `"${i + 1}": { "background": "...", "lighting": "...", "mood_vibe": "...", "photography_style": "...", "pose": "...", "shot_type": "...", "scene_exclusions": "..." }`
+    )
+      .concat(hasQuote ? [`"${packageSize}": { "background": "...", "lighting": "...", "mood_vibe": "...", "photography_style": "...", "pose": "no subject", "shot_type": "quote background", "scene_exclusions": "no face, no person" }`] : [])
+      .join(",\n    ");
+
+    const response = await anthropic.messages.create(
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 8192,
+        messages: [
+          {
+            role: "user",
+            content: [
+              ...imageBlocks,
+              {
+                type: "text",
+                text: `You are a professional photography prompt engineer.
+
+The subject identity and wardrobe are already locked in a canonical base reference image. Your only task is to design the SCENE LAYER for each slot — environment, lighting, pose, and shot framing. Do NOT re-describe the subject's face, skin, hair, outfit, or accessories.
+
+SHOOT PARAMETERS:
+- Mode: ${shoot.mode}
+- Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote background" : ""})
+- Aspect Ratio: ${shoot.aspect_ratio}
+
+SCENE REFERENCES:
+${taggedDescriptions || "Inspiration image only — extract environment, lighting, mood."}
+
+RULES:
+- Each slot must have a UNIQUE pose, shot type, and scene composition.
+- "scene_exclusions" must always include: "do not transfer white studio backdrop or neutral pose from base reference".
+- Keep lighting consistent with the shoot mood unless a [LIGHTING] reference overrides it.
+- [BACKGROUND] reference controls environment only — ignore any clothing or people in it.
+- [COLOR_GRADE] reference controls film style and color palette only.
+${hasQuote ? `- Slot ${packageSize}: mood background for overlaying quote "${shoot.quote!.text}" — no face, abstract or environmental scene.` : ""}
+
+Return ONLY valid JSON (no markdown, no code fences):
+{
+  "prompts": {
+    ${slotKeys}
+  }
+}`,
+              },
+            ],
+          },
+        ],
+      },
+      { timeout: SHOOT_BRIEF_TIMEOUT_MS, maxRetries: 0 }
+    );
+
+    const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+    return raw.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
+  }
+
+  // ── Standard path: full free-form prompt per slot ───────────────────────
   const refDescriptions = [
     ...inspirationRefs.map((r) => `- Inspiration: ${r.name}`),
     ...taggedRefs.map(
@@ -343,16 +427,43 @@ export async function startGenerationWorker(
 
   const rawRefs = (shoot.shoot_references ?? []) as ShootRefRow[];
   const refs = await signRefs(service, rawRefs);
-  const identityRefCount = rawRefs.filter((r) => r.purpose === "identity").length;
-  const signedIdentityCount = refs.filter((r) => r.purpose === "identity" && r.url).length;
-  console.log("[generate] reference URL counts:", {
-    shootId,
-    totalRefs: rawRefs.length,
-    identityRefCount,
-    signedIdentityCount,
-  });
-  if (identityRefCount > 0 && signedIdentityCount === 0) {
-    throw new Error(`Identity references exist but none could be signed for shoot ${shootId}`);
+
+  // ── Character base resolution ──────────────────────────────────────────
+  let characterBaseUrl: string | undefined;
+  const hasBase = typeof shoot.character_base_id === "string" && !!shoot.character_base_id;
+
+  if (hasBase) {
+    const { data: base } = await service
+      .from("character_bases")
+      .select("id, base_4k_storage_path, base_storage_path, identity_profile")
+      .eq("id", shoot.character_base_id)
+      .single();
+
+    if (base) {
+      const storagePath = base.base_4k_storage_path ?? base.base_storage_path;
+      if (storagePath) {
+        characterBaseUrl = await signBasePath(service, storagePath, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => undefined);
+      }
+      // If the shoot doesn't have an identity profile yet, pull it from the base
+      if (!identityProfile && typeof base.identity_profile === "string") {
+        identityProfile = base.identity_profile;
+        await service.from("shoots").update({ identity_profile: identityProfile, updated_at: ts() }).eq("id", shootId);
+      }
+    }
+  }
+
+  if (!hasBase) {
+    const identityRefCount = rawRefs.filter((r) => r.purpose === "identity").length;
+    const signedIdentityCount = refs.filter((r) => r.purpose === "identity" && r.url).length;
+    console.log("[generate] reference URL counts:", {
+      shootId,
+      totalRefs: rawRefs.length,
+      identityRefCount,
+      signedIdentityCount,
+    });
+    if (identityRefCount > 0 && signedIdentityCount === 0) {
+      throw new Error(`Identity references exist but none could be signed for shoot ${shootId}`);
+    }
   }
 
   if (!identityProfile && !shootBrief) {
@@ -380,8 +491,8 @@ export async function startGenerationWorker(
     }
   }
 
-  // --- Step 1: Identity analysis ---
-  if (!identityProfile) {
+  // --- Step 1: Identity analysis (skip if base provides it) ---
+  if (!identityProfile && !hasBase) {
     await service
       .from("shoots")
       .update({ pipeline_stage: "Analyzing identity", progress: 10, updated_at: ts() })
@@ -427,7 +538,7 @@ export async function startGenerationWorker(
       created_at: ts(),
     });
 
-    shootBrief = await withRetry(() => buildShootBrief(shoot, identityProfile, refs), 2);
+    shootBrief = await withRetry(() => buildShootBrief(shoot, identityProfile, refs, characterBaseUrl), 2);
     // Validate before storing — Claude truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -447,16 +558,16 @@ export async function startGenerationWorker(
     typeof shootBrief === "string"
       ? shootBrief
       : JSON.stringify(shootBrief ?? {});
-  
+
   const shootBriefClean = shootBriefStr
     .replace(/^```(?:json)?\s*/im, "")
     .replace(/```\s*$/m, "")
     .trim();
 
-  let prompts: Record<string, string> = {};
+  let prompts: Record<string, string | SceneSlotPrompt> = {};
   try {
     const parsed = JSON.parse(shootBriefClean);
-    prompts = (parsed.prompts as Record<string, string>) ?? {};
+    prompts = (parsed.prompts as Record<string, string | SceneSlotPrompt>) ?? {};
   } catch (e) {
     console.error("[generate] JSON parse failed, falling back to regex", e);
     // Last-resort regex extraction if JSON is still malformed
@@ -472,6 +583,20 @@ export async function startGenerationWorker(
     .slice(0, maxSlots);
 
   const aspectRatio = (shoot.aspect_ratio as AspectRatio) ?? "4:5";
+
+  // Build imageUrls for fal.ai — base-locked shoots use base + scene refs; standard shoots use identity + inspiration
+  let imageUrls: string[];
+  if (hasBase && characterBaseUrl) {
+    const backgroundUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "BACKGROUND")?.url ?? "";
+    const lightingUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "LIGHTING")?.url ?? "";
+    const colorGradeUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "COLOR_GRADE")?.url ?? "";
+    imageUrls = [characterBaseUrl, backgroundUrl, lightingUrl, colorGradeUrl].filter(Boolean).slice(0, 4);
+  } else {
+    const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
+    const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
+    imageUrls = [...identityUrls, ...inspirationUrls].slice(0, 4);
+  }
+
   const identityUrls = refs
     .filter((r) => r.purpose === "identity")
     .map((r) => r.url)
@@ -480,7 +605,6 @@ export async function startGenerationWorker(
     .filter((r) => r.purpose === "inspiration")
     .map((r) => r.url)
     .filter(Boolean);
-  const imageUrls = [...identityUrls, ...inspirationUrls].slice(0, 4);
 
   let failedCount = 0;
 
@@ -517,10 +641,25 @@ export async function startGenerationWorker(
     });
 
     try {
-      const slotPrompt =
-        prompts[String(slot)] ??
-        prompts["1"] ??
-        "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
+      const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];
+
+      let slotPrompt: string;
+      if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
+        // Locked-base: assemble final prompt from scene fields + base anchor opener
+        const scene = rawSlotPrompt as SceneSlotPrompt;
+        slotPrompt = [
+          `Scene: ${scene.background}. ${scene.lighting}. ${scene.mood_vibe}.`,
+          `Shot: ${scene.shot_type}. Photography style: ${scene.photography_style}.`,
+          `Subject: [BASE REFERENCE] — use the locked character base as the primary identity and wardrobe anchor. Pose: ${scene.pose}.`,
+          `Important Details: Maintain exact facial identity, skin tone, body build, and outfit from base reference. Realistic skin texture, natural asymmetry, physically plausible light direction, editorial lens feel, subtle film grain.`,
+          `Use Case: editorial photography / fashion portrait.`,
+          `Constraints: Preserve exact identity from base reference image. Do not alter face shape, eye spacing, nose shape, jawline, or skin tone. ${scene.scene_exclusions}.`,
+        ].join(" ");
+      } else if (typeof rawSlotPrompt === "string" && rawSlotPrompt) {
+        slotPrompt = rawSlotPrompt;
+      } else {
+        slotPrompt = "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
+      }
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
