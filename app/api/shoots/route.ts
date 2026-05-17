@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     // Saved character base shortcut — skips Stages 1 and 1.5 entirely
     character_base_id: resolvedBaseId,
     base_lock_status: resolvedBaseId ? "USER_APPROVED" : null,
-    identity_profile: baseIdentityProfile,
+    identity_profile: baseIdentityProfile ?? "",
     created_at: now,
     updated_at: now,
   }).select().single();
