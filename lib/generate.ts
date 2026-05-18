@@ -70,20 +70,75 @@ const FAL_REPLACE: [RegExp, string][] = [
   [/\bexposed\b/gi, "visible"],
 ];
 
-function sanitizeForFal(prompt: string): string {
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// extra: dynamic words loaded from the shared forbidden_words DB table
+function sanitizeForFal(
+  prompt: string,
+  extra: Array<{ word: string; replacement: string }> = []
+): string {
   let p = prompt;
   for (const [pattern, replacement] of FAL_REPLACE) {
     p = p.replace(pattern, replacement);
   }
+  for (const { word, replacement } of extra) {
+    p = p.replace(new RegExp(`\\b${escapeRegex(word)}\\b`, "gi"), replacement);
+  }
   return p;
 }
 
-// Wrapper: try raw prompt first, fall back to sanitized version on Forbidden
+// When callFalWithFallback exhausts all options, ask Gemini which word triggered the rejection
+async function identifyForbiddenWord(prompt: string): Promise<{
+  flaggedWord: string;
+  replacement: string;
+  sanitizedPrompt: string;
+} | null> {
+  const model = genai.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: { maxOutputTokens: 256, responseMimeType: "application/json" },
+  });
+  try {
+    const result = await Promise.race([
+      model.generateContent(
+        `An AI image generation model rejected this photography prompt with a content policy "Forbidden" error.
+Identify the SINGLE most likely word or short phrase that triggered the rejection.
+Suggest a professional photography alternative that conveys the same creative intent without triggering content filters.
+
+Prompt:
+"${prompt.slice(0, 800)}"
+
+Return ONLY valid JSON:
+{
+  "flaggedWord": "the exact word or phrase most likely to have triggered rejection",
+  "replacement": "the safe professional-photography alternative",
+  "reason": "one sentence why this word likely triggered the filter"
+}`
+      ),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("identifyForbiddenWord timeout")), 15_000)
+      ),
+    ]);
+    const parsed = JSON.parse(result.response.text());
+    if (!parsed.flaggedWord || !parsed.replacement) return null;
+    const sanitized = prompt.replace(
+      new RegExp(`\\b${escapeRegex(parsed.flaggedWord)}\\b`, "gi"),
+      parsed.replacement
+    );
+    return { flaggedWord: parsed.flaggedWord, replacement: parsed.replacement, sanitizedPrompt: sanitized };
+  } catch {
+    return null;
+  }
+}
+
+// Wrapper: try raw prompt first, then static sanitization, then Gemini-identified sanitization
 async function callFalWithFallback(
   slotPrompt: string,
   imageUrls: string[],
   aspectRatio: string,
-  resolution: string
+  resolution: string,
+  dbForbiddenWords: Array<{ word: string; replacement: string }> = []
 ): Promise<{ url: string; sanitized: boolean }> {
   const isForbidden = (err: unknown) =>
     err instanceof Error && err.message.toLowerCase().includes("forbidden");
@@ -92,7 +147,7 @@ async function callFalWithFallback(
     return { url, sanitized: false };
   } catch (err) {
     if (isForbidden(err)) {
-      const clean = sanitizeForFal(slotPrompt);
+      const clean = sanitizeForFal(slotPrompt, dbForbiddenWords);
       if (clean !== slotPrompt) {
         const url = await withRetry(() => generateImageWithFal(clean, imageUrls, aspectRatio, resolution));
         return { url, sanitized: true };
@@ -327,7 +382,8 @@ async function buildShootBrief(
   identityProfile: string,
   refs: SignedRef[],
   characterBaseUrl?: string,
-  forbiddenExamples?: string[]
+  forbiddenExamples?: string[],
+  dbForbiddenWords?: Array<{ word: string; replacement: string }>
 ): Promise<string> {
   const packageSize = normalizePackageSize(shoot.package_size);
   const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
@@ -372,6 +428,13 @@ async function buildShootBrief(
       parts.push({ text: `[${tag}] reference image — "${r.name}"${note}: Extract ONLY the ${tag.toLowerCase()} from this image and apply it to all portrait prompts. Ignore all other elements.` });
       parts.push(groupCImageBlocks[i]);
     }
+  }
+
+  // Inject global forbidden word→replacement table so Gemini avoids exact known triggers
+  if (dbForbiddenWords && dbForbiddenWords.length > 0) {
+    parts.push({
+      text: `FORBIDDEN WORD LIST (platform-wide — never use ANY of these words; use the replacement instead):\n${dbForbiddenWords.map((w) => `"${w.word}" → use "${w.replacement}"`).join(", ")}`,
+    });
   }
 
   // Inject failure memory so Gemini avoids language patterns that were rejected before
@@ -978,9 +1041,19 @@ export async function startGenerationWorker(
       }
     } catch { /* non-fatal */ }
 
+    // Load global forbidden words shared across all users
+    let dbForbiddenWordsForBrief: Array<{ word: string; replacement: string }> = [];
+    try {
+      const { data: fwData } = await service.from("forbidden_words").select("word,replacement");
+      dbForbiddenWordsForBrief = fwData ?? [];
+      if (dbForbiddenWordsForBrief.length > 0) {
+        console.log(`[generate] injecting ${dbForbiddenWordsForBrief.length} forbidden word(s) into brief`);
+      }
+    } catch { /* non-fatal — table may not exist yet */ }
+
     // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
     // Retrying a timed-out Claude call would double the budget and kill the function.
-    shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples);
+    shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief);
     // Validate before storing — truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -1068,6 +1141,13 @@ export async function startGenerationWorker(
     .slice(0, maxSlots);
 
   const aspectRatio = (shoot.aspect_ratio as AspectRatio) ?? "4:5";
+
+  // Load global forbidden words once for all slots in this invocation
+  let dbForbiddenWords: Array<{ word: string; replacement: string }> = [];
+  try {
+    const { data: fwData } = await service.from("forbidden_words").select("word,replacement");
+    dbForbiddenWords = fwData ?? [];
+  } catch { /* non-fatal — table may not exist yet */ }
 
   // Build imageUrls for fal.ai — base-locked shoots use base + scene refs; standard shoots use identity + inspiration
   let imageUrls: string[];
@@ -1184,7 +1264,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: falUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution);
+      const { url: falUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution, dbForbiddenWords);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }
@@ -1240,32 +1320,94 @@ export async function startGenerationWorker(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[generate] slot ${slot} failed:`, message);
-
-      // Log Forbidden prompts to generation_events so Gemini can learn from them next shoot
-      if (message.toLowerCase().includes("forbidden")) {
-        try {
-          await service.from("generation_events").insert({
-            id: crypto.randomUUID(),
-            shoot_id: shootId,
-            user_id: shoot.user_id,
-            type: "forbidden_prompt",
-            payload: { slot, prompt: slotPrompt.slice(0, 2000) },
-            created_at: ts(),
-          });
-        } catch { /* non-fatal */ }
-      }
-
       failedCount++;
 
-      await service
-        .from("shoot_images")
-        .update({
+      if (message.toLowerCase().includes("forbidden")) {
+        // Ask Gemini to identify the specific trigger word and suggest a replacement
+        let analysis: { flaggedWord: string; replacement: string; sanitizedPrompt: string } | null = null;
+        try { analysis = await identifyForbiddenWord(slotPrompt); } catch {}
+
+        if (analysis) {
+          // a) Patch shoot_brief for this slot so retry uses the sanitized prompt automatically
+          try {
+            const bStr = typeof shootBrief === "string" ? shootBrief : JSON.stringify(shootBrief);
+            const bObj = JSON.parse(bStr);
+            if (Array.isArray(bObj.prompts)) {
+              const idx = bObj.prompts.findIndex((p: NewPromptObject) => p.prompt_index === slot);
+              if (idx >= 0) bObj.prompts[idx].fully_consolidated_prompt = analysis.sanitizedPrompt;
+              const patchedBrief = JSON.stringify(bObj);
+              await service.from("shoots").update({ shoot_brief: patchedBrief, updated_at: ts() }).eq("id", shootId);
+              shootBrief = patchedBrief; // keep local var in sync
+            }
+          } catch { /* non-fatal */ }
+
+          // b) Upsert to global forbidden_words table — all users benefit
+          try {
+            const { data: existing } = await service
+              .from("forbidden_words")
+              .select("id,hit_count")
+              .eq("word", analysis.flaggedWord.toLowerCase())
+              .maybeSingle();
+            if (existing) {
+              await service.from("forbidden_words")
+                .update({ hit_count: existing.hit_count + 1, replacement: analysis.replacement, updated_at: ts() })
+                .eq("id", existing.id);
+            } else {
+              await service.from("forbidden_words")
+                .insert({ word: analysis.flaggedWord.toLowerCase(), replacement: analysis.replacement });
+            }
+          } catch { /* non-fatal — table may not exist yet */ }
+
+          // c) Emit forbidden_detected event — SSE delivers this to the frontend in real-time
+          try {
+            await service.from("generation_events").insert({
+              id: crypto.randomUUID(),
+              shoot_id: shootId,
+              user_id: shoot.user_id,
+              type: "forbidden_detected",
+              payload: { slot, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement },
+              created_at: ts(),
+            });
+          } catch { /* non-fatal */ }
+
+          // d) Store structured error — used for page-reload recovery in the frontend
+          await service.from("shoot_images").update({
+            status: "FAILED",
+            stage: `Failed: content filter — "${analysis.flaggedWord}" flagged`,
+            provider_error: JSON.stringify({ forbidden: true, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement }),
+            updated_at: ts(),
+          }).eq("id", slotImg.id);
+
+        } else {
+          // Gemini couldn't identify a specific word — log raw prompt for passive learning
+          try {
+            await service.from("generation_events").insert({
+              id: crypto.randomUUID(),
+              shoot_id: shootId,
+              user_id: shoot.user_id,
+              type: "forbidden_prompt",
+              payload: { slot, prompt: slotPrompt.slice(0, 2000) },
+              created_at: ts(),
+            });
+          } catch { /* non-fatal */ }
+
+          await service.from("shoot_images").update({
+            status: "FAILED",
+            stage: `Failed: ${message.slice(0, 200)}`,
+            provider_error: message,
+            updated_at: ts(),
+          }).eq("id", slotImg.id);
+        }
+
+      } else {
+        // Non-Forbidden error — plain failure
+        await service.from("shoot_images").update({
           status: "FAILED",
           stage: `Failed: ${message.slice(0, 200)}`,
           provider_error: message,
           updated_at: ts(),
-        })
-        .eq("id", slotImg.id);
+        }).eq("id", slotImg.id);
+      }
     }
   }
 

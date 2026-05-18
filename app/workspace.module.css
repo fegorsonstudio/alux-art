@@ -456,6 +456,22 @@
 .statusBarOk { background: rgba(228, 255, 248, 0.9); border-color: rgba(39, 132, 107, 0.22); color: #177767; }
 .miniSpinner { width: 12px; height: 12px; border: 2px solid rgba(47, 142, 154, 0.16); border-top-color: #2f8e9a; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 
+/* ---- Forbidden word feedback banner ---- */
+.forbiddenBanner { margin: 6px 10px 10px; padding: 8px 10px; background: rgba(180, 100, 20, 0.07); border: 1px solid rgba(180, 100, 20, 0.22); border-radius: 6px; font-size: 11.5px; }
+.forbiddenLabel { margin: 0 0 4px; color: #b46414; line-height: 1.4; }
+.forbiddenWord { font-weight: 700; color: #c0392b; }
+.replacementWord { font-weight: 700; color: #1d8a5f; }
+.countdown { margin: 4px 0 0; color: #888; font-variant-numeric: tabular-nums; font-size: 11px; }
+.regenerateBtn { display: block; margin-top: 7px; padding: 5px 14px; background: #1a1a1a; color: #fff; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; width: 100%; text-align: center; }
+.regenerateBtn:hover { background: #333; }
+.app[data-theme="dark"] .forbiddenBanner { background: rgba(180, 100, 20, 0.12); border-color: rgba(220, 140, 40, 0.28); }
+.app[data-theme="dark"] .forbiddenLabel { color: #e08b2a; }
+.app[data-theme="dark"] .forbiddenWord { color: #ff8a7a; }
+.app[data-theme="dark"] .replacementWord { color: #4fc99a; }
+.app[data-theme="dark"] .countdown { color: #aaa; }
+.app[data-theme="dark"] .regenerateBtn { background: #2a2a2a; }
+.app[data-theme="dark"] .regenerateBtn:hover { background: #444; }
+
 /* ---- Status badges for base-lock states ---- */
 .statusBaselocking { background: #fff9e0; color: #8a6d00; }
 .statusBasereview  { background: #fff0d6; color: #9b5c00; }

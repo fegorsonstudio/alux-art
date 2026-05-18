@@ -27,7 +27,23 @@ function getShootImages(shoot: Shoot | null): Array<ShootImage & Record<string, 
 }
 
 function getProviderError(img: ShootImage & Record<string, unknown>) {
-  return String(img.providerError ?? img.provider_error ?? img.error ?? "").trim();
+  const raw = String(img.providerError ?? img.provider_error ?? img.error ?? "").trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.forbidden && parsed.flaggedWord) {
+      return `Content filter: "${parsed.flaggedWord}" → replaced with "${parsed.replacement}"`;
+    }
+  } catch { /* not JSON, return raw */ }
+  return raw;
+}
+
+function getForbiddenMeta(img: ShootImage & Record<string, unknown>): { flaggedWord: string; replacement: string } | null {
+  const raw = String(img.providerError ?? img.provider_error ?? "").trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.forbidden && parsed.flaggedWord) return { flaggedWord: parsed.flaggedWord, replacement: parsed.replacement };
+  } catch { /* not JSON */ }
+  return null;
 }
 
 function getShootPackageSize(shoot: Shoot | null): ShootPackageSize {
@@ -77,6 +93,9 @@ export default function WorkspacePage() {
   const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState("");
   const [editingTag, setEditingTag] = useState("");
+  // Forbidden word feedback state — slot number → { flaggedWord, replacement, detectedAt }
+  const [forbiddenSlots, setForbiddenSlots] = useState<Map<number, { flaggedWord: string; replacement: string; detectedAt: number }>>(new Map());
+  const [countdowns, setCountdowns] = useState<Map<number, number>>(new Map());
 
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
@@ -225,12 +244,58 @@ export default function WorkspacePage() {
         setReviewBaseUrl(null);
         setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"], pipelineStage: "Base approved — starting generation" } : prev);
         setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
+      } else if (event.type === "forbidden_detected") {
+        const { slot, flaggedWord, replacement } = (event.payload ?? event) as Record<string, unknown>;
+        if (typeof slot === "number" && typeof flaggedWord === "string") {
+          setForbiddenSlots(prev => {
+            const next = new Map(prev);
+            next.set(slot, { flaggedWord, replacement: String(replacement ?? ""), detectedAt: Date.now() });
+            return next;
+          });
+        }
       }
     };
     es.onerror = () => es.close();
     return () => { es.close(); shootIdRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentShoot?.id, currentShoot?.status]);
+
+  // Countdown ticker — ticks every second while any forbidden slot is awaiting retry
+  useEffect(() => {
+    if (forbiddenSlots.size === 0) return;
+    const interval = setInterval(() => {
+      setCountdowns(() => {
+        const next = new Map<number, number>();
+        forbiddenSlots.forEach((meta, slot) => {
+          const elapsed = Math.floor((Date.now() - meta.detectedAt) / 1000);
+          next.set(slot, Math.max(0, 120 - elapsed));
+        });
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [forbiddenSlots]);
+
+  // Page-load recovery: derive forbidden state from already-loaded shoot_images
+  useEffect(() => {
+    if (!currentShoot) return;
+    const imgs = getShootImages(currentShoot);
+    const recovered = new Map<number, { flaggedWord: string; replacement: string; detectedAt: number }>();
+    for (const img of imgs) {
+      if (String(img.status) === "FAILED") {
+        const meta = getForbiddenMeta(img as ShootImage & Record<string, unknown>);
+        if (meta) {
+          const updatedAt = String((img as unknown as Record<string, unknown>).updated_at ?? "");
+          recovered.set(Number(img.slot), {
+            ...meta,
+            detectedAt: updatedAt ? new Date(updatedAt).getTime() : Date.now(),
+          });
+        }
+      }
+    }
+    if (recovered.size > 0) setForbiddenSlots(recovered);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentShoot?.id]);
 
   // Fetch review base URL when opening a shoot already in BASE_REVIEW
   useEffect(() => {
@@ -416,6 +481,14 @@ export default function WorkspacePage() {
     const ok = results.filter((r): r is UploadedRef => r !== null);
     if (ok.length) setTaggedRefs(prev => [...prev, ...ok]);
     setUploading(null);
+  };
+
+  const handleRetrySlot = async (slot: number) => {
+    if (!currentShoot) return;
+    try {
+      await fetch(`/api/shoots/${currentShoot.id}/slots/${slot}/retry`, { method: "POST" });
+      // SSE will deliver slot_update → QUEUED then COMPLETE, updating UI automatically
+    } catch { /* ignore */ }
   };
 
   const handleApproveBase = async () => {
@@ -1101,6 +1174,8 @@ export default function WorkspacePage() {
               <div className={styles.slotGrid}>
                 {galleryImages.map((img) => {
                   const providerError = getProviderError(img);
+                  const forbidden = forbiddenSlots.get(Number(img.slot));
+                  const remaining = forbidden ? (countdowns.get(Number(img.slot)) ?? Math.max(0, 120 - Math.floor((Date.now() - forbidden.detectedAt) / 1000))) : 0;
                   return (
                   <div key={img.id} className={`${styles.slotCard} ${img.status === "FAILED" ? styles.slotCardFailed : ""}`}>
                     <div className={styles.slotPreview}>
@@ -1124,7 +1199,23 @@ export default function WorkspacePage() {
                         ) : img.status?.toLowerCase()}
                       </span>
                     </div>
-                    {img.status === "FAILED" && (
+                    {img.status === "FAILED" && forbidden ? (
+                      <div className={styles.forbiddenBanner}>
+                        <p className={styles.forbiddenLabel}>
+                          Content filter: <span className={styles.forbiddenWord}>&ldquo;{forbidden.flaggedWord}&rdquo;</span>
+                          {" → "}<span className={styles.replacementWord}>&ldquo;{forbidden.replacement}&rdquo;</span>
+                        </p>
+                        {remaining > 0 ? (
+                          <p className={styles.countdown}>
+                            Retry in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+                          </p>
+                        ) : (
+                          <button className={styles.regenerateBtn} onClick={() => handleRetrySlot(Number(img.slot))}>
+                            Regenerate
+                          </button>
+                        )}
+                      </div>
+                    ) : img.status === "FAILED" && (
                       <details className={styles.slotErrorDetails}>
                         <summary>Reason</summary>
                         <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the n8n execution and shoot_images rows for this shoot."}</p>
