@@ -118,22 +118,19 @@ async function signRefs(
 }
 
 async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
-  const imageBlocks = await Promise.all(
-    imageUrls.filter(Boolean).slice(0, 4).map(toBase64Block)
+  const imageParts = await Promise.all(
+    imageUrls.filter(Boolean).slice(0, 4).map(toGeminiImagePart)
   );
 
-  const response = await anthropic.messages.create(
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 512,
-      messages: [
-        {
-          role: "user",
-          content: [
-            ...imageBlocks,
-            {
-              type: "text",
-              text: `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
+  const model = genai.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: { maxOutputTokens: 512 },
+  });
+
+  const result = await Promise.race([
+    model.generateContent([
+      ...imageParts,
+      `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
 Return ONLY this format:
 IDENTITY PROFILE:
@@ -145,15 +142,13 @@ Build: [body type, height impression, proportions]
 Distinctive: [any notable stable features]
 
 Clinical and precise. No subjective judgments. Stable biometric features only.`,
-            },
-          ],
-        },
-      ],
-    },
-    { timeout: IDENTITY_ANALYSIS_TIMEOUT_MS, maxRetries: 0 }
-  );
+    ]),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Identity analysis timeout")), IDENTITY_ANALYSIS_TIMEOUT_MS)
+    ),
+  ]);
 
-  return response.content[0].type === "text" ? response.content[0].text : "";
+  return result.response.text();
 }
 
 type SceneSlotPrompt = {
@@ -918,6 +913,33 @@ export async function startGenerationWorker(
       .from("shoots")
       .update({ shoot_brief: shootBrief, updated_at: ts() })
       .eq("id", shootId);
+
+    // Pre-write prompts to all slots so they are visible in the gallery immediately,
+    // even if fal.ai generation later fails.
+    try {
+      const briefStr = typeof shootBrief === "string" ? shootBrief : JSON.stringify(shootBrief ?? {});
+      const briefClean = briefStr.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
+      const parsed = JSON.parse(briefClean);
+      const rawPrompts = parsed.prompts;
+      const allSlotRows = (shoot.shoot_images ?? []) as SlotRow[];
+      if (Array.isArray(rawPrompts)) {
+        const updates = rawPrompts
+          .filter((p: NewPromptObject) => p.fully_consolidated_prompt)
+          .map((p: NewPromptObject) => {
+            const slot = allSlotRows.find(s => s.slot === p.prompt_index);
+            if (!slot) return null;
+            return service
+              .from("shoot_images")
+              .update({ prompt: p.fully_consolidated_prompt, updated_at: ts() })
+              .eq("id", slot.id);
+          })
+          .filter(Boolean);
+        await Promise.all(updates);
+      }
+    } catch (briefWriteErr) {
+      // Non-fatal — generation can still proceed; prompts just won't be pre-visible
+      console.error("[generate] pre-write prompts failed:", briefWriteErr);
+    }
 
     // Brief build can take 3-4 min with 16K max_tokens + 7 images.
     // Return early so self-continuation gets a fresh 300s budget for slot generation.
