@@ -41,6 +41,7 @@
     "test_supabase.ts",
     "test_supabase.js",
     "test_supabase.cjs",
-    "test_worker.js"
+    "test_worker.js",
+    "test_advanced_shoot.cjs"
   ]
 }

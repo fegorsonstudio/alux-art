@@ -11,7 +11,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
 const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
-const SHOOT_BRIEF_TIMEOUT_MS = 180_000;
+const SHOOT_BRIEF_TIMEOUT_MS = 270_000;
 const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
@@ -226,40 +226,23 @@ V. OUTPUT JSON STRUCTURE
 
 Output ONLY a valid JSON object. No markdown code fences, no pre-text, no post-text.
 
+IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolidated fields — no intermediate breakdown fields (no separate background, lighting, pose, shot_type, outfit_look, reference_registry, prefix, etc.). This keeps the JSON compact and within token limits.
+
 {
   "upload_error_warning": null,
   "prompts": [
     {
       "prompt_index": 1,
       "is_quote_card": false,
-      "prefix": "Use the attached face/body identity photo submitted as the subject...",
-      "reference_registry": "...",
-      "critical_exclusions": "...",
-      "background": "...",
-      "lighting": "...",
-      "color_grading": "...",
-      "mood_vibe": "...",
-      "photography_style": "...",
-      "pose": "...",
-      "shot_type": "...",
-      "outfit_look": "...",
-      "fully_consolidated_prompt": "Single ready-to-send paragraph integrating ALL details.",
+      "fully_consolidated_prompt": "Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality. [Then: all scene, styling, lighting, pose, camera, and art direction details — fully self-contained.]",
       "negative_prompts": "no additional jewelry, no dead eyes without catchlights, no imaginary teeth, no asymmetric facial structures"
     },
     {
       "prompt_index": 10,
       "is_quote_card": true,
-      "prefix": "[SYSTEM WORKFLOW OVERRIDE] SVG Quote Graphic Composition Mode.",
-      "background": "...",
-      "lighting": "...",
-      "color_grading": "...",
-      "mood_vibe": "Refined editorial communication, premium branding layout.",
-      "photography_style": "Graphic overlay composition, editorial magazine spread.",
-      "pose": "Subject off-center or not present, creating clear graphic zone for text.",
-      "shot_type": "Wide composite frame with designated empty area for text layout.",
-      "outfit_look": "Cohesive with main series.",
+      "fully_consolidated_prompt": "Complete composite graphic instructions for background image generation.",
       "svg_layout_instructions": "Complete SVG overlay instructions: typographic hierarchy, font specifications, text-shadow or dark overlay for contrast, positioning, color assignments.",
-      "fully_consolidated_prompt": "Complete composite graphic instructions for background generation and SVG layout."
+      "negative_prompts": "..."
     }
   ]
 }`;
@@ -891,7 +874,9 @@ export async function startGenerationWorker(
       created_at: ts(),
     });
 
-    shootBrief = await withRetry(() => buildShootBrief(shoot, identityProfile, refs, characterBaseUrl), 2);
+    // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
+    // Retrying a timed-out Claude call would double the budget and kill the function.
+    shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl);
     // Validate before storing — Claude truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -903,6 +888,10 @@ export async function startGenerationWorker(
       .from("shoots")
       .update({ shoot_brief: shootBrief, updated_at: ts() })
       .eq("id", shootId);
+
+    // Brief build can take 3-4 min with 16K max_tokens + 7 images.
+    // Return early so self-continuation gets a fresh 300s budget for slot generation.
+    return { done: false, completed: 0, failed: 0, remaining: normalizePackageSize(shoot.package_size), total: normalizePackageSize(shoot.package_size) };
   }
 
   // Parse per-slot prompts
