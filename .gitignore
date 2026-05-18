@@ -40,3 +40,11 @@ npm-debug.log*
 
 # n8n workflow exports (may contain webhook URLs)
 *.n8n.json
+
+# Local diagnostic / recomposite scripts (not production code)
+inspect_shoot*.mjs
+recomposite_*.mjs
+check_urls.*
+test_supabase.*
+test_worker.*
+brain/
