@@ -292,7 +292,8 @@
 
 /* ---- Inputs ---- */
 .customTagInput,
-.quoteInput {
+.quoteInput,
+.refNoteInput {
   width: 100%;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(66, 156, 166, 0.22);
@@ -305,7 +306,8 @@
 }
 
 .app[data-theme="dark"] .customTagInput,
-.app[data-theme="dark"] .quoteInput {
+.app[data-theme="dark"] .quoteInput,
+.app[data-theme="dark"] .refNoteInput {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(155, 232, 226, 0.18);
   color: #eefbf9;
@@ -313,12 +315,16 @@
 
 .customTagInput { font-size: 0.75rem; padding: 6px 10px; }
 .quoteInput { resize: none; }
+.refNoteInput { font-size: 0.72rem; padding: 6px 10px; resize: none; }
 .customTagInput:focus,
-.quoteInput:focus { outline: none; border-color: rgba(66, 156, 166, 0.62); background: #ffffff; }
+.quoteInput:focus,
+.refNoteInput:focus { outline: none; border-color: rgba(66, 156, 166, 0.62); background: #ffffff; }
 .customTagInput::placeholder,
-.quoteInput::placeholder { color: #8aa0a4; }
+.quoteInput::placeholder,
+.refNoteInput::placeholder { color: #8aa0a4; }
 .app[data-theme="dark"] .customTagInput::placeholder,
-.app[data-theme="dark"] .quoteInput::placeholder { color: #89aeb2; }
+.app[data-theme="dark"] .quoteInput::placeholder,
+.app[data-theme="dark"] .refNoteInput::placeholder { color: #89aeb2; }
 
 /* ---- Tagged references ---- */
 .taggedList { display: flex; flex-direction: column; gap: 12px; }

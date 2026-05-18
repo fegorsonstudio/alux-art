@@ -16,6 +16,9 @@ const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
 const SHOOT_BRIEF_TIMEOUT_MS = 270_000;
 const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
 
+// Appended to every fal.ai prompt regardless of brief content
+const GLOBAL_NEGATIVE_PROMPT = "No three hands. No extra hands. No extra fingers. No additional limbs. No open mouth. No smiling. No visible teeth. No dead eyes. No imaginary teeth. No asymmetric facial structures.";
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -309,12 +312,12 @@ II. THE MANDATORY PROMPT PREFIX (For Prompts 1 through 9)
 
 To lock in the image generator's behavioral constraints and protect the subject's identity, the prefix key for all 9 editorial subject prompts must begin with this exact text block, word-for-word, without deviation:
 
-"Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality."
+"REFERENCE IMAGE 1 IS THE SUBJECT — use IMAGE 1 as the identity reference. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from IMAGE 1 and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
 
 III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 
-1. The Dentition Safeguard
-Inspect Group A closely. If NO identity photo displays clear dentition, you MUST NOT write any prompt describing a smiling, laughing, or open-mouthed expression. All pose values must specify closed lips.
+1. The Dentition Safeguard — ABSOLUTE RULE
+NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. This is an unconditional rule that applies regardless of what the identity photos show. Every single pose in every prompt MUST specify closed lips or a neutral/serious expression. Do not add smiles or laughter even if identity photos show them.
 
 2. Styling, Hairstyles, and Overrides
 By default, preserve the hair shown in Group A identity images. However, if Group C contains an image tagged [HAIRSTYLE], you MUST override all hair descriptions from Group A and Group B with the EXACT hairstyle visible in the [HAIRSTYLE] reference image. This override is absolute — even if the [HAIRSTYLE] image shows a shaved head, bald head, very short crop, or any other style that differs dramatically from Group A, you must describe that exact style in every portrait prompt. Never fall back to Group A hair when a [HAIRSTYLE] tag is present.
@@ -331,7 +334,7 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 - No Background Spills: Do NOT mix background environment elements of Group C into the Group B background setting.
 
 4. Cohesive Portfolio Rule
-Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Include baseline negative prompt: "no additional unwanted jewelry, no dead eyes without catchlights, no imaginary teeth, no asymmetric facial structures".
+Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Include baseline negative prompt: "no three hands, no extra hands, no extra fingers, no additional unwanted jewelry, no dead eyes without catchlights, no imaginary teeth, no open mouth, no smiling, no asymmetric facial structures".
 
 5. Camera & Lens Consistency
 Dynamically select one of the world's top 4 medium-format camera systems (Hasselblad, Phase One, Fujifilm GFX, or Leica S) and keep it identical across all 9 portrait prompts. Vary focal lengths per shot type.
@@ -359,7 +362,7 @@ IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolida
       "prompt_index": 1,
       "is_quote_card": false,
       "fully_consolidated_prompt": "Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality. Scene: [lighting setup, background/environment description, shot setup]. Subject: [body language, pose, expression, gaze direction]. Important Details: [exact outfit from [OUTFIT] reference or inspiration, fabric/texture specifics, hairstyle, lens feel, color balance, any tag overrides]. Use Case: editorial fashion photography. Constraints: [preserve identity, preserve outfit lock if [OUTFIT] was provided, negative constraints].",
-      "negative_prompts": "no additional jewelry, no dead eyes without catchlights, no imaginary teeth, no asymmetric facial structures"
+      "negative_prompts": "no three hands, no extra hands, no extra fingers, no additional unwanted jewelry, no dead eyes without catchlights, no imaginary teeth, no open mouth, no smiling, no asymmetric facial structures"
     },
     {
       "prompt_index": 10,
@@ -567,14 +570,62 @@ function escXml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildSvg(w: number, h: number, elements: string[], withShadow = false): string {
-  const defs = withShadow
-    ? `<defs><filter id="shadow"><feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.9)"/></filter></defs>`
+// Module-level Anton font cache (fetched once per process lifetime)
+let _antonFontBase64: string | null = null;
+let _antonFontFetched = false;
+
+async function loadAntonFont(): Promise<string | null> {
+  if (_antonFontFetched) return _antonFontBase64;
+  _antonFontFetched = true;
+  try {
+    // Use legacy User-Agent so Google Fonts returns TTF (librsvg/FreeType understands TTF,
+    // but not WOFF2 which would require Brotli decompression that librsvg lacks)
+    const cssRes = await Promise.race([
+      fetch("https://fonts.googleapis.com/css?family=Anton&display=swap", {
+        headers: { "User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)" },
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 8_000)),
+    ]);
+    const css = await (cssRes as Response).text();
+    // Match ttf or woff URL
+    const urlMatch = css.match(/src:\s*url\(([^)]+\.(?:ttf|woff)[^)]*)\)/);
+    if (!urlMatch) return null;
+    const fontUrl = urlMatch[1].replace(/['"]/g, "");
+    const fontRes = await Promise.race([
+      fetch(fontUrl),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 8_000)),
+    ]);
+    const fontBuf = Buffer.from(await (fontRes as Response).arrayBuffer());
+    _antonFontBase64 = fontBuf.toString("base64");
+    return _antonFontBase64;
+  } catch {
+    return null;
+  }
+}
+
+function buildSvg(
+  w: number,
+  h: number,
+  elements: string[],
+  withShadow = false,
+  antonBase64?: string | null
+): string {
+  const fontFace = antonBase64
+    ? `@font-face{font-family:'Anton';font-style:normal;font-weight:400;src:url('data:font/truetype;base64,${antonBase64}') format('truetype');}`
     : "";
+  const shadowFilter = withShadow
+    ? `<filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.95)"/></filter>`
+    : "";
+  const strokeFilter = `<filter id="stroke_shadow"><feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="rgba(0,0,0,1)"/></filter>`;
+  const defs = `<defs><style>${fontFace}</style>${shadowFilter}${strokeFilter}</defs>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${defs}${elements.join("")}</svg>`;
 }
 
-async function compositeQuoteCard(
+function antonFamily(antonLoaded: boolean): string {
+  return antonLoaded ? "'Anton', Impact, Arial Black, sans-serif" : "Impact, Arial Black, sans-serif";
+}
+
+export async function compositeQuoteCard(
   service: ReturnType<typeof createServiceClient>,
   shoot: {
     id: string;
@@ -586,8 +637,8 @@ async function compositeQuoteCard(
   backgroundStoragePath: string,
   bucket: string,
   svgLayoutInstructions?: string
-): Promise<void> {
-  if (!shoot.quote?.text) return;
+): Promise<string | null> {
+  if (!shoot.quote?.text) return null;
 
   const quoteText = shoot.quote.text;
   const attribution = shoot.quote.attribution ?? "";
@@ -605,7 +656,7 @@ async function compositeQuoteCard(
 
   if (!portraitSlot?.preview_storage_path) {
     console.log("[compositeQuoteCard] no portrait found, keeping plain background");
-    return;
+    return null;
   }
 
   const [bgSigned, portraitSigned] = await Promise.all([
@@ -614,13 +665,13 @@ async function compositeQuoteCard(
       .from(portraitSlot.preview_storage_bucket as string)
       .createSignedUrl(portraitSlot.preview_storage_path as string, 3600),
   ]);
-  if (!bgSigned.data?.signedUrl || !portraitSigned.data?.signedUrl) return;
+  if (!bgSigned.data?.signedUrl || !portraitSigned.data?.signedUrl) return null;
 
   const [bgRes, portraitRes] = await Promise.all([
     fetch(bgSigned.data.signedUrl),
     fetch(portraitSigned.data.signedUrl),
   ]);
-  if (!bgRes.ok || !portraitRes.ok) return;
+  if (!bgRes.ok || !portraitRes.ok) return null;
 
   const [bgBuf, portraitBuf] = [
     Buffer.from(await bgRes.arrayBuffer()),
@@ -631,45 +682,35 @@ async function compositeQuoteCard(
   const W = bgMeta.width ?? 1080;
   const H = bgMeta.height ?? 1350;
 
-  // Ask Claude to pick a layout and color scheme
-  const [bgBlock, portraitBlock] = await Promise.all([
-    toBase64Block(bgSigned.data.signedUrl),
-    toBase64Block(portraitSigned.data.signedUrl),
+  // Ask Gemini to pick a layout and color scheme
+  const [bgPart, portraitPart] = await Promise.all([
+    toGeminiImagePart(bgSigned.data.signedUrl),
+    toGeminiImagePart(portraitSigned.data.signedUrl),
   ]);
 
-  const designRes = await anthropic.messages.create(
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 256,
-      messages: [
-        {
-          role: "user",
-          content: [
-            bgBlock,
-            portraitBlock,
-            {
-              type: "text",
-              text: `You are a graphic designer compositing a quote card. Image 1 is the mood background, image 2 is the subject portrait.
+  // Load Anton font in parallel with Gemini call
+  const [antonFont] = await Promise.all([loadAntonFont()]);
+  const useAnton = !!antonFont;
+
+  const designPromptText = `You are an art director for a high-impact editorial photo studio. You are compositing a bold typographic quote card. Image 1 is the mood background image. Image 2 is the subject's portrait.
 
 Quote: "${quoteText}"${attribution ? `\nAttribution: ${attribution}` : ""}
 ${svgLayoutInstructions ? `\nLayout guidance from shoot brief:\n${svgLayoutInstructions}\n` : ""}
-Choose the best layout:
-- "top_bottom": portrait fills frame, bold text in dark bands top and bottom
-- "split_right": portrait on left 55%, text on dark right panel
-- "overlay": portrait full-bleed, dark overlay, centered text
+
+Pick the SINGLE most dramatic, editorial layout from these options:
+- "impact_bottom": Portrait fills entire frame. Massive ALL-CAPS quote text at bottom (like motivational posters — "NO RISK NO STORY"). Strong dark gradient at bottom. Huge font, 1-3 lines max.
+- "half_dark": Portrait fills LEFT half. Solid dark panel on RIGHT half. Bold stacked quote lines on right, very large font. Attribution small at bottom of panel.
+- "title_card": Solid dark full background. Portrait centered and large (60% of height). Huge attribution text at top (or quote source). Bold quote text below portrait. Clean typographic hierarchy.
+- "overlay": Portrait full-bleed. Dark scrim over entire image. Centered bold text block.
+
+Pick "impact_bottom" when the quote is short and punchy (under 8 words).
+Pick "half_dark" when the portrait is strong and the quote is medium length.
+Pick "title_card" when there is a strong attribution (name, bible verse, etc) to feature.
+Pick "overlay" as fallback.
 
 Return ONLY valid JSON (no markdown):
-{"layout":"top_bottom","text_color":"#RRGGBB","accent_color":"#RRGGBB","overlay_opacity":0.45,"capitalize":true}`,
-            },
-          ],
-        },
-      ],
-    },
-    { timeout: 20_000, maxRetries: 0 }
-  );
+{"layout":"impact_bottom","text_color":"#FFFFFF","accent_color":"#E0C87A","overlay_opacity":0.55,"capitalize":true}`;
 
-  const rawDesign =
-    designRes.content[0].type === "text" ? designRes.content[0].text : "{}";
   let design: {
     layout: string;
     text_color: string;
@@ -678,201 +719,252 @@ Return ONLY valid JSON (no markdown):
     capitalize: boolean;
   };
   try {
-    const cleaned = rawDesign
-      .replace(/^```(?:json)?\s*/im, "")
-      .replace(/```\s*$/m, "")
-      .trim();
-    design = JSON.parse(cleaned);
+    const designModel = genai.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { maxOutputTokens: 256, responseMimeType: "application/json" },
+    });
+    const designResult = await Promise.race([
+      designModel.generateContent([bgPart, portraitPart, designPromptText]),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 20_000)),
+    ]);
+    design = JSON.parse(designResult.response.text());
   } catch {
     design = {
-      layout: "overlay",
+      layout: "impact_bottom",
       text_color: "#FFFFFF",
-      accent_color: "#CCCCCC",
-      overlay_opacity: 0.45,
+      accent_color: "#E0C87A",
+      overlay_opacity: 0.55,
       capitalize: true,
     };
   }
 
   const textColor = design.text_color ?? "#FFFFFF";
-  const accentColor = design.accent_color ?? "#CCCCCC";
-  const overlayOpacity = Math.min(0.8, design.overlay_opacity ?? 0.45);
-  const displayQuote = design.capitalize ? quoteText.toUpperCase() : quoteText;
+  const accentColor = design.accent_color ?? "#E0C87A";
+  const overlayOpacity = Math.min(0.85, design.overlay_opacity ?? 0.55);
+  const displayQuote = design.capitalize !== false ? quoteText.toUpperCase() : quoteText;
+  const displayAttrib = attribution ? attribution.toUpperCase() : "";
+  const fontFamily = antonFamily(useAnton);
 
   let finalBuf: Buffer;
 
-  if (design.layout === "split_right") {
-    const portraitW = Math.round(W * 0.55);
+  if (design.layout === "impact_bottom") {
+    // Portrait full-bleed. Massive bottom text. Strong gradient.
+    const croppedPortrait = await sharp(portraitBuf)
+      .resize(W, H, { fit: "cover", position: "top" })
+      .toBuffer();
+
+    const lines = wrapQuoteLines(displayQuote, 12);
+    // Font is 18-25% of height, capped by panel width / chars
+    const maxChars = Math.max(...lines.map(l => l.length), 1);
+    const fontByHeight = Math.round(H * 0.22 / Math.max(lines.length, 1));
+    const fontByWidth = Math.round(W * 0.92 / (maxChars * 0.58));
+    const fontSize = Math.min(fontByHeight, fontByWidth, Math.round(H * 0.26));
+    const lineH = Math.round(fontSize * 1.05);
+    const pad = Math.round(W * 0.04);
+    const bottomPad = Math.round(H * 0.04);
+    const attribSize = attribution ? Math.round(fontSize * 0.32) : 0;
+    const textBlockH = lines.length * lineH + (attribution ? attribSize + Math.round(H * 0.025) : 0);
+    const gradH = textBlockH + Math.round(H * 0.08);
+
+    // Gradient SVG overlay (transparent-to-black from top to bottom of gradH)
+    const gradSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${gradH}">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#000" stop-opacity="0.88"/>
+      </linearGradient></defs>
+      <rect width="${W}" height="${gradH}" fill="url(#g)"/>
+    </svg>`;
+
+    const textEls: string[] = [];
+    const textStartY = H - bottomPad - (attribution ? attribSize + Math.round(H * 0.025) : 0) - lines.length * lineH;
+    lines.forEach((line, i) => {
+      textEls.push(
+        `<text x="${pad}" y="${textStartY + i * lineH + fontSize}" text-anchor="start" font-size="${fontSize}" font-weight="400" fill="${textColor}" font-family="${fontFamily}" filter="url(#stroke_shadow)" letter-spacing="${Math.round(fontSize * 0.02)}">${escXml(line)}</text>`
+      );
+    });
+    if (attribution) {
+      const attY = H - bottomPad;
+      textEls.push(
+        `<text x="${pad}" y="${attY}" text-anchor="start" font-size="${attribSize}" font-weight="400" fill="${accentColor}" font-family="${fontFamily}" letter-spacing="${Math.round(attribSize * 0.08)}">${escXml(displayAttrib)}</text>`
+      );
+    }
+
+    finalBuf = await sharp(croppedPortrait)
+      .composite([
+        { input: Buffer.from(gradSvg), top: H - gradH, left: 0 },
+        { input: Buffer.from(buildSvg(W, H, textEls, false, antonFont)) },
+      ])
+      .png()
+      .toBuffer();
+
+  } else if (design.layout === "half_dark") {
+    // Portrait on left half, solid dark panel right half
+    const portraitW = Math.round(W * 0.52);
     const panelW = W - portraitW;
+    const panelX = portraitW;
 
     const [croppedPortrait, panelBuf] = await Promise.all([
       sharp(portraitBuf)
         .resize(portraitW, H, { fit: "cover", position: "centre" })
         .toBuffer(),
       sharp({
-        create: {
-          width: panelW,
-          height: H,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: Math.round(0.88 * 255) },
-        },
+        create: { width: panelW, height: H, channels: 4, background: { r: 10, g: 10, b: 10, alpha: 255 } },
       })
         .png()
         .toBuffer(),
     ]);
 
     const canvas = await sharp({
-      create: { width: W, height: H, channels: 3, background: { r: 0, g: 0, b: 0 } },
+      create: { width: W, height: H, channels: 3, background: { r: 10, g: 10, b: 10 } },
     })
       .png()
       .toBuffer();
 
-    const lines = wrapQuoteLines(displayQuote, 14);
-    const fontSize = Math.min(
-      Math.round(H / (lines.length + 5)),
-      Math.round(panelW / 5)
-    );
-    const lineH = fontSize + 10;
+    const lines = wrapQuoteLines(displayQuote, 10);
+    const maxChars = Math.max(...lines.map(l => l.length), 1);
+    const fontByHeight = Math.round(H * 0.18 / Math.max(lines.length, 1));
+    const fontByWidth = Math.round((panelW * 0.88) / (maxChars * 0.58));
+    const fontSize = Math.min(fontByHeight, fontByWidth, Math.round(H * 0.20));
+    const lineH = Math.round(fontSize * 1.08);
+    const pad = Math.round(panelW * 0.08);
+    const cx = panelX + pad;
     const blockH = lines.length * lineH;
-    const startY = Math.round((H - blockH) / 2);
-    const cx = portraitW + Math.round(panelW / 2);
+    const attribSize = attribution ? Math.round(fontSize * 0.30) : 0;
+    const totalH = blockH + (attribution ? attribSize + Math.round(H * 0.04) : 0);
+    const startY = Math.round((H - totalH) / 2);
 
-    const textEls = lines.map(
-      (line, i) =>
-        `<text x="${cx}" y="${startY + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif">${escXml(line)}</text>`
-    );
-    if (attribution) {
+    const textEls: string[] = [];
+    lines.forEach((line, i) => {
       textEls.push(
-        `<text x="${cx}" y="${startY + blockH + 32}" text-anchor="middle" font-size="${Math.round(fontSize * 0.45)}" fill="${accentColor}" font-family="Arial, sans-serif">${escXml(attribution)}</text>`
+        `<text x="${cx}" y="${startY + i * lineH + fontSize}" text-anchor="start" font-size="${fontSize}" font-weight="400" fill="${textColor}" font-family="${fontFamily}" letter-spacing="${Math.round(fontSize * 0.02)}">${escXml(line)}</text>`
+      );
+    });
+    if (attribution) {
+      const attY = startY + blockH + Math.round(H * 0.04) + attribSize;
+      textEls.push(
+        `<text x="${cx}" y="${attY}" text-anchor="start" font-size="${attribSize}" font-weight="400" fill="${accentColor}" font-family="${fontFamily}" letter-spacing="${Math.round(attribSize * 0.1)}">${escXml(displayAttrib)}</text>`
       );
     }
 
     finalBuf = await sharp(canvas)
       .composite([
         { input: croppedPortrait, top: 0, left: 0 },
-        { input: panelBuf, top: 0, left: portraitW },
-        { input: Buffer.from(buildSvg(W, H, textEls)) },
+        { input: panelBuf, top: 0, left: panelX },
+        { input: Buffer.from(buildSvg(W, H, textEls, false, antonFont)) },
       ])
       .png()
       .toBuffer();
 
-  } else if (design.layout === "top_bottom") {
-    const bandH = Math.round(H * 0.22);
+  } else if (design.layout === "title_card") {
+    // Dark background, portrait centered and prominent, huge attribution at top, quote below
+    const portraitH = Math.round(H * 0.60);
+    const portraitW = Math.round(portraitH * 0.75);
+    const safePortraitW = Math.min(portraitW, W - Math.round(W * 0.08));
+    const portraitTop = Math.round(H * 0.14);
+    const portraitLeft = Math.round((W - safePortraitW) / 2);
 
-    const [croppedPortrait, topBand, botBand] = await Promise.all([
+    const [bgDark, croppedPortrait] = await Promise.all([
+      sharp({
+        create: { width: W, height: H, channels: 3, background: { r: 8, g: 8, b: 8 } },
+      })
+        .png()
+        .toBuffer(),
       sharp(portraitBuf)
-        .resize(W, H, { fit: "cover", position: "north" })
-        .toBuffer(),
-      sharp({
-        create: {
-          width: W,
-          height: bandH,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: Math.round(0.65 * 255) },
-        },
-      })
-        .png()
-        .toBuffer(),
-      sharp({
-        create: {
-          width: W,
-          height: bandH,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: Math.round(0.75 * 255) },
-        },
-      })
-        .png()
+        .resize(safePortraitW, portraitH, { fit: "cover", position: "top" })
         .toBuffer(),
     ]);
 
-    const lines = wrapQuoteLines(displayQuote, 20);
-    const halfLen = Math.ceil(lines.length / 2);
-    const topLines = lines.slice(0, halfLen);
-    const botLines = lines.slice(halfLen);
-    const fontSize = Math.min(
-      Math.round(bandH / (Math.max(topLines.length, botLines.length) + 1.5)),
-      Math.round(W / 9)
-    );
-    const lineH = fontSize + 8;
+    const topPad = Math.round(H * 0.04);
+    const attribSize = Math.round(W * 0.10);
+    const quoteStartY = portraitTop + portraitH + Math.round(H * 0.04);
+    const availH = H - quoteStartY - Math.round(H * 0.03);
+    const lines = wrapQuoteLines(displayQuote, 22);
+    const fontByHeight = Math.round(availH / (lines.length + 0.5));
+    const maxChars = Math.max(...lines.map(l => l.length), 1);
+    const fontByWidth = Math.round((W * 0.9) / (maxChars * 0.58));
+    const fontSize = Math.min(fontByHeight, fontByWidth, Math.round(H * 0.09));
+    const lineH = Math.round(fontSize * 1.1);
+    const cx = Math.round(W / 2);
 
     const textEls: string[] = [];
-    topLines.forEach((line, i) => {
-      textEls.push(
-        `<text x="${W / 2}" y="${Math.round(bandH * 0.25) + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif" filter="url(#shadow)">${escXml(line)}</text>`
-      );
-    });
-    botLines.forEach((line, i) => {
-      textEls.push(
-        `<text x="${W / 2}" y="${H - bandH + Math.round(bandH * 0.2) + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif" filter="url(#shadow)">${escXml(line)}</text>`
-      );
-    });
+    // Large attribution at top
     if (attribution) {
       textEls.push(
-        `<text x="${W / 2}" y="${H - 28}" text-anchor="middle" font-size="${Math.round(fontSize * 0.45)}" fill="${accentColor}" font-family="Arial, sans-serif">${escXml(attribution)}</text>`
+        `<text x="${cx}" y="${topPad + attribSize}" text-anchor="middle" font-size="${attribSize}" font-weight="400" fill="${accentColor}" font-family="${fontFamily}" letter-spacing="${Math.round(attribSize * 0.1)}">${escXml(displayAttrib)}</text>`
       );
     }
+    // Quote lines below portrait
+    lines.forEach((line, i) => {
+      textEls.push(
+        `<text x="${cx}" y="${quoteStartY + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="400" fill="${textColor}" font-family="${fontFamily}" letter-spacing="${Math.round(fontSize * 0.03)}">${escXml(line)}</text>`
+      );
+    });
 
-    finalBuf = await sharp(croppedPortrait)
+    finalBuf = await sharp(bgDark)
       .composite([
-        { input: topBand, top: 0, left: 0 },
-        { input: botBand, top: H - bandH, left: 0 },
-        { input: Buffer.from(buildSvg(W, H, textEls, true)) },
+        { input: croppedPortrait, top: portraitTop, left: portraitLeft },
+        { input: Buffer.from(buildSvg(W, H, textEls, false, antonFont)) },
       ])
       .png()
       .toBuffer();
 
   } else {
-    // "overlay": portrait full-bleed + dark overlay + centered text
+    // "overlay": portrait full-bleed + dark scrim + centered bold text
     const overlayAlpha = Math.round(overlayOpacity * 255);
     const [croppedPortrait, overlayBuf] = await Promise.all([
       sharp(portraitBuf)
         .resize(W, H, { fit: "cover", position: "centre" })
         .toBuffer(),
       sharp({
-        create: {
-          width: W,
-          height: H,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: overlayAlpha },
-        },
+        create: { width: W, height: H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: overlayAlpha } },
       })
         .png()
         .toBuffer(),
     ]);
 
-    const lines = wrapQuoteLines(displayQuote, 18);
-    const fontSize = Math.min(
-      Math.round(H / (lines.length + 6)),
-      Math.round(W / 7)
-    );
-    const lineH = fontSize + 14;
-    const blockH = lines.length * lineH;
+    const lines = wrapQuoteLines(displayQuote, 16);
+    const maxChars = Math.max(...lines.map(l => l.length), 1);
+    const fontByHeight = Math.round(H * 0.20 / Math.max(lines.length, 1));
+    const fontByWidth = Math.round((W * 0.88) / (maxChars * 0.58));
+    const fontSize = Math.min(fontByHeight, fontByWidth, Math.round(H * 0.22));
+    const lineH = Math.round(fontSize * 1.08);
+    const attribSize = attribution ? Math.round(fontSize * 0.32) : 0;
+    const blockH = lines.length * lineH + (attribution ? attribSize + Math.round(H * 0.03) : 0);
     const startY = Math.round((H - blockH) / 2);
+    const cx = Math.round(W / 2);
+    const pad = Math.round(W * 0.05);
 
-    const textEls = lines.map(
-      (line, i) =>
-        `<text x="${W / 2}" y="${startY + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif" filter="url(#shadow)">${escXml(line)}</text>`
-    );
+    const textEls: string[] = [];
+    lines.forEach((line, i) => {
+      textEls.push(
+        `<text x="${cx}" y="${startY + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="400" fill="${textColor}" font-family="${fontFamily}" filter="url(#stroke_shadow)" letter-spacing="${Math.round(fontSize * 0.02)}" textLength="${Math.min(W - pad * 2, Math.round(line.length * fontSize * 0.58))}" lengthAdjust="spacing">${escXml(line)}</text>`
+      );
+    });
     if (attribution) {
       textEls.push(
-        `<text x="${W / 2}" y="${startY + blockH + 50}" text-anchor="middle" font-size="${Math.round(fontSize * 0.45)}" fill="${accentColor}" font-family="Arial, sans-serif">${escXml(attribution)}</text>`
+        `<text x="${cx}" y="${startY + lines.length * lineH + Math.round(H * 0.03) + attribSize}" text-anchor="middle" font-size="${attribSize}" font-weight="400" fill="${accentColor}" font-family="${fontFamily}" letter-spacing="${Math.round(attribSize * 0.1)}">${escXml(displayAttrib)}</text>`
       );
     }
 
     finalBuf = await sharp(croppedPortrait)
       .composite([
         { input: overlayBuf, blend: "over" },
-        { input: Buffer.from(buildSvg(W, H, textEls, true)) },
+        { input: Buffer.from(buildSvg(W, H, textEls, false, antonFont)) },
       ])
       .png()
       .toBuffer();
   }
 
-  await service.storage.from(bucket).upload(backgroundStoragePath, finalBuf, {
+  // Upload to a new path (not overwrite) so CDN cache is bypassed
+  const compositePath = backgroundStoragePath.replace(/\.png$/i, "-c.png");
+  await service.storage.from(bucket).upload(compositePath, finalBuf, {
     contentType: "image/png",
     upsert: true,
+    cacheControl: "no-store",
   });
 
-  console.log(`[compositeQuoteCard] layout="${design.layout}" saved to ${bucket}/${backgroundStoragePath}`);
+  console.log(`[compositeQuoteCard] layout="${design.layout}" saved to ${bucket}/${compositePath}`);
+  return compositePath;
 }
 
 export type WorkerResult = {
@@ -1113,6 +1205,7 @@ export async function startGenerationWorker(
 
   let prompts: Record<string, string | SceneSlotPrompt> = {};
   const svgLayoutMap: Record<string, string> = {};
+  const negativePromptsMap: Record<string, string> = {};
   try {
     const parsed = JSON.parse(shootBriefClean);
     const rawPrompts = parsed.prompts;
@@ -1122,6 +1215,7 @@ export async function startGenerationWorker(
         const key = String(p.prompt_index);
         if (p.fully_consolidated_prompt) prompts[key] = p.fully_consolidated_prompt;
         if (p.svg_layout_instructions) svgLayoutMap[key] = p.svg_layout_instructions;
+        if (p.negative_prompts) negativePromptsMap[key] = p.negative_prompts;
       }
     } else if (rawPrompts && typeof rawPrompts === "object") {
       // Legacy dict format
@@ -1157,9 +1251,20 @@ export async function startGenerationWorker(
     const colorGradeUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "COLOR_GRADE")?.url ?? "";
     imageUrls = [characterBaseUrl, backgroundUrl, lightingUrl, colorGradeUrl].filter(Boolean).slice(0, 4);
   } else {
+    // Identity images come first so the model treats them as the primary subject reference.
+    // Include key visual-override tagged refs (OUTFIT, HAIRSTYLE) so the model sees
+    // those images directly, not just as text descriptions. Limit inspiration to 1 to
+    // avoid diluting the identity signal with other people's faces.
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
+    const outfitUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "OUTFIT")?.url ?? "";
+    const hairstyleUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "HAIRSTYLE")?.url ?? "";
+    const taggedVisualUrls = [outfitUrl, hairstyleUrl].filter(Boolean);
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
-    imageUrls = [...identityUrls.slice(0, 3), ...inspirationUrls.slice(0, 6)];
+    imageUrls = [
+      ...identityUrls.slice(0, 2),     // max 2 identity (model's primary subject reference)
+      ...taggedVisualUrls,               // OUTFIT + HAIRSTYLE refs if present
+      ...inspirationUrls.slice(0, 1),   // max 1 inspiration (mood/style context)
+    ];
   }
 
   const identityUrls = refs
@@ -1225,6 +1330,13 @@ export async function startGenerationWorker(
         slotPrompt = "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
       }
 
+      // Append per-slot negative prompts from brief + global negatives to every fal call
+      const slotNegative = negativePromptsMap[String(slot)] ?? "";
+      const combinedNegative = [slotNegative, GLOBAL_NEGATIVE_PROMPT].filter(Boolean).join(" ").trim();
+      if (combinedNegative) {
+        slotPrompt = `${slotPrompt} NEGATIVE PROMPT: ${combinedNegative}`;
+      }
+
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
       // Persist prompt before fal call so it's visible even if generation fails
@@ -1270,13 +1382,13 @@ export async function startGenerationWorker(
       }
 
       // Always save the image to Supabase storage (using "test" bucket in test mode) so signed URLs work
-      const storagePath = await saveSlotImage(service, shootId, shoot.user_id, slot, falUrl, isTestMode);
+      let storagePath = await saveSlotImage(service, shootId, shoot.user_id, slot, falUrl, isTestMode);
 
-      // Quote card composite: replace plain background with portrait + text layout
+      // Quote card composite: upload to a new path so CDN cache is bypassed
       if (hasQuote && slot === total) {
         const quoteBucket = isTestMode ? "test" : "generated-4k";
         try {
-          await compositeQuoteCard(
+          const compositePath = await compositeQuoteCard(
             service,
             {
               id: shootId,
@@ -1289,6 +1401,7 @@ export async function startGenerationWorker(
             quoteBucket,
             svgLayoutMap[String(slot)]
           );
+          if (compositePath) storagePath = compositePath;
         } catch (compErr) {
           console.error("[generate] compositeQuoteCard failed, keeping plain background:", compErr);
         }

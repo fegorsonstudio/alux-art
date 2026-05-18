@@ -491,6 +491,25 @@ export default function WorkspacePage() {
     } catch { /* ignore */ }
   };
 
+  const handleRecompositeQuote = async () => {
+    if (!currentShoot) return;
+    setStatus({ type: "loading", message: "Recompositing quote card..." });
+    try {
+      const res = await fetch(`/api/shoots/${currentShoot.id}/recomposite-quote`, { method: "POST" });
+      if (res.ok) {
+        setStatus({ type: "ok", message: "Quote card updated! Refresh to see the new version." });
+        // Refresh the shoot to get new signed URL
+        const json = await fetch(`/api/shoots/${currentShoot.id}`).then(r => r.json()).catch(() => null);
+        if (json?.shoot) setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, ...json.shoot } : s));
+      } else {
+        const { error } = await res.json().catch(() => ({ error: "Unknown error" }));
+        setStatus({ type: "error", message: error ?? "Recomposite failed" });
+      }
+    } catch (e) {
+      setStatus({ type: "error", message: String(e) });
+    }
+  };
+
   const handleApproveBase = async () => {
     if (!currentShoot || baseAction === "loading") return;
     setBaseAction("loading");
@@ -573,7 +592,7 @@ export default function WorkspacePage() {
           packageSize,
           identityImages: identityImages.map(({ id, name, type, size, storageBucket, storagePath }) => ({ id, name, type, size, storageBucket, storagePath })),
           inspirationImages: inspirationImages.map(({ id, name, type, size, storageBucket, storagePath }) => ({ id, name, type, size, storageBucket, storagePath })),
-          taggedReferences: taggedRefs.map(({ id, name, type, size, storageBucket, storagePath, tag, customTag }) => ({
+          taggedReferences: taggedRefs.map(({ id, name, type, size, storageBucket, storagePath, tag, customTag, note }) => ({
             id,
             name,
             type,
@@ -582,6 +601,7 @@ export default function WorkspacePage() {
             storagePath,
             tag: customTag?.trim() ? null : tag || null,
             customName: customTag?.trim() || null,
+            note: note?.trim() || null,
           })),
           quote, adminBypass,
           characterBaseId: selectedBase?.id ?? null,
@@ -623,9 +643,26 @@ export default function WorkspacePage() {
     const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
     if (!res.ok) return;
     const blob = await res.blob();
+    const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
+
+    // On mobile with Web Share API, share the file so it can be saved to the Photos gallery
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      const file = new File([blob], filename, { type: blob.type || "image/png" });
+      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: "Alux Art Photo" });
+          return;
+        } catch (shareErr) {
+          // User dismissed the share sheet — fall through to anchor download
+          if ((shareErr as Error).name === "AbortError") return;
+        }
+      }
+    }
+
+    // Desktop / unsupported browsers: anchor element download
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `aluxart-slot${img.slot}-${img.kind}.png`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -924,6 +961,13 @@ export default function WorkspacePage() {
                           value={ref.customTag ?? ""}
                           onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, customTag: e.target.value, tag: undefined } : r))}
                         />
+                        <textarea
+                          className={styles.refNoteInput}
+                          placeholder="Styling direction (optional)..."
+                          rows={2}
+                          value={ref.note ?? ""}
+                          onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
+                        />
                         <button className={styles.thumbRemove} style={{ position: "static" }} onClick={() => setTaggedRefs(p => p.filter(r => r.id !== ref.id))}>x Remove</button>
                       </div>
                     </div>
@@ -934,7 +978,7 @@ export default function WorkspacePage() {
                 <input ref={taggedRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                   onChange={e => e.target.files && handleTaggedFiles(e.target.files)} />
                 <p>{uploading === "tagged" ? "Uploading..." : "Add reference images and tag each one"}</p>
-                <p className={styles.uploadCount}>OUTFIT / HAIRSTYLE / MAKEUP / NAIL DESIGN / LIGHTING / BACKGROUND</p>
+                <p className={styles.uploadCount}>OUTFIT / HAIRSTYLE / MAKEUP / NAIL / BACKGROUND / LIGHTING / COLOR GRADE</p>
               </div>
             </div>
           )}
@@ -1195,6 +1239,11 @@ export default function WorkspacePage() {
                             <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)} title="Download Image" aria-label="Download image">
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             </button>
+                            {img.kind === "quote" && currentShoot.quote?.text && (
+                              <button className={styles.dlBtn} onClick={handleRecompositeQuote} title="Recomposite quote card">
+                                ✦
+                              </button>
+                            )}
                           </div>
                         ) : img.status?.toLowerCase()}
                       </span>
