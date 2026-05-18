@@ -35,6 +35,12 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "check_urls.ts",
+    "check_urls.mjs",
+    "test_supabase.ts",
+    "test_supabase.js",
+    "test_supabase.cjs",
+    "test_worker.js"
   ]
 }
