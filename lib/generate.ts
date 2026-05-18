@@ -213,7 +213,9 @@ III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 Inspect Group A closely. If NO identity photo displays clear dentition, you MUST NOT write any prompt describing a smiling, laughing, or open-mouthed expression. All pose values must specify closed lips.
 
 2. Styling, Hairstyles, and Overrides
-By default, preserve the hair from Group A. If Group C includes an asset tagged as "hairstyle reference", override both Group A and Group B hairstyles. If Group C contains a nail design reference, detail custom nail characteristics in outfit_look.
+By default, preserve the hair shown in Group A identity images. However, if Group C contains an image tagged [HAIRSTYLE], you MUST override all hair descriptions from Group A and Group B with the EXACT hairstyle visible in the [HAIRSTYLE] reference image. This override is absolute — even if the [HAIRSTYLE] image shows a shaved head, bald head, very short crop, or any other style that differs dramatically from Group A, you must describe that exact style in every portrait prompt. Never fall back to Group A hair when a [HAIRSTYLE] tag is present.
+
+If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail characteristics in the Important Details section.
 
 [OUTFIT] CONSISTENCY LOCK: If Group C contains an asset tagged [OUTFIT], that exact outfit MUST be worn by the subject in ALL 9 portrait prompts without exception. Extract the specific garment, fabric, color, cut, silhouette, and surface details from the [OUTFIT] reference image and replicate them precisely in every portrait prompt. Shot-to-shot variation must come only from pose, camera angle, expression, and composition — NOT from changing the outfit. Do not invent or substitute any alternative garments.
 
@@ -290,11 +292,7 @@ async function buildShootBrief(
     ? "GROUP A — Identity (Subject): Locked character base image. Use for exact facial identity, body structure, and locked wardrobe."
     : `GROUP A — Identity (Subject): ${groupAUrls.length} identity reference photo(s). Use for facial features, skin tone, and body build only.\n\nIdentity Profile:\n${identityProfile}`;
 
-  const groupCDescriptions = taggedRefs
-    .map((r) => `  - Tagged [${r.tag ?? r.customName ?? "unknown"}]: ${r.name}${r.note ? ` (${r.note})` : ""}`)
-    .join("\n");
-
-  const [groupABlocks, groupBBlocks, groupCBlocks] = await Promise.all([
+  const [groupABlocks, groupBBlocks, groupCImageBlocks] = await Promise.all([
     Promise.all(groupAUrls.slice(0, 4).map(toGeminiImagePart)),
     Promise.all(inspirationRefs.map((r) => toGeminiImagePart(r.url))),
     Promise.all(taggedRefs.map((r) => toGeminiImagePart(r.url))),
@@ -313,9 +311,17 @@ async function buildShootBrief(
     parts.push(...groupBBlocks);
   }
 
-  if (groupCBlocks.length > 0) {
-    parts.push({ text: `GROUP C — Accessories & Overrides:\n${groupCDescriptions}` });
-    parts.push(...groupCBlocks);
+  // Interleave each Group C image with its own tag label so the model
+  // knows exactly which image maps to which tag (critical for [HAIRSTYLE] etc.)
+  if (groupCImageBlocks.length > 0) {
+    parts.push({ text: "GROUP C — Accessories & Overrides: Each tagged reference is labelled immediately before its image." });
+    for (let i = 0; i < taggedRefs.length; i++) {
+      const r = taggedRefs[i];
+      const tag = r.tag ?? r.customName ?? "unknown";
+      const note = r.note ? ` — note: ${r.note}` : "";
+      parts.push({ text: `[${tag}] reference image — "${r.name}"${note}: Extract ONLY the ${tag.toLowerCase()} from this image and apply it to all portrait prompts. Ignore all other elements.` });
+      parts.push(groupCImageBlocks[i]);
+    }
   }
 
   parts.push({
