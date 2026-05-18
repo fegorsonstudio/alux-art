@@ -152,6 +152,119 @@ type SceneSlotPrompt = {
   scene_exclusions: string;
 };
 
+type NewPromptObject = {
+  prompt_index: number;
+  is_quote_card?: boolean;
+  fully_consolidated_prompt?: string;
+  svg_layout_instructions?: string;
+  negative_prompts?: string;
+};
+
+const SHOOT_BRIEF_SYSTEM_INSTRUCTION = `SYSTEM INSTRUCTION: Photo Shoot Prompt Engineer (Art Director Vision Model)
+
+You are an expert, world-class Art Director and Prompt Engineer for professional high-end fashion and lifestyle photoshoots. Your mission is to analyze incoming image assets and design exactly 9 highly detailed, diverse, and technically flawless photoshoot prompts and 1 specialized quote graphic portrait prompt (utilizing an SVG-based overlay workflow).
+
+The entire output must be formatted in a single, strict, valid JSON object with absolutely no external conversational pre-text or post-text.
+
+I. INPUT CLASSIFICATION & VALIDATION
+
+You will analyze three distinct groups of incoming image assets (URLs or base64 data):
+
+GROUP A — Identity (Subject):
+Role: The target subject. Their face, skin tone, unique physical markers (scars, piercings, tattoos), and body structure must be replicated with absolute precision across all photographic prompts.
+Framing Type Alignment: Analyze the framing of the Group A images carefully to align with downstream prompts:
+- Portrait-only references must only be used for tight close-ups and beauty portraits.
+- Medium/half-body references must only be used for waist/hip-up or medium prompts.
+- Smiling references with visible teeth must be used only for prompts that explicitly involve smiling or laughing.
+Validation: If there is a critical gap (e.g., you need to generate a full-body shot but only have a headshot, or a requested asset is completely missing), set the upload_error_warning key at the root of the JSON with a description of what is missing. Do not generate empty or fallback placeholders.
+
+GROUP B — Inspiration (Aesthetic & Pose):
+Role: Visual references for the environments, compositions, camera angles, lighting moods, and editorial styling.
+Pose Harvesting: If multiple inspiration images are provided, analyze and map all observed poses across your prompts. If fewer than 10 are provided, creatively invent highly fashion-forward, professional poses to fill the remaining slots.
+
+GROUP C — Accessories & Overrides:
+Role: Specific items tagged with names and styling notes (e.g., clothing, shoes, bags, props, custom nail designs, jewelry details, hair overrides).
+Strict Tag-Focused Isolation: If an image in Group C displays a full body, a model, or a wider scene context but is tagged as a specific element (e.g., tagged as "shoe", "bag", "jacket", "wedding ring"), you must isolate and describe only the tagged item from that image. Completely ignore all other visual information in that reference photo.
+Hard-Replacement Priority: Items in Group C hard-replace any corresponding items worn by models in the Group B inspiration images.
+
+II. THE MANDATORY PROMPT PREFIX (For Prompts 1 through 9)
+
+To lock in the image generator's behavioral constraints and protect the subject's identity, the prefix key for all 9 editorial subject prompts must begin with this exact text block, word-for-word, without deviation:
+
+"Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality."
+
+III. CORE ART DIRECTION & SAFETY SAFEGUARDS
+
+1. The Dentition Safeguard
+Inspect Group A closely. If NO identity photo displays clear dentition, you MUST NOT write any prompt describing a smiling, laughing, or open-mouthed expression. All pose values must specify closed lips.
+
+2. Styling, Hairstyles, and Overrides
+By default, preserve the hair from Group A. If Group C includes an asset tagged as "hairstyle reference", override both Group A and Group B hairstyles. If Group C contains a nail design reference, detail custom nail characteristics in outfit_look.
+
+3. Critical Exclusions Registry
+- No Aesthetic Bleeding: Do NOT transfer models, skin tones, faces, or hairstyles from Group B or Group C onto the target subject.
+- No Identity Artifacts: Do NOT transfer casual clothing from Group A onto the editorial. Group A is for physical identity preservation only.
+- No Background Spills: Do NOT mix background environment elements of Group C into the Group B background setting.
+
+4. Cohesive Portfolio Rule
+Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Include baseline negative prompt: "no additional unwanted jewelry, no dead eyes without catchlights, no imaginary teeth, no asymmetric facial structures".
+
+5. Camera & Lens Consistency
+Dynamically select one of the world's top 4 medium-format camera systems (Hasselblad, Phase One, Fujifilm GFX, or Leica S) and keep it identical across all 9 portrait prompts. Vary focal lengths per shot type.
+
+6. Atmospheric Elements Integration
+Every prompt must incorporate organic atmospheric elements: volumetric dust motes, morning mist, wind-blown elements, humid air quality, micro light leaks, or organic lens flares.
+
+7. Self-Containment Mandate
+Every single prompt must be fully self-contained. Never reference other prompts. Fully articulate all details in every prompt, even if repeated.
+
+IV. THE 10th PROMPT: THE GRAPHIC QUOTE CARD
+
+The 10th prompt is a specialized instruction block for an SVG composite workflow. It specifies instructions for producing a high-end editorial graphic layout combining a background image with beautiful typography overlay. Define high-contrast typographic zones, transparent overlays, and beautiful placement of quote text.
+
+V. OUTPUT JSON STRUCTURE
+
+Output ONLY a valid JSON object. No markdown code fences, no pre-text, no post-text.
+
+{
+  "upload_error_warning": null,
+  "prompts": [
+    {
+      "prompt_index": 1,
+      "is_quote_card": false,
+      "prefix": "Use the attached face/body identity photo submitted as the subject...",
+      "reference_registry": "...",
+      "critical_exclusions": "...",
+      "background": "...",
+      "lighting": "...",
+      "color_grading": "...",
+      "mood_vibe": "...",
+      "photography_style": "...",
+      "pose": "...",
+      "shot_type": "...",
+      "outfit_look": "...",
+      "fully_consolidated_prompt": "Single ready-to-send paragraph integrating ALL details.",
+      "negative_prompts": "no additional jewelry, no dead eyes without catchlights, no imaginary teeth, no asymmetric facial structures"
+    },
+    {
+      "prompt_index": 10,
+      "is_quote_card": true,
+      "prefix": "[SYSTEM WORKFLOW OVERRIDE] SVG Quote Graphic Composition Mode.",
+      "background": "...",
+      "lighting": "...",
+      "color_grading": "...",
+      "mood_vibe": "Refined editorial communication, premium branding layout.",
+      "photography_style": "Graphic overlay composition, editorial magazine spread.",
+      "pose": "Subject off-center or not present, creating clear graphic zone for text.",
+      "shot_type": "Wide composite frame with designated empty area for text layout.",
+      "outfit_look": "Cohesive with main series.",
+      "svg_layout_instructions": "Complete SVG overlay instructions: typographic hierarchy, font specifications, text-shadow or dark overlay for contrast, positioning, color assignments.",
+      "fully_consolidated_prompt": "Complete composite graphic instructions for background generation and SVG layout."
+    }
+  ]
+}`;
+
+
 async function buildShootBrief(
   shoot: {
     mode: string;
@@ -164,177 +277,78 @@ async function buildShootBrief(
   characterBaseUrl?: string
 ): Promise<string> {
   const packageSize = normalizePackageSize(shoot.package_size);
-  const inspirationRefs = refs.filter((r) => r.purpose === "inspiration");
-  const taggedRefs = refs.filter((r) => r.purpose === "tagged");
-  const isAdvanced = shoot.mode === "advanced";
+  const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
+  const inspirationRefs = refs.filter((r) => r.purpose === "inspiration" && r.url).slice(0, 9);
+  const taggedRefs = refs.filter((r) => r.purpose === "tagged" && r.url);
   const hasQuote = !!shoot.quote?.text && packageSize === 10;
   const portraitCount = hasQuote ? packageSize - 1 : packageSize;
 
-  // ── Locked-base path: scene-only JSON per slot ──────────────────────────
-  if (characterBaseUrl) {
-    const sceneRefs = [
-      ...inspirationRefs.slice(0, 1),
-      ...taggedRefs.filter((r) => ["BACKGROUND", "LIGHTING", "COLOR_GRADE"].includes(r.tag ?? "")),
-    ].filter((r) => r.url);
+  // Group A: locked base or identity images
+  const groupAUrls = characterBaseUrl ? [characterBaseUrl] : identityRefs.map((r) => r.url);
+  const groupALabel = characterBaseUrl
+    ? "GROUP A — Identity (Subject): Locked character base image. Use for exact facial identity, body structure, and locked wardrobe."
+    : `GROUP A — Identity (Subject): ${groupAUrls.length} identity reference photo(s). Use for facial features, skin tone, and body build only.\n\nIdentity Profile:\n${identityProfile}`;
 
-    const imageBlocks = await Promise.all(sceneRefs.map((r) => toBase64Block(r.url)));
+  const groupCDescriptions = taggedRefs
+    .map((r) => `  - Tagged [${r.tag ?? r.customName ?? "unknown"}]: ${r.name}${r.note ? ` (${r.note})` : ""}`)
+    .join("\n");
 
-    const taggedDescriptions = [
-      ...inspirationRefs.map((r) => `- Inspiration (scene direction): ${r.name}`),
-      ...taggedRefs
-        .filter((r) => ["BACKGROUND", "LIGHTING", "COLOR_GRADE"].includes(r.tag ?? ""))
-        .map((r) => `- [${r.tag}]: ${r.name}${r.note ? ` (${r.note})` : ""}`),
-    ].join("\n");
+  const [groupABlocks, groupBBlocks, groupCBlocks] = await Promise.all([
+    Promise.all(groupAUrls.slice(0, 4).map(toBase64Block)),
+    Promise.all(inspirationRefs.map((r) => toBase64Block(r.url))),
+    Promise.all(taggedRefs.map((r) => toBase64Block(r.url))),
+  ]);
 
-    const slotKeys = Array.from({ length: portraitCount }, (_, i) =>
-      `"${i + 1}": { "background": "...", "lighting": "...", "mood_vibe": "...", "photography_style": "...", "pose": "...", "shot_type": "...", "scene_exclusions": "..." }`
-    )
-      .concat(hasQuote ? [`"${packageSize}": { "background": "...", "lighting": "...", "mood_vibe": "...", "photography_style": "...", "pose": "no subject", "shot_type": "quote background", "scene_exclusions": "no face, no person" }`] : [])
-      .join(",\n    ");
+  type ContentBlock = { type: "text"; text: string } | Awaited<ReturnType<typeof toBase64Block>>;
+  const content: ContentBlock[] = [];
 
-    const response = await anthropic.messages.create(
-      {
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        messages: [
-          {
-            role: "user",
-            content: [
-              ...imageBlocks,
-              {
-                type: "text",
-                text: `You are a professional photography prompt engineer.
+  if (groupABlocks.length > 0) {
+    content.push({ type: "text", text: groupALabel });
+    content.push(...groupABlocks);
+  }
 
-The subject identity and wardrobe are already locked in a canonical base reference image. Your only task is to design the SCENE LAYER for each slot — environment, lighting, pose, and shot framing. Do NOT re-describe the subject's face, skin, hair, outfit, or accessories.
+  if (groupBBlocks.length > 0) {
+    content.push({ type: "text", text: "GROUP B — Inspiration (Aesthetic & Pose): Visual references for environments, compositions, camera angles, lighting moods, and editorial styling." });
+    content.push(...groupBBlocks);
+  }
 
-SHOOT PARAMETERS:
+  if (groupCBlocks.length > 0) {
+    content.push({ type: "text", text: `GROUP C — Accessories & Overrides:\n${groupCDescriptions}` });
+    content.push(...groupCBlocks);
+  }
+
+  content.push({
+    type: "text",
+    text: `SHOOT PARAMETERS:
 - Mode: ${shoot.mode}
-- Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote background" : ""})
+- Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card" : ""})
 - Aspect Ratio: ${shoot.aspect_ratio}
+${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `\n- Attribution: "${shoot.quote!.attribution}"` : ""}` : ""}
 
-SCENE REFERENCES:
-${taggedDescriptions || "Inspiration image only — extract environment, lighting, mood."}
+Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
 
-RULES:
-- Each slot must have a UNIQUE pose, shot type, and scene composition.
-- "scene_exclusions" must always include: "do not transfer white studio backdrop or neutral pose from base reference". Do NOT mention watermarks or text overlays.
-- Keep lighting consistent with the shoot mood unless a [LIGHTING] reference overrides it.
-- [BACKGROUND] reference controls environment only — ignore any clothing or people in it.
-- [COLOR_GRADE] reference controls film style and color palette only.
-${hasQuote ? `- Slot ${packageSize}: mood background for overlaying quote "${shoot.quote!.text}" — no face, abstract or environmental scene.` : ""}
-
-Return ONLY valid JSON (no markdown, no code fences):
-{
-  "prompts": {
-    ${slotKeys}
-  }
-}`,
-              },
-            ],
-          },
-        ],
-      },
-      { timeout: SHOOT_BRIEF_TIMEOUT_MS, maxRetries: 0 }
-    );
-
-    const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
-    return raw.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
-  }
-
-  // ── Standard path: full free-form prompt per slot ───────────────────────
-  const refDescriptions = [
-    ...inspirationRefs.map((r) => `- Inspiration: ${r.name}`),
-    ...taggedRefs.map(
-      (r) =>
-        `- Tagged [${r.tag ?? "unknown"}]: ${r.name}${r.note ? ` (${r.note})` : ""}`
-    ),
-  ].join("\n");
-
-  const imageBlocks = await Promise.all(
-    [...inspirationRefs.slice(0, 2), ...taggedRefs.slice(0, 2)]
-      .filter((r) => r.url)
-      .map((r) => toBase64Block(r.url))
-  );
-
-  const wardrobeSource =
-    isAdvanced && taggedRefs.some((r) => r.tag === "OUTFIT")
-      ? "[OUTFIT] tagged reference"
-      : "inspiration image";
-
-  const slotKeys = Array.from({ length: portraitCount }, (_, i) => `"${i + 1}": "Scene: ..."`)
-    .concat(hasQuote ? [`"${packageSize}": "Scene: ..."`] : [])
-    .join(",\n    ");
+Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.`,
+  });
 
   const response = await anthropic.messages.create(
     {
       model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      messages: [
-        {
-          role: "user",
-          content: [
-            ...imageBlocks,
-            {
-              type: "text",
-              text: `You are a professional photography prompt engineer.
-
-IDENTITY PROFILE:
-${identityProfile}
-
-SHOOT PARAMETERS:
-- Mode: ${shoot.mode}
-- Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote background" : ""})
-- Aspect Ratio: ${shoot.aspect_ratio}
-
-REFERENCES PROVIDED:
-${refDescriptions || "Identity images only — no inspiration or tagged references."}
-
-${
-  isAdvanced
-    ? `TAGGED REFERENCE RULES:
-- [OUTFIT] replaces outfit from inspiration across all portrait slots
-- [BACKGROUND] replaces environment only — ignore clothing/face in that reference
-- [LIGHTING] matches lighting setup only
-- [HAIRSTYLE] applies hair change only
-- [MAKEUP] applies beauty look only
-- Layer priority: identity lock > tagged overrides > inspiration art direction > pose/composition`
-    : ""
-}
-
-Create a JSON shoot brief. Each portrait slot must have a UNIQUE combination of pose, expression, camera angle, and composition. Keep identity, wardrobe, and lighting consistent unless overridden by a tagged reference.
-
-Use this exact structure for each prompt:
-Scene: [lighting, background, environment, shot setup]
-Subject: [identity reference details, body language, pose, expression]
-Important Details: [wardrobe from ${wardrobeSource}, textures, lens feel, color grade]
-Use Case: editorial photography / fashion portrait / mood portrait
-Constraints: Preserve exact identity from profile. No alterations to facial structure, eye spacing, skin tone, jawline. [specific negative constraints]
-
-${hasQuote ? `Slot ${packageSize}: Create a mood background suitable for overlaying the quote "${shoot.quote!.text}" — no face, abstract or environmental scene matching the shoot aesthetic.` : ""}
-
-Return ONLY valid JSON (no markdown, no code fences):
-{
-  "prompts": {
-    ${slotKeys}
-  }
-}`,
-            },
-          ],
-        },
-      ],
+      max_tokens: 16000,
+      system: SHOOT_BRIEF_SYSTEM_INSTRUCTION,
+      messages: [{ role: "user", content }],
     },
     { timeout: SHOOT_BRIEF_TIMEOUT_MS, maxRetries: 0 }
   );
 
   const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
-  // Strip markdown code fences Claude sometimes adds despite instructions
   return raw.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
 }
 
 async function generateImageWithFal(
   prompt: string,
   imageUrls: string[],
-  aspectRatio: string
+  aspectRatio: string,
+  resolution = "1K"
 ): Promise<string> {
   // Free fallback for testing when FAL_KEY has no credits
   if (process.env.FAL_TEST_MODE === "1") {
@@ -356,13 +370,14 @@ async function generateImageWithFal(
       aspect_ratio: aspectRatio as unknown as "4:5",
       output_format: "png",
       safety_tolerance: "6",
-      image_urls: imageUrls.slice(0, 4),
-      resolution: "4K",
+      image_urls: imageUrls.slice(0, 9),
       limit_generations: false,
+      ...(resolution ? { resolution: resolution as unknown as "4K" } : {}),
     },
   });
 
-  const output = response.data as FalOutput;
+  // Handle both newer and older fal-ai/client versions
+  const output = ((response as Record<string, unknown>).data || response) as FalOutput;
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL");
   return url;
@@ -373,7 +388,8 @@ async function saveSlotImage(
   shootId: string,
   userId: string,
   slot: number,
-  imageUrl: string
+  imageUrl: string,
+  isTestMode: boolean = false
 ): Promise<string> {
   const imageRes = await fetch(imageUrl);
   if (!imageRes.ok) throw new Error(`Image fetch failed: ${imageRes.status}`);
@@ -383,14 +399,348 @@ async function saveSlotImage(
       ? imageRes.headers.get("content-type")!
       : "image/png";
   const bytes = Buffer.from(await imageRes.arrayBuffer());
-  const storagePath = `${userId}/${shootId}/slot-${slot}.png`;
+  const ext = contentType === "image/jpeg" ? "jpg" : "png";
+  const storagePath = `${userId}/${shootId}/slot-${slot}.${ext}`;
+  const bucket = isTestMode ? "test" : "generated-4k";
 
   const { error } = await service.storage
-    .from("generated-4k")
+    .from(bucket)
     .upload(storagePath, bytes, { contentType, upsert: true });
   if (error) throw new Error(error.message);
 
   return storagePath;
+}
+
+function wrapQuoteLines(text: string, maxCharsPerLine: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if (current && (current + " " + word).length > maxCharsPerLine) {
+      lines.push(current.trim());
+      current = word;
+    } else {
+      current = current ? current + " " + word : word;
+    }
+  }
+  if (current) lines.push(current.trim());
+  return lines.filter(Boolean);
+}
+
+function escXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildSvg(w: number, h: number, elements: string[], withShadow = false): string {
+  const defs = withShadow
+    ? `<defs><filter id="shadow"><feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.9)"/></filter></defs>`
+    : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${defs}${elements.join("")}</svg>`;
+}
+
+async function compositeQuoteCard(
+  service: ReturnType<typeof createServiceClient>,
+  shoot: {
+    id: string;
+    user_id: string;
+    quote: { text: string; attribution?: string } | null;
+    package_size: number;
+    aspect_ratio: string;
+  },
+  backgroundStoragePath: string,
+  bucket: string,
+  svgLayoutInstructions?: string
+): Promise<void> {
+  if (!shoot.quote?.text) return;
+
+  const quoteText = shoot.quote.text;
+  const attribution = shoot.quote.attribution ?? "";
+
+  // Find best portrait from an earlier completed slot
+  const { data: portraitSlot } = await service
+    .from("shoot_images")
+    .select("slot, preview_storage_bucket, preview_storage_path")
+    .eq("shoot_id", shoot.id)
+    .eq("status", "COMPLETE")
+    .lt("slot", shoot.package_size)
+    .order("slot", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!portraitSlot?.preview_storage_path) {
+    console.log("[compositeQuoteCard] no portrait found, keeping plain background");
+    return;
+  }
+
+  const [bgSigned, portraitSigned] = await Promise.all([
+    service.storage.from(bucket).createSignedUrl(backgroundStoragePath, 3600),
+    service.storage
+      .from(portraitSlot.preview_storage_bucket as string)
+      .createSignedUrl(portraitSlot.preview_storage_path as string, 3600),
+  ]);
+  if (!bgSigned.data?.signedUrl || !portraitSigned.data?.signedUrl) return;
+
+  const [bgRes, portraitRes] = await Promise.all([
+    fetch(bgSigned.data.signedUrl),
+    fetch(portraitSigned.data.signedUrl),
+  ]);
+  if (!bgRes.ok || !portraitRes.ok) return;
+
+  const [bgBuf, portraitBuf] = [
+    Buffer.from(await bgRes.arrayBuffer()),
+    Buffer.from(await portraitRes.arrayBuffer()),
+  ];
+
+  const bgMeta = await sharp(bgBuf).metadata();
+  const W = bgMeta.width ?? 1080;
+  const H = bgMeta.height ?? 1350;
+
+  // Ask Claude to pick a layout and color scheme
+  const [bgBlock, portraitBlock] = await Promise.all([
+    toBase64Block(bgSigned.data.signedUrl),
+    toBase64Block(portraitSigned.data.signedUrl),
+  ]);
+
+  const designRes = await anthropic.messages.create(
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 256,
+      messages: [
+        {
+          role: "user",
+          content: [
+            bgBlock,
+            portraitBlock,
+            {
+              type: "text",
+              text: `You are a graphic designer compositing a quote card. Image 1 is the mood background, image 2 is the subject portrait.
+
+Quote: "${quoteText}"${attribution ? `\nAttribution: ${attribution}` : ""}
+${svgLayoutInstructions ? `\nLayout guidance from shoot brief:\n${svgLayoutInstructions}\n` : ""}
+Choose the best layout:
+- "top_bottom": portrait fills frame, bold text in dark bands top and bottom
+- "split_right": portrait on left 55%, text on dark right panel
+- "overlay": portrait full-bleed, dark overlay, centered text
+
+Return ONLY valid JSON (no markdown):
+{"layout":"top_bottom","text_color":"#RRGGBB","accent_color":"#RRGGBB","overlay_opacity":0.45,"capitalize":true}`,
+            },
+          ],
+        },
+      ],
+    },
+    { timeout: 20_000, maxRetries: 0 }
+  );
+
+  const rawDesign =
+    designRes.content[0].type === "text" ? designRes.content[0].text : "{}";
+  let design: {
+    layout: string;
+    text_color: string;
+    accent_color: string;
+    overlay_opacity: number;
+    capitalize: boolean;
+  };
+  try {
+    const cleaned = rawDesign
+      .replace(/^```(?:json)?\s*/im, "")
+      .replace(/```\s*$/m, "")
+      .trim();
+    design = JSON.parse(cleaned);
+  } catch {
+    design = {
+      layout: "overlay",
+      text_color: "#FFFFFF",
+      accent_color: "#CCCCCC",
+      overlay_opacity: 0.45,
+      capitalize: true,
+    };
+  }
+
+  const textColor = design.text_color ?? "#FFFFFF";
+  const accentColor = design.accent_color ?? "#CCCCCC";
+  const overlayOpacity = Math.min(0.8, design.overlay_opacity ?? 0.45);
+  const displayQuote = design.capitalize ? quoteText.toUpperCase() : quoteText;
+
+  let finalBuf: Buffer;
+
+  if (design.layout === "split_right") {
+    const portraitW = Math.round(W * 0.55);
+    const panelW = W - portraitW;
+
+    const [croppedPortrait, panelBuf] = await Promise.all([
+      sharp(portraitBuf)
+        .resize(portraitW, H, { fit: "cover", position: "centre" })
+        .toBuffer(),
+      sharp({
+        create: {
+          width: panelW,
+          height: H,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: Math.round(0.88 * 255) },
+        },
+      })
+        .png()
+        .toBuffer(),
+    ]);
+
+    const canvas = await sharp({
+      create: { width: W, height: H, channels: 3, background: { r: 0, g: 0, b: 0 } },
+    })
+      .png()
+      .toBuffer();
+
+    const lines = wrapQuoteLines(displayQuote, 14);
+    const fontSize = Math.min(
+      Math.round(H / (lines.length + 5)),
+      Math.round(panelW / 5)
+    );
+    const lineH = fontSize + 10;
+    const blockH = lines.length * lineH;
+    const startY = Math.round((H - blockH) / 2);
+    const cx = portraitW + Math.round(panelW / 2);
+
+    const textEls = lines.map(
+      (line, i) =>
+        `<text x="${cx}" y="${startY + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif">${escXml(line)}</text>`
+    );
+    if (attribution) {
+      textEls.push(
+        `<text x="${cx}" y="${startY + blockH + 32}" text-anchor="middle" font-size="${Math.round(fontSize * 0.45)}" fill="${accentColor}" font-family="Arial, sans-serif">${escXml(attribution)}</text>`
+      );
+    }
+
+    finalBuf = await sharp(canvas)
+      .composite([
+        { input: croppedPortrait, top: 0, left: 0 },
+        { input: panelBuf, top: 0, left: portraitW },
+        { input: Buffer.from(buildSvg(W, H, textEls)) },
+      ])
+      .png()
+      .toBuffer();
+
+  } else if (design.layout === "top_bottom") {
+    const bandH = Math.round(H * 0.22);
+
+    const [croppedPortrait, topBand, botBand] = await Promise.all([
+      sharp(portraitBuf)
+        .resize(W, H, { fit: "cover", position: "north" })
+        .toBuffer(),
+      sharp({
+        create: {
+          width: W,
+          height: bandH,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: Math.round(0.65 * 255) },
+        },
+      })
+        .png()
+        .toBuffer(),
+      sharp({
+        create: {
+          width: W,
+          height: bandH,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: Math.round(0.75 * 255) },
+        },
+      })
+        .png()
+        .toBuffer(),
+    ]);
+
+    const lines = wrapQuoteLines(displayQuote, 20);
+    const halfLen = Math.ceil(lines.length / 2);
+    const topLines = lines.slice(0, halfLen);
+    const botLines = lines.slice(halfLen);
+    const fontSize = Math.min(
+      Math.round(bandH / (Math.max(topLines.length, botLines.length) + 1.5)),
+      Math.round(W / 9)
+    );
+    const lineH = fontSize + 8;
+
+    const textEls: string[] = [];
+    topLines.forEach((line, i) => {
+      textEls.push(
+        `<text x="${W / 2}" y="${Math.round(bandH * 0.25) + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif" filter="url(#shadow)">${escXml(line)}</text>`
+      );
+    });
+    botLines.forEach((line, i) => {
+      textEls.push(
+        `<text x="${W / 2}" y="${H - bandH + Math.round(bandH * 0.2) + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif" filter="url(#shadow)">${escXml(line)}</text>`
+      );
+    });
+    if (attribution) {
+      textEls.push(
+        `<text x="${W / 2}" y="${H - 28}" text-anchor="middle" font-size="${Math.round(fontSize * 0.45)}" fill="${accentColor}" font-family="Arial, sans-serif">${escXml(attribution)}</text>`
+      );
+    }
+
+    finalBuf = await sharp(croppedPortrait)
+      .composite([
+        { input: topBand, top: 0, left: 0 },
+        { input: botBand, top: H - bandH, left: 0 },
+        { input: Buffer.from(buildSvg(W, H, textEls, true)) },
+      ])
+      .png()
+      .toBuffer();
+
+  } else {
+    // "overlay": portrait full-bleed + dark overlay + centered text
+    const overlayAlpha = Math.round(overlayOpacity * 255);
+    const [croppedPortrait, overlayBuf] = await Promise.all([
+      sharp(portraitBuf)
+        .resize(W, H, { fit: "cover", position: "centre" })
+        .toBuffer(),
+      sharp({
+        create: {
+          width: W,
+          height: H,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: overlayAlpha },
+        },
+      })
+        .png()
+        .toBuffer(),
+    ]);
+
+    const lines = wrapQuoteLines(displayQuote, 18);
+    const fontSize = Math.min(
+      Math.round(H / (lines.length + 6)),
+      Math.round(W / 7)
+    );
+    const lineH = fontSize + 14;
+    const blockH = lines.length * lineH;
+    const startY = Math.round((H - blockH) / 2);
+
+    const textEls = lines.map(
+      (line, i) =>
+        `<text x="${W / 2}" y="${startY + i * lineH + fontSize}" text-anchor="middle" font-size="${fontSize}" font-weight="900" fill="${textColor}" font-family="Impact, Arial Black, sans-serif" filter="url(#shadow)">${escXml(line)}</text>`
+    );
+    if (attribution) {
+      textEls.push(
+        `<text x="${W / 2}" y="${startY + blockH + 50}" text-anchor="middle" font-size="${Math.round(fontSize * 0.45)}" fill="${accentColor}" font-family="Arial, sans-serif">${escXml(attribution)}</text>`
+      );
+    }
+
+    finalBuf = await sharp(croppedPortrait)
+      .composite([
+        { input: overlayBuf, blend: "over" },
+        { input: Buffer.from(buildSvg(W, H, textEls, true)) },
+      ])
+      .png()
+      .toBuffer();
+  }
+
+  await service.storage.from(bucket).upload(backgroundStoragePath, finalBuf, {
+    contentType: "image/png",
+    upsert: true,
+  });
+
+  console.log(`[compositeQuoteCard] layout="${design.layout}" saved to ${bucket}/${backgroundStoragePath}`);
 }
 
 export type WorkerResult = {
@@ -403,9 +753,10 @@ export type WorkerResult = {
 
 export async function startGenerationWorker(
   shootId: string,
-  opts: { maxSlots?: number } = {}
+  opts: { maxSlots?: number; resolution?: string } = {}
 ): Promise<WorkerResult> {
   const maxSlots = opts.maxSlots ?? 1;
+  const resolution = opts.resolution ?? "1K";
   const service = createServiceClient();
   const ts = () => new Date().toISOString();
 
@@ -418,6 +769,7 @@ export async function startGenerationWorker(
   if (shootErr || !shoot) throw new Error(shootErr?.message ?? "Shoot not found");
 
   const total = normalizePackageSize(shoot.package_size);
+  const hasQuote = !!(shoot.quote as { text?: string } | null)?.text && total === 10;
   // Supabase returns JSONB defaults as {} (object), not "" — normalize to string first.
   const rawIdentity = shoot.identity_profile;
   let identityProfile: string =
@@ -566,12 +918,23 @@ export async function startGenerationWorker(
     .trim();
 
   let prompts: Record<string, string | SceneSlotPrompt> = {};
+  const svgLayoutMap: Record<string, string> = {};
   try {
     const parsed = JSON.parse(shootBriefClean);
-    prompts = (parsed.prompts as Record<string, string | SceneSlotPrompt>) ?? {};
+    const rawPrompts = parsed.prompts;
+    if (Array.isArray(rawPrompts)) {
+      // New array format from SHOOT_BRIEF_SYSTEM_INSTRUCTION
+      for (const p of rawPrompts as NewPromptObject[]) {
+        const key = String(p.prompt_index);
+        if (p.fully_consolidated_prompt) prompts[key] = p.fully_consolidated_prompt;
+        if (p.svg_layout_instructions) svgLayoutMap[key] = p.svg_layout_instructions;
+      }
+    } else if (rawPrompts && typeof rawPrompts === "object") {
+      // Legacy dict format
+      prompts = rawPrompts as Record<string, string | SceneSlotPrompt>;
+    }
   } catch (e) {
     console.error("[generate] JSON parse failed, falling back to regex", e);
-    // Last-resort regex extraction if JSON is still malformed
     const match = shootBriefClean.match(/"1"\s*:\s*"([^"]+)"/);
     if (match) prompts["1"] = match[1];
   }
@@ -595,7 +958,7 @@ export async function startGenerationWorker(
   } else {
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
-    imageUrls = [...identityUrls, ...inspirationUrls].slice(0, 4);
+    imageUrls = [...identityUrls.slice(0, 1), ...inspirationUrls.slice(0, 8)];
   }
 
   const identityUrls = refs
@@ -695,12 +1058,32 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const falUrl = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio));
+      const falUrl = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio, resolution));
 
-      // In test mode skip uploading to Supabase storage (avoids Pollinations.ai rate limits)
-      const storagePath = isTestMode
-        ? `test/${shootId}/slot-${slot}.jpg`
-        : await saveSlotImage(service, shootId, shoot.user_id, slot, falUrl);
+      // Always save the image to Supabase storage (using "test" bucket in test mode) so signed URLs work
+      const storagePath = await saveSlotImage(service, shootId, shoot.user_id, slot, falUrl, isTestMode);
+
+      // Quote card composite: replace plain background with portrait + text layout
+      if (hasQuote && slot === total) {
+        const quoteBucket = isTestMode ? "test" : "generated-4k";
+        try {
+          await compositeQuoteCard(
+            service,
+            {
+              id: shootId,
+              user_id: shoot.user_id,
+              quote: shoot.quote as { text: string; attribution?: string } | null,
+              package_size: total,
+              aspect_ratio: shoot.aspect_ratio,
+            },
+            storagePath,
+            quoteBucket,
+            svgLayoutMap[String(slot)]
+          );
+        } catch (compErr) {
+          console.error("[generate] compositeQuoteCard failed, keeping plain background:", compErr);
+        }
+      }
 
       await service
         .from("shoot_images")
@@ -710,9 +1093,9 @@ export async function startGenerationWorker(
           provider: isTestMode ? "pollinations" : "vercel-fal",
           configured_model: isTestMode ? "pollinations-free" : "fal-ai/nano-banana-2/edit",
           preview_storage_bucket: isTestMode ? "test" : "generated-4k",
-          preview_storage_path: isTestMode ? falUrl : storagePath,
+          preview_storage_path: storagePath,
           download_storage_bucket: isTestMode ? "test" : "generated-4k",
-          download_storage_path: isTestMode ? falUrl : storagePath,
+          download_storage_path: storagePath,
           updated_at: ts(),
         })
         .eq("id", slotImg.id);

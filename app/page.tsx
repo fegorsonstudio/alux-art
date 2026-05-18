@@ -6,7 +6,7 @@ import type { User, Shoot, ShootImage, AspectRatio, Currency, ShootMode, Referen
 import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packagePrice } from "@/lib/types";
 import styles from "./workspace.module.css";
 
-interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; }
+interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; note?: string; }
 interface CharacterBaseItem { id: string; user_label?: string | null; base_url?: string | null; attempt_number: number; created_at: string; }
 const DEFAULT_PACKAGES: PackagePricing[] = Object.values(SHOOT_PACKAGES).map((pkg) => ({
   imageCount: pkg.imageCount,
@@ -50,6 +50,7 @@ export default function WorkspacePage() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [currency, setCurrency] = useState<Currency>("NGN");
   const [packageSize, setPackageSize] = useState<ShootPackageSize>(10);
+  const [resolution, setResolution] = useState("1K");
   const [quote, setQuote] = useState({ text: "", attribution: "" });
 
   // Shoots
@@ -72,6 +73,9 @@ export default function WorkspacePage() {
   const [baseAction, setBaseAction] = useState<"idle" | "loading">("idle");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState("");
+  const [editingTag, setEditingTag] = useState("");
 
   const identityRef = useRef<HTMLInputElement>(null);
   const inspirationRef = useRef<HTMLInputElement>(null);
@@ -159,6 +163,8 @@ export default function WorkspacePage() {
           storageBucket: img.storage_bucket as string,
           storagePath: img.storage_path as string,
           url: img.url as string,
+          tag: img.tag as ReferenceTag | undefined,
+          note: img.note as string | undefined,
         }));
         setInspirationLibraryImages(imgs);
       }
@@ -373,6 +379,25 @@ export default function WorkspacePage() {
     setInspirationImages(prev => prev.filter(img => !inspirationLibraryImages.some(l => l.id === img.id)));
   };
 
+  const handleDeleteInspirationLibraryImage = async (imgId: string) => {
+    await fetch(`/api/inspiration-library?id=${imgId}`, { method: "DELETE" });
+    setInspirationLibraryImages(prev => prev.filter(i => i.id !== imgId));
+    setInspirationImages(prev => prev.filter(i => i.id !== imgId));
+    if (editingInspirationId === imgId) setEditingInspirationId(null);
+  };
+
+  const handleSaveInspirationMeta = async (imgId: string, tag: string, note: string) => {
+    await fetch("/api/inspiration-library", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: imgId, tag: tag || null, note: note || null }),
+    });
+    const update = { tag: (tag as ReferenceTag) || undefined, note: note || undefined };
+    setInspirationLibraryImages(prev => prev.map(i => i.id === imgId ? { ...i, ...update } : i));
+    setInspirationImages(prev => prev.map(i => i.id === imgId ? { ...i, ...update } : i));
+    setEditingInspirationId(null);
+  };
+
   const handleInspirationFiles = async (files: FileList) => {
     setUploading("inspiration");
     const results = await Promise.all(Array.from(files).map(f => uploadFile(f, "inspiration-images", true)));
@@ -496,9 +521,13 @@ export default function WorkspacePage() {
       setCurrentShoot(shoot);
 
       if (adminBypass) {
-        setStatus({ type: "ok", message: "Generating..." });
+        setStatus({ type: "ok", message: "Your shoot is queued! Generating professional images — check back in about 1 hour." });
         resumeStartedRef.current.add(shoot.id); // prevent useEffect double-start
-        fetch(`/api/shoots/${shoot.id}/start`, { method: "POST" }).catch(() => {});
+        fetch(`/api/shoots/${shoot.id}/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resolution }),
+        }).catch(() => {});
         return;
       }
 
@@ -701,20 +730,77 @@ export default function WorkspacePage() {
 
             {inspirationLibraryImages.length > 0 && (
               <div>
-                <p className={styles.libLabel}>Saved inspiration - tap to select/deselect</p>
+                <p className={styles.libLabel}>Saved inspiration — tap to select/deselect</p>
                 <div className={styles.thumbGrid}>
                   {inspirationLibraryImages.map(img => {
                     const selected = inspirationImages.some(i => i.id === img.id);
+                    const isEditing = editingInspirationId === img.id;
                     return (
-                      <button key={img.id} type="button" className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
-                        onClick={() => handleAddFromInspirationLibrary(img)} aria-pressed={selected}>
+                      <div key={img.id}
+                        role="button" tabIndex={0} aria-pressed={selected}
+                        className={`${styles.thumb} ${selected ? styles.thumbSelected : ""}`}
+                        onClick={() => handleAddFromInspirationLibrary(img)}
+                        onKeyDown={e => e.key === "Enter" && handleAddFromInspirationLibrary(img)}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt={img.name} />
                         {selected && <span className={styles.thumbCheck}>OK</span>}
-                      </button>
+                        {img.tag && (
+                          <span className={styles.thumbTag}>
+                            {img.tag.replace(/_/g, " ")}
+                          </span>
+                        )}
+                        <button type="button" className={styles.libDeleteBtn}
+                          onClick={e => { e.stopPropagation(); handleDeleteInspirationLibraryImage(img.id); }}
+                          title="Delete permanently">✕</button>
+                        <button type="button" className={`${styles.libEditBtn} ${isEditing ? styles.libEditBtnActive : ""}`}
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (isEditing) { setEditingInspirationId(null); } else {
+                              setEditingInspirationId(img.id);
+                              setEditingNote(img.note ?? "");
+                              setEditingTag(img.tag ?? "");
+                            }
+                          }}
+                          title="Edit tag & note">✎</button>
+                      </div>
                     );
                   })}
                 </div>
+
+                {/* Inline edit panel */}
+                {editingInspirationId && (() => {
+                  const img = inspirationLibraryImages.find(i => i.id === editingInspirationId);
+                  if (!img) return null;
+                  return (
+                    <div className={styles.libEditPanel}>
+                      <p className={styles.libEditTitle}>{img.name}</p>
+                      <div className={styles.libEditRow}>
+                        <label className={styles.libEditLabel}>Tag</label>
+                        <select className={styles.libEditSelect} value={editingTag} onChange={e => setEditingTag(e.target.value)}>
+                          <option value="">None</option>
+                          {REFERENCE_TAGS.map(t => (
+                            <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.libEditRow}>
+                        <label className={styles.libEditLabel}>Note</label>
+                        <textarea className={styles.libEditNote} value={editingNote}
+                          onChange={e => setEditingNote(e.target.value)}
+                          placeholder="e.g. summer shoot, street style..." rows={2} />
+                      </div>
+                      <div className={styles.libEditActions}>
+                        <button className={styles.libEditSave}
+                          onClick={() => handleSaveInspirationMeta(editingInspirationId, editingTag, editingNote)}>
+                          Save
+                        </button>
+                        <button className={styles.libEditCancel} onClick={() => setEditingInspirationId(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -846,9 +932,25 @@ export default function WorkspacePage() {
               Pay {price} & Generate {packageSize}
             </button>
             {isAdmin && (
-              <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
-                Admin: Generate Free
-              </button>
+              <div className={styles.adminControls}>
+                <div className={styles.adminControlRow}>
+                  <p className={styles.adminControlLabel}>Resolution</p>
+                  <div className={styles.pillGroup}>
+                    {(["", "0.5K", "1K", "2K", "4K"] as const).map((r) => (
+                      <button
+                        key={r || "default"}
+                        className={`${styles.pill} ${resolution === r ? styles.pillActive : ""}`}
+                        onClick={() => setResolution(r)}
+                      >
+                        {r || "Default"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
+                  Admin: Generate Free
+                </button>
+              </div>
             )}
           </div>
 
@@ -925,9 +1027,18 @@ export default function WorkspacePage() {
 
               {/* Progress */}
               {(currentShoot.status === "PROCESSING" || currentShoot.status === "QUEUED") && (
-                <div className={styles.progressBar}>
-                  <div className={styles.galleryFill} style={{ width: `${currentShoot.progress ?? 0}%` }} />
-                </div>
+                <>
+                  <div className={styles.progressBar}>
+                    <div className={styles.galleryFill} style={{ width: `${currentShoot.progress ?? 0}%` }} />
+                  </div>
+                  <div className={styles.processingNotice}>
+                    <span className={styles.processingIcon}>⏱</span>
+                    <div>
+                      <p className={styles.processingTitle}>Generating your professional images</p>
+                      <p className={styles.processingBody}>High-quality images are heavy files that take time to render. Check back in about <strong>1 hour</strong> — we&apos;ll also send you an email when they&apos;re ready.</p>
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* Base locking — in progress */}

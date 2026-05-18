@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { startGenerationWorker } from "@/lib/generate";
-import { notifyShootComplete } from "@/lib/n8n";
+import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
 
 export const maxDuration = 300;
@@ -11,6 +11,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  const resolution: string = typeof body.resolution === "string" ? body.resolution : "1K";
   const internalSecret = req.headers.get("x-internal-secret");
   const isInternal =
     internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
@@ -46,7 +48,7 @@ export async function POST(
 
   const { data: shoot } = await service
     .from("shoots")
-    .select("status, user_id, character_base_id")
+    .select("status, user_id, owner_email, character_base_id")
     .eq("id", id)
     .single();
 
@@ -134,10 +136,16 @@ export async function POST(
       payload: { stage: "Starting generation", progress: 5 },
       created_at: now,
     });
+
+    // Notify user that generation has started (fire-and-forget)
+    const ownerEmail = (shoot as unknown as Record<string, string>).owner_email;
+    if (ownerEmail) {
+      notifyGenerationStarted(id, ownerEmail).catch(() => {});
+    }
   }
 
   try {
-    const result = await startGenerationWorker(id, { maxSlots: 1 });
+    const result = await startGenerationWorker(id, { maxSlots: 1, resolution });
 
     if (!result.done) {
       // Self-continuation: fire next slot in a new invocation (fire-and-forget)
@@ -147,7 +155,9 @@ export async function POST(
         method: "POST",
         headers: {
           "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ resolution }),
       }).catch((err) =>
         console.error("[start] self-continuation failed:", err)
       );

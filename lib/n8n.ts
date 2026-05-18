@@ -5,7 +5,7 @@
  * webhook and handles email delivery and any downstream logging.
  */
 
-export async function notifyShootComplete(shootId: string): Promise<void> {
+async function sendWebhook(payload: Record<string, unknown>): Promise<void> {
   const url =
     process.env.N8N_WEBHOOK_URL ?? process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
   if (!url) return;
@@ -18,9 +18,24 @@ export async function notifyShootComplete(shootId: string): Promise<void> {
         ? { Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}` }
         : {}),
     },
-    body: JSON.stringify({
-      type: "shoot_complete",
-      shoot_id: shootId,
-    }),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function notifyGenerationStarted(
+  shootId: string,
+  userEmail: string
+): Promise<void> {
+  await sendWebhook({
+    type: "generation_started",
+    shoot_id: shootId,
+    user_email: userEmail,
+  });
+}
+
+export async function notifyShootComplete(shootId: string): Promise<void> {
+  await sendWebhook({
+    type: "shoot_complete",
+    shoot_id: shootId,
   });
 }

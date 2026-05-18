@@ -52,14 +52,35 @@ export async function PATCH(request: NextRequest) {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const form = await request.formData();
-  const imageId = form.get("id") as string | null;
+  const contentType = request.headers.get("content-type") ?? "";
+  let imageId: string | null = null;
+  let tag: string | null | undefined;
+  let note: string | null | undefined;
+  let isMeta = false;
+
+  if (contentType.includes("application/json")) {
+    const body = await request.json().catch(() => ({}));
+    imageId = body.id ?? null;
+    tag = body.tag ?? null;
+    note = body.note ?? null;
+    isMeta = true;
+  } else {
+    const form = await request.formData();
+    imageId = form.get("id") as string | null;
+  }
+
   if (!imageId) return NextResponse.json({ error: "Missing image id" }, { status: 400 });
 
   const service = createServiceClient();
+  const updates: Record<string, unknown> = { last_used_at: new Date().toISOString() };
+  if (isMeta) {
+    updates.tag = tag ?? null;
+    updates.note = note ?? null;
+  }
+
   const { error } = await service
     .from("inspiration_images")
-    .update({ last_used_at: new Date().toISOString() })
+    .update(updates)
     .eq("id", imageId)
     .eq("user_id", user.id);
 

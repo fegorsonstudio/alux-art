@@ -46,7 +46,7 @@ export async function GET() {
     .select("*, shoot_images(*)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(25);
+    .limit(1000);
 
   return NextResponse.json({ shoots: shoots ?? [] });
 }
