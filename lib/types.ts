@@ -60,7 +60,7 @@ export interface CharacterBase {
 }
 export type ImageStatus = "PENDING" | "GENERATING" | "UPSCALING" | "COMPLETE" | "FAILED";
 export type ImageKind = "portrait" | "mood" | "quote";
-export type ReferenceTag = "OUTFIT" | "HAIRSTYLE" | "MAKEUP" | "BACKGROUND" | "LIGHTING" | "ACCESSORY" | "COLOR_GRADE";
+export type ReferenceTag = "OUTFIT" | "HAIRSTYLE" | "MAKEUP" | "BACKGROUND" | "LIGHTING" | "ACCESSORY" | "COLOR_GRADE" | "NAIL_DESIGN";
 export type ReferencePurpose = "identity" | "inspiration" | "tagged";
 export type ShootPackageSize = 5 | 10;
 
@@ -94,7 +94,7 @@ export const ASPECTS: Record<AspectRatio, AspectConfig> = {
 };
 
 export const REFERENCE_TAGS: ReferenceTag[] = [
-  "OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE",
+  "OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE",
 ];
 
 export const FAL_MODELS = [

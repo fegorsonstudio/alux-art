@@ -860,7 +860,7 @@ export default function WorkspacePage() {
                 <input ref={taggedRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                   onChange={e => e.target.files && handleTaggedFiles(e.target.files)} />
                 <p>{uploading === "tagged" ? "Uploading..." : "Add reference images and tag each one"}</p>
-                <p className={styles.uploadCount}>OUTFIT / HAIRSTYLE / MAKEUP / LIGHTING / BACKGROUND</p>
+                <p className={styles.uploadCount}>OUTFIT / HAIRSTYLE / MAKEUP / NAIL DESIGN / LIGHTING / BACKGROUND</p>
               </div>
             </div>
           )}
