@@ -59,6 +59,49 @@ async function toGeminiImagePart(url: string) {
   return { inlineData: { mimeType: "image/jpeg" as const, data: resized.toString("base64") } };
 }
 
+// Words that trigger fal.ai content moderation even at safety_tolerance "6"
+const FAL_REPLACE: [RegExp, string][] = [
+  [/\balluring\b/gi, "intense"],
+  [/\bseductive\b/gi, "confident"],
+  [/\bsensual\b/gi, "graceful"],
+  [/\bsultry\b/gi, "captivating"],
+  [/\bteasing\b/gi, "playful"],
+  [/\brevealing\b/gi, "showing"],
+  [/\bexposed\b/gi, "visible"],
+];
+
+function sanitizeForFal(prompt: string): string {
+  let p = prompt;
+  for (const [pattern, replacement] of FAL_REPLACE) {
+    p = p.replace(pattern, replacement);
+  }
+  return p;
+}
+
+// Wrapper: try raw prompt first, fall back to sanitized version on Forbidden
+async function callFalWithFallback(
+  slotPrompt: string,
+  imageUrls: string[],
+  aspectRatio: string,
+  resolution: string
+): Promise<{ url: string; sanitized: boolean }> {
+  const isForbidden = (err: unknown) =>
+    err instanceof Error && err.message.toLowerCase().includes("forbidden");
+  try {
+    const url = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio, resolution));
+    return { url, sanitized: false };
+  } catch (err) {
+    if (isForbidden(err)) {
+      const clean = sanitizeForFal(slotPrompt);
+      if (clean !== slotPrompt) {
+        const url = await withRetry(() => generateImageWithFal(clean, imageUrls, aspectRatio, resolution));
+        return { url, sanitized: true };
+      }
+    }
+    throw err;
+  }
+}
+
 type ShootRefRow = {
   purpose: string;
   tag?: string | null;
@@ -117,6 +160,8 @@ async function signRefs(
   );
 }
 
+const IDENTITY_PROFILE_FIELDS = ["Face:", "Skin:", "Eyes:", "Hair:", "Build:", "Distinctive:"];
+
 async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
   const imageParts = await Promise.all(
     imageUrls.filter(Boolean).slice(0, 4).map(toGeminiImagePart)
@@ -127,28 +172,37 @@ async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
     generationConfig: { maxOutputTokens: 512 },
   });
 
-  const result = await Promise.race([
-    model.generateContent([
-      ...imageParts,
-      `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
+  const basePrompt = `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
-Return ONLY this format:
+Return ONLY this format — ALL 6 fields are required:
 IDENTITY PROFILE:
 Face: [facial structure — shape, proportions, bone structure]
 Skin: [tone with specific descriptors e.g. warm medium brown, cool fair]
 Eyes: [color, shape, spacing]
-Hair: [color, texture, length, style]
+Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
 Build: [body type, height impression, proportions]
 Distinctive: [any notable stable features]
 
-Clinical and precise. No subjective judgments. Stable biometric features only.`,
-    ]),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Identity analysis timeout")), IDENTITY_ANALYSIS_TIMEOUT_MS)
-    ),
-  ]);
+Clinical and precise. No subjective judgments. Stable biometric features only.`;
 
-  return result.response.text();
+  const run = (extra = "") =>
+    Promise.race([
+      model.generateContent([...imageParts, basePrompt + extra]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Identity analysis timeout")), IDENTITY_ANALYSIS_TIMEOUT_MS)
+      ),
+    ]);
+
+  let text = (await run()).response.text();
+
+  // Retry once if any field is missing — Gemini sometimes stops early
+  const missing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
+  if (missing.length > 0) {
+    console.warn("[generate] identity profile missing fields:", missing);
+    text = (await run(`\n\nCRITICAL: Your previous response was missing: ${missing.join(", ")}. You MUST include ALL 6 fields.`)).response.text();
+  }
+
+  return text;
 }
 
 type SceneSlotPrompt = {
@@ -272,7 +326,8 @@ async function buildShootBrief(
   },
   identityProfile: string,
   refs: SignedRef[],
-  characterBaseUrl?: string
+  characterBaseUrl?: string,
+  forbiddenExamples?: string[]
 ): Promise<string> {
   const packageSize = normalizePackageSize(shoot.package_size);
   const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
@@ -317,6 +372,13 @@ async function buildShootBrief(
       parts.push({ text: `[${tag}] reference image — "${r.name}"${note}: Extract ONLY the ${tag.toLowerCase()} from this image and apply it to all portrait prompts. Ignore all other elements.` });
       parts.push(groupCImageBlocks[i]);
     }
+  }
+
+  // Inject failure memory so Gemini avoids language patterns that were rejected before
+  if (forbiddenExamples && forbiddenExamples.length > 0) {
+    parts.push({
+      text: `GENERATION FAILURE MEMORY — Learned Restrictions:\nThe following prompts were previously REJECTED by the image generation engine for content policy violations. Study the exact wording carefully. Identify which specific words or phrases likely caused the rejection and NEVER use similar language in any prompt you generate:\n\n${forbiddenExamples.map((p, i) => `Rejected example ${i + 1}:\n"${p.slice(0, 300)}"`).join("\n\n")}\n\nAvoid ALL similar wording. This is critical — rejected prompts waste user credits.`,
+    });
   }
 
   parts.push({
@@ -898,9 +960,27 @@ export async function startGenerationWorker(
       created_at: ts(),
     });
 
+    // Fetch past Forbidden prompts so Gemini can avoid repeating those language patterns
+    let forbiddenExamples: string[] = [];
+    try {
+      const { data: fbData } = await service
+        .from("generation_events")
+        .select("payload")
+        .eq("type", "forbidden_prompt")
+        .eq("user_id", shoot.user_id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      forbiddenExamples = (fbData ?? [])
+        .map((row) => ((row.payload as Record<string, unknown>)?.prompt as string) ?? "")
+        .filter(Boolean);
+      if (forbiddenExamples.length > 0) {
+        console.log(`[generate] injecting ${forbiddenExamples.length} forbidden example(s) into brief`);
+      }
+    } catch { /* non-fatal */ }
+
     // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
     // Retrying a timed-out Claude call would double the budget and kill the function.
-    shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl);
+    shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples);
     // Validate before storing — truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -999,7 +1079,7 @@ export async function startGenerationWorker(
   } else {
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
-    imageUrls = [...identityUrls.slice(0, 1), ...inspirationUrls.slice(0, 8)];
+    imageUrls = [...identityUrls.slice(0, 3), ...inspirationUrls.slice(0, 6)];
   }
 
   const identityUrls = refs
@@ -1045,10 +1125,9 @@ export async function startGenerationWorker(
       created_at: ts(),
     });
 
+    let slotPrompt = ""; // hoisted so catch block can log it for learning
     try {
       const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];
-
-      let slotPrompt: string;
       if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
         // Locked-base: assemble final prompt from scene fields + base anchor opener
         const scene = rawSlotPrompt as SceneSlotPrompt;
@@ -1105,7 +1184,10 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const falUrl = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio, resolution));
+      const { url: falUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution);
+      if (promptWasSanitized) {
+        console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
+      }
 
       // Always save the image to Supabase storage (using "test" bucket in test mode) so signed URLs work
       const storagePath = await saveSlotImage(service, shootId, shoot.user_id, slot, falUrl, isTestMode);
@@ -1158,6 +1240,21 @@ export async function startGenerationWorker(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[generate] slot ${slot} failed:`, message);
+
+      // Log Forbidden prompts to generation_events so Gemini can learn from them next shoot
+      if (message.toLowerCase().includes("forbidden")) {
+        try {
+          await service.from("generation_events").insert({
+            id: crypto.randomUUID(),
+            shoot_id: shootId,
+            user_id: shoot.user_id,
+            type: "forbidden_prompt",
+            payload: { slot, prompt: slotPrompt.slice(0, 2000) },
+            created_at: ts(),
+          });
+        } catch { /* non-fatal */ }
+      }
+
       failedCount++;
 
       await service
