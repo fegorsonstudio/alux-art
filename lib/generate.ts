@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import { createServiceClient } from "./supabase-server";
@@ -7,6 +8,7 @@ import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
@@ -43,6 +45,18 @@ async function toBase64Block(url: string) {
       data: resized.toString("base64"),
     },
   };
+}
+
+// Gemini image part — same resize logic, different wrapper format
+async function toGeminiImagePart(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  const resized = await sharp(buf)
+    .resize(2000, 2000, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  return { inlineData: { mimeType: "image/jpeg" as const, data: resized.toString("base64") } };
 }
 
 type ShootRefRow = {
@@ -201,6 +215,10 @@ Inspect Group A closely. If NO identity photo displays clear dentition, you MUST
 2. Styling, Hairstyles, and Overrides
 By default, preserve the hair from Group A. If Group C includes an asset tagged as "hairstyle reference", override both Group A and Group B hairstyles. If Group C contains a nail design reference, detail custom nail characteristics in outfit_look.
 
+[OUTFIT] CONSISTENCY LOCK: If Group C contains an asset tagged [OUTFIT], that exact outfit MUST be worn by the subject in ALL 9 portrait prompts without exception. Extract the specific garment, fabric, color, cut, silhouette, and surface details from the [OUTFIT] reference image and replicate them precisely in every portrait prompt. Shot-to-shot variation must come only from pose, camera angle, expression, and composition — NOT from changing the outfit. Do not invent or substitute any alternative garments.
+
+[BACKGROUND] CONSISTENCY LOCK: If Group C contains an asset tagged [BACKGROUND], extract the specific environment type, location, and visual characteristics from that reference and use it as the primary backdrop setting across all portrait prompts. Variation between shots may come from framing, distance, and angle — but the environment type must remain consistent with the [BACKGROUND] reference.
+
 3. Critical Exclusions Registry
 - No Aesthetic Bleeding: Do NOT transfer models, skin tones, faces, or hairstyles from Group B or Group C onto the target subject.
 - No Identity Artifacts: Do NOT transfer casual clothing from Group A onto the editorial. Group A is for physical identity preservation only.
@@ -216,7 +234,7 @@ Dynamically select one of the world's top 4 medium-format camera systems (Hassel
 Every prompt must incorporate organic atmospheric elements: volumetric dust motes, morning mist, wind-blown elements, humid air quality, micro light leaks, or organic lens flares.
 
 7. Self-Containment Mandate
-Every single prompt must be fully self-contained. Never reference other prompts. Fully articulate all details in every prompt, even if repeated.
+Every single prompt must be fully self-contained. Never reference other prompts. Fully articulate all details in every prompt, even if repeated. Do NOT include any internal reasoning phrases such as "as seen in identity photo X", "from reference image Y", "per Group C", or any other meta-references to the input assets. The output prompt text is sent directly to an image generator that has no context about the input groups — describe everything explicitly in photographic language.
 
 IV. THE 10th PROMPT: THE GRAPHIC QUOTE CARD
 
@@ -234,7 +252,7 @@ IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolida
     {
       "prompt_index": 1,
       "is_quote_card": false,
-      "fully_consolidated_prompt": "Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality. [Then: all scene, styling, lighting, pose, camera, and art direction details — fully self-contained.]",
+      "fully_consolidated_prompt": "Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality. Scene: [lighting setup, background/environment description, shot setup]. Subject: [body language, pose, expression, gaze direction]. Important Details: [exact outfit from [OUTFIT] reference or inspiration, fabric/texture specifics, hairstyle, lens feel, color balance, any tag overrides]. Use Case: editorial fashion photography. Constraints: [preserve identity, preserve outfit lock if [OUTFIT] was provided, negative constraints].",
       "negative_prompts": "no additional jewelry, no dead eyes without catchlights, no imaginary teeth, no asymmetric facial structures"
     },
     {
@@ -277,31 +295,30 @@ async function buildShootBrief(
     .join("\n");
 
   const [groupABlocks, groupBBlocks, groupCBlocks] = await Promise.all([
-    Promise.all(groupAUrls.slice(0, 4).map(toBase64Block)),
-    Promise.all(inspirationRefs.map((r) => toBase64Block(r.url))),
-    Promise.all(taggedRefs.map((r) => toBase64Block(r.url))),
+    Promise.all(groupAUrls.slice(0, 4).map(toGeminiImagePart)),
+    Promise.all(inspirationRefs.map((r) => toGeminiImagePart(r.url))),
+    Promise.all(taggedRefs.map((r) => toGeminiImagePart(r.url))),
   ]);
 
-  type ContentBlock = { type: "text"; text: string } | Awaited<ReturnType<typeof toBase64Block>>;
-  const content: ContentBlock[] = [];
+  type GeminiPart = { text: string } | { inlineData: { mimeType: "image/jpeg"; data: string } };
+  const parts: GeminiPart[] = [];
 
   if (groupABlocks.length > 0) {
-    content.push({ type: "text", text: groupALabel });
-    content.push(...groupABlocks);
+    parts.push({ text: groupALabel });
+    parts.push(...groupABlocks);
   }
 
   if (groupBBlocks.length > 0) {
-    content.push({ type: "text", text: "GROUP B — Inspiration (Aesthetic & Pose): Visual references for environments, compositions, camera angles, lighting moods, and editorial styling." });
-    content.push(...groupBBlocks);
+    parts.push({ text: "GROUP B — Inspiration (Aesthetic & Pose): Visual references for environments, compositions, camera angles, lighting moods, and editorial styling." });
+    parts.push(...groupBBlocks);
   }
 
   if (groupCBlocks.length > 0) {
-    content.push({ type: "text", text: `GROUP C — Accessories & Overrides:\n${groupCDescriptions}` });
-    content.push(...groupCBlocks);
+    parts.push({ text: `GROUP C — Accessories & Overrides:\n${groupCDescriptions}` });
+    parts.push(...groupCBlocks);
   }
 
-  content.push({
-    type: "text",
+  parts.push({
     text: `SHOOT PARAMETERS:
 - Mode: ${shoot.mode}
 - Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card" : ""})
@@ -313,17 +330,23 @@ Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : "
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.`,
   });
 
-  const response = await anthropic.messages.create(
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 16000,
-      system: SHOOT_BRIEF_SYSTEM_INSTRUCTION,
-      messages: [{ role: "user", content }],
+  const geminiModel = genai.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    systemInstruction: SHOOT_BRIEF_SYSTEM_INSTRUCTION,
+    generationConfig: {
+      maxOutputTokens: 16384,
+      responseMimeType: "application/json",
     },
-    { timeout: SHOOT_BRIEF_TIMEOUT_MS, maxRetries: 0 }
-  );
+  });
 
-  const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+  const geminiResult = await Promise.race([
+    geminiModel.generateContent(parts),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini brief timeout")), SHOOT_BRIEF_TIMEOUT_MS)
+    ),
+  ]);
+
+  const raw = geminiResult.response.text();
   return raw.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
 }
 
@@ -877,10 +900,11 @@ export async function startGenerationWorker(
     // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
     // Retrying a timed-out Claude call would double the budget and kill the function.
     shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl);
-    // Validate before storing — Claude truncation at max_tokens produces broken JSON
+    // Validate before storing — truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
     } catch {
+      console.error("[generate] buildShootBrief raw preview:", shootBrief.slice(0, 3000));
       throw new Error(`buildShootBrief returned invalid JSON (length ${shootBrief.length}) — likely hit token limit`);
     }
 

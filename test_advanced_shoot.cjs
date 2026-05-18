@@ -236,7 +236,7 @@ async function main() {
     await sleep(10_000);
     const { data: shoot, error: pollErr } = await service
       .from("shoots")
-      .select("status, progress, pipeline_stage, shoot_brief")
+      .select("status, progress, pipeline_stage")
       .eq("id", shootId)
       .single();
 
@@ -246,6 +246,10 @@ async function main() {
 
     if (shoot.status === "COMPLETE" || shoot.status === "FAILED") {
       log(`\n=== Shoot finished: ${shoot.status} ===\n`);
+
+      // Fetch brief separately to avoid "Cannot coerce" errors from large JSONB in poll query
+      const { data: briefRow } = await service.from("shoots").select("shoot_brief").eq("id", shootId).single();
+      shoot.shoot_brief = briefRow?.shoot_brief ?? null;
 
       if (shoot.shoot_brief) {
         try {
