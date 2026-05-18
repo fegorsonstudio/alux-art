@@ -1120,6 +1120,12 @@ export default function WorkspacePage() {
                         <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the n8n execution and shoot_images rows for this shoot."}</p>
                       </details>
                     )}
+                    {isAdmin && !!((img as Record<string, unknown>).prompt) && (
+                      <details className={styles.slotErrorDetails}>
+                        <summary>Prompt</summary>
+                        <p className={styles.slotError} style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "11px" }}>{String((img as Record<string, unknown>).prompt)}</p>
+                      </details>
+                    )}
                   </div>
                 )})}
               </div>

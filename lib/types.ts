@@ -147,6 +147,7 @@ export interface ShootImage {
   kind: ImageKind;
   status: ImageStatus;
   stage?: string;
+  prompt?: string;
   provider?: string;
   providerError?: string;
   configuredModel?: string;

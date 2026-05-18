@@ -1027,6 +1027,12 @@ export async function startGenerationWorker(
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
+      // Persist prompt before fal call so it's visible even if generation fails
+      await service
+        .from("shoot_images")
+        .update({ prompt: slotPrompt, updated_at: ts() })
+        .eq("id", slotImg.id);
+
       // Log to Airtable before calling fal.ai so the payload is always visible
       console.log("[generate] Airtable payload URL counts:", {
         shootId,
