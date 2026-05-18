@@ -73,6 +73,7 @@ export default function WorkspacePage() {
   const [baseAction, setBaseAction] = useState<"idle" | "loading">("idle");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copiedShootId, setCopiedShootId] = useState<string | null>(null);
   const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState("");
   const [editingTag, setEditingTag] = useState("");
@@ -982,7 +983,16 @@ export default function WorkspacePage() {
                           <span style={{ fontSize: "0.85rem" }}>
                             {(s as unknown as Record<string, string>).aspect_ratio || s.aspectRatio} / {s.mode} / {getShootPackageSize(s)} images
                           </span>
-                          <span className={styles.shootDate}>{new Date((s as unknown as Record<string, string>).created_at || s.createdAt).toLocaleDateString()}</span>
+                          <span className={styles.shootDate}>
+                            {(() => { const d = new Date((s as unknown as Record<string, string>).created_at || s.createdAt); return `${d.toLocaleDateString()} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`; })()}
+                          </span>
+                          <button
+                            type="button"
+                            className={styles.copyIdBtn}
+                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(s.id).then(() => { setCopiedShootId(s.id); setTimeout(() => setCopiedShootId(prev => prev === s.id ? null : prev), 1500); }); }}
+                          >
+                            {copiedShootId === s.id ? "Copied!" : "Copy ID"}
+                          </button>
                         </div>
                         <span className={styles.shootActions}>
                           <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").replace(/_/g, "").charAt(0).toUpperCase() + (s.status ?? "").replace(/_/g, "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
