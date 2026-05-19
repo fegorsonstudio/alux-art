@@ -46,13 +46,20 @@ export async function GET(
 
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Generate signed preview URLs for completed images
+  // Generate preview URLs for completed images.
+  // Use the stored fal.ai CDN URL for non-composite slots (zero Supabase egress).
+  // Quote card slots have a server-side composite stored in Supabase, so those still get signed URLs.
   const images = await Promise.all((shoot.shoot_images ?? []).map(async (img: Record<string, unknown>) => {
-    if (img.status === "COMPLETE" && img.preview_storage_bucket && img.preview_storage_path) {
-      const { data } = await service.storage
-        .from(img.preview_storage_bucket as string)
-        .createSignedUrl(img.preview_storage_path as string, 3600);
-      return { ...img, previewUrl: data?.signedUrl };
+    if (img.status === "COMPLETE") {
+      if (img.fal_url && img.kind !== "quote") {
+        return { ...img, previewUrl: img.fal_url };
+      }
+      if (img.preview_storage_bucket && img.preview_storage_path) {
+        const { data } = await service.storage
+          .from(img.preview_storage_bucket as string)
+          .createSignedUrl(img.preview_storage_path as string, 3600);
+        return { ...img, previewUrl: data?.signedUrl };
+      }
     }
     return img;
   }));

@@ -7,11 +7,17 @@ async function withSignedPreviewUrls(
 ) {
   if (!shoot) return shoot;
   const images = await Promise.all(((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
-    if (img.status === "COMPLETE" && img.preview_storage_bucket && img.preview_storage_path) {
-      const { data } = await service.storage
-        .from(img.preview_storage_bucket as string)
-        .createSignedUrl(img.preview_storage_path as string, 3600);
-      return { ...img, previewUrl: data?.signedUrl };
+    if (img.status === "COMPLETE") {
+      // Use fal.ai CDN URL for non-composite slots — zero Supabase egress
+      if (img.fal_url && img.kind !== "quote") {
+        return { ...img, previewUrl: img.fal_url };
+      }
+      if (img.preview_storage_bucket && img.preview_storage_path) {
+        const { data } = await service.storage
+          .from(img.preview_storage_bucket as string)
+          .createSignedUrl(img.preview_storage_path as string, 3600);
+        return { ...img, previewUrl: data?.signedUrl };
+      }
     }
     return img;
   }));

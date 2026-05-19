@@ -1620,6 +1620,8 @@ export async function startGenerationWorker(
           preview_storage_path: storagePath,
           download_storage_bucket: isTestMode ? "test" : "generated-4k",
           download_storage_path: storagePath,
+          // Store original fal.ai CDN URL for zero-egress preview display
+          fal_url: isTestMode ? null : falUrl,
           updated_at: ts(),
         })
         .eq("id", slotImg.id);
