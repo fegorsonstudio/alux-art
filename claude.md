@@ -239,3 +239,111 @@ claude apps/
 ├── studio.py
 └── package.json
 ```
+You are working on the Alux Art / Virtual Photo Studio Next.js app.
+
+Repo:
+C:\Users\FUJITSU\Documents\claude apps
+
+Live app:
+https://virtual-photo-studio-rho.vercel.app
+
+Current branch:
+codex/complete-photo-studio-fixes
+
+Latest important commits:
+- ca5027d Add package credits and retryable shoot retention
+- 9b10fa1 Bypass middleware for API routes
+
+Context:
+The app uses Next.js App Router, Supabase, Paystack, Fal.ai, and Vercel. The app serverless worker is now the primary image-generation engine. n8n is only fallback/secondary.
+
+Recently implemented:
+- 5-image and 10-image package selection.
+- Package pricing updates by currency.
+- Payment-confirmed shoot queuing through Paystack webhook.
+- Credit reservation tables for paid shoot retries.
+- One serverless request per image slot through `/api/shoots/[id]/start`.
+- Failed image retry endpoint: `/api/shoots/[id]/images/[imageId]/retry`.
+- 48-hour retention cleanup route: `/api/cron/cleanup-expired`.
+- Partial ZIP downloads for completed images.
+- Middleware bypass for `/api/*` to fix Vercel `MIDDLEWARE_INVOCATION_TIMEOUT`.
+
+Supabase migration has already been applied to project:
+owdfoxglbxrqhgqbvkon
+
+Production deploy has already been done:
+https://virtual-photo-studio-rho.vercel.app
+
+Main issue from previous testing:
+Tester originally hit `504 GATEWAY_TIMEOUT` with `MIDDLEWARE_INVOCATION_TIMEOUT` on `/api/shoots`. This was fixed in `middleware.ts` by excluding `/api/*` from middleware.
+
+Your job:
+Do a senior code review and live workflow test. Focus on bugs, race conditions, broken auth/payment assumptions, image-generation reliability, and production readiness.
+
+Review these files closely:
+- middleware.ts
+- app/api/shoots/route.ts
+- app/api/shoots/[id]/start/route.ts
+- app/api/shoots/[id]/pay/route.ts
+- app/api/webhooks/paystack/route.ts
+- app/api/shoots/[id]/images/[imageId]/retry/route.ts
+- app/api/shoots/[id]/download-zip/route.ts
+- app/api/cron/cleanup-expired/route.ts
+- lib/generate.ts
+- scripts/migrate.mjs
+- app/page.tsx
+
+Code review checklist:
+1. Confirm `/api/*` really bypasses middleware.
+2. Confirm unpaid shoots cannot start generation.
+3. Confirm Paystack webhook is idempotent and cannot double-credit/double-queue.
+4. Confirm package size controls slot count correctly: 5 package = 5 slots, 10 package = 10 slots.
+5. Confirm admin bypass does not require payment but still creates the selected slot count.
+6. Confirm failed image retry only works for the owner/admin, only on failed slots, and only before expiry.
+7. Confirm generation worker processes one slot per request and does not restart many slots in one request.
+8. Confirm partial ZIP downloads work when only some images are complete.
+9. Confirm expired shoots no longer expose signed download URLs.
+10. Confirm cleanup route deletes generated images, ZIPs, and inspiration references after 48 hours.
+11. Confirm no fal.ai/fal.media URLs leak to the frontend after generation.
+12. Confirm no secrets are committed or exposed in logs.
+13. Confirm Supabase RLS and service-role use are acceptable.
+14. Confirm the UI handles failed generations clearly and lets the user retry per failed image.
+15. Confirm image prompts strongly preserve identity from uploaded identity references.
+
+Live test checklist:
+1. Log in as admin.
+2. Confirm package selector shows 5 and 10 images.
+3. Confirm NGN/USD price changes correctly.
+4. Create an admin free 5-image shoot.
+5. Confirm exactly 5 slots are created.
+6. Watch generation and confirm only one slot is active at a time.
+7. Refresh during generation and confirm no 504 timeout.
+8. If a slot fails, click retry and confirm only that slot restarts.
+9. Download completed individual images.
+10. Try ZIP download once at least one image completes.
+11. Check browser network tab for fal.ai/fal.media leaks.
+12. Record console and network errors.
+
+Return your report in this format:
+
+Findings:
+- [Severity] File/route:
+  Problem:
+  Why it matters:
+  Suggested fix:
+
+Live Test Results:
+- Login:
+- Package pricing:
+- Shoot creation:
+- Slot count:
+- Generation:
+- Refresh stability:
+- Retry:
+- Downloads:
+- Fal URL leakage:
+- Console/network errors:
+
+Final recommendation:
+- Ship / do not ship:
+- Required fixes before next test:

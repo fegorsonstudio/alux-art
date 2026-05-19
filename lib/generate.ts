@@ -453,11 +453,24 @@ async function buildShootBrief(
     });
   }
 
+  const SHOT_TYPE_LABELS: Record<string, string> = {
+    headshot:  "headshot — tight crop, face and neck/shoulders only",
+    close_up:  "close-up — head to chest, standard portrait framing",
+    medium:    "medium shot — waist up, torso and arms visible",
+    full_body: "full body — head to toe, full figure in frame",
+  };
+  let shotTypeConstraint = "";
+  try {
+    const parsed = JSON.parse(identityProfile) as Record<string, unknown>;
+    const label = SHOT_TYPE_LABELS[parsed.shot_type as string];
+    if (label) shotTypeConstraint = `\n- Shot Type: ${label}`;
+  } catch { /* identityProfile may be plain text, not JSON */ }
+
   parts.push({
     text: `SHOOT PARAMETERS:
 - Mode: ${shoot.mode}
 - Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card" : ""})
-- Aspect Ratio: ${shoot.aspect_ratio}
+- Aspect Ratio: ${shoot.aspect_ratio}${shotTypeConstraint}
 ${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `\n- Attribution: "${shoot.quote!.attribution}"` : ""}` : ""}
 
 Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.

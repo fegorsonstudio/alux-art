@@ -32,6 +32,13 @@ export default function BecomeCreatorPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    fetch("/api/user/creator-status")
+      .then(r => r.ok ? r.json() : { isCreator: false })
+      .then(d => { if (d.isCreator) router.push("/creator-dashboard"); })
+      .catch(() => {});
+  }, [router]);
+
+  useEffect(() => {
     fetch("/api/paystack/banks")
       .then(r => r.json())
       .then(d => { if (d.banks) setBanks(d.banks); })

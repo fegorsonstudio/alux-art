@@ -23,8 +23,47 @@ interface TemplateRow {
   created_at: string;
 }
 
+interface ShowcaseIdentityRef {
+  localId: string;
+  file: File;
+  preview: string;
+  storagePath: string;
+  storageBucket: string;
+  uploading: boolean;
+  error?: string;
+}
+
+interface ShowcaseShootImage {
+  id: string;
+  slot: number;
+  status: string;
+  preview_url?: string;
+  download_url?: string;
+  added?: boolean;
+}
+
+interface ShowcaseShoot {
+  id: string;
+  status: string;
+  template_showcase_id: string;
+  shoot_images: ShowcaseShootImage[];
+}
+
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
 interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; }
+
+const SHOWCASE_PACKAGES = [
+  { count: 1, label: "1 image", price: 1000 },
+  { count: 5, label: "5 images", price: 5000 },
+  { count: 10, label: "10 images", price: 10000 },
+] as const;
+
+const SHOT_TYPES = [
+  { value: "headshot",  label: "Headshot" },
+  { value: "close_up",  label: "Close-up" },
+  { value: "medium",    label: "Medium" },
+  { value: "full_body", label: "Full body" },
+] as const;
 
 interface UploadedImage {
   localId: string;
@@ -65,6 +104,17 @@ export default function CreatorDashboard() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
 
+  // ── Showcase generation state ───────────────────────────────────────────────
+  const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
+  const [showcaseIdentityRefs, setShowcaseIdentityRefs] = useState<ShowcaseIdentityRef[]>([]);
+  const [showcasePackage, setShowcasePackage] = useState(1);
+  const [showcaseShotType, setShowcaseShotType] = useState("headshot");
+  const [showcasePaying, setShowcasePaying] = useState(false);
+  const [showcaseError, setShowcaseError] = useState("");
+  const [showcaseShoots, setShowcaseShoots] = useState<ShowcaseShoot[]>([]);
+  const [addingImageId, setAddingImageId] = useState<string | null>(null);
+  const showcaseIdInputRef = useRef<HTMLInputElement>(null);
+
   const loadDashboard = useCallback(async () => {
     const res = await fetch("/api/creator-dashboard");
     if (res.status === 401) { router.push("/login?redirect=/creator-dashboard"); return; }
@@ -78,6 +128,114 @@ export default function CreatorDashboard() {
   }, [router]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Poll showcase shoots every 4 seconds when any are active
+  useEffect(() => {
+    const active = showcaseShoots.some(s => ["QUEUED", "PROCESSING", "BASE_LOCKING"].includes(s.status));
+    if (!active) return;
+    const id = setInterval(async () => {
+      const res = await fetch("/api/shoots");
+      if (!res.ok) return;
+      const d = await res.json();
+      const all: ShowcaseShoot[] = (d.shoots ?? []).filter((s: ShowcaseShoot) => showcaseTemplateId && s.template_showcase_id === showcaseTemplateId);
+      setShowcaseShoots(all);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [showcaseShoots, showcaseTemplateId]);
+
+  const openShowcase = async (templateId: string) => {
+    setShowcaseTemplateId(templateId);
+    setShowcaseIdentityRefs([]);
+    setShowcasePackage(1);
+    setShowcaseShotType("headshot");
+    setShowcaseError("");
+    // Load any existing showcase shoots for this template
+    const res = await fetch("/api/shoots");
+    if (res.status === 401) { router.push("/login?redirect=/creator-dashboard"); return; }
+    if (res.ok) {
+      const d = await res.json();
+      const relevant: ShowcaseShoot[] = (d.shoots ?? []).filter((s: ShowcaseShoot) => s.template_showcase_id === templateId);
+      setShowcaseShoots(relevant);
+    }
+  };
+
+  const uploadShowcaseIdentity = async (file: File, localId: string) => {
+    setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: true } : r));
+    const res = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "identity-images" }),
+    });
+    if (!res.ok) {
+      setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: "Upload failed" } : r));
+      return;
+    }
+    const { uploadUrl, storagePath, storageBucket } = await res.json();
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    if (!putRes.ok) {
+      setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: "Upload failed" } : r));
+      return;
+    }
+    setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, storagePath, storageBucket } : r));
+  };
+
+  const addShowcaseIdentityFiles = (files: FileList) => {
+    const toAdd = Array.from(files).slice(0, 5 - showcaseIdentityRefs.length);
+    const newRefs: ShowcaseIdentityRef[] = toAdd.map(file => {
+      const localId = crypto.randomUUID();
+      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", storageBucket: "identity-images", uploading: false };
+    });
+    setShowcaseIdentityRefs(prev => [...prev, ...newRefs]);
+    newRefs.forEach(r => uploadShowcaseIdentity(r.file, r.localId));
+  };
+
+  const payAndGenerate = async () => {
+    setShowcaseError("");
+    const uploaded = showcaseIdentityRefs.filter(r => r.storagePath);
+    if (uploaded.length === 0) { setShowcaseError("Upload at least 1 identity photo first"); return; }
+    if (showcaseIdentityRefs.some(r => r.uploading)) { setShowcaseError("Wait for uploads to finish"); return; }
+    setShowcasePaying(true);
+    const res = await fetch(`/api/templates/${showcaseTemplateId}/generate-showcase`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageCount: showcasePackage,
+        identityRefs: uploaded.map(r => ({ name: r.file.name, type: r.file.type, size: r.file.size, storageBucket: r.storageBucket, storagePath: r.storagePath })),
+        ...(showcasePackage === 1 ? { shotType: showcaseShotType } : {}),
+      }),
+    });
+    const d = await res.json();
+    setShowcasePaying(false);
+    if (!res.ok) { setShowcaseError(d.error ?? "Failed to start showcase generation"); return; }
+    window.location.href = d.authorizationUrl;
+  };
+
+  const addToGallery = async (templateId: string | null, shootImageId: string) => {
+    if (!templateId) return;
+    setAddingImageId(shootImageId);
+    const res = await fetch(`/api/templates/${templateId}/images/from-shoot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shootImageId }),
+    });
+    setAddingImageId(null);
+    if (!res.ok) return;
+    // Mark added in local state
+    setShowcaseShoots(prev => prev.map(s => ({
+      ...s,
+      shoot_images: s.shoot_images.map(img => img.id === shootImageId ? { ...img, added: true } : img),
+    })));
+    loadDashboard();
+  };
+
+  const downloadImage = async (url: string) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cover.jpg";
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.click();
+  };
 
   const feeNgn = stats ? 15000 : 15000; // platform fee; ideally fetch from pricing_configs
   const earnPreview = form.priceNgn && Number(form.priceNgn) > feeNgn
@@ -250,6 +408,9 @@ export default function CreatorDashboard() {
                 <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}>
                   {t.status === "published" ? "Unpublish" : "Publish"}
                 </button>
+                <button type="button" className={`${styles.actionBtn} ${styles.actionBtnShowcase}`} onClick={() => openShowcase(t.id)}>
+                  Generate images
+                </button>
                 <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)}>Delete</button>
               </div>
             </div>
@@ -388,6 +549,122 @@ export default function CreatorDashboard() {
               {saving ? "Saving..." : panel === "create" ? "Create template" : "Save changes"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Showcase panel ── */}
+      {showcaseTemplateId && (
+        <div className={styles.showcasePanel}>
+          <div className={styles.formPanelHeader}>
+            <h3 className={styles.formTitle}>Generate Showcase Images</h3>
+            <button type="button" className={styles.closeBtn} onClick={() => setShowcaseTemplateId(null)}>✕</button>
+          </div>
+
+          <p className={styles.showcaseHint}>
+            Upload photos of your model, pick a package, and pay ₦1,000 per image to generate showcase photos for this template.
+          </p>
+
+          {showcaseError && <p className={styles.formError}>{showcaseError}</p>}
+
+          {/* Identity upload */}
+          <div className={styles.field}>
+            <span className={styles.label}>Model identity photos ({showcaseIdentityRefs.length}/5)</span>
+            <div className={styles.imagesGrid}>
+              {showcaseIdentityRefs.map(ref => (
+                <div key={ref.localId} className={styles.imgItem}>
+                  <img src={ref.preview} alt="" className={styles.imgPreview} />
+                  {ref.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
+                  {ref.error && <div className={styles.imgError}>{ref.error}</div>}
+                  <button type="button" className={styles.imgRemove} onClick={() => setShowcaseIdentityRefs(prev => prev.filter(r => r.localId !== ref.localId))}>✕</button>
+                </div>
+              ))}
+              {showcaseIdentityRefs.length < 5 && (
+                <button type="button" className={styles.addImgBtn} onClick={() => showcaseIdInputRef.current?.click()}>
+                  + Add photo
+                </button>
+              )}
+            </div>
+            <input type="file" accept="image/*" multiple ref={showcaseIdInputRef} className={styles.hidden} onChange={e => { if (e.target.files) addShowcaseIdentityFiles(e.target.files); e.target.value = ""; }} />
+          </div>
+
+          {/* Package picker */}
+          <div className={styles.field}>
+            <span className={styles.label}>Package</span>
+            <div className={styles.pills}>
+              {SHOWCASE_PACKAGES.map(pkg => (
+                <button key={pkg.count} type="button" className={`${styles.pill} ${showcasePackage === pkg.count ? styles.pillActive : ""}`} onClick={() => setShowcasePackage(pkg.count)}>
+                  {pkg.label} — ₦{pkg.price.toLocaleString()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {showcasePackage === 1 && (
+            <div className={styles.shotTypeSection}>
+              <span className={styles.label}>Shot type</span>
+              <div className={styles.shotTypeGrid}>
+                {SHOT_TYPES.map(s => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    className={`${styles.shotTypeBtn} ${showcaseShotType === s.value ? styles.shotTypeBtnActive : ""}`}
+                    onClick={() => setShowcaseShotType(s.value)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button type="button" className={styles.saveBtn} onClick={payAndGenerate} disabled={showcasePaying || showcaseIdentityRefs.some(r => r.uploading)}>
+            {showcasePaying ? "Redirecting to payment..." : `Pay ₦${(showcasePackage * 1000).toLocaleString()} & Generate`}
+          </button>
+
+          {/* Existing showcase shoots for this template */}
+          {showcaseShoots.length > 0 && (
+            <div className={styles.showcaseShoots}>
+              <span className={styles.label}>Generated shoots</span>
+              {showcaseShoots.map(shoot => (
+                <div key={shoot.id} className={styles.showcaseShoot}>
+                  <div className={styles.showcaseShootHeader}>
+                    <span className={styles.showcaseShootStatus}>{shoot.status}</span>
+                    <span className={styles.showcaseShootId}>{shoot.id.slice(0, 8)}</span>
+                  </div>
+                  <div className={styles.showcaseImageGrid}>
+                    {(shoot.shoot_images ?? []).filter(img => img.status === "COMPLETE").map(img => (
+                      <div key={img.id} className={styles.showcaseImageItem}>
+                        {img.preview_url
+                          ? <img src={img.preview_url} alt={`Slot ${img.slot}`} className={styles.showcaseImg} />
+                          : <div className={styles.showcaseImgPlaceholder}>Image ready</div>
+                        }
+                        <div className={styles.showcaseImageActions}>
+                          <button
+                            type="button"
+                            className={styles.showcaseActionBtn}
+                            onClick={() => addToGallery(showcaseTemplateId, img.id)}
+                            disabled={addingImageId === img.id || img.added}
+                          >
+                            {img.added ? "Added" : addingImageId === img.id ? "Adding..." : "Add to gallery"}
+                          </button>
+                          {(img.download_url || img.preview_url) && (
+                            <button type="button" className={styles.showcaseActionBtn} onClick={() => downloadImage(img.download_url || img.preview_url!)}>
+                              Download
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {shoot.status !== "COMPLETE" && shoot.status !== "FAILED" && (
+                      <div className={styles.showcaseGenerating}>
+                        Generating... ({(shoot.shoot_images ?? []).filter(i => i.status === "COMPLETE").length}/{shoot.shoot_images?.length ?? 0} done)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

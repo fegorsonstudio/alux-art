@@ -62,15 +62,19 @@ export type ImageStatus = "PENDING" | "GENERATING" | "UPSCALING" | "COMPLETE" | 
 export type ImageKind = "portrait" | "mood" | "quote";
 export type ReferenceTag = "OUTFIT" | "HAIRSTYLE" | "MAKEUP" | "BACKGROUND" | "LIGHTING" | "COLOR_GRADE" | "NAIL_DESIGN";
 export type ReferencePurpose = "identity" | "inspiration" | "tagged";
-export type ShootPackageSize = 5 | 10;
+export type ShootPackageSize = 1 | 5 | 10;
 
 export const SHOOT_PACKAGES: Record<ShootPackageSize, { imageCount: ShootPackageSize; priceMultiplier: number; label: string }> = {
+  1: { imageCount: 1, priceMultiplier: 0.1, label: "1 image" },
   5: { imageCount: 5, priceMultiplier: 0.5, label: "5 images" },
   10: { imageCount: 10, priceMultiplier: 1, label: "10 images" },
 };
 
 export function normalizePackageSize(value: unknown): ShootPackageSize {
-  return Number(value) === 5 ? 5 : 10;
+  const n = Number(value);
+  if (n === 1) return 1;
+  if (n === 5) return 5;
+  return 10;
 }
 
 export function packagePrice(basePrice: number, packageSize: ShootPackageSize): number {

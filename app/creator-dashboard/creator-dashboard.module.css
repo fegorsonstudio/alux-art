@@ -466,9 +466,184 @@ select.input { appearance: none; cursor: pointer; }
 .saveBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 32px rgba(48, 141, 151, 0.22); }
 .saveBtn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
+/* ---- Showcase variant for action btn ---- */
+.actionBtnShowcase {
+  color: #2f8e9a !important;
+  border-color: rgba(47, 142, 154, 0.32) !important;
+}
+.actionBtnShowcase:hover { border-color: rgba(47, 142, 154, 0.6) !important; color: #245d66 !important; }
+
+/* ---- Showcase panel ---- */
+.showcasePanel {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(47, 142, 154, 0.28);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 18px 50px rgba(53, 130, 143, 0.12);
+}
+
+.showcaseHint {
+  font-size: 0.82rem;
+  color: #4e7076;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---- Showcase shoots ---- */
+.showcaseShoots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(67, 159, 169, 0.14);
+}
+
+.showcaseShoot {
+  background: rgba(67, 159, 169, 0.04);
+  border: 1px solid rgba(67, 159, 169, 0.16);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.showcaseShootHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.showcaseShootStatus {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2f8e9a;
+  background: rgba(47, 142, 154, 0.1);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.showcaseShootId {
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: #7aafb4;
+}
+
+.showcaseImageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.showcaseImageItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(67, 159, 169, 0.18);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.showcaseImg {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+
+.showcaseImgPlaceholder {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(47, 142, 154, 0.06);
+  color: #6a9aa0;
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.shotTypeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.shotTypeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.shotTypeBtn {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(67, 159, 169, 0.24);
+  border-radius: 8px;
+  color: #506e73;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.1s, color 0.1s, background 0.1s, box-shadow 0.1s;
+}
+
+.shotTypeBtn:hover {
+  border-color: rgba(67, 159, 169, 0.52);
+  color: #263235;
+  background: #ffffff;
+}
+
+.shotTypeBtnActive {
+  background: #ffffff !important;
+  border-color: rgba(65, 199, 184, 0.72) !important;
+  color: #1d727c !important;
+  box-shadow: inset 0 -12px 20px rgba(188, 245, 235, 0.62);
+}
+
+.showcaseImageActions {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+}
+
+.showcaseActionBtn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(67, 159, 169, 0.22);
+  border-radius: 6px;
+  color: #3f6166;
+  font-size: 0.65rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.showcaseActionBtn:hover:not(:disabled) { border-color: rgba(67, 159, 169, 0.5); color: #245d66; }
+.showcaseActionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.showcaseGenerating {
+  grid-column: 1 / -1;
+  color: #7aafb4;
+  font-size: 0.78rem;
+  padding: 8px 0;
+}
+
 @media (max-width: 700px) {
   .statsGrid { grid-template-columns: repeat(2, 1fr); }
   .formGrid { grid-template-columns: 1fr; }
   .header { padding: 14px 20px; }
   .main { padding: 20px 16px; }
+  .showcaseImageGrid { grid-template-columns: repeat(2, 1fr); }
 }

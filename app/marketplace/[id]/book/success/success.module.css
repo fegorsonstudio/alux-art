@@ -1,0 +1,84 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 60% 0%, oklch(0.22 0.04 210) 0%, oklch(0.12 0.02 210) 100%);
+  padding: 2rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  padding: 3rem 2.5rem;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  background: oklch(0.48 0.12 195);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: oklch(0.97 0.01 210);
+  flex-shrink: 0;
+}
+
+.heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: oklch(0.95 0.01 210);
+  margin: 0;
+}
+
+.body {
+  font-size: 0.95rem;
+  color: oklch(0.72 0.02 210);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 34ch;
+}
+
+.ref {
+  font-size: 0.78rem;
+  color: oklch(0.52 0.02 210);
+  font-family: monospace;
+  margin: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, oklch(0.55 0.12 195), oklch(0.45 0.1 240));
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.85rem 2.25rem;
+  border-radius: 0.6rem;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.btn:hover { opacity: 0.88; }
+
+.secondaryLink {
+  font-size: 0.85rem;
+  color: oklch(0.62 0.04 210);
+  text-decoration: none;
+  padding: 0.25rem;
+}
+
+.secondaryLink:hover { color: oklch(0.8 0.04 210); }

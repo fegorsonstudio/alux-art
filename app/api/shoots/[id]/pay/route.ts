@@ -16,15 +16,20 @@ export async function POST(
   const { data: shoot } = await service.from("shoots").select("*").eq("id", id).eq("user_id", user.id).single();
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Prevent re-paying a shoot that is already past PENDING_PAYMENT
+  if (shoot.status !== "PENDING_PAYMENT") {
+    return NextResponse.json({ error: "This shoot has already been paid or is not payable" }, { status: 409 });
+  }
+
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
   const packageSize = normalizePackageSize(shoot.package_size);
 
-  // Admin bypass — no payment needed
+  // Admin bypass — no payment needed; guard with status check to prevent double-queue
   if (isAdmin) {
     await service.from("shoots").update({
       status: "QUEUED",
       updated_at: new Date().toISOString(),
-    }).eq("id", id);
+    }).eq("id", id).eq("status", "PENDING_PAYMENT");
     const origin = new URL(request.url).origin;
     fetch(`${origin}/api/shoots/${id}/start`, {
       method: "POST",

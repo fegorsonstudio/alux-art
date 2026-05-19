@@ -24,6 +24,7 @@ export default function MarketplacePage() {
   const [search, setSearch] = useState("");
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
   const load = useCallback(async (cat: string, q: string, cursor?: string) => {
     if (!cursor) setLoading(true); else setLoadingMore(true);
@@ -45,6 +46,12 @@ export default function MarketplacePage() {
     load(category, search);
   }, [category, search, load]);
 
+  useEffect(() => {
+    fetch("/api/user/creator-status")
+      .then(r => r.ok ? r.json() : { isCreator: false })
+      .then(d => setIsCreator(d.isCreator));
+  }, []);
+
   const applySearch = () => setSearch(searchInput);
 
   return (
@@ -53,7 +60,10 @@ export default function MarketplacePage() {
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
         <div className={styles.navRight}>
           <Link href="/" className={styles.navLink}>Studio</Link>
-          <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
+          {isCreator
+            ? <Link href="/creator-dashboard" className={styles.navCta}>Creator Dashboard</Link>
+            : <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
+          }
         </div>
       </header>
 
