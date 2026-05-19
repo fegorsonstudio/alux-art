@@ -1767,6 +1767,31 @@ export async function startGenerationWorker(
       payload: { progress: 100, stage: "Complete" },
       created_at: ts(),
     });
+
+    // Delete inspiration + tagged reference files from storage on completion.
+    // Identity images are intentionally kept — they power the identity library for future shoots.
+    try {
+      const { data: refs } = await service
+        .from("shoot_references")
+        .select("storage_bucket, storage_path")
+        .eq("shoot_id", shootId)
+        .in("purpose", ["inspiration", "tagged"]);
+
+      if (refs && refs.length > 0) {
+        const byBucket = new Map<string, string[]>();
+        for (const ref of refs) {
+          if (!byBucket.has(ref.storage_bucket)) byBucket.set(ref.storage_bucket, []);
+          byBucket.get(ref.storage_bucket)!.push(ref.storage_path);
+        }
+        await Promise.allSettled(
+          Array.from(byBucket.entries()).map(([bucket, paths]) =>
+            service.storage.from(bucket).remove(paths)
+          )
+        );
+      }
+    } catch (err) {
+      console.error("[generate] reference cleanup failed (non-fatal):", err);
+    }
   }
 
   return { done, completed: totalComplete, failed: failedCount, remaining, total };
