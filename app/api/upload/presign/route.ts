@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 
 const MAX_SIZE = 20 * 1024 * 1024;
-const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
+const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images", "template-images"]);
 
 function sanitizeFileName(name: string) {
   return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");

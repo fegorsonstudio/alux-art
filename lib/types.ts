@@ -207,6 +207,111 @@ export interface PackagePricing {
   usd: number;
 }
 
+// ── Marketplace types ────────────────────────────────────────────────────────
+
+export type TemplateCategory =
+  | "portrait" | "editorial" | "corporate" | "glamour" | "wedding"
+  | "maternity" | "fantasy" | "boudoir" | "street" | "other";
+
+export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] = [
+  { value: "portrait",  label: "Portrait" },
+  { value: "editorial", label: "Editorial" },
+  { value: "corporate", label: "Corporate" },
+  { value: "glamour",   label: "Glamour" },
+  { value: "wedding",   label: "Wedding" },
+  { value: "maternity", label: "Maternity" },
+  { value: "fantasy",   label: "Fantasy" },
+  { value: "boudoir",   label: "Boudoir" },
+  { value: "street",    label: "Street" },
+  { value: "other",     label: "Other" },
+];
+
+export type TemplateStatus = "draft" | "published" | "suspended";
+export type CouponDiscountType = "percent" | "fixed";
+export type PurchaseStatus = "pending" | "success" | "failed";
+
+export interface Creator {
+  id: string;
+  userId: string;
+  displayName: string;
+  bio?: string;
+  avatarStoragePath?: string;
+  avatarBucket?: string;
+  avatarUrl?: string;
+  instagramUrl?: string;
+  websiteUrl?: string;
+  paystackSubaccountCode?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  isActive: boolean;
+  templateCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Template {
+  id: string;
+  creatorId: string;
+  creator?: Pick<Creator, "id" | "displayName" | "avatarUrl" | "templateCount">;
+  title: string;
+  description?: string;
+  category: TemplateCategory;
+  tags: string[];
+  priceNgn: number;
+  shootMode: ShootMode;
+  aspectRatio: AspectRatio;
+  packageSize: ShootPackageSize;
+  status: TemplateStatus;
+  purchaseCount: number;
+  coverStoragePath?: string;
+  coverBucket?: string;
+  coverUrl?: string;
+  images?: TemplateImage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateImage {
+  id: string;
+  templateId: string;
+  storagePath: string;
+  storageBucket: string;
+  displayOrder: number;
+  purpose: "inspiration" | "tagged";
+  tag?: string;
+  url?: string;
+  createdAt: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string;
+  discountType: CouponDiscountType;
+  discountValue: number;
+  maxUses?: number;
+  useCount: number;
+  expiresAt?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface TemplatePurchase {
+  id: string;
+  templateId: string;
+  shootId?: string;
+  userId: string;
+  amountNgn: number;
+  platformFeeNgn: number;
+  creatorPayoutNgn: number;
+  couponId?: string;
+  couponDiscountNgn: number;
+  paystackReference?: string;
+  status: PurchaseStatus;
+  createdAt: string;
+}
+
 // SSE event types
 export type SSEEventType =
   | "snapshot" | "stage" | "slot_update" | "slot_complete"

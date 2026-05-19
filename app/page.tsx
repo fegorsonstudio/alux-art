@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import type { User, Shoot, ShootImage, AspectRatio, Currency, ShootMode, ReferenceTag, ShootPackageSize, PackagePricing } from "@/lib/types";
 import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packagePrice } from "@/lib/types";
@@ -712,6 +713,7 @@ export default function WorkspacePage() {
           Alux Art
         </div>
         <div className={styles.navRight}>
+          <Link href="/marketplace" className={styles.adminLink}>Marketplace</Link>
           {isAdmin && <a href="/admin" className={styles.adminLink}>Admin</a>}
           <span className={styles.navEmail}>{user?.email}</span>
           <button className={styles.themeToggle} onClick={toggleTheme} aria-pressed={theme === "dark"}>

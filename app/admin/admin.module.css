@@ -37,3 +37,5 @@
 .rolloutRow { display: flex; align-items: center; gap: 10px; }
 .rolloutSlider { flex: 1; accent-color: #c9a96e; cursor: pointer; }
 .rolloutNumber { width: 58px; background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 6px; color: #ccc; font-size: 0.85rem; padding: 6px 8px; text-align: center; font-family: inherit; }
+.couponForm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+select.priceInput { appearance: none; cursor: pointer; }

@@ -1,0 +1,243 @@
+/* ---- Page shell ---- */
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(144, 220, 220, 0.62), transparent 26%),
+    radial-gradient(circle at 86% 6%, rgba(255, 190, 176, 0.48), transparent 28%),
+    radial-gradient(circle at 80% 92%, rgba(183, 224, 252, 0.72), transparent 34%),
+    linear-gradient(135deg, #fff8ea 0%, #e5fbf6 40%, #d9efff 100%);
+  color: #263235;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+.page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(80% 18% at 12% 28%, rgba(255, 255, 255, 0.52) 0 42%, transparent 43%),
+    radial-gradient(80% 16% at 88% 42%, rgba(172, 238, 222, 0.46) 0 42%, transparent 43%),
+    radial-gradient(92% 20% at 40% 78%, rgba(159, 210, 247, 0.38) 0 40%, transparent 41%);
+  opacity: 0.8;
+}
+
+/* ---- Nav ---- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.74);
+  background: rgba(255, 248, 234, 0.82);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgba(47, 142, 154, 0.08);
+}
+
+.back {
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(67, 159, 169, 0.22);
+  border-radius: 8px;
+  color: #3f6166;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.back:hover { border-color: rgba(67, 159, 169, 0.48); color: #245d66; }
+
+.navBrand {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #263235;
+  text-decoration: none;
+  letter-spacing: 0;
+}
+
+/* ---- Container ---- */
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---- Step bar ---- */
+.stepBar { display: flex; align-items: center; gap: 0; }
+
+.stepDot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.68);
+  border: 2px solid rgba(67, 159, 169, 0.24);
+  color: #7aafb4;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stepDotActive {
+  background: rgba(47, 142, 154, 0.12);
+  border-color: #2f8e9a;
+  color: #2f8e9a;
+}
+
+.stepLine { flex: 1; height: 2px; background: rgba(67, 159, 169, 0.2); margin: 0 8px; }
+
+.stepLabels { display: flex; justify-content: space-between; padding: 0 8px; margin-top: 6px; }
+.stepLabel { font-size: 0.72rem; color: #7aafb4; }
+.stepLabelActive { font-size: 0.72rem; color: #2f8e9a; font-weight: 600; }
+
+/* ---- Form heading ---- */
+.title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #263235;
+  margin: 20px 0 0;
+}
+
+.sub { font-size: 0.875rem; color: #4e7076; margin: 8px 0 0; line-height: 1.5; }
+
+.error {
+  background: rgba(167, 70, 60, 0.06);
+  border: 1px solid rgba(167, 70, 60, 0.22);
+  border-radius: 8px;
+  color: #a7463c;
+  font-size: 0.82rem;
+  padding: 10px 14px;
+  margin: 4px 0 0;
+}
+
+/* ---- Form ---- */
+.form {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 18px 50px rgba(53, 130, 143, 0.12);
+  margin-top: 20px;
+}
+
+/* ---- Avatar ---- */
+.avatarSection { display: flex; justify-content: center; margin-bottom: 8px; }
+
+.avatarPreview {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(67, 159, 169, 0.06);
+  border: 2px dashed rgba(67, 159, 169, 0.32);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.avatarPreview:hover { border-color: #2f8e9a; background: rgba(67, 159, 169, 0.1); }
+.avatarImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatarPlaceholder { font-size: 0.72rem; color: #7aafb4; text-align: center; padding: 8px; }
+.hidden { display: none; }
+
+/* ---- Fields ---- */
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.label {
+  font-size: 0.75rem;
+  color: #4e7076;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.input {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(66, 156, 166, 0.22);
+  border-radius: 8px;
+  color: #263235;
+  font-size: 0.875rem;
+  padding: 10px 14px;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.input:focus { border-color: rgba(66, 156, 166, 0.62); background: #ffffff; }
+.input::placeholder { color: #8aa0a4; }
+.textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+select.input { appearance: none; cursor: pointer; }
+
+/* ---- Payout note ---- */
+.payNote {
+  background: rgba(67, 159, 169, 0.06);
+  border: 1px solid rgba(67, 159, 169, 0.18);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 0.82rem;
+  color: #3f6166;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.payFootNote { font-size: 0.72rem; color: #7aafb4; margin: 0; line-height: 1.5; text-align: center; }
+
+/* ---- Buttons ---- */
+.btnRow { display: flex; gap: 10px; }
+
+.backBtn {
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(67, 159, 169, 0.22);
+  border-radius: 8px;
+  color: #3f6166;
+  font-size: 0.875rem;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.backBtn:hover { border-color: rgba(67, 159, 169, 0.48); color: #245d66; }
+
+.submitBtn {
+  flex: 1;
+  background: linear-gradient(135deg, #ffffff 0%, #aff0e4 48%, #9fd7ff 100%);
+  color: #263235;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 10px 26px rgba(48, 141, 151, 0.16);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.submitBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 32px rgba(48, 141, 151, 0.22); }
+.submitBtn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+@media (max-width: 600px) {
+  .nav { padding: 14px 20px; }
+  .container { padding: 32px 20px 60px; }
+  .form { padding: 18px 16px; }
+}

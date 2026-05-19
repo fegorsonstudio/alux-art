@@ -34,10 +34,17 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPath = request.nextUrl.pathname.startsWith("/login");
 
+  const p = request.nextUrl.pathname;
+  const isPublicMarketplacePath =
+    p === "/marketplace" ||
+    p.startsWith("/marketplace/") ||
+    p.startsWith("/creators/") ||
+    p === "/become-creator";
+
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
 
-  if (!user && !isAuthPath) {
+  if (!user && !isAuthPath && !isPublicMarketplacePath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

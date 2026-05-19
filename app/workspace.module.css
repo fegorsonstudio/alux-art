@@ -1,6 +1,7 @@
 /* ---- Layout ---- */
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 8% 12%, rgba(144, 220, 220, 0.62), transparent 26%),
     radial-gradient(circle at 86% 6%, rgba(255, 190, 176, 0.48), transparent 28%),
@@ -10,6 +11,8 @@
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100vw;
 }
 
 .app::before {
@@ -17,6 +20,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
+  will-change: auto;
   background:
     radial-gradient(80% 18% at 12% 28%, rgba(255, 255, 255, 0.52) 0 42%, transparent 43%),
     radial-gradient(80% 16% at 88% 42%, rgba(172, 238, 222, 0.46) 0 42%, transparent 43%),
@@ -539,21 +543,50 @@
 
 /* ---- Mobile ---- */
 @media (max-width: 600px) {
+  /* Stop the page from shifting horizontally on scroll */
+  .app { overflow-x: hidden; position: relative; }
+
   .nav { padding: 10px 14px; }
   .navEmail { display: none; }
   .navBrand { font-size: 0.95rem; gap: 6px; }
   .navLogo { width: 26px; height: 26px; }
   .signOutBtn, .adminLink { padding: 5px 10px; font-size: 0.75rem; }
-  .main { padding: 12px 10px; gap: 12px; }
-  .panel { padding: 14px 12px; gap: 14px; }
+  .themeToggle { padding: 5px 8px; font-size: 0.75rem; min-width: 40px; }
+
+  .main { padding: 12px 12px; gap: 12px; width: 100%; box-sizing: border-box; }
+  .panel { padding: 14px 12px; gap: 14px; width: 100%; box-sizing: border-box; overflow: hidden; }
   .pill { font-size: 0.75rem; padding: 5px 10px; }
-  .pillGroup { gap: 4px; }
-  .payBtn { font-size: 0.9rem; padding: 12px; }
-  .slotGrid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-  .thumbGrid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px; }
+  .pillGroup { gap: 4px; flex-wrap: wrap; }
+  .payBtn { font-size: 0.9rem; padding: 12px; width: 100%; }
+
+  /* Gallery */
+  .slotGrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .slotCard { min-width: 0; }
+  .slotImg { width: 100%; height: auto; aspect-ratio: 4/5; object-fit: cover; }
+
+  /* Uploads */
+  .thumbGrid { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 5px; }
+  .uploadZone { padding: 14px 10px; }
+
+  /* Tagged refs */
   .taggedRow { flex-direction: column; }
   .taggedThumb { width: 100%; height: 80px; }
-  .progressName { max-width: 80px; }
+
+  /* Progress bar labels */
+  .progressName { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Package options — stack to 2-col on narrow screens */
+  .packagesGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+
+  /* Shoot cards in sidebar */
+  .shootCard { padding: 10px 12px; }
+
+  /* Quote text inputs */
+  .quoteInput, .quoteAttrib { font-size: 0.85rem; }
+
+  /* Prevent any child from blowing out the width */
+  .panel * { max-width: 100%; }
+  .panel :global(img) { max-width: 100%; height: auto; }
 }
 
 /* ---- Interaction feedback (press states) ---- */
@@ -638,3 +671,4 @@
     animation-duration: 1.5s;
   }
 }
+
