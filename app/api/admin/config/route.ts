@@ -10,6 +10,7 @@ type AdminConfig = {
   vision_model: VisionModel;
   generation_model: GenerationModel;
   locked_base_rollout_percent: number;
+  locked_base_enabled: boolean;
 };
 
 async function getAdminSession() {
@@ -32,6 +33,7 @@ export async function GET() {
     vision_model: (map.vision_model ?? "gemini") as VisionModel,
     generation_model: (map.generation_model ?? "nano-banana") as GenerationModel,
     locked_base_rollout_percent: parseInt(map.locked_base_rollout_percent ?? "100", 10),
+    locked_base_enabled: map.locked_base_enabled === "true",
   } satisfies AdminConfig);
 }
 
@@ -63,6 +65,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "locked_base_rollout_percent must be 0–100" }, { status: 400 });
     }
     updates.push({ key: "locked_base_rollout_percent", value: String(Math.round(pct)), updated_at: now });
+  }
+
+  if (body.locked_base_enabled !== undefined) {
+    updates.push({ key: "locked_base_enabled", value: body.locked_base_enabled ? "true" : "false", updated_at: now });
   }
 
   if (updates.length === 0) {

@@ -16,6 +16,7 @@ interface ModelConfig {
   vision_model: "gemini" | "claude";
   generation_model: "nano-banana" | "seedream";
   locked_base_rollout_percent: number;
+  locked_base_enabled: boolean;
 }
 
 export default function AdminPage() {
@@ -24,7 +25,7 @@ export default function AdminPage() {
   const [pricingUsd, setPricingUsd] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
-  const [modelConfig, setModelConfig] = useState<ModelConfig>({ vision_model: "gemini", generation_model: "nano-banana", locked_base_rollout_percent: 100 });
+  const [modelConfig, setModelConfig] = useState<ModelConfig>({ vision_model: "gemini", generation_model: "nano-banana", locked_base_rollout_percent: 100, locked_base_enabled: false });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [modelSaving, setModelSaving] = useState(false);
   const [modelMsg, setModelMsg] = useState("");
@@ -178,6 +179,27 @@ export default function AdminPage() {
                 ? "fal-ai/nano-banana-2/edit — Flux Kontext, strong identity lock."
                 : "fal-ai/bytedance/seedream/v4/edit — SeedDream 4, multi-image editing."}
             </div>
+          </div>
+        </div>
+        <div className={styles.modelSection}>
+          <div className={styles.modelLabel}>Base-lock Feature</div>
+          <div className={styles.modelPills}>
+            {([true, false] as const).map(val => (
+              <button
+                key={String(val)}
+                type="button"
+                className={`${styles.modelPill} ${modelConfig.locked_base_enabled === val ? styles.modelPillActive : ""}`}
+                onClick={() => saveModelConfig({ locked_base_enabled: val })}
+                disabled={modelSaving}
+              >
+                {val ? "Enabled" : "Disabled"}
+              </button>
+            ))}
+          </div>
+          <div className={styles.modelHint}>
+            {modelConfig.locked_base_enabled
+              ? "Base-lock is ON — new shoots will generate a locked character reference before processing."
+              : "Base-lock is OFF — shoots skip the base image step and go straight to generation."}
           </div>
         </div>
         <div className={styles.modelSection}>

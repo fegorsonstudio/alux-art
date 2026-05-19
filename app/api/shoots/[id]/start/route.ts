@@ -66,19 +66,23 @@ export async function POST(
 
   const now = new Date().toISOString();
 
-  // Read rollout percent from app_config (overrides env var for no-code admin control)
+  // Read base-lock config from app_config (overrides env vars for no-code admin control)
   let rolloutPct: number | undefined;
+  let dbLockedBaseEnabled: boolean | null = null;
   try {
-    const { data: cfgRows } = await service.from("app_config").select("key,value").eq("key", "locked_base_rollout_percent");
-    const row = cfgRows?.[0];
-    if (row) rolloutPct = parseInt(row.value, 10);
+    const { data: cfgRows } = await service.from("app_config").select("key,value")
+      .in("key", ["locked_base_rollout_percent", "locked_base_enabled"]);
+    for (const row of cfgRows ?? []) {
+      if (row.key === "locked_base_rollout_percent") rolloutPct = parseInt(row.value, 10);
+      if (row.key === "locked_base_enabled") dbLockedBaseEnabled = row.value === "true";
+    }
   } catch { /* non-fatal — env var fallback applies */ }
 
   // ── Base-lock dispatch — QUEUED shoots that need a base ─────────────────
   if (
     shoot.status === "QUEUED" &&
     !shoot.character_base_id &&
-    isLockedBaseEnabled(id, rolloutPct)
+    isLockedBaseEnabled(id, rolloutPct, dbLockedBaseEnabled)
   ) {
     await service.from("shoots").update({
       status: "BASE_LOCKING",
