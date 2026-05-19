@@ -66,11 +66,19 @@ export async function POST(
 
   const now = new Date().toISOString();
 
+  // Read rollout percent from app_config (overrides env var for no-code admin control)
+  let rolloutPct: number | undefined;
+  try {
+    const { data: cfgRows } = await service.from("app_config").select("key,value").eq("key", "locked_base_rollout_percent");
+    const row = cfgRows?.[0];
+    if (row) rolloutPct = parseInt(row.value, 10);
+  } catch { /* non-fatal — env var fallback applies */ }
+
   // ── Base-lock dispatch — QUEUED shoots that need a base ─────────────────
   if (
     shoot.status === "QUEUED" &&
     !shoot.character_base_id &&
-    isLockedBaseEnabled(id)
+    isLockedBaseEnabled(id, rolloutPct)
   ) {
     await service.from("shoots").update({
       status: "BASE_LOCKING",

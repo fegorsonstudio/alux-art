@@ -141,18 +141,24 @@ async function callFalWithFallback(
   imageUrls: string[],
   aspectRatio: string,
   resolution: string,
-  dbForbiddenWords: Array<{ word: string; replacement: string }> = []
+  dbForbiddenWords: Array<{ word: string; replacement: string }> = [],
+  generationModel: "nano-banana" | "seedream" = "nano-banana"
 ): Promise<{ url: string; sanitized: boolean }> {
+  const generate = (prompt: string) =>
+    generationModel === "seedream"
+      ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution)
+      : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
+
   const isForbidden = (err: unknown) =>
     err instanceof Error && err.message.toLowerCase().includes("forbidden");
   try {
-    const url = await withRetry(() => generateImageWithFal(slotPrompt, imageUrls, aspectRatio, resolution));
+    const url = await withRetry(() => generate(slotPrompt));
     return { url, sanitized: false };
   } catch (err) {
     if (isForbidden(err)) {
       const clean = sanitizeForFal(slotPrompt, dbForbiddenWords);
       if (clean !== slotPrompt) {
-        const url = await withRetry(() => generateImageWithFal(clean, imageUrls, aspectRatio, resolution));
+        const url = await withRetry(() => generate(clean));
         return { url, sanitized: true };
       }
     }
@@ -516,6 +522,184 @@ async function generateImageWithFal(
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL");
   return url;
+}
+
+// SeedDream 4 aspect-ratio → image_size mapping
+const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
+  "1K": {
+    "3:4":  { width: 960,  height: 1280 },
+    "4:5":  { width: 1024, height: 1280 },
+    "1:1":  "square_hd",
+    "16:9": "landscape_16_9",
+    "9:16": "portrait_16_9",
+    "2:3":  { width: 854,  height: 1280 },
+  },
+  "4K": {
+    "3:4":  { width: 1920, height: 2560 },
+    "4:5":  { width: 2048, height: 2560 },
+    "1:1":  { width: 2048, height: 2048 },
+    "16:9": { width: 2560, height: 1440 },
+    "9:16": { width: 1440, height: 2560 },
+    "2:3":  { width: 1707, height: 2560 },
+  },
+};
+
+async function generateImageWithSeedream(
+  prompt: string,
+  imageUrls: string[],
+  aspectRatio: string,
+  resolution = "1K"
+): Promise<string> {
+  const tier = resolution === "4K" ? "4K" : "1K";
+  const imageSize = SEEDREAM_SIZES[tier]?.[aspectRatio] ?? SEEDREAM_SIZES["1K"]["4:5"];
+
+  const response = await fal.subscribe("fal-ai/bytedance/seedream/v4/edit", {
+    input: {
+      prompt,
+      // biome-ignore lint: fal type is too narrow for SeedDream's flexible image_size
+      image_size: imageSize as never,
+      num_images: 1,
+      enable_safety_checker: true,
+      enhance_prompt_mode: "standard" as const,
+      image_urls: imageUrls.slice(0, 10),
+    },
+  });
+
+  const output = ((response as Record<string, unknown>).data || response) as FalOutput;
+  const url = output.images?.[0]?.url ?? "";
+  if (!url) throw new Error("SeedDream returned no image URL");
+  return url;
+}
+
+// Claude-based identity analysis (alternative to Gemini)
+async function analyzeIdentityImagesClaude(imageUrls: string[]): Promise<string> {
+  const imageBlocks = imageUrls
+    .filter(Boolean)
+    .slice(0, 4)
+    .map(url => ({
+      type: "image" as const,
+      source: { type: "url" as const, url },
+    }));
+
+  const promptText = `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
+
+Return ONLY this format — ALL 6 fields are required:
+IDENTITY PROFILE:
+Face: [facial structure — shape, proportions, bone structure]
+Skin: [tone with specific descriptors e.g. warm medium brown, cool fair]
+Eyes: [color, shape, spacing]
+Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
+Build: [body type, height impression, proportions]
+Distinctive: [any notable stable features]
+
+Clinical and precise. No subjective judgments. Stable biometric features only.`;
+
+  const result = await Promise.race([
+    anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 512,
+      messages: [{
+        role: "user",
+        content: [...imageBlocks, { type: "text" as const, text: promptText }],
+      }],
+    }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Claude identity analysis timeout")), IDENTITY_ANALYSIS_TIMEOUT_MS)
+    ),
+  ]);
+
+  const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+  const missing = ["Face:", "Skin:", "Eyes:", "Hair:", "Build:", "Distinctive:"].filter(f => !text.includes(f));
+  if (missing.length > 0) {
+    console.warn("[generate] Claude identity profile missing fields:", missing);
+  }
+  return text;
+}
+
+// Claude-based shoot brief (alternative to Gemini)
+async function buildShootBriefClaude(
+  shoot: {
+    mode: string;
+    package_size: number;
+    aspect_ratio: string;
+    quote?: { text: string; attribution: string } | null;
+  },
+  identityProfile: string,
+  refs: SignedRef[],
+  characterBaseUrl?: string,
+  forbiddenExamples?: string[],
+  dbForbiddenWords?: Array<{ word: string; replacement: string }>
+): Promise<string> {
+  const packageSize = normalizePackageSize(shoot.package_size);
+  const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
+  const inspirationRefs = refs.filter((r) => r.purpose === "inspiration" && r.url).slice(0, 9);
+  const taggedRefs = refs.filter((r) => r.purpose === "tagged" && r.url);
+  const hasQuote = !!shoot.quote?.text && packageSize === 10;
+  const portraitCount = hasQuote ? packageSize - 1 : packageSize;
+
+  const groupAUrls = characterBaseUrl ? [characterBaseUrl] : identityRefs.map((r) => r.url);
+  const groupALabel = characterBaseUrl
+    ? "GROUP A — Identity (Subject): Locked character base image. Use for exact facial identity, body structure, and locked wardrobe."
+    : `GROUP A — Identity (Subject): ${groupAUrls.length} identity reference photo(s). Use for facial features, skin tone, and body build only.\n\nIdentity Profile:\n${identityProfile}`;
+
+  type ClaudePart =
+    | { type: "image"; source: { type: "url"; url: string } }
+    | { type: "text"; text: string };
+
+  const content: ClaudePart[] = [];
+
+  if (groupAUrls.length > 0) {
+    content.push({ type: "text", text: groupALabel });
+    groupAUrls.slice(0, 4).forEach(url => content.push({ type: "image", source: { type: "url", url } }));
+  }
+
+  if (inspirationRefs.length > 0) {
+    content.push({ type: "text", text: "GROUP B — Inspiration (Aesthetic & Pose): Visual references for environments, compositions, camera angles, lighting moods, and editorial styling." });
+    inspirationRefs.forEach(r => content.push({ type: "image", source: { type: "url", url: r.url } }));
+  }
+
+  if (taggedRefs.length > 0) {
+    content.push({ type: "text", text: "GROUP C — Accessories & Overrides: Each tagged reference is labelled immediately before its image." });
+    taggedRefs.forEach(r => {
+      const tag = r.tag ?? r.customName ?? "unknown";
+      const note = r.note ? ` — note: ${r.note}` : "";
+      content.push({ type: "text", text: `[${tag}] reference image — "${r.name}"${note}: Extract ONLY the ${tag.toLowerCase()} from this image and apply it to all portrait prompts. Ignore all other elements.` });
+      content.push({ type: "image", source: { type: "url", url: r.url } });
+    });
+  }
+
+  if (dbForbiddenWords && dbForbiddenWords.length > 0) {
+    content.push({ type: "text", text: `FORBIDDEN WORD LIST (platform-wide — never use ANY of these words; use the replacement instead):\n${dbForbiddenWords.map((w) => `"${w.word}" → use "${w.replacement}"`).join(", ")}` });
+  }
+
+  if (forbiddenExamples && forbiddenExamples.length > 0) {
+    content.push({ type: "text", text: `GENERATION FAILURE MEMORY — Learned Restrictions:\nThe following prompts were previously REJECTED by the image generation engine for content policy violations. Study the exact wording carefully. NEVER use similar language:\n\n${forbiddenExamples.map((p, i) => `Rejected example ${i + 1}:\n"${p.slice(0, 300)}"`).join("\n\n")}` });
+  }
+
+  content.push({ type: "text", text: `SHOOT PARAMETERS:
+- Mode: ${shoot.mode}
+- Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card" : ""})
+- Aspect Ratio: ${shoot.aspect_ratio}
+${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `\n- Attribution: "${shoot.quote!.attribution}"` : ""}` : ""}
+
+Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
+
+Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.` });
+
+  const claudeResult = await Promise.race([
+    anthropic.messages.create({
+      model: "claude-opus-4-7",
+      max_tokens: 16384,
+      system: SHOOT_BRIEF_SYSTEM_INSTRUCTION,
+      messages: [{ role: "user", content }],
+    }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Claude brief timeout")), SHOOT_BRIEF_TIMEOUT_MS)
+    ),
+  ]);
+
+  const raw = claudeResult.content[0]?.type === "text" ? claudeResult.content[0].text : "";
+  return raw.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
 }
 
 async function saveSlotImage(
@@ -1068,6 +1252,17 @@ export async function startGenerationWorker(
     }
   }
 
+  // Load active model config (no-code admin switches) — must be before identity analysis
+  let visionModel: "gemini" | "claude" = "gemini";
+  let generationModel: "nano-banana" | "seedream" = "nano-banana";
+  try {
+    const { data: cfgData } = await service.from("app_config").select("key,value");
+    const cfgMap = Object.fromEntries((cfgData ?? []).map(r => [r.key, r.value]));
+    if (cfgMap.vision_model === "claude") visionModel = "claude";
+    if (cfgMap.generation_model === "seedream") generationModel = "seedream";
+    console.log("[generate] active models:", { visionModel, generationModel });
+  } catch { /* non-fatal — defaults apply */ }
+
   // --- Step 1: Identity analysis (skip if base provides it) ---
   if (!identityProfile && !hasBase) {
     await service
@@ -1090,7 +1285,12 @@ export async function startGenerationWorker(
       .filter(Boolean);
     if (identityUrls.length === 0) throw new Error("No identity images found");
 
-    identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls), 2);
+    identityProfile = await withRetry(
+      () => visionModel === "claude"
+        ? analyzeIdentityImagesClaude(identityUrls)
+        : analyzeIdentityImages(identityUrls),
+      2
+    );
 
     await service
       .from("shoots")
@@ -1145,7 +1345,9 @@ export async function startGenerationWorker(
 
     // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
     // Retrying a timed-out Claude call would double the budget and kill the function.
-    shootBrief = await buildShootBrief(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief);
+    shootBrief = await (visionModel === "claude"
+      ? buildShootBriefClaude(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief)
+      : buildShootBrief(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief));
     // Validate before storing — truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -1376,7 +1578,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: falUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution, dbForbiddenWords);
+      const { url: falUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution, dbForbiddenWords, generationModel);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }
@@ -1413,7 +1615,7 @@ export async function startGenerationWorker(
           status: "COMPLETE",
           stage: `Completed slot ${slot}`,
           provider: isTestMode ? "pollinations" : "vercel-fal",
-          configured_model: isTestMode ? "pollinations-free" : "fal-ai/nano-banana-2/edit",
+          configured_model: isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "fal-ai/nano-banana-2/edit"),
           preview_storage_bucket: isTestMode ? "test" : "generated-4k",
           preview_storage_path: storagePath,
           download_storage_bucket: isTestMode ? "test" : "generated-4k",

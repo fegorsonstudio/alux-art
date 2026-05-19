@@ -25,3 +25,15 @@
 .bannedBadge { background: #1a0a0a; color: #ff6666; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; }
 .banBtn { background: none; border: 1px solid #1e1e1e; border-radius: 6px; color: #666; font-size: 0.75rem; padding: 3px 10px; cursor: pointer; }
 .banBtn:hover { border-color: #444; color: #ccc; }
+.modelGrid { display: flex; flex-direction: column; gap: 20px; }
+.modelSection { display: flex; flex-direction: column; gap: 8px; }
+.modelLabel { font-size: 0.78rem; color: #666; text-transform: uppercase; letter-spacing: 0.08em; }
+.modelPills { display: flex; gap: 8px; flex-wrap: wrap; }
+.modelPill { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 8px; color: #888; font-size: 0.82rem; padding: 8px 16px; cursor: pointer; transition: border-color 0.15s, color 0.15s; font-family: inherit; }
+.modelPill:hover:not(:disabled) { border-color: #333; color: #ccc; }
+.modelPill:disabled { opacity: 0.5; cursor: not-allowed; }
+.modelPillActive { border-color: #c9a96e !important; color: #c9a96e !important; background: rgba(201, 169, 110, 0.08) !important; }
+.modelHint { font-size: 0.75rem; color: #444; line-height: 1.4; }
+.rolloutRow { display: flex; align-items: center; gap: 10px; }
+.rolloutSlider { flex: 1; accent-color: #c9a96e; cursor: pointer; }
+.rolloutNumber { width: 58px; background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 6px; color: #ccc; font-size: 0.85rem; padding: 6px 8px; text-align: center; font-family: inherit; }

@@ -31,9 +31,10 @@ function stripFences(text: string): string {
 
 // ── Feature flag helpers ────────────────────────────────────────────────────
 
-export function isLockedBaseEnabled(shootId: string): boolean {
+// rolloutPct overrides the env var when passed (read from app_config by the caller)
+export function isLockedBaseEnabled(shootId: string, rolloutPct?: number): boolean {
   if (process.env.LOCKED_BASE_ENABLED !== "true") return false;
-  const pct = parseInt(process.env.LOCKED_BASE_ROLLOUT_PERCENT ?? "100", 10);
+  const pct = rolloutPct ?? parseInt(process.env.LOCKED_BASE_ROLLOUT_PERCENT ?? "100", 10);
   if (isNaN(pct) || pct >= 100) return true;
   if (pct <= 0) return false;
   // Deterministic per-shoot: hash last 8 hex chars of shoot UUID

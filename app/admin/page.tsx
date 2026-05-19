@@ -12,12 +12,29 @@ interface AdminData {
   metrics: { totalUsers: number; totalShoots: number; completedShoots: number; queueDepth: number };
 }
 
+interface ModelConfig {
+  vision_model: "gemini" | "claude";
+  generation_model: "nano-banana" | "seedream";
+  locked_base_rollout_percent: number;
+}
+
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [pricingNgn, setPricingNgn] = useState("");
   const [pricingUsd, setPricingUsd] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [modelConfig, setModelConfig] = useState<ModelConfig>({ vision_model: "gemini", generation_model: "nano-banana", locked_base_rollout_percent: 100 });
+  const [rolloutInput, setRolloutInput] = useState("100");
+  const [modelSaving, setModelSaving] = useState(false);
+  const [modelMsg, setModelMsg] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/config")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setModelConfig(d); setRolloutInput(String(d.locked_base_rollout_percent ?? 100)); } })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/admin/overview")
@@ -52,6 +69,28 @@ export default function AdminPage() {
     } finally {
       setSaving(false);
       setTimeout(() => setMsg(""), 3000);
+    }
+  };
+
+  const saveModelConfig = async (patch: Partial<ModelConfig>) => {
+    setModelSaving(true);
+    setModelMsg("");
+    try {
+      const next = { ...modelConfig, ...patch };
+      const res = await fetch("/api/admin/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error ?? "Error saving");
+      setModelConfig(next);
+      setModelMsg("Saved!");
+    } catch (err) {
+      setModelMsg(err instanceof Error ? err.message : "Error saving");
+    } finally {
+      setModelSaving(false);
+      setTimeout(() => setModelMsg(""), 3000);
     }
   };
 
@@ -92,6 +131,90 @@ export default function AdminPage() {
           <button type="button" className={styles.saveBtn} onClick={savePricing} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
           {msg && <span className={styles.saveMsg}>{msg}</span>}
         </div>
+      </div>
+
+      {/* Model Config */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>AI Model Config</h2>
+        <div className={styles.modelGrid}>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Vision Agent (brief building)</div>
+            <div className={styles.modelPills}>
+              {(["gemini", "claude"] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`${styles.modelPill} ${modelConfig.vision_model === m ? styles.modelPillActive : ""}`}
+                  onClick={() => saveModelConfig({ vision_model: m })}
+                  disabled={modelSaving}
+                >
+                  {m === "gemini" ? "Gemini 2.5 Flash" : "Claude Sonnet / Opus"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.modelHint}>
+              {modelConfig.vision_model === "gemini"
+                ? "Gemini 2.5 Flash analyzes identity images and builds shoot briefs."
+                : "Claude Sonnet (identity) + Claude Opus (brief) handles vision tasks."}
+            </div>
+          </div>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Image Generation Model</div>
+            <div className={styles.modelPills}>
+              {(["nano-banana", "seedream"] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`${styles.modelPill} ${modelConfig.generation_model === m ? styles.modelPillActive : ""}`}
+                  onClick={() => saveModelConfig({ generation_model: m })}
+                  disabled={modelSaving}
+                >
+                  {m === "nano-banana" ? "Flux Kontext (nano-banana)" : "SeedDream 4 (Bytedance)"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.modelHint}>
+              {modelConfig.generation_model === "nano-banana"
+                ? "fal-ai/nano-banana-2/edit — Flux Kontext, strong identity lock."
+                : "fal-ai/bytedance/seedream/v4/edit — SeedDream 4, multi-image editing."}
+            </div>
+          </div>
+        </div>
+        <div className={styles.modelSection}>
+          <div className={styles.modelLabel}>Base-lock Rollout — {rolloutInput}% of new shoots</div>
+          <div className={styles.rolloutRow}>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={rolloutInput}
+              className={styles.rolloutSlider}
+              onChange={e => setRolloutInput(e.target.value)}
+            />
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={rolloutInput}
+              className={styles.rolloutNumber}
+              onChange={e => setRolloutInput(e.target.value)}
+            />
+            <button
+              type="button"
+              className={styles.saveBtn}
+              onClick={() => saveModelConfig({ locked_base_rollout_percent: Number(rolloutInput) })}
+              disabled={modelSaving}
+            >
+              {modelSaving ? "Saving…" : "Save"}
+            </button>
+          </div>
+          <div className={styles.modelHint}>
+            0% = locked base disabled for all. 100% = every shoot uses base-lock. Values in between are deterministic per shoot ID.
+          </div>
+        </div>
+        {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}
+        {modelSaving && <span className={styles.saveMsg}>Saving…</span>}
       </div>
 
       {/* Recent Shoots */}

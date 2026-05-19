@@ -7,7 +7,7 @@
     radial-gradient(circle at 80% 92%, rgba(183, 224, 252, 0.72), transparent 34%),
     linear-gradient(135deg, #fff8ea 0%, #e5fbf6 40%, #d9efff 100%);
   color: #263235;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
   box-sizing: border-box;
 }
@@ -97,6 +97,7 @@
   padding: 6px 12px;
   cursor: pointer;
   text-decoration: none;
+  transition: border-color 0.15s cubic-bezier(0.23, 1, 0.32, 1), color 0.15s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .signOutBtn:hover,
@@ -144,7 +145,7 @@
   overflow: hidden;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(255, 255, 255, 0.88);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -237,7 +238,7 @@
 
 /* ---- Identity library ---- */
 .panelTitleRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.clearLibBtn { background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(213, 110, 98, 0.25); border-radius: 8px; color: #a9544d; font-size: 0.72rem; padding: 4px 9px; cursor: pointer; transition: all 0.15s; }
+.clearLibBtn { background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(213, 110, 98, 0.25); border-radius: 8px; color: #a9544d; font-size: 0.72rem; padding: 4px 9px; cursor: pointer; transition: border-color 0.15s cubic-bezier(0.23, 1, 0.32, 1), color 0.15s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.15s cubic-bezier(0.23, 1, 0.32, 1); }
 .clearLibBtn:hover { border-color: rgba(213, 110, 98, 0.65); color: #8d3f39; background: #fff; }
 .libLabel { font-size: 0.7rem; color: #668085; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
 .app[data-theme="dark"] .libLabel { color: #9fc1c4; }
@@ -334,7 +335,7 @@
 .taggedThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .taggedControls { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .tagPills { display: flex; flex-wrap: wrap; gap: 4px; }
-.tagPill { background: rgba(255, 255, 255, 0.74); border: 1px solid rgba(80, 174, 184, 0.22); border-radius: 8px; color: #57777c; font-size: 0.7rem; padding: 4px 9px; cursor: pointer; transition: all 0.1s; }
+.tagPill { background: rgba(255, 255, 255, 0.74); border: 1px solid rgba(80, 174, 184, 0.22); border-radius: 8px; color: #57777c; font-size: 0.7rem; padding: 4px 9px; cursor: pointer; transition: border-color 0.1s cubic-bezier(0.23, 1, 0.32, 1), color 0.1s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.1s cubic-bezier(0.23, 1, 0.32, 1); }
 .tagPill:hover { border-color: rgba(80, 174, 184, 0.52); color: #2f6970; background: #ffffff; }
 .tagPillActive { background: #ffffff; border-color: rgba(255, 157, 142, 0.72); color: #b55b52; }
 .app[data-theme="dark"] .tagPill { background: rgba(255, 255, 255, 0.07); border-color: rgba(155, 232, 226, 0.18); color: #b8d3d5; }
@@ -346,7 +347,7 @@
 .label { font-size: 0.75rem; color: #4e7076; font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; }
 .helperText { margin: -4px 0 2px; color: #5d7a80; font-size: 0.76rem; line-height: 1.4; }
 .pillGroup { display: flex; flex-wrap: wrap; gap: 6px; }
-.pill { background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(67, 159, 169, 0.24); border-radius: 8px; color: #506e73; font-size: 0.8rem; padding: 6px 12px; cursor: pointer; transition: all 0.1s; }
+.pill { background: rgba(255, 255, 255, 0.68); border: 1px solid rgba(67, 159, 169, 0.24); border-radius: 8px; color: #506e73; font-size: 0.8rem; padding: 6px 12px; cursor: pointer; transition: border-color 0.1s cubic-bezier(0.23, 1, 0.32, 1), color 0.1s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.1s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.1s cubic-bezier(0.23, 1, 0.32, 1); }
 .pill:hover { border-color: rgba(67, 159, 169, 0.52); color: #263235; background: #ffffff; }
 .pillActive { background: #ffffff; border-color: rgba(65, 199, 184, 0.72); color: #1d727c; box-shadow: inset 0 -12px 20px rgba(188, 245, 235, 0.62); }
 .packageGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -553,4 +554,87 @@
   .taggedRow { flex-direction: column; }
   .taggedThumb { width: 100%; height: 80px; }
   .progressName { max-width: 80px; }
+}
+
+/* ---- Interaction feedback (press states) ---- */
+.payBtn:active:not(:disabled),
+.pill:active,
+.packageOption:active,
+.shootCard:active,
+.tagPill:active,
+.signOutBtn:active,
+.adminLink:active,
+.themeToggle:active,
+.dlBtn:active,
+.zipBtn:active,
+.clearLibBtn:active,
+.libEditSave:active,
+.libEditCancel:active,
+.baseApproveBtn:active:not(:disabled),
+.baseRejectBtn:active:not(:disabled),
+.adminBypassBtn:active:not(:disabled),
+.regenerateBtn:active,
+.copyIdBtn:active,
+.deleteShootBtn:active {
+  transform: scale(0.97);
+}
+
+/* ---- Touch device: suppress transform hovers (hover fires on tap) ---- */
+@media (hover: none) {
+  .uploadZone:hover { transform: none; }
+  .payBtn:hover { transform: none; }
+  .shootCard:hover { transform: none; }
+  .baseApproveBtn:hover { transform: none; }
+}
+
+/* ---- Gallery slot entrance animation ---- */
+@keyframes slotFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slotCard {
+  animation: slotFadeIn 280ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.slotCard:nth-child(1)  { animation-delay:   0ms; }
+.slotCard:nth-child(2)  { animation-delay:  40ms; }
+.slotCard:nth-child(3)  { animation-delay:  80ms; }
+.slotCard:nth-child(4)  { animation-delay: 120ms; }
+.slotCard:nth-child(5)  { animation-delay: 160ms; }
+.slotCard:nth-child(6)  { animation-delay: 200ms; }
+.slotCard:nth-child(7)  { animation-delay: 240ms; }
+.slotCard:nth-child(8)  { animation-delay: 280ms; }
+.slotCard:nth-child(9)  { animation-delay: 320ms; }
+.slotCard:nth-child(10) { animation-delay: 360ms; }
+
+/* ---- Accessibility: respect reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .slotCard { animation: none; }
+  .uploadZone,
+  .payBtn,
+  .shootCard,
+  .baseApproveBtn,
+  .pill,
+  .tagPill,
+  .packageOption,
+  .signOutBtn,
+  .adminLink,
+  .themeToggle,
+  .dlBtn,
+  .zipBtn,
+  .clearLibBtn,
+  .libEditSave,
+  .libEditCancel,
+  .baseRejectBtn,
+  .adminBypassBtn,
+  .regenerateBtn,
+  .copyIdBtn,
+  .deleteShootBtn {
+    transition: none;
+  }
+  .slotSpinner,
+  .miniSpinner {
+    animation-duration: 1.5s;
+  }
 }
