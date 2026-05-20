@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TEMPLATE_CATEGORIES, ASPECTS } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import styles from "./creator-dashboard.module.css";
@@ -96,6 +96,7 @@ const defaultForm = () => ({
 
 export default function CreatorDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -133,6 +134,35 @@ export default function CreatorDashboard() {
   }, [router]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Pre-fill create form when arriving from main studio via ?from_shoot=ID
+  useEffect(() => {
+    const shootId = searchParams.get("from_shoot");
+    if (!shootId) return;
+    fetch("/api/shoots")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const shoot = (d?.shoots ?? []).find((s: Record<string, unknown>) => s.id === shootId);
+        if (!shoot) return;
+        setPanel("create");
+        setFormError("");
+        setForm({
+          title: "",
+          description: "",
+          category: "portrait",
+          tags: "",
+          priceNgn: "",
+          shootMode: (shoot.mode as string) === "fast" ? "fast" : "advanced",
+          aspectRatio: (shoot.aspect_ratio as AspectRatio) ?? "4:5",
+          packageSize: [1, 5, 10].includes(Number(shoot.package_size)) ? Number(shoot.package_size) as 1 | 5 | 10 : 10,
+          status: "draft",
+          coverStoragePath: "",
+        });
+        setImages([]);
+        setCoverPreview("");
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Poll showcase shoots every 4 seconds when any are active
   useEffect(() => {

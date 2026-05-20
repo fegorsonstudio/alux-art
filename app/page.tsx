@@ -55,6 +55,7 @@ function getShootPackageSize(shoot: Shoot | null): ShootPackageSize {
 export default function WorkspacePage() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
+  const [isCreator, setIsCreator] = useState(false);
   const [packages, setPackages] = useState<PackagePricing[]>(DEFAULT_PACKAGES);
 
   // Upload state
@@ -120,19 +121,21 @@ export default function WorkspacePage() {
   // Load user + config + shoots
   useEffect(() => {
     (async () => {
-      const [meRes, configRes, shootsRes, libRes, inspirationLibRes, charsRes] = await Promise.all([
+      const [meRes, configRes, shootsRes, libRes, inspirationLibRes, charsRes, creatorStatusRes] = await Promise.all([
         fetch("/api/me"),
         fetch("/api/config"),
         fetch("/api/shoots"),
         fetch("/api/identity-library"),
         fetch("/api/inspiration-library"),
         fetch("/api/characters"),
+        fetch("/api/user/creator-status"),
       ]);
       if (meRes.status === 401) {
         window.location.href = "/login";
         return;
       }
       if (meRes.ok) setUser((await meRes.json()).user);
+      if (creatorStatusRes.ok) { const d = await creatorStatusRes.json(); setIsCreator(d.isCreator === true); }
       if (configRes.ok) {
         const c = await configRes.json();
         if (Array.isArray(c.packages) && c.packages.length > 0) {
@@ -1293,6 +1296,14 @@ export default function WorkspacePage() {
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
                   {currentShoot.status === "COMPLETE" ? `Download All ${getShootPackageSize(currentShoot)} (ZIP)` : "Download Completed Images (ZIP)"}
                 </button>
+              )}
+              {(isCreator || isAdmin) && currentShoot.status === "COMPLETE" && (
+                <a
+                  href={`/creator-dashboard?from_shoot=${currentShoot.id}`}
+                  className={styles.saveAsTemplateLink}
+                >
+                  Save as template
+                </a>
               )}
             </div>
           )}
