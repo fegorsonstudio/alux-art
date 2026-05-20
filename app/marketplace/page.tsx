@@ -25,6 +25,20 @@ export default function MarketplacePage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("studio-theme");
+    if (stored === "dark" || stored === "light") setTheme(stored);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("studio-theme", next);
+      return next;
+    });
+  };
 
   const load = useCallback(async (cat: string, q: string, cursor?: string) => {
     if (!cursor) setLoading(true); else setLoadingMore(true);
@@ -55,7 +69,7 @@ export default function MarketplacePage() {
   const applySearch = () => setSearch(searchInput);
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-theme={theme}>
       <header className={styles.nav}>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
         <div className={styles.navRight}>
@@ -64,6 +78,9 @@ export default function MarketplacePage() {
             ? <Link href="/creator-dashboard" className={styles.navCta}>Creator Dashboard</Link>
             : <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
           }
+          <button className={styles.themeToggle} onClick={toggleTheme} type="button" aria-pressed={theme === "dark"}>
+            {theme === "dark" ? "Light" : "Dark"}
+          </button>
         </div>
       </header>
 
