@@ -40,12 +40,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     description: "",
     category: "portrait",
     tags: [],
-    shoot_mode: shoot.mode,
-    aspect_ratio: shoot.aspect_ratio,
+    shoot_mode: shoot.mode ?? "advanced",
+    aspect_ratio: shoot.aspect_ratio ?? "4:5",
     package_size: shoot.package_size ?? 10,
     price_ngn: 0,
-    price_1_ngn: null,
-    price_5_ngn: null,
     status: "draft",
     cover_storage_path: null,
     cover_bucket: "template-images",
@@ -54,7 +52,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   }).select().single();
 
   if (tmplErr || !template) {
-    return NextResponse.json({ error: "Failed to create template" }, { status: 500 });
+    console.error("[to-template] insert error:", tmplErr?.message, tmplErr?.details, tmplErr?.hint);
+    return NextResponse.json({ error: tmplErr?.message ?? "Failed to create template" }, { status: 500 });
   }
 
   // Copy inspiration + tagged references into template-images bucket
@@ -93,7 +92,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     if (upErr) continue;
 
     // Insert template_images row
-    await service.from("template_images").insert({
+    const { error: imgErr } = await service.from("template_images").insert({
       template_id: template.id,
       storage_path: destPath,
       storage_bucket: "template-images",
@@ -103,6 +102,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       note: ref.note ?? null,
       created_at: now,
     });
+    if (imgErr) console.error("[to-template] template_images insert error:", imgErr.message);
 
     // Auto-set first inspiration image as cover
     if (i === 0 && ref.purpose === "inspiration") {
