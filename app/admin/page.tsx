@@ -63,6 +63,7 @@ interface ModelConfig {
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
+  prompt_only_mode: boolean;
 }
 
 // ---- Helpers ----
@@ -127,7 +128,7 @@ export default function AdminPage() {
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     vision_model: "gemini", generation_model: "nano-banana",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
-    platform_fee_ngn: 15000,
+    platform_fee_ngn: 15000, prompt_only_mode: false,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [platformFeeInput, setPlatformFeeInput] = useState("15000");
@@ -428,6 +429,19 @@ export default function AdminPage() {
                 disabled={modelSaving}>{modelSaving ? "Saving…" : "Save"}</button>
             </div>
             <div className={styles.modelHint}>Fee deducted from each template sale. Scales proportionally for 1/5-image packages.</div>
+          </div>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Prompt-Only Mode</div>
+            <div className={styles.modelPills}>
+              {([false, true] as const).map(val => (
+                <button key={String(val)} type="button"
+                  className={`${styles.modelPill} ${modelConfig.prompt_only_mode === val ? styles.modelPillActive : ""}`}
+                  onClick={() => saveModelConfig({ prompt_only_mode: val })} disabled={modelSaving}>
+                  {val ? "Enabled" : "Disabled"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.modelHint}>{modelConfig.prompt_only_mode ? "ON — prompts are generated and saved but fal.ai calls are skipped. Use Template Lab to generate images later." : "OFF — normal generation pipeline with fal.ai."}</div>
           </div>
         </div>
         {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}

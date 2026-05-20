@@ -60,6 +60,7 @@ export default function TemplatePage() {
   const [isCreator, setIsCreator] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
   const [shareLabel, setShareLabel] = useState("Share");
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
     fetch(`/api/marketplace/${id}`)
@@ -73,6 +74,18 @@ export default function TemplatePage() {
     ...(template.coverUrl ? [{ id: "__cover", url: template.coverUrl, purpose: "cover", displayOrder: -1, tag: undefined }] : []),
     ...template.images,
   ] : [];
+
+  useEffect(() => {
+    const len = allImages.length;
+    const handler = (e: KeyboardEvent) => {
+      if (!len) return;
+      if (e.key === "ArrowLeft") setGalleryIdx(i => Math.max(0, i - 1));
+      if (e.key === "ArrowRight") setGalleryIdx(i => Math.min(len - 1, i + 1));
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allImages.length]);
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -156,11 +169,35 @@ export default function TemplatePage() {
       <div className={styles.layout}>
         {/* Gallery */}
         <div className={styles.galleryCol}>
-          <div className={styles.mainImg}>
-            {allImages[galleryIdx]?.url
-              ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
-              : <div className={styles.imgPlaceholder}>No image</div>
-            }
+          <div className={styles.mainImgWrap}
+            onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
+            onTouchEnd={e => {
+              if (touchStartX === null) return;
+              const delta = touchStartX - e.changedTouches[0].clientX;
+              if (delta > 50) setGalleryIdx(i => Math.min(allImages.length - 1, i + 1));
+              else if (delta < -50) setGalleryIdx(i => Math.max(0, i - 1));
+              setTouchStartX(null);
+            }}
+          >
+            <div className={styles.mainImg}>
+              {allImages[galleryIdx]?.url
+                ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
+                : <div className={styles.imgPlaceholder}>No image</div>
+              }
+            </div>
+            {allImages.length > 1 && (
+              <>
+                {galleryIdx > 0 && (
+                  <button type="button" className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
+                    onClick={() => setGalleryIdx(i => i - 1)} aria-label="Previous image">&#8249;</button>
+                )}
+                {galleryIdx < allImages.length - 1 && (
+                  <button type="button" className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
+                    onClick={() => setGalleryIdx(i => i + 1)} aria-label="Next image">&#8250;</button>
+                )}
+                <span className={styles.galleryCounter}>{galleryIdx + 1} / {allImages.length}</span>
+              </>
+            )}
           </div>
           {allImages.length > 1 && (
             <div className={styles.thumbTrack}>
@@ -208,38 +245,26 @@ export default function TemplatePage() {
             <p className={styles.description}>{template.description}</p>
           )}
 
-          <div className={styles.metaGrid}>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Mode</span><span className={styles.metaVal}>{template.shootMode}</span></div>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Ratio</span><span className={styles.metaVal}>{template.aspectRatio}</span></div>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Sales</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
-          </div>
-
-          {pkgOptions.length > 0 && (
-            <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>Images</span>
-              <div className={styles.pkgPills}>
-                {pkgOptions.map(o => (
-                  <button
-                    key={o.n}
-                    type="button"
-                    className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
-                    onClick={() => setSelectedPkg(o.n)}
-                  >
-                    {o.n} {o.n === 1 ? "image" : "images"}
-                    <span className={styles.pkgPillPrice}>₦{o.price.toLocaleString()}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {template.tags.length > 0 && (
-            <div className={styles.tags}>
-              {template.tags.map(t => <span key={t} className={styles.tag}>{t}</span>)}
-            </div>
-          )}
-
           <div className={styles.purchaseBox}>
+            {pkgOptions.length > 0 && (
+              <div className={styles.pkgRow}>
+                <span className={styles.pkgLabel}>Images</span>
+                <div className={styles.pkgPills}>
+                  {pkgOptions.map(o => (
+                    <button
+                      key={o.n}
+                      type="button"
+                      className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
+                      onClick={() => setSelectedPkg(o.n)}
+                    >
+                      {o.n} {o.n === 1 ? "image" : "images"}
+                      <span className={styles.pkgPillPrice}>₦{o.price.toLocaleString()}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className={styles.couponRow}>
               <input
                 className={styles.couponInput}
@@ -286,6 +311,18 @@ export default function TemplatePage() {
               Add your identity photos, customise the reference images, then pay — all on the next screen.
             </p>
           </div>
+
+          <div className={styles.metaGrid}>
+            <div className={styles.metaItem}><span className={styles.metaLabel}>Mode</span><span className={styles.metaVal}>{template.shootMode}</span></div>
+            <div className={styles.metaItem}><span className={styles.metaLabel}>Ratio</span><span className={styles.metaVal}>{template.aspectRatio}</span></div>
+            <div className={styles.metaItem}><span className={styles.metaLabel}>Sales</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
+          </div>
+
+          {template.tags.length > 0 && (
+            <div className={styles.tags}>
+              {template.tags.map(t => <span key={t} className={styles.tag}>{t}</span>)}
+            </div>
+          )}
         </div>
       </div>
     </div>

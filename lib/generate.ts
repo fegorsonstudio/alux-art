@@ -1285,12 +1285,14 @@ export async function startGenerationWorker(
   // Load active model config (no-code admin switches) — must be before identity analysis
   let visionModel: "gemini" | "claude" = "gemini";
   let generationModel: "nano-banana" | "seedream" = "nano-banana";
+  let promptOnlyMode = false;
   try {
     const { data: cfgData } = await service.from("app_config").select("key,value");
     const cfgMap = Object.fromEntries((cfgData ?? []).map(r => [r.key, r.value]));
     if (cfgMap.vision_model === "claude") visionModel = "claude";
     if (cfgMap.generation_model === "seedream") generationModel = "seedream";
-    console.log("[generate] active models:", { visionModel, generationModel });
+    promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
+    console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode });
   } catch { /* non-fatal — defaults apply */ }
 
   // --- Step 1: Identity analysis (skip if base provides it) ---
@@ -1576,6 +1578,18 @@ export async function startGenerationWorker(
         .from("shoot_images")
         .update({ prompt: slotPrompt, updated_at: ts() })
         .eq("id", slotImg.id);
+
+      // Prompt-only mode: skip fal.ai entirely — mark slot complete with prompt saved
+      if (promptOnlyMode) {
+        await service.from("shoot_images").update({
+          status: "COMPLETE",
+          provider: "prompt-only",
+          stage: "Prompt saved (prompt-only mode)",
+          updated_at: ts(),
+        }).eq("id", slotImg.id);
+        console.log(`[generate] slot ${slot}: prompt-only mode — skipping fal.ai`);
+        continue;
+      }
 
       // Log to Airtable before calling fal.ai so the payload is always visible
       console.log("[generate] Airtable payload URL counts:", {

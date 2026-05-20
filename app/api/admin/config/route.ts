@@ -12,6 +12,7 @@ type AdminConfig = {
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
+  prompt_only_mode: boolean;
 };
 
 async function getAdminSession() {
@@ -36,6 +37,7 @@ export async function GET() {
     locked_base_rollout_percent: parseInt(map.locked_base_rollout_percent ?? "100", 10),
     locked_base_enabled: map.locked_base_enabled === "true",
     platform_fee_ngn: parseInt(map.platform_fee_ngn ?? "15000", 10),
+    prompt_only_mode: map.prompt_only_mode === "true",
   } satisfies AdminConfig);
 }
 
@@ -79,6 +81,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "platform_fee_ngn must be an integer ≥ 1000" }, { status: 400 });
     }
     updates.push({ key: "platform_fee_ngn", value: String(fee), updated_at: now });
+  }
+
+  if (body.prompt_only_mode !== undefined) {
+    updates.push({ key: "prompt_only_mode", value: body.prompt_only_mode ? "true" : "false", updated_at: now });
   }
 
   if (updates.length === 0) {
