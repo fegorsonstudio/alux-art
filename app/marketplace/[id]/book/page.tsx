@@ -19,6 +19,8 @@ interface TemplateDetail {
   id: string;
   title: string;
   priceNgn: number;
+  price1Ngn?: number | null;
+  price5Ngn?: number | null;
   shootMode: string;
   aspectRatio: string;
   packageSize: number;
@@ -78,6 +80,10 @@ export default function BookPage() {
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [validating, setValidating] = useState(false);
 
+  const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(() => {
+    const p = Number(searchParams.get("pkg"));
+    return ([1, 5, 10].includes(p) ? p : 10) as 1 | 5 | 10;
+  });
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
 
@@ -229,6 +235,7 @@ export default function BookPage() {
         identityRefs: allIdentityRefs,
         taggedRefs: taggedRefs.map(r => ({ tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket })),
         couponCode: couponResult?.valid ? couponCode : undefined,
+        packageSize: selectedPkg,
       }),
     });
     if (res.status === 401) { router.push(`/login?redirect=/marketplace/${id}/book`); return; }
@@ -259,9 +266,19 @@ export default function BookPage() {
     );
   }
 
+  const pkgOptions = ([
+    { n: 1 as const, price: template.price1Ngn },
+    { n: 5 as const, price: template.price5Ngn },
+    { n: 10 as const, price: template.priceNgn },
+  ] as Array<{ n: 1 | 5 | 10; price: number | null | undefined }>)
+    .filter(o => o.price != null && o.price > 0) as Array<{ n: 1 | 5 | 10; price: number }>;
+
+  const activePkg = pkgOptions.find(o => o.n === selectedPkg) ?? pkgOptions[pkgOptions.length - 1];
+  const pkgPrice = activePkg?.price ?? template.priceNgn;
+
   const displayedPrice = couponResult?.valid && couponResult.discountNgn
-    ? template.priceNgn - couponResult.discountNgn
-    : template.priceNgn;
+    ? pkgPrice - couponResult.discountNgn
+    : pkgPrice;
 
   return (
     <div className={styles.page}>
@@ -277,7 +294,7 @@ export default function BookPage() {
           <span className={styles.templateTitle}>{template.title}</span>
           <span className={styles.templateMeta}>{template.shootMode} · {template.aspectRatio} · {template.packageSize} images</span>
         </div>
-        <span className={styles.price}>₦{template.priceNgn.toLocaleString()}</span>
+        <span className={styles.price}>₦{pkgPrice.toLocaleString()}</span>
       </div>
 
       <div className={styles.layout}>
@@ -384,6 +401,21 @@ export default function BookPage() {
 
       {/* Payment footer */}
       <div className={styles.payFooter}>
+        {pkgOptions.length > 1 && (
+          <div className={styles.pkgRow}>
+            {pkgOptions.map(o => (
+              <button
+                key={o.n}
+                type="button"
+                className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
+                onClick={() => setSelectedPkg(o.n)}
+              >
+                {o.n} {o.n === 1 ? "image" : "images"} — ₦{o.price.toLocaleString()}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className={styles.couponRow}>
           <input
             className={styles.couponInput}
@@ -413,11 +445,11 @@ export default function BookPage() {
           <div className={styles.priceBlock}>
             {couponResult?.valid && couponResult.discountNgn ? (
               <>
-                <span className={styles.priceOld}>₦{template.priceNgn.toLocaleString()}</span>
+                <span className={styles.priceOld}>₦{pkgPrice.toLocaleString()}</span>
                 <span className={styles.priceFinal}>₦{displayedPrice.toLocaleString()}</span>
               </>
             ) : (
-              <span className={styles.priceFinal}>₦{displayedPrice.toLocaleString()}</span>
+              <span className={styles.priceFinal}>₦{pkgPrice.toLocaleString()}</span>
             )}
           </div>
           <button type="button" className={styles.payBtn} onClick={book} disabled={!canPay}>

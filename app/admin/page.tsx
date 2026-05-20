@@ -62,6 +62,7 @@ interface ModelConfig {
   generation_model: "nano-banana" | "seedream";
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
+  platform_fee_ngn: number;
 }
 
 // ---- Helpers ----
@@ -126,8 +127,10 @@ export default function AdminPage() {
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     vision_model: "gemini", generation_model: "nano-banana",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
+    platform_fee_ngn: 15000,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
+  const [platformFeeInput, setPlatformFeeInput] = useState("15000");
   const [modelSaving, setModelSaving] = useState(false);
   const [modelMsg, setModelMsg] = useState("");
 
@@ -157,7 +160,7 @@ export default function AdminPage() {
 
     fetch("/api/admin/config")
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setModelConfig(d); setRolloutInput(String(d.locked_base_rollout_percent ?? 100)); } })
+      .then(d => { if (d) { setModelConfig(d); setRolloutInput(String(d.locked_base_rollout_percent ?? 100)); setPlatformFeeInput(String(d.platform_fee_ngn ?? 15000)); } })
       .catch(() => {});
 
     fetch("/api/admin/coupons")
@@ -414,6 +417,17 @@ export default function AdminPage() {
                 onClick={() => saveModelConfig({ locked_base_rollout_percent: Number(rolloutInput) })}
                 disabled={modelSaving}>{modelSaving ? "Saving…" : "Save"}</button>
             </div>
+          </div>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Platform Fee — ₦{Number(platformFeeInput).toLocaleString()} per 10 images</div>
+            <div className={styles.rolloutRow}>
+              <input type="number" min={1000} step={500} value={platformFeeInput}
+                className={styles.rolloutNumber} style={{ width: 120 }} onChange={e => setPlatformFeeInput(e.target.value)} />
+              <button type="button" className={styles.saveBtn}
+                onClick={() => saveModelConfig({ platform_fee_ngn: Number(platformFeeInput) })}
+                disabled={modelSaving}>{modelSaving ? "Saving…" : "Save"}</button>
+            </div>
+            <div className={styles.modelHint}>Fee deducted from each template sale. Scales proportionally for 1/5-image packages.</div>
           </div>
         </div>
         {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}

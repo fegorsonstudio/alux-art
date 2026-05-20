@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TEMPLATE_CATEGORIES, ASPECTS, PLATFORM_FEE_NGN } from "@/lib/types";
+import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import styles from "./creator-dashboard.module.css";
 
@@ -16,6 +16,8 @@ interface TemplateRow {
   category: string;
   tags?: string[];
   price_ngn: number;
+  price_1_ngn?: number | null;
+  price_5_ngn?: number | null;
   status: string;
   purchase_count: number;
   shoot_mode: string;
@@ -88,6 +90,8 @@ const defaultForm = () => ({
   category: "portrait",
   tags: "",
   priceNgn: "",
+  price1Ngn: "",
+  price5Ngn: "",
   shootMode: "advanced",
   aspectRatio: "4:5" as AspectRatio,
   packageSize: 10,
@@ -122,6 +126,9 @@ export default function CreatorDashboard() {
   const [showcaseError, setShowcaseError] = useState("");
   const [showcaseShoots, setShowcaseShoots] = useState<ShowcaseShoot[]>([]);
   const [addingImageId, setAddingImageId] = useState<string | null>(null);
+  const [galleryAdded, setGalleryAdded] = useState<Map<string, string>>(new Map());
+  const [settingCover, setSettingCover] = useState<string | null>(null);
+  const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = useCallback(async () => {
@@ -137,6 +144,13 @@ export default function CreatorDashboard() {
   }, [router]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.platformFeeNgn) setPlatformFeeNgn(d.platformFeeNgn); })
+      .catch(() => {});
+  }, []);
 
   // Pre-fill create form when arriving from main studio via ?from_shoot=ID
   useEffect(() => {
@@ -155,6 +169,8 @@ export default function CreatorDashboard() {
           category: "portrait",
           tags: "",
           priceNgn: "",
+          price1Ngn: "",
+          price5Ngn: "",
           shootMode: (shoot.mode as string) === "fast" ? "fast" : "advanced",
           aspectRatio: (shoot.aspect_ratio as AspectRatio) ?? "4:5",
           packageSize: [1, 5, 10].includes(Number(shoot.package_size)) ? Number(shoot.package_size) as 1 | 5 | 10 : 10,
@@ -197,6 +213,8 @@ export default function CreatorDashboard() {
       category: t.category,
       tags: (t.tags ?? []).join(", "),
       priceNgn: String(t.price_ngn),
+      price1Ngn: t.price_1_ngn != null ? String(t.price_1_ngn) : "",
+      price5Ngn: t.price_5_ngn != null ? String(t.price_5_ngn) : "",
       shootMode: t.shoot_mode,
       aspectRatio: t.aspect_ratio as AspectRatio,
       packageSize: t.package_size,
@@ -232,6 +250,8 @@ export default function CreatorDashboard() {
       category: linked?.category ?? "portrait",
       tags: (linked?.tags ?? []).join(", "),
       priceNgn: "",
+      price1Ngn: "",
+      price5Ngn: "",
       shootMode: linked?.shoot_mode ?? "advanced",
       aspectRatio: (linked?.aspect_ratio ?? "4:5") as AspectRatio,
       packageSize: linked?.package_size ?? 10,
@@ -320,11 +340,26 @@ export default function CreatorDashboard() {
     });
     setAddingImageId(null);
     if (!res.ok) return;
-    // Mark added in local state
+    const data = await res.json();
+    if (data.image?.storagePath) {
+      setGalleryAdded(prev => new Map(prev).set(shootImageId, data.image.storagePath));
+    }
     setShowcaseShoots(prev => prev.map(s => ({
       ...s,
       shoot_images: s.shoot_images.map(img => img.id === shootImageId ? { ...img, added: true } : img),
     })));
+    loadDashboard();
+  };
+
+  const setAsCover = async (templateId: string | null, storagePath: string, imageId: string) => {
+    if (!templateId) return;
+    setSettingCover(imageId);
+    await fetch(`/api/templates/${templateId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coverStoragePath: storagePath }),
+    });
+    setSettingCover(null);
     loadDashboard();
   };
 
@@ -337,10 +372,7 @@ export default function CreatorDashboard() {
     a.click();
   };
 
-  const feeNgn = PLATFORM_FEE_NGN;
-  const earnPreview = form.priceNgn && Number(form.priceNgn) > feeNgn
-    ? Number(form.priceNgn) - feeNgn
-    : null;
+  const feeNgn = platformFeeNgn;
 
   const uploadFile = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true } : img));
@@ -392,8 +424,18 @@ export default function CreatorDashboard() {
   const saveTemplate = async () => {
     setFormError("");
     if (!form.title.trim()) { setFormError("Title is required"); return; }
-    if (!form.priceNgn || Number(form.priceNgn) < 1000) { setFormError("Price must be at least ₦1,000"); return; }
-    if (earnPreview === null) { setFormError(`Price must be more than ₦${feeNgn.toLocaleString()} (the platform fee)`); return; }
+    if (!form.priceNgn || Number(form.priceNgn) <= feeNgn) {
+      setFormError(`10-image price must be more than ₦${feeNgn.toLocaleString()} (the platform fee)`);
+      return;
+    }
+    if (form.price1Ngn && Number(form.price1Ngn) <= packagePrice(feeNgn, 1)) {
+      setFormError(`1-image price must be more than ₦${packagePrice(feeNgn, 1).toLocaleString()}`);
+      return;
+    }
+    if (form.price5Ngn && Number(form.price5Ngn) <= packagePrice(feeNgn, 5)) {
+      setFormError(`5-image price must be more than ₦${packagePrice(feeNgn, 5).toLocaleString()}`);
+      return;
+    }
     if (images.some(i => i.uploading)) { setFormError("Please wait for all images to finish uploading"); return; }
 
     setSaving(true);
@@ -403,6 +445,8 @@ export default function CreatorDashboard() {
       category: form.category,
       tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
       priceNgn: Number(form.priceNgn),
+      price1Ngn: form.price1Ngn ? Number(form.price1Ngn) : null,
+      price5Ngn: form.price5Ngn ? Number(form.price5Ngn) : null,
       shootMode: form.shootMode,
       aspectRatio: form.aspectRatio,
       packageSize: form.packageSize,
@@ -558,11 +602,31 @@ export default function CreatorDashboard() {
 
           <div className={styles.formGrid}>
             <label className={styles.field}>
-              <span className={styles.label}>Your price (₦) *</span>
+              <span className={styles.label}>10-image price (₦) *</span>
               <input className={styles.input} type="number" value={form.priceNgn} onChange={e => setForm(f => ({ ...f, priceNgn: e.target.value }))} placeholder="e.g. 25000" min={1000} />
-              {earnPreview !== null
-                ? <span className={styles.earnPreview}>You earn ₦{earnPreview.toLocaleString()} per sale</span>
+              {form.priceNgn && Number(form.priceNgn) > feeNgn
+                ? <span className={styles.earnPreview}>You earn ₦{(Number(form.priceNgn) - feeNgn).toLocaleString()} per sale</span>
                 : form.priceNgn && <span className={styles.earnWarn}>Must be more than ₦{feeNgn.toLocaleString()} platform fee</span>
+              }
+            </label>
+
+            <label className={styles.field}>
+              <span className={styles.label}>1-image price (₦) <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
+              <input className={styles.input} type="number" value={form.price1Ngn} onChange={e => setForm(f => ({ ...f, price1Ngn: e.target.value }))} placeholder={`e.g. ${packagePrice(feeNgn, 1) + 500}`} min={1} />
+              {form.price1Ngn && Number(form.price1Ngn) > packagePrice(feeNgn, 1)
+                ? <span className={styles.earnPreview}>You earn ₦{(Number(form.price1Ngn) - packagePrice(feeNgn, 1)).toLocaleString()}</span>
+                : form.price1Ngn && <span className={styles.earnWarn}>Must be more than ₦{packagePrice(feeNgn, 1).toLocaleString()}</span>
+              }
+            </label>
+          </div>
+
+          <div className={styles.formGrid}>
+            <label className={styles.field}>
+              <span className={styles.label}>5-image price (₦) <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
+              <input className={styles.input} type="number" value={form.price5Ngn} onChange={e => setForm(f => ({ ...f, price5Ngn: e.target.value }))} placeholder={`e.g. ${packagePrice(feeNgn, 5) + 2500}`} min={1} />
+              {form.price5Ngn && Number(form.price5Ngn) > packagePrice(feeNgn, 5)
+                ? <span className={styles.earnPreview}>You earn ₦{(Number(form.price5Ngn) - packagePrice(feeNgn, 5)).toLocaleString()}</span>
+                : form.price5Ngn && <span className={styles.earnWarn}>Must be more than ₦{packagePrice(feeNgn, 5).toLocaleString()}</span>
               }
             </label>
 
@@ -821,6 +885,16 @@ export default function CreatorDashboard() {
                           >
                             {img.added ? "Added" : addingImageId === img.id ? "Adding..." : "Add to gallery"}
                           </button>
+                          {galleryAdded.has(img.id) && (
+                            <button
+                              type="button"
+                              className={styles.showcaseActionBtn}
+                              onClick={() => setAsCover(showcaseTemplateId, galleryAdded.get(img.id)!, img.id)}
+                              disabled={settingCover === img.id}
+                            >
+                              {settingCover === img.id ? "Setting..." : "Set as cover"}
+                            </button>
+                          )}
                           {(img.download_url || img.preview_url) && (
                             <button type="button" className={styles.showcaseActionBtn} onClick={() => downloadImage(img.download_url || img.preview_url!)}>
                               Download

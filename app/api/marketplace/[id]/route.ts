@@ -81,6 +81,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       category: template.category,
       tags: template.tags ?? [],
       priceNgn: template.price_ngn,
+      price1Ngn: template.price_1_ngn ?? null,
+      price5Ngn: template.price_5_ngn ?? null,
       shootMode: template.shoot_mode,
       aspectRatio: template.aspect_ratio,
       packageSize: template.package_size,

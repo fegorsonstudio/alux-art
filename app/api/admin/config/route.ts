@@ -11,6 +11,7 @@ type AdminConfig = {
   generation_model: GenerationModel;
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
+  platform_fee_ngn: number;
 };
 
 async function getAdminSession() {
@@ -34,6 +35,7 @@ export async function GET() {
     generation_model: (map.generation_model ?? "nano-banana") as GenerationModel,
     locked_base_rollout_percent: parseInt(map.locked_base_rollout_percent ?? "100", 10),
     locked_base_enabled: map.locked_base_enabled === "true",
+    platform_fee_ngn: parseInt(map.platform_fee_ngn ?? "15000", 10),
   } satisfies AdminConfig);
 }
 
@@ -69,6 +71,14 @@ export async function PATCH(req: NextRequest) {
 
   if (body.locked_base_enabled !== undefined) {
     updates.push({ key: "locked_base_enabled", value: body.locked_base_enabled ? "true" : "false", updated_at: now });
+  }
+
+  if (body.platform_fee_ngn !== undefined) {
+    const fee = Number(body.platform_fee_ngn);
+    if (!Number.isInteger(fee) || fee < 1000) {
+      return NextResponse.json({ error: "platform_fee_ngn must be an integer ≥ 1000" }, { status: 400 });
+    }
+    updates.push({ key: "platform_fee_ngn", value: String(fee), updated_at: now });
   }
 
   if (updates.length === 0) {

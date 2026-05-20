@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { ASPECTS, PLATFORM_FEE_NGN } from "@/lib/types";
+import { ASPECTS, packagePrice } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
+
+async function getPlatformFee(service: ReturnType<typeof createServiceClient>): Promise<number> {
+  const { data } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
+  return parseInt(data?.value ?? "15000", 10);
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -36,7 +41,7 @@ export async function POST(request: NextRequest) {
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const { title, description, category, tags, priceNgn, shootMode, aspectRatio, packageSize } = body;
+  const { title, description, category, tags, priceNgn, price1Ngn, price5Ngn, shootMode, aspectRatio, packageSize } = body;
 
   if (typeof title !== "string" || title.trim().length < 2) {
     return NextResponse.json({ error: "Title is required (min 2 characters)" }, { status: 400 });
@@ -50,9 +55,23 @@ export async function POST(request: NextRequest) {
   if (typeof aspectRatio !== "string" || !(aspectRatio in ASPECTS)) {
     return NextResponse.json({ error: "Invalid aspect ratio" }, { status: 400 });
   }
-  if (!Number.isInteger(priceNgn) || (priceNgn as number) <= PLATFORM_FEE_NGN) {
-    return NextResponse.json({ error: `Price must be more than ₦${PLATFORM_FEE_NGN.toLocaleString()} (the platform fee)` }, { status: 400 });
+
+  const platformFeeNgn = await getPlatformFee(service);
+
+  if (!Number.isInteger(priceNgn) || (priceNgn as number) <= platformFeeNgn) {
+    return NextResponse.json({ error: `10-image price must be more than ₦${platformFeeNgn.toLocaleString()} (the platform fee)` }, { status: 400 });
   }
+  if (price1Ngn !== undefined && price1Ngn !== null) {
+    if (!Number.isInteger(price1Ngn) || (price1Ngn as number) <= packagePrice(platformFeeNgn, 1)) {
+      return NextResponse.json({ error: `1-image price must be more than ₦${packagePrice(platformFeeNgn, 1).toLocaleString()}` }, { status: 400 });
+    }
+  }
+  if (price5Ngn !== undefined && price5Ngn !== null) {
+    if (!Number.isInteger(price5Ngn) || (price5Ngn as number) <= packagePrice(platformFeeNgn, 5)) {
+      return NextResponse.json({ error: `5-image price must be more than ₦${packagePrice(platformFeeNgn, 5).toLocaleString()}` }, { status: 400 });
+    }
+  }
+
   const pkg = [1, 5, 10].includes(Number(packageSize)) ? Number(packageSize) : 10;
   const { coverStoragePath } = body;
 
@@ -64,6 +83,8 @@ export async function POST(request: NextRequest) {
     category,
     tags: Array.isArray(tags) ? (tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10) : [],
     price_ngn: priceNgn,
+    price_1_ngn: (price1Ngn != null && Number.isInteger(price1Ngn)) ? price1Ngn : null,
+    price_5_ngn: (price5Ngn != null && Number.isInteger(price5Ngn)) ? price5Ngn : null,
     shoot_mode: shootMode,
     aspect_ratio: aspectRatio,
     package_size: pkg,

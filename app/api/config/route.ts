@@ -4,20 +4,20 @@ import { createServiceClient } from "@/lib/supabase-server";
 
 export async function GET() {
   const supabase = createServiceClient();
-  const { data: pricing } = await supabase
-    .from("pricing_configs")
-    .select("ngn, usd")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .single();
+  const [pricingResult, feeResult] = await Promise.all([
+    supabase.from("pricing_configs").select("ngn, usd").order("updated_at", { ascending: false }).limit(1).single(),
+    supabase.from("app_config").select("value").eq("key", "platform_fee_ngn").single(),
+  ]);
 
-  const basePricing = pricing ?? { ngn: 15000, usd: 10 };
+  const basePricing = pricingResult.data ?? { ngn: 15000, usd: 10 };
+  const platformFeeNgn = parseInt(feeResult.data?.value ?? "15000", 10);
 
   return NextResponse.json({
     aspects: ASPECTS,
     models: FAL_MODELS,
     tags: REFERENCE_TAGS,
     pricing: basePricing,
+    platformFeeNgn,
     packages: Object.values(SHOOT_PACKAGES).map((pkg) => ({
       imageCount: pkg.imageCount,
       label: pkg.label,

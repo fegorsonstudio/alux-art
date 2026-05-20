@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { packagePrice } from "@/lib/types";
 
 interface RefInput {
   name?: string;
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     identityRefs?: RefInput[];
     taggedRefs?: TaggedRefInput[];
     couponCode?: string;
+    packageSize?: number;
   };
 
   const identityRefs: RefInput[] = body.identityRefs ?? [];
@@ -41,6 +43,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const service = createServiceClient();
+
+  const buyerPackageSize: 1 | 5 | 10 = ([1, 5, 10] as const).includes(body.packageSize as 1 | 5 | 10)
+    ? (body.packageSize as 1 | 5 | 10)
+    : 10;
 
   // 1. Fetch published template + creator
   const { data: template } = await service
@@ -71,15 +77,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // 2. Fetch platform fee from pricing_configs
-  const { data: feeConfig } = await service
-    .from("pricing_configs")
-    .select("price_ngn")
-    .eq("package_size", template.package_size)
-    .single();
-  const platformFeeNgn: number = (feeConfig as { price_ngn: number } | null)?.price_ngn ?? 15000;
+  // 2. Fetch platform fee from app_config
+  const { data: feeRow } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
+  const basePlatformFeeNgn = parseInt(feeRow?.value ?? "15000", 10);
+  const platformFeeNgn = packagePrice(basePlatformFeeNgn, buyerPackageSize);
 
-  if (template.price_ngn <= platformFeeNgn) {
+  // Resolve buyer's price for chosen package
+  const priceMap: Record<1 | 5 | 10, number | null> = {
+    1: (template as Record<string, unknown>).price_1_ngn as number | null ?? null,
+    5: (template as Record<string, unknown>).price_5_ngn as number | null ?? null,
+    10: template.price_ngn,
+  };
+  const buyerAmountNgn: number | null = priceMap[buyerPackageSize];
+  if (!buyerAmountNgn) {
+    return NextResponse.json({ error: "This package is not available for this template" }, { status: 422 });
+  }
+
+  if (buyerAmountNgn <= platformFeeNgn) {
     return NextResponse.json({ error: "Template price must exceed the platform fee" }, { status: 422 });
   }
 
@@ -113,8 +127,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   // 4. Amounts
-  const creatorPayoutNgn = template.price_ngn - platformFeeNgn;
-  const amountNgn = template.price_ngn - couponDiscountNgn;
+  const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
+  const amountNgn = buyerAmountNgn - couponDiscountNgn;
 
   const now = new Date().toISOString();
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
@@ -129,7 +143,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     mode: template.shoot_mode ?? "advanced",
     aspect_ratio: template.aspect_ratio ?? "4:5",
     currency: "NGN",
-    package_size: template.package_size ?? 10,
+    package_size: buyerPackageSize,
     status: "PENDING_PAYMENT",
     progress: 0,
     quote: { text: "", attribution: "" },
@@ -141,8 +155,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (shootErr) return NextResponse.json({ error: shootErr.message }, { status: 500 });
 
   // Create image slots
-  const packageSize = template.package_size ?? 10;
-  const slots = Array.from({ length: packageSize }, (_, i) => ({
+  const slots = Array.from({ length: buyerPackageSize }, (_, i) => ({
     id: crypto.randomUUID(),
     shoot_id: shootId,
     user_id: user.id,

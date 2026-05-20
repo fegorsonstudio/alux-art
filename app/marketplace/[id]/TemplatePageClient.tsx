@@ -20,6 +20,8 @@ interface TemplateDetail {
   category: string;
   tags: string[];
   priceNgn: number;
+  price1Ngn?: number | null;
+  price5Ngn?: number | null;
   shootMode: string;
   aspectRatio: string;
   packageSize: number;
@@ -56,6 +58,7 @@ export default function TemplatePage() {
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
+  const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
 
   useEffect(() => {
     fetch(`/api/marketplace/${id}`)
@@ -90,7 +93,10 @@ export default function TemplatePage() {
 
   const purchase = () => {
     setBuying(true);
-    router.push(`/marketplace/${id}/book${couponCode ? `?coupon=${encodeURIComponent(couponCode)}` : ""}`);
+    const params = new URLSearchParams();
+    params.set("pkg", String(selectedPkg));
+    if (couponCode) params.set("coupon", couponCode);
+    router.push(`/marketplace/${id}/book?${params.toString()}`);
   };
 
   if (loading) {
@@ -111,9 +117,19 @@ export default function TemplatePage() {
     );
   }
 
+  const pkgOptions = ([
+    { n: 1 as const, price: template.price1Ngn },
+    { n: 5 as const, price: template.price5Ngn },
+    { n: 10 as const, price: template.priceNgn },
+  ] as Array<{ n: 1 | 5 | 10; price: number | null | undefined }>)
+    .filter(o => o.price != null && o.price > 0) as Array<{ n: 1 | 5 | 10; price: number }>;
+
+  const activePkg = pkgOptions.find(o => o.n === selectedPkg) ?? pkgOptions[pkgOptions.length - 1];
+  const pkgPrice = activePkg?.price ?? template.priceNgn;
+
   const displayedPrice = couponResult?.valid && couponResult.discountNgn
-    ? template.priceNgn - couponResult.discountNgn
-    : template.priceNgn;
+    ? pkgPrice - couponResult.discountNgn
+    : pkgPrice;
 
   return (
     <div className={styles.page}>
@@ -181,9 +197,27 @@ export default function TemplatePage() {
           <div className={styles.metaGrid}>
             <div className={styles.metaItem}><span className={styles.metaLabel}>Mode</span><span className={styles.metaVal}>{template.shootMode}</span></div>
             <div className={styles.metaItem}><span className={styles.metaLabel}>Ratio</span><span className={styles.metaVal}>{template.aspectRatio}</span></div>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Images</span><span className={styles.metaVal}>{template.packageSize}</span></div>
             <div className={styles.metaItem}><span className={styles.metaLabel}>Sales</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
           </div>
+
+          {pkgOptions.length > 0 && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>Images</span>
+              <div className={styles.pkgPills}>
+                {pkgOptions.map(o => (
+                  <button
+                    key={o.n}
+                    type="button"
+                    className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
+                    onClick={() => setSelectedPkg(o.n)}
+                  >
+                    {o.n} {o.n === 1 ? "image" : "images"}
+                    <span className={styles.pkgPillPrice}>₦{o.price.toLocaleString()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {template.tags.length > 0 && (
             <div className={styles.tags}>
@@ -217,11 +251,11 @@ export default function TemplatePage() {
             <div className={styles.priceRow}>
               {couponResult?.valid && couponResult.discountNgn ? (
                 <>
-                  <span className={styles.priceOriginal}>₦{template.priceNgn.toLocaleString()}</span>
+                  <span className={styles.priceOriginal}>₦{pkgPrice.toLocaleString()}</span>
                   <span className={styles.priceFinal}>₦{displayedPrice.toLocaleString()}</span>
                 </>
               ) : (
-                <span className={styles.priceFinal}>₦{template.priceNgn.toLocaleString()}</span>
+                <span className={styles.priceFinal}>₦{pkgPrice.toLocaleString()}</span>
               )}
             </div>
 

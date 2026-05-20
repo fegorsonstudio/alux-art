@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { ASPECTS, PLATFORM_FEE_NGN } from "@/lib/types";
+import { ASPECTS, packagePrice } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
+
+async function getPlatformFee(service: ReturnType<typeof createServiceClient>): Promise<number> {
+  const { data } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
+  return parseInt(data?.value ?? "15000", 10);
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,16 +46,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = await request.json() as Record<string, unknown>;
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
+  const platformFeeNgn = await getPlatformFee(service);
+
   if (typeof body.title === "string" && body.title.trim().length >= 2) updates.title = body.title.trim();
   if (typeof body.description === "string") updates.description = body.description.trim();
   if (typeof body.category === "string" && ALLOWED_CATEGORIES.has(body.category)) updates.category = body.category;
   if (typeof body.shootMode === "string" && ALLOWED_MODES.has(body.shootMode)) updates.shoot_mode = body.shootMode;
   if (typeof body.aspectRatio === "string" && body.aspectRatio in ASPECTS) updates.aspect_ratio = body.aspectRatio;
-  if (Number.isInteger(body.priceNgn) && (body.priceNgn as number) > PLATFORM_FEE_NGN) updates.price_ngn = body.priceNgn;
+  if (Number.isInteger(body.priceNgn) && (body.priceNgn as number) > platformFeeNgn) updates.price_ngn = body.priceNgn;
+  if (Number.isInteger(body.price1Ngn) && (body.price1Ngn as number) > packagePrice(platformFeeNgn, 1)) updates.price_1_ngn = body.price1Ngn;
+  if (body.price1Ngn === null) updates.price_1_ngn = null;
+  if (Number.isInteger(body.price5Ngn) && (body.price5Ngn as number) > packagePrice(platformFeeNgn, 5)) updates.price_5_ngn = body.price5Ngn;
+  if (body.price5Ngn === null) updates.price_5_ngn = null;
   if ([1, 5, 10].includes(Number(body.packageSize))) updates.package_size = Number(body.packageSize);
   if (Array.isArray(body.tags)) updates.tags = (body.tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10);
   if (body.status === "published" || body.status === "draft") updates.status = body.status;
-  if (typeof body.coverStoragePath === "string") updates.cover_storage_path = body.coverStoragePath;
+  if (typeof body.coverStoragePath === "string") {
+    updates.cover_storage_path = body.coverStoragePath;
+    updates.cover_bucket = "template-images";
+  }
 
   const { data: template, error } = await service
     .from("templates")
