@@ -344,6 +344,15 @@ select.input { appearance: none; cursor: pointer; }
 .coverPlaceholder { color: #7aafb4; font-size: 0.82rem; }
 .hidden { display: none; }
 
+/* ---- Field hint ---- */
+.fieldHint { font-size: 0.76rem; color: #88a4a8; margin: 0 0 8px 0; line-height: 1.5; }
+
+/* ---- Advanced mode reference sections ---- */
+.advancedRefSection { margin-bottom: 12px; }
+.advancedRefLabel { display: block; font-size: 0.78rem; font-weight: 700; color: #2f6870; margin-bottom: 6px; }
+.advancedRefNote { font-weight: 400; color: #88a4a8; }
+.addImgBtnSm { min-height: 64px; font-size: 0.78rem; }
+
 /* ---- Image grid ---- */
 .imagesGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
 
@@ -419,6 +428,8 @@ select.input { appearance: none; cursor: pointer; }
 }
 
 .imgRemove:hover { color: #a7463c; background: #ffffff; }
+
+.imgDbBadge { position: absolute; bottom: 4px; left: 4px; background: rgba(47, 142, 154, 0.85); color: #fff; font-size: 0.62rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; pointer-events: none; }
 
 .addImgBtn {
   aspect-ratio: 1;

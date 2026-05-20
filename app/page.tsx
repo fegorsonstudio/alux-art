@@ -88,6 +88,7 @@ export default function WorkspacePage() {
   const [selectedBase, setSelectedBase] = useState<CharacterBaseItem | null>(null);
   const [reviewBaseUrl, setReviewBaseUrl] = useState<string | null>(null);
   const [reviewAttemptsRemaining, setReviewAttemptsRemaining] = useState(4);
+  const [baseFullscreen, setBaseFullscreen] = useState(false);
   const [baseAction, setBaseAction] = useState<"idle" | "loading">("idle");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -317,6 +318,13 @@ export default function WorkspacePage() {
       })
       .catch(() => {});
   }, [currentShoot?.status, currentShoot?.id]);
+
+  useEffect(() => {
+    if (!baseFullscreen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setBaseFullscreen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [baseFullscreen]);
 
   const uploadFile = useCallback(async (file: File, bucket: string, saveLib = false): Promise<UploadedRef | null> => {
     const key = `${file.name}-${file.size}`;
@@ -1199,7 +1207,13 @@ export default function WorkspacePage() {
                   {reviewBaseUrl ? (
                     <div className={styles.baseReviewContent}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={reviewBaseUrl} alt="Character base preview" className={styles.baseReviewImg} />
+                      <img
+                        src={reviewBaseUrl}
+                        alt="Character base preview"
+                        className={styles.baseReviewImg}
+                        onClick={() => setBaseFullscreen(true)}
+                        title="Click to view full size"
+                      />
                       <div className={styles.baseReviewActions}>
                         <button className={styles.baseApproveBtn} onClick={handleApproveBase} disabled={baseAction === "loading"}>
                           {baseAction === "loading" ? "..." : "Looks good — generate my photos"}
@@ -1309,6 +1323,19 @@ export default function WorkspacePage() {
           )}
         </div>
       </div>
+      {/* Base image fullscreen lightbox */}
+      {baseFullscreen && reviewBaseUrl && (
+        <div className={styles.baseFullscreenOverlay} onClick={() => setBaseFullscreen(false)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={reviewBaseUrl}
+            alt="Character base — full size"
+            className={styles.baseFullscreenImg}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button className={styles.baseFullscreenClose} onClick={() => setBaseFullscreen(false)} aria-label="Close">✕</button>
+        </div>
+      )}
     </div>
   );
 }

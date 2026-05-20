@@ -19,18 +19,33 @@ export async function GET() {
 
   const { data: rawTemplates } = await service
     .from("templates")
-    .select("*, template_images(id, display_order, purpose, tag)")
+    .select("*, template_images(id, display_order, purpose, tag, storage_path, storage_bucket)")
     .eq("creator_id", creator.id)
     .order("created_at", { ascending: false });
 
-  // Sign cover URLs in parallel so the edit form can show current thumbnails
+  // Sign cover + template image URLs in parallel
   const templates: Record<string, unknown>[] = await Promise.all(
     (rawTemplates ?? []).map(async (t: Record<string, unknown>): Promise<Record<string, unknown>> => {
-      if (!t.cover_storage_path) return { ...t, cover_url: null };
-      const { data } = await service.storage
-        .from((t.cover_bucket as string) ?? "template-images")
-        .createSignedUrl(t.cover_storage_path as string, 3600);
-      return { ...t, cover_url: data?.signedUrl ?? null };
+      // Sign cover URL
+      let cover_url: string | null = null;
+      if (t.cover_storage_path) {
+        const { data } = await service.storage
+          .from((t.cover_bucket as string) ?? "template-images")
+          .createSignedUrl(t.cover_storage_path as string, 3600);
+        cover_url = data?.signedUrl ?? null;
+      }
+      // Sign each template image URL
+      const rawImages = (t.template_images as Array<Record<string, unknown>>) ?? [];
+      const template_images = await Promise.all(
+        rawImages.map(async (img) => {
+          if (!img.storage_path) return { ...img, signed_url: null };
+          const { data } = await service.storage
+            .from((img.storage_bucket as string) ?? "template-images")
+            .createSignedUrl(img.storage_path as string, 3600);
+          return { ...img, signed_url: data?.signedUrl ?? null };
+        })
+      );
+      return { ...t, cover_url, template_images };
     })
   );
 

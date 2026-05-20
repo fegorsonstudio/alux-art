@@ -24,7 +24,7 @@ interface TemplateRow {
   cover_storage_path?: string;
   cover_bucket?: string;
   cover_url?: string | null;
-  template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string }>;
+  template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
   created_at: string;
 }
 
@@ -72,12 +72,13 @@ const SHOT_TYPES = [
 
 interface UploadedImage {
   localId: string;
-  file: File;
+  file?: File;
   preview: string;
   storagePath: string;
   purpose: "inspiration" | "tagged";
   tag: string;
   uploading: boolean;
+  fromDb?: boolean;
   error?: string;
 }
 
@@ -110,6 +111,7 @@ export default function CreatorDashboard() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const formPanelRef = useRef<HTMLDivElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
+  const [pendingTag, setPendingTag] = useState<string>("inspiration");
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -180,10 +182,10 @@ export default function CreatorDashboard() {
   }, [showcaseShoots, showcaseTemplateId]);
 
   useEffect(() => {
-    if (panel !== "none") {
-      setTimeout(() => formPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    if (!loading && panel !== "none") {
+      setTimeout(() => formPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }
-  }, [panel]);
+  }, [panel, loading]);
 
   const openEdit = (t: TemplateRow) => {
     setShowcaseTemplateId(null);
@@ -201,7 +203,21 @@ export default function CreatorDashboard() {
       status: t.status,
       coverStoragePath: t.cover_storage_path ?? "",
     });
-    setImages([]);
+    // Load existing reference images so the user can see and manage them
+    const existingImages: UploadedImage[] = (t.template_images ?? [])
+      .slice()
+      .sort((a, b) => a.display_order - b.display_order)
+      .filter(img => img.storage_path && img.signed_url)
+      .map(img => ({
+        localId: img.id,
+        preview: img.signed_url!,
+        storagePath: img.storage_path!,
+        purpose: img.purpose as "inspiration" | "tagged",
+        tag: img.tag ?? "OUTFIT",
+        uploading: false,
+        fromDb: true,
+      }));
+    setImages(existingImages);
     setCoverPreview(t.cover_url ?? "");
   };
 
@@ -350,12 +366,14 @@ export default function CreatorDashboard() {
     if (images.length >= 8) { setFormError("Maximum 8 images per template"); return; }
     const remaining = 8 - images.length;
     const toAdd = Array.from(files).slice(0, remaining);
+    const purpose: "inspiration" | "tagged" = pendingTag === "inspiration" ? "inspiration" : "tagged";
+    const tag = pendingTag === "inspiration" ? "OUTFIT" : pendingTag;
     const newImgs: UploadedImage[] = toAdd.map(file => {
       const localId = crypto.randomUUID();
-      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose: "inspiration", tag: "OUTFIT", uploading: false };
+      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, uploading: false };
     });
     setImages(prev => [...prev, ...newImgs]);
-    newImgs.forEach(img => uploadFile(img.file, img.localId));
+    newImgs.forEach(img => uploadFile(img.file!, img.localId));
   };
 
   const uploadCover = async (file: File) => {
@@ -405,8 +423,8 @@ export default function CreatorDashboard() {
       templateId = panel;
     }
 
-    // Save images
-    const uploadedImages = images.filter(i => i.storagePath);
+    // Save images — only upload NEW images (fromDb images are already linked)
+    const uploadedImages = images.filter(i => i.storagePath && !i.fromDb);
     for (let i = 0; i < uploadedImages.length; i++) {
       const img = uploadedImages[i];
       await fetch(`/api/templates/${templateId}/images`, {
@@ -589,41 +607,106 @@ export default function CreatorDashboard() {
             <input type="file" accept="image/*" ref={coverInputRef} className={styles.hidden} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCover(f); }} />
           </div>
 
-          {/* Reference images */}
+          {/* Reference images — mode-aware */}
           <div className={styles.field}>
             <span className={styles.label}>Reference images ({images.length}/8)</span>
-            <div className={styles.imagesGrid}>
-              {images.map((img, i) => (
-                <div key={img.localId} className={styles.imgItem}>
-                  <img src={img.preview} alt="" className={styles.imgPreview} />
-                  {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
-                  {img.error && <div className={styles.imgError}>{img.error}</div>}
-                  <select
-                    className={styles.imgPurpose}
-                    value={img.purpose}
-                    onChange={e => setImages(prev => prev.map((im, j) => j === i ? { ...im, purpose: e.target.value as "inspiration" | "tagged" } : im))}
-                  >
-                    <option value="inspiration">Inspiration</option>
-                    <option value="tagged">Tagged</option>
-                  </select>
-                  {img.purpose === "tagged" && (
-                    <select
-                      className={styles.imgTag}
-                      value={img.tag}
-                      onChange={e => setImages(prev => prev.map((im, j) => j === i ? { ...im, tag: e.target.value } : im))}
-                    >
-                      {TEMPLATE_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+
+            {form.shootMode === "fast" ? (
+              <>
+                <p className={styles.fieldHint}>Upload the look / inspiration image that defines the outfit, setting, and mood.</p>
+                <div className={styles.imagesGrid}>
+                  {images.map((img, i) => (
+                    <div key={img.localId} className={styles.imgItem}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.preview} alt="" className={styles.imgPreview} />
+                      {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
+                      {img.error && <div className={styles.imgError}>{img.error}</div>}
+                      {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
+                      <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                    </div>
+                  ))}
+                  {images.length < 8 && (
+                    <button type="button" className={styles.addImgBtn} onClick={() => { setPendingTag("inspiration"); imgInputRef.current?.click(); }}>
+                      + Add
+                    </button>
                   )}
-                  <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
                 </div>
-              ))}
-              {images.length < 8 && (
-                <button type="button" className={styles.addImgBtn} onClick={() => imgInputRef.current?.click()}>
-                  + Add image
-                </button>
-              )}
-            </div>
+              </>
+            ) : (
+              <>
+                <p className={styles.fieldHint}>Advanced mode: add a main inspiration image, then optional override references for specific elements. Buyers&apos; portraits will use these references to match each category.</p>
+
+                {/* Inspiration */}
+                {(() => {
+                  const insps = images.filter(img => img.purpose === "inspiration");
+                  return (
+                    <div className={styles.advancedRefSection}>
+                      <span className={styles.advancedRefLabel}>Inspiration <span className={styles.advancedRefNote}>— main look, outfit &amp; mood (required)</span></span>
+                      <div className={styles.imagesGrid}>
+                        {insps.map(img => {
+                          const i = images.findIndex(x => x.localId === img.localId);
+                          return (
+                            <div key={img.localId} className={styles.imgItem}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={img.preview} alt="" className={styles.imgPreview} />
+                              {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
+                              {img.error && <div className={styles.imgError}>{img.error}</div>}
+                              {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
+                              <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                            </div>
+                          );
+                        })}
+                        {insps.length === 0 && images.length < 8 && (
+                          <button type="button" className={styles.addImgBtn} onClick={() => { setPendingTag("inspiration"); imgInputRef.current?.click(); }}>
+                            + Add inspiration
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Per-tag override sections */}
+                {(["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"] as const).map(tag => {
+                  const tagDescriptions: Record<string, string> = {
+                    OUTFIT: "outfit / clothing override",
+                    HAIRSTYLE: "hairstyle override",
+                    MAKEUP: "makeup / beauty look",
+                    BACKGROUND: "background / environment",
+                    LIGHTING: "lighting reference",
+                    ACCESSORY: "accessories",
+                    COLOR_GRADE: "color grade / film style",
+                  };
+                  const tagImgs = images.filter(img => img.purpose === "tagged" && img.tag === tag);
+                  return (
+                    <div key={tag} className={styles.advancedRefSection}>
+                      <span className={styles.advancedRefLabel}>[{tag}] <span className={styles.advancedRefNote}>— {tagDescriptions[tag]} (optional)</span></span>
+                      <div className={styles.imagesGrid}>
+                        {tagImgs.map(img => {
+                          const i = images.findIndex(x => x.localId === img.localId);
+                          return (
+                            <div key={img.localId} className={styles.imgItem}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={img.preview} alt="" className={styles.imgPreview} />
+                              {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
+                              {img.error && <div className={styles.imgError}>{img.error}</div>}
+                              {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
+                              <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                            </div>
+                          );
+                        })}
+                        {tagImgs.length === 0 && images.length < 8 && (
+                          <button type="button" className={`${styles.addImgBtn} ${styles.addImgBtnSm}`} onClick={() => { setPendingTag(tag); imgInputRef.current?.click(); }}>
+                            + Add
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
             <input type="file" accept="image/*" multiple ref={imgInputRef} className={styles.hidden} onChange={e => { if (e.target.files) addImages(e.target.files); e.target.value = ""; }} />
           </div>
 

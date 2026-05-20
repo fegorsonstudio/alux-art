@@ -197,7 +197,7 @@ export async function POST(
   // Attach all relevant ref URLs for fal.ai
   const falRefUrls = [
     ...identityRefs.map((r) => r.url),
-    outfitRef?.url ?? (shoot.mode === "fast" ? inspirationRef?.url : undefined),
+    outfitRef?.url ?? inspirationRef?.url,
     hairstyleRef?.url,
     makeupRef?.url,
     nailRef?.url,

@@ -520,7 +520,8 @@
 .baseReviewTitle { font-size: 1rem; font-weight: 800; color: #7a5400; margin: 0; }
 .baseReviewHint  { font-size: 0.78rem; color: #8a6b1e; margin: 0; line-height: 1.5; }
 .baseReviewContent { display: flex; gap: 16px; align-items: flex-start; }
-.baseReviewImg { width: 160px; height: 200px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.baseReviewImg { width: 160px; height: 200px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.12); cursor: zoom-in; transition: transform 0.15s; }
+.baseReviewImg:hover { transform: scale(1.03); }
 .baseReviewActions { display: flex; flex-direction: column; gap: 10px; flex: 1; padding-top: 4px; }
 .baseApproveBtn { background: linear-gradient(135deg, #ffffff 0%, #aff0e4 48%, #9fd7ff 100%); color: #1a4c52; border: 1px solid rgba(65, 199, 184, 0.5); border-radius: 8px; font-size: 0.88rem; font-weight: 800; padding: 12px 16px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 8px 20px rgba(48, 141, 151, 0.15); }
 .baseApproveBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(48, 141, 151, 0.22); }
@@ -534,6 +535,13 @@
 .app[data-theme="dark"] .baseApproveBtn { background: linear-gradient(135deg, #ffffff 0%, #88eadb 48%, #83c9ff 100%); }
 .app[data-theme="dark"] .baseRejectBtn { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 176, 163, 0.26); color: #ffb8aa; }
 .app[data-theme="dark"] .baseRejectBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+
+/* ---- Base fullscreen lightbox ---- */
+.baseFullscreenOverlay { position: fixed; inset: 0; z-index: 9000; background: rgba(0, 0, 0, 0.88); display: flex; align-items: center; justify-content: center; animation: fadeInFast 0.15s ease-out; }
+@keyframes fadeInFast { from { opacity: 0; } to { opacity: 1; } }
+.baseFullscreenImg { max-width: min(90vw, 800px); max-height: 90vh; object-fit: contain; border-radius: 10px; box-shadow: 0 24px 80px rgba(0,0,0,0.6); }
+.baseFullscreenClose { position: fixed; top: 20px; right: 24px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; color: #fff; font-size: 1.1rem; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.baseFullscreenClose:hover { background: rgba(255,255,255,0.22); }
 
 /* ---- Base rejected banner ---- */
 .baseRejectedBanner { background: rgba(255, 225, 220, 0.88); border: 1px solid rgba(167, 70, 60, 0.24); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }

@@ -129,31 +129,36 @@ export function buildBaseLockPrompt(
     ? styling.outfit_ref_exclusions.join(", ")
     : "none identified";
 
-  return `Generate a hyper-realistic full-body character reference photograph on a pure white seamless studio backdrop. This is a canonical character lock reference — not a creative shot. Match the technical brief exactly.
+  return `IDENTITY LOCK — TOP PRIORITY: Reproduce the EXACT person from the identity reference photos. This is a biometric character lock, not a creative portrait. The generated face must be unmistakably the same individual — same face shape, same eye spacing and eye shape, same nose bridge width and tip shape, same lip shape, same jawline, same skin tone, same hairline, same brow shape. A near-lookalike is a failure. The subject must be recognisable as themselves, not as a similar-looking model or stock character.
 
-Reference images attached:
-(1) Identity face photo(s) — lock facial features, skin tone, eye shape, brow shape, natural dentition and any visible piercings. Do NOT transfer hairstyle, clothing, pose, or background from these references.
-${hasOutfitRef ? `(2) Outfit/look reference — wardrobe, makeup, and styling register only. Do NOT transfer the face, body type, pose, or backdrop. Specific exclusions: ${exclusionsList}.` : ""}
-${hasHairstyleRef ? "(3) Hairstyle reference — override hair from outfit ref with this hair shape, length, colour, and texture only." : ""}
-${hasMakeupRef ? "(4) Makeup reference — override makeup from outfit ref with this beauty look only." : ""}
-${hasNailRef ? "(5) Nail reference — override nails from outfit ref with this nail design only." : ""}
-${hasAccessoryRefs ? "(6) Accessory reference(s) — add the accessories shown." : ""}
+Generate a hyper-realistic full-body character reference photograph on a pure white seamless studio backdrop.
 
-Subject identity: ${identityProfile}
+REFERENCE IMAGES — how to use each:
+(1) Identity photo(s) [FACE LOCK — highest priority]: Extract only facial identity, skin tone, and body build. Do NOT transfer hairstyle, outfit, accessories, background, pose, or lighting from these images. Lock the face with extreme fidelity.
+${hasOutfitRef ? `(2) Outfit/look reference [STYLING ONLY]: Apply wardrobe, makeup, and styling. Do NOT transfer the model's face, expression, body proportions, or background. Exclusions: ${exclusionsList}.` : (styling.outfit ? "(2) Outfit reference: see styling brief below." : "")}
+${hasHairstyleRef ? "(3) Hairstyle reference: override all hair with this exact cut, colour, and texture." : ""}
+${hasMakeupRef ? "(4) Makeup reference: override all makeup with this beauty look only." : ""}
+${hasNailRef ? "(5) Nail reference: override nails with this exact design." : ""}
+${hasAccessoryRefs ? "(6) Accessory reference(s): add exactly these accessories." : ""}
 
-${styling.outfit ? `Outfit: ${styling.outfit}` : ""}
-${styling.hair ? `Hair: ${styling.hair}` : ""}
-${styling.makeup ? `Makeup: ${styling.makeup}` : ""}
-${styling.nails ? `Nails: ${styling.nails}` : ""}
-${styling.accessories.length > 0 ? `Accessories: ${styling.accessories.join(", ")}` : ""}
+Subject identity context: ${identityProfile || "see identity photos"}
 
-Background: pure white seamless studio backdrop — completely uniform, no gradient, no texture, no visible floor seam, no cast shadows on the backdrop. The subject is the only element in the frame.
+STYLING TO APPLY:
+${styling.outfit ? `- Outfit: ${styling.outfit}` : "- Outfit: clean, neutral wardrobe appropriate for a studio reference shoot"}
+${styling.hair ? `- Hair: ${styling.hair}` : ""}
+${styling.makeup ? `- Makeup: ${styling.makeup}` : ""}
+${styling.nails ? `- Nails: ${styling.nails}` : ""}
+${styling.accessories.length > 0 ? `- Accessories: ${styling.accessories.join(", ")}` : ""}
 
-Lighting: clean three-point studio beauty lighting — soft key from upper camera-left at 35 degrees, soft fill from camera-right at chest level, gentle hair light from behind defining the crown, soft underlight bounce lifting the eye sockets. Even exposure. Natural skin tones. No colour cast.
+Background: pure white seamless studio backdrop — completely uniform, no gradient, no texture, no visible floor seam, no cast shadows. Subject is the only element in frame.
 
-Pose: full-body standing, feet shoulder-width apart, weight evenly distributed, arms relaxed at sides, body squared to camera, chin level, direct gaze into lens, lips closed in a relaxed neutral set. Subject centered in frame with 10% padding above head and below feet — full head-to-toe visibility, no cropping.
+Lighting: three-point studio beauty — soft key from upper camera-left at 35°, soft fill from camera-right at chest level, gentle hair light from behind, soft underlight bounce lifting eye sockets. Even exposure, natural skin tones, no colour cast.
 
-Technical: photoreal stack — visible skin pores, subsurface scattering on nose bridge/cheeks/ears, strand-by-strand hair detail at hairline with baby hairs, fabric weave visible on garments, Kodak Vision3 colour grade, medium-format film aesthetic, sharp focus across subject, minimal background separation.`;
+Pose: full-body standing, feet shoulder-width apart, arms relaxed at sides, body squared to camera, chin level, direct gaze into lens, lips closed. Subject centered with 10% head-room above and below — full head-to-toe, no cropping.
+
+Technical: photoreal — skin pores, subsurface scattering on nose/cheeks/ears, strand-by-strand hair at hairline, fabric weave on garments, Kodak Vision3 grade, medium-format film aesthetic, sharp across subject.
+
+CRITICAL REMINDER: The face of the generated character must be the same real person as in the identity photos. Any deviation in face shape, eye spacing, or jawline is a failure.`;
 }
 
 // ── Quality gate (v1 — Claude vision) ──────────────────────────────────────
@@ -224,7 +229,7 @@ export function evaluateGate(result: QualityGateResult): GateDecision {
   if (result.technical_quality_score < 0.60) return "HARD_FAIL";
 
   // Borderline band
-  if (result.identity_match_score < 0.85) return "PENDING_USER_APPROVAL";
+  if (result.identity_match_score < 0.80) return "PENDING_USER_APPROVAL";
   if (result.technical_quality_score < 0.75) return "PENDING_USER_APPROVAL";
   if (!result.full_body_visible) return "PENDING_USER_APPROVAL";
   if (!result.background_is_white_seamless) return "PENDING_USER_APPROVAL";
