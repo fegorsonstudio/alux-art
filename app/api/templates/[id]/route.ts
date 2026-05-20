@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (typeof body.shootMode === "string" && ALLOWED_MODES.has(body.shootMode)) updates.shoot_mode = body.shootMode;
   if (typeof body.aspectRatio === "string" && body.aspectRatio in ASPECTS) updates.aspect_ratio = body.aspectRatio;
   if (Number.isInteger(body.priceNgn) && (body.priceNgn as number) >= 1000) updates.price_ngn = body.priceNgn;
-  if ([5, 10].includes(Number(body.packageSize))) updates.package_size = Number(body.packageSize);
+  if ([1, 5, 10].includes(Number(body.packageSize))) updates.package_size = Number(body.packageSize);
   if (Array.isArray(body.tags)) updates.tags = (body.tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10);
   if (body.status === "published" || body.status === "draft") updates.status = body.status;
   if (typeof body.coverStoragePath === "string") updates.cover_storage_path = body.coverStoragePath;

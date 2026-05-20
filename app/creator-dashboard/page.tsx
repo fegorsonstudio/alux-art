@@ -108,6 +108,7 @@ export default function CreatorDashboard() {
   const [formError, setFormError] = useState("");
   const imgInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const formPanelRef = useRef<HTMLDivElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
 
   // ── Showcase generation state ───────────────────────────────────────────────
@@ -178,7 +179,14 @@ export default function CreatorDashboard() {
     return () => clearInterval(id);
   }, [showcaseShoots, showcaseTemplateId]);
 
+  useEffect(() => {
+    if (panel !== "none") {
+      setTimeout(() => formPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    }
+  }, [panel]);
+
   const openEdit = (t: TemplateRow) => {
+    setShowcaseTemplateId(null);
     setPanel(t.id);
     setFormError("");
     setForm({
@@ -219,6 +227,7 @@ export default function CreatorDashboard() {
   };
 
   const openShowcase = async (templateId: string) => {
+    setPanel("none");
     setShowcaseTemplateId(templateId);
     setShowcaseIdentityRefs([]);
     setShowcasePackage(1);
@@ -498,7 +507,7 @@ export default function CreatorDashboard() {
 
       {/* Create / Edit panel */}
       {panel !== "none" && (
-        <div className={styles.formPanel}>
+        <div className={styles.formPanel} ref={formPanelRef}>
           <div className={styles.formPanelHeader}>
             <h3 className={styles.formTitle}>{panel === "create" ? "New Template" : "Edit Template"}</h3>
             <button type="button" className={styles.closeBtn} onClick={() => setPanel("none")}>✕</button>
@@ -561,8 +570,8 @@ export default function CreatorDashboard() {
             <label className={styles.field}>
               <span className={styles.label}>Package size</span>
               <div className={styles.pills}>
-                {[5, 10].map(s => (
-                  <button key={s} type="button" className={`${styles.pill} ${form.packageSize === s ? styles.pillActive : ""}`} onClick={() => setForm(f => ({ ...f, packageSize: s }))}>{s} images</button>
+                {[1, 5, 10].map(s => (
+                  <button key={s} type="button" className={`${styles.pill} ${form.packageSize === s ? styles.pillActive : ""}`} onClick={() => setForm(f => ({ ...f, packageSize: s }))}>{s} {s === 1 ? "image" : "images"}</button>
                 ))}
               </div>
             </label>
