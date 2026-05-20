@@ -186,6 +186,19 @@ function CreatorDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Open edit panel for a template created via "Turn into template" flow
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId) return;
+    (async () => {
+      const res = await fetch(`/api/templates/${editId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.template) openEdit(data.template);
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Poll showcase shoots every 4 seconds when any are active
   useEffect(() => {
     const active = showcaseShoots.some(s => ["QUEUED", "PROCESSING", "BASE_LOCKING"].includes(s.status));
@@ -215,7 +228,7 @@ function CreatorDashboard() {
       description: t.description ?? "",
       category: t.category,
       tags: (t.tags ?? []).join(", "),
-      priceNgn: String(t.price_ngn),
+      priceNgn: t.price_ngn > 0 ? String(t.price_ngn) : "",
       price1Ngn: t.price_1_ngn != null ? String(t.price_1_ngn) : "",
       price5Ngn: t.price_5_ngn != null ? String(t.price_5_ngn) : "",
       shootMode: t.shoot_mode,

@@ -57,6 +57,8 @@ export default function WorkspacePage() {
   const [user, setUser] = useState<User | null>(null);
   const [isCreator, setIsCreator] = useState(false);
   const [packages, setPackages] = useState<PackagePricing[]>(DEFAULT_PACKAGES);
+  const [toTemplateLoading, setToTemplateLoading] = useState(false);
+  const [toTemplateError, setToTemplateError] = useState("");
 
   // Upload state
   const [identityImages, setIdentityImages] = useState<UploadedRef[]>([]);
@@ -708,6 +710,17 @@ export default function WorkspacePage() {
   };
 
   const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/login"; };
+
+  const turnIntoTemplate = async () => {
+    if (!currentShoot) return;
+    setToTemplateLoading(true);
+    setToTemplateError("");
+    const res = await fetch(`/api/shoots/${currentShoot.id}/to-template`, { method: "POST" });
+    const d = await res.json();
+    setToTemplateLoading(false);
+    if (!res.ok) { setToTemplateError(d.error ?? "Failed to create template"); return; }
+    window.location.href = `/creator-dashboard?edit=${d.templateId}`;
+  };
   const isAdmin = user?.role === "admin";
   const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
   const activePackage = packages.find((pkg) => pkg.imageCount === packageSize) ?? DEFAULT_PACKAGES.find((pkg) => pkg.imageCount === packageSize)!;
@@ -1317,12 +1330,17 @@ export default function WorkspacePage() {
                 </button>
               )}
               {(isCreator || isAdmin) && currentShoot.status === "COMPLETE" && (
-                <a
-                  href={`/creator-dashboard?from_shoot=${currentShoot.id}`}
-                  className={styles.saveAsTemplateLink}
-                >
-                  Save as template
-                </a>
+                <>
+                  {toTemplateError && <p className={styles.toTemplateError}>{toTemplateError}</p>}
+                  <button
+                    type="button"
+                    className={styles.saveAsTemplateLink}
+                    onClick={turnIntoTemplate}
+                    disabled={toTemplateLoading}
+                  >
+                    {toTemplateLoading ? "Creating template..." : "Turn into template →"}
+                  </button>
+                </>
               )}
             </div>
           )}

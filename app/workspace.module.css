@@ -460,8 +460,10 @@
 .dlBtn:hover { border-color: rgba(67, 159, 169, 0.55); color: #184f58; }
 .zipBtn { background: #ffffff; border: 1px solid rgba(67, 159, 169, 0.35); border-radius: 8px; color: #2d727b; font-size: 0.85rem; font-weight: 750; padding: 10px 16px; cursor: pointer; width: 100%; }
 .zipBtn:hover { border-color: rgba(67, 159, 169, 0.7); }
-.saveAsTemplateLink { display: block; text-align: center; background: rgba(47, 142, 154, 0.07); border: 1px solid rgba(47, 142, 154, 0.28); border-radius: 8px; color: #2f8e9a; font-size: 0.82rem; font-weight: 700; padding: 10px 16px; text-decoration: none; width: 100%; box-sizing: border-box; }
-.saveAsTemplateLink:hover { background: rgba(47, 142, 154, 0.13); border-color: rgba(47, 142, 154, 0.5); }
+.saveAsTemplateLink { display: block; text-align: center; background: rgba(47, 142, 154, 0.07); border: 1px solid rgba(47, 142, 154, 0.28); border-radius: 8px; color: #2f8e9a; font-size: 0.82rem; font-weight: 700; padding: 10px 16px; text-decoration: none; width: 100%; box-sizing: border-box; cursor: pointer; font-family: inherit; transition: background 0.15s, border-color 0.15s, opacity 0.15s; }
+.saveAsTemplateLink:hover:not(:disabled) { background: rgba(47, 142, 154, 0.13); border-color: rgba(47, 142, 154, 0.5); }
+.saveAsTemplateLink:disabled { opacity: 0.55; cursor: not-allowed; }
+.toTemplateError { font-size: 0.78rem; color: #a7463c; margin: 0 0 4px 0; text-align: center; }
 
 /* ---- Status bar ---- */
 .statusBar { background: rgba(217, 239, 255, 0.82); border: 1px solid rgba(73, 151, 205, 0.24); border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #2f6a98; display: flex; align-items: center; gap: 8px; }
