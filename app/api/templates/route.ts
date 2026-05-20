@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Price must be at least ₦1,000" }, { status: 400 });
   }
   const pkg = [5, 10].includes(Number(packageSize)) ? Number(packageSize) : 10;
+  const { coverStoragePath } = body;
 
   const now = new Date().toISOString();
   const { data: template, error } = await service.from("templates").insert({
@@ -67,6 +68,8 @@ export async function POST(request: NextRequest) {
     aspect_ratio: aspectRatio,
     package_size: pkg,
     status: "draft",
+    cover_storage_path: typeof coverStoragePath === "string" && coverStoragePath ? coverStoragePath : null,
+    cover_bucket: "template-images",
     created_at: now,
     updated_at: now,
   }).select().single();

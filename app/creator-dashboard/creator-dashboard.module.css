@@ -473,6 +473,25 @@ select.input { appearance: none; cursor: pointer; }
 }
 .actionBtnShowcase:hover { border-color: rgba(47, 142, 154, 0.6) !important; color: #245d66 !important; }
 
+.actionBtnShare { color: #2f8e9a !important; border-color: rgba(47, 142, 154, 0.28) !important; }
+.actionBtnShare:hover { border-color: rgba(47, 142, 154, 0.6) !important; background: rgba(47, 142, 154, 0.06) !important; }
+.actionBtnShareCopied { color: #177767 !important; border-color: rgba(23, 119, 103, 0.5) !important; background: rgba(23, 119, 103, 0.07) !important; }
+
+.saveAsTemplateBtn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(67, 159, 169, 0.28);
+  border-radius: 10px;
+  color: #4e7076;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.saveAsTemplateBtn:hover { border-color: rgba(47, 142, 154, 0.55); color: #2f8e9a; background: rgba(47, 142, 154, 0.06); }
+
 /* ---- Showcase panel ---- */
 .showcasePanel {
   background: rgba(255, 255, 255, 0.74);

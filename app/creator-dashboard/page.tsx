@@ -12,13 +12,18 @@ const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING"
 interface TemplateRow {
   id: string;
   title: string;
+  description?: string;
   category: string;
+  tags?: string[];
   price_ngn: number;
   status: string;
   purchase_count: number;
   shoot_mode: string;
   aspect_ratio: string;
   package_size: number;
+  cover_storage_path?: string;
+  cover_bucket?: string;
+  cover_url?: string | null;
   template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string }>;
   created_at: string;
 }
@@ -142,6 +147,46 @@ export default function CreatorDashboard() {
     }, 4000);
     return () => clearInterval(id);
   }, [showcaseShoots, showcaseTemplateId]);
+
+  const openEdit = (t: TemplateRow) => {
+    setPanel(t.id);
+    setFormError("");
+    setForm({
+      title: t.title,
+      description: t.description ?? "",
+      category: t.category,
+      tags: (t.tags ?? []).join(", "),
+      priceNgn: String(t.price_ngn),
+      shootMode: t.shoot_mode,
+      aspectRatio: t.aspect_ratio as AspectRatio,
+      packageSize: t.package_size,
+      status: t.status,
+      coverStoragePath: t.cover_storage_path ?? "",
+    });
+    setImages([]);
+    setCoverPreview(t.cover_url ?? "");
+  };
+
+  const saveShowcaseAsTemplate = () => {
+    const linked = templates.find(t => t.id === showcaseTemplateId);
+    setShowcaseTemplateId(null);
+    setPanel("create");
+    setFormError("");
+    setForm({
+      title: "",
+      description: linked?.description ?? "",
+      category: linked?.category ?? "portrait",
+      tags: (linked?.tags ?? []).join(", "),
+      priceNgn: "",
+      shootMode: linked?.shoot_mode ?? "advanced",
+      aspectRatio: (linked?.aspect_ratio ?? "4:5") as AspectRatio,
+      packageSize: linked?.package_size ?? 10,
+      status: "draft",
+      coverStoragePath: "",
+    });
+    setImages([]);
+    setCoverPreview("");
+  };
 
   const openShowcase = async (templateId: string) => {
     setShowcaseTemplateId(templateId);
@@ -405,6 +450,9 @@ export default function CreatorDashboard() {
               <span className={styles.templateSales}>{t.purchase_count} sales</span>
               <span className={t.status === "published" ? styles.published : styles.draft}>{t.status}</span>
               <div className={styles.templateActions}>
+                <button type="button" className={styles.actionBtn} onClick={() => openEdit(t)}>
+                  Edit
+                </button>
                 <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}>
                   {t.status === "published" ? "Unpublish" : "Publish"}
                 </button>
@@ -619,6 +667,10 @@ export default function CreatorDashboard() {
 
           <button type="button" className={styles.saveBtn} onClick={payAndGenerate} disabled={showcasePaying || showcaseIdentityRefs.some(r => r.uploading)}>
             {showcasePaying ? "Redirecting to payment..." : `Pay ₦${(showcasePackage * 1000).toLocaleString()} & Generate`}
+          </button>
+
+          <button type="button" className={styles.saveAsTemplateBtn} onClick={saveShowcaseAsTemplate}>
+            Save as new template instead
           </button>
 
           {/* Existing showcase shoots for this template */}

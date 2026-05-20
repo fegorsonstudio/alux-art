@@ -17,13 +17,24 @@ export async function GET() {
 
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: templates } = await service
+  const { data: rawTemplates } = await service
     .from("templates")
     .select("*, template_images(id, display_order, purpose, tag)")
     .eq("creator_id", creator.id)
     .order("created_at", { ascending: false });
 
-  const templateIds = (templates ?? []).map((t: { id: string }) => t.id);
+  // Sign cover URLs in parallel so the edit form can show current thumbnails
+  const templates: Record<string, unknown>[] = await Promise.all(
+    (rawTemplates ?? []).map(async (t: Record<string, unknown>): Promise<Record<string, unknown>> => {
+      if (!t.cover_storage_path) return { ...t, cover_url: null };
+      const { data } = await service.storage
+        .from((t.cover_bucket as string) ?? "template-images")
+        .createSignedUrl(t.cover_storage_path as string, 3600);
+      return { ...t, cover_url: data?.signedUrl ?? null };
+    })
+  );
+
+  const templateIds = templates.map((t) => t.id as string);
   const { data: purchases } = templateIds.length > 0
     ? await service
         .from("template_purchases")
@@ -37,10 +48,10 @@ export async function GET() {
 
   return NextResponse.json({
     creator,
-    templates: templates ?? [],
+    templates,
     stats: {
-      totalTemplates: templates?.length ?? 0,
-      publishedTemplates: (templates ?? []).filter((t: { status: string }) => t.status === "published").length,
+      totalTemplates: templates.length,
+      publishedTemplates: templates.filter((t) => t.status === "published").length,
       totalSales,
       totalEarnedNgn: totalEarned,
     },
