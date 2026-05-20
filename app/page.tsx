@@ -649,13 +649,20 @@ export default function WorkspacePage() {
     // On mobile with Web Share API, share the file so it can be saved to the Photos gallery
     if (typeof navigator !== "undefined" && "share" in navigator) {
       const file = new File([blob], filename, { type: blob.type || "image/png" });
-      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+      let canShareFiles = false;
+      try {
+        canShareFiles = typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+      } catch { /* canShare may throw on unsupported arguments */ }
+      if (canShareFiles) {
         try {
           await navigator.share({ files: [file], title: "Alux Art Photo" });
           return;
         } catch (shareErr) {
-          // User dismissed the share sheet — fall through to anchor download
-          if ((shareErr as Error).name === "AbortError") return;
+          if ((shareErr as Error).name === "AbortError") {
+            // User dismissed without saving — fall through to anchor download
+          } else {
+            // Non-abort share failure — fall through to anchor download
+          }
         }
       }
     }
