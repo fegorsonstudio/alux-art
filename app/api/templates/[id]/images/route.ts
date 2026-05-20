@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 
 const ALLOWED_PURPOSES = new Set(["inspiration", "tagged"]);
-const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"]);
+const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"]);
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const body = await request.json() as Record<string, unknown>;
-  const { storagePath, displayOrder, purpose, tag } = body;
+  const { storagePath, displayOrder, purpose, tag, note } = body;
 
   if (typeof storagePath !== "string" || !storagePath.startsWith(`${user.id}/`)) {
     return NextResponse.json({ error: "Invalid storage path" }, { status: 400 });
@@ -51,11 +51,58 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     display_order: Number(displayOrder) || 0,
     purpose,
     tag: purpose === "tagged" ? tag : null,
+    note: (typeof note === "string" && note.trim()) ? note.trim() : null,
     created_at: new Date().toISOString(),
   }).select().single();
 
   if (error) return NextResponse.json({ error: "Failed to add image" }, { status: 500 });
   return NextResponse.json({ image }, { status: 201 });
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const service = createServiceClient();
+  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
+
+  const body = await request.json() as Record<string, unknown>;
+  const { imageId, tag, note } = body;
+
+  if (typeof imageId !== "string") return NextResponse.json({ error: "imageId required" }, { status: 400 });
+  if (tag !== undefined && (typeof tag !== "string" || !ALLOWED_TAGS.has(tag as string))) {
+    return NextResponse.json({ error: "Invalid tag" }, { status: 400 });
+  }
+
+  // Verify image belongs to this template and creator owns the template
+  const { data: img } = await service
+    .from("template_images")
+    .select("id, template_id")
+    .eq("id", imageId)
+    .eq("template_id", id)
+    .single();
+  if (!img) return NextResponse.json({ error: "Image not found" }, { status: 404 });
+
+  const { data: tmpl } = await service
+    .from("templates")
+    .select("id")
+    .eq("id", img.template_id)
+    .eq("creator_id", creator.id)
+    .single();
+  if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const updates: Record<string, unknown> = {};
+  if (tag !== undefined) updates.tag = tag;
+  if (note !== undefined) updates.note = (typeof note === "string" && note.trim()) ? note.trim() : null;
+
+  if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
+
+  await service.from("template_images").update(updates).eq("id", imageId);
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

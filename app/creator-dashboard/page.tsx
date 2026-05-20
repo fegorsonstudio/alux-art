@@ -7,7 +7,8 @@ import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import styles from "./creator-dashboard.module.css";
 
-const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"] as const;
+const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
+type TemplateTag = typeof TEMPLATE_TAGS[number];
 
 interface TemplateRow {
   id: string;
@@ -26,7 +27,7 @@ interface TemplateRow {
   cover_storage_path?: string;
   cover_bucket?: string;
   cover_url?: string | null;
-  template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
+  template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; note?: string | null; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
   created_at: string;
 }
 
@@ -79,6 +80,7 @@ interface UploadedImage {
   storagePath: string;
   purpose: "inspiration" | "tagged";
   tag: string;
+  note: string;
   uploading: boolean;
   fromDb?: boolean;
   error?: string;
@@ -230,7 +232,7 @@ function CreatorDashboard() {
       const data = await res.json();
       const imgs = (data.template?.template_images ?? []) as Array<{
         id: string; storage_path: string; storage_bucket: string;
-        display_order: number; purpose: string; tag?: string; signed_url?: string | null;
+        display_order: number; purpose: string; tag?: string; note?: string | null; signed_url?: string | null;
       }>;
       const existingImages: UploadedImage[] = imgs
         .filter(img => img.storage_path && img.signed_url)
@@ -240,6 +242,7 @@ function CreatorDashboard() {
           storagePath: img.storage_path,
           purpose: img.purpose as "inspiration" | "tagged",
           tag: img.tag ?? "OUTFIT",
+          note: img.note ?? "",
           uploading: false,
           fromDb: true,
         }));
@@ -413,10 +416,10 @@ function CreatorDashboard() {
     const remaining = 8 - images.length;
     const toAdd = Array.from(files).slice(0, remaining);
     const purpose: "inspiration" | "tagged" = pendingTag === "inspiration" ? "inspiration" : "tagged";
-    const tag = pendingTag === "inspiration" ? "OUTFIT" : pendingTag;
+    const tag = (pendingTag === "inspiration" || pendingTag === "__tagged__") ? "OUTFIT" : pendingTag;
     const newImgs: UploadedImage[] = toAdd.map(file => {
       const localId = crypto.randomUUID();
-      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, uploading: false };
+      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, note: "", uploading: false };
     });
     setImages(prev => [...prev, ...newImgs]);
     newImgs.forEach(img => uploadFile(img.file!, img.localId));
@@ -481,14 +484,29 @@ function CreatorDashboard() {
       templateId = panel;
     }
 
-    // Save images — only upload NEW images (fromDb images are already linked)
+    // Save NEW images
     const uploadedImages = images.filter(i => i.storagePath && !i.fromDb);
     for (let i = 0; i < uploadedImages.length; i++) {
       const img = uploadedImages[i];
       await fetch(`/api/templates/${templateId}/images`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storagePath: img.storagePath, displayOrder: i, purpose: img.purpose, tag: img.purpose === "tagged" ? img.tag : undefined }),
+        body: JSON.stringify({
+          storagePath: img.storagePath,
+          displayOrder: i,
+          purpose: img.purpose,
+          tag: img.purpose === "tagged" ? img.tag : undefined,
+          note: img.note?.trim() || undefined,
+        }),
+      });
+    }
+    // PATCH fromDb images with any updated tag/note
+    const fromDbImages = images.filter(i => i.fromDb);
+    for (const img of fromDbImages) {
+      await fetch(`/api/templates/${templateId}/images`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId: img.localId, tag: img.tag, note: img.note?.trim() || null }),
       });
     }
 
@@ -747,44 +765,65 @@ function CreatorDashboard() {
                   );
                 })()}
 
-                {/* Per-tag override sections */}
-                {(["OUTFIT", "HAIRSTYLE", "MAKEUP", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"] as const).map(tag => {
-                  const tagDescriptions: Record<string, string> = {
-                    OUTFIT: "outfit / clothing override",
-                    HAIRSTYLE: "hairstyle override",
-                    MAKEUP: "makeup / beauty look",
-                    BACKGROUND: "background / environment",
-                    LIGHTING: "lighting reference",
-                    ACCESSORY: "accessories",
-                    COLOR_GRADE: "color grade / film style",
-                  };
-                  const tagImgs = images.filter(img => img.purpose === "tagged" && img.tag === tag);
-                  return (
-                    <div key={tag} className={styles.advancedRefSection}>
-                      <span className={styles.advancedRefLabel}>[{tag}] <span className={styles.advancedRefNote}>— {tagDescriptions[tag]} (optional)</span></span>
-                      <div className={styles.imagesGrid}>
-                        {tagImgs.map(img => {
-                          const i = images.findIndex(x => x.localId === img.localId);
-                          return (
-                            <div key={img.localId} className={styles.imgItem}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={img.preview} alt="" className={styles.imgPreview} />
-                              {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
-                              {img.error && <div className={styles.imgError}>{img.error}</div>}
-                              {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
-                              <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
-                            </div>
-                          );
-                        })}
-                        {tagImgs.length === 0 && images.length < 8 && (
-                          <button type="button" className={`${styles.addImgBtn} ${styles.addImgBtnSm}`} onClick={() => { setPendingTag(tag); imgInputRef.current?.click(); }}>
-                            + Add
-                          </button>
-                        )}
+                {/* Tagged references — inline tag pills + note per image */}
+                <div className={styles.advancedRefSection}>
+                  <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>— upload images and tag each one (optional)</span></span>
+                  {images.filter(img => img.purpose === "tagged").map(img => (
+                    <div key={img.localId} className={styles.taggedRefCard}>
+                      <div className={styles.taggedRefTop}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.preview} alt="" className={styles.taggedRefThumb} />
+                        <div className={styles.taggedRefRight}>
+                          <div className={styles.tagPills}>
+                            {TEMPLATE_TAGS.map(t => (
+                              <button
+                                key={t}
+                                type="button"
+                                className={`${styles.tagPill} ${img.tag === t ? styles.tagPillActive : ""}`}
+                                onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, tag: t } : x))}
+                              >
+                                {t.replace("_", " ")}
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            className={styles.noteInput}
+                            value={img.note}
+                            onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, note: e.target.value } : x))}
+                            placeholder="Styling note (optional)..."
+                            rows={2}
+                            maxLength={200}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.taggedRefRemove}
+                          onClick={async () => {
+                            if (img.fromDb) {
+                              await fetch(`/api/templates/${panel}/images`, {
+                                method: "DELETE",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ imageId: img.localId }),
+                              });
+                            }
+                            setImages(prev => prev.filter(x => x.localId !== img.localId));
+                          }}
+                        >✕</button>
                       </div>
+                      {img.uploading && <div className={styles.taggedRefStatus}>Uploading...</div>}
+                      {img.error && <div className={styles.taggedRefError}>{img.error}</div>}
                     </div>
-                  );
-                })}
+                  ))}
+                  {images.length < 8 && (
+                    <button
+                      type="button"
+                      className={`${styles.addImgBtn} ${styles.addImgBtnSm}`}
+                      onClick={() => { setPendingTag("__tagged__"); imgInputRef.current?.click(); }}
+                    >
+                      + Add reference
+                    </button>
+                  )}
+                </div>
               </>
             )}
 

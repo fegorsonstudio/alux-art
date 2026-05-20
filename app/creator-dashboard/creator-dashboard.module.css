@@ -670,6 +670,111 @@ select.input { appearance: none; cursor: pointer; }
   padding: 8px 0;
 }
 
+/* ---- Tagged reference card (advanced mode) ---- */
+.taggedRefCard {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(67, 159, 169, 0.18);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taggedRefTop {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.taggedRefThumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 7px;
+  flex-shrink: 0;
+  border: 1px solid rgba(67, 159, 169, 0.2);
+}
+
+.taggedRefRight {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tagPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tagPill {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(67, 159, 169, 0.22);
+  border-radius: 6px;
+  color: #4e7076;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 3px 7px;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.tagPill:hover { border-color: rgba(47, 142, 154, 0.45); color: #2f8e9a; }
+
+.tagPillActive {
+  border-color: #2f8e9a !important;
+  background: rgba(47, 142, 154, 0.1);
+  color: #2f8e9a !important;
+}
+
+.noteInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(67, 159, 169, 0.2);
+  border-radius: 7px;
+  color: #263235;
+  font-size: 0.75rem;
+  padding: 7px 10px;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.noteInput:focus { border-color: rgba(47, 142, 154, 0.5); }
+.noteInput::placeholder { color: #8aa4a8; }
+
+.taggedRefRemove {
+  background: rgba(255, 255, 255, 0.82);
+  border: none;
+  color: #7aafb4;
+  font-size: 0.65rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.taggedRefRemove:hover { color: #a7463c; background: #fff; }
+
+.taggedRefStatus { font-size: 0.72rem; color: #7aafb4; }
+.taggedRefError { font-size: 0.72rem; color: #a7463c; }
+
 @media (max-width: 700px) {
   .statsGrid { grid-template-columns: repeat(2, 1fr); }
   .formGrid { grid-template-columns: 1fr; }
