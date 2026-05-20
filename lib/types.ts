@@ -64,6 +64,8 @@ export type ReferenceTag = "OUTFIT" | "HAIRSTYLE" | "MAKEUP" | "BACKGROUND" | "L
 export type ReferencePurpose = "identity" | "inspiration" | "tagged";
 export type ShootPackageSize = 1 | 5 | 10;
 
+export const PLATFORM_FEE_NGN = 15000;
+
 export const SHOOT_PACKAGES: Record<ShootPackageSize, { imageCount: ShootPackageSize; priceMultiplier: number; label: string }> = {
   1: { imageCount: 1, priceMultiplier: 0.1, label: "1 image" },
   5: { imageCount: 5, priceMultiplier: 0.5, label: "5 images" },

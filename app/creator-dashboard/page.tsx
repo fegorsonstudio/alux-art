@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TEMPLATE_CATEGORIES, ASPECTS } from "@/lib/types";
+import { TEMPLATE_CATEGORIES, ASPECTS, PLATFORM_FEE_NGN } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import styles from "./creator-dashboard.module.css";
 
@@ -337,7 +337,7 @@ export default function CreatorDashboard() {
     a.click();
   };
 
-  const feeNgn = stats ? 15000 : 15000; // platform fee; ideally fetch from pricing_configs
+  const feeNgn = PLATFORM_FEE_NGN;
   const earnPreview = form.priceNgn && Number(form.priceNgn) > feeNgn
     ? Number(form.priceNgn) - feeNgn
     : null;

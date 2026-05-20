@@ -48,3 +48,4 @@ check_urls.*
 test_supabase.*
 test_worker.*
 brain/
+.gstack/

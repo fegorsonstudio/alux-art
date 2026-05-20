@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { ASPECTS } from "@/lib/types";
+import { ASPECTS, PLATFORM_FEE_NGN } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
   if (typeof aspectRatio !== "string" || !(aspectRatio in ASPECTS)) {
     return NextResponse.json({ error: "Invalid aspect ratio" }, { status: 400 });
   }
-  if (!Number.isInteger(priceNgn) || (priceNgn as number) < 1000) {
-    return NextResponse.json({ error: "Price must be at least ₦1,000" }, { status: 400 });
+  if (!Number.isInteger(priceNgn) || (priceNgn as number) <= PLATFORM_FEE_NGN) {
+    return NextResponse.json({ error: `Price must be more than ₦${PLATFORM_FEE_NGN.toLocaleString()} (the platform fee)` }, { status: 400 });
   }
   const pkg = [1, 5, 10].includes(Number(packageSize)) ? Number(packageSize) : 10;
   const { coverStoragePath } = body;

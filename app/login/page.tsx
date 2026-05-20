@@ -44,7 +44,7 @@ export default function LoginPage() {
         </div>
         <h1 className={styles.headline}>Your AI Photoshoot Studio</h1>
         <p className={styles.sub}>
-          Upload your photos. We generate a 10-image professional shoot - no prompts needed.
+          Upload your photos. We generate a professional shoot, 1 to 10 images, no prompts needed.
         </p>
         <button
           className={styles.googleBtn}

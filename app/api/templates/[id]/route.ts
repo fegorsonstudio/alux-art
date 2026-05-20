@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { ASPECTS } from "@/lib/types";
+import { ASPECTS, PLATFORM_FEE_NGN } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (typeof body.category === "string" && ALLOWED_CATEGORIES.has(body.category)) updates.category = body.category;
   if (typeof body.shootMode === "string" && ALLOWED_MODES.has(body.shootMode)) updates.shoot_mode = body.shootMode;
   if (typeof body.aspectRatio === "string" && body.aspectRatio in ASPECTS) updates.aspect_ratio = body.aspectRatio;
-  if (Number.isInteger(body.priceNgn) && (body.priceNgn as number) >= 1000) updates.price_ngn = body.priceNgn;
+  if (Number.isInteger(body.priceNgn) && (body.priceNgn as number) > PLATFORM_FEE_NGN) updates.price_ngn = body.priceNgn;
   if ([1, 5, 10].includes(Number(body.packageSize))) updates.package_size = Number(body.packageSize);
   if (Array.isArray(body.tags)) updates.tags = (body.tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10);
   if (body.status === "published" || body.status === "draft") updates.status = body.status;
