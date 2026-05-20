@@ -56,6 +56,18 @@ export default function TemplatePage() {
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const share = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      await navigator.share({ title: template?.title ?? "Alux Art", text: `Book a professional AI photo shoot — "${template?.title}"`, url }).catch(() => {});
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     fetch(`/api/marketplace/${id}`)
@@ -237,6 +249,14 @@ export default function TemplatePage() {
             <p className={styles.buyNote}>
               Add your identity photos, customise the reference images, then pay — all on the next screen.
             </p>
+
+            <button
+              type="button"
+              className={`${styles.shareBtn} ${copied ? styles.shareBtnCopied : ""}`}
+              onClick={share}
+            >
+              {copied ? "Link copied!" : "Share this look"}
+            </button>
           </div>
         </div>
       </div>
