@@ -128,6 +128,7 @@ export default function CreatorDashboard() {
   const [addingImageId, setAddingImageId] = useState<string | null>(null);
   const [galleryAdded, setGalleryAdded] = useState<Map<string, string>>(new Map());
   const [settingCover, setSettingCover] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,7 +204,7 @@ export default function CreatorDashboard() {
     }
   }, [panel, loading]);
 
-  const openEdit = (t: TemplateRow) => {
+  const openEdit = async (t: TemplateRow) => {
     setShowcaseTemplateId(null);
     setPanel(t.id);
     setFormError("");
@@ -221,22 +222,29 @@ export default function CreatorDashboard() {
       status: t.status,
       coverStoragePath: t.cover_storage_path ?? "",
     });
-    // Load existing reference images so the user can see and manage them
-    const existingImages: UploadedImage[] = (t.template_images ?? [])
-      .slice()
-      .sort((a, b) => a.display_order - b.display_order)
-      .filter(img => img.storage_path && img.signed_url)
-      .map(img => ({
-        localId: img.id,
-        preview: img.signed_url!,
-        storagePath: img.storage_path!,
-        purpose: img.purpose as "inspiration" | "tagged",
-        tag: img.tag ?? "OUTFIT",
-        uploading: false,
-        fromDb: true,
-      }));
-    setImages(existingImages);
+    setImages([]);
     setCoverPreview(t.cover_url ?? "");
+    // Fetch full template with signed URLs for reference images
+    const res = await fetch(`/api/templates/${t.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      const imgs = (data.template?.template_images ?? []) as Array<{
+        id: string; storage_path: string; storage_bucket: string;
+        display_order: number; purpose: string; tag?: string; signed_url?: string | null;
+      }>;
+      const existingImages: UploadedImage[] = imgs
+        .filter(img => img.storage_path && img.signed_url)
+        .map(img => ({
+          localId: img.id,
+          preview: img.signed_url!,
+          storagePath: img.storage_path,
+          purpose: img.purpose as "inspiration" | "tagged",
+          tag: img.tag ?? "OUTFIT",
+          uploading: false,
+          fromDb: true,
+        }));
+      setImages(existingImages);
+    }
   };
 
   const saveShowcaseAsTemplate = () => {
@@ -349,6 +357,12 @@ export default function CreatorDashboard() {
       shoot_images: s.shoot_images.map(img => img.id === shootImageId ? { ...img, added: true } : img),
     })));
     loadDashboard();
+  };
+
+  const copyLink = (id: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/marketplace/${id}`);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const setAsCover = async (templateId: string | null, storagePath: string, imageId: string) => {
@@ -561,6 +575,9 @@ export default function CreatorDashboard() {
                   Generate images
                 </button>
                 <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)}>Delete</button>
+                <button type="button" className={styles.actionBtn} onClick={() => copyLink(t.id)}>
+                  {copiedId === t.id ? "Copied!" : "Copy link"}
+                </button>
               </div>
             </div>
           </div>

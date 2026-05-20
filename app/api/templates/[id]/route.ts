@@ -29,7 +29,24 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .single();
 
   if (error || !template) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ template });
+
+  const rawImages = (template.template_images ?? []) as Array<{
+    id: string; storage_path: string; storage_bucket: string;
+    display_order: number; purpose: string; tag?: string; created_at: string;
+  }>;
+
+  const imagesWithUrls = await Promise.all(
+    rawImages
+      .sort((a, b) => a.display_order - b.display_order)
+      .map(async (img) => {
+        const { data: s } = await service.storage
+          .from(img.storage_bucket ?? "template-images")
+          .createSignedUrl(img.storage_path, 3600);
+        return { ...img, signed_url: s?.signedUrl ?? null };
+      })
+  );
+
+  return NextResponse.json({ template: { ...template, template_images: imagesWithUrls } });
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

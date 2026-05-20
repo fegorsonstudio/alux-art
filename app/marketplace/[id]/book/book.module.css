@@ -306,6 +306,32 @@
 
 .refBtnRemove:hover { border-color: rgba(167, 70, 60, 0.48); color: #8b2c24; background: rgba(167, 70, 60, 0.04); }
 
+/* ---- Package picker ---- */
+.pkgRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pkgPill {
+  padding: 7px 14px;
+  border: 1.5px solid rgba(47, 142, 154, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #263235;
+  transition: border-color 0.15s;
+}
+.pkgPill:hover { border-color: #2f8e9a; }
+
+.pkgPillActive {
+  border-color: #2f8e9a;
+  background: rgba(47, 142, 154, 0.1);
+}
+
 /* ---- Pay footer ---- */
 .payFooter {
   position: fixed;

@@ -59,6 +59,7 @@ export default function TemplatePage() {
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
+  const [shareLabel, setShareLabel] = useState("Share");
 
   useEffect(() => {
     fetch(`/api/marketplace/${id}`)
@@ -89,6 +90,16 @@ export default function TemplatePage() {
     const data = await res.json();
     setCouponResult(data);
     setValidating(false);
+  };
+
+  const share = async () => {
+    const url = window.location.href;
+    if (template && typeof navigator.share === "function") {
+      try { await navigator.share({ title: template.title, url }); return; } catch {}
+    }
+    await navigator.clipboard.writeText(url);
+    setShareLabel("Copied!");
+    setTimeout(() => setShareLabel("Share"), 1500);
   };
 
   const purchase = () => {
@@ -173,7 +184,10 @@ export default function TemplatePage() {
 
         {/* Info */}
         <div className={styles.infoCol}>
-          <span className={styles.categoryPill}>{template.category}</span>
+          <div className={styles.categoryRow}>
+            <span className={styles.categoryPill}>{template.category}</span>
+            <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel}</button>
+          </div>
           <h1 className={styles.title}>{template.title}</h1>
 
           {template.creator && (
