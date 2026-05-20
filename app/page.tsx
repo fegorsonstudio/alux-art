@@ -119,16 +119,13 @@ export default function WorkspacePage() {
     });
   };
 
-  // Load user + config + shoots
+  // Load critical data: auth, config, shoots — blocks initial render
   useEffect(() => {
     (async () => {
-      const [meRes, configRes, shootsRes, libRes, inspirationLibRes, charsRes, creatorStatusRes] = await Promise.all([
+      const [meRes, configRes, shootsRes, creatorStatusRes] = await Promise.all([
         fetch("/api/me"),
         fetch("/api/config"),
         fetch("/api/shoots"),
-        fetch("/api/identity-library"),
-        fetch("/api/inspiration-library"),
-        fetch("/api/characters"),
         fetch("/api/user/creator-status"),
       ]);
       if (meRes.status === 401) {
@@ -153,7 +150,6 @@ export default function WorkspacePage() {
       if (shootsRes.ok) {
         const shootList: Shoot[] = (await shootsRes.json()).shoots ?? [];
         setShoots(shootList);
-        // Auto-open and enrich the most recent shoot with signed preview URLs
         if (shootList.length > 0) {
           const enrichRes = await fetch(`/api/shoots/${shootList[0].id}`);
           if (enrichRes.ok) {
@@ -165,38 +161,47 @@ export default function WorkspacePage() {
           }
         }
       }
-      if (libRes.ok) {
-        const libData = await libRes.json();
-        const imgs: UploadedRef[] = (libData.images ?? []).map((img: Record<string, unknown>) => ({
-          id: img.id as string,
-          name: img.name as string,
-          type: img.type as string,
-          size: img.size as number,
-          storageBucket: img.storage_bucket as string,
-          storagePath: img.storage_path as string,
-          url: img.url as string,
-        }));
-        setLibraryImages(imgs);
-      }
-      if (inspirationLibRes.ok) {
-        const libData = await inspirationLibRes.json();
-        const imgs: UploadedRef[] = (libData.images ?? []).map((img: Record<string, unknown>) => ({
-          id: img.id as string,
-          name: img.name as string,
-          type: img.type as string,
-          size: img.size as number,
-          storageBucket: img.storage_bucket as string,
-          storagePath: img.storage_path as string,
-          url: img.url as string,
-          tag: img.tag as ReferenceTag | undefined,
-          note: img.note as string | undefined,
-        }));
-        setInspirationLibraryImages(imgs);
-      }
-      if (charsRes.ok) {
-        const charsData = await charsRes.json();
-        setCharacterBases(charsData.characters ?? []);
-      }
+
+      // After auth confirmed, load non-critical data without blocking
+      void (async () => {
+        const [libRes, inspirationLibRes, charsRes] = await Promise.all([
+          fetch("/api/identity-library"),
+          fetch("/api/inspiration-library"),
+          fetch("/api/characters"),
+        ]);
+        if (libRes.ok) {
+          const libData = await libRes.json();
+          const imgs: UploadedRef[] = (libData.images ?? []).map((img: Record<string, unknown>) => ({
+            id: img.id as string,
+            name: img.name as string,
+            type: img.type as string,
+            size: img.size as number,
+            storageBucket: img.storage_bucket as string,
+            storagePath: img.storage_path as string,
+            url: img.url as string,
+          }));
+          setLibraryImages(imgs);
+        }
+        if (inspirationLibRes.ok) {
+          const libData = await inspirationLibRes.json();
+          const imgs: UploadedRef[] = (libData.images ?? []).map((img: Record<string, unknown>) => ({
+            id: img.id as string,
+            name: img.name as string,
+            type: img.type as string,
+            size: img.size as number,
+            storageBucket: img.storage_bucket as string,
+            storagePath: img.storage_path as string,
+            url: img.url as string,
+            tag: img.tag as ReferenceTag | undefined,
+            note: img.note as string | undefined,
+          }));
+          setInspirationLibraryImages(imgs);
+        }
+        if (charsRes.ok) {
+          const charsData = await charsRes.json();
+          setCharacterBases(charsData.characters ?? []);
+        }
+      })();
     })();
   }, []);
 

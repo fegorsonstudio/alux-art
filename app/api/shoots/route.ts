@@ -34,21 +34,31 @@ function normalizeTag(ref: ReferenceRecord) {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(Number(searchParams.get("limit") ?? "20"), 100);
+  const cursor = searchParams.get("cursor");
+
   const service = createServiceClient();
-  const { data: shoots } = await service
+  let query = service
     .from("shoots")
     .select("*, shoot_images(*)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(1000);
+    .limit(limit + 1);
 
-  return NextResponse.json({ shoots: shoots ?? [] });
+  if (cursor) query = query.lt("created_at", cursor);
+
+  const { data: rows } = await query;
+  const shoots = (rows ?? []).slice(0, limit);
+  const nextCursor = (rows ?? []).length > limit ? shoots[shoots.length - 1]?.created_at : null;
+
+  return NextResponse.json({ shoots, nextCursor });
 }
 
 export async function POST(request: NextRequest) {
