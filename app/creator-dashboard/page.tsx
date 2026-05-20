@@ -105,6 +105,7 @@ export default function CreatorDashboard() {
   const [coverPreview, setCoverPreview] = useState("");
 
   // ── Showcase generation state ───────────────────────────────────────────────
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
   const [showcaseIdentityRefs, setShowcaseIdentityRefs] = useState<ShowcaseIdentityRef[]>([]);
   const [showcasePackage, setShowcasePackage] = useState(1);
@@ -142,6 +143,17 @@ export default function CreatorDashboard() {
     }, 4000);
     return () => clearInterval(id);
   }, [showcaseShoots, showcaseTemplateId]);
+
+  const shareTemplate = async (templateId: string, title: string) => {
+    const url = `${window.location.origin}/marketplace/${templateId}`;
+    if (navigator.share) {
+      await navigator.share({ title, text: `Book a professional AI photo shoot — "${title}"`, url }).catch(() => {});
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(templateId);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
 
   const openShowcase = async (templateId: string) => {
     setShowcaseTemplateId(templateId);
@@ -411,6 +423,15 @@ export default function CreatorDashboard() {
                 <button type="button" className={`${styles.actionBtn} ${styles.actionBtnShowcase}`} onClick={() => openShowcase(t.id)}>
                   Generate images
                 </button>
+                {t.status === "published" && (
+                  <button
+                    type="button"
+                    className={`${styles.actionBtn} ${styles.actionBtnShare} ${copiedId === t.id ? styles.actionBtnShareCopied : ""}`}
+                    onClick={() => shareTemplate(t.id, t.title)}
+                  >
+                    {copiedId === t.id ? "Link copied!" : "Share"}
+                  </button>
+                )}
                 <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)}>Delete</button>
               </div>
             </div>
