@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
@@ -99,7 +99,7 @@ const defaultForm = () => ({
   coverStoragePath: "",
 });
 
-export default function CreatorDashboard() {
+function CreatorDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [creator, setCreator] = useState<Creator | null>(null);
@@ -935,5 +935,13 @@ export default function CreatorDashboard() {
 
       </div>
     </div>
+  );
+}
+
+export default function CreatorDashboardPage() {
+  return (
+    <Suspense>
+      <CreatorDashboard />
+    </Suspense>
   );
 }
