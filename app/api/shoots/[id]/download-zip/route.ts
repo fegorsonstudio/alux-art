@@ -24,35 +24,49 @@ export async function GET(
   const completedImages = (shoot.shoot_images ?? []).filter(
     (i: Record<string, unknown>) => i.status === "COMPLETE" && i.download_storage_path
   );
-  if (completedImages.length === 0) return NextResponse.json({ error: "No completed images are available to download yet." }, { status: 400 });
-
-  // If ZIP already exists, return its signed URL
-  if (shoot.status === "COMPLETE" && shoot.zip_storage_path) {
-    const { data: signed } = await service.storage
-      .from(shoot.zip_storage_bucket)
-      .createSignedUrl(shoot.zip_storage_path, 3600);
-    return NextResponse.json({ url: signed?.signedUrl, expiresAt: new Date(Date.now() + 3600000).toISOString() });
+  if (completedImages.length === 0) {
+    return NextResponse.json({ error: "No completed images available to download yet." }, { status: 400 });
   }
 
-  // Build ZIP from all completed images available for this shoot.
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
   for (const img of completedImages) {
-    const { data: fileData } = await service.storage
+    const { data: fileData, error: dlErr } = await service.storage
       .from(img.download_storage_bucket as string)
       .download(img.download_storage_path as string);
+    if (dlErr) {
+      console.error("[download-zip] file download error:", dlErr.message, img.download_storage_path);
+      continue;
+    }
     if (fileData) {
-      zip.file(`slot-${img.slot}-${img.kind}.png`, await fileData.arrayBuffer());
+      const ext = (img.download_storage_path as string).endsWith(".png") ? "png" : "jpg";
+      zip.file(`portrait-${img.slot}.${ext}`, await fileData.arrayBuffer());
     }
   }
 
-  const zipBuf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
-  const zipPath = `${user.id}/${id}/shoot-${id}.zip`;
+  if (Object.keys(zip.files).length === 0) {
+    return NextResponse.json({ error: "Could not read any image files for this shoot." }, { status: 500 });
+  }
 
-  await service.storage.from("shoot-zips").upload(zipPath, zipBuf, { contentType: "application/zip", upsert: true });
-  await service.from("shoots").update({ zip_storage_bucket: "shoot-zips", zip_storage_path: zipPath, zip_status: "ready" }).eq("id", id);
+  const zipBuf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
 
-  const { data: signed } = await service.storage.from("shoot-zips").createSignedUrl(zipPath, 3600);
-  return NextResponse.json({ url: signed?.signedUrl, expiresAt: new Date(Date.now() + 3600000).toISOString() });
+  // Best-effort cache to storage — silently skip if bucket/columns not yet migrated
+  try {
+    const zipPath = `${user.id}/${id}/shoot-${id}.zip`;
+    await service.storage.from("shoot-zips").upload(zipPath, zipBuf, { contentType: "application/zip", upsert: true });
+    await service.from("shoots").update({
+      zip_storage_bucket: "shoot-zips",
+      zip_storage_path: zipPath,
+      zip_status: "ready",
+    }).eq("id", id);
+  } catch { /* non-fatal — ZIP still returned inline */ }
+
+  return new Response(zipBuf.buffer as ArrayBuffer, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="aluxart-portraits-${id.slice(0, 8)}.zip"`,
+      "Content-Length": String(zipBuf.byteLength),
+    },
+  });
 }

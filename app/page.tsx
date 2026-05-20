@@ -695,17 +695,25 @@ export default function WorkspacePage() {
 
   const downloadZip = async (shoot: Shoot) => {
     setStatus({ type: "loading", message: "Preparing ZIP..." });
-    const res = await fetch(`/api/shoots/${shoot.id}/download-zip`);
-    const { url, error } = await res.json();
-    if (url) {
+    try {
+      const res = await fetch(`/api/shoots/${shoot.id}/download-zip`);
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "ZIP failed" }));
+        setStatus({ type: "error", message: error ?? "ZIP failed" });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `aluxart-shoot-${shoot.id.slice(0, 8)}.zip`;
-      a.target = "_blank";
+      a.download = `aluxart-portraits-${shoot.id.slice(0, 8)}.zip`;
+      document.body.appendChild(a);
       a.click();
-      setStatus({ type: "ok", message: "ZIP ready!" });
-    } else {
-      setStatus({ type: "error", message: error ?? "ZIP failed" });
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus({ type: "ok", message: "ZIP downloaded!" });
+    } catch {
+      setStatus({ type: "error", message: "ZIP download failed — please try again." });
     }
   };
 

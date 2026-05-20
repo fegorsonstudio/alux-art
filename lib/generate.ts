@@ -1235,6 +1235,23 @@ export async function startGenerationWorker(
       identityRefCount,
       signedIdentityCount,
     });
+
+    // Hard block: no identity images = generation cannot preserve subject likeness
+    if (identityRefCount === 0) {
+      const msg = "No identity images found. Upload at least 3 clear face photos before starting generation.";
+      await service.from("shoots").update({
+        status: "FAILED",
+        pipeline_stage: msg,
+        updated_at: ts(),
+      }).eq("id", shootId);
+      await service.from("shoot_images").update({
+        status: "FAILED",
+        stage: "Blocked: no identity images",
+        updated_at: ts(),
+      }).eq("shoot_id", shootId).in("status", ["QUEUED", "PENDING", "GENERATING"]);
+      throw new Error(msg);
+    }
+
     if (identityRefCount > 0 && signedIdentityCount === 0) {
       throw new Error(`Identity references exist but none could be signed for shoot ${shootId}`);
     }
