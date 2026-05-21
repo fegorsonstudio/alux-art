@@ -15,15 +15,22 @@ async function getFeaturedTemplates(): Promise<FeaturedTemplate[]> {
     const service = createServiceClient();
     const { data } = await service
       .from("templates")
-      .select("id, title, cover_url, category")
-      .eq("is_published", true)
+      .select("id, title, cover_storage_path, cover_bucket, category")
+      .eq("status", "published")
       .order("purchase_count", { ascending: false });
-    return (data ?? []).map(r => ({
-      id: r.id,
-      title: r.title,
-      coverUrl: r.cover_url ?? null,
-      category: r.category,
-    }));
+
+    return await Promise.all(
+      (data ?? []).map(async (r) => {
+        let coverUrl: string | null = null;
+        if (r.cover_storage_path) {
+          const { data: s } = await service.storage
+            .from(r.cover_bucket ?? "template-images")
+            .createSignedUrl(r.cover_storage_path, 3600);
+          coverUrl = s?.signedUrl ?? null;
+        }
+        return { id: r.id, title: r.title, coverUrl, category: r.category };
+      })
+    );
   } catch {
     return [];
   }
