@@ -7,7 +7,6 @@ import styles from "./login.module.css";
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const supabase = createClient();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -25,6 +24,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError("");
+    const supabase = createClient();
     const next = new URLSearchParams(location.search).get("next") ?? "/studio";
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
