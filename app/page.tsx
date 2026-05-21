@@ -64,8 +64,12 @@ export default async function LandingPage() {
         <div className={styles.steps}>
           <div className={styles.step}>
             <span className={styles.stepNum}>01</span>
-            <h3 className={styles.stepTitle}>Upload 3 photos</h3>
-            <p className={styles.stepDesc}>Clear, front-facing selfies. Our system locks your face, features, and skin tone.</p>
+            <h3 className={styles.stepTitle}>Upload your photos</h3>
+            <p className={styles.stepDesc}>
+              Start with 3 clear selfies — these lock your face, skin tone, and features.
+              Then add pose references for any angles you want: a back shot, a side profile, a full-body look.
+              The AI only knows what you show it, so if you want a pose it has not seen, upload a reference that shows it.
+            </p>
           </div>
           <div className={styles.step}>
             <span className={styles.stepNum}>02</span>
