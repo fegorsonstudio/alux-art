@@ -145,7 +145,10 @@ export default function MarketplacePage() {
                   )}
                   <div className={styles.cardFooter}>
                     <span className={styles.price}>₦{t.priceNgn.toLocaleString()}</span>
-                    <span className={styles.salesCount}>{t.purchaseCount} sales</span>
+                    {t.purchaseCount > 0
+                      ? <span className={styles.salesCount}>{t.purchaseCount} sale{t.purchaseCount !== 1 ? "s" : ""}</span>
+                      : <span className={styles.newBadge}>New</span>
+                    }
                   </div>
                 </div>
               </Link>

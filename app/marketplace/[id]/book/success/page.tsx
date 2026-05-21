@@ -14,13 +14,13 @@ export default function BookSuccessPage() {
         <div className={styles.icon}>✓</div>
         <h1 className={styles.heading}>Payment received</h1>
         <p className={styles.body}>
-          Your shoot is being generated. This usually takes a few minutes.
-          Head to your workspace to track progress and download your images when ready.
+          These are high-quality editorial portraits — generation takes up to 60 minutes.
+          Head to your studio to track progress. If your network drops, just refresh the page.
         </p>
         {shootId && (
           <p className={styles.ref}>Ref: {shootId.slice(0, 8).toUpperCase()}</p>
         )}
-        <Link href="/" className={styles.btn}>Go to Workspace</Link>
+        <Link href="/studio" className={styles.btn}>Go to Studio</Link>
         <Link href="/marketplace" className={styles.secondaryLink}>Browse more styles</Link>
       </div>
     </div>

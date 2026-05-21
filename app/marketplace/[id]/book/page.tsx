@@ -203,7 +203,7 @@ export default function BookPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: couponCode, templateId: id }),
     });
-    if (res.status === 401) { router.push(`/login?redirect=/marketplace/${id}/book`); return; }
+    if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
     setCouponResult(data);
     setValidating(false);
@@ -238,7 +238,7 @@ export default function BookPage() {
         packageSize: selectedPkg,
       }),
     });
-    if (res.status === 401) { router.push(`/login?redirect=/marketplace/${id}/book`); return; }
+    if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
     if (data.authorizationUrl) {
       window.location.href = data.authorizationUrl;

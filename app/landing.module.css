@@ -1,0 +1,290 @@
+/* Landing page — dark editorial aesthetic */
+
+.page {
+  min-height: 100vh;
+  background: #080808;
+  color: #fff8ea;
+  font-family: var(--font-sans), sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Nav ---- */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 1px solid rgba(255, 248, 234, 0.06);
+}
+
+.wordmark {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff8ea;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.navLink {
+  font-size: 0.9rem;
+  color: rgba(255, 248, 234, 0.6);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.navLink:hover { color: #fff8ea; }
+
+.navCta {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff8ea;
+  text-decoration: none;
+  border: 1px solid rgba(255, 248, 234, 0.2);
+  padding: 7px 18px;
+  border-radius: 6px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.navCta:hover { border-color: #2f8e9a; background: rgba(47, 142, 154, 0.08); }
+
+/* ---- Hero ---- */
+.hero {
+  padding: 100px 40px 80px;
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2f8e9a;
+  margin: 0 0 20px;
+}
+
+.headline {
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #fff8ea;
+  margin: 0 0 24px;
+}
+
+.subline {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: rgba(255, 248, 234, 0.55);
+  margin: 0 0 40px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  display: inline-block;
+  background: #2f8e9a;
+  color: #fff8ea;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 14px 36px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.primaryBtn:hover { background: #267d88; transform: translateY(-1px); }
+
+.pricingNote {
+  font-size: 0.82rem;
+  color: rgba(255, 248, 234, 0.4);
+}
+
+/* ---- How it works ---- */
+.howSection {
+  padding: 80px 40px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sectionHeading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 248, 234, 0.3);
+  margin: 0 0 48px;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stepNum {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #2f8e9a;
+  letter-spacing: 0.1em;
+}
+
+.stepTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff8ea;
+  margin: 0;
+}
+
+.stepDesc {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: rgba(255, 248, 234, 0.45);
+  margin: 0;
+}
+
+/* ---- Sample looks ---- */
+.looksSection {
+  padding: 60px 40px 80px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.looksGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.lookCard {
+  display: block;
+  text-decoration: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+  transition: transform 0.15s;
+}
+.lookCard:hover { transform: translateY(-3px); }
+
+.lookImg {
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+  display: block;
+}
+
+.lookPlaceholder {
+  width: 100%;
+  aspect-ratio: 4/5;
+  background: linear-gradient(160deg, #111 0%, #1a2a2b 100%);
+}
+
+.lookMeta {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lookTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff8ea;
+}
+
+.lookCategory {
+  font-size: 0.72rem;
+  color: rgba(255, 248, 234, 0.35);
+  text-transform: capitalize;
+}
+
+.lookCardPlaceholder {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+}
+
+.lookMetaPlaceholder {
+  height: 52px;
+  background: #111;
+}
+
+.looksFooter {
+  text-align: center;
+}
+
+.ghostBtn {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 248, 234, 0.5);
+  text-decoration: none;
+  border: 1px solid rgba(255, 248, 234, 0.1);
+  padding: 10px 28px;
+  border-radius: 6px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ghostBtn:hover { color: #fff8ea; border-color: rgba(255, 248, 234, 0.3); }
+
+/* ---- Footer ---- */
+.footer {
+  margin-top: auto;
+  padding: 32px 40px;
+  border-top: 1px solid rgba(255, 248, 234, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footerBrand {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: rgba(255, 248, 234, 0.3);
+  letter-spacing: 0.04em;
+}
+
+.footerNote {
+  font-size: 0.78rem;
+  color: rgba(255, 248, 234, 0.2);
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 680px) {
+  .nav { padding: 16px 20px; }
+  .hero { padding: 60px 20px 50px; }
+  .howSection, .looksSection { padding-left: 20px; padding-right: 20px; }
+  .steps { grid-template-columns: 1fr; gap: 32px; }
+  .looksGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .footer { padding: 24px 20px; }
+  .heroActions { flex-direction: column; gap: 14px; }
+}
+
+@media (max-width: 420px) {
+  .looksGrid { grid-template-columns: 1fr; }
+}

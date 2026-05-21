@@ -313,9 +313,11 @@ export default function TemplatePage() {
           </div>
 
           <div className={styles.metaGrid}>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Mode</span><span className={styles.metaVal}>{template.shootMode}</span></div>
+            <div className={styles.metaItem}><span className={styles.metaLabel}>Style</span><span className={styles.metaVal}>{template.shootMode === "advanced" ? "Full customisation" : "Standard"}</span></div>
             <div className={styles.metaItem}><span className={styles.metaLabel}>Ratio</span><span className={styles.metaVal}>{template.aspectRatio}</span></div>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Sales</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
+            {template.purchaseCount > 0 && (
+              <div className={styles.metaItem}><span className={styles.metaLabel}>Sales</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
+            )}
           </div>
 
           {template.tags.length > 0 && (

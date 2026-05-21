@@ -288,6 +288,7 @@
 
 .price { font-size: 0.95rem; font-weight: 700; color: #2f8e9a; }
 .salesCount { font-size: 0.72rem; color: #7aafb4; }
+.newBadge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #2f8e9a; background: rgba(47,142,154,0.12); padding: 2px 7px; border-radius: 10px; }
 
 /* ---- Load more ---- */
 .loadMoreRow { text-align: center; padding: 40px 0 0; }

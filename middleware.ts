@@ -35,7 +35,8 @@ export async function middleware(request: NextRequest) {
   const isAuthPath = request.nextUrl.pathname.startsWith("/login");
 
   const p = request.nextUrl.pathname;
-  const isPublicMarketplacePath =
+  const isPublicPath =
+    p === "/" ||
     p === "/marketplace" ||
     (p.startsWith("/marketplace/") && !p.includes("/book")) ||
     p.startsWith("/creators/");
@@ -43,15 +44,18 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
 
-  if (!user && !isAuthPath && !isPublicMarketplacePath) {
+  if (!user && !isAuthPath && !isPublicPath) {
     const url = request.nextUrl.clone();
+    const next = request.nextUrl.pathname + request.nextUrl.search;
     url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("next", next);
     return NextResponse.redirect(url);
   }
 
   if (user && isAuthPath) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/studio";
     url.search = "";
     return NextResponse.redirect(url);
   }
