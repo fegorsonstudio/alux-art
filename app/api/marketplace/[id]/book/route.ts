@@ -26,6 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     taggedRefs?: TaggedRefInput[];
     couponCode?: string;
     packageSize?: number;
+    currency?: string;
   };
 
   const identityRefs: RefInput[] = body.identityRefs ?? [];
@@ -47,6 +48,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const buyerPackageSize: 1 | 5 | 10 = ([1, 5, 10] as const).includes(body.packageSize as 1 | 5 | 10)
     ? (body.packageSize as 1 | 5 | 10)
     : 10;
+
+  const payCurrency: "NGN" | "USD" = body.currency === "USD" ? "USD" : "NGN";
+
+  // Fetch live FX rate if paying in USD
+  let usdToNgn = 1600;
+  if (payCurrency === "USD") {
+    try {
+      const fxRes = await fetch("https://open.er-api.com/v6/latest/USD");
+      if (fxRes.ok) {
+        const fxData = await fxRes.json();
+        if (fxData?.rates?.NGN > 100) usdToNgn = fxData.rates.NGN;
+      }
+    } catch { /* use fallback */ }
+  }
 
   // 1. Fetch published template + creator
   const { data: template } = await service
@@ -142,7 +157,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     owner_email: user.email,
     mode: template.shoot_mode ?? "advanced",
     aspect_ratio: template.aspect_ratio ?? "4:5",
-    currency: "NGN",
+    currency: payCurrency,
     package_size: buyerPackageSize,
     status: "PENDING_PAYMENT",
     progress: 0,
@@ -221,6 +236,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     creator_payout_ngn: creatorPayoutNgn,
     coupon_id: couponId,
     coupon_discount_ngn: couponDiscountNgn,
+    currency: payCurrency,
+    amount_usd: payCurrency === "USD" ? parseFloat((amountNgn / usdToNgn).toFixed(2)) : null,
     status: "pending",
     created_at: now,
   });
@@ -234,7 +251,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     },
     body: JSON.stringify({
       email: user.email,
-      amount: amountNgn * 100,
+      amount: payCurrency === "USD"
+        ? Math.ceil((amountNgn / usdToNgn) * 100)   // USD cents
+        : amountNgn * 100,                            // NGN kobo
+      currency: payCurrency,
       callback_url: `${proto}://${host}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
       metadata: {
         type: "template_purchase",

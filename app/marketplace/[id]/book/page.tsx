@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useCurrency, type Currency } from "@/lib/useCurrency";
 import styles from "./book.module.css";
 
 interface TemplateImage {
@@ -66,6 +67,11 @@ export default function BookPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { usdToNgn } = useCurrency();
+  const currency: Currency = searchParams.get("currency") === "USD" ? "USD" : "NGN";
+  const formatPrice = (ngn: number) => currency === "NGN"
+    ? `₦${Math.round(ngn).toLocaleString()}`
+    : `$${(ngn / usdToNgn).toFixed(2)}`;
   const [template, setTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -236,6 +242,7 @@ export default function BookPage() {
         taggedRefs: taggedRefs.map(r => ({ tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket })),
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: selectedPkg,
+        currency,
       }),
     });
     if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
@@ -294,7 +301,7 @@ export default function BookPage() {
           <span className={styles.templateTitle}>{template.title}</span>
           <span className={styles.templateMeta}>{template.shootMode} · {template.aspectRatio} · {template.packageSize} images</span>
         </div>
-        <span className={styles.price}>₦{pkgPrice.toLocaleString()}</span>
+        <span className={styles.price}>{formatPrice(pkgPrice)}</span>
       </div>
 
       <div className={styles.layout}>
@@ -410,7 +417,7 @@ export default function BookPage() {
                 className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
                 onClick={() => setSelectedPkg(o.n)}
               >
-                {o.n} {o.n === 1 ? "image" : "images"} — ₦{o.price.toLocaleString()}
+                {o.n} {o.n === 1 ? "image" : "images"} — {formatPrice(o.price)}
               </button>
             ))}
           </div>
@@ -434,7 +441,7 @@ export default function BookPage() {
         {couponResult && (
           <p className={couponResult.valid ? styles.couponSuccess : styles.couponError}>
             {couponResult.valid
-              ? `${couponResult.discountDescription} — save ₦${couponResult.discountNgn?.toLocaleString()}`
+              ? `${couponResult.discountDescription} — save ${formatPrice(couponResult.discountNgn ?? 0)}`
               : couponResult.message}
           </p>
         )}
@@ -445,11 +452,11 @@ export default function BookPage() {
           <div className={styles.priceBlock}>
             {couponResult?.valid && couponResult.discountNgn ? (
               <>
-                <span className={styles.priceOld}>₦{pkgPrice.toLocaleString()}</span>
-                <span className={styles.priceFinal}>₦{displayedPrice.toLocaleString()}</span>
+                <span className={styles.priceOld}>{formatPrice(pkgPrice)}</span>
+                <span className={styles.priceFinal}>{formatPrice(displayedPrice)}</span>
               </>
             ) : (
-              <span className={styles.priceFinal}>₦{pkgPrice.toLocaleString()}</span>
+              <span className={styles.priceFinal}>{formatPrice(pkgPrice)}</span>
             )}
           </div>
           <button type="button" className={styles.payBtn} onClick={book} disabled={!canPay}>

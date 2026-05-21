@@ -505,6 +505,28 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
+/* ---- Currency toggle ---- */
+.currencyToggle {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(67, 159, 169, 0.24);
+  border-radius: 8px;
+  color: #3f6166;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.currencyToggle:hover { border-color: rgba(67, 159, 169, 0.48); color: #245d66; background: #ffffff; }
+
+/* ---- Star display ---- */
+.starRow { display: flex; align-items: center; gap: 2px; flex-wrap: nowrap; }
+.starFull  { color: #f5a623; font-size: 0.8rem; line-height: 1; }
+.starHalf  { color: #f5a623; font-size: 0.8rem; line-height: 1; opacity: 0.6; }
+.starEmpty { color: #d0e6e8; font-size: 0.8rem; line-height: 1; }
+.ratingNum { font-size: 0.72rem; color: #4e7076; margin-left: 4px; font-weight: 600; }
+.ratingCount { font-size: 0.7rem; color: #7aafb4; margin-left: 2px; }
+
 /* ---- Theme toggle button ---- */
 .themeToggle {
   background: rgba(255, 255, 255, 0.68);
@@ -523,6 +545,23 @@
   color: #245d66;
   background: #ffffff;
 }
+
+.page[data-theme="dark"] .currencyToggle {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.2);
+  color: #9dece1;
+}
+.page[data-theme="dark"] .currencyToggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(115, 221, 207, 0.45);
+  color: #eefbf9;
+}
+
+.page[data-theme="dark"] .starFull  { color: #f5c842; }
+.page[data-theme="dark"] .starHalf  { color: #f5c842; }
+.page[data-theme="dark"] .starEmpty { color: #2e5a5e; }
+.page[data-theme="dark"] .ratingNum { color: #8ec8c6; }
+.page[data-theme="dark"] .ratingCount { color: #3d7a7e; }
 
 .page[data-theme="dark"] .themeToggle {
   background: rgba(255, 255, 255, 0.06);

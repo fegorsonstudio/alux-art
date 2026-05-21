@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createClient, createServiceClient } from "@/lib/supabase-server";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const service = createServiceClient();
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
 
   const { data: template, error } = await service
     .from("templates")
@@ -63,6 +65,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .eq("creator_id", template.creator_id)
     .eq("status", "published");
 
+  let userRating: number | null = null;
+  if (session?.user) {
+    const { data: ratingRow } = await service
+      .from("template_ratings")
+      .select("rating")
+      .eq("template_id", id)
+      .eq("user_id", session.user.id)
+      .single();
+    userRating = ratingRow?.rating ?? null;
+  }
+
   return NextResponse.json({
     template: {
       id: template.id,
@@ -87,6 +100,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       aspectRatio: template.aspect_ratio,
       packageSize: template.package_size,
       purchaseCount: template.purchase_count,
+      avgRating: (template as Record<string, unknown>).avg_rating as number | null ?? null,
+      ratingCount: (template as Record<string, unknown>).rating_count as number ?? 0,
+      userRating,
       coverUrl,
       images,
       createdAt: template.created_at,

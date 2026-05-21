@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useCurrency } from "@/lib/useCurrency";
 import styles from "./template.module.css";
 
 interface TemplateImage {
@@ -26,6 +27,9 @@ interface TemplateDetail {
   aspectRatio: string;
   packageSize: number;
   purchaseCount: number;
+  avgRating: number | null;
+  ratingCount: number;
+  userRating: number | null;
   coverUrl: string | null;
   images: TemplateImage[];
   creator: {
@@ -46,12 +50,51 @@ interface CouponResult {
   message?: string;
 }
 
+function StarWidget({
+  avg,
+  count,
+  userRating,
+  onRate,
+}: {
+  avg: number | null;
+  count: number;
+  userRating: number | null;
+  onRate: (n: number) => void;
+}) {
+  const [hover, setHover] = useState(0);
+  const display = hover || userRating || 0;
+
+  return (
+    <div className={styles.ratingBlock}>
+      <div className={styles.ratingStars}>
+        {[1, 2, 3, 4, 5].map(n => (
+          <button
+            key={n}
+            type="button"
+            className={`${styles.ratingStar} ${n <= display ? styles.ratingStarActive : ""}`}
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(0)}
+            onClick={() => onRate(n)}
+            aria-label={`Rate ${n} star${n !== 1 ? "s" : ""}`}
+          >★</button>
+        ))}
+      </div>
+      {avg !== null && count > 0 && (
+        <span className={styles.ratingAvg}>{avg.toFixed(1)} ({count})</span>
+      )}
+      {userRating && <span className={styles.ratingYours}>Your rating: {userRating}★</span>}
+    </div>
+  );
+}
+
 export default function TemplatePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
   const [template, setTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [validating, setValidating] = useState(false);
@@ -62,11 +105,22 @@ export default function TemplatePage() {
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
   const [shareLabel, setShareLabel] = useState("Share");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/marketplace/${id}`)
       .then(r => r.json())
-      .then(d => { if (d.template) setTemplate(d.template); })
+      .then(d => {
+        if (d.template) {
+          setTemplate(d.template);
+          setAvgRating(d.template.avgRating ?? null);
+          setRatingCount(d.template.ratingCount ?? 0);
+          setUserRating(d.template.userRating ?? null);
+        }
+      })
       .finally(() => setLoading(false));
     fetch("/api/user/creator-status").then(r => r.ok ? r.json() : { isCreator: false }).then(d => setIsCreator(d.isCreator));
     fetch("/api/me").then(r => setIsLoggedIn(r.ok));
@@ -80,6 +134,7 @@ export default function TemplatePage() {
   useEffect(() => {
     const len = allImages.length;
     const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setLightboxOpen(false); return; }
       if (!len) return;
       if (e.key === "ArrowLeft") setGalleryIdx(i => Math.max(0, i - 1));
       if (e.key === "ArrowRight") setGalleryIdx(i => Math.min(len - 1, i + 1));
@@ -88,6 +143,24 @@ export default function TemplatePage() {
     return () => window.removeEventListener("keydown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allImages.length]);
+
+  const submitRating = async (n: number) => {
+    if (!isLoggedIn) { window.location.href = `/login?next=/marketplace/${id}`; return; }
+    if (ratingSubmitting) return;
+    setRatingSubmitting(true);
+    setUserRating(n);
+    const res = await fetch(`/api/templates/${id}/rate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: n }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      setAvgRating(d.avgRating ?? null);
+      setRatingCount(d.ratingCount ?? 0);
+    }
+    setRatingSubmitting(false);
+  };
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -121,6 +194,7 @@ export default function TemplatePage() {
     setBuying(true);
     const params = new URLSearchParams();
     params.set("pkg", String(selectedPkg));
+    params.set("currency", currency);
     if (couponCode) params.set("coupon", couponCode);
     router.push(`/marketplace/${id}/book?${params.toString()}`);
   };
@@ -159,15 +233,46 @@ export default function TemplatePage() {
 
   return (
     <div className={styles.page}>
+      {/* Lightbox */}
+      {lightboxOpen && allImages.length > 0 && (
+        <div className={styles.lightbox} onClick={() => setLightboxOpen(false)}>
+          <button type="button" className={styles.lightboxClose} onClick={() => setLightboxOpen(false)} aria-label="Close">✕</button>
+          <div className={styles.lightboxImgWrap} onClick={e => e.stopPropagation()}>
+            {allImages[galleryIdx]?.url
+              ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.lightboxImg} />
+              : <div className={styles.lightboxPlaceholder}>No image</div>
+            }
+            {allImages.length > 1 && (
+              <>
+                {galleryIdx > 0 && (
+                  <button type="button" className={`${styles.lightboxArrow} ${styles.lightboxArrowLeft}`}
+                    onClick={() => setGalleryIdx(i => i - 1)}>&#8249;</button>
+                )}
+                {galleryIdx < allImages.length - 1 && (
+                  <button type="button" className={`${styles.lightboxArrow} ${styles.lightboxArrowRight}`}
+                    onClick={() => setGalleryIdx(i => i + 1)}>&#8250;</button>
+                )}
+                <span className={styles.lightboxCounter}>{galleryIdx + 1} / {allImages.length}</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className={styles.nav}>
         <Link href="/marketplace" className={styles.backLink}>← Marketplace</Link>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
-        {isLoggedIn === false
-          ? <Link href={`/login?next=/marketplace/${id}`} className={styles.backLink}>Sign in →</Link>
-          : isCreator
-            ? <Link href="/creator-dashboard" className={styles.backLink}>Creator Dashboard →</Link>
-            : <Link href="/become-creator" className={styles.backLink}>Become a Creator</Link>
-        }
+        <div className={styles.navRight}>
+          <button className={styles.currencyToggle} onClick={toggleCurrency} type="button">
+            {currency === "NGN" ? "₦ NGN" : "$ USD"}
+          </button>
+          {isLoggedIn === false
+            ? <Link href={`/login?next=/marketplace/${id}`} className={styles.backLink}>Sign in →</Link>
+            : isCreator
+              ? <Link href="/creator-dashboard" className={styles.backLink}>Creator Dashboard →</Link>
+              : <Link href="/become-creator" className={styles.backLink}>Become a Creator</Link>
+          }
+        </div>
       </header>
 
       <div className={styles.layout}>
@@ -183,11 +288,19 @@ export default function TemplatePage() {
               setTouchStartX(null);
             }}
           >
-            <div className={styles.mainImg}>
+            <div
+              className={`${styles.mainImg} ${styles.mainImgClickable}`}
+              onClick={() => setLightboxOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => e.key === "Enter" && setLightboxOpen(true)}
+              aria-label="Expand image"
+            >
               {allImages[galleryIdx]?.url
                 ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
                 : <div className={styles.imgPlaceholder}>No image</div>
               }
+              <div className={styles.expandHint}>Tap to expand</div>
             </div>
             {allImages.length > 1 && (
               <>
@@ -231,6 +344,13 @@ export default function TemplatePage() {
           </div>
           <h1 className={styles.title}>{template.title}</h1>
 
+          <StarWidget
+            avg={avgRating}
+            count={ratingCount}
+            userRating={userRating}
+            onRate={submitRating}
+          />
+
           {template.creator && (
             <Link href={`/creators/${template.creator.id}`} className={styles.creatorCard}>
               {template.creator.avatarUrl
@@ -262,7 +382,7 @@ export default function TemplatePage() {
                       onClick={() => setSelectedPkg(o.n)}
                     >
                       {o.n} {o.n === 1 ? "image" : "images"}
-                      <span className={styles.pkgPillPrice}>₦{o.price.toLocaleString()}</span>
+                      <span className={styles.pkgPillPrice}>{formatPrice(o.price)}</span>
                     </button>
                   ))}
                 </div>
@@ -286,7 +406,7 @@ export default function TemplatePage() {
             {couponResult && (
               <p className={couponResult.valid ? styles.couponSuccess : styles.couponError}>
                 {couponResult.valid
-                  ? `${couponResult.discountDescription} — save ₦${couponResult.discountNgn?.toLocaleString()}`
+                  ? `${couponResult.discountDescription} — save ${formatPrice(couponResult.discountNgn ?? 0)}`
                   : couponResult.message}
               </p>
             )}
@@ -294,11 +414,11 @@ export default function TemplatePage() {
             <div className={styles.priceRow}>
               {couponResult?.valid && couponResult.discountNgn ? (
                 <>
-                  <span className={styles.priceOriginal}>₦{pkgPrice.toLocaleString()}</span>
-                  <span className={styles.priceFinal}>₦{displayedPrice.toLocaleString()}</span>
+                  <span className={styles.priceOriginal}>{formatPrice(pkgPrice)}</span>
+                  <span className={styles.priceFinal}>{formatPrice(displayedPrice)}</span>
                 </>
               ) : (
-                <span className={styles.priceFinal}>₦{pkgPrice.toLocaleString()}</span>
+                <span className={styles.priceFinal}>{formatPrice(pkgPrice)}</span>
               )}
             </div>
 

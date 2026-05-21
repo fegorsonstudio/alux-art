@@ -1,0 +1,28 @@
+# Local video / Remotion workspace
+video/
+list_chrome_tabs.mjs
+scripts/run-test-shoot.mjs
+
+# Marketing docs / PDFs
+*.pdf
+*.pptx
+*.PNG
+ALUX_ART_MARKETING_AGENT.md
+ALUX_SOCIAL_AUTOMATION_SETUP.md
+BRAND_GUIDE.md
+MARKETING_AGENT.md
+FACEBOOK_SETUP_AGENT.md
+PRIVACY_POLICY_AGENT.md
+SECURITY_AGENT.md
+alux-drafts/
+
+# Local diagnostic scripts
+inspect_shoot*.mjs
+recomposite_*.mjs
+check_urls.*
+test_supabase.*
+test_worker.*
+brain/
+
+# Dev tools
+.gstack/

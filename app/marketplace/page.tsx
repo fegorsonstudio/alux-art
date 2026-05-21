@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { TEMPLATE_CATEGORIES } from "@/lib/types";
+import { useCurrency } from "@/lib/useCurrency";
 import styles from "./marketplace.module.css";
 
 interface TemplateCard {
@@ -11,9 +12,27 @@ interface TemplateCard {
   category: string;
   priceNgn: number;
   purchaseCount: number;
+  avgRating: number | null;
+  ratingCount: number;
   coverUrl: string | null;
   creator: { id: string; displayName: string; avatarUrl: string | null } | null;
   createdAt: string;
+}
+
+function StarDisplay({ rating, count }: { rating: number | null; count: number }) {
+  if (!rating) return null;
+  const full = Math.floor(rating);
+  const hasHalf = rating - full >= 0.5;
+  const empty = 5 - full - (hasHalf ? 1 : 0);
+  return (
+    <div className={styles.starRow}>
+      {Array.from({ length: full }, (_, i) => <span key={`f${i}`} className={styles.starFull}>★</span>)}
+      {hasHalf && <span className={styles.starHalf}>★</span>}
+      {Array.from({ length: empty }, (_, i) => <span key={`e${i}`} className={styles.starEmpty}>★</span>)}
+      <span className={styles.ratingNum}>{rating.toFixed(1)}</span>
+      {count > 0 && <span className={styles.ratingCount}>({count})</span>}
+    </div>
+  );
 }
 
 export default function MarketplacePage() {
@@ -26,6 +45,7 @@ export default function MarketplacePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
 
   useEffect(() => {
     const stored = localStorage.getItem("studio-theme");
@@ -78,6 +98,9 @@ export default function MarketplacePage() {
             ? <Link href="/creator-dashboard" className={styles.navCta}>Creator Dashboard</Link>
             : <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
           }
+          <button className={styles.currencyToggle} onClick={toggleCurrency} type="button">
+            {currency === "NGN" ? "₦ NGN" : "$ USD"}
+          </button>
           <button className={styles.themeToggle} onClick={toggleTheme} type="button" aria-pressed={theme === "dark"}>
             {theme === "dark" ? "Light" : "Dark"}
           </button>
@@ -143,8 +166,9 @@ export default function MarketplacePage() {
                       <span className={styles.creatorName}>{t.creator.displayName}</span>
                     </div>
                   )}
+                  <StarDisplay rating={t.avgRating} count={t.ratingCount} />
                   <div className={styles.cardFooter}>
-                    <span className={styles.price}>₦{t.priceNgn.toLocaleString()}</span>
+                    <span className={styles.price}>{formatPrice(t.priceNgn)}</span>
                     {t.purchaseCount > 0
                       ? <span className={styles.salesCount}>{t.purchaseCount} sale{t.purchaseCount !== 1 ? "s" : ""}</span>
                       : <span className={styles.newBadge}>New</span>

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   let query = service
     .from("templates")
-    .select("id, creator_id, title, description, category, tags, price_ngn, shoot_mode, aspect_ratio, package_size, purchase_count, cover_storage_path, cover_bucket, created_at, creators(id, display_name, avatar_storage_path, avatar_bucket)")
+    .select("id, creator_id, title, description, category, tags, price_ngn, shoot_mode, aspect_ratio, package_size, purchase_count, avg_rating, rating_count, cover_storage_path, cover_bucket, created_at, creators(id, display_name, avatar_storage_path, avatar_bucket)")
     .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(limit + 1);
@@ -58,6 +58,8 @@ export async function GET(request: NextRequest) {
       aspectRatio: t.aspect_ratio,
       packageSize: t.package_size,
       purchaseCount: t.purchase_count,
+      avgRating: (t as Record<string, unknown>).avg_rating as number | null ?? null,
+      ratingCount: (t as Record<string, unknown>).rating_count as number ?? 0,
       coverUrl,
       createdAt: t.created_at,
     };
