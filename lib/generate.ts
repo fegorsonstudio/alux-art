@@ -537,6 +537,24 @@ async function generateImageWithFal(
   return url;
 }
 
+async function polishImageWithFal(imageUrl: string, prompt: string): Promise<string> {
+  try {
+    const response = await fal.subscribe("fal-ai/z-image-turbo", {
+      input: {
+        image_url: imageUrl,
+        prompt,
+        strength: 0.18,
+        num_inference_steps: 4,
+      },
+    });
+    const output = ((response as Record<string, unknown>).data || response) as FalOutput;
+    return output.images?.[0]?.url ?? imageUrl;
+  } catch (err) {
+    console.warn("[generate] polish pass failed, keeping original:", err instanceof Error ? err.message : err);
+    return imageUrl;
+  }
+}
+
 // SeedDream 4 aspect-ratio → image_size mapping
 const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
   "1K": {
@@ -1286,13 +1304,15 @@ export async function startGenerationWorker(
   let visionModel: "gemini" | "claude" = "gemini";
   let generationModel: "nano-banana" | "seedream" = "nano-banana";
   let promptOnlyMode = false;
+  let polishPassEnabled = false;
   try {
     const { data: cfgData } = await service.from("app_config").select("key,value");
     const cfgMap = Object.fromEntries((cfgData ?? []).map(r => [r.key, r.value]));
     if (cfgMap.vision_model === "claude") visionModel = "claude";
     if (cfgMap.generation_model === "seedream") generationModel = "seedream";
     promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
-    console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode });
+    polishPassEnabled = cfgMap.polish_pass_enabled === "true" || cfgMap.polish_pass_enabled === true;
+    console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode, polishPassEnabled });
   } catch { /* non-fatal — defaults apply */ }
 
   // --- Step 1: Identity analysis (skip if base provides it) ---
@@ -1495,7 +1515,7 @@ export async function startGenerationWorker(
     const taggedVisualUrls = [outfitUrl, hairstyleUrl].filter(Boolean);
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
     imageUrls = [
-      ...identityUrls.slice(0, 2),     // max 2 identity (model's primary subject reference)
+      ...identityUrls.slice(0, 6),     // up to 6 identity images — more inputs = stronger face lock
       ...taggedVisualUrls,               // OUTFIT + HAIRSTYLE refs if present
       ...inspirationUrls.slice(0, 1),   // max 1 inspiration (mood/style context)
     ];
@@ -1622,9 +1642,16 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: falUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution, dbForbiddenWords, generationModel);
+      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution, dbForbiddenWords, generationModel);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
+      }
+
+      // Optional polish pass — subtle quality refinement (denoise 0.18) via Z-Image Turbo
+      let falUrl = rawFalUrl;
+      if (polishPassEnabled && !isTestMode) {
+        falUrl = await polishImageWithFal(rawFalUrl, slotPrompt);
+        console.log(`[generate] slot ${slot}: polish pass ${falUrl !== rawFalUrl ? "applied" : "fallback to original"}`);
       }
 
       // Always save the image to Supabase storage (using "test" bucket in test mode) so signed URLs work

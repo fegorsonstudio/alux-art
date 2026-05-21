@@ -64,6 +64,7 @@ interface ModelConfig {
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
   prompt_only_mode: boolean;
+  polish_pass_enabled: boolean;
 }
 
 // ---- Helpers ----
@@ -128,7 +129,7 @@ export default function AdminPage() {
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     vision_model: "gemini", generation_model: "nano-banana",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
-    platform_fee_ngn: 15000, prompt_only_mode: false,
+    platform_fee_ngn: 15000, prompt_only_mode: false, polish_pass_enabled: false,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [platformFeeInput, setPlatformFeeInput] = useState("15000");
@@ -442,6 +443,19 @@ export default function AdminPage() {
               ))}
             </div>
             <div className={styles.modelHint}>{modelConfig.prompt_only_mode ? "ON — prompts are generated and saved but fal.ai calls are skipped. Use Template Lab to generate images later." : "OFF — normal generation pipeline with fal.ai."}</div>
+          </div>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Polish Pass (Z-Image Turbo)</div>
+            <div className={styles.modelPills}>
+              {([false, true] as const).map(val => (
+                <button key={String(val)} type="button"
+                  className={`${styles.modelPill} ${modelConfig.polish_pass_enabled === val ? styles.modelPillActive : ""}`}
+                  onClick={() => saveModelConfig({ polish_pass_enabled: val })} disabled={modelSaving}>
+                  {val ? "Enabled" : "Disabled"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.modelHint}>{modelConfig.polish_pass_enabled ? "ON — each generated image gets a second quality-refinement pass (denoise 0.18). Adds ~3s per slot." : "OFF — images are used directly from fal.ai with no post-processing."}</div>
           </div>
         </div>
         {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}

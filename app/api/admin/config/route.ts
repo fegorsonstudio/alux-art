@@ -13,6 +13,7 @@ type AdminConfig = {
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
   prompt_only_mode: boolean;
+  polish_pass_enabled: boolean;
 };
 
 async function getAdminSession() {
@@ -38,6 +39,7 @@ export async function GET() {
     locked_base_enabled: map.locked_base_enabled === "true",
     platform_fee_ngn: parseInt(map.platform_fee_ngn ?? "15000", 10),
     prompt_only_mode: map.prompt_only_mode === "true",
+    polish_pass_enabled: map.polish_pass_enabled === "true",
   } satisfies AdminConfig);
 }
 
@@ -85,6 +87,10 @@ export async function PATCH(req: NextRequest) {
 
   if (body.prompt_only_mode !== undefined) {
     updates.push({ key: "prompt_only_mode", value: body.prompt_only_mode ? "true" : "false", updated_at: now });
+  }
+
+  if (body.polish_pass_enabled !== undefined) {
+    updates.push({ key: "polish_pass_enabled", value: body.polish_pass_enabled ? "true" : "false", updated_at: now });
   }
 
   if (updates.length === 0) {
