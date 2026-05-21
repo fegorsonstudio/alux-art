@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
+import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
 
@@ -59,7 +60,7 @@ interface ShowcaseShoot {
 }
 
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
-interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; }
+interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; theme?: string; font_family?: string; }
 
 const SHOWCASE_PACKAGES = [
   { count: 1, label: "1 image", price: 1000 },
@@ -83,6 +84,15 @@ interface UploadedImage {
   tag: string;
   customName: string;
   note: string;
+  uploading: boolean;
+  fromDb?: boolean;
+  error?: string;
+}
+
+interface SampleImageItem {
+  localId: string;   // db id when fromDb
+  preview: string;
+  storagePath: string;
   uploading: boolean;
   fromDb?: boolean;
   error?: string;
@@ -113,9 +123,11 @@ function CreatorDashboard() {
   const [panel, setPanel] = useState<"none" | "create" | string>("none"); // "create" or templateId
   const [form, setForm] = useState(defaultForm());
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [sampleImages, setSampleImages] = useState<SampleImageItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const sampleImgInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const formPanelRef = useRef<HTMLDivElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
@@ -135,6 +147,11 @@ function CreatorDashboard() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
   const [showCollageEditor, setShowCollageEditor] = useState(false);
+  const [storefrontOpen, setStorefrontOpen] = useState(false);
+  const [storefrontTheme, setStorefrontTheme] = useState("alux");
+  const [storefrontFont, setStorefrontFont] = useState("default");
+  const [storefrontSaving, setStorefrontSaving] = useState(false);
+  const [storefrontSaved, setStorefrontSaved] = useState(false);
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = useCallback(async () => {
@@ -222,6 +239,13 @@ function CreatorDashboard() {
     }
   }, [panel, loading]);
 
+  useEffect(() => {
+    if (creator) {
+      setStorefrontTheme(creator.theme ?? "alux");
+      setStorefrontFont(creator.font_family ?? "default");
+    }
+  }, [creator]);
+
   const openEdit = async (t: TemplateRow) => {
     setShowcaseTemplateId(null);
     setPanel(t.id);
@@ -241,6 +265,7 @@ function CreatorDashboard() {
       coverStoragePath: t.cover_storage_path ?? "",
     });
     setImages([]);
+    setSampleImages([]);
     setCoverPreview(t.cover_url ?? "");
     // Fetch full template with signed URLs for reference images
     const res = await fetch(`/api/templates/${t.id}`);
@@ -251,7 +276,7 @@ function CreatorDashboard() {
         display_order: number; purpose: string; tag?: string; custom_name?: string | null; note?: string | null; signed_url?: string | null;
       }>;
       const existingImages: UploadedImage[] = imgs
-        .filter(img => img.storage_path && img.signed_url)
+        .filter(img => img.storage_path && img.signed_url && (img.purpose === "inspiration" || img.purpose === "tagged"))
         .map(img => ({
           localId: img.id,
           preview: img.signed_url!,
@@ -264,6 +289,16 @@ function CreatorDashboard() {
           fromDb: true,
         }));
       setImages(existingImages);
+      const existingSamples: SampleImageItem[] = imgs
+        .filter(img => img.storage_path && img.signed_url && img.purpose === "sample")
+        .map(img => ({
+          localId: img.id,
+          preview: img.signed_url!,
+          storagePath: img.storage_path,
+          uploading: false,
+          fromDb: true,
+        }));
+      setSampleImages(existingSamples);
     }
   };
 
@@ -442,6 +477,49 @@ function CreatorDashboard() {
     newImgs.forEach(img => uploadFile(img.file!, img.localId));
   };
 
+  const uploadSampleFile = async (file: File, localId: string) => {
+    setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: true } : s));
+    const res = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "template-images" }),
+    });
+    if (!res.ok) {
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
+      return;
+    }
+    const { uploadUrl, storagePath } = await res.json();
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    if (!putRes.ok) {
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
+      return;
+    }
+    setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, storagePath } : s));
+  };
+
+  const addSampleFiles = (files: FileList) => {
+    const remaining = 10 - sampleImages.length;
+    if (remaining <= 0) return;
+    const toAdd = Array.from(files).slice(0, remaining);
+    const newItems: SampleImageItem[] = toAdd.map(file => {
+      const localId = crypto.randomUUID();
+      return { localId, preview: URL.createObjectURL(file), storagePath: "", uploading: false };
+    });
+    setSampleImages(prev => [...prev, ...newItems]);
+    newItems.forEach((item, idx) => uploadSampleFile(toAdd[idx], item.localId));
+  };
+
+  const removeSampleImage = async (item: SampleImageItem, templateId: string | null) => {
+    if (item.fromDb && templateId && templateId !== "create") {
+      await fetch(`/api/templates/${templateId}/images`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId: item.localId }),
+      });
+    }
+    setSampleImages(prev => prev.filter(s => s.localId !== item.localId));
+  };
+
   const uploadCover = async (file: File) => {
     const res = await fetch("/api/upload/presign", {
       method: "POST",
@@ -471,6 +549,7 @@ function CreatorDashboard() {
       return;
     }
     if (images.some(i => i.uploading)) { setFormError("Please wait for all images to finish uploading"); return; }
+    if (sampleImages.some(s => s.uploading)) { setFormError("Please wait for all sample images to finish uploading"); return; }
 
     setSaving(true);
     const body = {
@@ -528,12 +607,35 @@ function CreatorDashboard() {
       });
     }
 
+    // Save new sample images (existing fromDb ones are already in DB; deletions are done in real-time)
+    const newSamples = sampleImages.filter(s => s.storagePath && !s.fromDb);
+    for (let i = 0; i < newSamples.length; i++) {
+      await fetch(`/api/templates/${templateId}/images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storagePath: newSamples[i].storagePath, displayOrder: i, purpose: "sample" }),
+      });
+    }
+
     setSaving(false);
     setPanel("none");
     setForm(defaultForm());
     setImages([]);
+    setSampleImages([]);
     setCoverPreview("");
     loadDashboard();
+  };
+
+  const saveStorefront = async () => {
+    setStorefrontSaving(true);
+    await fetch("/api/creator/storefront", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: storefrontTheme, fontFamily: storefrontFont }),
+    });
+    setStorefrontSaving(false);
+    setStorefrontSaved(true);
+    setTimeout(() => setStorefrontSaved(false), 2000);
   };
 
   const toggleStatus = async (t: TemplateRow) => {
@@ -576,10 +678,78 @@ function CreatorDashboard() {
         </div>
       )}
 
+      {/* Storefront settings */}
+      <div className={styles.storefrontSection}>
+        <button type="button" className={styles.storefrontToggle} onClick={() => setStorefrontOpen(o => !o)}>
+          <span>Storefront Settings</span>
+          <span>{storefrontOpen ? "▲" : "▼"}</span>
+        </button>
+        {storefrontOpen && (
+          <div className={styles.storefrontContent}>
+            <div className={styles.storefrontGroup}>
+              <span className={styles.label}>Theme</span>
+              <div className={styles.themeGrid}>
+                {THEMES.map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    className={`${styles.themeCard} ${storefrontTheme === t.value ? styles.themeCardActive : ""}`}
+                    onClick={() => setStorefrontTheme(t.value)}
+                  >
+                    <div className={styles.themePreview} style={{ background: t.previewBg }} />
+                    <div className={styles.themeAccentDot} style={{ background: t.previewAccent }} />
+                    <div className={styles.themeCardLabel}>{t.label}</div>
+                    <div className={styles.themeCardDesc}>{t.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.storefrontGroup}>
+              <span className={styles.label}>Font pairing</span>
+              <div className={styles.fontList}>
+                {FONTS.map(f => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    className={`${styles.fontItem} ${storefrontFont === f.value ? styles.fontItemActive : ""}`}
+                    onClick={() => setStorefrontFont(f.value)}
+                  >
+                    <span className={styles.fontItemLabel}>{f.label}</span>
+                    <span className={styles.fontItemDesc}>{f.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.storefrontActions}>
+              {creator && (
+                <a
+                  href={`/creators/${creator.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.storefrontPreviewLink}
+                >
+                  Preview storefront ↗
+                </a>
+              )}
+              <button
+                type="button"
+                className={styles.storefrontSaveBtn}
+                onClick={saveStorefront}
+                disabled={storefrontSaving}
+              >
+                {storefrontSaved ? "Saved!" : storefrontSaving ? "Saving..." : "Save storefront"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setCoverPreview(""); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); }}>
             + New Template
           </button>
         )}
@@ -863,6 +1033,43 @@ function CreatorDashboard() {
             )}
 
             <input type="file" accept="image/*" multiple ref={imgInputRef} className={styles.hidden} onChange={e => { if (e.target.files) addImages(e.target.files); e.target.value = ""; }} />
+          </div>
+
+          {/* Sample / gallery images */}
+          <div className={styles.field}>
+            <span className={styles.label}>Sample gallery images ({sampleImages.length}/10)</span>
+            <p className={styles.fieldHint}>
+              Upload up to 10 example output images to show buyers what this template produces. These are displayed in the marketplace gallery. Workflow reference images are kept private.
+            </p>
+            <div className={styles.imagesGrid}>
+              {sampleImages.map(item => (
+                <div key={item.localId} className={styles.imgItem}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.preview} alt="" className={styles.imgPreview} />
+                  {item.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
+                  {item.error && <div className={styles.imgError}>{item.error}</div>}
+                  {item.fromDb && <div className={styles.imgDbBadge}>saved</div>}
+                  <button
+                    type="button"
+                    className={styles.imgRemove}
+                    onClick={() => removeSampleImage(item, panel === "create" ? null : panel)}
+                  >✕</button>
+                </div>
+              ))}
+              {sampleImages.length < 10 && (
+                <button type="button" className={styles.addImgBtn} onClick={() => sampleImgInputRef.current?.click()}>
+                  + Add sample
+                </button>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              ref={sampleImgInputRef}
+              className={styles.hidden}
+              onChange={e => { if (e.target.files) addSampleFiles(e.target.files); e.target.value = ""; }}
+            />
           </div>
 
           <div className={styles.formActions}>

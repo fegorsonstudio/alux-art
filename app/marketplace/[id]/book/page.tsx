@@ -81,6 +81,9 @@ export default function BookPage() {
 
   const [taggedRefs, setTaggedRefs] = useState<TaggedRefState[]>([]);
   const [replacingTag, setReplacingTag] = useState<string | null>(null);
+  const [addingRef, setAddingRef] = useState(false);
+  const [addRefTag, setAddRefTag] = useState("OUTFIT");
+  const addRefInputRef = useRef<HTMLInputElement>(null);
 
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
@@ -196,6 +199,28 @@ export default function BookPage() {
       : r
     ));
     setReplacingTag(null);
+  };
+
+  // ── Add custom reference ────────────────────────────────────────────────────
+
+  const handleAddRefFile = async (file: File) => {
+    const res = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "identity-images" }),
+    });
+    if (!res.ok) { setAddingRef(false); return; }
+    const { uploadUrl, storagePath, storageBucket } = await res.json();
+    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    setTaggedRefs(prev => [...prev, {
+      id: crypto.randomUUID(),
+      tag: addRefTag,
+      storagePath,
+      storageBucket,
+      url: URL.createObjectURL(file),
+      isReplaced: true,
+    }]);
+    setAddingRef(false);
   };
 
   // ── Coupon ──────────────────────────────────────────────────────────────────
@@ -363,17 +388,24 @@ export default function BookPage() {
         </section>
 
         {/* Tagged refs section */}
-        {taggedRefs.length > 0 && (
+        {(taggedRefs.length > 0 || addingRef) && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Template references</h2>
-            <p className={styles.sectionHint}>These are the creator&rsquo;s reference images. Remove any you don&rsquo;t want, or replace with your own.</p>
+            <h2 className={styles.sectionTitle}>Reference images</h2>
+            <p className={styles.sectionHint}>
+              Creator&apos;s references are kept private until your shoot generates. Replace any with your own image, or add new ones.
+            </p>
 
             <div className={styles.refGrid}>
               {taggedRefs.map(ref => (
                 <div key={ref.id} className={`${styles.refCard} ${ref.isReplaced ? styles.refCardReplaced : ""}`}>
-                  {ref.url
+                  {ref.isReplaced && ref.url
                     ? <img src={ref.url} alt={ref.tag} className={styles.refImg} />
-                    : <div className={styles.refPlaceholder}>{ref.tag}</div>
+                    : (
+                      <div className={styles.refPrivate}>
+                        <span className={styles.refPrivateLock}>🔒</span>
+                        <span className={styles.refPrivateLabel}>Private ref</span>
+                      </div>
+                    )
                   }
                   <div className={styles.refMeta}>
                     <span className={styles.refTag}>{ref.tag}</span>
@@ -391,6 +423,43 @@ export default function BookPage() {
               ))}
             </div>
 
+            {/* Add custom reference */}
+            <div className={styles.addRefRow}>
+              {!addingRef && (
+                <button type="button" className={styles.addRefBtn} onClick={() => setAddingRef(true)}>
+                  + Add your own reference
+                </button>
+              )}
+              {addingRef && (
+                <div className={styles.addRefForm}>
+                  <select className={styles.addRefSelect} value={addRefTag} onChange={e => setAddRefTag(e.target.value)}>
+                    {["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={styles.addRefUploadBtn}
+                    onClick={() => addRefInputRef.current?.click()}
+                  >
+                    Upload image
+                  </button>
+                  <button type="button" className={styles.addRefCancelBtn} onClick={() => setAddingRef(false)}>Cancel</button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={addRefInputRef}
+                    className={styles.hidden}
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleAddRefFile(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
             <input
               type="file"
               accept="image/*"
@@ -402,6 +471,19 @@ export default function BookPage() {
                 e.target.value = "";
               }}
             />
+          </section>
+        )}
+
+        {/* Allow adding refs even when template has none */}
+        {taggedRefs.length === 0 && !addingRef && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Reference images</h2>
+            <p className={styles.sectionHint}>Optionally add your own reference images to guide the shoot.</p>
+            <div className={styles.addRefRow}>
+              <button type="button" className={styles.addRefBtn} onClick={() => setAddingRef(true)}>
+                + Add your own reference
+              </button>
+            </div>
           </section>
         )}
       </div>

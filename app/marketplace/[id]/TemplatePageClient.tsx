@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCurrency } from "@/lib/useCurrency";
+import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
 
 interface TemplateImage {
@@ -40,6 +41,8 @@ interface TemplateDetail {
     instagramUrl?: string;
     websiteUrl?: string;
     templateCount: number;
+    theme?: string;
+    fontFamily?: string;
   } | null;
 }
 
@@ -110,6 +113,9 @@ export default function TemplatePage() {
   const [ratingCount, setRatingCount] = useState(0);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
+  const storTheme = getTheme(template?.creator?.theme ?? "alux");
+  const storFont = getFont(template?.creator?.fontFamily ?? "default");
+
   useEffect(() => {
     fetch(`/api/marketplace/${id}`)
       .then(r => r.json())
@@ -126,9 +132,21 @@ export default function TemplatePage() {
     fetch("/api/me").then(r => setIsLoggedIn(r.ok));
   }, [id]);
 
+  useEffect(() => {
+    if (!storFont.googleUrl) return;
+    const existing = document.querySelector("link[data-storefront-font]");
+    if (existing) existing.remove();
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = storFont.googleUrl;
+    link.setAttribute("data-storefront-font", "");
+    document.head.appendChild(link);
+  }, [storFont.googleUrl]);
+
+  // Gallery shows cover + sample images only; workflow refs (purpose==="tagged") are hidden pre-payment.
   const allImages = template ? [
     ...(template.coverUrl ? [{ id: "__cover", url: template.coverUrl, purpose: "cover", displayOrder: -1, tag: undefined }] : []),
-    ...template.images,
+    ...template.images.filter(img => img.purpose === "sample"),
   ] : [];
 
   useEffect(() => {
@@ -232,7 +250,10 @@ export default function TemplatePage() {
     : pkgPrice;
 
   return (
-    <div className={styles.page}>
+    <div
+      className={`${styles.page}${storTheme.dark ? ` ${styles.pageDark}` : ""}`}
+      style={{ ...storTheme.vars, "--st-font-heading": storFont.heading, "--st-font-body": storFont.body } as React.CSSProperties}
+    >
       {/* Lightbox */}
       {lightboxOpen && allImages.length > 0 && (
         <div className={styles.lightbox} onClick={() => setLightboxOpen(false)}>

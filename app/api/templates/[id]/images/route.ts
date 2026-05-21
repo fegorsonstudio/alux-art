@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 
-const ALLOWED_PURPOSES = new Set(["inspiration", "tagged"]);
-const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"]);
+const ALLOWED_PURPOSES = new Set(["inspiration", "tagged", "sample"]);
+const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"]);
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,14 +23,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .single();
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
-  const { count } = await service
-    .from("template_images")
-    .select("id", { count: "exact", head: true })
-    .eq("template_id", id);
-  if ((count ?? 0) >= 8) {
-    return NextResponse.json({ error: "Maximum 8 images per template" }, { status: 400 });
-  }
-
   const body = await request.json() as Record<string, unknown>;
   const { storagePath, displayOrder, purpose, tag, note, customName } = body;
 
@@ -42,6 +34,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
   if (purpose === "tagged" && (typeof tag !== "string" || !ALLOWED_TAGS.has(tag))) {
     return NextResponse.json({ error: "Invalid tag for tagged image" }, { status: 400 });
+  }
+
+  // Enforce separate limits: 8 for workflow refs, 10 for sample gallery images
+  const limitField = purpose === "sample" ? "sample" : "workflow";
+  const purposeFilter = limitField === "sample"
+    ? service.from("template_images").select("id", { count: "exact", head: true }).eq("template_id", id).eq("purpose", "sample")
+    : service.from("template_images").select("id", { count: "exact", head: true }).eq("template_id", id).neq("purpose", "sample");
+  const { count } = await purposeFilter;
+  const maxAllowed = limitField === "sample" ? 10 : 8;
+  if ((count ?? 0) >= maxAllowed) {
+    return NextResponse.json({ error: `Maximum ${maxAllowed} ${limitField} images per template` }, { status: 400 });
   }
 
   const { data: image, error } = await service.from("template_images").insert({

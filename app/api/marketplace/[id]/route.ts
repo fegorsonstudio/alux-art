@@ -42,9 +42,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     rawImages
       .sort((a, b) => a.display_order - b.display_order)
       .map(async (img) => {
-        const { data: s } = await service.storage
-          .from(img.storage_bucket ?? "template-images")
-          .createSignedUrl(img.storage_path, 3600);
+        // Workflow reference images (tagged + inspiration) are kept private until after
+        // payment — return path/bucket for the book page but no signed URL.
+        const isWorkflowRef = img.purpose === "tagged" || img.purpose === "inspiration";
+        let signedUrl: string | null = null;
+        if (!isWorkflowRef) {
+          const { data: s } = await service.storage
+            .from(img.storage_bucket ?? "template-images")
+            .createSignedUrl(img.storage_path, 3600);
+          signedUrl = s?.signedUrl ?? null;
+        }
         return {
           id: img.id,
           templateId: id,
@@ -53,7 +60,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           displayOrder: img.display_order,
           purpose: img.purpose,
           tag: img.tag ?? null,
-          url: s?.signedUrl ?? null,
+          url: signedUrl,
           createdAt: img.created_at,
         };
       })
@@ -88,6 +95,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         websiteUrl: cr.website_url ?? null,
         avatarUrl,
         templateCount: templateCount ?? 0,
+        theme: cr.theme ?? "alux",
+        fontFamily: cr.font_family ?? "default",
       } : null,
       title: template.title,
       description: template.description ?? null,

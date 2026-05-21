@@ -118,6 +118,191 @@ const STATUS_CLASS: Record<string, string> = {
   BASE_REVIEW: "statusBasereview", BASE_REJECTED: "statusFailed",
 };
 
+const PENDING_MIGRATIONS = [
+  {
+    id: "016",
+    name: "template_images.custom_name",
+    sql: "ALTER TABLE template_images ADD COLUMN IF NOT EXISTS custom_name text;",
+    check: async () => {
+      const res = await fetch("/api/marketplace/migration-check?col=template_images.custom_name");
+      return res.ok && (await res.json()).exists;
+    },
+  },
+  {
+    id: "017a",
+    name: "creators.theme",
+    sql: "ALTER TABLE creators ADD COLUMN IF NOT EXISTS theme text DEFAULT 'alux';",
+    check: null,
+  },
+  {
+    id: "017b",
+    name: "creators.font_family",
+    sql: "ALTER TABLE creators ADD COLUMN IF NOT EXISTS font_family text DEFAULT 'default';",
+    check: null,
+  },
+];
+
+const MIGRATION_SQL = PENDING_MIGRATIONS.map(m => m.sql).join("\n");
+const SUPABASE_SQL_URL = "https://supabase.com/dashboard/project/owdfoxglbxrqhgqbvkon/sql/new";
+
+function MigrationsCard() {
+  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"idle"|"checking"|"ok"|"needed">("idle");
+
+  const checkStatus = async () => {
+    setStatus("checking");
+    const res = await fetch("/api/admin/migration-status");
+    if (!res.ok) { setStatus("needed"); return; }
+    const d = await res.json();
+    setStatus(d.allApplied ? "ok" : "needed");
+  };
+
+  const copy = () => {
+    navigator.clipboard.writeText(MIGRATION_SQL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className={styles.card}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <h2 className={styles.cardTitle} style={{ margin: 0 }}>Pending Migrations</h2>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className={styles.banBtn} onClick={checkStatus} disabled={status === "checking"}>
+            {status === "checking" ? "Checking…" : "Check status"}
+          </button>
+          {status === "ok" && <span style={{ color: "#177767", fontSize: "0.82rem", alignSelf: "center" }}>✓ All applied</span>}
+        </div>
+      </div>
+      <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "8px 0 12px" }}>
+        These columns must be added to Supabase before themes and custom reference names work.
+        Copy the SQL below and run it in the{" "}
+        <a href={SUPABASE_SQL_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#2f8e9a" }}>
+          Supabase SQL editor ↗
+        </a>
+      </p>
+      <pre style={{
+        background: "rgba(0,0,0,0.06)", borderRadius: 8, padding: "12px 14px",
+        fontSize: "0.75rem", overflowX: "auto", margin: "0 0 12px",
+        fontFamily: "monospace", lineHeight: 1.7,
+      }}>{MIGRATION_SQL}</pre>
+      <button className={styles.banBtn} onClick={copy} style={{ marginRight: 8 }}>
+        {copied ? "Copied!" : "Copy SQL"}
+      </button>
+      <a href={SUPABASE_SQL_URL} target="_blank" rel="noopener noreferrer" className={styles.banBtn}
+        style={{ textDecoration: "none", display: "inline-block" }}>
+        Open SQL editor ↗
+      </a>
+    </div>
+  );
+}
+
+interface AdminTemplate {
+  id: string;
+  title: string;
+  status: string;
+  price_ngn: number;
+  price_1_ngn: number | null;
+  price_5_ngn: number | null;
+  creators: { display_name: string } | null;
+}
+
+function AdminTemplatesCard() {
+  const [templates, setTemplates] = useState<AdminTemplate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [prices, setPrices] = useState<Record<string, { p10: string; p1: string; p5: string }>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/admin/templates")
+      .then(r => r.ok ? r.json() : { templates: [] })
+      .then(d => {
+        setTemplates(d.templates ?? []);
+        const init: Record<string, { p10: string; p1: string; p5: string }> = {};
+        for (const t of (d.templates ?? [])) {
+          init[t.id] = { p10: String(t.price_ngn), p1: t.price_1_ngn != null ? String(t.price_1_ngn) : "", p5: t.price_5_ngn != null ? String(t.price_5_ngn) : "" };
+        }
+        setPrices(init);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const savePrice = async (templateId: string) => {
+    const p = prices[templateId];
+    if (!p) return;
+    setSaving(templateId);
+    await fetch("/api/admin/templates", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: templateId,
+        priceNgn: p.p10 ? Number(p.p10) : undefined,
+        price1Ngn: p.p1 ? Number(p.p1) : null,
+        price5Ngn: p.p5 ? Number(p.p5) : null,
+      }),
+    });
+    setSaving(null);
+    setSaved(templateId);
+    setTimeout(() => setSaved(s => s === templateId ? null : s), 2000);
+  };
+
+  return (
+    <div className={styles.card}>
+      <h2 className={styles.cardTitle}>Template Prices</h2>
+      {loading && <p style={{ color: "#7aafb4", fontSize: "0.8rem" }}>Loading…</p>}
+      {!loading && templates.length === 0 && <p style={{ color: "#7aafb4", fontSize: "0.8rem" }}>No templates yet.</p>}
+      <table className={styles.table}>
+        <thead><tr><th>Title</th><th>Creator</th><th>Status</th><th>10-img</th><th>5-img</th><th>1-img</th><th></th></tr></thead>
+        <tbody>
+          {templates.map(t => {
+            const p = prices[t.id] ?? { p10: "", p1: "", p5: "" };
+            const isOpen = expanded === t.id;
+            return (
+              <>
+                <tr key={t.id}>
+                  <td>{t.title}</td>
+                  <td style={{ color: "#7aafb4", fontSize: "0.78rem" }}>{(t.creators as { display_name: string } | null)?.display_name ?? "—"}</td>
+                  <td><span className={t.status === "published" ? styles.activeBadge : styles.bannedBadge}>{t.status}</span></td>
+                  <td>₦{t.price_ngn?.toLocaleString()}</td>
+                  <td>{t.price_5_ngn != null ? `₦${t.price_5_ngn.toLocaleString()}` : "—"}</td>
+                  <td>{t.price_1_ngn != null ? `₦${t.price_1_ngn.toLocaleString()}` : "—"}</td>
+                  <td><button className={styles.banBtn} onClick={() => setExpanded(isOpen ? null : t.id)}>{isOpen ? "Close" : "Edit"}</button></td>
+                </tr>
+                {isOpen && (
+                  <tr key={`${t.id}-edit`}>
+                    <td colSpan={7}>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", padding: "8px 0" }}>
+                        <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: "0.75rem", color: "#4e7076" }}>
+                          10-image price (₦) *
+                          <input className={styles.priceInput} type="number" value={p.p10} onChange={e => setPrices(prev => ({ ...prev, [t.id]: { ...p, p10: e.target.value } }))} style={{ width: 110 }} />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: "0.75rem", color: "#4e7076" }}>
+                          5-image price (₦)
+                          <input className={styles.priceInput} type="number" value={p.p5} onChange={e => setPrices(prev => ({ ...prev, [t.id]: { ...p, p5: e.target.value } }))} style={{ width: 110 }} placeholder="optional" />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: "0.75rem", color: "#4e7076" }}>
+                          1-image price (₦)
+                          <input className={styles.priceInput} type="number" value={p.p1} onChange={e => setPrices(prev => ({ ...prev, [t.id]: { ...p, p1: e.target.value } }))} style={{ width: 110 }} placeholder="optional" />
+                        </label>
+                        <button className={styles.saveBtn} style={{ padding: "8px 16px", fontSize: "0.78rem" }} onClick={() => savePrice(t.id)} disabled={saving === t.id}>
+                          {saving === t.id ? "Saving…" : saved === t.id ? "Saved ✓" : "Save prices"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [err, setErr] = useState("");
@@ -583,6 +768,12 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      {/* ---- Pending migrations ---- */}
+      <MigrationsCard />
+
+      {/* ---- Template price editor ---- */}
+      <AdminTemplatesCard />
 
       {/* ---- Creators ---- */}
       <div className={styles.card}>

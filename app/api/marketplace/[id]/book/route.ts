@@ -79,7 +79,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   // C4: validate tagged refs against template image paths and allowed tags
-  const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "COLOR_GRADE"]);
+  const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"]);
   const templateImagePaths = new Set(
     ((template.template_images ?? []) as Array<{ storage_path: string }>).map(img => img.storage_path)
   );
