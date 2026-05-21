@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           <p>
             <strong>Data Controller:</strong> Alux Art and Frames, Nigeria.<br />
             <strong>Contact:</strong>{" "}
-            <a href="mailto:fegorsonphotography@gmail.com">fegorsonphotography@gmail.com</a>
+            <a href="mailto:aluxartandframes@gmail.com">aluxartandframes@gmail.com</a>
           </p>
 
           <h2>2. Data We Collect</h2>
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
           <ul>
             <li>Stored in Supabase secure storage, accessible only to you and our generation pipeline during your active shoot.</li>
             <li>Used solely to generate your requested portraits for that shoot.</li>
-            <li>Not shared with third parties except the AI model that processes your generation request (fal.ai), which receives individual image URLs per request and does not retain them.</li>
+            <li>Not shared with third parties.</li>
             <li>Automatically and permanently deleted within 48 hours of shoot completion or expiry.</li>
           </ul>
           <p>
@@ -114,18 +114,8 @@ export default function PrivacyPage() {
             policy governs payment data.
           </p>
           <p>
-            <strong>fal.ai:</strong> AI model provider that processes your identity photos
-            and generates portrait images. Images are sent per-request and are not retained
-            by fal.ai beyond their standard processing window.
-          </p>
-          <p>
-            <strong>Supabase:</strong> Hosts our database and file storage. Data is stored
-            in secure, encrypted infrastructure. Supabase&apos;s privacy policy applies to
-            infrastructure-level processing.
-          </p>
-          <p>
             We do not share your data with advertisers, data brokers, or any other
-            third parties beyond those listed above.
+            third parties beyond Paystack.
           </p>
 
           <h2>6. Data Retention</h2>
@@ -171,7 +161,7 @@ export default function PrivacyPage() {
           </ul>
           <p>
             To exercise any of these rights, email us at{" "}
-            <a href="mailto:fegorsonphotography@gmail.com">fegorsonphotography@gmail.com</a>.
+            <a href="mailto:aluxartandframes@gmail.com">aluxartandframes@gmail.com</a>.
             We will respond within 30 days.
           </p>
 
@@ -206,7 +196,7 @@ export default function PrivacyPage() {
           <h2>12. Contact</h2>
           <p>
             <strong>Alux Art and Frames</strong><br />
-            Email: <a href="mailto:fegorsonphotography@gmail.com">fegorsonphotography@gmail.com</a><br />
+            Email: <a href="mailto:aluxartandframes@gmail.com">aluxartandframes@gmail.com</a><br />
             Website: aluxartandframes.shop
           </p>
 

@@ -177,6 +177,12 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 40px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.looksGridVisible {
+  opacity: 1;
 }
 
 .lookCard {

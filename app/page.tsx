@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase-server";
 import styles from "./landing.module.css";
+import RotatingStyles from "./RotatingStyles";
 
 interface FeaturedTemplate {
   id: string;
@@ -16,8 +17,7 @@ async function getFeaturedTemplates(): Promise<FeaturedTemplate[]> {
       .from("templates")
       .select("id, title, cover_url, category")
       .eq("is_published", true)
-      .order("purchase_count", { ascending: false })
-      .limit(3);
+      .order("purchase_count", { ascending: false });
     return (data ?? []).map(r => ({
       id: r.id,
       title: r.title,
@@ -87,26 +87,7 @@ export default async function LandingPage() {
       {/* Sample looks */}
       <section className={styles.looksSection}>
         <h2 className={styles.sectionHeading}>Current styles</h2>
-        <div className={styles.looksGrid}>
-          {templates.length > 0 ? templates.map(t => (
-            <Link key={t.id} href={`/marketplace/${t.id}`} className={styles.lookCard}>
-              {t.coverUrl
-                ? <img src={t.coverUrl} alt={t.title} className={styles.lookImg} />
-                : <div className={styles.lookPlaceholder} />
-              }
-              <div className={styles.lookMeta}>
-                <span className={styles.lookTitle}>{t.title}</span>
-                <span className={styles.lookCategory}>{t.category}</span>
-              </div>
-            </Link>
-          )) : (
-            <>
-              <div className={styles.lookCardPlaceholder}><div className={styles.lookPlaceholder} /><div className={styles.lookMetaPlaceholder} /></div>
-              <div className={styles.lookCardPlaceholder}><div className={styles.lookPlaceholder} /><div className={styles.lookMetaPlaceholder} /></div>
-              <div className={styles.lookCardPlaceholder}><div className={styles.lookPlaceholder} /><div className={styles.lookMetaPlaceholder} /></div>
-            </>
-          )}
-        </div>
+        <RotatingStyles templates={templates} />
         <div className={styles.looksFooter}>
           <Link href="/marketplace" className={styles.ghostBtn}>Browse all styles →</Link>
         </div>

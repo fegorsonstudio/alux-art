@@ -156,7 +156,7 @@ export default function TermsPage() {
           <h2>17. Contact</h2>
           <p>
             <strong>Alux Art and Frames</strong><br />
-            Email: <a href="mailto:fegorsonphotography@gmail.com">fegorsonphotography@gmail.com</a><br />
+            Email: <a href="mailto:aluxartandframes@gmail.com">aluxartandframes@gmail.com</a><br />
             Website: aluxartandframes.shop
           </p>
 
