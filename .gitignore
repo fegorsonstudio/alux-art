@@ -49,3 +49,19 @@ test_supabase.*
 test_worker.*
 brain/
 .gstack/
+
+# Local video / Remotion workspace (not part of the web app)
+video/
+list_chrome_tabs.mjs
+scripts/run-test-shoot.mjs
+*.pdf
+*.pptx
+*.PNG
+ALUX_ART_MARKETING_AGENT.md
+ALUX_SOCIAL_AUTOMATION_SETUP.md
+BRAND_GUIDE.md
+MARKETING_AGENT.md
+FACEBOOK_SETUP_AGENT.md
+PRIVACY_POLICY_AGENT.md
+SECURITY_AGENT.md
+alux-drafts/
