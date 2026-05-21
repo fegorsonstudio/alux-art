@@ -150,7 +150,7 @@ ${styling.makeup ? `- Makeup: ${styling.makeup}` : ""}
 ${styling.nails ? `- Nails: ${styling.nails}` : ""}
 ${styling.accessories.length > 0 ? `- Accessories: ${styling.accessories.join(", ")}` : ""}
 
-Background: pure white seamless studio backdrop — completely uniform, no gradient, no texture, no visible floor seam, no cast shadows. Subject is the only element in frame.
+Background: smooth gradient from deep charcoal at the base transitioning to warm medium grey toward the top, faint metallic panel texture at very low opacity suggesting a high-end studio wall — brushed-metal striations barely perceptible, a soft atmospheric haze diffused from directly behind the subject, floor-to-wall seam invisible. Palette reads as warm-charcoal, refined studio grey. No white. No blown-out sky. No hard geometric shapes. Subject is the only element in frame.
 
 Lighting: three-point studio beauty — soft key from upper camera-left at 35°, soft fill from camera-right at chest level, gentle hair light from behind, soft underlight bounce lifting eye sockets. Even exposure, natural skin tones, no colour cast.
 
@@ -187,7 +187,7 @@ export async function runQualityGate(
   "face_count": number of faces in generated image,
   "identity_match_score": 0.0 to 1.0 — how closely the generated face matches the identity references (0=different person, 1=identical),
   "full_body_visible": true if head-to-toe with no cropping,
-  "background_is_white_seamless": true if background is clean white studio backdrop,
+  "background_is_clean_studio": true if background is a clean studio backdrop with no distracting elements (white, grey, gradient, or charcoal all qualify — fail only if there is clutter, text, or a busy scene behind the subject),
   "no_crops": true if subject has adequate margin from all four frame edges,
   "technical_quality_score": 0.0 to 1.0 — overall sharpness, exposure, and absence of artifacts,
   "notes": "brief explanation of any issues"
@@ -208,7 +208,7 @@ export async function runQualityGate(
       face_count: 1,
       identity_match_score: 0.75,
       full_body_visible: true,
-      background_is_white_seamless: true,
+      background_is_clean_studio: true,
       no_crops: true,
       technical_quality_score: 0.75,
       notes: "Quality gate parse failed — manual review required",
@@ -232,7 +232,7 @@ export function evaluateGate(result: QualityGateResult): GateDecision {
   if (result.identity_match_score < 0.80) return "PENDING_USER_APPROVAL";
   if (result.technical_quality_score < 0.75) return "PENDING_USER_APPROVAL";
   if (!result.full_body_visible) return "PENDING_USER_APPROVAL";
-  if (!result.background_is_white_seamless) return "PENDING_USER_APPROVAL";
+  if (!result.background_is_clean_studio) return "PENDING_USER_APPROVAL";
 
   // All green
   return "AUTO_APPROVED";

@@ -23,7 +23,7 @@ export interface QualityGateResult {
   face_count: number;
   identity_match_score: number;   // 0-1; >=0.85 auto, 0.70-0.85 borderline, <0.70 fail
   full_body_visible: boolean;
-  background_is_white_seamless: boolean;
+  background_is_clean_studio: boolean;
   no_crops: boolean;
   technical_quality_score: number; // 0-1; >=0.75 auto
   notes: string;

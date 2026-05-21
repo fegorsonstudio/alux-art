@@ -99,7 +99,7 @@ export async function logBaseLockResult(params: {
   technicalQualityScore: number;
   faceDetected: boolean;
   fullBodyVisible: boolean;
-  backgroundWhite: boolean;
+  backgroundClean: boolean;
   notes: string;
 }): Promise<void> {
   await createRecord("Base Lock Results", {
@@ -111,7 +111,7 @@ export async function logBaseLockResult(params: {
     "Technical Quality Score": params.technicalQualityScore,
     "Face Detected": params.faceDetected,
     "Full Body Visible": params.fullBodyVisible,
-    "Background White": params.backgroundWhite,
+    "Background Clean": params.backgroundClean,
     "Notes": params.notes,
     "Timestamp": new Date().toISOString(),
   });

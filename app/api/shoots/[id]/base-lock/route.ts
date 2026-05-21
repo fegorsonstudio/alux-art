@@ -275,7 +275,7 @@ export async function POST(
   } catch (err) {
     console.error("[base-lock] quality gate failed (defaulting to borderline):", err);
     gateResult = { face_detected: true, face_count: 1, identity_match_score: 0.75,
-      full_body_visible: true, background_is_white_seamless: true, no_crops: true,
+      full_body_visible: true, background_is_clean_studio: true, no_crops: true,
       technical_quality_score: 0.75, notes: "Gate call failed — defaulting to borderline" };
     decision = "PENDING_USER_APPROVAL";
   }
@@ -292,7 +292,7 @@ export async function POST(
     technicalQualityScore: gateResult.technical_quality_score,
     faceDetected: gateResult.face_detected,
     fullBodyVisible: gateResult.full_body_visible,
-    backgroundWhite: gateResult.background_is_white_seamless,
+    backgroundClean: gateResult.background_is_clean_studio,
     notes: gateResult.notes,
   }).catch(() => {});
 
