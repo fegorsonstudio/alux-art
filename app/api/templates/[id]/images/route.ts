@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const body = await request.json() as Record<string, unknown>;
-  const { storagePath, displayOrder, purpose, tag, note } = body;
+  const { storagePath, displayOrder, purpose, tag, note, customName } = body;
 
   if (typeof storagePath !== "string" || !storagePath.startsWith(`${user.id}/`)) {
     return NextResponse.json({ error: "Invalid storage path" }, { status: 400 });
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     purpose,
     tag: purpose === "tagged" ? tag : null,
     note: (typeof note === "string" && note.trim()) ? note.trim() : null,
+    custom_name: (typeof customName === "string" && customName.trim()) ? customName.trim() : null,
     created_at: new Date().toISOString(),
   }).select().single();
 
@@ -71,7 +72,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const { imageId, tag, note } = body;
+  const { imageId, tag, note, customName } = body;
 
   if (typeof imageId !== "string") return NextResponse.json({ error: "imageId required" }, { status: 400 });
   if (tag !== undefined && (typeof tag !== "string" || !ALLOWED_TAGS.has(tag as string))) {
@@ -98,6 +99,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const updates: Record<string, unknown> = {};
   if (tag !== undefined) updates.tag = tag;
   if (note !== undefined) updates.note = (typeof note === "string" && note.trim()) ? note.trim() : null;
+  if (customName !== undefined) updates.custom_name = (typeof customName === "string" && customName.trim()) ? customName.trim() : null;
 
   if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 

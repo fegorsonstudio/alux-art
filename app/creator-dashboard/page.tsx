@@ -80,6 +80,7 @@ interface UploadedImage {
   storagePath: string;
   purpose: "inspiration" | "tagged";
   tag: string;
+  customName: string;
   note: string;
   uploading: boolean;
   fromDb?: boolean;
@@ -245,7 +246,7 @@ function CreatorDashboard() {
       const data = await res.json();
       const imgs = (data.template?.template_images ?? []) as Array<{
         id: string; storage_path: string; storage_bucket: string;
-        display_order: number; purpose: string; tag?: string; note?: string | null; signed_url?: string | null;
+        display_order: number; purpose: string; tag?: string; custom_name?: string | null; note?: string | null; signed_url?: string | null;
       }>;
       const existingImages: UploadedImage[] = imgs
         .filter(img => img.storage_path && img.signed_url)
@@ -255,6 +256,7 @@ function CreatorDashboard() {
           storagePath: img.storage_path,
           purpose: img.purpose as "inspiration" | "tagged",
           tag: img.tag ?? "OUTFIT",
+          customName: img.custom_name ?? "",
           note: img.note ?? "",
           uploading: false,
           fromDb: true,
@@ -432,7 +434,7 @@ function CreatorDashboard() {
     const tag = (pendingTag === "inspiration" || pendingTag === "__tagged__") ? "OUTFIT" : pendingTag;
     const newImgs: UploadedImage[] = toAdd.map(file => {
       const localId = crypto.randomUUID();
-      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, note: "", uploading: false };
+      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, customName: "", note: "", uploading: false };
     });
     setImages(prev => [...prev, ...newImgs]);
     newImgs.forEach(img => uploadFile(img.file!, img.localId));
@@ -509,6 +511,7 @@ function CreatorDashboard() {
           displayOrder: i,
           purpose: img.purpose,
           tag: img.purpose === "tagged" ? img.tag : undefined,
+          customName: img.purpose === "tagged" ? (img.customName?.trim() || undefined) : undefined,
           note: img.note?.trim() || undefined,
         }),
       });
@@ -519,7 +522,7 @@ function CreatorDashboard() {
       await fetch(`/api/templates/${templateId}/images`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId: img.localId, tag: img.tag, note: img.note?.trim() || null }),
+        body: JSON.stringify({ imageId: img.localId, tag: img.tag, customName: img.customName?.trim() || null, note: img.note?.trim() || null }),
       });
     }
 
@@ -799,6 +802,14 @@ function CreatorDashboard() {
                               </button>
                             ))}
                           </div>
+                          <input
+                            type="text"
+                            className={styles.noteInput}
+                            value={img.customName}
+                            onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, customName: e.target.value } : x))}
+                            placeholder="Reference name (optional)..."
+                            maxLength={80}
+                          />
                           <textarea
                             className={styles.noteInput}
                             value={img.note}

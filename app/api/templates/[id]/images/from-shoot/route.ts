@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Fetch the shoot image (must be COMPLETE and owned by this user)
   const { data: shootImage } = await service
     .from("shoot_images")
-    .select("id, shoot_id, slot, status, preview_url, download_url")
+    .select("id, shoot_id, slot, status, fal_url, preview_storage_path, preview_storage_bucket")
     .eq("id", body.shootImageId)
     .eq("user_id", user.id)
     .eq("status", "COMPLETE")
@@ -57,8 +57,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Image does not belong to a showcase for this template" }, { status: 403 });
   }
 
-  // Use download_url (fal CDN) or preview_url as source
-  const sourceUrl = shootImage.download_url || shootImage.preview_url;
+  // Resolve source URL: fal CDN first, then signed URL from storage
+  let sourceUrl: string | null = (shootImage as Record<string, unknown>).fal_url as string | null ?? null;
+  if (!sourceUrl) {
+    const previewPath = (shootImage as Record<string, unknown>).preview_storage_path as string | null;
+    const previewBucket = (shootImage as Record<string, unknown>).preview_storage_bucket as string | null;
+    if (previewPath) {
+      const { data: signed } = await service.storage
+        .from(previewBucket ?? "shoot-images")
+        .createSignedUrl(previewPath, 300);
+      sourceUrl = signed?.signedUrl ?? null;
+    }
+  }
   if (!sourceUrl) return NextResponse.json({ error: "No image URL available" }, { status: 422 });
 
   // Download the image from fal CDN
