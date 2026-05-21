@@ -10,18 +10,21 @@ export async function GET(request: NextRequest) {
 
   const service = createServiceClient();
 
-  let query = service
-    .from("templates")
-    .select("id, creator_id, title, description, category, tags, price_ngn, shoot_mode, aspect_ratio, package_size, purchase_count, avg_rating, rating_count, cover_storage_path, cover_bucket, created_at, creators(id, display_name, avatar_storage_path, avatar_bucket)")
-    .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
+  const buildQuery = (withRatings: boolean) => {
+    const cols = [
+      "id, creator_id, title, description, category, tags, price_ngn, shoot_mode, aspect_ratio, package_size, purchase_count",
+      withRatings ? "avg_rating, rating_count," : "",
+      "cover_storage_path, cover_bucket, created_at, creators(id, display_name, avatar_storage_path, avatar_bucket)",
+    ].filter(Boolean).join(" ");
+    let q = service.from("templates").select(cols).eq("status", "published").order("created_at", { ascending: false }).limit(limit + 1);
+    if (category && category !== "all") q = q.eq("category", category);
+    if (search) q = q.ilike("title", `%${search}%`);
+    if (cursor) q = q.lt("created_at", cursor);
+    return q;
+  };
 
-  if (category && category !== "all") query = query.eq("category", category);
-  if (search) query = query.ilike("title", `%${search}%`);
-  if (cursor) query = query.lt("created_at", cursor);
-
-  const { data, error } = await query;
+  let { data, error } = await buildQuery(true);
+  if (error) ({ data, error } = await buildQuery(false));
   if (error) return NextResponse.json({ error: "Failed to load templates" }, { status: 500 });
 
   const hasMore = (data?.length ?? 0) > limit;
