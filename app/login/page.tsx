@@ -25,9 +25,10 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError("");
+    const next = new URLSearchParams(location.search).get("next") ?? "/studio";
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${location.origin}/api/auth/callback` },
+      options: { redirectTo: `${location.origin}/api/auth/callback?next=${encodeURIComponent(next)}` },
     });
     if (error) {
       setError(error.message);

@@ -58,6 +58,7 @@ export default function TemplatePage() {
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
   const [shareLabel, setShareLabel] = useState("Share");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -68,6 +69,7 @@ export default function TemplatePage() {
       .then(d => { if (d.template) setTemplate(d.template); })
       .finally(() => setLoading(false));
     fetch("/api/user/creator-status").then(r => r.ok ? r.json() : { isCreator: false }).then(d => setIsCreator(d.isCreator));
+    fetch("/api/me").then(r => setIsLoggedIn(r.ok));
   }, [id]);
 
   const allImages = template ? [
@@ -97,7 +99,7 @@ export default function TemplatePage() {
       body: JSON.stringify({ code: couponCode, templateId: id }),
     });
     if (res.status === 401) {
-      window.location.href = `/login?redirect=/marketplace/${id}`;
+      window.location.href = `/login?next=/marketplace/${id}`;
       return;
     }
     const data = await res.json();
@@ -160,9 +162,11 @@ export default function TemplatePage() {
       <header className={styles.nav}>
         <Link href="/marketplace" className={styles.backLink}>← Marketplace</Link>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
-        {isCreator
-          ? <Link href="/creator-dashboard" className={styles.backLink}>Creator Dashboard →</Link>
-          : <Link href="/become-creator" className={styles.backLink}>Become a Creator</Link>
+        {isLoggedIn === false
+          ? <Link href={`/login?next=/marketplace/${id}`} className={styles.backLink}>Sign in →</Link>
+          : isCreator
+            ? <Link href="/creator-dashboard" className={styles.backLink}>Creator Dashboard →</Link>
+            : <Link href="/become-creator" className={styles.backLink}>Become a Creator</Link>
         }
       </header>
 
