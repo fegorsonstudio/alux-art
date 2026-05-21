@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <div className={styles.prose}>
           <h2>1. Who We Are</h2>
           <p>
-            Alux Art and Frames ("Alux Art", "we", "us") operates the Virtual Photo Studio at
+            Alux Art and Frames (&ldquo;Alux Art&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) operates the Virtual Photo Studio at
             aluxartandframes.shop. This Privacy Policy explains what personal data we collect,
             why we collect it, and how we protect it.
           </p>
@@ -120,7 +120,7 @@ export default function PrivacyPage() {
           </p>
           <p>
             <strong>Supabase:</strong> Hosts our database and file storage. Data is stored
-            in secure, encrypted infrastructure. Supabase's privacy policy applies to
+            in secure, encrypted infrastructure. Supabase&apos;s privacy policy applies to
             infrastructure-level processing.
           </p>
           <p>

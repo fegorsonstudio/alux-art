@@ -19,7 +19,7 @@ export default function TermsPage() {
         <div className={styles.prose}>
           <h2>1. Acceptance</h2>
           <p>
-            By accessing or using Alux Art at aluxartandframes.shop ("we", "us", "the Platform"),
+            By accessing or using Alux Art at aluxartandframes.shop (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;the Platform&rdquo;),
             you agree to these Terms of Service. If you do not agree, do not use the Platform.
           </p>
 
@@ -72,8 +72,8 @@ export default function TermsPage() {
           <h2>7. Marketplace and Templates</h2>
           <p>
             The Platform hosts shoot templates created by independent photographer-creators
-            ("Creators"). When you purchase a template, you are purchasing the right to use that
-            Creator's style and direction for AI portrait generation in a single shoot.
+            (&ldquo;Creators&rdquo;). When you purchase a template, you are purchasing the right to use that
+            Creator&apos;s style and direction for AI portrait generation in a single shoot.
           </p>
           <p>
             <strong>Refunds are not available once image generation begins.</strong> If a shoot
@@ -110,7 +110,7 @@ export default function TermsPage() {
 
           <h2>11. Disclaimers</h2>
           <p>
-            The Service is provided "as is" and "as available." We do not guarantee that every
+            The Service is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; We do not guarantee that every
             generated image will meet your expectations. AI image generation is probabilistic
             and results vary by input quality, template complexity, and model behaviour. We make
             no warranty that the Platform will be uninterrupted, error-free, or available at
