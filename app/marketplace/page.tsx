@@ -93,7 +93,7 @@ export default function MarketplacePage() {
       <header className={styles.nav}>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
         <div className={styles.navRight}>
-          <Link href="/" className={styles.navLink}>Studio</Link>
+          <Link href="/studio" className={styles.navLink}>Studio</Link>
           {isCreator
             ? <Link href="/creator-dashboard" className={styles.navCta}>Creator Dashboard</Link>
             : <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
