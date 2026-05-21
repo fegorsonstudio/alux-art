@@ -37,6 +37,8 @@ export async function middleware(request: NextRequest) {
   const p = request.nextUrl.pathname;
   const isPublicPath =
     p === "/" ||
+    p === "/terms" ||
+    p === "/privacy" ||
     p === "/marketplace" ||
     (p.startsWith("/marketplace/") && !p.includes("/book")) ||
     p.startsWith("/creators/");

@@ -115,7 +115,11 @@ export default async function LandingPage() {
       {/* Footer */}
       <footer className={styles.footer}>
         <span className={styles.footerBrand}>Alux Art</span>
-        <span className={styles.footerNote}>Built for creators, professionals, and anyone who wants to look like the cover.</span>
+        <div className={styles.footerLinks}>
+          <Link href="/terms" className={styles.footerLink}>Terms of Service</Link>
+          <Link href="/privacy" className={styles.footerLink}>Privacy Policy</Link>
+        </div>
+        <span className={styles.footerNote}>© 2026 Alux Art and Frames. All rights reserved.</span>
       </footer>
     </div>
   );
