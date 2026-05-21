@@ -45,7 +45,7 @@ export default async function LandingPage() {
 
       {/* Hero */}
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>Tired of ₦150,000 photo shoots that take 3 weeks to book?</p>
+        <p className={styles.eyebrow}>Tired of expensive shoots, the planning, and waiting weeks just to get your photos?</p>
         <h1 className={styles.headline}>
           Ready to look<br />like the cover?
         </h1>
@@ -55,7 +55,6 @@ export default async function LandingPage() {
         </p>
         <div className={styles.heroActions}>
           <Link href="/marketplace" className={styles.primaryBtn}>Browse styles</Link>
-          <span className={styles.pricingNote}>Starts at ₦15,000 · Results in minutes</span>
         </div>
       </section>
 
