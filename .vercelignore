@@ -6,7 +6,6 @@ scripts/run-test-shoot.mjs
 # Marketing docs / PDFs
 *.pdf
 *.pptx
-*.PNG
 ALUX_ART_MARKETING_AGENT.md
 ALUX_SOCIAL_AUTOMATION_SETUP.md
 BRAND_GUIDE.md
