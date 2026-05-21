@@ -128,7 +128,6 @@ function CreatorDashboard() {
   const [formError, setFormError] = useState("");
   const imgInputRef = useRef<HTMLInputElement>(null);
   const sampleImgInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
   const formPanelRef = useRef<HTMLDivElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [pendingTag, setPendingTag] = useState<string>("inspiration");
@@ -520,19 +519,6 @@ function CreatorDashboard() {
     setSampleImages(prev => prev.filter(s => s.localId !== item.localId));
   };
 
-  const uploadCover = async (file: File) => {
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "template-images" }),
-    });
-    if (!res.ok) return;
-    const { uploadUrl, storagePath } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-    setForm(f => ({ ...f, coverStoragePath: storagePath }));
-    setCoverPreview(URL.createObjectURL(file));
-  };
-
   const saveTemplate = async () => {
     setFormError("");
     if (!form.title.trim()) { setFormError("Title is required"); return; }
@@ -552,6 +538,8 @@ function CreatorDashboard() {
     if (sampleImages.some(s => s.uploading)) { setFormError("Please wait for all sample images to finish uploading"); return; }
 
     setSaving(true);
+    // First gallery image is automatically the marketplace card thumbnail.
+    const coverFromGallery = sampleImages[0]?.storagePath;
     const body = {
       title: form.title,
       description: form.description,
@@ -564,7 +552,7 @@ function CreatorDashboard() {
       aspectRatio: form.aspectRatio,
       packageSize: form.packageSize,
       status: form.status,
-      coverStoragePath: form.coverStoragePath || undefined,
+      coverStoragePath: coverFromGallery || form.coverStoragePath || undefined,
     };
 
     let templateId: string;
@@ -882,27 +870,6 @@ function CreatorDashboard() {
             </label>
           </div>
 
-          {/* Cover image */}
-          <div className={styles.field}>
-            <span className={styles.label}>Cover image</span>
-            <div className={styles.coverUpload} onClick={() => coverInputRef.current?.click()} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && coverInputRef.current?.click()}>
-              {coverPreview
-                ? <img src={coverPreview} alt="Cover" className={styles.coverPreview} />
-                : <span className={styles.coverPlaceholder}>Click to upload cover image</span>
-              }
-            </div>
-            <input type="file" accept="image/*" ref={coverInputRef} className={styles.hidden} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCover(f); }} />
-            {images.length >= 2 && (
-              <button
-                type="button"
-                className={styles.collageCoverBtn}
-                onClick={() => setShowCollageEditor(true)}
-              >
-                Create collage cover
-              </button>
-            )}
-          </div>
-
           {/* Reference images — mode-aware */}
           <div className={styles.field}>
             <span className={styles.label}>Reference images ({images.length}/8)</span>
@@ -1035,20 +1002,21 @@ function CreatorDashboard() {
             <input type="file" accept="image/*" multiple ref={imgInputRef} className={styles.hidden} onChange={e => { if (e.target.files) addImages(e.target.files); e.target.value = ""; }} />
           </div>
 
-          {/* Sample / gallery images */}
+          {/* Gallery images — public showcase; first image = marketplace card thumbnail */}
           <div className={styles.field}>
-            <span className={styles.label}>Sample gallery images ({sampleImages.length}/10)</span>
+            <span className={styles.label}>Gallery images ({sampleImages.length}/10)</span>
             <p className={styles.fieldHint}>
-              Upload up to 10 example output images to show buyers what this template produces. These are displayed in the marketplace gallery. Workflow reference images are kept private.
+              Upload up to 10 images shown in the public gallery. The first image is used as the template thumbnail on the marketplace listing. Workflow reference images are kept private from buyers.
             </p>
             <div className={styles.imagesGrid}>
-              {sampleImages.map(item => (
+              {sampleImages.map((item, idx) => (
                 <div key={item.localId} className={styles.imgItem}>
+                  {idx === 0 && <div className={styles.imgDbBadge} style={{ background: "var(--accent, #2d9)" }}>cover</div>}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.preview} alt="" className={styles.imgPreview} />
                   {item.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                   {item.error && <div className={styles.imgError}>{item.error}</div>}
-                  {item.fromDb && <div className={styles.imgDbBadge}>saved</div>}
+                  {item.fromDb && idx !== 0 && <div className={styles.imgDbBadge}>saved</div>}
                   <button
                     type="button"
                     className={styles.imgRemove}
@@ -1058,7 +1026,7 @@ function CreatorDashboard() {
               ))}
               {sampleImages.length < 10 && (
                 <button type="button" className={styles.addImgBtn} onClick={() => sampleImgInputRef.current?.click()}>
-                  + Add sample
+                  + Add image
                 </button>
               )}
             </div>
@@ -1070,6 +1038,15 @@ function CreatorDashboard() {
               className={styles.hidden}
               onChange={e => { if (e.target.files) addSampleFiles(e.target.files); e.target.value = ""; }}
             />
+            {images.length >= 2 && (
+              <button
+                type="button"
+                className={styles.collageCoverBtn}
+                onClick={() => setShowCollageEditor(true)}
+              >
+                Create collage cover from workflow refs
+              </button>
+            )}
           </div>
 
           <div className={styles.formActions}>

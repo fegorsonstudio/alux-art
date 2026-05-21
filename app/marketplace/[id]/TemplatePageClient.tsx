@@ -143,11 +143,14 @@ export default function TemplatePage() {
     document.head.appendChild(link);
   }, [storFont.googleUrl]);
 
-  // Gallery shows cover + sample images only; workflow refs (purpose==="tagged") are hidden pre-payment.
-  const allImages = template ? [
-    ...(template.coverUrl ? [{ id: "__cover", url: template.coverUrl, purpose: "cover", displayOrder: -1, tag: undefined }] : []),
-    ...template.images.filter(img => img.purpose === "sample"),
-  ] : [];
+  // Gallery: if creator has uploaded sample/gallery images use those; otherwise fall back to the cover.
+  // Workflow refs (tagged + inspiration) are hidden pre-payment.
+  const sampleImgs = template ? template.images.filter(img => img.purpose === "sample") : [];
+  const allImages = template ? (
+    sampleImgs.length > 0
+      ? sampleImgs
+      : (template.coverUrl ? [{ id: "__cover", url: template.coverUrl, purpose: "cover", displayOrder: -1, tag: undefined }] : [])
+  ) : [];
 
   useEffect(() => {
     const len = allImages.length;
