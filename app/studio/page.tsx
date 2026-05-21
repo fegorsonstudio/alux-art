@@ -59,7 +59,6 @@ function getShootPackageSize(shoot: Shoot | null): ShootPackageSize {
 }
 
 export default function WorkspacePage() {
-  const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [isCreator, setIsCreator] = useState(false);
   const [packages, setPackages] = useState<PackagePricing[]>(DEFAULT_PACKAGES);
@@ -723,7 +722,7 @@ export default function WorkspacePage() {
     }
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/login"; };
+  const signOut = async () => { await createClient().auth.signOut(); window.location.href = "/login"; };
 
   const turnIntoTemplate = async () => {
     if (!currentShoot) return;
