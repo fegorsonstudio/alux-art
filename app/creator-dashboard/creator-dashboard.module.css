@@ -344,6 +344,22 @@ select.input { appearance: none; cursor: pointer; }
 .coverPlaceholder { color: #7aafb4; font-size: 0.82rem; }
 .hidden { display: none; }
 
+.collageCoverBtn {
+  margin-top: 8px;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(47, 142, 154, 0.38);
+  background: rgba(255, 255, 255, 0.7);
+  color: #2f8e9a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+  display: block;
+}
+.collageCoverBtn:hover { border-color: rgba(47, 142, 154, 0.65); background: rgba(47, 142, 154, 0.06); }
+
 /* ---- Field hint ---- */
 .fieldHint { font-size: 0.76rem; color: #88a4a8; margin: 0 0 8px 0; line-height: 1.5; }
 

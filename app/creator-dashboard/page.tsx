@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import styles from "./creator-dashboard.module.css";
+import CollageEditor, { type CollageImage } from "./CollageEditor";
 
 const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
 type TemplateTag = typeof TEMPLATE_TAGS[number];
@@ -133,6 +134,7 @@ function CreatorDashboard() {
   const [settingCover, setSettingCover] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
+  const [showCollageEditor, setShowCollageEditor] = useState(false);
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = useCallback(async () => {
@@ -720,6 +722,15 @@ function CreatorDashboard() {
               }
             </div>
             <input type="file" accept="image/*" ref={coverInputRef} className={styles.hidden} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCover(f); }} />
+            {images.length >= 2 && (
+              <button
+                type="button"
+                className={styles.collageCoverBtn}
+                onClick={() => setShowCollageEditor(true)}
+              >
+                Create collage cover
+              </button>
+            )}
           </div>
 
           {/* Reference images — mode-aware */}
@@ -997,6 +1008,22 @@ function CreatorDashboard() {
       )}
 
       </div>
+
+      {/* Collage cover editor modal */}
+      {showCollageEditor && (
+        <CollageEditor
+          templateId={panel === "create" ? "" : panel}
+          images={images
+            .filter(img => img.storagePath || img.fromDb)
+            .map((img): CollageImage => ({ id: img.localId, url: img.preview }))}
+          onSave={(storagePath, previewUrl) => {
+            setForm(f => ({ ...f, coverStoragePath: storagePath }));
+            setCoverPreview(previewUrl);
+            setShowCollageEditor(false);
+          }}
+          onClose={() => setShowCollageEditor(false)}
+        />
+      )}
     </div>
   );
 }
