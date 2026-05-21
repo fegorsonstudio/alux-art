@@ -10,22 +10,37 @@ export async function GET(request: NextRequest) {
 
   const service = createServiceClient();
 
-  const buildQuery = (withRatings: boolean) => {
-    const cols = [
-      "id, creator_id, title, description, category, tags, price_ngn, shoot_mode, aspect_ratio, package_size, purchase_count",
-      withRatings ? "avg_rating, rating_count," : "",
-      "cover_storage_path, cover_bucket, created_at, creators(id, display_name, avatar_storage_path, avatar_bucket)",
-    ].filter(Boolean).join(" ");
-    let q = service.from("templates").select(cols).eq("status", "published").order("created_at", { ascending: false }).limit(limit + 1);
-    if (category && category !== "all") q = q.eq("category", category);
-    if (search) q = q.ilike("title", `%${search}%`);
-    if (cursor) q = q.lt("created_at", cursor);
-    return q;
-  };
+  let q = service
+    .from("templates")
+    .select("id, creator_id, title, description, category, tags, price_ngn, shoot_mode, aspect_ratio, package_size, purchase_count, cover_storage_path, cover_bucket, created_at, creators(id, display_name, avatar_storage_path, avatar_bucket)")
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(limit + 1);
 
-  let { data, error } = await buildQuery(true);
-  if (error) ({ data, error } = await buildQuery(false));
+  if (category && category !== "all") q = q.eq("category", category);
+  if (search) q = q.ilike("title", `%${search}%`);
+  if (cursor) q = q.lt("created_at", cursor);
+
+  const { data, error } = await q;
   if (error) return NextResponse.json({ error: "Failed to load templates" }, { status: 500 });
+
+  // Attempt to fetch ratings separately (graceful no-op if migration 015 not yet applied)
+  const templateIds = (data ?? []).map(t => t.id);
+  let ratingsMap: Record<string, { avg: number | null; count: number }> = {};
+  if (templateIds.length > 0) {
+    const { data: ratingRows } = await service
+      .from("templates")
+      .select("id, avg_rating, rating_count")
+      .in("id", templateIds);
+    if (ratingRows) {
+      for (const r of ratingRows) {
+        ratingsMap[r.id] = {
+          avg: (r as Record<string, unknown>).avg_rating as number | null ?? null,
+          count: (r as Record<string, unknown>).rating_count as number ?? 0,
+        };
+      }
+    }
+  }
 
   const hasMore = (data?.length ?? 0) > limit;
   const rows = (data ?? []).slice(0, limit);
@@ -61,8 +76,8 @@ export async function GET(request: NextRequest) {
       aspectRatio: t.aspect_ratio,
       packageSize: t.package_size,
       purchaseCount: t.purchase_count,
-      avgRating: (t as Record<string, unknown>).avg_rating as number | null ?? null,
-      ratingCount: (t as Record<string, unknown>).rating_count as number ?? 0,
+      avgRating: ratingsMap[t.id]?.avg ?? null,
+      ratingCount: ratingsMap[t.id]?.count ?? 0,
       coverUrl,
       createdAt: t.created_at,
     };
