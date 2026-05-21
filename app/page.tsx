@@ -47,7 +47,7 @@ export default async function LandingPage() {
       <section className={styles.hero}>
         <p className={styles.eyebrow}>Tired of expensive shoots, the planning, and waiting weeks just to get your photos?</p>
         <h1 className={styles.headline}>
-          Ready to look<br />like the cover?
+          Ready to see yourself<br />in a whole new light?
         </h1>
         <p className={styles.subline}>
           Upload 3 selfies. Choose a style. Get 10 editorial portraits in minutes.
