@@ -11,6 +11,7 @@ interface TemplateImage {
   url: string | null;
   purpose: string;
   tag?: string;
+  customName?: string | null;
   storagePath: string;
   storageBucket: string;
   displayOrder: number;
@@ -50,10 +51,12 @@ interface NewIdentityUpload {
 interface TaggedRefState {
   id: string;
   tag: string;
+  customName: string;
   storagePath: string;
   storageBucket: string;
   url: string;
   isReplaced: boolean;
+  note: string;
 }
 
 interface CouponResult {
@@ -83,6 +86,7 @@ export default function BookPage() {
   const [replacingTag, setReplacingTag] = useState<string | null>(null);
   const [addingRef, setAddingRef] = useState(false);
   const [addRefTag, setAddRefTag] = useState("OUTFIT");
+  const [addRefNote, setAddRefNote] = useState("");
   const addRefInputRef = useRef<HTMLInputElement>(null);
 
   const [couponCode, setCouponCode] = useState("");
@@ -114,10 +118,12 @@ export default function BookPage() {
         setTaggedRefs(tagged.map(img => ({
           id: img.id,
           tag: img.tag!,
+          customName: img.customName || img.tag!,
           storagePath: img.storagePath,
           storageBucket: img.storageBucket,
-          url: img.url ?? "",
+          url: "",
           isReplaced: false,
+          note: "",
         })));
       }
       if (idData.refs) setSavedRefs(idData.refs);
@@ -215,12 +221,15 @@ export default function BookPage() {
     setTaggedRefs(prev => [...prev, {
       id: crypto.randomUUID(),
       tag: addRefTag,
+      customName: addRefTag,
       storagePath,
       storageBucket,
       url: URL.createObjectURL(file),
       isReplaced: true,
+      note: addRefNote.trim(),
     }]);
     setAddingRef(false);
+    setAddRefNote("");
   };
 
   // ── Coupon ──────────────────────────────────────────────────────────────────
@@ -264,7 +273,7 @@ export default function BookPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         identityRefs: allIdentityRefs,
-        taggedRefs: taggedRefs.map(r => ({ tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket })),
+        taggedRefs: taggedRefs.map(r => ({ tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket, note: r.note.trim() || undefined })),
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: selectedPkg,
         currency,
@@ -387,33 +396,33 @@ export default function BookPage() {
           )}
         </section>
 
-        {/* Tagged refs section */}
-        {(taggedRefs.length > 0 || addingRef) && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Reference images</h2>
-            <p className={styles.sectionHint}>
-              Creator&apos;s references are kept private until your shoot generates. Replace any with your own image, or add new ones.
-            </p>
+        {/* Reference customisation section — always shown */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Reference images</h2>
+          <p className={styles.sectionHint}>
+            Creator references stay private. Add a styling note to any slot, replace it with your own image, or remove it. You can also add brand-new reference slots.
+          </p>
 
-            <div className={styles.refGrid}>
+          {taggedRefs.length > 0 && (
+            <div className={styles.refList}>
               {taggedRefs.map(ref => (
-                <div key={ref.id} className={`${styles.refCard} ${ref.isReplaced ? styles.refCardReplaced : ""}`}>
-                  {ref.isReplaced && ref.url
-                    ? <img src={ref.url} alt={ref.tag} className={styles.refImg} />
-                    : (
-                      <div className={styles.refPrivate}>
-                        <span className={styles.refPrivateLock}>🔒</span>
-                        <span className={styles.refPrivateLabel}>Private ref</span>
-                      </div>
-                    )
-                  }
-                  <div className={styles.refMeta}>
-                    <span className={styles.refTag}>{ref.tag}</span>
-                    {ref.isReplaced && <span className={styles.yourImage}>Your image</span>}
+                <div key={ref.id} className={`${styles.refListRow} ${ref.isReplaced ? styles.refListRowReplaced : ""}`}>
+                  <div className={styles.refListLeft}>
+                    {ref.isReplaced && ref.url && (
+                      <img src={ref.url} alt={ref.tag} className={styles.refThumbSmall} />
+                    )}
+                    <span className={styles.refTag}>{ref.customName}</span>
                   </div>
-                  <div className={styles.refActions}>
+                  <input
+                    type="text"
+                    className={styles.refNoteInput}
+                    placeholder="Styling note, e.g. change color to burgundy…"
+                    value={ref.note}
+                    onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
+                  />
+                  <div className={styles.refListActions}>
                     <button type="button" className={styles.refBtn} onClick={() => startReplace(ref.id)}>
-                      Replace
+                      {ref.isReplaced ? "Re-upload" : "Replace"}
                     </button>
                     <button type="button" className={`${styles.refBtn} ${styles.refBtnRemove}`} onClick={() => setTaggedRefs(prev => prev.filter(r => r.id !== ref.id))}>
                       ×
@@ -422,70 +431,65 @@ export default function BookPage() {
                 </div>
               ))}
             </div>
+          )}
 
-            {/* Add custom reference */}
-            <div className={styles.addRefRow}>
-              {!addingRef && (
-                <button type="button" className={styles.addRefBtn} onClick={() => setAddingRef(true)}>
-                  + Add your own reference
-                </button>
-              )}
-              {addingRef && (
-                <div className={styles.addRefForm}>
-                  <select className={styles.addRefSelect} value={addRefTag} onChange={e => setAddRefTag(e.target.value)}>
-                    {["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"].map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={styles.addRefUploadBtn}
-                    onClick={() => addRefInputRef.current?.click()}
-                  >
-                    Upload image
-                  </button>
-                  <button type="button" className={styles.addRefCancelBtn} onClick={() => setAddingRef(false)}>Cancel</button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={addRefInputRef}
-                    className={styles.hidden}
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleAddRefFile(file);
-                      e.target.value = "";
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            <input
-              type="file"
-              accept="image/*"
-              ref={replaceInputRef}
-              className={styles.hidden}
-              onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) { replaceFileRef.current = file; handleReplaceFile(file); }
-                e.target.value = "";
-              }}
-            />
-          </section>
-        )}
-
-        {/* Allow adding refs even when template has none */}
-        {taggedRefs.length === 0 && !addingRef && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Reference images</h2>
-            <p className={styles.sectionHint}>Optionally add your own reference images to guide the shoot.</p>
-            <div className={styles.addRefRow}>
+          {/* Add custom reference */}
+          <div className={styles.addRefRow}>
+            {!addingRef && (
               <button type="button" className={styles.addRefBtn} onClick={() => setAddingRef(true)}>
                 + Add your own reference
               </button>
-            </div>
-          </section>
-        )}
+            )}
+            {addingRef && (
+              <div className={styles.addRefForm}>
+                <select className={styles.addRefSelect} value={addRefTag} onChange={e => setAddRefTag(e.target.value)}>
+                  {["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"].map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  className={styles.refNoteInput}
+                  placeholder="Styling note (optional)…"
+                  value={addRefNote}
+                  onChange={e => setAddRefNote(e.target.value)}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button
+                  type="button"
+                  className={styles.addRefUploadBtn}
+                  onClick={() => addRefInputRef.current?.click()}
+                >
+                  Upload image
+                </button>
+                <button type="button" className={styles.addRefCancelBtn} onClick={() => { setAddingRef(false); setAddRefNote(""); }}>Cancel</button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={addRefInputRef}
+                  className={styles.hidden}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleAddRefFile(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <input
+            type="file"
+            accept="image/*"
+            ref={replaceInputRef}
+            className={styles.hidden}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) { replaceFileRef.current = file; handleReplaceFile(file); }
+              e.target.value = "";
+            }}
+          />
+        </section>
       </div>
 
       {/* Payment footer */}

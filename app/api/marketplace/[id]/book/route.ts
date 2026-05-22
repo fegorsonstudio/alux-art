@@ -12,6 +12,7 @@ interface RefInput {
 
 interface TaggedRefInput extends RefInput {
   tag: string;
+  note?: string;
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     purpose: "tagged",
     tag: ref.tag,
     custom_name: null,
-    note: null,
+    note: ref.note?.trim() || null,
     name: ref.name ?? `ref-${i + 1}`,
     type: ref.type ?? "image/jpeg",
     size: ref.size ?? 1,

@@ -35,7 +35,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const rawImages = (template.template_images ?? []) as Array<{
     id: string; storage_path: string; storage_bucket: string;
-    display_order: number; purpose: string; tag?: string; created_at: string;
+    display_order: number; purpose: string; tag?: string | null;
+    custom_name?: string | null; created_at: string;
   }>;
 
   const images = await Promise.all(
@@ -60,6 +61,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           displayOrder: img.display_order,
           purpose: img.purpose,
           tag: img.tag ?? null,
+          customName: img.custom_name ?? null,
           url: signedUrl,
           createdAt: img.created_at,
         };

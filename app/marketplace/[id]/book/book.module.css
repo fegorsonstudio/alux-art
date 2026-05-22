@@ -333,6 +333,67 @@
 
 .refBtnRemove:hover { border-color: rgba(167, 70, 60, 0.48); color: #8b2c24; background: rgba(167, 70, 60, 0.04); }
 
+/* ---- Reference list (replaces card grid) ---- */
+.refList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refListRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(67, 159, 169, 0.16);
+  border-radius: 10px;
+  transition: border-color 0.15s;
+}
+
+.refListRow:hover { border-color: rgba(67, 159, 169, 0.32); }
+
+.refListRowReplaced { border-color: rgba(47, 142, 154, 0.38) !important; }
+
+.refListLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.refThumbSmall {
+  width: 32px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid rgba(67, 159, 169, 0.22);
+  flex-shrink: 0;
+}
+
+.refNoteInput {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(67, 159, 169, 0.18);
+  border-radius: 7px;
+  color: #263235;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.refNoteInput:focus { border-color: rgba(67, 159, 169, 0.5); }
+.refNoteInput::placeholder { color: #9aafb3; }
+
+.refListActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 /* ---- Add custom reference ---- */
 .addRefRow {
   display: flex;
@@ -523,7 +584,8 @@
   .nav { padding: 12px 16px; }
   .infoBar { padding: 12px 16px; }
   .payFooter { padding: 12px 16px; }
-  .refGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .refListRow { flex-wrap: wrap; }
+  .refNoteInput { min-width: 100%; order: 3; }
   .couponInput { width: 120px; }
   .payBtn { padding: 10px 18px; font-size: 0.88rem; }
 }
