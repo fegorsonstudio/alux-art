@@ -7,7 +7,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: creator, error } = await service
     .from("creators")
-    .select("id, display_name, bio, avatar_storage_path, avatar_bucket, instagram_url, website_url, created_at")
+    .select("*")
     .eq("id", id)
     .eq("is_active", true)
     .single();
@@ -57,6 +57,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       instagramUrl: creator.instagram_url,
       websiteUrl: creator.website_url,
       createdAt: creator.created_at,
+      theme: creator.theme ?? "alux",
+      fontFamily: creator.font_family ?? "default",
       templates: templatesWithUrls,
     },
   });

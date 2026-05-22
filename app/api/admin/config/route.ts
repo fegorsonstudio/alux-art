@@ -12,6 +12,8 @@ type AdminConfig = {
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
+  platform_price_1_ngn: number;
+  platform_price_5_ngn: number;
   prompt_only_mode: boolean;
   polish_pass_enabled: boolean;
 };
@@ -38,6 +40,8 @@ export async function GET() {
     locked_base_rollout_percent: parseInt(map.locked_base_rollout_percent ?? "100", 10),
     locked_base_enabled: map.locked_base_enabled === "true",
     platform_fee_ngn: parseInt(map.platform_fee_ngn ?? "15000", 10),
+    platform_price_1_ngn: parseInt(map.platform_price_1_ngn ?? "0", 10) || Math.ceil(parseInt(map.platform_fee_ngn ?? "15000", 10) * 0.1),
+    platform_price_5_ngn: parseInt(map.platform_price_5_ngn ?? "0", 10) || Math.ceil(parseInt(map.platform_fee_ngn ?? "15000", 10) * 0.5),
     prompt_only_mode: map.prompt_only_mode === "true",
     polish_pass_enabled: map.polish_pass_enabled === "true",
   } satisfies AdminConfig);
@@ -83,6 +87,22 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "platform_fee_ngn must be an integer ≥ 1000" }, { status: 400 });
     }
     updates.push({ key: "platform_fee_ngn", value: String(fee), updated_at: now });
+  }
+
+  if (body.platform_price_1_ngn !== undefined) {
+    const p = Number(body.platform_price_1_ngn);
+    if (!Number.isInteger(p) || p < 100) {
+      return NextResponse.json({ error: "platform_price_1_ngn must be an integer ≥ 100" }, { status: 400 });
+    }
+    updates.push({ key: "platform_price_1_ngn", value: String(p), updated_at: now });
+  }
+
+  if (body.platform_price_5_ngn !== undefined) {
+    const p = Number(body.platform_price_5_ngn);
+    if (!Number.isInteger(p) || p < 500) {
+      return NextResponse.json({ error: "platform_price_5_ngn must be an integer ≥ 500" }, { status: 400 });
+    }
+    updates.push({ key: "platform_price_5_ngn", value: String(p), updated_at: now });
   }
 
   if (body.prompt_only_mode !== undefined) {

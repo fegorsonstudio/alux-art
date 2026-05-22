@@ -63,6 +63,8 @@ interface ModelConfig {
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
+  platform_price_1_ngn: number;
+  platform_price_5_ngn: number;
   prompt_only_mode: boolean;
   polish_pass_enabled: boolean;
 }
@@ -197,111 +199,6 @@ function MigrationsCard() {
   );
 }
 
-interface AdminTemplate {
-  id: string;
-  title: string;
-  status: string;
-  price_ngn: number;
-  price_1_ngn: number | null;
-  price_5_ngn: number | null;
-  creators: { display_name: string } | null;
-}
-
-function AdminTemplatesCard() {
-  const [templates, setTemplates] = useState<AdminTemplate[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [prices, setPrices] = useState<Record<string, { p10: string; p1: string; p5: string }>>({});
-  const [saving, setSaving] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch("/api/admin/templates")
-      .then(r => r.ok ? r.json() : { templates: [] })
-      .then(d => {
-        setTemplates(d.templates ?? []);
-        const init: Record<string, { p10: string; p1: string; p5: string }> = {};
-        for (const t of (d.templates ?? [])) {
-          init[t.id] = { p10: String(t.price_ngn), p1: t.price_1_ngn != null ? String(t.price_1_ngn) : "", p5: t.price_5_ngn != null ? String(t.price_5_ngn) : "" };
-        }
-        setPrices(init);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const savePrice = async (templateId: string) => {
-    const p = prices[templateId];
-    if (!p) return;
-    setSaving(templateId);
-    await fetch("/api/admin/templates", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: templateId,
-        priceNgn: p.p10 ? Number(p.p10) : undefined,
-        price1Ngn: p.p1 ? Number(p.p1) : null,
-        price5Ngn: p.p5 ? Number(p.p5) : null,
-      }),
-    });
-    setSaving(null);
-    setSaved(templateId);
-    setTimeout(() => setSaved(s => s === templateId ? null : s), 2000);
-  };
-
-  return (
-    <div className={styles.card}>
-      <h2 className={styles.cardTitle}>Template Prices</h2>
-      {loading && <p style={{ color: "#7aafb4", fontSize: "0.8rem" }}>Loading…</p>}
-      {!loading && templates.length === 0 && <p style={{ color: "#7aafb4", fontSize: "0.8rem" }}>No templates yet.</p>}
-      <table className={styles.table}>
-        <thead><tr><th>Title</th><th>Creator</th><th>Status</th><th>10-img</th><th>5-img</th><th>1-img</th><th></th></tr></thead>
-        <tbody>
-          {templates.map(t => {
-            const p = prices[t.id] ?? { p10: "", p1: "", p5: "" };
-            const isOpen = expanded === t.id;
-            return (
-              <>
-                <tr key={t.id}>
-                  <td>{t.title}</td>
-                  <td style={{ color: "#7aafb4", fontSize: "0.78rem" }}>{(t.creators as { display_name: string } | null)?.display_name ?? "—"}</td>
-                  <td><span className={t.status === "published" ? styles.activeBadge : styles.bannedBadge}>{t.status}</span></td>
-                  <td>₦{t.price_ngn?.toLocaleString()}</td>
-                  <td>{t.price_5_ngn != null ? `₦${t.price_5_ngn.toLocaleString()}` : "—"}</td>
-                  <td>{t.price_1_ngn != null ? `₦${t.price_1_ngn.toLocaleString()}` : "—"}</td>
-                  <td><button className={styles.banBtn} onClick={() => setExpanded(isOpen ? null : t.id)}>{isOpen ? "Close" : "Edit"}</button></td>
-                </tr>
-                {isOpen && (
-                  <tr key={`${t.id}-edit`}>
-                    <td colSpan={7}>
-                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", padding: "8px 0" }}>
-                        <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: "0.75rem", color: "#4e7076" }}>
-                          10-image price (₦) *
-                          <input className={styles.priceInput} type="number" value={p.p10} onChange={e => setPrices(prev => ({ ...prev, [t.id]: { ...p, p10: e.target.value } }))} style={{ width: 110 }} />
-                        </label>
-                        <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: "0.75rem", color: "#4e7076" }}>
-                          5-image price (₦)
-                          <input className={styles.priceInput} type="number" value={p.p5} onChange={e => setPrices(prev => ({ ...prev, [t.id]: { ...p, p5: e.target.value } }))} style={{ width: 110 }} placeholder="optional" />
-                        </label>
-                        <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: "0.75rem", color: "#4e7076" }}>
-                          1-image price (₦)
-                          <input className={styles.priceInput} type="number" value={p.p1} onChange={e => setPrices(prev => ({ ...prev, [t.id]: { ...p, p1: e.target.value } }))} style={{ width: 110 }} placeholder="optional" />
-                        </label>
-                        <button className={styles.saveBtn} style={{ padding: "8px 16px", fontSize: "0.78rem" }} onClick={() => savePrice(t.id)} disabled={saving === t.id}>
-                          {saving === t.id ? "Saving…" : saved === t.id ? "Saved ✓" : "Save prices"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
@@ -314,10 +211,13 @@ export default function AdminPage() {
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     vision_model: "gemini", generation_model: "nano-banana",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
-    platform_fee_ngn: 15000, prompt_only_mode: false, polish_pass_enabled: false,
+    platform_fee_ngn: 15000, platform_price_1_ngn: 1500, platform_price_5_ngn: 7500,
+    prompt_only_mode: false, polish_pass_enabled: false,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [platformFeeInput, setPlatformFeeInput] = useState("15000");
+  const [price1Input, setPrice1Input] = useState("1500");
+  const [price5Input, setPrice5Input] = useState("7500");
   const [modelSaving, setModelSaving] = useState(false);
   const [modelMsg, setModelMsg] = useState("");
 
@@ -347,7 +247,15 @@ export default function AdminPage() {
 
     fetch("/api/admin/config")
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setModelConfig(d); setRolloutInput(String(d.locked_base_rollout_percent ?? 100)); setPlatformFeeInput(String(d.platform_fee_ngn ?? 15000)); } })
+      .then(d => {
+        if (d) {
+          setModelConfig(d);
+          setRolloutInput(String(d.locked_base_rollout_percent ?? 100));
+          setPlatformFeeInput(String(d.platform_fee_ngn ?? 15000));
+          setPrice1Input(String(d.platform_price_1_ngn ?? 1500));
+          setPrice5Input(String(d.platform_price_5_ngn ?? 7500));
+        }
+      })
       .catch(() => {});
 
     fetch("/api/admin/coupons")
@@ -606,17 +514,6 @@ export default function AdminPage() {
             </div>
           </div>
           <div className={styles.modelSection}>
-            <div className={styles.modelLabel}>Platform Fee — ₦{Number(platformFeeInput).toLocaleString()} per 10 images</div>
-            <div className={styles.rolloutRow}>
-              <input type="number" min={1000} step={500} value={platformFeeInput}
-                className={styles.rolloutNumber} style={{ width: 120 }} onChange={e => setPlatformFeeInput(e.target.value)} />
-              <button type="button" className={styles.saveBtn}
-                onClick={() => saveModelConfig({ platform_fee_ngn: Number(platformFeeInput) })}
-                disabled={modelSaving}>{modelSaving ? "Saving…" : "Save"}</button>
-            </div>
-            <div className={styles.modelHint}>Fee deducted from each template sale. Scales proportionally for 1/5-image packages.</div>
-          </div>
-          <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Prompt-Only Mode</div>
             <div className={styles.modelPills}>
               {([false, true] as const).map(val => (
@@ -772,8 +669,58 @@ export default function AdminPage() {
       {/* ---- Pending migrations ---- */}
       <MigrationsCard />
 
-      {/* ---- Template price editor ---- */}
-      <AdminTemplatesCard />
+      {/* ---- Shoot Package Pricing ---- */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Shoot Package Pricing</h2>
+        <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 16px" }}>
+          Platform fee deducted from each template sale. Set explicit prices for each package size.
+        </p>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
+            1 image (₦)
+            <input
+              className={styles.priceInput}
+              type="number" min={100} step={100}
+              value={price1Input}
+              onChange={e => setPrice1Input(e.target.value)}
+              style={{ width: 120 }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
+            5 images (₦)
+            <input
+              className={styles.priceInput}
+              type="number" min={500} step={100}
+              value={price5Input}
+              onChange={e => setPrice5Input(e.target.value)}
+              style={{ width: 120 }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
+            10 images (₦)
+            <input
+              className={styles.priceInput}
+              type="number" min={1000} step={500}
+              value={platformFeeInput}
+              onChange={e => setPlatformFeeInput(e.target.value)}
+              style={{ width: 120 }}
+            />
+          </label>
+          <button
+            type="button"
+            className={styles.saveBtn}
+            disabled={modelSaving}
+            onClick={() => saveModelConfig({
+              platform_fee_ngn: Number(platformFeeInput),
+              platform_price_1_ngn: Number(price1Input),
+              platform_price_5_ngn: Number(price5Input),
+            })}
+          >
+            {modelSaving ? "Saving…" : "Save prices"}
+          </button>
+          {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}
+        </div>
+      </div>
 
       {/* ---- Creators ---- */}
       <div className={styles.card}>

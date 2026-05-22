@@ -722,7 +722,7 @@ export default function WorkspacePage() {
     }
   };
 
-  const signOut = async () => { await createClient().auth.signOut(); window.location.href = "/login"; };
+  const signOut = async () => { await createClient().auth.signOut(); window.location.href = "/"; };
 
   const turnIntoTemplate = async () => {
     if (!currentShoot) return;

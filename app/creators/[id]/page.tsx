@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./creator.module.css";
 
 interface CreatorProfile {
@@ -13,6 +14,8 @@ interface CreatorProfile {
   instagramUrl?: string;
   websiteUrl?: string;
   createdAt: string;
+  theme?: string;
+  fontFamily?: string;
   templates: Array<{
     id: string;
     title: string;
@@ -29,12 +32,26 @@ export default function CreatorPage() {
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const storTheme = getTheme(creator?.theme ?? "alux");
+  const storFont = getFont(creator?.fontFamily ?? "default");
+
   useEffect(() => {
     fetch(`/api/creators/${id}`)
       .then(r => r.json())
       .then(d => { if (d.creator) setCreator(d.creator); })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!storFont.googleUrl) return;
+    const existing = document.querySelector("link[data-storefront-font]");
+    if (existing) existing.remove();
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = storFont.googleUrl;
+    link.setAttribute("data-storefront-font", "");
+    document.head.appendChild(link);
+  }, [storFont.googleUrl]);
 
   if (loading) {
     return (
@@ -54,7 +71,10 @@ export default function CreatorPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div
+      className={`${styles.page}${storTheme.dark ? ` ${styles.pageDark}` : ""}`}
+      style={{ ...storTheme.vars, "--st-font-heading": storFont.heading, "--st-font-body": storFont.body } as React.CSSProperties}
+    >
       <header className={styles.nav}>
         <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
