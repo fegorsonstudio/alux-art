@@ -1100,26 +1100,24 @@ export default function WorkspacePage() {
             <button className={styles.payBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(false)}>
               Pay {price} & Generate {packageSize}
             </button>
-            {isAdmin && (
-              <div className={styles.adminControls}>
-                <div className={styles.adminControlRow}>
-                  <p className={styles.adminControlLabel}>Resolution</p>
-                  <div className={styles.pillGroup}>
-                    {(["", "0.5K", "1K", "2K", "4K"] as const).map((r) => (
-                      <button
-                        key={r || "default"}
-                        className={`${styles.pill} ${resolution === r ? styles.pillActive : ""}`}
-                        onClick={() => setResolution(r)}
-                      >
-                        {r || "Default"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
-                  Admin: Generate Free
-                </button>
+            <div className={styles.adminControlRow}>
+              <p className={styles.adminControlLabel}>Resolution</p>
+              <div className={styles.pillGroup}>
+                {(["", "0.5K", "1K", "2K", "4K"] as const).map((r) => (
+                  <button
+                    key={r || "default"}
+                    className={`${styles.pill} ${resolution === r ? styles.pillActive : ""}`}
+                    onClick={() => setResolution(r)}
+                  >
+                    {r || "Default"}
+                  </button>
+                ))}
               </div>
+            </div>
+            {isAdmin && (
+              <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
+                Admin: Generate Free
+              </button>
             )}
           </div>
 
@@ -1349,7 +1347,13 @@ export default function WorkspacePage() {
                   {currentShoot.status === "COMPLETE" ? `Download All ${getShootPackageSize(currentShoot)} (ZIP)` : "Download Completed Images (ZIP)"}
                 </button>
               )}
-              {(isCreator || isAdmin) && currentShoot.status === "COMPLETE" && (
+              {(() => {
+                const purchases = (currentShoot as unknown as Record<string, unknown>).template_purchases as Array<Record<string, unknown>> | undefined;
+                const sourcedFromOtherCreator = (purchases?.length ?? 0) > 0
+                  && (purchases![0]?.templates as Record<string, unknown> | undefined)?.creators !== undefined
+                  && ((purchases![0]?.templates as Record<string, unknown>)?.creators as Record<string, unknown>)?.user_id !== user?.id;
+                return (isAdmin || (isCreator && !sourcedFromOtherCreator)) && currentShoot.status === "COMPLETE";
+              })() && (
                 <>
                   {toTemplateError && <p className={styles.toTemplateError}>{toTemplateError}</p>}
                   <button

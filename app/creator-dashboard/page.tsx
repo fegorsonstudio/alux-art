@@ -84,6 +84,7 @@ interface UploadedImage {
   tag: string;
   customName: string;
   note: string;
+  noteHidden: boolean;
   uploading: boolean;
   fromDb?: boolean;
   error?: string;
@@ -275,24 +276,25 @@ function CreatorDashboard() {
         display_order: number; purpose: string; tag?: string; custom_name?: string | null; note?: string | null; signed_url?: string | null;
       }>;
       const existingImages: UploadedImage[] = imgs
-        .filter(img => img.storage_path && img.signed_url && (img.purpose === "inspiration" || img.purpose === "tagged"))
+        .filter(img => img.storage_path && (img.purpose === "inspiration" || img.purpose === "tagged"))
         .map(img => ({
           localId: img.id,
-          preview: img.signed_url!,
+          preview: img.signed_url ?? "",
           storagePath: img.storage_path,
           purpose: img.purpose as "inspiration" | "tagged",
           tag: img.tag ?? "OUTFIT",
           customName: img.custom_name ?? "",
           note: img.note ?? "",
+          noteHidden: (img as Record<string, unknown>).note_hidden === true,
           uploading: false,
           fromDb: true,
         }));
       setImages(existingImages);
       const existingSamples: SampleImageItem[] = imgs
-        .filter(img => img.storage_path && img.signed_url && img.purpose === "sample")
+        .filter(img => img.storage_path && img.purpose === "sample")
         .map(img => ({
           localId: img.id,
-          preview: img.signed_url!,
+          preview: img.signed_url ?? "",
           storagePath: img.storage_path,
           uploading: false,
           fromDb: true,
@@ -463,14 +465,14 @@ function CreatorDashboard() {
   };
 
   const addImages = (files: FileList) => {
-    if (images.length >= 8) { setFormError("Maximum 8 images per template"); return; }
-    const remaining = 8 - images.length;
+    if (images.length >= 20) { setFormError("Maximum 20 images per template"); return; }
+    const remaining = 20 - images.length;
     const toAdd = Array.from(files).slice(0, remaining);
     const purpose: "inspiration" | "tagged" = pendingTag === "inspiration" ? "inspiration" : "tagged";
     const tag = (pendingTag === "inspiration" || pendingTag === "__tagged__") ? "OUTFIT" : pendingTag;
     const newImgs: UploadedImage[] = toAdd.map(file => {
       const localId = crypto.randomUUID();
-      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, customName: "", note: "", uploading: false };
+      return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, customName: "", note: "", noteHidden: false, uploading: false };
     });
     setImages(prev => [...prev, ...newImgs]);
     newImgs.forEach(img => uploadFile(img.file!, img.localId));
@@ -552,7 +554,7 @@ function CreatorDashboard() {
       aspectRatio: form.aspectRatio,
       packageSize: form.packageSize,
       status: form.status,
-      coverStoragePath: coverFromGallery || form.coverStoragePath || undefined,
+      coverStoragePath: form.coverStoragePath || coverFromGallery || undefined,
     };
 
     let templateId: string;
@@ -568,41 +570,62 @@ function CreatorDashboard() {
       templateId = panel;
     }
 
-    // Save NEW images
+    // Save NEW workflow images (inspiration + tagged)
+    const existingWorkflowCount = images.filter(i => i.fromDb).length;
     const uploadedImages = images.filter(i => i.storagePath && !i.fromDb);
     for (let i = 0; i < uploadedImages.length; i++) {
       const img = uploadedImages[i];
-      await fetch(`/api/templates/${templateId}/images`, {
+      const imgRes = await fetch(`/api/templates/${templateId}/images`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           storagePath: img.storagePath,
-          displayOrder: i,
+          displayOrder: existingWorkflowCount + i,
           purpose: img.purpose,
           tag: img.purpose === "tagged" ? img.tag : undefined,
           customName: img.purpose === "tagged" ? (img.customName?.trim() || undefined) : undefined,
           note: img.note?.trim() || undefined,
+          noteHidden: img.purpose === "tagged" ? img.noteHidden : undefined,
         }),
       });
+      if (!imgRes.ok) {
+        const errData = await imgRes.json().catch(() => ({}));
+        setFormError(errData.error ?? "Failed to save image — please try again");
+        setSaving(false);
+        return;
+      }
     }
     // PATCH fromDb images with any updated tag/note
     const fromDbImages = images.filter(i => i.fromDb);
     for (const img of fromDbImages) {
-      await fetch(`/api/templates/${templateId}/images`, {
+      const patchRes = await fetch(`/api/templates/${templateId}/images`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId: img.localId, tag: img.tag, customName: img.customName?.trim() || null, note: img.note?.trim() || null }),
+        body: JSON.stringify({ imageId: img.localId, tag: img.tag, customName: img.customName?.trim() || null, note: img.note?.trim() || null, noteHidden: img.noteHidden }),
       });
+      if (!patchRes.ok) {
+        const errData = await patchRes.json().catch(() => ({}));
+        setFormError(errData.error ?? "Failed to update image metadata — please try again");
+        setSaving(false);
+        return;
+      }
     }
 
     // Save new sample images (existing fromDb ones are already in DB; deletions are done in real-time)
+    const existingSampleCount = sampleImages.filter(s => s.fromDb).length;
     const newSamples = sampleImages.filter(s => s.storagePath && !s.fromDb);
     for (let i = 0; i < newSamples.length; i++) {
-      await fetch(`/api/templates/${templateId}/images`, {
+      const sampleRes = await fetch(`/api/templates/${templateId}/images`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storagePath: newSamples[i].storagePath, displayOrder: i, purpose: "sample" }),
+        body: JSON.stringify({ storagePath: newSamples[i].storagePath, displayOrder: existingSampleCount + i, purpose: "sample" }),
       });
+      if (!sampleRes.ok) {
+        const errData = await sampleRes.json().catch(() => ({}));
+        setFormError(errData.error ?? "Failed to save gallery image — please try again");
+        setSaving(false);
+        return;
+      }
     }
 
     setSaving(false);
@@ -956,7 +979,6 @@ function CreatorDashboard() {
                             value={img.customName}
                             onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, customName: e.target.value } : x))}
                             placeholder="Reference name (optional)..."
-                            maxLength={80}
                           />
                           <textarea
                             className={styles.noteInput}
@@ -964,8 +986,16 @@ function CreatorDashboard() {
                             onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, note: e.target.value } : x))}
                             placeholder="Styling note (optional)..."
                             rows={2}
-                            maxLength={200}
                           />
+                          {img.note.trim() && (
+                            <button
+                              type="button"
+                              className={img.noteHidden ? styles.noteHiddenBtn : styles.noteVisibleBtn}
+                              onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, noteHidden: !x.noteHidden } : x))}
+                            >
+                              {img.noteHidden ? "Note hidden from buyer" : "Hide note from buyer"}
+                            </button>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -986,7 +1016,7 @@ function CreatorDashboard() {
                       {img.error && <div className={styles.taggedRefError}>{img.error}</div>}
                     </div>
                   ))}
-                  {images.length < 8 && (
+                  {images.filter(img => img.purpose === "tagged").length < 20 && (
                     <button
                       type="button"
                       className={`${styles.addImgBtn} ${styles.addImgBtnSm}`}
@@ -1038,13 +1068,13 @@ function CreatorDashboard() {
               className={styles.hidden}
               onChange={e => { if (e.target.files) addSampleFiles(e.target.files); e.target.value = ""; }}
             />
-            {images.length >= 2 && (
+            {sampleImages.length >= 2 && (
               <button
                 type="button"
                 className={styles.collageCoverBtn}
                 onClick={() => setShowCollageEditor(true)}
               >
-                Create collage cover from workflow refs
+                Create collage cover from gallery
               </button>
             )}
           </div>
@@ -1197,7 +1227,7 @@ function CreatorDashboard() {
       {showCollageEditor && (
         <CollageEditor
           templateId={panel === "create" ? "" : panel}
-          images={images
+          images={sampleImages
             .filter(img => img.storagePath || img.fromDb)
             .map((img): CollageImage => ({ id: img.localId, url: img.preview }))}
           onSave={(storagePath, previewUrl) => {
