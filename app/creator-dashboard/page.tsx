@@ -643,7 +643,7 @@ function CreatorDashboard() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.back}>← Studio</Link>
+        <Link href="/studio" className={styles.back}>← Studio</Link>
         <h1 className={styles.title}>Creator Dashboard</h1>
         <Link href="/marketplace" className={styles.marketplaceLink}>Browse marketplace →</Link>
       </header>
