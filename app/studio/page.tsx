@@ -1100,24 +1100,26 @@ export default function WorkspacePage() {
             <button className={styles.payBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(false)}>
               Pay {price} & Generate {packageSize}
             </button>
-            <div className={styles.adminControlRow}>
-              <p className={styles.adminControlLabel}>Resolution</p>
-              <div className={styles.pillGroup}>
-                {(["", "0.5K", "1K", "2K", "4K"] as const).map((r) => (
-                  <button
-                    key={r || "default"}
-                    className={`${styles.pill} ${resolution === r ? styles.pillActive : ""}`}
-                    onClick={() => setResolution(r)}
-                  >
-                    {r || "Default"}
-                  </button>
-                ))}
-              </div>
-            </div>
             {isAdmin && (
-              <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
-                Admin: Generate Free
-              </button>
+              <div className={styles.adminControls}>
+                <div className={styles.adminControlRow}>
+                  <p className={styles.adminControlLabel}>Resolution</p>
+                  <div className={styles.pillGroup}>
+                    {(["", "0.5K", "1K", "2K", "4K"] as const).map((r) => (
+                      <button
+                        key={r || "default"}
+                        className={`${styles.pill} ${resolution === r ? styles.pillActive : ""}`}
+                        onClick={() => setResolution(r)}
+                      >
+                        {r || "Default"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
+                  Admin: Generate Free
+                </button>
+              </div>
             )}
           </div>
 
