@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import styles from "./login.module.css";
 
@@ -38,6 +39,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
+      <Link href="/marketplace" className={styles.backLink}>← Browse looks</Link>
       <div className={styles.card}>
         <div className={styles.logo}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

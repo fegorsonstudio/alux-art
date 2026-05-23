@@ -291,6 +291,7 @@
 .creatorArrow { color: #7aafb4; font-size: 0.9rem; }
 
 .description { font-size: 0.9rem; color: #4e7076; line-height: 1.6; margin: 0; }
+.descQuote { border-left: 3px solid currentColor; padding-left: 10px; margin: 6px 0 0; opacity: 0.75; font-style: italic; }
 
 .metaGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 

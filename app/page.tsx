@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase-server";
 import styles from "./landing.module.css";
 import RotatingStyles from "./RotatingStyles";
 
+export const dynamic = "force-dynamic";
+
 interface FeaturedTemplate {
   id: string;
   title: string;

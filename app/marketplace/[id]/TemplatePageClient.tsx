@@ -7,6 +7,27 @@ import { useCurrency } from "@/lib/useCurrency";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
 
+function renderMarkdown(text: string) {
+  // Split into lines, handle > blockquotes, then bold **...**
+  return text.split("\n").map((line, li) => {
+    const isQuote = line.startsWith("> ");
+    const content = isQuote ? line.slice(2) : line;
+    const parts: React.ReactNode[] = [];
+    const boldRe = /\*\*(.+?)\*\*/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = boldRe.exec(content)) !== null) {
+      if (m.index > last) parts.push(content.slice(last, m.index));
+      parts.push(<strong key={m.index}>{m[1]}</strong>);
+      last = m.index + m[0].length;
+    }
+    if (last < content.length) parts.push(content.slice(last));
+    return isQuote
+      ? <blockquote key={li} className={styles.descQuote}>{parts}</blockquote>
+      : <span key={li}>{parts}{li < text.split("\n").length - 1 ? " " : ""}</span>;
+  });
+}
+
 interface TemplateImage {
   id: string;
   url: string | null;
@@ -390,7 +411,7 @@ export default function TemplatePage() {
           )}
 
           {template.description && (
-            <p className={styles.description}>{template.description}</p>
+            <p className={styles.description}>{renderMarkdown(template.description)}</p>
           )}
 
           <div className={styles.purchaseBox}>

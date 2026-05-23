@@ -134,3 +134,14 @@
   color: #708184;
   margin: 0;
 }
+
+.backLink {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 0.85rem;
+  color: #4e7076;
+  text-decoration: none;
+  font-weight: 500;
+}
+.backLink:hover { text-decoration: underline; }
