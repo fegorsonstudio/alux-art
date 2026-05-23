@@ -67,7 +67,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // 1. Fetch published template + creator
   const { data: template } = await service
     .from("templates")
-    .select("*, creators(id, display_name, paystack_subaccount_code), template_images(storage_path, storage_bucket)")
+    .select("*, creators(id, display_name, paystack_subaccount_code), template_images(storage_path, storage_bucket, tag, purpose, note, custom_name)")
     .eq("id", templateId)
     .eq("status", "published")
     .single();
@@ -81,8 +81,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // C4: validate tagged refs against template image paths and allowed tags
   const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"]);
-  const templateImagePaths = new Set(
-    ((template.template_images ?? []) as Array<{ storage_path: string }>).map(img => img.storage_path)
+  type TemplateImgMeta = { storage_path: string; storage_bucket?: string | null; tag?: string | null; purpose?: string; note?: string | null; custom_name?: string | null };
+  const templateImgList = (template.template_images ?? []) as TemplateImgMeta[];
+  const templateImagePaths = new Set(templateImgList.map(img => img.storage_path));
+  // Map storage_path → creator note for merging with buyer notes
+  const creatorNoteMap = new Map<string, string | null>(
+    templateImgList.map(img => [img.storage_path, img.note ?? null])
   );
   for (const ref of taggedRefs) {
     if (!VALID_TAGS.has(ref.tag)) {
@@ -92,6 +96,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Invalid reference image path" }, { status: 400 });
     }
   }
+
+  // Deduplicate tagged refs by storagePath — creator dashboard had a bug that could create
+  // duplicate DB records for the same image; send only one entry per unique file to generation.
+  const seenTaggedPaths = new Set<string>();
+  const deduplicatedTaggedRefs = taggedRefs.filter(ref => {
+    if (seenTaggedPaths.has(ref.storagePath)) return false;
+    seenTaggedPaths.add(ref.storagePath);
+    return true;
+  });
 
   // 2. Fetch platform fee from app_config
   const { data: feeRow } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
@@ -200,24 +213,49 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     created_at: now,
   }));
 
-  const taggedRows = taggedRefs.map((ref, i) => ({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: user.id,
-    purpose: "tagged",
-    tag: ref.tag,
-    custom_name: null,
-    note: ref.note?.trim() || null,
-    name: ref.name ?? `ref-${i + 1}`,
-    type: ref.type ?? "image/jpeg",
-    size: ref.size ?? 1,
-    storage_bucket: ref.storageBucket,
-    storage_path: ref.storagePath,
-    created_at: now,
-  }));
+  const taggedRows = deduplicatedTaggedRefs.map((ref, i) => {
+    const creatorNote = creatorNoteMap.get(ref.storagePath) ?? null;
+    const buyerNote = ref.note?.trim() || null;
+    const combinedNote = [creatorNote, buyerNote].filter(Boolean).join(". ") || null;
+    return {
+      id: crypto.randomUUID(),
+      shoot_id: shootId,
+      user_id: user.id,
+      purpose: "tagged",
+      tag: ref.tag,
+      custom_name: null,
+      note: combinedNote,
+      name: ref.name ?? `ref-${i + 1}`,
+      type: ref.type ?? "image/jpeg",
+      size: ref.size ?? 1,
+      storage_bucket: ref.storageBucket,
+      storage_path: ref.storagePath,
+      created_at: now,
+    };
+  });
 
-  if (identityRows.length + taggedRows.length > 0) {
-    const { error: refErr } = await service.from("shoot_references").insert([...identityRows, ...taggedRows]);
+  // Add the template's inspiration images as shoot references so generation receives Group B.
+  // These are private (never shown to buyers) but are critical for aesthetic direction.
+  const inspirationRows = templateImgList
+    .filter(img => img.purpose === "inspiration" && img.storage_path)
+    .map((img, i) => ({
+      id: crypto.randomUUID(),
+      shoot_id: shootId,
+      user_id: user.id,
+      purpose: "inspiration",
+      tag: null,
+      custom_name: null,
+      note: null,
+      name: `inspiration-${i + 1}`,
+      type: "image/jpeg",
+      size: 1,
+      storage_bucket: img.storage_bucket ?? "template-images",
+      storage_path: img.storage_path,
+      created_at: now,
+    }));
+
+  if (identityRows.length + taggedRows.length + inspirationRows.length > 0) {
+    const { error: refErr } = await service.from("shoot_references").insert([...identityRows, ...taggedRows, ...inspirationRows]);
     if (refErr) {
       await service.from("shoot_images").delete().eq("shoot_id", shootId);
       await service.from("shoots").delete().eq("id", shootId);

@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const rawImages = (template.template_images ?? []) as Array<{
     id: string; storage_path: string; storage_bucket: string;
     display_order: number; purpose: string; tag?: string | null;
-    custom_name?: string | null; created_at: string;
+    custom_name?: string | null; note?: string | null; note_hidden?: boolean | null; created_at: string;
   }>;
 
   const images = await Promise.all(
@@ -62,6 +62,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           purpose: img.purpose,
           tag: img.tag ?? null,
           customName: img.custom_name ?? null,
+          note: img.note ?? null,
+          noteHidden: img.note_hidden ?? false,
           url: signedUrl,
           createdAt: img.created_at,
         };
@@ -84,6 +86,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .single();
     userRating = ratingRow?.rating ?? null;
   }
+
+  // Deduplicate tagged images by storagePath before exposing to buyer — duplicate DB
+  // records from creator dashboard re-uploads should appear as a single ref.
+  const seenImagePaths = new Set<string>();
+  const deduplicatedImages = images.filter(img => {
+    if (img.purpose === "tagged") {
+      if (seenImagePaths.has(img.storagePath)) return false;
+      seenImagePaths.add(img.storagePath);
+    }
+    return true;
+  });
 
   return NextResponse.json({
     template: {
@@ -115,7 +128,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       ratingCount: (template as Record<string, unknown>).rating_count as number ?? 0,
       userRating,
       coverUrl,
-      images,
+      images: deduplicatedImages,
       createdAt: template.created_at,
       updatedAt: template.updated_at,
     },
