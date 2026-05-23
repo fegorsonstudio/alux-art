@@ -657,7 +657,12 @@ function CreatorDashboard() {
 
   const deleteTemplate = async (id: string) => {
     if (!confirm("Delete this template? This cannot be undone.")) return;
-    await fetch(`/api/templates/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/templates/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? `Delete failed (${res.status})`);
+      return;
+    }
     loadDashboard();
   };
 

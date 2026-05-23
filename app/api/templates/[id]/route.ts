@@ -106,14 +106,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { count } = await service
+  const { data: purchases } = await service
     .from("template_purchases")
-    .select("id", { count: "exact", head: true })
+    .select("user_id")
     .eq("template_id", id)
     .eq("status", "success");
 
-  if ((count ?? 0) > 0) {
-    return NextResponse.json({ error: "Cannot delete a template with completed purchases" }, { status: 409 });
+  const externalPurchases = (purchases ?? []).filter(p => p.user_id !== user.id);
+  if (externalPurchases.length > 0) {
+    return NextResponse.json({ error: "Cannot delete a template that has been purchased by other users" }, { status: 409 });
   }
 
   const { error } = await service
