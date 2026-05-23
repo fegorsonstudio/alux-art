@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
+import "./globals.css";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -17,6 +18,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

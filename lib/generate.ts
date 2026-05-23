@@ -16,8 +16,8 @@ const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
 const SHOOT_BRIEF_TIMEOUT_MS = 270_000;
 const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
 
-// Appended to every fal.ai prompt regardless of brief content
-const GLOBAL_NEGATIVE_PROMPT = "No three hands. No extra hands. No extra fingers. No additional limbs. No open mouth. No smiling. No visible teeth. No dead eyes. No imaginary teeth. No asymmetric facial structures.";
+// Appended to every fal.ai prompt as positive anatomical facts
+const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. Closed composed lips with neutral or subtle expression. Symmetrical natural facial anatomy.";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -279,12 +279,18 @@ type SceneSlotPrompt = {
   scene_exclusions: string;
 };
 
+const SHOT_TYPE_LABELS: Record<string, string> = {
+  headshot:  "headshot — tight crop, face and neck/shoulders only",
+  close_up:  "close-up — head to chest, standard portrait framing",
+  medium:    "medium shot — waist up, torso and arms visible",
+  full_body: "full body — head to toe, full figure in frame",
+};
+
 type NewPromptObject = {
   prompt_index: number;
   is_quote_card?: boolean;
   fully_consolidated_prompt?: string;
   svg_layout_instructions?: string;
-  negative_prompts?: string;
 };
 
 const SHOOT_BRIEF_SYSTEM_INSTRUCTION = `SYSTEM INSTRUCTION: Photo Shoot Prompt Engineer (Art Director Vision Model)
@@ -314,11 +320,14 @@ Role: Specific items tagged with names and styling notes (e.g., clothing, shoes,
 Strict Tag-Focused Isolation: If an image in Group C displays a full body, a model, or a wider scene context but is tagged as a specific element (e.g., tagged as "shoe", "bag", "jacket", "wedding ring"), you must isolate and describe only the tagged item from that image. Completely ignore all other visual information in that reference photo.
 Hard-Replacement Priority: Items in Group C hard-replace any corresponding items worn by models in the Group B inspiration images.
 
+GROUP D — Pose Direction (Buyer-Supplied, Optional):
+Role: Exact pose and expression references provided by the buyer. Each image may be a single pose photo OR a collage containing multiple distinct poses. Scan every Group D image carefully and extract all individual poses you can identify — a collage counts as multiple pose references. Assign extracted poses to portrait slots in order (first pose found → slot 1, second pose → slot 2, continuing across all D images, cycling back to the start if poses run out before slots are filled). Extract body position, limb placement, hand position, head tilt, and facial expression only. Do NOT transfer skin tone, wardrobe, accessories, or background from Group D. Group D overrides pose-harvesting from Group B for the mapped slots.
+
 II. THE MANDATORY PROMPT PREFIX (For Prompts 1 through 9)
 
-To lock in the image generator's behavioral constraints and protect the subject's identity, the prefix key for all 9 editorial subject prompts must begin with this exact text block, word-for-word, without deviation:
+To lock in the image generator's behavioral constraints and protect the subject's identity, every editorial subject prompt must begin with this exact text block, word-for-word, without deviation. Replace [IDENTITY_RANGE] with the exact image range stated in the GROUP A label (e.g. "IMAGES 1 through 3", or "IMAGE 1" if only one identity image was provided):
 
-"REFERENCE IMAGE 1 IS THE SUBJECT — use IMAGE 1 as the identity reference. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from IMAGE 1 and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
+"Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
 
 III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 
@@ -340,7 +349,7 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 - No Background Spills: Do NOT mix background environment elements of Group C into the Group B background setting.
 
 4. Cohesive Portfolio Rule
-Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Include baseline negative prompt: "no three hands, no extra hands, no extra fingers, no additional unwanted jewelry, no dead eyes without catchlights, no imaginary teeth, no open mouth, no smiling, no asymmetric facial structures".
+Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Every portrait prompt must state anatomical facts positively: exactly two hands with five natural fingers each, eyes with natural catchlights, and closed composed lips with a neutral or subtle expression. State these as descriptive facts in the prompt body, not as negative constraints.
 
 5. Camera & Lens Consistency
 Dynamically select one of the world's top 4 medium-format camera systems (Hasselblad, Phase One, Fujifilm GFX, or Leica S) and keep it identical across all 9 portrait prompts. Vary focal lengths per shot type.
@@ -367,15 +376,13 @@ IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolida
     {
       "prompt_index": 1,
       "is_quote_card": false,
-      "fully_consolidated_prompt": "Use the attached face/body identity photo submitted as the subject. Generate a hyper-realistic photograph matching this reference exactly. PRIORITY: The subject's face, body structure, and dentition must be taken directly and accurately from the attached face photo, preserve all facial features, exactly as they appear. Do not alter the subject's identity under any circumstances. This is a professional fashion and lifestyle photoshoot. The result must look like a high-end editorial magazine photograph with perfect technical quality. Scene: [lighting setup, background/environment description, shot setup]. Subject: [body language, pose, expression, gaze direction]. Important Details: [exact outfit from [OUTFIT] reference or inspiration, fabric/texture specifics, hairstyle, lens feel, color balance, any tag overrides]. Use Case: editorial fashion photography. Constraints: [preserve identity, preserve outfit lock if [OUTFIT] was provided, negative constraints].",
-      "negative_prompts": "no three hands, no extra hands, no extra fingers, no additional unwanted jewelry, no dead eyes without catchlights, no imaginary teeth, no open mouth, no smiling, no asymmetric facial structures"
+      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — closed lips, neutral/composed; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, closed composed lips."
     },
     {
       "prompt_index": 10,
       "is_quote_card": true,
       "fully_consolidated_prompt": "Complete composite graphic instructions for background image generation.",
-      "svg_layout_instructions": "Complete SVG overlay instructions: typographic hierarchy, font specifications, text-shadow or dark overlay for contrast, positioning, color assignments.",
-      "negative_prompts": "..."
+      "svg_layout_instructions": "Complete SVG overlay instructions: typographic hierarchy, font specifications, text-shadow or dark overlay for contrast, positioning, color assignments."
     }
   ]
 }`;
@@ -386,6 +393,7 @@ async function buildShootBrief(
     mode: string;
     package_size: number;
     aspect_ratio: string;
+    shot_type?: string | null;
     quote?: { text: string; attribution: string } | null;
   },
   identityProfile: string,
@@ -403,9 +411,13 @@ async function buildShootBrief(
 
   // Group A: locked base or identity images
   const groupAUrls = characterBaseUrl ? [characterBaseUrl] : identityRefs.map((r) => r.url);
+  const groupACount = groupAUrls.length;
+  const identityRange = groupACount === 1 ? "IMAGE 1" : `IMAGES 1 through ${groupACount}`;
   const groupALabel = characterBaseUrl
-    ? "GROUP A — Identity (Subject): Locked character base image. Use for exact facial identity, body structure, and locked wardrobe."
-    : `GROUP A — Identity (Subject): ${groupAUrls.length} identity reference photo(s). Use for facial features, skin tone, and body build only.\n\nIdentity Profile:\n${identityProfile}`;
+    ? `GROUP A — Identity (Subject): Locked character base image (IMAGE 1). Use IMAGE 1 for exact facial identity, body structure, and locked wardrobe.`
+    : `GROUP A — Identity (Subject): ${groupACount} identity reference photo(s) (${identityRange}). Use ${identityRange} for facial features, skin tone, and body build only. When writing the mandatory prompt prefix, reference ${identityRange} as the identity source.\n\nIdentity Profile:\n${identityProfile}`;
+
+  const poseRefsForBrief = refs.filter((r) => r.purpose === "pose" && r.url);
 
   const [groupABlocks, groupBBlocks, groupCImageBlocks] = await Promise.all([
     Promise.all(groupAUrls.slice(0, 4).map(toGeminiImagePart)),
@@ -439,6 +451,18 @@ async function buildShootBrief(
     }
   }
 
+  // GROUP D — pose direction images (Gemini only, never sent to fal.ai)
+  if (poseRefsForBrief.length > 0) {
+    const groupDBlocks = await Promise.all(poseRefsForBrief.map((r) => toGeminiImagePart(r.url)));
+    parts.push({
+      text: `GROUP D — Pose Direction (${poseRefsForBrief.length} image${poseRefsForBrief.length !== 1 ? "s" : ""}): The buyer has provided exact pose/expression references. Each image may be a single pose photo OR a collage containing multiple distinct poses — scan every image for all visible poses. Extract all distinct poses across all Group D images and assign them to portrait slots in order (first extracted pose → slot 1, second → slot 2, cycling back if poses run out before slots are filled). Describe each extracted pose in precise photographic language: exact body position, limb placement, hand position, head tilt, and facial expression. Do NOT transfer skin tone, wardrobe, accessories, or background from these images — extract pose and expression only. Group D overrides pose-harvesting from Group B for mapped slots.`,
+    });
+    for (let i = 0; i < poseRefsForBrief.length; i++) {
+      parts.push({ text: `Pose direction image ${i + 1} — scan for all distinct poses (may be a collage):` });
+      parts.push(groupDBlocks[i]);
+    }
+  }
+
   // Inject global forbidden word→replacement table so Gemini avoids exact known triggers
   if (dbForbiddenWords && dbForbiddenWords.length > 0) {
     parts.push({
@@ -453,18 +477,9 @@ async function buildShootBrief(
     });
   }
 
-  const SHOT_TYPE_LABELS: Record<string, string> = {
-    headshot:  "headshot — tight crop, face and neck/shoulders only",
-    close_up:  "close-up — head to chest, standard portrait framing",
-    medium:    "medium shot — waist up, torso and arms visible",
-    full_body: "full body — head to toe, full figure in frame",
-  };
   let shotTypeConstraint = "";
-  try {
-    const parsed = JSON.parse(identityProfile) as Record<string, unknown>;
-    const label = SHOT_TYPE_LABELS[parsed.shot_type as string];
-    if (label) shotTypeConstraint = `\n- Shot Type: ${label}`;
-  } catch { /* identityProfile may be plain text, not JSON */ }
+  const shotTypeLabel = SHOT_TYPE_LABELS[shoot.shot_type ?? ""];
+  if (shotTypeLabel) shotTypeConstraint = `\n- Shot Type: ${shotTypeLabel}`;
 
   parts.push({
     text: `SHOOT PARAMETERS:
@@ -484,7 +499,8 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     generationConfig: {
       maxOutputTokens: 16384,
       responseMimeType: "application/json",
-    },
+      thinkingConfig: { thinkingBudget: 8192 },
+    } as any, // thinkingConfig not yet in SDK types
   });
 
   const geminiResult = await Promise.race([
@@ -653,6 +669,7 @@ async function buildShootBriefClaude(
     mode: string;
     package_size: number;
     aspect_ratio: string;
+    shot_type?: string | null;
     quote?: { text: string; attribution: string } | null;
   },
   identityProfile: string,
@@ -665,13 +682,16 @@ async function buildShootBriefClaude(
   const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
   const inspirationRefs = refs.filter((r) => r.purpose === "inspiration" && r.url).slice(0, 9);
   const taggedRefs = refs.filter((r) => r.purpose === "tagged" && r.url);
+  const poseRefsForBrief = refs.filter((r) => r.purpose === "pose" && r.url);
   const hasQuote = !!shoot.quote?.text && packageSize === 10;
   const portraitCount = hasQuote ? packageSize - 1 : packageSize;
 
   const groupAUrls = characterBaseUrl ? [characterBaseUrl] : identityRefs.map((r) => r.url);
+  const groupACount = groupAUrls.length;
+  const identityRange = groupACount === 1 ? "IMAGE 1" : `IMAGES 1 through ${groupACount}`;
   const groupALabel = characterBaseUrl
-    ? "GROUP A — Identity (Subject): Locked character base image. Use for exact facial identity, body structure, and locked wardrobe."
-    : `GROUP A — Identity (Subject): ${groupAUrls.length} identity reference photo(s). Use for facial features, skin tone, and body build only.\n\nIdentity Profile:\n${identityProfile}`;
+    ? `GROUP A — Identity (Subject): Locked character base image (IMAGE 1). Use IMAGE 1 for exact facial identity, body structure, and locked wardrobe.`
+    : `GROUP A — Identity (Subject): ${groupACount} identity reference photo(s) (${identityRange}). Use ${identityRange} for facial features, skin tone, and body build only. When writing the mandatory prompt prefix, reference ${identityRange} as the identity source.\n\nIdentity Profile:\n${identityProfile}`;
 
   type ClaudePart =
     | { type: "image"; source: { type: "url"; url: string } }
@@ -699,6 +719,17 @@ async function buildShootBriefClaude(
     });
   }
 
+  if (poseRefsForBrief.length > 0) {
+    content.push({
+      type: "text",
+      text: `GROUP D — Pose Direction (${poseRefsForBrief.length} image${poseRefsForBrief.length !== 1 ? "s" : ""}): The buyer has provided exact pose/expression references. Each image may be a single pose photo OR a collage containing multiple distinct poses — scan every image for all visible poses. Extract all distinct poses across all Group D images and assign them to portrait slots in order (first extracted pose → slot 1, second → slot 2, cycling back if poses run out before slots are filled). Describe each extracted pose in precise photographic language: exact body position, limb placement, hand position, head tilt, and facial expression. Do NOT transfer skin tone, wardrobe, accessories, or background from these images — extract pose and expression only. Group D overrides pose-harvesting from Group B for mapped slots.`,
+    });
+    for (let i = 0; i < poseRefsForBrief.length; i++) {
+      content.push({ type: "text", text: `Pose direction image ${i + 1} — scan for all distinct poses (may be a collage):` });
+      content.push({ type: "image", source: { type: "url", url: poseRefsForBrief[i].url } });
+    }
+  }
+
   if (dbForbiddenWords && dbForbiddenWords.length > 0) {
     content.push({ type: "text", text: `FORBIDDEN WORD LIST (platform-wide — never use ANY of these words; use the replacement instead):\n${dbForbiddenWords.map((w) => `"${w.word}" → use "${w.replacement}"`).join(", ")}` });
   }
@@ -707,10 +738,13 @@ async function buildShootBriefClaude(
     content.push({ type: "text", text: `GENERATION FAILURE MEMORY — Learned Restrictions:\nThe following prompts were previously REJECTED by the image generation engine for content policy violations. Study the exact wording carefully. NEVER use similar language:\n\n${forbiddenExamples.map((p, i) => `Rejected example ${i + 1}:\n"${p.slice(0, 300)}"`).join("\n\n")}` });
   }
 
+  const claudeShotTypeLabel = SHOT_TYPE_LABELS[shoot.shot_type ?? ""];
+  const claudeShotTypeConstraint = claudeShotTypeLabel ? `\n- Shot Type: ${claudeShotTypeLabel}` : "";
+
   content.push({ type: "text", text: `SHOOT PARAMETERS:
 - Mode: ${shoot.mode}
 - Package: ${packageSize} images total (${portraitCount} portrait${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card" : ""})
-- Aspect Ratio: ${shoot.aspect_ratio}
+- Aspect Ratio: ${shoot.aspect_ratio}${claudeShotTypeConstraint}
 ${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `\n- Attribution: "${shoot.quote!.attribution}"` : ""}` : ""}
 
 Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
@@ -1459,7 +1493,6 @@ export async function startGenerationWorker(
 
   let prompts: Record<string, string | SceneSlotPrompt> = {};
   const svgLayoutMap: Record<string, string> = {};
-  const negativePromptsMap: Record<string, string> = {};
   try {
     const parsed = JSON.parse(shootBriefClean);
     const rawPrompts = parsed.prompts;
@@ -1469,7 +1502,6 @@ export async function startGenerationWorker(
         const key = String(p.prompt_index);
         if (p.fully_consolidated_prompt) prompts[key] = p.fully_consolidated_prompt;
         if (p.svg_layout_instructions) svgLayoutMap[key] = p.svg_layout_instructions;
-        if (p.negative_prompts) negativePromptsMap[key] = p.negative_prompts;
       }
     } else if (rawPrompts && typeof rawPrompts === "object") {
       // Legacy dict format
@@ -1584,12 +1616,8 @@ export async function startGenerationWorker(
         slotPrompt = "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
       }
 
-      // Append per-slot negative prompts from brief + global negatives to every fal call
-      const slotNegative = negativePromptsMap[String(slot)] ?? "";
-      const combinedNegative = [slotNegative, GLOBAL_NEGATIVE_PROMPT].filter(Boolean).join(" ").trim();
-      if (combinedNegative) {
-        slotPrompt = `${slotPrompt} NEGATIVE PROMPT: ${combinedNegative}`;
-      }
+      // Append positive anatomical constraints to every fal call
+      slotPrompt = `${slotPrompt} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 

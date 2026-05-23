@@ -1,0 +1,1 @@
+ALTER TABLE shoots ADD COLUMN IF NOT EXISTS shot_type TEXT;

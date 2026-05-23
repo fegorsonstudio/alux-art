@@ -479,6 +479,13 @@
   margin-bottom: 10px;
 }
 
+.shotTypeRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
 .pkgPill {
   padding: 7px 14px;
   border: 1.5px solid rgba(47, 142, 154, 0.3);
@@ -575,6 +582,24 @@
 
 .payBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 32px rgba(48, 141, 151, 0.24); }
 .payBtn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+.clearRefsBtn {
+  background: none;
+  border: none;
+  color: #a7463c;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  align-self: flex-start;
+  transition: color 0.15s;
+}
+
+.clearRefsBtn:hover:not(:disabled) { color: #8b2c24; }
+.clearRefsBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .hidden { display: none; }
 

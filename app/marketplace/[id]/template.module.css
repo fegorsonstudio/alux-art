@@ -87,10 +87,11 @@
   margin: 0 auto;
   padding: 40px 32px 80px;
   align-items: start;
+  overflow-x: hidden;
 }
 
 /* ---- Gallery ---- */
-.galleryCol { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 80px; }
+.galleryCol { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 80px; min-width: 0; }
 
 .mainImgWrap {
   position: relative;
@@ -203,7 +204,7 @@
 }
 
 /* ---- Info ---- */
-.infoCol { display: flex; flex-direction: column; gap: 20px; }
+.infoCol { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 
 .categoryRow {
   display: flex;

@@ -12,15 +12,19 @@ export async function GET() {
   const service = createServiceClient();
 
   const checks = await Promise.all([
+    service.from("template_images").select("note").limit(0).then(r => !r.error),
     service.from("template_images").select("custom_name").limit(0).then(r => !r.error),
     service.from("creators").select("theme").limit(0).then(r => !r.error),
     service.from("creators").select("font_family").limit(0).then(r => !r.error),
+    service.from("template_images").select("note_hidden").limit(0).then(r => !r.error),
   ]);
 
   const results = [
-    { id: "016", name: "template_images.custom_name", applied: checks[0] },
-    { id: "017a", name: "creators.theme", applied: checks[1] },
-    { id: "017b", name: "creators.font_family", applied: checks[2] },
+    { id: "013", name: "template_images.note", applied: checks[0] },
+    { id: "016", name: "template_images.custom_name", applied: checks[1] },
+    { id: "017a", name: "creators.theme", applied: checks[2] },
+    { id: "017b", name: "creators.font_family", applied: checks[3] },
+    { id: "018", name: "template_images.note_hidden", applied: checks[4] },
   ];
 
   return NextResponse.json({

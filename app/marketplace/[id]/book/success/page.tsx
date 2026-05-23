@@ -20,8 +20,8 @@ export default function BookSuccessPage() {
         {shootId && (
           <p className={styles.ref}>Ref: {shootId.slice(0, 8).toUpperCase()}</p>
         )}
-        <Link href="/studio" className={styles.btn}>Go to Studio</Link>
-        <Link href="/marketplace" className={styles.secondaryLink}>Browse more styles</Link>
+        <Link href="/marketplace" className={styles.btn}>Browse more styles</Link>
+        <Link href="/studio" className={styles.secondaryLink}>Track progress in Studio</Link>
       </div>
     </div>
   );

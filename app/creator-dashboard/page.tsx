@@ -7,6 +7,7 @@ import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
+import { resizeIfNeeded } from "@/lib/resize-image";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
 
 const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
@@ -29,7 +30,7 @@ interface TemplateRow {
   cover_storage_path?: string;
   cover_bucket?: string;
   cover_url?: string | null;
-  template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; note?: string | null; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
+  template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; note?: string | null; custom_name?: string | null; note_hidden?: boolean | null; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
   created_at: string;
 }
 
@@ -264,43 +265,34 @@ function CreatorDashboard() {
       status: t.status,
       coverStoragePath: t.cover_storage_path ?? "",
     });
-    setImages([]);
-    setSampleImages([]);
     setCoverPreview(t.cover_url ?? "");
-    // Fetch full template with signed URLs for reference images
-    const res = await fetch(`/api/templates/${t.id}`);
-    if (res.ok) {
-      const data = await res.json();
-      const imgs = (data.template?.template_images ?? []) as Array<{
-        id: string; storage_path: string; storage_bucket: string;
-        display_order: number; purpose: string; tag?: string; custom_name?: string | null; note?: string | null; signed_url?: string | null;
-      }>;
-      const existingImages: UploadedImage[] = imgs
-        .filter(img => img.storage_path && (img.purpose === "inspiration" || img.purpose === "tagged"))
-        .map(img => ({
-          localId: img.id,
-          preview: img.signed_url ?? "",
-          storagePath: img.storage_path,
-          purpose: img.purpose as "inspiration" | "tagged",
-          tag: img.tag ?? "OUTFIT",
-          customName: img.custom_name ?? "",
-          note: img.note ?? "",
-          noteHidden: (img as Record<string, unknown>).note_hidden === true,
-          uploading: false,
-          fromDb: true,
-        }));
-      setImages(existingImages);
-      const existingSamples: SampleImageItem[] = imgs
-        .filter(img => img.storage_path && img.purpose === "sample")
-        .map(img => ({
-          localId: img.id,
-          preview: img.signed_url ?? "",
-          storagePath: img.storage_path,
-          uploading: false,
-          fromDb: true,
-        }));
-      setSampleImages(existingSamples);
-    }
+    // Use already-loaded template_images (signed URLs included from dashboard API)
+    const imgs = t.template_images ?? [];
+    const existingImages: UploadedImage[] = imgs
+      .filter(img => img.storage_path && (img.purpose === "inspiration" || img.purpose === "tagged"))
+      .map(img => ({
+        localId: img.id,
+        preview: img.signed_url ?? "",
+        storagePath: img.storage_path ?? "",
+        purpose: img.purpose as "inspiration" | "tagged",
+        tag: img.tag ?? "OUTFIT",
+        customName: img.custom_name ?? "",
+        note: img.note ?? "",
+        noteHidden: img.note_hidden === true,
+        uploading: false,
+        fromDb: true,
+      }));
+    setImages(existingImages);
+    const existingSamples: SampleImageItem[] = imgs
+      .filter(img => img.storage_path && img.purpose === "sample")
+      .map(img => ({
+        localId: img.id,
+        preview: img.signed_url ?? "",
+        storagePath: img.storage_path ?? "",
+        uploading: false,
+        fromDb: true,
+      }));
+    setSampleImages(existingSamples);
   };
 
   const saveShowcaseAsTemplate = () => {
@@ -345,17 +337,18 @@ function CreatorDashboard() {
 
   const uploadShowcaseIdentity = async (file: File, localId: string) => {
     setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: true } : r));
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "identity-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
     });
     if (!res.ok) {
       setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: "Upload failed" } : r));
       return;
     }
     const { uploadUrl, storagePath, storageBucket } = await res.json();
-    const putRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     if (!putRes.ok) {
       setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: "Upload failed" } : r));
       return;
@@ -446,17 +439,18 @@ function CreatorDashboard() {
 
   const uploadFile = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true } : img));
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "template-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
     });
     if (!res.ok) {
       setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
       return;
     }
     const { uploadUrl, storagePath } = await res.json();
-    const putRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     if (!putRes.ok) {
       setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
       return;
@@ -480,17 +474,18 @@ function CreatorDashboard() {
 
   const uploadSampleFile = async (file: File, localId: string) => {
     setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: true } : s));
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "template-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
     });
     if (!res.ok) {
       setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
       return;
     }
     const { uploadUrl, storagePath } = await res.json();
-    const putRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     if (!putRes.ok) {
       setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
       return;

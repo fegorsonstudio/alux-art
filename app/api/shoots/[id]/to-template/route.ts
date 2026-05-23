@@ -60,6 +60,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   type RefRow = {
     purpose: string;
     tag: string | null;
+    custom_name: string | null;
     note: string | null;
     type: string | null;
     storage_bucket: string;
@@ -99,6 +100,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       display_order: i,
       purpose: ref.purpose,
       tag: ref.purpose === "tagged" ? (ref.tag ?? null) : null,
+      custom_name: ref.custom_name ?? null,
       note: ref.note ?? null,
       created_at: now,
     });

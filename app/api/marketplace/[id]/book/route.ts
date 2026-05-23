@@ -25,6 +25,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => ({})) as {
     identityRefs?: RefInput[];
     taggedRefs?: TaggedRefInput[];
+    poseRefs?: RefInput[];
+    shotType?: string;
     couponCode?: string;
     packageSize?: number;
     currency?: string;
@@ -49,6 +51,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const buyerPackageSize: 1 | 5 | 10 = ([1, 5, 10] as const).includes(body.packageSize as 1 | 5 | 10)
     ? (body.packageSize as 1 | 5 | 10)
     : 10;
+
+  const poseRefs: RefInput[] = Array.isArray(body.poseRefs) ? body.poseRefs.slice(0, 10) : [];
+  for (const ref of poseRefs) {
+    if (typeof ref.storagePath !== "string" || !ref.storagePath.startsWith(`${user.id}/`)) {
+      return NextResponse.json({ error: "Invalid pose image reference" }, { status: 400 });
+    }
+  }
+
+  const VALID_SHOT_TYPES = new Set(["headshot", "close_up", "medium", "full_body"]);
+  const shotType: string | null =
+    buyerPackageSize === 1 && typeof body.shotType === "string" && VALID_SHOT_TYPES.has(body.shotType)
+      ? body.shotType
+      : null;
 
   const payCurrency: "NGN" | "USD" = body.currency === "USD" ? "USD" : "NGN";
 
@@ -177,6 +192,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     progress: 0,
     quote: { text: "", attribution: "" },
     identity_profile: "",
+    shot_type: shotType ?? null,
     created_at: now,
     updated_at: now,
   });
@@ -254,8 +270,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       created_at: now,
     }));
 
-  if (identityRows.length + taggedRows.length + inspirationRows.length > 0) {
-    const { error: refErr } = await service.from("shoot_references").insert([...identityRows, ...taggedRows, ...inspirationRows]);
+  const poseRows = poseRefs.map((ref, i) => ({
+    id: crypto.randomUUID(),
+    shoot_id: shootId,
+    user_id: user.id,
+    purpose: "pose",
+    tag: null,
+    custom_name: null,
+    note: null,
+    name: ref.name ?? `pose-${i + 1}`,
+    type: ref.type ?? "image/jpeg",
+    size: ref.size ?? 1,
+    storage_bucket: ref.storageBucket,
+    storage_path: ref.storagePath,
+    created_at: now,
+  }));
+
+  if (identityRows.length + taggedRows.length + inspirationRows.length + poseRows.length > 0) {
+    const { error: refErr } = await service.from("shoot_references").insert([...identityRows, ...taggedRows, ...inspirationRows, ...poseRows]);
     if (refErr) {
       await service.from("shoot_images").delete().eq("shoot_id", shootId);
       await service.from("shoots").delete().eq("id", shootId);

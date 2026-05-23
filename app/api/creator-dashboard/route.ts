@@ -19,7 +19,7 @@ export async function GET() {
 
   const { data: rawTemplates } = await service
     .from("templates")
-    .select("*, template_images(id, display_order, purpose, tag, storage_path, storage_bucket)")
+    .select("*, template_images(id, display_order, purpose, tag, note, note_hidden, custom_name, storage_path, storage_bucket)")
     .eq("creator_id", creator.id)
     .order("created_at", { ascending: false });
 

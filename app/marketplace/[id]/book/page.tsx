@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCurrency, type Currency } from "@/lib/useCurrency";
 import styles from "./book.module.css";
+import { resizeIfNeeded } from "@/lib/resize-image";
 
 interface TemplateImage {
   id: string;
@@ -12,6 +13,8 @@ interface TemplateImage {
   purpose: string;
   tag?: string;
   customName?: string | null;
+  note?: string | null;
+  noteHidden?: boolean;
   storagePath: string;
   storageBucket: string;
   displayOrder: number;
@@ -57,6 +60,17 @@ interface TaggedRefState {
   url: string;
   isReplaced: boolean;
   note: string;
+  noteHidden: boolean;
+}
+
+interface PoseUpload {
+  localId: string;
+  file: File;
+  preview: string;
+  storagePath: string;
+  storageBucket: string;
+  uploading: boolean;
+  error?: string;
 }
 
 interface CouponResult {
@@ -89,6 +103,10 @@ export default function BookPage() {
   const [addRefNote, setAddRefNote] = useState("");
   const addRefInputRef = useRef<HTMLInputElement>(null);
 
+  const [poseUploads, setPoseUploads] = useState<PoseUpload[]>([]);
+  const poseInputRef = useRef<HTMLInputElement>(null);
+  const [shotType, setShotType] = useState<"headshot" | "close_up" | "medium" | "full_body">("close_up");
+
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [validating, setValidating] = useState(false);
@@ -98,6 +116,7 @@ export default function BookPage() {
     return ([1, 5, 10].includes(p) ? p : 10) as 1 | 5 | 10;
   });
   const [buying, setBuying] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [error, setError] = useState("");
 
   const identityInputRef = useRef<HTMLInputElement>(null);
@@ -123,7 +142,8 @@ export default function BookPage() {
           storageBucket: img.storageBucket,
           url: "",
           isReplaced: false,
-          note: "",
+          note: img.noteHidden ? "" : (img.note ?? ""),
+          noteHidden: img.noteHidden ?? false,
         })));
       }
       if (idData.refs) setSavedRefs(idData.refs);
@@ -149,17 +169,18 @@ export default function BookPage() {
 
   const uploadIdentityFile = async (file: File, localId: string) => {
     setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: true } : u));
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "identity-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
     });
     if (!res.ok) {
       setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
       return;
     }
     const { uploadUrl, storagePath, storageBucket } = await res.json();
-    const put = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    const put = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     if (!put.ok) {
       setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
       return;
@@ -182,6 +203,48 @@ export default function BookPage() {
     items.forEach(u => uploadIdentityFile(u.file, u.localId));
   };
 
+  // ── Pose uploads ────────────────────────────────────────────────────────────
+
+  const uploadPoseFile = async (file: File, localId: string) => {
+    setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: true } : u));
+    const f = await resizeIfNeeded(file);
+    const res = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
+    });
+    if (!res.ok) {
+      setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
+      return;
+    }
+    const { uploadUrl, storagePath, storageBucket } = await res.json();
+    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket } : u));
+  };
+
+  const addPoseFiles = (files: FileList) => {
+    const toAdd = Array.from(files).slice(0, 10 - poseUploads.length);
+    const items: PoseUpload[] = toAdd.map(file => ({
+      localId: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+      storagePath: "",
+      storageBucket: "identity-images",
+      uploading: false,
+    }));
+    setPoseUploads(prev => [...prev, ...items]);
+    items.forEach(u => uploadPoseFile(u.file, u.localId));
+  };
+
+  const clearIdentityImages = async () => {
+    if (!confirm("Delete all your saved identity images? This cannot be undone.")) return;
+    setClearing(true);
+    await fetch("/api/user/identity-refs", { method: "DELETE" });
+    setSavedRefs([]);
+    setSelectedSaved(new Set());
+    setClearing(false);
+  };
+
   // ── Tagged ref replace ──────────────────────────────────────────────────────
 
   const startReplace = (tagId: string) => {
@@ -192,14 +255,15 @@ export default function BookPage() {
   const handleReplaceFile = async (file: File) => {
     if (!replacingTag) return;
     const localPreview = URL.createObjectURL(file);
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "identity-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
     });
     if (!res.ok) { setReplacingTag(null); return; }
     const { uploadUrl, storagePath, storageBucket } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     setTaggedRefs(prev => prev.map(r => r.id === replacingTag
       ? { ...r, storagePath, storageBucket, url: localPreview, isReplaced: true }
       : r
@@ -210,14 +274,15 @@ export default function BookPage() {
   // ── Add custom reference ────────────────────────────────────────────────────
 
   const handleAddRefFile = async (file: File) => {
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "identity-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
     });
     if (!res.ok) { setAddingRef(false); return; }
     const { uploadUrl, storagePath, storageBucket } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     setTaggedRefs(prev => [...prev, {
       id: crypto.randomUUID(),
       tag: addRefTag,
@@ -227,6 +292,7 @@ export default function BookPage() {
       url: URL.createObjectURL(file),
       isReplaced: true,
       note: addRefNote.trim(),
+      noteHidden: false,
     }]);
     setAddingRef(false);
     setAddRefNote("");
@@ -262,7 +328,7 @@ export default function BookPage() {
     })),
   ];
 
-  const canPay = allIdentityRefs.length > 0 && !newUploads.some(u => u.uploading) && !newUploads.some(u => u.error) && !buying;
+  const canPay = allIdentityRefs.length > 0 && !newUploads.some(u => u.uploading) && !poseUploads.some(u => u.uploading) && !newUploads.some(u => u.error) && !buying;
 
   const book = async () => {
     if (!canPay) return;
@@ -274,6 +340,11 @@ export default function BookPage() {
       body: JSON.stringify({
         identityRefs: allIdentityRefs,
         taggedRefs: taggedRefs.map(r => ({ tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket, note: r.note.trim() || undefined })),
+        poseRefs: poseUploads.filter(u => u.storagePath).map(u => ({
+          name: u.file.name, type: u.file.type, size: u.file.size,
+          storageBucket: u.storageBucket, storagePath: u.storagePath,
+        })),
+        shotType: selectedPkg === 1 ? shotType : undefined,
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: selectedPkg,
         currency,
@@ -345,23 +416,33 @@ export default function BookPage() {
           <p className={styles.sectionHint}>Select saved photos or upload new ones. At least 1 required.</p>
 
           {savedRefs.length > 0 && (
-            <div className={styles.savedGrid}>
-              {savedRefs.map(ref => (
-                <button
-                  key={ref.id}
-                  type="button"
-                  className={`${styles.savedThumb} ${selectedSaved.has(ref.id) ? styles.savedThumbSelected : ""}`}
-                  onClick={() => setSelectedSaved(prev => {
-                    const next = new Set(prev);
-                    if (next.has(ref.id)) next.delete(ref.id); else next.add(ref.id);
-                    return next;
-                  })}
-                >
-                  <img src={ref.url} alt={ref.name} className={styles.savedImg} />
-                  {selectedSaved.has(ref.id) && <div className={styles.selectedTick}>✓</div>}
-                </button>
-              ))}
-            </div>
+            <>
+              <div className={styles.savedGrid}>
+                {savedRefs.map(ref => (
+                  <button
+                    key={ref.id}
+                    type="button"
+                    className={`${styles.savedThumb} ${selectedSaved.has(ref.id) ? styles.savedThumbSelected : ""}`}
+                    onClick={() => setSelectedSaved(prev => {
+                      const next = new Set(prev);
+                      if (next.has(ref.id)) next.delete(ref.id); else next.add(ref.id);
+                      return next;
+                    })}
+                  >
+                    <img src={ref.url} alt={ref.name} className={styles.savedImg} />
+                    {selectedSaved.has(ref.id) && <div className={styles.selectedTick}>✓</div>}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={styles.clearRefsBtn}
+                onClick={clearIdentityImages}
+                disabled={clearing}
+              >
+                {clearing ? "Clearing..." : "Clear identity images"}
+              </button>
+            </>
           )}
 
           <div className={styles.uploadRow}>
@@ -396,6 +477,39 @@ export default function BookPage() {
           )}
         </section>
 
+        {/* Pose direction section */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Pose direction (optional)</h2>
+          <p className={styles.sectionHint}>
+            Upload up to 10 pose reference images. Each image can be a single pose photo or a collage of multiple poses — the AI will extract all visible poses and match them to your generated images in order.
+          </p>
+          {poseUploads.length > 0 && (
+            <div className={styles.uploadGrid}>
+              {poseUploads.map(u => (
+                <div key={u.localId} className={styles.uploadItem}>
+                  <img src={u.preview} alt="" className={styles.uploadImg} />
+                  {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                  {u.error && <div className={styles.uploadError}>{u.error}</div>}
+                  <button type="button" className={styles.removeBtn} onClick={() => setPoseUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {poseUploads.length < 10 && (
+            <button type="button" className={styles.uploadBtn} onClick={() => poseInputRef.current?.click()}>
+              + Add pose image
+            </button>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            ref={poseInputRef}
+            className={styles.hidden}
+            onChange={e => { if (e.target.files) addPoseFiles(e.target.files); e.target.value = ""; }}
+          />
+        </section>
+
         {/* Reference customisation section — always shown */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Reference images</h2>
@@ -413,13 +527,15 @@ export default function BookPage() {
                     )}
                     <span className={styles.refTag}>{ref.customName}</span>
                   </div>
-                  <input
-                    type="text"
-                    className={styles.refNoteInput}
-                    placeholder="Styling note, e.g. change color to burgundy…"
-                    value={ref.note}
-                    onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
-                  />
+                  {!ref.noteHidden && (
+                    <input
+                      type="text"
+                      className={styles.refNoteInput}
+                      placeholder="Styling note, e.g. change color to burgundy…"
+                      value={ref.note}
+                      onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
+                    />
+                  )}
                   <div className={styles.refListActions}>
                     <button type="button" className={styles.refBtn} onClick={() => startReplace(ref.id)}>
                       {ref.isReplaced ? "Re-upload" : "Replace"}
@@ -504,6 +620,21 @@ export default function BookPage() {
                 onClick={() => setSelectedPkg(o.n)}
               >
                 {o.n} {o.n === 1 ? "image" : "images"} — {formatPrice(o.price)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selectedPkg === 1 && (
+          <div className={styles.shotTypeRow}>
+            {(["headshot", "close_up", "medium", "full_body"] as const).map(t => (
+              <button
+                key={t}
+                type="button"
+                className={`${styles.pkgPill} ${shotType === t ? styles.pkgPillActive : ""}`}
+                onClick={() => setShotType(t)}
+              >
+                {t === "headshot" ? "Headshot" : t === "close_up" ? "Close-up" : t === "medium" ? "Medium" : "Full body"}
               </button>
             ))}
           </div>

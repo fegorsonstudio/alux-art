@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (typeof contentType !== "string" || !contentType.startsWith("image/"))
     return NextResponse.json({ error: "contentType must be image/*" }, { status: 400 });
   if (typeof size !== "number" || size <= 0 || size > MAX_SIZE)
-    return NextResponse.json({ error: "size must be 1-10MB" }, { status: 400 });
+    return NextResponse.json({ error: "size must be 1–20MB" }, { status: 400 });
   if (typeof bucket !== "string" || !ALLOWED_BUCKETS.has(bucket))
     return NextResponse.json({ error: "invalid bucket" }, { status: 400 });
 

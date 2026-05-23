@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./become-creator.module.css";
+import { resizeIfNeeded } from "@/lib/resize-image";
 
 interface Bank { name: string; code: string; }
 
@@ -47,14 +48,15 @@ export default function BecomeCreatorPage() {
 
   const uploadAvatar = async (file: File) => {
     setUploadingAvatar(true);
+    const f = await resizeIfNeeded(file);
     const res = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, bucket: "template-images" }),
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
     });
     if (!res.ok) { setUploadingAvatar(false); return; }
     const { uploadUrl, storagePath } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     setAvatarStoragePath(storagePath);
     setAvatarPreview(URL.createObjectURL(file));
     setUploadingAvatar(false);

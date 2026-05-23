@@ -791,6 +791,34 @@ select.input { appearance: none; cursor: pointer; }
 .taggedRefStatus { font-size: 0.72rem; color: #7aafb4; }
 .taggedRefError { font-size: 0.72rem; color: #a7463c; }
 
+.noteVisibleBtn {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid rgba(67, 159, 169, 0.28);
+  border-radius: 6px;
+  color: #7aafb4;
+  font-size: 0.68rem;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+.noteVisibleBtn:hover { border-color: rgba(67, 159, 169, 0.6); color: #3f6166; }
+
+.noteHiddenBtn {
+  align-self: flex-start;
+  background: rgba(167, 70, 60, 0.07);
+  border: 1px solid rgba(167, 70, 60, 0.28);
+  border-radius: 6px;
+  color: #a7463c;
+  font-size: 0.68rem;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.noteHiddenBtn:hover { background: rgba(167, 70, 60, 0.13); }
+
 /* ---- Storefront settings ---- */
 .storefrontSection {
   background: rgba(255, 255, 255, 0.58);

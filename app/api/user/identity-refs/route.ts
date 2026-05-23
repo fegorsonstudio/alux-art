@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 
+
 export async function GET() {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -45,4 +46,43 @@ export async function GET() {
   );
 
   return NextResponse.json({ refs: signed.filter(r => r.url !== null) });
+}
+
+export async function DELETE() {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const service = createServiceClient();
+
+  // Fetch all identity refs for this user to get unique storage paths
+  const { data: refs } = await service
+    .from("shoot_references")
+    .select("id, storage_path, storage_bucket")
+    .eq("user_id", user.id)
+    .eq("purpose", "identity");
+
+  if (refs && refs.length > 0) {
+    // Delete storage objects grouped by bucket
+    const byBucket = new Map<string, string[]>();
+    for (const ref of refs) {
+      if (!byBucket.has(ref.storage_bucket)) byBucket.set(ref.storage_bucket, []);
+      byBucket.get(ref.storage_bucket)!.push(ref.storage_path);
+    }
+    for (const [bucket, paths] of byBucket) {
+      // Deduplicate paths before deleting
+      const unique = [...new Set(paths)];
+      await service.storage.from(bucket).remove(unique);
+    }
+
+    // Delete all identity ref rows for this user
+    await service
+      .from("shoot_references")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("purpose", "identity");
+  }
+
+  return NextResponse.json({ deleted: refs?.length ?? 0 });
 }

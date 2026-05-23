@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   const service = createServiceClient();
   let query = service
     .from("shoots")
-    .select("*, shoot_images(*), templates(title)")
+    .select("*, shoot_images(*), templates(title), template_purchases!shoot_id(template_id, templates!template_id(creator_id, creators!creator_id(user_id)))")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(limit + 1);

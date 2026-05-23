@@ -105,7 +105,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     storage_path: destPath,
     storage_bucket: "template-images",
     display_order: displayOrder,
-    purpose: "inspiration",
+    purpose: "sample",
     tag: null,
     created_at: now,
   });
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       storagePath: destPath,
       storageBucket: "template-images",
       displayOrder,
-      purpose: "inspiration",
+      purpose: "sample",
       url: signed?.signedUrl ?? null,
     },
   });
