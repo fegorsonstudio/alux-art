@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const { storagePath, displayOrder, purpose, tag, note, customName } = body;
+  const { storagePath, displayOrder, purpose, tag, note, customName, noteHidden } = body;
 
   if (typeof storagePath !== "string" || !storagePath.startsWith(`${user.id}/`)) {
     return NextResponse.json({ error: "Invalid storage path" }, { status: 400 });
@@ -42,22 +42,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ? service.from("template_images").select("id", { count: "exact", head: true }).eq("template_id", id).eq("purpose", "sample")
     : service.from("template_images").select("id", { count: "exact", head: true }).eq("template_id", id).neq("purpose", "sample");
   const { count } = await purposeFilter;
-  const maxAllowed = limitField === "sample" ? 10 : 8;
+  const maxAllowed = limitField === "sample" ? 10 : 20;
   if ((count ?? 0) >= maxAllowed) {
     return NextResponse.json({ error: `Maximum ${maxAllowed} ${limitField} images per template` }, { status: 400 });
   }
 
-  const { data: image, error } = await service.from("template_images").insert({
+  const noteVal = (typeof note === "string" && note.trim()) ? note.trim() : null;
+  const customNameVal = (typeof customName === "string" && customName.trim()) ? customName.trim() : null;
+
+  // Build insert object without optional columns when null, so a missing migration
+  // (e.g. 016_template_images_custom_name) doesn't cause every insert to fail.
+  const insertRow: Record<string, unknown> = {
     template_id: id,
     storage_path: storagePath,
     storage_bucket: "template-images",
     display_order: Number(displayOrder) || 0,
     purpose,
     tag: purpose === "tagged" ? tag : null,
-    note: (typeof note === "string" && note.trim()) ? note.trim() : null,
-    custom_name: (typeof customName === "string" && customName.trim()) ? customName.trim() : null,
     created_at: new Date().toISOString(),
-  }).select().single();
+  };
+  if (noteVal !== null) insertRow.note = noteVal;
+  if (customNameVal !== null) insertRow.custom_name = customNameVal;
+  if (noteHidden === true) insertRow.note_hidden = true;
+
+  let { data: image, error } = await service.from("template_images").insert(insertRow).select().single();
+  if (error && insertRow.note_hidden !== undefined) {
+    // note_hidden column may not exist yet — retry without it
+    const { note_hidden: _nh, ...insertRowCore } = insertRow;
+    ({ data: image, error } = await service.from("template_images").insert(insertRowCore).select().single());
+  }
 
   if (error) return NextResponse.json({ error: "Failed to add image" }, { status: 500 });
   return NextResponse.json({ image }, { status: 201 });
@@ -75,7 +88,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const { imageId, tag, note, customName } = body;
+  const { imageId, tag, note, customName, noteHidden } = body;
 
   if (typeof imageId !== "string") return NextResponse.json({ error: "imageId required" }, { status: 400 });
   if (tag !== undefined && (typeof tag !== "string" || !ALLOWED_TAGS.has(tag as string))) {
@@ -103,10 +116,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (tag !== undefined) updates.tag = tag;
   if (note !== undefined) updates.note = (typeof note === "string" && note.trim()) ? note.trim() : null;
   if (customName !== undefined) updates.custom_name = (typeof customName === "string" && customName.trim()) ? customName.trim() : null;
+  if (noteHidden !== undefined) updates.note_hidden = noteHidden === true;
 
   if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
-  await service.from("template_images").update(updates).eq("id", imageId);
+  const { error: updateErr } = await service.from("template_images").update(updates).eq("id", imageId);
+  if (updateErr && updates.note_hidden !== undefined) {
+    // note_hidden column may not exist yet — retry without it so other fields still save
+    const { note_hidden: _nh, ...updatesCore } = updates;
+    if (Object.keys(updatesCore).length > 0) {
+      await service.from("template_images").update(updatesCore).eq("id", imageId);
+    }
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -121,7 +142,33 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const body = await request.json() as { imageId?: string };
+  const body = await request.json() as { imageId?: string; clearAll?: boolean };
+
+  // clearAll=true wipes every workflow ref (tagged + inspiration) for this template
+  if (body.clearAll === true) {
+    const { data: tmpl } = await service
+      .from("templates")
+      .select("id")
+      .eq("id", id)
+      .eq("creator_id", creator.id)
+      .single();
+    if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { data: allRefs } = await service
+      .from("template_images")
+      .select("id, storage_path")
+      .eq("template_id", id)
+      .in("purpose", ["tagged", "inspiration"]);
+
+    if (allRefs && allRefs.length > 0) {
+      const paths = allRefs.map(r => r.storage_path).filter(Boolean);
+      if (paths.length > 0) await service.storage.from("template-images").remove(paths);
+      const ids = allRefs.map(r => r.id);
+      await service.from("template_images").delete().in("id", ids);
+    }
+    return NextResponse.json({ ok: true, deleted: allRefs?.length ?? 0 });
+  }
+
   if (typeof body.imageId !== "string") return NextResponse.json({ error: "imageId required" }, { status: 400 });
 
   const { data: img } = await service

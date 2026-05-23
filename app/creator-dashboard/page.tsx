@@ -954,7 +954,26 @@ function CreatorDashboard() {
 
                 {/* Tagged references — inline tag pills + note per image */}
                 <div className={styles.advancedRefSection}>
-                  <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>— upload images and tag each one (optional)</span></span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>— upload images and tag each one (optional)</span></span>
+                    {images.some(img => img.purpose === "tagged") && panel !== "create" && (
+                      <button
+                        type="button"
+                        style={{ fontSize: "0.75rem", color: "#e44", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+                        onClick={async () => {
+                          if (!confirm("Delete ALL tagged references for this template? This cannot be undone.")) return;
+                          await fetch(`/api/templates/${panel}/images`, {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ clearAll: true }),
+                          });
+                          setImages(prev => prev.filter(img => img.purpose !== "tagged"));
+                        }}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                   {images.filter(img => img.purpose === "tagged").map(img => (
                     <div key={img.localId} className={styles.taggedRefCard}>
                       <div className={styles.taggedRefTop}>
