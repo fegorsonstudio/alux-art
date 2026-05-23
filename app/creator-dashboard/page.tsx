@@ -957,100 +957,103 @@ function CreatorDashboard() {
                   );
                 })()}
 
-                {/* Tagged references — inline tag pills + note per image */}
-                <div className={styles.advancedRefSection}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                    <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>— upload images and tag each one (optional)</span></span>
-                    {images.some(img => img.purpose === "tagged") && panel !== "create" && (
-                      <button
-                        type="button"
-                        style={{ fontSize: "0.75rem", color: "#e44", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
-                        onClick={async () => {
-                          if (!confirm("Delete ALL tagged references for this template? This cannot be undone.")) return;
-                          await fetch(`/api/templates/${panel}/images`, {
-                            method: "DELETE",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ clearAll: true }),
-                          });
-                          setImages(prev => prev.filter(img => img.purpose !== "tagged"));
-                        }}
-                      >
-                        Clear all
-                      </button>
-                    )}
-                  </div>
-                  {images.filter(img => img.purpose === "tagged").map(img => (
-                    <div key={img.localId} className={styles.taggedRefCard}>
-                      <div className={styles.taggedRefTop}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.preview} alt="" className={styles.taggedRefThumb} />
-                        <div className={styles.taggedRefRight}>
-                          <div className={styles.tagPills}>
-                            {TEMPLATE_TAGS.map(t => (
-                              <button
-                                key={t}
-                                type="button"
-                                className={`${styles.tagPill} ${img.tag === t ? styles.tagPillActive : ""}`}
-                                onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, tag: t } : x))}
-                              >
-                                {t.replace("_", " ")}
-                              </button>
-                            ))}
-                          </div>
-                          <input
-                            type="text"
-                            className={styles.noteInput}
-                            value={img.customName}
-                            onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, customName: e.target.value } : x))}
-                            placeholder="Reference name (optional)..."
-                          />
-                          <textarea
-                            className={styles.noteInput}
-                            value={img.note}
-                            onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, note: e.target.value } : x))}
-                            placeholder="Styling note (optional)..."
-                            rows={2}
-                          />
-                          {img.note.trim() && (
-                            <button
-                              type="button"
-                              className={img.noteHidden ? styles.noteHiddenBtn : styles.noteVisibleBtn}
-                              onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, noteHidden: !x.noteHidden } : x))}
-                            >
-                              {img.noteHidden ? "Note hidden from buyer" : "Hide note from buyer"}
-                            </button>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.taggedRefRemove}
-                          onClick={async () => {
-                            if (img.fromDb) {
-                              await fetch(`/api/templates/${panel}/images`, {
-                                method: "DELETE",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ imageId: img.localId }),
-                              });
-                            }
-                            setImages(prev => prev.filter(x => x.localId !== img.localId));
-                          }}
-                        >✕</button>
-                      </div>
-                      {img.uploading && <div className={styles.taggedRefStatus}>Uploading...</div>}
-                      {img.error && <div className={styles.taggedRefError}>{img.error}</div>}
-                    </div>
-                  ))}
-                  {images.filter(img => img.purpose === "tagged").length < 20 && (
+              </>
+            )}
+
+            {/* Tagged references — always visible so creator can edit/delete regardless of shoot mode */}
+            {(form.shootMode === "advanced" || images.some(img => img.purpose === "tagged")) && (
+              <div className={styles.advancedRefSection}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>— upload images and tag each one (optional)</span></span>
+                  {images.some(img => img.purpose === "tagged") && panel !== "create" && (
                     <button
                       type="button"
-                      className={`${styles.addImgBtn} ${styles.addImgBtnSm}`}
-                      onClick={() => { setPendingTag("__tagged__"); imgInputRef.current?.click(); }}
+                      style={{ fontSize: "0.75rem", color: "#e44", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+                      onClick={async () => {
+                        if (!confirm("Delete ALL tagged references for this template? This cannot be undone.")) return;
+                        await fetch(`/api/templates/${panel}/images`, {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ clearAll: true }),
+                        });
+                        setImages(prev => prev.filter(img => img.purpose !== "tagged"));
+                      }}
                     >
-                      + Add reference
+                      Clear all
                     </button>
                   )}
                 </div>
-              </>
+                {images.filter(img => img.purpose === "tagged").map(img => (
+                  <div key={img.localId} className={styles.taggedRefCard}>
+                    <div className={styles.taggedRefTop}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.preview} alt="" className={styles.taggedRefThumb} />
+                      <div className={styles.taggedRefRight}>
+                        <div className={styles.tagPills}>
+                          {TEMPLATE_TAGS.map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              className={`${styles.tagPill} ${img.tag === t ? styles.tagPillActive : ""}`}
+                              onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, tag: t } : x))}
+                            >
+                              {t.replace("_", " ")}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          className={styles.noteInput}
+                          value={img.customName}
+                          onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, customName: e.target.value } : x))}
+                          placeholder="Reference name (optional)..."
+                        />
+                        <textarea
+                          className={styles.noteInput}
+                          value={img.note}
+                          onChange={e => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, note: e.target.value } : x))}
+                          placeholder="Styling note (optional)..."
+                          rows={2}
+                        />
+                        {img.note.trim() && (
+                          <button
+                            type="button"
+                            className={img.noteHidden ? styles.noteHiddenBtn : styles.noteVisibleBtn}
+                            onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, noteHidden: !x.noteHidden } : x))}
+                          >
+                            {img.noteHidden ? "Note hidden from buyer" : "Hide note from buyer"}
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.taggedRefRemove}
+                        onClick={async () => {
+                          if (img.fromDb) {
+                            await fetch(`/api/templates/${panel}/images`, {
+                              method: "DELETE",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ imageId: img.localId }),
+                            });
+                          }
+                          setImages(prev => prev.filter(x => x.localId !== img.localId));
+                        }}
+                      >✕</button>
+                    </div>
+                    {img.uploading && <div className={styles.taggedRefStatus}>Uploading...</div>}
+                    {img.error && <div className={styles.taggedRefError}>{img.error}</div>}
+                  </div>
+                ))}
+                {images.filter(img => img.purpose === "tagged").length < 20 && (
+                  <button
+                    type="button"
+                    className={`${styles.addImgBtn} ${styles.addImgBtnSm}`}
+                    onClick={() => { setPendingTag("__tagged__"); imgInputRef.current?.click(); }}
+                  >
+                    + Add reference
+                  </button>
+                )}
+              </div>
             )}
 
             <input type="file" accept="image/*" multiple ref={imgInputRef} className={styles.hidden} onChange={e => { if (e.target.files) addImages(e.target.files); e.target.value = ""; }} />
