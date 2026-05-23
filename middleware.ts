@@ -41,6 +41,7 @@ export async function middleware(request: NextRequest) {
     p === "/privacy" ||
     p === "/marketplace" ||
     (p.startsWith("/marketplace/") && !p.includes("/book")) ||
+    p.includes("/book/success") ||
     p.startsWith("/creators/");
 
   const { data: { session } } = await supabase.auth.getSession();

@@ -160,8 +160,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const amountNgn = buyerAmountNgn - couponDiscountNgn;
 
   const now = new Date().toISOString();
-  const proto = request.headers.get("x-forwarded-proto") ?? "https";
-  const host = request.headers.get("host") ?? "";
+  const origin = process.env.NEXT_PUBLIC_SITE_URL
+    ?? `${request.headers.get("x-forwarded-proto") ?? "https"}://${request.headers.get("host") ?? ""}`;
   const shootId = crypto.randomUUID();
 
   // 5. Create shoot in PENDING_PAYMENT
@@ -294,7 +294,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ? Math.ceil((amountNgn / usdToNgn) * 100)   // USD cents
         : amountNgn * 100,                            // NGN kobo
       currency: payCurrency,
-      callback_url: `${proto}://${host}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
+      callback_url: `${origin}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
       metadata: {
         type: "template_purchase",
         template_id: templateId,
