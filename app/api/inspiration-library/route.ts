@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -17,10 +18,8 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const signedImages = await Promise.all((data ?? []).map(async (img) => {
-    const { data: signed } = await service.storage
-      .from(img.storage_bucket)
-      .createSignedUrl(img.storage_path, 3600);
-    return signed?.signedUrl ? { ...img, url: signed.signedUrl } : null;
+    const url = await r2SignedDownloadUrl(img.storage_bucket, img.storage_path, 3600).catch(() => null);
+    return url ? { ...img, url } : null;
   }));
   const images = signedImages.filter(Boolean);
 

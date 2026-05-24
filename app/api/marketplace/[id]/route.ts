@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,19 +19,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   let coverUrl: string | null = null;
   if (template.cover_storage_path) {
-    const { data: s } = await service.storage
-      .from(template.cover_bucket ?? "template-images")
-      .createSignedUrl(template.cover_storage_path, 3600);
-    coverUrl = s?.signedUrl ?? null;
+    coverUrl = await r2SignedDownloadUrl(
+      template.cover_bucket ?? "template-images",
+      template.cover_storage_path,
+      3600
+    ).catch(() => null);
   }
 
   const cr = template.creators as Record<string, string> | null;
   let avatarUrl: string | null = null;
   if (cr?.avatar_storage_path) {
-    const { data: s } = await service.storage
-      .from(cr.avatar_bucket ?? "template-images")
-      .createSignedUrl(cr.avatar_storage_path, 3600);
-    avatarUrl = s?.signedUrl ?? null;
+    avatarUrl = await r2SignedDownloadUrl(
+      cr.avatar_bucket ?? "template-images",
+      cr.avatar_storage_path,
+      3600
+    ).catch(() => null);
   }
 
   const rawImages = (template.template_images ?? []) as Array<{
@@ -48,10 +51,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         const isWorkflowRef = img.purpose === "tagged" || img.purpose === "inspiration";
         let signedUrl: string | null = null;
         if (!isWorkflowRef) {
-          const { data: s } = await service.storage
-            .from(img.storage_bucket ?? "template-images")
-            .createSignedUrl(img.storage_path, 3600);
-          signedUrl = s?.signedUrl ?? null;
+          signedUrl = await r2SignedDownloadUrl(
+            img.storage_bucket ?? "template-images",
+            img.storage_path,
+            3600
+          ).catch(() => null);
         }
         return {
           id: img.id,

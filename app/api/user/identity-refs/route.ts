@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl, r2Delete } from "@/lib/r2";
 
 
 export async function GET() {
@@ -29,18 +30,15 @@ export async function GET() {
     return true;
   }).slice(0, 20);
 
-  // Sign URLs
   const signed = await Promise.all(
     deduped.map(async (ref) => {
-      const { data } = await service.storage
-        .from(ref.storage_bucket)
-        .createSignedUrl(ref.storage_path, 3600);
+      const url = await r2SignedDownloadUrl(ref.storage_bucket, ref.storage_path, 3600).catch(() => null);
       return {
         id: ref.id,
         name: ref.name,
         storagePath: ref.storage_path,
         storageBucket: ref.storage_bucket,
-        url: data?.signedUrl ?? null,
+        url,
       };
     })
   );
@@ -71,9 +69,8 @@ export async function DELETE() {
       byBucket.get(ref.storage_bucket)!.push(ref.storage_path);
     }
     for (const [bucket, paths] of byBucket) {
-      // Deduplicate paths before deleting
       const unique = [...new Set(paths)];
-      await service.storage.from(bucket).remove(unique);
+      await r2Delete(bucket, unique).catch(() => {});
     }
 
     // Delete all identity ref rows for this user

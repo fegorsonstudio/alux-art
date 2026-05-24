@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,10 +17,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   let avatarUrl: string | null = null;
   if (creator.avatar_storage_path) {
-    const { data: s } = await service.storage
-      .from(creator.avatar_bucket ?? "template-images")
-      .createSignedUrl(creator.avatar_storage_path, 3600);
-    avatarUrl = s?.signedUrl ?? null;
+    avatarUrl = await r2SignedDownloadUrl(
+      creator.avatar_bucket ?? "template-images",
+      creator.avatar_storage_path,
+      3600
+    ).catch(() => null);
   }
 
   const { data: templates } = await service
@@ -32,10 +34,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const templatesWithUrls = await Promise.all((templates ?? []).map(async (t) => {
     let coverUrl: string | null = null;
     if (t.cover_storage_path) {
-      const { data: s } = await service.storage
-        .from(t.cover_bucket ?? "template-images")
-        .createSignedUrl(t.cover_storage_path, 3600);
-      coverUrl = s?.signedUrl ?? null;
+      coverUrl = await r2SignedDownloadUrl(
+        t.cover_bucket ?? "template-images",
+        t.cover_storage_path,
+        3600
+      ).catch(() => null);
     }
     return {
       id: t.id,

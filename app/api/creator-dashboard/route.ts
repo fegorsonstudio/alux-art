@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -26,23 +27,24 @@ export async function GET() {
   // Sign cover + template image URLs in parallel
   const templates: Record<string, unknown>[] = await Promise.all(
     (rawTemplates ?? []).map(async (t: Record<string, unknown>): Promise<Record<string, unknown>> => {
-      // Sign cover URL
       let cover_url: string | null = null;
       if (t.cover_storage_path) {
-        const { data } = await service.storage
-          .from((t.cover_bucket as string) ?? "template-images")
-          .createSignedUrl(t.cover_storage_path as string, 3600);
-        cover_url = data?.signedUrl ?? null;
+        cover_url = await r2SignedDownloadUrl(
+          (t.cover_bucket as string) ?? "template-images",
+          t.cover_storage_path as string,
+          3600
+        ).catch(() => null);
       }
-      // Sign each template image URL
       const rawImages = (t.template_images as Array<Record<string, unknown>>) ?? [];
       const template_images = await Promise.all(
         rawImages.map(async (img) => {
           if (!img.storage_path) return { ...img, signed_url: null };
-          const { data } = await service.storage
-            .from((img.storage_bucket as string) ?? "template-images")
-            .createSignedUrl(img.storage_path as string, 3600);
-          return { ...img, signed_url: data?.signedUrl ?? null };
+          const signed_url = await r2SignedDownloadUrl(
+            (img.storage_bucket as string) ?? "template-images",
+            img.storage_path as string,
+            3600
+          ).catch(() => null);
+          return { ...img, signed_url };
         })
       );
       return { ...t, cover_url, template_images };

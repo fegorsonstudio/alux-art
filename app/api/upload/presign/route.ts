@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import { r2SignedUploadUrl } from "@/lib/r2";
 
 const MAX_SIZE = 20 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images", "template-images"]);
@@ -31,16 +32,16 @@ export async function POST(req: NextRequest) {
   const uniqueId = crypto.randomUUID();
   const sanitized = sanitizeFileName(filename);
   const path = `${user.id}/${uniqueId}-${sanitized}`;
-  const service = createServiceClient();
 
-  const { data: uploadData, error: uploadErr } = await service.storage
-    .from(bucket).createSignedUploadUrl(path);
-  if (uploadErr || !uploadData)
-    return NextResponse.json({ error: uploadErr?.message ?? "presign failed" }, { status: 500 });
+  const uploadUrl = await r2SignedUploadUrl(bucket, path, contentType, 3600).catch((err) => {
+    console.error("[presign] R2 signed upload URL failed:", err);
+    return null;
+  });
+  if (!uploadUrl) return NextResponse.json({ error: "presign failed" }, { status: 500 });
 
   return NextResponse.json({
-    uploadUrl:     uploadData.signedUrl,
-    uploadToken:   uploadData.token,
+    uploadUrl,
+    uploadToken:   "",
     id:            uniqueId,
     name:          filename,
     type:          contentType,

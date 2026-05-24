@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2Download, r2Upload } from "@/lib/r2";
 
 export async function GET(
   _request: NextRequest,
@@ -32,16 +33,15 @@ export async function GET(
   const zip = new JSZip();
 
   for (const img of completedImages) {
-    const { data: fileData, error: dlErr } = await service.storage
-      .from(img.download_storage_bucket as string)
-      .download(img.download_storage_path as string);
-    if (dlErr) {
-      console.error("[download-zip] file download error:", dlErr.message, img.download_storage_path);
-      continue;
-    }
-    if (fileData) {
+    try {
+      const fileData = await r2Download(
+        img.download_storage_bucket as string,
+        img.download_storage_path as string
+      );
       const ext = (img.download_storage_path as string).endsWith(".png") ? "png" : "jpg";
       zip.file(`portrait-${img.slot}.${ext}`, await fileData.arrayBuffer());
+    } catch (err) {
+      console.error("[download-zip] R2 download error:", img.download_storage_path, err instanceof Error ? err.message : err);
     }
   }
 
@@ -54,7 +54,7 @@ export async function GET(
   // Best-effort cache to storage — silently skip if bucket/columns not yet migrated
   try {
     const zipPath = `${user.id}/${id}/shoot-${id}.zip`;
-    await service.storage.from("shoot-zips").upload(zipPath, zipBuf, { contentType: "application/zip", upsert: true });
+    await r2Upload("shoot-zips", zipPath, zipBuf, "application/zip");
     await service.from("shoots").update({
       zip_storage_bucket: "shoot-zips",
       zip_storage_path: zipPath,

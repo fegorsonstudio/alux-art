@@ -4,6 +4,7 @@ import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import type { StylingBrief, QualityGateResult } from "./types";
 import type { createServiceClient } from "./supabase-server";
+import { r2Upload, r2SignedDownloadUrl } from "./r2";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -276,7 +277,7 @@ export async function generateBaseWithFal(
 // ── Save base image to Supabase storage ─────────────────────────────────────
 
 export async function saveBaseImage(
-  service: ReturnType<typeof createServiceClient>,
+  _service: ReturnType<typeof createServiceClient>,
   userId: string,
   baseId: string,
   imageUrl: string
@@ -286,24 +287,16 @@ export async function saveBaseImage(
   const bytes = Buffer.from(await res.arrayBuffer());
   const storagePath = `${userId}/${baseId}/base.png`;
 
-  const { error } = await service.storage
-    .from("character-bases")
-    .upload(storagePath, bytes, { contentType: "image/png", upsert: true });
-  if (error) throw new Error(`Base image storage failed: ${error.message}`);
-
+  await r2Upload("character-bases", storagePath, bytes, "image/png");
   return storagePath;
 }
 
 // ── Sign base storage path ───────────────────────────────────────────────────
 
 export async function signBasePath(
-  service: ReturnType<typeof createServiceClient>,
+  _service: ReturnType<typeof createServiceClient>,
   storagePath: string,
   ttlSeconds = BASE_LOCK_TTL
 ): Promise<string> {
-  const { data, error } = await service.storage
-    .from("character-bases")
-    .createSignedUrl(storagePath, ttlSeconds);
-  if (error || !data?.signedUrl) throw new Error(`Base sign failed: ${error?.message}`);
-  return data.signedUrl;
+  return r2SignedDownloadUrl("character-bases", storagePath, ttlSeconds);
 }

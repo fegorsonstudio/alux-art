@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2Delete } from "@/lib/r2";
 
 const ALLOWED_PURPOSES = new Set(["inspiration", "tagged", "sample"]);
 const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE"]);
@@ -162,7 +163,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     if (allRefs && allRefs.length > 0) {
       const paths = allRefs.map(r => r.storage_path).filter(Boolean);
-      if (paths.length > 0) await service.storage.from("template-images").remove(paths);
+      if (paths.length > 0) await r2Delete("template-images", paths).catch(() => {});
       const ids = allRefs.map(r => r.id);
       await service.from("template_images").delete().in("id", ids);
     }
@@ -187,7 +188,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     .single();
   if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await service.storage.from("template-images").remove([img.storage_path]);
+  await r2Delete("template-images", [img.storage_path]).catch(() => {});
   await service.from("template_images").delete().eq("id", body.imageId);
 
   return NextResponse.json({ ok: true });

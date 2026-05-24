@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2Upload, r2SignedDownloadUrl } from "@/lib/r2";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
@@ -68,10 +69,11 @@ export async function POST(req: NextRequest) {
       if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
     }
 
-    const { data: signed, error: signedErr } = await service.storage.from(storageBucket).createSignedUrl(storagePath, 3600);
-    if (signedErr || !signed?.signedUrl) {
-      return NextResponse.json({ error: signedErr?.message ?? "Unable to sign uploaded image" }, { status: 500 });
+    const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600).catch(() => null);
+    if (!signedUrl) {
+      return NextResponse.json({ error: "Unable to sign uploaded image" }, { status: 500 });
     }
+    const signed = { signedUrl };
 
     return NextResponse.json({
       image: {
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
         size,
         storageBucket,
         storagePath,
-        url: signed.signedUrl,
+        url: signed.signedUrl ?? null,
       },
     });
   }
@@ -94,16 +96,15 @@ export async function POST(req: NextRequest) {
   const uniqueId = crypto.randomUUID();
   const path = `${user.id}/${uniqueId}-${sanitizeFileName(file.name)}`;
 
-  const { error: uploadError } = await service.storage
-    .from(bucket)
-    .upload(path, file, { contentType: file.type, upsert: true });
-
-  if (uploadError) {
-    console.error("[upload] storage error:", uploadError.message);
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+  try {
+    await r2Upload(bucket, path, file, file.type);
+  } catch (uploadError) {
+    console.error("[upload] R2 error:", uploadError instanceof Error ? uploadError.message : uploadError);
+    return NextResponse.json({ error: uploadError instanceof Error ? uploadError.message : "Upload failed" }, { status: 500 });
   }
 
-  const { data: signed } = await service.storage.from(bucket).createSignedUrl(path, 3600);
+  const signedUrl = await r2SignedDownloadUrl(bucket, path, 3600).catch(() => null);
+  const signed = signedUrl ? { signedUrl } : null;
 
   const imageId = uniqueId;
 

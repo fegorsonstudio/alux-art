@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl, r2Upload, r2Delete } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -14,12 +15,9 @@ export async function GET() {
     .eq("user_id", user.id)
     .order("last_used_at", { ascending: false });
 
-  // Generate signed URLs for each image
   const signedImages = await Promise.all((data ?? []).map(async (img) => {
-    const { data: signed } = await service.storage
-      .from(img.storage_bucket)
-      .createSignedUrl(img.storage_path, 3600);
-    return signed?.signedUrl ? { ...img, url: signed.signedUrl } : null;
+    const url = await r2SignedDownloadUrl(img.storage_bucket, img.storage_path, 3600).catch(() => null);
+    return url ? { ...img, url } : null;
   }));
   const images = signedImages.filter(Boolean);
 
@@ -38,11 +36,12 @@ export async function POST(request: NextRequest) {
 
   const service = createServiceClient();
   const path = `${user.id}/${Date.now()}-${file.name}`;
-  const { error: uploadError } = await service.storage
-    .from("identity-images")
-    .upload(path, file, { contentType: file.type, upsert: false });
 
-  if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 500 });
+  try {
+    await r2Upload("identity-images", path, file, file.type);
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Upload failed" }, { status: 500 });
+  }
 
   const { data: record } = await service.from("identity_images").insert({
     user_id: user.id,
@@ -55,11 +54,8 @@ export async function POST(request: NextRequest) {
     last_used_at: new Date().toISOString(),
   }).select().single();
 
-  const { data: signed } = await service.storage
-    .from("identity-images")
-    .createSignedUrl(path, 3600);
-
-  return NextResponse.json({ image: { ...record, url: signed?.signedUrl } });
+  const url = await r2SignedDownloadUrl("identity-images", path, 3600).catch(() => null);
+  return NextResponse.json({ image: { ...record, url } });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -75,13 +71,18 @@ export async function DELETE(request: NextRequest) {
   if (imageId) {
     const { data: img } = await service.from("identity_images").select("*").eq("id", imageId).eq("user_id", user.id).single();
     if (img) {
-      await service.storage.from(img.storage_bucket).remove([img.storage_path]);
+      await r2Delete(img.storage_bucket, [img.storage_path]).catch(() => {});
       await service.from("identity_images").delete().eq("id", imageId);
     }
   } else {
     const { data: imgs } = await service.from("identity_images").select("*").eq("user_id", user.id);
-    if (imgs) {
-      await Promise.all(imgs.map(img => service.storage.from(img.storage_bucket).remove([img.storage_path])));
+    if (imgs && imgs.length > 0) {
+      const byBucket = new Map<string, string[]>();
+      for (const img of imgs) {
+        if (!byBucket.has(img.storage_bucket)) byBucket.set(img.storage_bucket, []);
+        byBucket.get(img.storage_bucket)!.push(img.storage_path);
+      }
+      await Promise.allSettled(Array.from(byBucket.entries()).map(([b, paths]) => r2Delete(b, paths)));
       await service.from("identity_images").delete().eq("user_id", user.id);
     }
   }

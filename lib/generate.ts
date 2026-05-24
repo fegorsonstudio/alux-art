@@ -6,6 +6,7 @@ import { createServiceClient } from "./supabase-server";
 import { normalizePackageSize, type AspectRatio } from "./types";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
+import { r2SignedDownloadUrl, r2Upload, r2Delete } from "./r2";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -196,29 +197,27 @@ type FalOutput = {
 };
 
 async function signRefs(
-  service: ReturnType<typeof createServiceClient>,
+  _service: ReturnType<typeof createServiceClient>,
   refs: ShootRefRow[]
 ): Promise<SignedRef[]> {
   return Promise.all(
     refs.map(async (ref) => {
-      const { data, error } = await service.storage
-        .from(ref.storage_bucket)
-        .createSignedUrl(ref.storage_path, REFERENCE_SIGNED_URL_TTL_SECONDS);
-      if (error || !data?.signedUrl) {
+      const url = await r2SignedDownloadUrl(ref.storage_bucket, ref.storage_path, REFERENCE_SIGNED_URL_TTL_SECONDS).catch((err) => {
         console.error("[generate] reference signing failed:", {
           purpose: ref.purpose,
           bucket: ref.storage_bucket,
           path: ref.storage_path,
-          error: error?.message ?? "No signed URL returned",
+          error: err instanceof Error ? err.message : String(err),
         });
-      }
+        return "";
+      });
       return {
         purpose: ref.purpose,
         tag: ref.tag,
         customName: ref.custom_name,
         note: ref.note,
         name: ref.name,
-        url: data?.signedUrl ?? "",
+        url,
       };
     })
   );
@@ -787,11 +786,7 @@ async function saveSlotImage(
   const storagePath = `${userId}/${shootId}/slot-${slot}.${ext}`;
   const bucket = isTestMode ? "test" : "generated-4k";
 
-  const { error } = await service.storage
-    .from(bucket)
-    .upload(storagePath, bytes, { contentType, upsert: true });
-  if (error) throw new Error(error.message);
-
+  await r2Upload(bucket, storagePath, bytes, contentType);
   return storagePath;
 }
 
@@ -908,17 +903,19 @@ export async function compositeQuoteCard(
     return null;
   }
 
-  const [bgSigned, portraitSigned] = await Promise.all([
-    service.storage.from(bucket).createSignedUrl(backgroundStoragePath, 3600),
-    service.storage
-      .from(portraitSlot.preview_storage_bucket as string)
-      .createSignedUrl(portraitSlot.preview_storage_path as string, 3600),
+  const [bgSignedUrl, portraitSignedUrl] = await Promise.all([
+    r2SignedDownloadUrl(bucket, backgroundStoragePath, 3600).catch(() => null),
+    r2SignedDownloadUrl(
+      portraitSlot.preview_storage_bucket as string,
+      portraitSlot.preview_storage_path as string,
+      3600
+    ).catch(() => null),
   ]);
-  if (!bgSigned.data?.signedUrl || !portraitSigned.data?.signedUrl) return null;
+  if (!bgSignedUrl || !portraitSignedUrl) return null;
 
   const [bgRes, portraitRes] = await Promise.all([
-    fetch(bgSigned.data.signedUrl),
-    fetch(portraitSigned.data.signedUrl),
+    fetch(bgSignedUrl),
+    fetch(portraitSignedUrl),
   ]);
   if (!bgRes.ok || !portraitRes.ok) return null;
 
@@ -931,10 +928,9 @@ export async function compositeQuoteCard(
   const W = bgMeta.width ?? 1080;
   const H = bgMeta.height ?? 1350;
 
-  // Ask Gemini to pick a layout and color scheme
   const [bgPart, portraitPart] = await Promise.all([
-    toGeminiImagePart(bgSigned.data.signedUrl),
-    toGeminiImagePart(portraitSigned.data.signedUrl),
+    toGeminiImagePart(bgSignedUrl),
+    toGeminiImagePart(portraitSignedUrl),
   ]);
 
   // Load Anton font in parallel with Gemini call
@@ -1204,13 +1200,8 @@ Return ONLY valid JSON (no markdown):
       .toBuffer();
   }
 
-  // Upload to a new path (not overwrite) so CDN cache is bypassed
   const compositePath = backgroundStoragePath.replace(/\.png$/i, "-c.png");
-  await service.storage.from(bucket).upload(compositePath, finalBuf, {
-    contentType: "image/png",
-    upsert: true,
-    cacheControl: "no-store",
-  });
+  await r2Upload(bucket, compositePath, finalBuf, "image/png");
 
   console.log(`[compositeQuoteCard] layout="${design.layout}" saved to ${bucket}/${compositePath}`);
   return compositePath;
@@ -1884,7 +1875,7 @@ export async function startGenerationWorker(
         }
         await Promise.allSettled(
           Array.from(byBucket.entries()).map(([bucket, paths]) =>
-            service.storage.from(bucket).remove(paths)
+            r2Delete(bucket, paths)
           )
         );
       }

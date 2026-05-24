@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { normalizePackageSize } from "@/lib/types";
+import { r2Upload } from "@/lib/r2";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -90,10 +91,7 @@ export async function POST(request: NextRequest) {
       const bytes = Buffer.from(await imageRes.arrayBuffer());
       const storagePath = `${shoot.user_id}/${shootId}/slot-${image.slot}.png`;
 
-      const { error: uploadError } = await service.storage
-        .from("generated-4k")
-        .upload(storagePath, bytes, { contentType, upsert: true });
-      if (uploadError) throw new Error(uploadError.message);
+      await r2Upload("generated-4k", storagePath, bytes, contentType);
 
       const { error: updateError } = await service
         .from("shoot_images")
