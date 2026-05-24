@@ -1,33 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET() {
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("creators")
-    .select("id, display_name, bio, avatar_storage_path, avatar_bucket, instagram_url, website_url, created_at")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  const rows = await sql`
+    SELECT id, display_name, bio, avatar_storage_path, avatar_bucket, instagram_url, website_url, created_at
+    FROM creators WHERE is_active = true ORDER BY created_at DESC
+  `;
 
-  if (error) return NextResponse.json({ error: "Failed to load creators" }, { status: 500 });
-
-  const creators = await Promise.all((data ?? []).map(async (c) => {
+  const creators = await Promise.all(rows.map(async (c) => {
     let avatarUrl: string | null = null;
     if (c.avatar_storage_path) {
-      const { data: s } = await service.storage
-        .from(c.avatar_bucket ?? "template-images")
-        .createSignedUrl(c.avatar_storage_path, 3600);
-      avatarUrl = s?.signedUrl ?? null;
+      avatarUrl = await r2SignedDownloadUrl(
+        (c.avatar_bucket ?? "template-images") as string,
+        c.avatar_storage_path as string,
+        3600
+      ).catch(() => null);
     }
-    return {
-      id: c.id,
-      displayName: c.display_name,
-      bio: c.bio,
-      avatarUrl,
-      instagramUrl: c.instagram_url,
-      websiteUrl: c.website_url,
-      createdAt: c.created_at,
-    };
+    return { id: c.id, displayName: c.display_name, bio: c.bio, avatarUrl, instagramUrl: c.instagram_url, websiteUrl: c.website_url, createdAt: c.created_at };
   }));
 
   return NextResponse.json({ creators });
@@ -39,13 +30,7 @@ export async function POST(request: NextRequest) {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-
-  const { data: existing } = await service
-    .from("creators")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
+  const [existing] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (existing) return NextResponse.json({ error: "Creator profile already exists" }, { status: 409 });
 
   const body = await request.json() as Record<string, unknown>;
@@ -55,21 +40,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Display name is required (min 2 characters)" }, { status: 400 });
   }
 
-  const now = new Date().toISOString();
-  const { data: creator, error } = await service.from("creators").insert({
-    user_id: user.id,
-    display_name: displayName.trim(),
-    bio: typeof bio === "string" ? bio.trim() : null,
-    avatar_storage_path: typeof avatarStoragePath === "string" ? avatarStoragePath : null,
-    instagram_url: typeof instagramUrl === "string" ? instagramUrl.trim() : null,
-    website_url: typeof websiteUrl === "string" ? websiteUrl.trim() : null,
-    bank_name: typeof bankName === "string" ? bankName.trim() : null,
-    account_number: typeof accountNumber === "string" ? accountNumber.trim() : null,
-    account_name: typeof accountName === "string" ? accountName.trim() : null,
-    created_at: now,
-    updated_at: now,
-  }).select().single();
+  const [creator] = await sql`
+    INSERT INTO creators
+      (user_id, display_name, bio, avatar_storage_path, instagram_url, website_url,
+       bank_name, account_number, account_name, created_at, updated_at)
+    VALUES (
+      ${user.id}, ${displayName.trim()},
+      ${typeof bio === "string" ? bio.trim() : null},
+      ${typeof avatarStoragePath === "string" ? avatarStoragePath : null},
+      ${typeof instagramUrl === "string" ? instagramUrl.trim() : null},
+      ${typeof websiteUrl === "string" ? websiteUrl.trim() : null},
+      ${typeof bankName === "string" ? bankName.trim() : null},
+      ${typeof accountNumber === "string" ? accountNumber.trim() : null},
+      ${typeof accountName === "string" ? accountName.trim() : null},
+      NOW(), NOW()
+    )
+    RETURNING *
+  `.catch((err) => { console.error("[creators POST]", err); return [null]; });
 
-  if (error) return NextResponse.json({ error: "Failed to create creator profile" }, { status: 500 });
+  if (!creator) return NextResponse.json({ error: "Failed to create creator profile" }, { status: 500 });
   return NextResponse.json({ creator }, { status: 201 });
 }

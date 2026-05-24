@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -7,12 +8,9 @@ export async function POST(request: NextRequest) {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service
-    .from("creators")
-    .select("id, display_name, bank_name")
-    .eq("user_id", user.id)
-    .single();
+  const [creator] = await sql`
+    SELECT id, display_name, bank_name FROM creators WHERE user_id = ${user.id}
+  `;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
@@ -44,13 +42,15 @@ export async function POST(request: NextRequest) {
 
   const subaccountCode: string = data.data.subaccount_code;
 
-  await service.from("creators").update({
-    paystack_subaccount_code: subaccountCode,
-    account_number: accountNumber,
-    account_name: accountName,
-    bank_name: data.data.bank_name ?? creator.bank_name,
-    updated_at: new Date().toISOString(),
-  }).eq("id", creator.id);
+  await sql`
+    UPDATE creators SET
+      paystack_subaccount_code = ${subaccountCode},
+      account_number = ${accountNumber},
+      account_name = ${accountName},
+      bank_name = ${data.data.bank_name ?? creator.bank_name},
+      updated_at = NOW()
+    WHERE id = ${creator.id}
+  `;
 
   return NextResponse.json({ subaccountCode });
 }

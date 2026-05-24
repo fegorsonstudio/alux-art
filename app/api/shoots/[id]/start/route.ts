@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
 import { startGenerationWorker } from "@/lib/generate";
 import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
+import sql from "@/lib/db";
 
 export const maxDuration = 300;
 
@@ -16,7 +17,6 @@ export async function POST(
   const internalSecret = req.headers.get("x-internal-secret");
   const isInternal =
     internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
-  const service = createServiceClient();
 
   if (!isInternal) {
     const supabase = await createClient();
@@ -24,12 +24,7 @@ export async function POST(
     const user = session?.user ?? null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data: ownerCheck } = await service
-      .from("shoots")
-      .select("user_id, status")
-      .eq("id", id)
-      .single();
-
+    const [ownerCheck] = await sql`SELECT user_id, status FROM shoots WHERE id = ${id}`;
     const isOwner = ownerCheck?.user_id === user.id;
     const isAdmin = user.email === process.env.ADMIN_EMAIL;
     if (!isOwner && !isAdmin)
@@ -37,26 +32,18 @@ export async function POST(
     if (!isAdmin && ownerCheck?.status === "PENDING_PAYMENT")
       return NextResponse.json({ error: "Payment required" }, { status: 402 });
   } else {
-    const { data: ownerCheck } = await service
-      .from("shoots")
-      .select("status")
-      .eq("id", id)
-      .single();
+    const [ownerCheck] = await sql`SELECT status FROM shoots WHERE id = ${id}`;
     if (ownerCheck?.status === "PENDING_PAYMENT")
       return NextResponse.json({ error: "Payment required" }, { status: 402 });
   }
 
-  const { data: shoot } = await service
-    .from("shoots")
-    .select("status, user_id, owner_email, character_base_id")
-    .eq("id", id)
-    .single();
-
+  const [shoot] = await sql`
+    SELECT status, user_id, owner_email, character_base_id FROM shoots WHERE id = ${id}
+  `;
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
   if (shoot.status === "COMPLETE")
     return NextResponse.json({ ok: true, queued: false, status: "COMPLETE" });
 
-  // ── Base-lock terminal/waiting states — return early ────────────────────
   if (shoot.status === "BASE_REJECTED") {
     return NextResponse.json({ ok: false, status: "BASE_REJECTED" });
   }
@@ -66,39 +53,37 @@ export async function POST(
 
   const now = new Date().toISOString();
 
-  // Read base-lock config from app_config (overrides env vars for no-code admin control)
   let rolloutPct: number | undefined;
   let dbLockedBaseEnabled: boolean | null = null;
   try {
-    const { data: cfgRows } = await service.from("app_config").select("key,value")
-      .in("key", ["locked_base_rollout_percent", "locked_base_enabled"]);
-    for (const row of cfgRows ?? []) {
+    const cfgRows = await sql`
+      SELECT key, value FROM app_config
+      WHERE key = ANY(${["locked_base_rollout_percent", "locked_base_enabled"]})
+    `;
+    for (const row of cfgRows) {
       if (row.key === "locked_base_rollout_percent") rolloutPct = parseInt(row.value, 10);
       if (row.key === "locked_base_enabled") dbLockedBaseEnabled = row.value === "true";
     }
-  } catch { /* non-fatal — env var fallback applies */ }
+  } catch { /* non-fatal */ }
 
-  // ── Base-lock dispatch — QUEUED shoots that need a base ─────────────────
   if (
     shoot.status === "QUEUED" &&
     !shoot.character_base_id &&
     isLockedBaseEnabled(id, rolloutPct, dbLockedBaseEnabled)
   ) {
-    await service.from("shoots").update({
-      status: "BASE_LOCKING",
-      base_lock_status: "GENERATING",
-      base_lock_started_at: now,
-      updated_at: now,
-    }).eq("id", id);
-
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: id,
-      user_id: shoot.user_id,
-      type: "base_locking",
-      payload: { stage: "Locking character base", progress: 5 },
-      created_at: now,
-    });
+    await sql`
+      UPDATE shoots SET
+        status = 'BASE_LOCKING', base_lock_status = 'GENERATING',
+        base_lock_started_at = ${now}, updated_at = ${now}
+      WHERE id = ${id}
+    `;
+    await sql`
+      INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${id}, ${shoot.user_id},
+        'base_locking', ${JSON.stringify({ stage: "Locking character base", progress: 5 })}, ${now}
+      )
+    `;
 
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
     fetch(`${origin}/api/shoots/${id}/base-lock`, {
@@ -113,44 +98,31 @@ export async function POST(
     return NextResponse.json({ ok: true, status: "BASE_LOCKING" });
   }
 
-  // Claim the shoot only if it isn't already PROCESSING (continuation skips this)
   if (shoot.status !== "PROCESSING") {
-    const { data: claimed, error: claimError } = await service
-      .from("shoots")
-      .update({
-        status: "PROCESSING",
-        progress: 5,
-        pipeline_stage: "Starting generation",
-        updated_at: now,
-      })
-      .eq("id", id)
-      .in("status", ["QUEUED", "FAILED"])
-      .select("id")
-      .maybeSingle();
+    const claimed = await sql`
+      UPDATE shoots SET
+        status = 'PROCESSING', progress = 5,
+        pipeline_stage = 'Starting generation', updated_at = ${now}
+      WHERE id = ${id} AND status = ANY(${["QUEUED", "FAILED"]})
+      RETURNING id
+    `;
 
-    if (claimError)
-      return NextResponse.json({ error: claimError.message }, { status: 500 });
-    if (!claimed)
+    if (!claimed.length)
       return NextResponse.json({ ok: true, queued: false, status: shoot.status });
 
-    // Mark all pending/failed slots as QUEUED so the worker can pick them up
-    await service
-      .from("shoot_images")
-      .update({ status: "QUEUED", stage: "Queued for generation", updated_at: now })
-      .eq("shoot_id", id)
-      .in("status", ["PENDING", "FAILED"]);
+    await sql`
+      UPDATE shoot_images SET status = 'QUEUED', stage = 'Queued for generation', updated_at = ${now}
+      WHERE shoot_id = ${id} AND status = ANY(${["PENDING", "FAILED"]})
+    `;
+    await sql`
+      INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${id}, ${shoot.user_id},
+        'stage', ${JSON.stringify({ stage: "Starting generation", progress: 5 })}, ${now}
+      )
+    `;
 
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: id,
-      user_id: shoot.user_id,
-      type: "stage",
-      payload: { stage: "Starting generation", progress: 5 },
-      created_at: now,
-    });
-
-    // Notify user that generation has started (fire-and-forget)
-    const ownerEmail = (shoot as unknown as Record<string, string>).owner_email;
+    const ownerEmail = shoot.owner_email as string | undefined;
     if (ownerEmail) {
       notifyGenerationStarted(id, ownerEmail).catch(() => {});
     }
@@ -160,9 +132,7 @@ export async function POST(
     const result = await startGenerationWorker(id, { maxSlots: 1, resolution });
 
     if (!result.done) {
-      // Self-continuation: fire next slot in a new invocation (fire-and-forget)
-      const origin =
-        process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
       fetch(`${origin}/api/shoots/${id}/start`, {
         method: "POST",
         headers: {
@@ -170,11 +140,8 @@ export async function POST(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ resolution }),
-      }).catch((err) =>
-        console.error("[start] self-continuation failed:", err)
-      );
+      }).catch((err) => console.error("[start] self-continuation failed:", err));
     } else {
-      // All slots done — notify n8n for email (fire-and-forget)
       notifyShootComplete(id).catch(() => {});
     }
 
@@ -183,14 +150,13 @@ export async function POST(
     const message = error instanceof Error ? error.message : String(error);
     console.error("[start] generation worker failed:", message);
 
-    await service
-      .from("shoots")
-      .update({
-        status: "FAILED",
-        pipeline_stage: `Generation failed: ${message}`,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
+    await sql`
+      UPDATE shoots SET
+        status = 'FAILED',
+        pipeline_stage = ${`Generation failed: ${message}`},
+        updated_at = NOW()
+      WHERE id = ${id}
+    `;
 
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }

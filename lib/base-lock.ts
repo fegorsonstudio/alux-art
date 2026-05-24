@@ -3,7 +3,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import type { StylingBrief, QualityGateResult } from "./types";
-import type { createServiceClient } from "./supabase-server";
 import { r2Upload, r2SignedDownloadUrl } from "./r2";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -277,7 +276,7 @@ export async function generateBaseWithFal(
 // ── Save base image to Supabase storage ─────────────────────────────────────
 
 export async function saveBaseImage(
-  _service: ReturnType<typeof createServiceClient>,
+  _service: unknown,
   userId: string,
   baseId: string,
   imageUrl: string
@@ -294,7 +293,7 @@ export async function saveBaseImage(
 // ── Sign base storage path ───────────────────────────────────────────────────
 
 export async function signBasePath(
-  _service: ReturnType<typeof createServiceClient>,
+  _service: unknown,
   storagePath: string,
   ttlSeconds = BASE_LOCK_TTL
 ): Promise<string> {

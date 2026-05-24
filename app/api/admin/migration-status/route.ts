@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function GET() {
   const supabase = await createClient();
@@ -9,14 +10,12 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const service = createServiceClient();
-
   const checks = await Promise.all([
-    service.from("template_images").select("note").limit(0).then(r => !r.error),
-    service.from("template_images").select("custom_name").limit(0).then(r => !r.error),
-    service.from("creators").select("theme").limit(0).then(r => !r.error),
-    service.from("creators").select("font_family").limit(0).then(r => !r.error),
-    service.from("template_images").select("note_hidden").limit(0).then(r => !r.error),
+    sql`SELECT note FROM template_images LIMIT 0`.then(() => true).catch(() => false),
+    sql`SELECT custom_name FROM template_images LIMIT 0`.then(() => true).catch(() => false),
+    sql`SELECT theme FROM creators LIMIT 0`.then(() => true).catch(() => false),
+    sql`SELECT font_family FROM creators LIMIT 0`.then(() => true).catch(() => false),
+    sql`SELECT note_hidden FROM template_images LIMIT 0`.then(() => true).catch(() => false),
   ]);
 
   const results = [
@@ -27,8 +26,5 @@ export async function GET() {
     { id: "018", name: "template_images.note_hidden", applied: checks[4] },
   ];
 
-  return NextResponse.json({
-    allApplied: results.every(r => r.applied),
-    results,
-  });
+  return NextResponse.json({ allApplied: results.every((r) => r.applied), results });
 }

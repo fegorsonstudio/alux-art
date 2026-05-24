@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { packagePrice } from "@/lib/types";
 
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
+async function requireAdmin() {
+  const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
   if (!user || user.email !== process.env.ADMIN_EMAIL) return null;
@@ -10,30 +12,34 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  if (!await requireAdmin(supabase)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const service = createServiceClient();
-  const { data: templates } = await service
-    .from("templates")
-    .select("id, title, status, price_ngn, price_1_ngn, price_5_ngn, creator_id, creators(display_name)")
-    .order("created_at", { ascending: false });
+  const templates = await sql`
+    SELECT t.id, t.title, t.status, t.price_ngn, t.price_1_ngn, t.price_5_ngn, t.creator_id,
+           c.display_name AS creator_display_name
+    FROM templates t
+    LEFT JOIN creators c ON c.id = t.creator_id
+    ORDER BY t.created_at DESC
+  `;
 
-  return NextResponse.json({ templates: templates ?? [] });
+  return NextResponse.json({
+    templates: templates.map((t) => ({
+      ...t,
+      creators: t.creator_display_name ? { display_name: t.creator_display_name } : null,
+    })),
+  });
 }
 
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient();
-  if (!await requireAdmin(supabase)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const service = createServiceClient();
-  const { data: feeRow } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
+  const [feeRow] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
   const platformFeeNgn = parseInt(feeRow?.value ?? "15000", 10);
 
   const body = await request.json() as { id: string; priceNgn?: number; price1Ngn?: number | null; price5Ngn?: number | null };
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const updates: Record<string, unknown> = { updated_at: new Date() };
   if (body.priceNgn != null && body.priceNgn > platformFeeNgn) updates.price_ngn = body.priceNgn;
   if (body.price1Ngn != null && body.price1Ngn > packagePrice(platformFeeNgn, 1)) updates.price_1_ngn = body.price1Ngn;
   if (body.price1Ngn === null) updates.price_1_ngn = null;
@@ -42,7 +48,6 @@ export async function PATCH(request: NextRequest) {
 
   if (Object.keys(updates).length <= 1) return NextResponse.json({ ok: true });
 
-  const { error } = await service.from("templates").update(updates).eq("id", body.id);
-  if (error) return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  await sql`UPDATE templates SET ${sql(updates)} WHERE id = ${body.id}`;
   return NextResponse.json({ ok: true });
 }

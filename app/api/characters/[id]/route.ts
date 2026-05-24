@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { signBasePath } from "@/lib/base-lock";
-
-// POST /api/characters/[id]/save — promote a shoot's base into the named library
-// PATCH /api/characters/[id] — update label
-// DELETE /api/characters/[id] — soft-archive
 
 export async function POST(
   req: NextRequest,
@@ -19,25 +16,16 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const label: string = typeof body.label === "string" ? body.label.trim().slice(0, 80) : "";
 
-  const service = createServiceClient();
-  const { data: base } = await service
-    .from("character_bases")
-    .select("id, user_id, status")
-    .eq("id", baseId)
-    .single();
+  const [base] = await sql`SELECT id, user_id, status FROM character_bases WHERE id = ${baseId}`;
 
   if (!base || base.user_id !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!["AUTO_APPROVED", "USER_APPROVED"].includes(base.status)) {
+  if (!["AUTO_APPROVED", "USER_APPROVED"].includes(base.status as string)) {
     return NextResponse.json({ error: "Base must be approved before saving to library" }, { status: 400 });
   }
 
-  await service.from("character_bases").update({
-    user_label: label || null,
-    updated_at: new Date().toISOString(),
-  }).eq("id", baseId);
-
+  await sql`UPDATE character_bases SET user_label = ${label || null}, updated_at = NOW() WHERE id = ${baseId}`;
   return NextResponse.json({ ok: true });
 }
 
@@ -54,22 +42,12 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
   const label: string = typeof body.label === "string" ? body.label.trim().slice(0, 80) : "";
 
-  const service = createServiceClient();
-  const { data: base } = await service
-    .from("character_bases")
-    .select("id, user_id")
-    .eq("id", baseId)
-    .single();
-
+  const [base] = await sql`SELECT id, user_id FROM character_bases WHERE id = ${baseId}`;
   if (!base || base.user_id !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await service.from("character_bases").update({
-    user_label: label || null,
-    updated_at: new Date().toISOString(),
-  }).eq("id", baseId);
-
+  await sql`UPDATE character_bases SET user_label = ${label || null}, updated_at = NOW() WHERE id = ${baseId}`;
   return NextResponse.json({ ok: true });
 }
 
@@ -83,26 +61,15 @@ export async function DELETE(
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: base } = await service
-    .from("character_bases")
-    .select("id, user_id")
-    .eq("id", baseId)
-    .single();
-
+  const [base] = await sql`SELECT id, user_id FROM character_bases WHERE id = ${baseId}`;
   if (!base || base.user_id !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await service.from("character_bases").update({
-    is_archived: true,
-    updated_at: new Date().toISOString(),
-  }).eq("id", baseId);
-
+  await sql`UPDATE character_bases SET is_archived = true, updated_at = NOW() WHERE id = ${baseId}`;
   return NextResponse.json({ ok: true });
 }
 
-// GET /api/characters/[id] — fetch single base with signed URL
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -113,21 +80,16 @@ export async function GET(
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: base } = await service
-    .from("character_bases")
-    .select("*")
-    .eq("id", baseId)
-    .single();
+  const [base] = await sql`SELECT * FROM character_bases WHERE id = ${baseId}`;
 
   if (!base || (base.user_id !== user.id && user.email !== process.env.ADMIN_EMAIL)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const storagePath = base.base_4k_storage_path ?? base.base_storage_path;
+  const storagePath = (base.base_4k_storage_path ?? base.base_storage_path) as string | null;
   let baseUrl: string | null = null;
   if (storagePath) {
-    baseUrl = await signBasePath(service, storagePath, 3600).catch(() => null);
+    baseUrl = await signBasePath(null as never, storagePath, 3600).catch(() => null);
   }
 
   return NextResponse.json({ character: { ...base, base_url: baseUrl } });

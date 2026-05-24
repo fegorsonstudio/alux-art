@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import { r2Exists } from "@/lib/r2";
 import { ASPECTS, REFERENCE_TAGS, normalizePackageSize } from "@/lib/types";
+import sql from "@/lib/db";
 
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
 const ALLOWED_TAGS = new Set<string>(REFERENCE_TAGS);
@@ -44,21 +46,46 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Number(searchParams.get("limit") ?? "20"), 100);
   const cursor = searchParams.get("cursor");
 
-  const service = createServiceClient();
-  let query = service
-    .from("shoots")
-    .select("*, shoot_images(*), templates(title), template_purchases!shoot_id(template_id, templates!template_id(creator_id, creators!creator_id(user_id)))")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
+  const shoots = cursor
+    ? await sql`
+        SELECT s.*, t.title AS template_title
+        FROM shoots s
+        LEFT JOIN templates t ON t.id = s.template_id
+        WHERE s.user_id = ${user.id} AND s.created_at < ${cursor}
+        ORDER BY s.created_at DESC
+        LIMIT ${limit + 1}
+      `
+    : await sql`
+        SELECT s.*, t.title AS template_title
+        FROM shoots s
+        LEFT JOIN templates t ON t.id = s.template_id
+        WHERE s.user_id = ${user.id}
+        ORDER BY s.created_at DESC
+        LIMIT ${limit + 1}
+      `;
 
-  if (cursor) query = query.lt("created_at", cursor);
+  const rows = shoots.slice(0, limit);
+  const nextCursor = shoots.length > limit ? rows[rows.length - 1]?.created_at : null;
 
-  const { data: rows } = await query;
-  const shoots = (rows ?? []).slice(0, limit);
-  const nextCursor = (rows ?? []).length > limit ? shoots[shoots.length - 1]?.created_at : null;
+  // Attach shoot_images for each shoot in one query
+  if (rows.length > 0) {
+    const shootIds = rows.map((s) => s.id);
+    const allImages = await sql`
+      SELECT * FROM shoot_images WHERE shoot_id = ANY(${shootIds}) ORDER BY shoot_id, slot
+    `;
+    const imagesByShoot: Record<string, unknown[]> = {};
+    for (const img of allImages) {
+      if (!imagesByShoot[img.shoot_id]) imagesByShoot[img.shoot_id] = [];
+      imagesByShoot[img.shoot_id].push(img);
+    }
+    const rowsWithImages = rows.map((s) => ({
+      ...s,
+      shoot_images: imagesByShoot[s.id] ?? [],
+    }));
+    return NextResponse.json({ shoots: rowsWithImages, nextCursor });
+  }
 
-  return NextResponse.json({ shoots, nextCursor });
+  return NextResponse.json({ shoots: rows, nextCursor });
 }
 
 export async function POST(request: NextRequest) {
@@ -111,15 +138,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid reference image metadata" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-
-  const referenceChecks = await Promise.all(allRefs.map(async (ref) => {
-    const { data } = await service.storage
-      .from(ref.storageBucket as string)
-      .createSignedUrl(ref.storagePath as string, 60);
-    return Boolean(data?.signedUrl);
-  }));
-
+  // Check references exist in R2
+  const referenceChecks = await Promise.all(
+    allRefs.map((ref) => r2Exists(ref.storageBucket as string, ref.storagePath as string))
+  );
   if (!referenceChecks.every(Boolean)) {
     return NextResponse.json({ error: "One or more selected reference images no longer exists. Refresh and choose saved images that still show previews." }, { status: 400 });
   }
@@ -130,11 +152,10 @@ export async function POST(request: NextRequest) {
   let resolvedBaseId: string | null = null;
   let baseIdentityProfile: string | null = null;
   if (characterBaseId && typeof characterBaseId === "string") {
-    const { data: base } = await service
-      .from("character_bases")
-      .select("id, user_id, status, identity_profile, is_archived")
-      .eq("id", characterBaseId)
-      .single();
+    const [base] = await sql`
+      SELECT id, user_id, status, identity_profile, is_archived
+      FROM character_bases WHERE id = ${characterBaseId}
+    `;
     if (!base || base.user_id !== user.id) {
       return NextResponse.json({ error: "Character base not found" }, { status: 400 });
     }
@@ -145,31 +166,24 @@ export async function POST(request: NextRequest) {
     baseIdentityProfile = base.identity_profile ?? null;
   }
 
-  // Create shoot record
   const shootId = crypto.randomUUID();
   const now = new Date().toISOString();
   const initialStatus = (isAdmin && adminBypass) ? "QUEUED" : "PENDING_PAYMENT";
 
-  const { data: shoot, error: shootError } = await service.from("shoots").insert({
-    id: shootId,
-    user_id: user.id,
-    owner_email: user.email,
-    mode,
-    aspect_ratio: aspectRatio,
-    currency,
-    package_size: packageSize,
-    status: initialStatus,
-    progress: 0,
-    quote,
-    // Saved character base shortcut — skips Stages 1 and 1.5 entirely
-    character_base_id: resolvedBaseId,
-    base_lock_status: resolvedBaseId ? "USER_APPROVED" : null,
-    identity_profile: baseIdentityProfile ?? "",
-    created_at: now,
-    updated_at: now,
-  }).select().single();
+  const [shoot] = await sql`
+    INSERT INTO shoots (
+      id, user_id, owner_email, mode, aspect_ratio, currency, package_size,
+      status, progress, quote, character_base_id, base_lock_status,
+      identity_profile, created_at, updated_at
+    ) VALUES (
+      ${shootId}, ${user.id}, ${user.email ?? ""}, ${mode}, ${aspectRatio},
+      ${currency}, ${packageSize}, ${initialStatus}, 0, ${JSON.stringify(quote)},
+      ${resolvedBaseId}, ${resolvedBaseId ? "USER_APPROVED" : null},
+      ${baseIdentityProfile ?? ""}, ${now}, ${now}
+    ) RETURNING *
+  `;
 
-  if (shootError) return NextResponse.json({ error: shootError.message }, { status: 500 });
+  if (!shoot) return NextResponse.json({ error: "Failed to create shoot" }, { status: 500 });
 
   if (allRefs.length > 0) {
     const referenceRows = allRefs.map((r) => {
@@ -181,23 +195,24 @@ export async function POST(request: NextRequest) {
         purpose: r.purpose,
         tag: normalized.tag,
         custom_name: normalized.customName,
-        note: r.note ?? null,
-        name: r.name,
-        type: r.type,
-        size: r.size,
-        storage_bucket: r.storageBucket,
-        storage_path: r.storagePath,
+        note: (r.note as string | null) ?? null,
+        name: r.name as string,
+        type: r.type as string,
+        size: r.size as number,
+        storage_bucket: r.storageBucket as string,
+        storage_path: r.storagePath as string,
         created_at: now,
       };
     });
-    const { error: referenceError } = await service.from("shoot_references").insert(referenceRows);
-    if (referenceError) {
-      await service.from("shoots").delete().eq("id", shootId);
-      return NextResponse.json({ error: `Reference save failed: ${referenceError.message}` }, { status: 500 });
+    try {
+      await sql`INSERT INTO shoot_references ${sql(referenceRows)}`;
+    } catch (err) {
+      await sql`DELETE FROM shoots WHERE id = ${shootId}`;
+      const msg = err instanceof Error ? err.message : String(err);
+      return NextResponse.json({ error: `Reference save failed: ${msg}` }, { status: 500 });
     }
   }
 
-  // Create one slot per purchased package image.
   const slots = Array.from({ length: packageSize }, (_, i) => ({
     id: crypto.randomUUID(),
     shoot_id: shootId,
@@ -208,18 +223,15 @@ export async function POST(request: NextRequest) {
     created_at: now,
     updated_at: now,
   }));
-  const { error: slotsError } = await service.from("shoot_images").insert(slots);
-  if (slotsError) {
-    await service.from("shoot_references").delete().eq("shoot_id", shootId);
-    await service.from("shoots").delete().eq("id", shootId);
-    return NextResponse.json({ error: `Image slot setup failed: ${slotsError.message}` }, { status: 500 });
+  try {
+    await sql`INSERT INTO shoot_images ${sql(slots)}`;
+  } catch (err) {
+    await sql`DELETE FROM shoot_references WHERE shoot_id = ${shootId}`;
+    await sql`DELETE FROM shoots WHERE id = ${shootId}`;
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Image slot setup failed: ${msg}` }, { status: 500 });
   }
 
-  const { data: fullShoot } = await service
-    .from("shoots")
-    .select("*, shoot_images(*)")
-    .eq("id", shootId)
-    .single();
-
-  return NextResponse.json({ shoot: fullShoot });
+  const shoot_images = await sql`SELECT * FROM shoot_images WHERE shoot_id = ${shootId} ORDER BY slot`;
+  return NextResponse.json({ shoot: { ...shoot, shoot_images } });
 }

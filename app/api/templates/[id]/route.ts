@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
 
-async function getPlatformFee(service: ReturnType<typeof createServiceClient>): Promise<number> {
-  const { data } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
-  return parseInt(data?.value ?? "15000", 10);
+async function getPlatformFee(): Promise<number> {
+  const [row] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
+  return parseInt(row?.value ?? "15000", 10);
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,34 +19,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: template, error } = await service
-    .from("templates")
-    .select("*, template_images(*)")
-    .eq("id", id)
-    .eq("creator_id", creator.id)
-    .single();
+  const [template] = await sql`
+    SELECT * FROM templates WHERE id = ${id} AND creator_id = ${creator.id}
+  `;
+  if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (error || !template) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const rawImages = await sql`
+    SELECT * FROM template_images WHERE template_id = ${id} ORDER BY display_order ASC
+  `;
 
-  const rawImages = (template.template_images ?? []) as Array<{
-    id: string; storage_path: string; storage_bucket: string;
-    display_order: number; purpose: string; tag?: string; created_at: string;
-  }>;
-
-  const imagesWithUrls = await Promise.all(
-    rawImages
-      .sort((a, b) => a.display_order - b.display_order)
-      .map(async (img) => {
-        const { data: s } = await service.storage
-          .from(img.storage_bucket ?? "template-images")
-          .createSignedUrl(img.storage_path, 3600);
-        return { ...img, signed_url: s?.signedUrl ?? null };
-      })
-  );
+  const imagesWithUrls = await Promise.all(rawImages.map(async (img) => {
+    const signedUrl = await r2SignedDownloadUrl(
+      (img.storage_bucket ?? "template-images") as string,
+      img.storage_path as string,
+      3600
+    ).catch(() => null);
+    return { ...img, signed_url: signedUrl };
+  }));
 
   return NextResponse.json({ template: { ...template, template_images: imagesWithUrls } });
 }
@@ -56,14 +50,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-  const platformFeeNgn = await getPlatformFee(service);
+  const platformFeeNgn = await getPlatformFee();
+  const updates: Record<string, unknown> = { updated_at: new Date() };
 
   if (typeof body.title === "string" && body.title.trim().length >= 2) updates.title = body.title.trim();
   if (typeof body.description === "string") updates.description = body.description.trim();
@@ -83,15 +75,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     updates.cover_bucket = "template-images";
   }
 
-  const { data: template, error } = await service
-    .from("templates")
-    .update(updates)
-    .eq("id", id)
-    .eq("creator_id", creator.id)
-    .select()
-    .single();
+  const [template] = await sql`
+    UPDATE templates SET ${sql(updates)} WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
+  `.catch(() => [null]);
 
-  if (error || !template) return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  if (!template) return NextResponse.json({ error: "Update failed" }, { status: 500 });
   return NextResponse.json({ template });
 }
 
@@ -102,27 +90,19 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: purchases } = await service
-    .from("template_purchases")
-    .select("user_id")
-    .eq("template_id", id)
-    .eq("status", "success");
+  const purchases = await sql`
+    SELECT user_id FROM template_purchases
+    WHERE template_id = ${id} AND status = 'success'
+  `;
 
-  const externalPurchases = (purchases ?? []).filter(p => p.user_id !== user.id);
+  const externalPurchases = purchases.filter((p) => p.user_id !== user.id);
   if (externalPurchases.length > 0) {
     return NextResponse.json({ error: "Cannot delete a template that has been purchased by other users" }, { status: 409 });
   }
 
-  const { error } = await service
-    .from("templates")
-    .delete()
-    .eq("id", id)
-    .eq("creator_id", creator.id);
-
-  if (error) return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  await sql`DELETE FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { r2Upload, r2SignedDownloadUrl } from "@/lib/r2";
 
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid bucket" }, { status: 400 });
   }
 
+  // Re-confirm an already-uploaded file (no re-upload, just save to library and return URL)
   if (!file && form.has("storagePath")) {
     const imageId = form.get("id") as string | null;
     const filename = form.get("filename") as string | null;
@@ -45,54 +47,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid image metadata" }, { status: 400 });
     }
 
-    const service = createServiceClient();
-    const now = new Date().toISOString();
-    const libraryTable = storageBucket === "identity-images"
-      ? "identity_images"
-      : storageBucket === "inspiration-images"
-        ? "inspiration_images"
-        : null;
+    const libraryTable = storageBucket === "identity-images" ? "identity_images"
+      : storageBucket === "inspiration-images" ? "inspiration_images" : null;
 
     if ((saveToLibrary || storageBucket === "inspiration-images") && libraryTable) {
-      const { error: dbErr } = await service.from(libraryTable).upsert({
-        id: imageId,
-        user_id: user.id,
-        name: filename,
-        type: contentType,
-        size,
-        storage_bucket: storageBucket,
-        storage_path: storagePath,
-        created_at: now,
-        last_used_at: now,
-      }, { onConflict: "id" });
-
-      if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
+      const now = new Date();
+      await sql`
+        INSERT INTO ${sql(libraryTable)} (id, user_id, name, type, size, storage_bucket, storage_path, created_at, last_used_at)
+        VALUES (${imageId}, ${user.id}, ${filename}, ${contentType}, ${size}, ${storageBucket}, ${storagePath}, ${now}, ${now})
+        ON CONFLICT (id) DO UPDATE SET last_used_at = EXCLUDED.last_used_at
+      `.catch((err) => console.error(`[upload] ${libraryTable} upsert:`, err));
     }
 
     const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600).catch(() => null);
-    if (!signedUrl) {
-      return NextResponse.json({ error: "Unable to sign uploaded image" }, { status: 500 });
-    }
-    const signed = { signedUrl };
+    if (!signedUrl) return NextResponse.json({ error: "Unable to sign uploaded image" }, { status: 500 });
 
-    return NextResponse.json({
-      image: {
-        id: imageId,
-        name: filename,
-        type: contentType,
-        size,
-        storageBucket,
-        storagePath,
-        url: signed.signedUrl ?? null,
-      },
-    });
+    return NextResponse.json({ image: { id: imageId, name: filename, type: contentType, size, storageBucket, storagePath, url: signedUrl } });
   }
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
   if (!file.type.startsWith("image/")) return NextResponse.json({ error: "File must be an image" }, { status: 400 });
   if (file.size <= 0 || file.size > MAX_SIZE) return NextResponse.json({ error: "Max 10MB" }, { status: 400 });
 
-  const service = createServiceClient();
   const uniqueId = crypto.randomUUID();
   const path = `${user.id}/${uniqueId}-${sanitizeFileName(file.name)}`;
 
@@ -104,45 +80,18 @@ export async function POST(req: NextRequest) {
   }
 
   const signedUrl = await r2SignedDownloadUrl(bucket, path, 3600).catch(() => null);
-  const signed = signedUrl ? { signedUrl } : null;
 
-  const imageId = uniqueId;
-
-  const libraryTable = bucket === "identity-images"
-    ? "identity_images"
-    : bucket === "inspiration-images"
-      ? "inspiration_images"
-      : null;
+  const libraryTable = bucket === "identity-images" ? "identity_images"
+    : bucket === "inspiration-images" ? "inspiration_images" : null;
 
   if ((saveToLibrary || bucket === "inspiration-images") && libraryTable) {
-    try {
-      const now = new Date().toISOString();
-      const { error: dbErr } = await service.from(libraryTable).upsert({
-        id: imageId,
-        user_id: user.id,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        storage_bucket: bucket,
-        storage_path: path,
-        created_at: now,
-        last_used_at: now,
-      }, { onConflict: "id" });
-      if (dbErr) console.error(`[upload] ${libraryTable} upsert error:`, dbErr.message);
-    } catch (e) {
-      console.error(`[upload] ${libraryTable} upsert threw:`, e);
-    }
+    const now = new Date();
+    await sql`
+      INSERT INTO ${sql(libraryTable)} (id, user_id, name, type, size, storage_bucket, storage_path, created_at, last_used_at)
+      VALUES (${uniqueId}, ${user.id}, ${file.name}, ${file.type}, ${file.size}, ${bucket}, ${path}, ${now}, ${now})
+      ON CONFLICT (id) DO UPDATE SET last_used_at = EXCLUDED.last_used_at
+    `.catch((err) => console.error(`[upload] ${libraryTable} upsert:`, err));
   }
 
-  return NextResponse.json({
-    image: {
-      id: imageId,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      storageBucket: bucket,
-      storagePath: path,
-      url: signed?.signedUrl,
-    },
-  });
+  return NextResponse.json({ image: { id: uniqueId, name: file.name, type: file.type, size: file.size, storageBucket: bucket, storagePath: path, url: signedUrl } });
 }

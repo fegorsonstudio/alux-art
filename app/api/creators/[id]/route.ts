@@ -1,54 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const service = createServiceClient();
 
-  const { data: creator, error } = await service
-    .from("creators")
-    .select("*")
-    .eq("id", id)
-    .eq("is_active", true)
-    .single();
-
-  if (error || !creator) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const [creator] = await sql`SELECT * FROM creators WHERE id = ${id} AND is_active = true`;
+  if (!creator) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   let avatarUrl: string | null = null;
   if (creator.avatar_storage_path) {
     avatarUrl = await r2SignedDownloadUrl(
-      creator.avatar_bucket ?? "template-images",
-      creator.avatar_storage_path,
+      (creator.avatar_bucket ?? "template-images") as string,
+      creator.avatar_storage_path as string,
       3600
     ).catch(() => null);
   }
 
-  const { data: templates } = await service
-    .from("templates")
-    .select("id, title, category, price_ngn, purchase_count, cover_storage_path, cover_bucket, created_at")
-    .eq("creator_id", id)
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
+  const templates = await sql`
+    SELECT id, title, category, price_ngn, purchase_count, cover_storage_path, cover_bucket, created_at
+    FROM templates WHERE creator_id = ${id} AND status = 'published' ORDER BY created_at DESC
+  `;
 
-  const templatesWithUrls = await Promise.all((templates ?? []).map(async (t) => {
+  const templatesWithUrls = await Promise.all(templates.map(async (t) => {
     let coverUrl: string | null = null;
     if (t.cover_storage_path) {
       coverUrl = await r2SignedDownloadUrl(
-        t.cover_bucket ?? "template-images",
-        t.cover_storage_path,
+        (t.cover_bucket ?? "template-images") as string,
+        t.cover_storage_path as string,
         3600
       ).catch(() => null);
     }
-    return {
-      id: t.id,
-      title: t.title,
-      category: t.category,
-      priceNgn: t.price_ngn,
-      purchaseCount: t.purchase_count,
-      coverUrl,
-      createdAt: t.created_at,
-    };
+    return { id: t.id, title: t.title, category: t.category, priceNgn: t.price_ngn, purchaseCount: t.purchase_count, coverUrl, createdAt: t.created_at };
   }));
 
   return NextResponse.json({

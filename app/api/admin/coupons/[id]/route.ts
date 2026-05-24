@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -14,6 +15,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { id } = await params;
   const body = await request.json() as Record<string, unknown>;
+
   const updates: Record<string, unknown> = {};
 
   if (typeof body.isActive === "boolean") updates.is_active = body.isActive;
@@ -21,24 +23,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (Number.isInteger(body.maxUses)) updates.max_uses = (body.maxUses as number) > 0 ? body.maxUses : null;
   if (typeof body.expiresAt === "string") updates.expires_at = body.expiresAt || null;
 
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("coupons")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+  if (Object.keys(updates).length === 0) return NextResponse.json({ error: "No fields to update" }, { status: 400 });
 
-  if (error || !data) return NextResponse.json({ error: "Update failed" }, { status: 500 });
-  return NextResponse.json({ coupon: data });
+  updates.updated_at = new Date();
+
+  const [coupon] = await sql`
+    UPDATE coupons SET ${sql(updates)} WHERE id = ${id} RETURNING *
+  `.catch(() => [null]);
+
+  if (!coupon) return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  return NextResponse.json({ coupon });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const service = createServiceClient();
-  const { error } = await service.from("coupons").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  await sql`DELETE FROM coupons WHERE id = ${id}`;
   return NextResponse.json({ ok: true });
 }

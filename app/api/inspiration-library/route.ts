@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET() {
@@ -8,22 +9,20 @@ export async function GET() {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("inspiration_images")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("last_used_at", { ascending: false });
+  const data = await sql`
+    SELECT * FROM inspiration_images WHERE user_id = ${user.id} ORDER BY last_used_at DESC
+  `;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  const signedImages = await Promise.all((data ?? []).map(async (img) => {
-    const url = await r2SignedDownloadUrl(img.storage_bucket, img.storage_path, 3600).catch(() => null);
+  const signedImages = await Promise.all(data.map(async (img) => {
+    const url = await r2SignedDownloadUrl(
+      img.storage_bucket as string,
+      img.storage_path as string,
+      3600
+    ).catch(() => null);
     return url ? { ...img, url } : null;
   }));
-  const images = signedImages.filter(Boolean);
 
-  return NextResponse.json({ images });
+  return NextResponse.json({ images: signedImages.filter(Boolean) });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -34,12 +33,11 @@ export async function DELETE(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const imageId = searchParams.get("id");
-  const service = createServiceClient();
 
   if (imageId) {
-    await service.from("inspiration_images").delete().eq("id", imageId).eq("user_id", user.id);
+    await sql`DELETE FROM inspiration_images WHERE id = ${imageId} AND user_id = ${user.id}`;
   } else {
-    await service.from("inspiration_images").delete().eq("user_id", user.id);
+    await sql`DELETE FROM inspiration_images WHERE user_id = ${user.id}`;
   }
 
   return NextResponse.json({ ok: true });
@@ -70,19 +68,12 @@ export async function PATCH(request: NextRequest) {
 
   if (!imageId) return NextResponse.json({ error: "Missing image id" }, { status: 400 });
 
-  const service = createServiceClient();
-  const updates: Record<string, unknown> = { last_used_at: new Date().toISOString() };
+  const updates: Record<string, unknown> = { last_used_at: new Date() };
   if (isMeta) {
     updates.tag = tag ?? null;
     updates.note = note ?? null;
   }
 
-  const { error } = await service
-    .from("inspiration_images")
-    .update(updates)
-    .eq("id", imageId)
-    .eq("user_id", user.id);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await sql`UPDATE inspiration_images SET ${sql(updates)} WHERE id = ${imageId} AND user_id = ${user.id}`;
   return NextResponse.json({ ok: true });
 }

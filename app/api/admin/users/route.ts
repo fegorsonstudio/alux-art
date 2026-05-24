@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
@@ -10,12 +11,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { userId, banned } = await request.json();
-  const service = createServiceClient();
-  const { data } = await service
-    .from("profiles")
-    .update({ banned, updated_at: new Date().toISOString() })
-    .eq("id", userId)
-    .select()
-    .single();
-  return NextResponse.json({ user: data });
+  const [profile] = await sql`
+    UPDATE profiles SET banned = ${banned}, updated_at = NOW()
+    WHERE id = ${userId}
+    RETURNING *
+  `;
+  return NextResponse.json({ user: profile });
 }

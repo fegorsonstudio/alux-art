@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase-server";
 import { createHmac } from "crypto";
+import sql from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -18,39 +18,30 @@ export async function POST(request: NextRequest) {
   }
 
   const { metadata, reference, amount, currency } = event.data;
-  const service = createServiceClient();
   const now = new Date().toISOString();
 
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
   const host = request.headers.get("host") ?? "";
 
-  // ── Creator showcase generation ───────────────────────────────────────────
+  // ── Creator showcase generation ─────────────────────────────────────────
   if (metadata?.type === "creator_showcase") {
     const { shoot_id: showcaseShootId, user_id } = metadata as Record<string, string>;
     if (!showcaseShootId) return NextResponse.json({ ok: true });
 
-    // Atomic dedup: only transitions if shoot is still PENDING_PAYMENT
-    const { data: activatedShoot } = await service
-      .from("shoots")
-      .update({ status: "QUEUED", updated_at: now })
-      .eq("id", showcaseShootId)
-      .eq("status", "PENDING_PAYMENT")
-      .select("id");
+    const activated = await sql`
+      UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
+      WHERE id = ${showcaseShootId} AND status = 'PENDING_PAYMENT'
+      RETURNING id
+    `;
+    if (!activated.length) return NextResponse.json({ ok: true, duplicate: true });
 
-    if (!activatedShoot?.length) return NextResponse.json({ ok: true, duplicate: true });
-
-    await service.from("payments").insert({
-      id: crypto.randomUUID(),
-      user_id,
-      shoot_id: showcaseShootId,
-      provider: "paystack",
-      provider_reference: reference,
-      amount_ngn: Math.round(amount / 100),
-      status: "success",
-      paid_at: now,
-      metadata: event.data,
-      created_at: now,
-    });
+    await sql`
+      INSERT INTO payments (id, user_id, shoot_id, provider, provider_reference, amount_ngn, status, paid_at, metadata, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${user_id}, ${showcaseShootId}, 'paystack',
+        ${reference}, ${Math.round(amount / 100)}, 'success', ${now}, ${JSON.stringify(event.data)}, ${now}
+      )
+    `;
 
     fetch(`${proto}://${host}/api/shoots/${showcaseShootId}/start`, {
       method: "POST",
@@ -60,35 +51,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // ── Template purchase fulfillment ──────────────────────────────────────────
+  // ── Template purchase fulfillment ────────────────────────────────────────
   if (metadata?.type === "template_purchase") {
     const { purchase_id, template_id, shoot_id: existingShootId, user_id, coupon_id } = metadata as Record<string, string>;
     if (!purchase_id) return NextResponse.json({ ok: true });
 
     // New booking flow: shoot already created with refs — just queue it
     if (existingShootId) {
-      // Atomic dedup: mark purchase success; returns empty array if already done
-      const { data: lockedPurchase } = await service
-        .from("template_purchases")
-        .update({ status: "success", shoot_id: existingShootId })
-        .eq("id", purchase_id)
-        .neq("status", "success")
-        .select("id");
+      const locked = await sql`
+        UPDATE template_purchases SET status = 'success', shoot_id = ${existingShootId}
+        WHERE id = ${purchase_id} AND status != 'success'
+        RETURNING id
+      `;
+      if (!locked.length) return NextResponse.json({ ok: true, duplicate: true });
 
-      if (!lockedPurchase?.length) return NextResponse.json({ ok: true, duplicate: true });
-
-      // Atomic shoot activation (idempotent)
-      await service.from("shoots")
-        .update({ status: "QUEUED", updated_at: now })
-        .eq("id", existingShootId)
-        .eq("status", "PENDING_PAYMENT");
-
-      // Atomic purchase_count increment
-      await service.rpc("increment_template_purchase_count", { p_template_id: template_id });
-
-      // Atomic coupon use_count increment
+      await sql`
+        UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
+        WHERE id = ${existingShootId} AND status = 'PENDING_PAYMENT'
+      `;
+      await sql`UPDATE templates SET purchase_count = purchase_count + 1 WHERE id = ${template_id}`;
       if (coupon_id) {
-        await service.rpc("increment_coupon_use_count", { p_coupon_id: coupon_id });
+        await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
       }
 
       fetch(`${proto}://${host}/api/shoots/${existingShootId}/start`, {
@@ -99,54 +82,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Legacy flow (no pre-built shoot): dedup before creating shoot
-    const { data: existingPurchase } = await service
-      .from("template_purchases")
-      .select("id, status")
-      .eq("id", purchase_id)
-      .single();
-
+    // Legacy flow: check dedup
+    const [existingPurchase] = await sql`
+      SELECT id, status FROM template_purchases WHERE id = ${purchase_id}
+    `;
     if (existingPurchase?.status === "success") {
       return NextResponse.json({ ok: true, duplicate: true });
     }
 
-    // Legacy flow (no pre-built shoot): create shoot from template refs
-    const { data: template } = await service
-      .from("templates")
-      .select("id, shoot_mode, aspect_ratio, package_size, title, template_images(*)")
-      .eq("id", template_id)
-      .single();
-
+    const [template] = await sql`SELECT * FROM templates WHERE id = ${template_id}`;
     if (!template) {
-      await service.from("template_purchases").update({ status: "failed" }).eq("id", purchase_id);
+      await sql`UPDATE template_purchases SET status = 'failed' WHERE id = ${purchase_id}`;
       return NextResponse.json({ ok: true });
     }
 
-    // Get user email
-    const { data: { user } } = await service.auth.admin.getUserById(user_id);
-    const ownerEmail = user?.email ?? "";
+    const templateImages = await sql`
+      SELECT storage_path, storage_bucket, purpose, tag FROM template_images WHERE template_id = ${template_id}
+    `;
 
-    // Create shoot
+    // Get owner email from profiles
+    const [ownerProfile] = await sql`SELECT email FROM profiles WHERE id = ${user_id}`;
+    const ownerEmail = ownerProfile?.email ?? "";
+
     const shootId = crypto.randomUUID();
     const packageSize = template.package_size ?? 10;
 
-    await service.from("shoots").insert({
-      id: shootId,
-      user_id,
-      owner_email: ownerEmail,
-      mode: template.shoot_mode ?? "advanced",
-      aspect_ratio: template.aspect_ratio ?? "4:5",
-      currency: "NGN",
-      package_size: packageSize,
-      status: "QUEUED",
-      progress: 0,
-      quote: { text: "", attribution: "" },
-      identity_profile: "",
-      created_at: now,
-      updated_at: now,
-    });
+    await sql`
+      INSERT INTO shoots (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status, progress, quote, identity_profile, created_at, updated_at)
+      VALUES (
+        ${shootId}, ${user_id}, ${ownerEmail},
+        ${template.shoot_mode ?? "advanced"}, ${template.aspect_ratio ?? "4:5"},
+        'NGN', ${packageSize}, 'QUEUED', 0, '{"text":"","attribution":""}',
+        '', ${now}, ${now}
+      )
+    `;
 
-    // Create image slots
     const slots = Array.from({ length: packageSize }, (_, i) => ({
       id: crypto.randomUUID(),
       shoot_id: shootId,
@@ -157,15 +127,9 @@ export async function POST(request: NextRequest) {
       created_at: now,
       updated_at: now,
     }));
-    await service.from("shoot_images").insert(slots);
-
-    // Copy template images → shoot_references
-    const templateImages = (template.template_images ?? []) as Array<{
-      storage_path: string;
-      storage_bucket: string;
-      purpose: string;
-      tag?: string;
-    }>;
+    if (slots.length > 0) {
+      await sql`INSERT INTO shoot_images ${sql(slots)}`;
+    }
 
     if (templateImages.length > 0) {
       const refs = templateImages.map((img, i) => ({
@@ -183,24 +147,18 @@ export async function POST(request: NextRequest) {
         storage_path: img.storage_path,
         created_at: now,
       }));
-      await service.from("shoot_references").insert(refs);
+      await sql`INSERT INTO shoot_references ${sql(refs)}`;
     }
 
-    // Mark purchase success
-    await service.from("template_purchases").update({
-      status: "success",
-      shoot_id: shootId,
-    }).eq("id", purchase_id);
-
-    // Atomic purchase_count increment
-    await service.rpc("increment_template_purchase_count", { p_template_id: template_id });
-
-    // Atomic coupon use_count increment
+    await sql`
+      UPDATE template_purchases SET status = 'success', shoot_id = ${shootId}
+      WHERE id = ${purchase_id}
+    `;
+    await sql`UPDATE templates SET purchase_count = purchase_count + 1 WHERE id = ${template_id}`;
     if (coupon_id) {
-      await service.rpc("increment_coupon_use_count", { p_coupon_id: coupon_id });
+      await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
     }
 
-    // Fire shoot start
     fetch(`${proto}://${host}/api/shoots/${shootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
@@ -209,47 +167,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // ── Standard shoot payment ─────────────────────────────────────────────────
+  // ── Standard shoot payment ─────────────────────────────────────────────
   const { shoot_id, user_id } = metadata ?? {};
   if (!shoot_id) return NextResponse.json({ ok: true });
 
-  const { data: existingPayment } = await service
-    .from("payments")
-    .select("id, status, user_id, shoot_id")
-    .eq("provider_reference", reference)
-    .single();
-
+  const [existingPayment] = await sql`
+    SELECT id, status, user_id, shoot_id FROM payments
+    WHERE provider_reference = ${reference}
+  `;
   if (existingPayment?.status === "success") {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
-  const { data: shoot } = await service
-    .from("shoots")
-    .select("id, user_id")
-    .eq("id", shoot_id)
-    .single();
-
+  const [shoot] = await sql`SELECT id, user_id FROM shoots WHERE id = ${shoot_id}`;
   const ownerId = shoot?.user_id ?? user_id;
 
-  await service.from("payments").update({
-    status: "success",
-    paid_at: now,
-    metadata: event.data,
-  }).eq("provider_reference", reference);
-
-  await service.from("shoots")
-    .update({ status: "QUEUED", updated_at: now })
-    .eq("id", shoot_id)
-    .eq("status", "PENDING_PAYMENT");
-
-  await service.from("generation_events").insert({
-    id: crypto.randomUUID(),
-    shoot_id,
-    user_id: ownerId,
-    type: "payment_confirmed",
-    payload: { reference, amount, currency },
-    created_at: now,
-  });
+  await sql`
+    UPDATE payments SET status = 'success', paid_at = ${now}, metadata = ${JSON.stringify(event.data)}
+    WHERE provider_reference = ${reference}
+  `;
+  await sql`
+    UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
+    WHERE id = ${shoot_id} AND status = 'PENDING_PAYMENT'
+  `;
+  await sql`
+    INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
+    VALUES (
+      ${crypto.randomUUID()}, ${shoot_id}, ${ownerId},
+      'payment_confirmed', ${JSON.stringify({ reference, amount, currency })}, ${now}
+    )
+  `;
 
   fetch(`${proto}://${host}/api/shoots/${shoot_id}/start`, {
     method: "POST",

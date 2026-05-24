@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -12,14 +13,8 @@ async function requireAdmin() {
 export async function GET() {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("coupons")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) return NextResponse.json({ error: "Failed to load coupons" }, { status: 500 });
-  return NextResponse.json({ coupons: data ?? [] });
+  const coupons = await sql`SELECT * FROM coupons ORDER BY created_at DESC`;
+  return NextResponse.json({ coupons });
 }
 
 export async function POST(request: NextRequest) {
@@ -41,23 +36,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Percent discount cannot exceed 100" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-  const { data: coupon, error } = await service.from("coupons").insert({
-    code: (code as string).toUpperCase(),
-    description: typeof description === "string" ? description.trim() : null,
-    discount_type: discountType,
-    discount_value: discountValue,
-    max_uses: Number.isInteger(maxUses) && (maxUses as number) > 0 ? maxUses : null,
-    expires_at: typeof expiresAt === "string" && expiresAt ? expiresAt : null,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  }).select().single();
-
-  if (error) {
+  try {
+    const [coupon] = await sql`
+      INSERT INTO coupons (code, description, discount_type, discount_value, max_uses, expires_at, is_active, created_at)
+      VALUES (
+        ${(code as string).toUpperCase()},
+        ${typeof description === "string" ? description.trim() : null},
+        ${discountType as string},
+        ${discountValue as number},
+        ${Number.isInteger(maxUses) && (maxUses as number) > 0 ? maxUses as number : null},
+        ${typeof expiresAt === "string" && expiresAt ? expiresAt : null},
+        true, NOW()
+      ) RETURNING *
+    `;
+    return NextResponse.json({ coupon }, { status: 201 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: error.message.includes("unique") ? "Coupon code already exists" : "Failed to create coupon" },
+      { error: msg.includes("unique") ? "Coupon code already exists" : "Failed to create coupon" },
       { status: 409 }
     );
   }
-  return NextResponse.json({ coupon }, { status: 201 });
 }

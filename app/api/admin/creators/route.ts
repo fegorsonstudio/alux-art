@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -12,19 +13,14 @@ async function requireAdmin() {
 export async function GET() {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("creators")
-    .select("id, user_id, display_name, bank_name, account_number, account_name, paystack_subaccount_code, is_active, created_at")
-    .order("created_at", { ascending: false });
+  const creators = await sql`
+    SELECT id, user_id, display_name, bank_name, account_number, account_name,
+           paystack_subaccount_code, is_active, created_at
+    FROM creators ORDER BY created_at DESC
+  `;
 
-  if (error) return NextResponse.json({ error: "Failed to load creators" }, { status: 500 });
-
-  const withCounts = await Promise.all((data ?? []).map(async (c) => {
-    const { count } = await service
-      .from("templates")
-      .select("id", { count: "exact", head: true })
-      .eq("creator_id", c.id);
+  const withCounts = await Promise.all(creators.map(async (c) => {
+    const [{ count }] = await sql`SELECT COUNT(*)::int AS count FROM templates WHERE creator_id = ${c.id}`;
     return { ...c, templateCount: count ?? 0 };
   }));
 
@@ -39,14 +35,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "id and isActive required" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("creators")
-    .update({ is_active: body.isActive, updated_at: new Date().toISOString() })
-    .eq("id", body.id)
-    .select()
-    .single();
+  const [creator] = await sql`
+    UPDATE creators SET is_active = ${body.isActive}, updated_at = NOW()
+    WHERE id = ${body.id}
+    RETURNING *
+  `;
 
-  if (error || !data) return NextResponse.json({ error: "Update failed" }, { status: 500 });
-  return NextResponse.json({ creator: data });
+  if (!creator) return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  return NextResponse.json({ creator });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { r2SignedDownloadUrl, r2Upload, r2Delete } from "@/lib/r2";
 
 export async function GET() {
@@ -8,20 +9,20 @@ export async function GET() {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data } = await service
-    .from("identity_images")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("last_used_at", { ascending: false });
+  const data = await sql`
+    SELECT * FROM identity_images WHERE user_id = ${user.id} ORDER BY last_used_at DESC
+  `;
 
-  const signedImages = await Promise.all((data ?? []).map(async (img) => {
-    const url = await r2SignedDownloadUrl(img.storage_bucket, img.storage_path, 3600).catch(() => null);
+  const signedImages = await Promise.all(data.map(async (img) => {
+    const url = await r2SignedDownloadUrl(
+      img.storage_bucket as string,
+      img.storage_path as string,
+      3600
+    ).catch(() => null);
     return url ? { ...img, url } : null;
   }));
-  const images = signedImages.filter(Boolean);
 
-  return NextResponse.json({ images });
+  return NextResponse.json({ images: signedImages.filter(Boolean) });
 }
 
 export async function POST(request: NextRequest) {
@@ -34,7 +35,6 @@ export async function POST(request: NextRequest) {
   const file = form.get("file") as File;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-  const service = createServiceClient();
   const path = `${user.id}/${Date.now()}-${file.name}`;
 
   try {
@@ -43,16 +43,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Upload failed" }, { status: 500 });
   }
 
-  const { data: record } = await service.from("identity_images").insert({
-    user_id: user.id,
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    storage_bucket: "identity-images",
-    storage_path: path,
-    created_at: new Date().toISOString(),
-    last_used_at: new Date().toISOString(),
-  }).select().single();
+  const now = new Date();
+  const [record] = await sql`
+    INSERT INTO identity_images (user_id, name, type, size, storage_bucket, storage_path, created_at, last_used_at)
+    VALUES (${user.id}, ${file.name}, ${file.type}, ${file.size}, 'identity-images', ${path}, ${now}, ${now})
+    RETURNING *
+  `;
 
   const url = await r2SignedDownloadUrl("identity-images", path, 3600).catch(() => null);
   return NextResponse.json({ image: { ...record, url } });
@@ -66,24 +62,24 @@ export async function DELETE(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const imageId = searchParams.get("id");
-  const service = createServiceClient();
 
   if (imageId) {
-    const { data: img } = await service.from("identity_images").select("*").eq("id", imageId).eq("user_id", user.id).single();
+    const [img] = await sql`SELECT * FROM identity_images WHERE id = ${imageId} AND user_id = ${user.id}`;
     if (img) {
-      await r2Delete(img.storage_bucket, [img.storage_path]).catch(() => {});
-      await service.from("identity_images").delete().eq("id", imageId);
+      await r2Delete(img.storage_bucket as string, [img.storage_path as string]).catch(() => {});
+      await sql`DELETE FROM identity_images WHERE id = ${imageId}`;
     }
   } else {
-    const { data: imgs } = await service.from("identity_images").select("*").eq("user_id", user.id);
-    if (imgs && imgs.length > 0) {
+    const imgs = await sql`SELECT storage_bucket, storage_path FROM identity_images WHERE user_id = ${user.id}`;
+    if (imgs.length > 0) {
       const byBucket = new Map<string, string[]>();
       for (const img of imgs) {
-        if (!byBucket.has(img.storage_bucket)) byBucket.set(img.storage_bucket, []);
-        byBucket.get(img.storage_bucket)!.push(img.storage_path);
+        const b = img.storage_bucket as string;
+        if (!byBucket.has(b)) byBucket.set(b, []);
+        byBucket.get(b)!.push(img.storage_path as string);
       }
       await Promise.allSettled(Array.from(byBucket.entries()).map(([b, paths]) => r2Delete(b, paths)));
-      await service.from("identity_images").delete().eq("user_id", user.id);
+      await sql`DELETE FROM identity_images WHERE user_id = ${user.id}`;
     }
   }
 

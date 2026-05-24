@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 const PRICE_PER_IMAGE_NGN = 1000;
 const ALLOWED_COUNTS = new Set([1, 5, 10]);
@@ -33,115 +34,68 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-
-  // Verify creator owns this template
-  const { data: creator } = await service
-    .from("creators")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: template } = await service
-    .from("templates")
-    .select("id, shoot_mode, aspect_ratio, package_size, template_images(*)")
-    .eq("id", templateId)
-    .eq("creator_id", creator.id)
-    .single();
-
+  const [template] = await sql`
+    SELECT id, shoot_mode, aspect_ratio, package_size FROM templates
+    WHERE id = ${templateId} AND creator_id = ${creator.id}
+  `;
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
-  // Validate identity refs belong to this user
+  const templateImages = await sql`
+    SELECT storage_path, storage_bucket, purpose, tag FROM template_images WHERE template_id = ${templateId}
+  `;
+
   for (const ref of identityRefs) {
     if (typeof ref.storagePath !== "string" || !ref.storagePath.startsWith(`${user.id}/`)) {
       return NextResponse.json({ error: "Invalid identity image reference" }, { status: 400 });
     }
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
   const shootId = crypto.randomUUID();
   const packageSize = imageCount as 1 | 5 | 10;
   const amountNgn = imageCount * PRICE_PER_IMAGE_NGN;
 
-  // Create shoot in PENDING_PAYMENT
-  const { error: shootErr } = await service.from("shoots").insert({
-    id: shootId,
-    user_id: user.id,
-    owner_email: user.email,
-    mode: template.shoot_mode ?? "advanced",
-    aspect_ratio: template.aspect_ratio ?? "4:5",
-    currency: "NGN",
-    package_size: packageSize,
-    status: "PENDING_PAYMENT",
-    progress: 0,
-    quote: { text: "", attribution: "" },
-    identity_profile: shotType ? JSON.stringify({ shot_type: shotType }) : "",
-    template_showcase_id: templateId,
-    created_at: now,
-    updated_at: now,
-  });
+  const [shootRow] = await sql`
+    INSERT INTO shoots
+      (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
+       progress, quote, identity_profile, template_showcase_id, created_at, updated_at)
+    VALUES (
+      ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
+      ${template.aspect_ratio ?? "4:5"}, 'NGN', ${packageSize}, 'PENDING_PAYMENT',
+      0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
+      ${shotType ? JSON.stringify({ shot_type: shotType }) : ""},
+      ${templateId}, ${now}, ${now}
+    )
+    RETURNING id
+  `.catch((err) => { console.error("[generate-showcase] shoot insert:", err); return [null]; });
 
-  if (shootErr) return NextResponse.json({ error: shootErr.message }, { status: 500 });
+  if (!shootRow) return NextResponse.json({ error: "Failed to create shoot" }, { status: 500 });
 
-  // Insert image slots
   const slots = Array.from({ length: imageCount }, (_, i) => ({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: user.id,
-    slot: i + 1,
-    kind: "portrait",
-    status: "PENDING",
-    created_at: now,
-    updated_at: now,
+    id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+    slot: i + 1, kind: "portrait", status: "PENDING", created_at: now, updated_at: now,
   }));
-  await service.from("shoot_images").insert(slots);
+  await sql`INSERT INTO shoot_images ${sql(slots)}`;
 
-  // Insert identity refs
-  const identityRows = identityRefs.map((ref, i) => ({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: user.id,
-    purpose: "identity",
-    tag: null,
-    custom_name: null,
-    note: null,
-    name: ref.name ?? `identity-${i + 1}`,
-    type: ref.type ?? "image/jpeg",
-    size: ref.size ?? 1,
-    storage_bucket: ref.storageBucket,
-    storage_path: ref.storagePath,
-    created_at: now,
-  }));
+  const allRefs = [
+    ...identityRefs.map((ref, i) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id, purpose: "identity",
+      tag: null, custom_name: null, note: null, name: ref.name ?? `identity-${i + 1}`,
+      type: ref.type ?? "image/jpeg", size: ref.size ?? 1,
+      storage_bucket: ref.storageBucket, storage_path: ref.storagePath, created_at: now,
+    })),
+    ...templateImages.map((img, i) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id, purpose: img.purpose,
+      tag: img.tag ?? null, custom_name: null, note: null, name: `template-ref-${i + 1}`,
+      type: "image/jpeg", size: 1, storage_bucket: img.storage_bucket,
+      storage_path: img.storage_path, created_at: now,
+    })),
+  ];
+  await sql`INSERT INTO shoot_references ${sql(allRefs)}`;
 
-  // Insert template tagged/inspiration refs
-  const templateImages = (template.template_images ?? []) as Array<{
-    storage_path: string;
-    storage_bucket: string;
-    purpose: string;
-    tag?: string;
-  }>;
-
-  const templateRows = templateImages.map((img, i) => ({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: user.id,
-    purpose: img.purpose,
-    tag: img.tag ?? null,
-    custom_name: null,
-    note: null,
-    name: `template-ref-${i + 1}`,
-    type: "image/jpeg",
-    size: 1,
-    storage_bucket: img.storage_bucket,
-    storage_path: img.storage_path,
-    created_at: now,
-  }));
-
-  await service.from("shoot_references").insert([...identityRows, ...templateRows]);
-
-  // Initiate Paystack charge
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
   const host = request.headers.get("host") ?? "";
   const callbackUrl = `${proto}://${host}/creator-dashboard?showcase_paid=1&shoot_id=${shootId}`;
@@ -168,19 +122,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const paystackData = await paystackRes.json();
   if (!paystackData.status) {
-    await service.from("shoot_references").delete().eq("shoot_id", shootId);
-    await service.from("shoot_images").delete().eq("shoot_id", shootId);
-    await service.from("shoots").delete().eq("id", shootId);
+    await sql`DELETE FROM shoot_references WHERE shoot_id = ${shootId}`;
+    await sql`DELETE FROM shoot_images WHERE shoot_id = ${shootId}`;
+    await sql`DELETE FROM shoots WHERE id = ${shootId}`;
     return NextResponse.json({ error: "Payment initialization failed" }, { status: 502 });
   }
 
-  await service.from("shoots").update({
-    updated_at: now,
-  }).eq("id", shootId);
-
-  return NextResponse.json({
-    authorizationUrl: paystackData.data.authorization_url,
-    shootId,
-    amountNgn,
-  });
+  return NextResponse.json({ authorizationUrl: paystackData.data.authorization_url, shootId, amountNgn });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { r2Delete } from "@/lib/r2";
 
 const ALLOWED_PURPOSES = new Set(["inspiration", "tagged", "sample"]);
@@ -12,16 +13,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: template } = await service
-    .from("templates")
-    .select("id")
-    .eq("id", id)
-    .eq("creator_id", creator.id)
-    .single();
+  const [template] = await sql`SELECT id FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
@@ -37,22 +32,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Invalid tag for tagged image" }, { status: 400 });
   }
 
-  // Enforce separate limits: 8 for workflow refs, 10 for sample gallery images
-  const limitField = purpose === "sample" ? "sample" : "workflow";
-  const purposeFilter = limitField === "sample"
-    ? service.from("template_images").select("id", { count: "exact", head: true }).eq("template_id", id).eq("purpose", "sample")
-    : service.from("template_images").select("id", { count: "exact", head: true }).eq("template_id", id).neq("purpose", "sample");
-  const { count } = await purposeFilter;
-  const maxAllowed = limitField === "sample" ? 10 : 20;
-  if ((count ?? 0) >= maxAllowed) {
-    return NextResponse.json({ error: `Maximum ${maxAllowed} ${limitField} images per template` }, { status: 400 });
+  const isSample = purpose === "sample";
+  const [{ count }] = await sql`
+    SELECT COUNT(*)::int AS count FROM template_images
+    WHERE template_id = ${id}
+      ${isSample ? sql`AND purpose = 'sample'` : sql`AND purpose != 'sample'`}
+  `;
+  const maxAllowed = isSample ? 10 : 20;
+  if ((count as number) >= maxAllowed) {
+    return NextResponse.json({ error: `Maximum ${maxAllowed} ${isSample ? "sample" : "workflow"} images per template` }, { status: 400 });
   }
 
   const noteVal = (typeof note === "string" && note.trim()) ? note.trim() : null;
   const customNameVal = (typeof customName === "string" && customName.trim()) ? customName.trim() : null;
 
-  // Build insert object without optional columns when null, so a missing migration
-  // (e.g. 016_template_images_custom_name) doesn't cause every insert to fail.
   const insertRow: Record<string, unknown> = {
     template_id: id,
     storage_path: storagePath,
@@ -60,20 +53,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     display_order: Number(displayOrder) || 0,
     purpose,
     tag: purpose === "tagged" ? tag : null,
-    created_at: new Date().toISOString(),
+    created_at: new Date(),
   };
   if (noteVal !== null) insertRow.note = noteVal;
   if (customNameVal !== null) insertRow.custom_name = customNameVal;
   if (noteHidden === true) insertRow.note_hidden = true;
 
-  let { data: image, error } = await service.from("template_images").insert(insertRow).select().single();
-  if (error && insertRow.note_hidden !== undefined) {
-    // note_hidden column may not exist yet — retry without it
-    const { note_hidden: _nh, ...insertRowCore } = insertRow;
-    ({ data: image, error } = await service.from("template_images").insert(insertRowCore).select().single());
-  }
+  const [image] = await sql`INSERT INTO template_images ${sql(insertRow)} RETURNING *`
+    .catch(async (err) => {
+      if (insertRow.note_hidden !== undefined) {
+        const { note_hidden: _nh, ...core } = insertRow;
+        return sql`INSERT INTO template_images ${sql(core)} RETURNING *`.catch(() => [null]);
+      }
+      console.error("[template images POST]", err);
+      return [null];
+    });
 
-  if (error) return NextResponse.json({ error: "Failed to add image" }, { status: 500 });
+  if (!image) return NextResponse.json({ error: "Failed to add image" }, { status: 500 });
   return NextResponse.json({ image }, { status: 201 });
 }
 
@@ -84,8 +80,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
@@ -96,21 +91,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Invalid tag" }, { status: 400 });
   }
 
-  // Verify image belongs to this template and creator owns the template
-  const { data: img } = await service
-    .from("template_images")
-    .select("id, template_id")
-    .eq("id", imageId)
-    .eq("template_id", id)
-    .single();
+  const [img] = await sql`SELECT id, template_id FROM template_images WHERE id = ${imageId} AND template_id = ${id}`;
   if (!img) return NextResponse.json({ error: "Image not found" }, { status: 404 });
 
-  const { data: tmpl } = await service
-    .from("templates")
-    .select("id")
-    .eq("id", img.template_id)
-    .eq("creator_id", creator.id)
-    .single();
+  const [tmpl] = await sql`SELECT id FROM templates WHERE id = ${img.template_id} AND creator_id = ${creator.id}`;
   if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const updates: Record<string, unknown> = {};
@@ -121,14 +105,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
-  const { error: updateErr } = await service.from("template_images").update(updates).eq("id", imageId);
-  if (updateErr && updates.note_hidden !== undefined) {
-    // note_hidden column may not exist yet — retry without it so other fields still save
-    const { note_hidden: _nh, ...updatesCore } = updates;
-    if (Object.keys(updatesCore).length > 0) {
-      await service.from("template_images").update(updatesCore).eq("id", imageId);
+  await sql`UPDATE template_images SET ${sql(updates)} WHERE id = ${imageId}`.catch(async (err) => {
+    if (updates.note_hidden !== undefined) {
+      const { note_hidden: _nh, ...core } = updates;
+      if (Object.keys(core).length > 0) {
+        await sql`UPDATE template_images SET ${sql(core)} WHERE id = ${imageId}`.catch(() => {});
+      }
+    } else {
+      console.error("[template images PATCH]", err);
     }
-  }
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -139,57 +126,39 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as { imageId?: string; clearAll?: boolean };
 
-  // clearAll=true wipes every workflow ref (tagged + inspiration) for this template
   if (body.clearAll === true) {
-    const { data: tmpl } = await service
-      .from("templates")
-      .select("id")
-      .eq("id", id)
-      .eq("creator_id", creator.id)
-      .single();
+    const [tmpl] = await sql`SELECT id FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
     if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const { data: allRefs } = await service
-      .from("template_images")
-      .select("id, storage_path")
-      .eq("template_id", id)
-      .in("purpose", ["tagged", "inspiration"]);
+    const allRefs = await sql`
+      SELECT id, storage_path FROM template_images
+      WHERE template_id = ${id} AND purpose = ANY(${["tagged", "inspiration"]})
+    `;
 
-    if (allRefs && allRefs.length > 0) {
-      const paths = allRefs.map(r => r.storage_path).filter(Boolean);
+    if (allRefs.length > 0) {
+      const paths = allRefs.map((r) => r.storage_path as string).filter(Boolean);
       if (paths.length > 0) await r2Delete("template-images", paths).catch(() => {});
-      const ids = allRefs.map(r => r.id);
-      await service.from("template_images").delete().in("id", ids);
+      const ids = allRefs.map((r) => r.id as string);
+      await sql`DELETE FROM template_images WHERE id = ANY(${ids})`;
     }
-    return NextResponse.json({ ok: true, deleted: allRefs?.length ?? 0 });
+    return NextResponse.json({ ok: true, deleted: allRefs.length });
   }
 
   if (typeof body.imageId !== "string") return NextResponse.json({ error: "imageId required" }, { status: 400 });
 
-  const { data: img } = await service
-    .from("template_images")
-    .select("id, storage_path, template_id")
-    .eq("id", body.imageId)
-    .eq("template_id", id)
-    .single();
+  const [img] = await sql`SELECT id, storage_path, template_id FROM template_images WHERE id = ${body.imageId} AND template_id = ${id}`;
   if (!img) return NextResponse.json({ error: "Image not found" }, { status: 404 });
 
-  const { data: tmpl } = await service
-    .from("templates")
-    .select("id")
-    .eq("id", img.template_id)
-    .eq("creator_id", creator.id)
-    .single();
+  const [tmpl] = await sql`SELECT id FROM templates WHERE id = ${img.template_id} AND creator_id = ${creator.id}`;
   if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await r2Delete("template-images", [img.storage_path]).catch(() => {});
-  await service.from("template_images").delete().eq("id", body.imageId);
+  await r2Delete("template-images", [img.storage_path as string]).catch(() => {});
+  await sql`DELETE FROM template_images WHERE id = ${body.imageId}`;
 
   return NextResponse.json({ ok: true });
 }

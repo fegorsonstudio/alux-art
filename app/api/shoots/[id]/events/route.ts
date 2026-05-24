@@ -1,26 +1,28 @@
 import { NextRequest } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl } from "@/lib/r2";
+import sql from "@/lib/db";
 
-async function withSignedPreviewUrls(
-  service: ReturnType<typeof createServiceClient>,
-  shoot: Record<string, unknown> | null
-) {
+async function withSignedPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
-  const images = await Promise.all(((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
-    if (img.status === "COMPLETE") {
-      // Use fal.ai CDN URL for non-composite slots — zero Supabase egress
-      if (img.fal_url && img.kind !== "quote") {
-        return { ...img, previewUrl: img.fal_url };
+  const images = await Promise.all(
+    ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
+      if (img.status === "COMPLETE") {
+        if (img.fal_url && img.kind !== "quote") {
+          return { ...img, previewUrl: img.fal_url };
+        }
+        if (img.preview_storage_bucket && img.preview_storage_path) {
+          const previewUrl = await r2SignedDownloadUrl(
+            img.preview_storage_bucket as string,
+            img.preview_storage_path as string,
+            3600
+          ).catch(() => null);
+          return { ...img, previewUrl };
+        }
       }
-      if (img.preview_storage_bucket && img.preview_storage_path) {
-        const { data } = await service.storage
-          .from(img.preview_storage_bucket as string)
-          .createSignedUrl(img.preview_storage_path as string, 3600);
-        return { ...img, previewUrl: data?.signedUrl };
-      }
-    }
-    return img;
-  }));
+      return img;
+    })
+  );
   return { ...shoot, shoot_images: images };
 }
 
@@ -34,9 +36,8 @@ export async function GET(
   const user = session?.user ?? null;
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const service = createServiceClient();
-  const { data: shoot } = await service.from("shoots").select("user_id").eq("id", id).single();
-  if (!shoot || (shoot.user_id !== user.id && user.email !== process.env.ADMIN_EMAIL)) {
+  const [shootOwner] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
+  if (!shootOwner || (shootOwner.user_id !== user.id && user.email !== process.env.ADMIN_EMAIL)) {
     return new Response("Not found", { status: 404 });
   }
 
@@ -57,62 +58,50 @@ export async function GET(
       };
 
       // Send initial snapshot
-      const { data: fullShoot } = await service
-        .from("shoots")
-        .select("*, shoot_images(*)")
-        .eq("id", id)
-        .single();
+      const [shootRow] = await sql`SELECT * FROM shoots WHERE id = ${id}`;
+      if (shootRow) {
+        const shoot_images = await sql`SELECT * FROM shoot_images WHERE shoot_id = ${id} ORDER BY slot`;
+        const fullShoot = { ...shootRow, shoot_images };
+        const hydratedShoot = await withSignedPreviewUrls(fullShoot);
+        enqueue({ type: "snapshot", shoot: hydratedShoot });
+      }
 
-      const hydratedShoot = await withSignedPreviewUrls(service, fullShoot);
-      enqueue({ type: "snapshot", shoot: hydratedShoot });
-
-      // If shoot is already in BASE_REVIEW, replay the last base_review_required event
-      // so the frontend gets the base_url even when connecting after the live event fired
-      if (fullShoot?.status === "BASE_REVIEW") {
-        const { data: reviewEvent } = await service
-          .from("generation_events")
-          .select("*")
-          .eq("shoot_id", id)
-          .eq("type", "base_review_required")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      // If shoot is in BASE_REVIEW, replay the last base_review_required event
+      if (shootRow?.status === "BASE_REVIEW") {
+        const [reviewEvent] = await sql`
+          SELECT * FROM generation_events
+          WHERE shoot_id = ${id} AND type = 'base_review_required'
+          ORDER BY created_at DESC
+          LIMIT 1
+        `;
         if (reviewEvent) {
           enqueue({ type: reviewEvent.type, ...(reviewEvent.payload as Record<string, unknown>) });
         }
       }
 
-      const { data: latestEvent } = await service
-        .from("generation_events")
-        .select("created_at")
-        .eq("shoot_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const [latestEvent] = await sql`
+        SELECT created_at FROM generation_events
+        WHERE shoot_id = ${id}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
       if (latestEvent?.created_at) lastEventCreatedAt = latestEvent.created_at;
 
       // Poll for new events every 2 seconds
       const interval = setInterval(async () => {
         try {
-          const { data: events } = await service
-            .from("generation_events")
-            .select("*")
-            .eq("shoot_id", id)
-            .gt("created_at", lastEventCreatedAt)
-            .order("created_at", { ascending: true });
+          const events = await sql`
+            SELECT * FROM generation_events
+            WHERE shoot_id = ${id} AND created_at > ${lastEventCreatedAt}
+            ORDER BY created_at ASC
+          `;
 
-          for (const event of events ?? []) {
+          for (const event of events) {
             enqueue({ type: event.type, ...event.payload });
             lastEventCreatedAt = event.created_at;
           }
 
-          // Stop if shoot is complete or failed
-          const { data: current } = await service
-            .from("shoots")
-            .select("status")
-            .eq("id", id)
-            .single();
-
+          const [current] = await sql`SELECT status FROM shoots WHERE id = ${id}`;
           if (current?.status === "COMPLETE" || current?.status === "FAILED") {
             clearInterval(interval);
             close();
@@ -123,7 +112,6 @@ export async function GET(
         }
       }, 2000);
 
-      // Clean up on client disconnect
       request.signal.addEventListener("abort", () => {
         clearInterval(interval);
         close();

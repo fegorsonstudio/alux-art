@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { THEMES, FONTS } from "@/lib/storefront-themes";
 
-const VALID_THEMES = THEMES.map(t => t.value);
-const VALID_FONTS = FONTS.map(f => f.value);
+const VALID_THEMES = THEMES.map((t) => t.value);
+const VALID_FONTS = FONTS.map((f) => f.value);
 
 export async function PATCH(req: NextRequest) {
   const supabase = await createClient();
@@ -11,12 +12,7 @@ export async function PATCH(req: NextRequest) {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service
-    .from("creators")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator not found" }, { status: 404 });
 
   const body = await req.json() as { theme?: string; fontFamily?: string };
@@ -26,6 +22,6 @@ export async function PATCH(req: NextRequest) {
 
   if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
-  await service.from("creators").update(updates).eq("id", creator.id);
+  await sql`UPDATE creators SET ${sql(updates)} WHERE id = ${creator.id}`;
   return NextResponse.json({ ok: true });
 }

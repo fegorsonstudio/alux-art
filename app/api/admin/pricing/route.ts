@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
@@ -16,22 +17,16 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Enter valid positive prices" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("pricing_configs")
-    .upsert({
-      id: true,
-      ngn: nextNgn,
-      usd: nextUsd,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id" })
-    .select("ngn, usd, updated_at")
-    .single();
-
-  if (error) {
-    console.error("[admin/pricing] save failed", error);
+  try {
+    const [pricing] = await sql`
+      INSERT INTO pricing_configs (id, ngn, usd, updated_at)
+      VALUES (1, ${nextNgn}, ${nextUsd}, NOW())
+      ON CONFLICT (id) DO UPDATE SET ngn = EXCLUDED.ngn, usd = EXCLUDED.usd, updated_at = NOW()
+      RETURNING ngn, usd, updated_at
+    `;
+    return NextResponse.json({ pricing });
+  } catch (err) {
+    console.error("[admin/pricing] save failed", err);
     return NextResponse.json({ error: "Unable to save pricing" }, { status: 500 });
   }
-
-  return NextResponse.json({ pricing: data });
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { createServiceClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
+import { r2SignedDownloadUrl } from "@/lib/r2";
 import styles from "./landing.module.css";
 import RotatingStyles from "./RotatingStyles";
 
@@ -14,21 +15,22 @@ interface FeaturedTemplate {
 
 async function getFeaturedTemplates(): Promise<FeaturedTemplate[]> {
   try {
-    const service = createServiceClient();
-    const { data } = await service
-      .from("templates")
-      .select("id, title, cover_storage_path, cover_bucket, category")
-      .eq("status", "published")
-      .order("purchase_count", { ascending: false });
+    const rows = await sql`
+      SELECT id, title, cover_storage_path, cover_bucket, category
+      FROM templates
+      WHERE status = 'published'
+      ORDER BY purchase_count DESC
+    `;
 
     return await Promise.all(
-      (data ?? []).map(async (r) => {
+      rows.map(async (r) => {
         let coverUrl: string | null = null;
         if (r.cover_storage_path) {
-          const { data: s } = await service.storage
-            .from(r.cover_bucket ?? "template-images")
-            .createSignedUrl(r.cover_storage_path, 3600);
-          coverUrl = s?.signedUrl ?? null;
+          coverUrl = await r2SignedDownloadUrl(
+            r.cover_bucket ?? "template-images",
+            r.cover_storage_path,
+            3600
+          ).catch(() => null);
         }
         return { id: r.id, title: r.title, coverUrl, category: r.category };
       })
@@ -83,33 +85,53 @@ export default async function LandingPage() {
           <div className={styles.step}>
             <span className={styles.stepNum}>02</span>
             <h3 className={styles.stepTitle}>Choose a style</h3>
-            <p className={styles.stepDesc}>Pick from editorial, fashion, corporate, or creative looks designed by photographers.</p>
+            <p className={styles.stepDesc}>
+              Browse our curated collection of editorial styles — from minimal studio looks to bold fashion editorials.
+              Each style controls the wardrobe, lighting, and visual direction of your shoot.
+            </p>
           </div>
           <div className={styles.step}>
             <span className={styles.stepNum}>03</span>
-            <h3 className={styles.stepTitle}>Download your portraits</h3>
-            <p className={styles.stepDesc}>10 images delivered to your studio. Every shot is you — same face, different look.</p>
+            <h3 className={styles.stepTitle}>Get your portraits</h3>
+            <p className={styles.stepDesc}>
+              Our AI generates high-resolution portraits in minutes. Download individually or as a full set.
+              Every image keeps your unique look — same face, same skin tone, same you.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Sample looks */}
-      <section className={styles.looksSection}>
-        <h2 className={styles.sectionHeading}>Current styles</h2>
-        <RotatingStyles templates={templates} />
-        <div className={styles.looksFooter}>
-          <Link href="/marketplace" className={styles.ghostBtn}>Browse all styles →</Link>
-        </div>
-      </section>
+      {/* Featured styles */}
+      {templates.length > 0 && (
+        <section className={styles.featuredSection}>
+          <h2 className={styles.sectionHeading}>Featured styles</h2>
+          <div className={styles.templateGrid}>
+            {templates.map((t) => (
+              <Link key={t.id} href={`/marketplace/${t.id}`} className={styles.templateCard}>
+                {t.coverUrl && (
+                  <div className={styles.templateCardImage}>
+                    <img src={t.coverUrl} alt={t.title} />
+                  </div>
+                )}
+                <div className={styles.templateCardInfo}>
+                  <span className={styles.templateCategory}>{t.category}</span>
+                  <h3 className={styles.templateTitle}>{t.title}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className={styles.browseMore}>
+            <Link href="/marketplace" className={styles.secondaryBtn}>Browse all styles</Link>
+          </div>
+        </section>
+      )}
+
+      {/* RotatingStyles component */}
+      <RotatingStyles templates={templates} />
 
       {/* Footer */}
       <footer className={styles.footer}>
-        <span className={styles.footerBrand}>Alux Art</span>
-        <div className={styles.footerLinks}>
-          <Link href="/terms" className={styles.footerLink}>Terms of Service</Link>
-          <Link href="/privacy" className={styles.footerLink}>Privacy Policy</Link>
-        </div>
-        <span className={styles.footerNote}>© 2026 Alux Art and Frames. All rights reserved.</span>
+        <p>© 2025 Alux Art. All rights reserved.</p>
       </footer>
     </div>
   );

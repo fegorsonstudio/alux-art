@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { packagePrice } from "@/lib/types";
 
 interface RefInput {
@@ -39,14 +40,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
   }
 
-  // Validate all identity refs belong to this user
   for (const ref of identityRefs) {
     if (typeof ref.storagePath !== "string" || !ref.storagePath.startsWith(`${user.id}/`)) {
       return NextResponse.json({ error: "Invalid identity image reference" }, { status: 400 });
     }
   }
-
-  const service = createServiceClient();
 
   const buyerPackageSize: 1 | 5 | 10 = ([1, 5, 10] as const).includes(body.packageSize as 1 | 5 | 10)
     ? (body.packageSize as 1 | 5 | 10)
@@ -67,7 +65,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const payCurrency: "NGN" | "USD" = body.currency === "USD" ? "USD" : "NGN";
 
-  // Fetch live FX rate if paying in USD
   let usdToNgn = 1600;
   if (payCurrency === "USD") {
     try {
@@ -79,30 +76,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     } catch { /* use fallback */ }
   }
 
-  // 1. Fetch published template + creator
-  const { data: template } = await service
-    .from("templates")
-    .select("*, creators(id, display_name, paystack_subaccount_code), template_images(storage_path, storage_bucket, tag, purpose, note, custom_name)")
-    .eq("id", templateId)
-    .eq("status", "published")
-    .single();
+  const [template] = await sql`
+    SELECT t.*, c.id AS cr_id, c.display_name AS cr_display_name,
+           c.paystack_subaccount_code AS cr_subaccount
+    FROM templates t
+    LEFT JOIN creators c ON c.id = t.creator_id
+    WHERE t.id = ${templateId} AND t.status = 'published'
+  `;
 
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
-
-  const creator = template.creators as { id: string; display_name: string; paystack_subaccount_code?: string } | null;
-  if (!creator?.paystack_subaccount_code) {
+  if (!template.cr_subaccount) {
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
-  // C4: validate tagged refs against template image paths and allowed tags
   const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"]);
   type TemplateImgMeta = { storage_path: string; storage_bucket?: string | null; tag?: string | null; purpose?: string; note?: string | null; custom_name?: string | null };
-  const templateImgList = (template.template_images ?? []) as TemplateImgMeta[];
-  const templateImagePaths = new Set(templateImgList.map(img => img.storage_path));
-  // Map storage_path → creator note for merging with buyer notes
+
+  const templateImgList = await sql`
+    SELECT storage_path, storage_bucket, tag, purpose, note, custom_name
+    FROM template_images WHERE template_id = ${templateId}
+  ` as TemplateImgMeta[];
+
+  const templateImagePaths = new Set(templateImgList.map((img) => img.storage_path));
   const creatorNoteMap = new Map<string, string | null>(
-    templateImgList.map(img => [img.storage_path, img.note ?? null])
+    templateImgList.map((img) => [img.storage_path, img.note ?? null])
   );
+
   for (const ref of taggedRefs) {
     if (!VALID_TAGS.has(ref.tag)) {
       return NextResponse.json({ error: `Invalid reference tag: ${ref.tag}` }, { status: 400 });
@@ -112,25 +111,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // Deduplicate tagged refs by storagePath — creator dashboard had a bug that could create
-  // duplicate DB records for the same image; send only one entry per unique file to generation.
   const seenTaggedPaths = new Set<string>();
-  const deduplicatedTaggedRefs = taggedRefs.filter(ref => {
+  const deduplicatedTaggedRefs = taggedRefs.filter((ref) => {
     if (seenTaggedPaths.has(ref.storagePath)) return false;
     seenTaggedPaths.add(ref.storagePath);
     return true;
   });
 
-  // 2. Fetch platform fee from app_config
-  const { data: feeRow } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
+  const [feeRow] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
   const basePlatformFeeNgn = parseInt(feeRow?.value ?? "15000", 10);
   const platformFeeNgn = packagePrice(basePlatformFeeNgn, buyerPackageSize);
 
-  // Resolve buyer's price for chosen package
   const priceMap: Record<1 | 5 | 10, number | null> = {
-    1: (template as Record<string, unknown>).price_1_ngn as number | null ?? null,
-    5: (template as Record<string, unknown>).price_5_ngn as number | null ?? null,
-    10: template.price_ngn,
+    1: (template.price_1_ngn as number | null) ?? null,
+    5: (template.price_5_ngn as number | null) ?? null,
+    10: template.price_ngn as number,
   };
   const buyerAmountNgn: number | null = priceMap[buyerPackageSize];
   if (!buyerAmountNgn) {
@@ -141,65 +136,55 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Template price must exceed the platform fee" }, { status: 422 });
   }
 
-  // 3. Validate coupon
   let couponId: string | null = null;
   let couponDiscountNgn = 0;
 
   if (body.couponCode && typeof body.couponCode === "string") {
-    const { data: c } = await service
-      .from("coupons")
-      .select("id, discount_type, discount_value, max_uses, use_count, expires_at, is_active")
-      .eq("code", body.couponCode.trim().toUpperCase())
-      .single();
+    const [c] = await sql`
+      SELECT id, discount_type, discount_value, max_uses, use_count, expires_at, is_active
+      FROM coupons WHERE code = ${body.couponCode.trim().toUpperCase()}
+    `;
 
     if (!c || !c.is_active) {
       return NextResponse.json({ error: "Invalid or inactive coupon code" }, { status: 422 });
     }
-    if (c.expires_at && new Date(c.expires_at) < new Date()) {
+    if (c.expires_at && new Date(c.expires_at as string) < new Date()) {
       return NextResponse.json({ error: "This coupon code has expired" }, { status: 422 });
     }
-    if (c.max_uses !== null && c.use_count >= c.max_uses) {
+    if (c.max_uses !== null && (c.use_count as number) >= (c.max_uses as number)) {
       return NextResponse.json({ error: "This coupon has reached its usage limit" }, { status: 422 });
     }
 
     if (c.discount_type === "percent") {
-      couponDiscountNgn = Math.floor(platformFeeNgn * c.discount_value / 100);
+      couponDiscountNgn = Math.floor(platformFeeNgn * (c.discount_value as number) / 100);
     } else {
-      couponDiscountNgn = Math.min(c.discount_value, platformFeeNgn);
+      couponDiscountNgn = Math.min(c.discount_value as number, platformFeeNgn);
     }
-    couponId = c.id;
+    couponId = c.id as string;
   }
 
-  // 4. Amounts
   const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
   const amountNgn = buyerAmountNgn - couponDiscountNgn;
-
-  const now = new Date().toISOString();
+  const now = new Date();
   const origin = process.env.NEXT_PUBLIC_SITE_URL
     ?? `${request.headers.get("x-forwarded-proto") ?? "https"}://${request.headers.get("host") ?? ""}`;
   const shootId = crypto.randomUUID();
 
-  // 5. Create shoot in PENDING_PAYMENT
-  const { error: shootErr } = await service.from("shoots").insert({
-    id: shootId,
-    user_id: user.id,
-    owner_email: user.email,
-    mode: template.shoot_mode ?? "advanced",
-    aspect_ratio: template.aspect_ratio ?? "4:5",
-    currency: payCurrency,
-    package_size: buyerPackageSize,
-    status: "PENDING_PAYMENT",
-    progress: 0,
-    quote: { text: "", attribution: "" },
-    identity_profile: "",
-    shot_type: shotType ?? null,
-    created_at: now,
-    updated_at: now,
-  });
+  const [shootRow] = await sql`
+    INSERT INTO shoots
+      (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
+       progress, quote, identity_profile, shot_type, created_at, updated_at)
+    VALUES (
+      ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
+      ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
+      'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
+      '', ${shotType}, ${now}, ${now}
+    )
+    RETURNING id
+  `.catch((err) => { console.error("[book] shoot insert failed:", err); return [null]; });
 
-  if (shootErr) return NextResponse.json({ error: shootErr.message }, { status: 500 });
+  if (!shootRow) return NextResponse.json({ error: "Failed to create shoot" }, { status: 500 });
 
-  // Create image slots
   const slots = Array.from({ length: buyerPackageSize }, (_, i) => ({
     id: crypto.randomUUID(),
     shoot_id: shootId,
@@ -210,110 +195,68 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     created_at: now,
     updated_at: now,
   }));
-  await service.from("shoot_images").insert(slots);
+  await sql`INSERT INTO shoot_images ${sql(slots)}`;
 
-  // 6. Insert shoot_references: identity + surviving tagged refs
-  const identityRows = identityRefs.map((ref, i) => ({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: user.id,
-    purpose: "identity",
-    tag: null,
-    custom_name: null,
-    note: null,
-    name: ref.name ?? `identity-${i + 1}`,
-    type: ref.type ?? "image/jpeg",
-    size: ref.size ?? 1,
-    storage_bucket: ref.storageBucket,
-    storage_path: ref.storagePath,
-    created_at: now,
-  }));
-
-  const taggedRows = deduplicatedTaggedRefs.map((ref, i) => {
-    const creatorNote = creatorNoteMap.get(ref.storagePath) ?? null;
-    const buyerNote = ref.note?.trim() || null;
-    const combinedNote = [creatorNote, buyerNote].filter(Boolean).join(". ") || null;
-    return {
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: user.id,
-      purpose: "tagged",
-      tag: ref.tag,
-      custom_name: null,
-      note: combinedNote,
-      name: ref.name ?? `ref-${i + 1}`,
-      type: ref.type ?? "image/jpeg",
-      size: ref.size ?? 1,
-      storage_bucket: ref.storageBucket,
-      storage_path: ref.storagePath,
+  const allRefs = [
+    ...identityRefs.map((ref, i) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "identity", tag: null, custom_name: null, note: null,
+      name: ref.name ?? `identity-${i + 1}`, type: ref.type ?? "image/jpeg",
+      size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
       created_at: now,
-    };
-  });
-
-  // Add the template's inspiration images as shoot references so generation receives Group B.
-  // These are private (never shown to buyers) but are critical for aesthetic direction.
-  const inspirationRows = templateImgList
-    .filter(img => img.purpose === "inspiration" && img.storage_path)
-    .map((img, i) => ({
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: user.id,
-      purpose: "inspiration",
-      tag: null,
-      custom_name: null,
-      note: null,
-      name: `inspiration-${i + 1}`,
-      type: "image/jpeg",
-      size: 1,
-      storage_bucket: img.storage_bucket ?? "template-images",
-      storage_path: img.storage_path,
+    })),
+    ...deduplicatedTaggedRefs.map((ref, i) => {
+      const creatorNote = creatorNoteMap.get(ref.storagePath) ?? null;
+      const buyerNote = ref.note?.trim() || null;
+      const combinedNote = [creatorNote, buyerNote].filter(Boolean).join(". ") || null;
+      return {
+        id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+        purpose: "tagged", tag: ref.tag, custom_name: null, note: combinedNote,
+        name: ref.name ?? `ref-${i + 1}`, type: ref.type ?? "image/jpeg",
+        size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
+        created_at: now,
+      };
+    }),
+    ...templateImgList
+      .filter((img) => img.purpose === "inspiration" && img.storage_path)
+      .map((img, i) => ({
+        id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+        purpose: "inspiration", tag: null, custom_name: null, note: null,
+        name: `inspiration-${i + 1}`, type: "image/jpeg", size: 1,
+        storage_bucket: img.storage_bucket ?? "template-images", storage_path: img.storage_path,
+        created_at: now,
+      })),
+    ...poseRefs.map((ref, i) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "pose", tag: null, custom_name: null, note: null,
+      name: ref.name ?? `pose-${i + 1}`, type: ref.type ?? "image/jpeg",
+      size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
       created_at: now,
-    }));
+    })),
+  ];
 
-  const poseRows = poseRefs.map((ref, i) => ({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: user.id,
-    purpose: "pose",
-    tag: null,
-    custom_name: null,
-    note: null,
-    name: ref.name ?? `pose-${i + 1}`,
-    type: ref.type ?? "image/jpeg",
-    size: ref.size ?? 1,
-    storage_bucket: ref.storageBucket,
-    storage_path: ref.storagePath,
-    created_at: now,
-  }));
-
-  if (identityRows.length + taggedRows.length + inspirationRows.length + poseRows.length > 0) {
-    const { error: refErr } = await service.from("shoot_references").insert([...identityRows, ...taggedRows, ...inspirationRows, ...poseRows]);
-    if (refErr) {
-      await service.from("shoot_images").delete().eq("shoot_id", shootId);
-      await service.from("shoots").delete().eq("id", shootId);
-      return NextResponse.json({ error: refErr.message }, { status: 500 });
+  if (allRefs.length > 0) {
+    const refInsertOk = await sql`INSERT INTO shoot_references ${sql(allRefs)}`.then(() => true).catch(() => false);
+    if (!refInsertOk) {
+      await sql`DELETE FROM shoot_images WHERE shoot_id = ${shootId}`;
+      await sql`DELETE FROM shoots WHERE id = ${shootId}`;
+      return NextResponse.json({ error: "Failed to save references" }, { status: 500 });
     }
   }
 
-  // 7. Insert pending purchase record
   const purchaseId = crypto.randomUUID();
-  await service.from("template_purchases").insert({
-    id: purchaseId,
-    template_id: templateId,
-    shoot_id: shootId,
-    user_id: user.id,
-    amount_ngn: amountNgn,
-    platform_fee_ngn: platformFeeNgn,
-    creator_payout_ngn: creatorPayoutNgn,
-    coupon_id: couponId,
-    coupon_discount_ngn: couponDiscountNgn,
-    currency: payCurrency,
-    amount_usd: payCurrency === "USD" ? parseFloat((amountNgn / usdToNgn).toFixed(2)) : null,
-    status: "pending",
-    created_at: now,
-  });
+  await sql`
+    INSERT INTO template_purchases
+      (id, template_id, shoot_id, user_id, amount_ngn, platform_fee_ngn, creator_payout_ngn,
+       coupon_id, coupon_discount_ngn, currency, amount_usd, status, created_at)
+    VALUES (
+      ${purchaseId}, ${templateId}, ${shootId}, ${user.id}, ${amountNgn}, ${platformFeeNgn},
+      ${creatorPayoutNgn}, ${couponId}, ${couponDiscountNgn}, ${payCurrency},
+      ${payCurrency === "USD" ? parseFloat((amountNgn / usdToNgn).toFixed(2)) : null},
+      'pending', ${now}
+    )
+  `;
 
-  // 8. Init Paystack split transaction
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",
     headers: {
@@ -323,8 +266,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     body: JSON.stringify({
       email: user.email,
       amount: payCurrency === "USD"
-        ? Math.ceil((amountNgn / usdToNgn) * 100)   // USD cents
-        : amountNgn * 100,                            // NGN kobo
+        ? Math.ceil((amountNgn / usdToNgn) * 100)
+        : amountNgn * 100,
       currency: payCurrency,
       callback_url: `${origin}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
       metadata: {
@@ -338,26 +281,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       split: creatorPayoutNgn > 0 ? {
         type: "flat",
         bearer_type: "account",
-        subaccounts: [{ subaccount: creator.paystack_subaccount_code, share: creatorPayoutNgn * 100 }],
+        subaccounts: [{ subaccount: template.cr_subaccount, share: creatorPayoutNgn * 100 }],
       } : undefined,
     }),
   });
 
   const paystackData = await paystackRes.json();
   if (!paystackData.status) {
-    await service.from("template_purchases").delete().eq("id", purchaseId);
-    await service.from("shoot_references").delete().eq("shoot_id", shootId);
-    await service.from("shoot_images").delete().eq("shoot_id", shootId);
-    await service.from("shoots").delete().eq("id", shootId);
+    await sql`DELETE FROM template_purchases WHERE id = ${purchaseId}`;
+    await sql`DELETE FROM shoot_references WHERE shoot_id = ${shootId}`;
+    await sql`DELETE FROM shoot_images WHERE shoot_id = ${shootId}`;
+    await sql`DELETE FROM shoots WHERE id = ${shootId}`;
     return NextResponse.json({ error: "Payment initialization failed" }, { status: 502 });
   }
 
-  await service.from("template_purchases")
-    .update({ paystack_reference: paystackData.data.reference })
-    .eq("id", purchaseId);
+  await sql`
+    UPDATE template_purchases SET paystack_reference = ${paystackData.data.reference}
+    WHERE id = ${purchaseId}
+  `;
 
-  return NextResponse.json({
-    authorizationUrl: paystackData.data.authorization_url,
-    shootId,
-  });
+  return NextResponse.json({ authorizationUrl: paystackData.data.authorization_url, shootId });
 }

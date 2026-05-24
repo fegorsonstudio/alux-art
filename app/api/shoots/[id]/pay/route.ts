@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
 import { normalizePackageSize, packagePrice } from "@/lib/types";
+import sql from "@/lib/db";
 
 export async function POST(
   request: NextRequest,
@@ -12,11 +13,9 @@ export async function POST(
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: shoot } = await service.from("shoots").select("*").eq("id", id).eq("user_id", user.id).single();
+  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Prevent re-paying a shoot that is already past PENDING_PAYMENT
   if (shoot.status !== "PENDING_PAYMENT") {
     return NextResponse.json({ error: "This shoot has already been paid or is not payable" }, { status: 409 });
   }
@@ -24,12 +23,12 @@ export async function POST(
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
   const packageSize = normalizePackageSize(shoot.package_size);
 
-  // Admin bypass — no payment needed; guard with status check to prevent double-queue
+  // Admin bypass
   if (isAdmin) {
-    await service.from("shoots").update({
-      status: "QUEUED",
-      updated_at: new Date().toISOString(),
-    }).eq("id", id).eq("status", "PENDING_PAYMENT");
+    await sql`
+      UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
+      WHERE id = ${id} AND status = 'PENDING_PAYMENT'
+    `;
     const origin = new URL(request.url).origin;
     fetch(`${origin}/api/shoots/${id}/start`, {
       method: "POST",
@@ -40,17 +39,13 @@ export async function POST(
   }
 
   // Get pricing
-  const { data: pricing } = await service
-    .from("pricing_configs")
-    .select("ngn, usd")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .single();
+  const [pricing] = await sql`
+    SELECT ngn, usd FROM pricing_configs ORDER BY updated_at DESC LIMIT 1
+  `;
 
   const basePrice = shoot.currency === "USD" ? (pricing?.usd ?? 10) : (pricing?.ngn ?? 15000);
   const price = packagePrice(basePrice, packageSize) * 100;
 
-  // Initialize Paystack
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",
     headers: {
@@ -71,18 +66,14 @@ export async function POST(
     return NextResponse.json({ error: paystackData.message }, { status: 500 });
   }
 
-  // Record payment attempt
-  await service.from("payments").insert({
-    id: crypto.randomUUID(),
-    shoot_id: id,
-    user_id: user.id,
-    status: "pending",
-    currency: shoot.currency,
-    amount: price,
-    provider: "paystack",
-    provider_reference: paystackData.data.reference,
-    created_at: new Date().toISOString(),
-  });
+  await sql`
+    INSERT INTO payments (id, shoot_id, user_id, status, currency, amount, provider, provider_reference, created_at)
+    VALUES (
+      ${crypto.randomUUID()}, ${id}, ${user.id}, 'pending',
+      ${shoot.currency}, ${price}, 'paystack',
+      ${paystackData.data.reference}, NOW()
+    )
+  `;
 
   return NextResponse.json({
     authorization_url: paystackData.data.authorization_url,

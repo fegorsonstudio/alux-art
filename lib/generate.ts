@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
-import { createServiceClient } from "./supabase-server";
+import sql from "./db";
 import { normalizePackageSize, type AspectRatio } from "./types";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
@@ -197,7 +197,6 @@ type FalOutput = {
 };
 
 async function signRefs(
-  _service: ReturnType<typeof createServiceClient>,
   refs: ShootRefRow[]
 ): Promise<SignedRef[]> {
   return Promise.all(
@@ -767,7 +766,6 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
 }
 
 async function saveSlotImage(
-  service: ReturnType<typeof createServiceClient>,
   shootId: string,
   userId: string,
   slot: number,
@@ -870,7 +868,6 @@ function antonFamily(antonLoaded: boolean): string {
 }
 
 export async function compositeQuoteCard(
-  service: ReturnType<typeof createServiceClient>,
   shoot: {
     id: string;
     user_id: string;
@@ -888,15 +885,7 @@ export async function compositeQuoteCard(
   const attribution = shoot.quote.attribution ?? "";
 
   // Find best portrait from an earlier completed slot
-  const { data: portraitSlot } = await service
-    .from("shoot_images")
-    .select("slot, preview_storage_bucket, preview_storage_path")
-    .eq("shoot_id", shoot.id)
-    .eq("status", "COMPLETE")
-    .lt("slot", shoot.package_size)
-    .order("slot", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const [portraitSlot] = await sql`SELECT slot, preview_storage_bucket, preview_storage_path FROM shoot_images WHERE shoot_id = ${shoot.id} AND status = 'COMPLETE' AND slot < ${shoot.package_size} ORDER BY slot ASC LIMIT 1`;
 
   if (!portraitSlot?.preview_storage_path) {
     console.log("[compositeQuoteCard] no portrait found, keeping plain background");
@@ -1221,20 +1210,16 @@ export async function startGenerationWorker(
 ): Promise<WorkerResult> {
   const maxSlots = opts.maxSlots ?? 1;
   const resolution = opts.resolution ?? "1K";
-  const service = createServiceClient();
   const ts = () => new Date().toISOString();
 
-  const { data: shoot, error: shootErr } = await service
-    .from("shoots")
-    .select("*, shoot_references(*), shoot_images(*)")
-    .eq("id", shootId)
-    .single();
-
-  if (shootErr || !shoot) throw new Error(shootErr?.message ?? "Shoot not found");
+  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${shootId}`;
+  if (!shoot) throw new Error("Shoot not found");
+  const rawRefs = await sql`SELECT * FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
+  const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
 
   const total = normalizePackageSize(shoot.package_size);
   const hasQuote = !!(shoot.quote as { text?: string } | null)?.text && total === 10;
-  // Supabase returns JSONB defaults as {} (object), not "" — normalize to string first.
+  // postgres returns JSONB columns as JS objects — normalize to string first.
   const rawIdentity = shoot.identity_profile;
   let identityProfile: string =
     typeof rawIdentity === "string" ? rawIdentity : "";
@@ -1242,29 +1227,24 @@ export async function startGenerationWorker(
   let shootBrief: string =
     typeof rawBrief === "string" ? rawBrief : "";
 
-  const rawRefs = (shoot.shoot_references ?? []) as ShootRefRow[];
-  const refs = await signRefs(service, rawRefs);
+  const refs = await signRefs(rawRefs);
 
   // ── Character base resolution ──────────────────────────────────────────
   let characterBaseUrl: string | undefined;
   const hasBase = typeof shoot.character_base_id === "string" && !!shoot.character_base_id;
 
   if (hasBase) {
-    const { data: base } = await service
-      .from("character_bases")
-      .select("id, base_4k_storage_path, base_storage_path, identity_profile")
-      .eq("id", shoot.character_base_id)
-      .single();
+    const [base] = await sql`SELECT id, base_4k_storage_path, base_storage_path, identity_profile FROM character_bases WHERE id = ${shoot.character_base_id}`;
 
     if (base) {
       const storagePath = base.base_4k_storage_path ?? base.base_storage_path;
       if (storagePath) {
-        characterBaseUrl = await signBasePath(service, storagePath, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => undefined);
+        characterBaseUrl = await signBasePath(null as never, storagePath as string, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => undefined);
       }
       // If the shoot doesn't have an identity profile yet, pull it from the base
       if (!identityProfile && typeof base.identity_profile === "string") {
         identityProfile = base.identity_profile;
-        await service.from("shoots").update({ identity_profile: identityProfile, updated_at: ts() }).eq("id", shootId);
+        await sql`UPDATE shoots SET identity_profile = ${identityProfile}, updated_at = ${ts()} WHERE id = ${shootId}`;
       }
     }
   }
@@ -1282,16 +1262,8 @@ export async function startGenerationWorker(
     // Hard block: no identity images = generation cannot preserve subject likeness
     if (identityRefCount === 0) {
       const msg = "No identity images found. Upload at least 3 clear face photos before starting generation.";
-      await service.from("shoots").update({
-        status: "FAILED",
-        pipeline_stage: msg,
-        updated_at: ts(),
-      }).eq("id", shootId);
-      await service.from("shoot_images").update({
-        status: "FAILED",
-        stage: "Blocked: no identity images",
-        updated_at: ts(),
-      }).eq("shoot_id", shootId).in("status", ["QUEUED", "PENDING", "GENERATING"]);
+      await sql`UPDATE shoots SET status = 'FAILED', pipeline_stage = ${msg}, updated_at = ${ts()} WHERE id = ${shootId}`;
+      await sql`UPDATE shoot_images SET status = 'FAILED', stage = 'Blocked: no identity images', updated_at = ${ts()} WHERE shoot_id = ${shootId} AND status = ANY(${['QUEUED', 'PENDING', 'GENERATING']})`;
       throw new Error(msg);
     }
 
@@ -1331,8 +1303,8 @@ export async function startGenerationWorker(
   let promptOnlyMode = false;
   let polishPassEnabled = false;
   try {
-    const { data: cfgData } = await service.from("app_config").select("key,value");
-    const cfgMap = Object.fromEntries((cfgData ?? []).map(r => [r.key, r.value]));
+    const cfgData = await sql`SELECT key, value FROM app_config`;
+    const cfgMap = Object.fromEntries(cfgData.map(r => [r.key, r.value]));
     if (cfgMap.vision_model === "claude") visionModel = "claude";
     if (cfgMap.generation_model === "seedream") generationModel = "seedream";
     promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
@@ -1342,19 +1314,9 @@ export async function startGenerationWorker(
 
   // --- Step 1: Identity analysis (skip if base provides it) ---
   if (!identityProfile && !hasBase) {
-    await service
-      .from("shoots")
-      .update({ pipeline_stage: "Analyzing identity", progress: 10, updated_at: ts() })
-      .eq("id", shootId);
+    await sql`UPDATE shoots SET pipeline_stage = 'Analyzing identity', progress = 10, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: shoot.user_id,
-      type: "stage",
-      payload: { stage: "Analyzing identity", progress: 10 },
-      created_at: ts(),
-    });
+    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'stage'}, ${JSON.stringify({ stage: "Analyzing identity", progress: 10 })}::jsonb, ${ts()})`;
 
     const identityUrls = refs
       .filter((r) => r.purpose === "identity")
@@ -1369,40 +1331,21 @@ export async function startGenerationWorker(
       2
     );
 
-    await service
-      .from("shoots")
-      .update({ identity_profile: identityProfile, updated_at: ts() })
-      .eq("id", shootId);
+    await sql`UPDATE shoots SET identity_profile = ${identityProfile}, updated_at = ${ts()} WHERE id = ${shootId}`;
   }
 
   // --- Step 2: Shoot brief ---
   if (!shootBrief) {
 
-    await service
-      .from("shoots")
-      .update({ pipeline_stage: "Building shoot brief", progress: 20, updated_at: ts() })
-      .eq("id", shootId);
+    await sql`UPDATE shoots SET pipeline_stage = 'Building shoot brief', progress = 20, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: shoot.user_id,
-      type: "stage",
-      payload: { stage: "Building shoot brief", progress: 20 },
-      created_at: ts(),
-    });
+    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'stage'}, ${JSON.stringify({ stage: "Building shoot brief", progress: 20 })}::jsonb, ${ts()})`;
 
     // Fetch past Forbidden prompts so Gemini can avoid repeating those language patterns
     let forbiddenExamples: string[] = [];
     try {
-      const { data: fbData } = await service
-        .from("generation_events")
-        .select("payload")
-        .eq("type", "forbidden_prompt")
-        .eq("user_id", shoot.user_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      forbiddenExamples = (fbData ?? [])
+      const fbData = await sql`SELECT payload FROM generation_events WHERE type = 'forbidden_prompt' AND user_id = ${shoot.user_id as string} ORDER BY created_at DESC LIMIT 5`;
+      forbiddenExamples = fbData
         .map((row) => ((row.payload as Record<string, unknown>)?.prompt as string) ?? "")
         .filter(Boolean);
       if (forbiddenExamples.length > 0) {
@@ -1413,8 +1356,7 @@ export async function startGenerationWorker(
     // Load global forbidden words shared across all users
     let dbForbiddenWordsForBrief: Array<{ word: string; replacement: string }> = [];
     try {
-      const { data: fwData } = await service.from("forbidden_words").select("word,replacement");
-      dbForbiddenWordsForBrief = fwData ?? [];
+      dbForbiddenWordsForBrief = await sql`SELECT word, replacement FROM forbidden_words`;
       if (dbForbiddenWordsForBrief.length > 0) {
         console.log(`[generate] injecting ${dbForbiddenWordsForBrief.length} forbidden word(s) into brief`);
       }
@@ -1423,8 +1365,8 @@ export async function startGenerationWorker(
     // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
     // Retrying a timed-out Claude call would double the budget and kill the function.
     shootBrief = await (visionModel === "claude"
-      ? buildShootBriefClaude(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief)
-      : buildShootBrief(shoot, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief));
+      ? buildShootBriefClaude(shoot as never, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief)
+      : buildShootBrief(shoot as never, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief));
     // Validate before storing — truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);
@@ -1433,10 +1375,7 @@ export async function startGenerationWorker(
       throw new Error(`buildShootBrief returned invalid JSON (length ${shootBrief.length}) — likely hit token limit`);
     }
 
-    await service
-      .from("shoots")
-      .update({ shoot_brief: shootBrief, updated_at: ts() })
-      .eq("id", shootId);
+    await sql`UPDATE shoots SET shoot_brief = ${shootBrief}, updated_at = ${ts()} WHERE id = ${shootId}`;
 
     // Pre-write prompts to all slots so they are visible in the gallery immediately,
     // even if fal.ai generation later fails.
@@ -1445,20 +1384,17 @@ export async function startGenerationWorker(
       const briefClean = briefStr.replace(/^```(?:json)?\s*/im, "").replace(/```\s*$/m, "").trim();
       const parsed = JSON.parse(briefClean);
       const rawPrompts = parsed.prompts;
-      const allSlotRows = (shoot.shoot_images ?? []) as SlotRow[];
+      const allSlotRows = shootImages;
       if (Array.isArray(rawPrompts)) {
-        const updates = rawPrompts
-          .filter((p: NewPromptObject) => p.fully_consolidated_prompt)
-          .map((p: NewPromptObject) => {
-            const slot = allSlotRows.find(s => s.slot === p.prompt_index);
-            if (!slot) return null;
-            return service
-              .from("shoot_images")
-              .update({ prompt: p.fully_consolidated_prompt, updated_at: ts() })
-              .eq("id", slot.id);
-          })
-          .filter(Boolean);
-        await Promise.all(updates);
+        await Promise.all(
+          rawPrompts
+            .filter((p: NewPromptObject) => p.fully_consolidated_prompt)
+            .map(async (p: NewPromptObject) => {
+              const slotRow = allSlotRows.find(s => s.slot === p.prompt_index);
+              if (!slotRow) return;
+              await sql`UPDATE shoot_images SET prompt = ${p.fully_consolidated_prompt!}, updated_at = ${ts()} WHERE id = ${slotRow.id}`;
+            })
+        );
       }
     } catch (briefWriteErr) {
       // Non-fatal — generation can still proceed; prompts just won't be pre-visible
@@ -1505,7 +1441,7 @@ export async function startGenerationWorker(
   }
 
   // --- Step 3: Process pending slots ---
-  const allSlots = (shoot.shoot_images ?? []) as SlotRow[];
+  const allSlots = shootImages;
   const pendingSlots = allSlots
     .filter((img) => ["QUEUED", "PENDING"].includes(img.status))
     .sort((a, b) => a.slot - b.slot)
@@ -1516,8 +1452,7 @@ export async function startGenerationWorker(
   // Load global forbidden words once for all slots in this invocation
   let dbForbiddenWords: Array<{ word: string; replacement: string }> = [];
   try {
-    const { data: fwData } = await service.from("forbidden_words").select("word,replacement");
-    dbForbiddenWords = fwData ?? [];
+    dbForbiddenWords = await sql`SELECT word, replacement FROM forbidden_words`;
   } catch { /* non-fatal — table may not exist yet */ }
 
   // Build imageUrls for fal.ai — base-locked shoots use base + scene refs; standard shoots use identity + inspiration
@@ -1559,33 +1494,13 @@ export async function startGenerationWorker(
     const slot = slotImg.slot;
 
     // Optimistic-lock: claim this slot atomically
-    const { data: claimed } = await service
-      .from("shoot_images")
-      .update({ status: "GENERATING", stage: `Generating slot ${slot}`, updated_at: ts() })
-      .eq("id", slotImg.id)
-      .eq("status", slotImg.status) // ensures only one worker picks it
-      .select("id")
-      .maybeSingle();
+    const claimed = await sql`UPDATE shoot_images SET status = 'GENERATING', stage = ${`Generating slot ${slot}`}, updated_at = ${ts()} WHERE id = ${slotImg.id} AND status = ${slotImg.status} RETURNING id`;
 
-    if (!claimed) continue; // another invocation already grabbed it
+    if (!claimed.length) continue; // another invocation already grabbed it
 
-    await service
-      .from("shoots")
-      .update({
-        pipeline_stage: `Generating slot ${slot}`,
-        progress: Math.min(85, 20 + Math.round((slot / total) * 65)),
-        updated_at: ts(),
-      })
-      .eq("id", shootId);
+    await sql`UPDATE shoots SET pipeline_stage = ${`Generating slot ${slot}`}, progress = ${Math.min(85, 20 + Math.round((slot / total) * 65))}, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: shoot.user_id,
-      type: "slot_update",
-      payload: { image: { slot, status: "GENERATING" } },
-      created_at: ts(),
-    });
+    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'slot_update'}, ${JSON.stringify({ image: { slot, status: "GENERATING" } })}::jsonb, ${ts()})`;
 
     let slotPrompt = ""; // hoisted so catch block can log it for learning
     try {
@@ -1613,19 +1528,11 @@ export async function startGenerationWorker(
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
       // Persist prompt before fal call so it's visible even if generation fails
-      await service
-        .from("shoot_images")
-        .update({ prompt: slotPrompt, updated_at: ts() })
-        .eq("id", slotImg.id);
+      await sql`UPDATE shoot_images SET prompt = ${slotPrompt}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
 
       // Prompt-only mode: skip fal.ai entirely — mark slot complete with prompt saved
       if (promptOnlyMode) {
-        await service.from("shoot_images").update({
-          status: "COMPLETE",
-          provider: "prompt-only",
-          stage: "Prompt saved (prompt-only mode)",
-          updated_at: ts(),
-        }).eq("id", slotImg.id);
+        await sql`UPDATE shoot_images SET status = 'COMPLETE', provider = 'prompt-only', stage = 'Prompt saved (prompt-only mode)', updated_at = ${ts()} WHERE id = ${slotImg.id}`;
         console.log(`[generate] slot ${slot}: prompt-only mode — skipping fal.ai`);
         continue;
       }
@@ -1674,20 +1581,19 @@ export async function startGenerationWorker(
       }
 
       // Always save the image to Supabase storage (using "test" bucket in test mode) so signed URLs work
-      let storagePath = await saveSlotImage(service, shootId, shoot.user_id, slot, falUrl, isTestMode);
+      let storagePath = await saveSlotImage(shootId, shoot.user_id as string, slot, falUrl, isTestMode);
 
       // Quote card composite: upload to a new path so CDN cache is bypassed
       if (hasQuote && slot === total) {
         const quoteBucket = isTestMode ? "test" : "generated-4k";
         try {
           const compositePath = await compositeQuoteCard(
-            service,
             {
               id: shootId,
-              user_id: shoot.user_id,
+              user_id: shoot.user_id as string,
               quote: shoot.quote as { text: string; attribution?: string } | null,
               package_size: total,
-              aspect_ratio: shoot.aspect_ratio,
+              aspect_ratio: shoot.aspect_ratio as string,
             },
             storagePath,
             quoteBucket,
@@ -1699,31 +1605,20 @@ export async function startGenerationWorker(
         }
       }
 
-      await service
-        .from("shoot_images")
-        .update({
-          status: "COMPLETE",
-          stage: `Completed slot ${slot}`,
-          provider: isTestMode ? "pollinations" : "vercel-fal",
-          configured_model: isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "fal-ai/nano-banana-2/edit"),
-          preview_storage_bucket: isTestMode ? "test" : "generated-4k",
-          preview_storage_path: storagePath,
-          download_storage_bucket: isTestMode ? "test" : "generated-4k",
-          download_storage_path: storagePath,
-          // Store original fal.ai CDN URL for zero-egress preview display
-          fal_url: isTestMode ? null : falUrl,
-          updated_at: ts(),
-        })
-        .eq("id", slotImg.id);
+      await sql`UPDATE shoot_images SET
+        status = 'COMPLETE',
+        stage = ${`Completed slot ${slot}`},
+        provider = ${isTestMode ? "pollinations" : "vercel-fal"},
+        configured_model = ${isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "fal-ai/nano-banana-2/edit")},
+        preview_storage_bucket = ${isTestMode ? "test" : "generated-4k"},
+        preview_storage_path = ${storagePath},
+        download_storage_bucket = ${isTestMode ? "test" : "generated-4k"},
+        download_storage_path = ${storagePath},
+        fal_url = ${isTestMode ? null : falUrl},
+        updated_at = ${ts()}
+        WHERE id = ${slotImg.id}`;
 
-      await service.from("generation_events").insert({
-        id: crypto.randomUUID(),
-        shoot_id: shootId,
-        user_id: shoot.user_id,
-        type: "slot_complete",
-        payload: { image: { slot, status: "COMPLETE" } },
-        created_at: ts(),
-      });
+      await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'slot_complete'}, ${JSON.stringify({ image: { slot, status: "COMPLETE" } })}::jsonb, ${ts()})`;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[generate] slot ${slot} failed:`, message);
@@ -1743,133 +1638,72 @@ export async function startGenerationWorker(
               const idx = bObj.prompts.findIndex((p: NewPromptObject) => p.prompt_index === slot);
               if (idx >= 0) bObj.prompts[idx].fully_consolidated_prompt = analysis.sanitizedPrompt;
               const patchedBrief = JSON.stringify(bObj);
-              await service.from("shoots").update({ shoot_brief: patchedBrief, updated_at: ts() }).eq("id", shootId);
+              await sql`UPDATE shoots SET shoot_brief = ${patchedBrief}, updated_at = ${ts()} WHERE id = ${shootId}`;
               shootBrief = patchedBrief; // keep local var in sync
             }
           } catch { /* non-fatal */ }
 
           // b) Upsert to global forbidden_words table — all users benefit
           try {
-            const { data: existing } = await service
-              .from("forbidden_words")
-              .select("id,hit_count")
-              .eq("word", analysis.flaggedWord.toLowerCase())
-              .maybeSingle();
+            const [existing] = await sql`SELECT id, hit_count FROM forbidden_words WHERE word = ${analysis.flaggedWord.toLowerCase()}`;
             if (existing) {
-              await service.from("forbidden_words")
-                .update({ hit_count: existing.hit_count + 1, replacement: analysis.replacement, updated_at: ts() })
-                .eq("id", existing.id);
+              await sql`UPDATE forbidden_words SET hit_count = ${Number(existing.hit_count) + 1}, replacement = ${analysis.replacement}, updated_at = ${ts()} WHERE id = ${existing.id}`;
             } else {
-              await service.from("forbidden_words")
-                .insert({ word: analysis.flaggedWord.toLowerCase(), replacement: analysis.replacement });
+              await sql`INSERT INTO forbidden_words (word, replacement) VALUES (${analysis.flaggedWord.toLowerCase()}, ${analysis.replacement})`;
             }
           } catch { /* non-fatal — table may not exist yet */ }
 
           // c) Emit forbidden_detected event — SSE delivers this to the frontend in real-time
           try {
-            await service.from("generation_events").insert({
-              id: crypto.randomUUID(),
-              shoot_id: shootId,
-              user_id: shoot.user_id,
-              type: "forbidden_detected",
-              payload: { slot, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement },
-              created_at: ts(),
-            });
+            await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'forbidden_detected'}, ${JSON.stringify({ slot, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement })}::jsonb, ${ts()})`;
           } catch { /* non-fatal */ }
 
           // d) Store structured error — used for page-reload recovery in the frontend
-          await service.from("shoot_images").update({
-            status: "FAILED",
-            stage: `Failed: content filter — "${analysis.flaggedWord}" flagged`,
-            provider_error: JSON.stringify({ forbidden: true, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement }),
-            updated_at: ts(),
-          }).eq("id", slotImg.id);
+          await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Failed: content filter — "${analysis.flaggedWord}" flagged`}, provider_error = ${JSON.stringify({ forbidden: true, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement })}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
 
         } else {
           // Gemini couldn't identify a specific word — log raw prompt for passive learning
           try {
-            await service.from("generation_events").insert({
-              id: crypto.randomUUID(),
-              shoot_id: shootId,
-              user_id: shoot.user_id,
-              type: "forbidden_prompt",
-              payload: { slot, prompt: slotPrompt.slice(0, 2000) },
-              created_at: ts(),
-            });
+            await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'forbidden_prompt'}, ${JSON.stringify({ slot, prompt: slotPrompt.slice(0, 2000) })}::jsonb, ${ts()})`;
           } catch { /* non-fatal */ }
 
-          await service.from("shoot_images").update({
-            status: "FAILED",
-            stage: `Failed: ${message.slice(0, 200)}`,
-            provider_error: message,
-            updated_at: ts(),
-          }).eq("id", slotImg.id);
+          await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Failed: ${message.slice(0, 200)}`}, provider_error = ${message}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
         }
 
       } else {
         // Non-Forbidden error — plain failure
-        await service.from("shoot_images").update({
-          status: "FAILED",
-          stage: `Failed: ${message.slice(0, 200)}`,
-          provider_error: message,
-          updated_at: ts(),
-        }).eq("id", slotImg.id);
+        await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Failed: ${message.slice(0, 200)}`}, provider_error = ${message}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
       }
     }
   }
 
   // Recount completion — done when no slots remain workable (avoids infinite loop on all-FAILED)
-  const { count: completeCount } = await service
-    .from("shoot_images")
-    .select("id", { count: "exact", head: true })
-    .eq("shoot_id", shootId)
-    .eq("status", "COMPLETE");
+  const [completedResult] = await sql`SELECT COUNT(*) as count FROM shoot_images WHERE shoot_id = ${shootId} AND status = 'COMPLETE'`;
+  const [workableResult] = await sql`SELECT COUNT(*) as count FROM shoot_images WHERE shoot_id = ${shootId} AND status = ANY(${['QUEUED', 'PENDING', 'GENERATING']})`;
 
-  const { count: workableCount } = await service
-    .from("shoot_images")
-    .select("id", { count: "exact", head: true })
-    .eq("shoot_id", shootId)
-    .in("status", ["QUEUED", "PENDING", "GENERATING"]);
-
-  const totalComplete = completeCount ?? 0;
-  const remaining = workableCount ?? 0;
+  const totalComplete = Number(completedResult.count) ?? 0;
+  const remaining = Number(workableResult.count) ?? 0;
   const done = remaining === 0;
 
-  await service
-    .from("shoots")
-    .update({
-      status: done ? "COMPLETE" : "PROCESSING",
-      progress: done ? 100 : Math.max(10, Math.round((totalComplete / total) * 100)),
-      pipeline_stage: done
-        ? "Complete"
-        : `Completed ${totalComplete}/${total} shots`,
-      completed_at: done ? ts() : null,
-      updated_at: ts(),
-    })
-    .eq("id", shootId);
+  await sql`UPDATE shoots SET
+    status = ${done ? "COMPLETE" : "PROCESSING"},
+    progress = ${done ? 100 : Math.max(10, Math.round((totalComplete / total) * 100))},
+    pipeline_stage = ${done ? "Complete" : `Completed ${totalComplete}/${total} shots`},
+    completed_at = ${done ? ts() : null},
+    updated_at = ${ts()}
+    WHERE id = ${shootId}`;
 
   if (done) {
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: shoot.user_id,
-      type: "complete",
-      payload: { progress: 100, stage: "Complete" },
-      created_at: ts(),
-    });
+    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'complete'}, ${JSON.stringify({ progress: 100, stage: "Complete" })}::jsonb, ${ts()})`;
 
     // Delete inspiration + tagged reference files from storage on completion.
     // Identity images are intentionally kept — they power the identity library for future shoots.
     try {
-      const { data: refs } = await service
-        .from("shoot_references")
-        .select("storage_bucket, storage_path")
-        .eq("shoot_id", shootId)
-        .in("purpose", ["inspiration", "tagged"]);
+      const cleanupRefs = await sql`SELECT storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId} AND purpose = ANY(${['inspiration', 'tagged']})`;
 
-      if (refs && refs.length > 0) {
+      if (cleanupRefs.length > 0) {
         const byBucket = new Map<string, string[]>();
-        for (const ref of refs) {
+        for (const ref of cleanupRefs) {
           if (!byBucket.has(ref.storage_bucket)) byBucket.set(ref.storage_bucket, []);
           byBucket.get(ref.storage_bucket)!.push(ref.storage_path);
         }

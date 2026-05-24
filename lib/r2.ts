@@ -19,11 +19,20 @@ export const r2 = new S3Client({
 export async function r2SignedDownloadUrl(
   bucket: string,
   path: string,
-  expiresIn = 3600
+  expiresIn = 3600,
+  downloadFilename?: string
 ): Promise<string> {
-  return getSignedUrl(r2, new GetObjectCommand({ Bucket: bucket, Key: path }), {
-    expiresIn,
-  });
+  return getSignedUrl(
+    r2,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: path,
+      ...(downloadFilename
+        ? { ResponseContentDisposition: `attachment; filename="${downloadFilename}"` }
+        : {}),
+    }),
+    { expiresIn }
+  );
 }
 
 export async function r2SignedUploadUrl(

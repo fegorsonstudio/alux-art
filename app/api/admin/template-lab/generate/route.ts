@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { fal } from "@fal-ai/client";
+import { r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
@@ -22,42 +24,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "shoot_image_id and template_id are required" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-
-  // 1. Fetch the shoot_images row
-  const { data: slotImg } = await service
-    .from("shoot_images")
-    .select("id, shoot_id, slot, prompt, status, provider")
-    .eq("id", shoot_image_id)
-    .single();
+  const [slotImg] = await sql`
+    SELECT id, shoot_id, slot, prompt, status, provider
+    FROM shoot_images WHERE id = ${shoot_image_id}
+  `;
 
   if (!slotImg) return NextResponse.json({ error: "Slot not found" }, { status: 404 });
   if (!slotImg.prompt) return NextResponse.json({ error: "No prompt saved for this slot" }, { status: 422 });
 
-  // 2. Fetch shoot references
-  const { data: refs } = await service
-    .from("shoot_references")
-    .select("purpose, storage_bucket, storage_path")
-    .eq("shoot_id", slotImg.shoot_id);
+  const refs = await sql`
+    SELECT purpose, storage_bucket, storage_path
+    FROM shoot_references WHERE shoot_id = ${slotImg.shoot_id}
+  `;
 
-  // Sign identity references (up to 3)
-  const identityRefs = (refs ?? []).filter((r: { purpose: string }) => r.purpose === "identity").slice(0, 3);
+  const identityRefs = refs.filter((r) => r.purpose === "identity").slice(0, 3);
   const signedIdentityUrls: string[] = [];
   for (const ref of identityRefs) {
-    const { data } = await service.storage
-      .from(ref.storage_bucket as string)
-      .createSignedUrl(ref.storage_path as string, 300);
-    if (data?.signedUrl) signedIdentityUrls.push(data.signedUrl);
+    const url = await r2SignedDownloadUrl(ref.storage_bucket as string, ref.storage_path as string, 300);
+    signedIdentityUrls.push(url);
   }
 
-  // Sign non-identity (inspiration + tagged) references
-  const nonIdentityRefs = (refs ?? []).filter((r: { purpose: string }) => r.purpose !== "identity");
+  const nonIdentityRefs = refs.filter((r) => r.purpose !== "identity");
   const signedRefUrls: string[] = [];
   for (const ref of nonIdentityRefs) {
-    const { data } = await service.storage
-      .from(ref.storage_bucket as string)
-      .createSignedUrl(ref.storage_path as string, 300);
-    if (data?.signedUrl) signedRefUrls.push(data.signedUrl);
+    const url = await r2SignedDownloadUrl(ref.storage_bucket as string, ref.storage_path as string, 300);
+    signedRefUrls.push(url);
   }
 
   const imageUrls = [...signedIdentityUrls, ...signedRefUrls].slice(0, 9);
@@ -65,7 +56,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No reference images found for this shoot" }, { status: 422 });
   }
 
-  // 3. Call fal.ai nano-banana
   let falUrl: string;
   try {
     const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
@@ -87,64 +77,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "fal.ai generation failed" }, { status: 500 });
   }
 
-  // 4. Download the image and upload to template-images bucket
   let uploadPath: string;
   try {
     const imgRes = await fetch(falUrl);
     if (!imgRes.ok) throw new Error(`Download failed: ${imgRes.status}`);
-    const buffer = await imgRes.arrayBuffer();
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
 
     uploadPath = `admin/${template_id}/${crypto.randomUUID()}.png`;
-    const { error: upErr } = await service.storage
-      .from("template-images")
-      .upload(uploadPath, buffer, { contentType: "image/png", upsert: false });
-    if (upErr) throw new Error(upErr.message);
+    await r2Upload("template-images", uploadPath, buffer, "image/png");
   } catch (err) {
     console.error("[template-lab/generate] upload error:", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Upload failed" }, { status: 500 });
   }
 
-  // 5. Get current max display_order for this template
-  const { data: existing } = await service
-    .from("template_images")
-    .select("display_order")
-    .eq("template_id", template_id)
-    .order("display_order", { ascending: false })
-    .limit(1);
-  const nextOrder = ((existing?.[0]?.display_order as number | null) ?? -1) + 1;
+  const [maxOrderRow] = await sql`
+    SELECT display_order FROM template_images
+    WHERE template_id = ${template_id}
+    ORDER BY display_order DESC LIMIT 1
+  `;
+  const nextOrder = ((maxOrderRow?.display_order as number | null) ?? -1) + 1;
 
-  // 6. Insert template_images row
-  const { data: newImg, error: insertErr } = await service
-    .from("template_images")
-    .insert({
-      template_id,
-      storage_path: uploadPath,
-      storage_bucket: "template-images",
-      display_order: nextOrder,
-      purpose: "generated",
-      created_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
+  const [newImg] = await sql`
+    INSERT INTO template_images (template_id, storage_path, storage_bucket, display_order, purpose, created_at)
+    VALUES (${template_id}, ${uploadPath}, 'template-images', ${nextOrder}, 'generated', NOW())
+    RETURNING id
+  `;
 
-  if (insertErr) {
-    console.error("[template-lab/generate] insert error:", insertErr);
-    return NextResponse.json({ error: insertErr.message }, { status: 500 });
+  if (!newImg) {
+    console.error("[template-lab/generate] insert failed");
+    return NextResponse.json({ error: "Failed to save image record" }, { status: 500 });
   }
 
-  // 7. Mark shoot_image as generated via nano-banana
-  await service.from("shoot_images").update({
-    provider: "nano-banana",
-    updated_at: new Date().toISOString(),
-  }).eq("id", shoot_image_id);
+  await sql`
+    UPDATE shoot_images SET provider = 'nano-banana', updated_at = NOW()
+    WHERE id = ${shoot_image_id}
+  `;
 
-  // 8. Sign the new image for response
-  const { data: signed } = await service.storage
-    .from("template-images")
-    .createSignedUrl(uploadPath, 3600);
+  const signedUrl = await r2SignedDownloadUrl("template-images", uploadPath, 3600);
 
-  return NextResponse.json({
-    imageId: newImg?.id,
-    signedUrl: signed?.signedUrl ?? null,
-  }, { status: 201 });
+  return NextResponse.json({ imageId: newImg.id, signedUrl }, { status: 201 });
 }

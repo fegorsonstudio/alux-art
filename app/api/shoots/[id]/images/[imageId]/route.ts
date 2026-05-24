@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import { r2SignedDownloadUrl } from "@/lib/r2";
+import sql from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
@@ -11,21 +13,12 @@ export async function GET(
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: img } = await service
-    .from("shoot_images")
-    .select("*")
-    .eq("id", imageId)
-    .eq("shoot_id", id)
-    .single();
-
+  const [img] = await sql`
+    SELECT * FROM shoot_images WHERE id = ${imageId} AND shoot_id = ${id}
+  `;
   if (!img) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { data: shoot } = await service
-    .from("shoots")
-    .select("user_id")
-    .eq("id", id)
-    .single();
+  const [shoot] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
   if (!shoot || (!isAdmin && shoot.user_id !== user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -38,30 +31,27 @@ export async function GET(
   const isDownload = request.nextUrl.searchParams.get("download") === "1";
   const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
-  const { data: signed } = await service.storage
-    .from(storageBucket)
-    .createSignedUrl(storagePath, 3600, {
-      download: isDownload ? filename : undefined,
-    });
+  const signedUrl = await r2SignedDownloadUrl(
+    storageBucket,
+    storagePath,
+    3600,
+    isDownload ? filename : undefined
+  ).catch(() => null);
 
-  if (!signed?.signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
+  if (!signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
 
   if (isDownload) {
-    await service.from("download_logs").insert({
-      id: crypto.randomUUID(),
-      user_id: user.id,
-      shoot_id: id,
-      image_id: imageId,
-      type: "4k",
-      created_at: new Date().toISOString(),
-    });
-
-    return NextResponse.redirect(signed.signedUrl);
+    await sql`
+      INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW()
+      )
+    `;
+    return NextResponse.redirect(signedUrl);
   }
 
-  // For preview (no download param), just return the signed URL
   return NextResponse.json({
-    url: signed.signedUrl,
+    url: signedUrl,
     expiresAt: new Date(Date.now() + 3600000).toISOString(),
     filename,
   });

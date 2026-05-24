@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -13,25 +14,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Rating must be 1–5" }, { status: 400 });
   }
 
-  const service = createServiceClient();
+  await sql`
+    INSERT INTO template_ratings (template_id, user_id, rating, updated_at)
+    VALUES (${templateId}, ${session.user.id}, ${rating}, NOW())
+    ON CONFLICT (template_id, user_id) DO UPDATE SET rating = EXCLUDED.rating, updated_at = NOW()
+  `.catch((err) => { return NextResponse.json({ error: String(err) }, { status: 500 }); });
 
-  // Upsert: one rating per user per template
-  const { error } = await service
-    .from("template_ratings")
-    .upsert(
-      { template_id: templateId, user_id: session.user.id, rating, updated_at: new Date().toISOString() },
-      { onConflict: "template_id,user_id" }
-    );
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  // Return updated avg
-  const { data: t } = await service
-    .from("templates")
-    .select("avg_rating, rating_count")
-    .eq("id", templateId)
-    .single();
-
+  const [t] = await sql`SELECT avg_rating, rating_count FROM templates WHERE id = ${templateId}`;
   return NextResponse.json({ ok: true, avgRating: t?.avg_rating, ratingCount: t?.rating_count });
 }
 
@@ -40,21 +29,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
-  const service = createServiceClient();
-  const { data: t } = await service
-    .from("templates")
-    .select("avg_rating, rating_count")
-    .eq("id", templateId)
-    .single();
+  const [t] = await sql`SELECT avg_rating, rating_count FROM templates WHERE id = ${templateId}`;
 
   let userRating: number | null = null;
   if (session?.user) {
-    const { data: r } = await service
-      .from("template_ratings")
-      .select("rating")
-      .eq("template_id", templateId)
-      .eq("user_id", session.user.id)
-      .single();
+    const [r] = await sql`
+      SELECT rating FROM template_ratings WHERE template_id = ${templateId} AND user_id = ${session.user.id}
+    `;
     userRating = r?.rating ?? null;
   }
 

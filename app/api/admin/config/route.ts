@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 const ALLOWED_VISION_MODELS = ["gemini", "claude"] as const;
 const ALLOWED_GENERATION_MODELS = ["nano-banana", "seedream"] as const;
@@ -30,9 +31,8 @@ export async function GET() {
   const user = await getAdminSession();
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const service = createServiceClient();
-  const { data } = await service.from("app_config").select("key,value");
-  const map = Object.fromEntries((data ?? []).map(r => [r.key, r.value]));
+  const rows = await sql`SELECT key, value FROM app_config`;
+  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
 
   return NextResponse.json({
     vision_model: (map.vision_model ?? "gemini") as VisionModel,
@@ -61,14 +61,12 @@ export async function PATCH(req: NextRequest) {
     }
     updates.push({ key: "vision_model", value: body.vision_model, updated_at: now });
   }
-
   if (body.generation_model !== undefined) {
     if (!ALLOWED_GENERATION_MODELS.includes(body.generation_model)) {
       return NextResponse.json({ error: `generation_model must be one of: ${ALLOWED_GENERATION_MODELS.join(", ")}` }, { status: 400 });
     }
     updates.push({ key: "generation_model", value: body.generation_model, updated_at: now });
   }
-
   if (body.locked_base_rollout_percent !== undefined) {
     const pct = Number(body.locked_base_rollout_percent);
     if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
@@ -76,11 +74,9 @@ export async function PATCH(req: NextRequest) {
     }
     updates.push({ key: "locked_base_rollout_percent", value: String(Math.round(pct)), updated_at: now });
   }
-
   if (body.locked_base_enabled !== undefined) {
     updates.push({ key: "locked_base_enabled", value: body.locked_base_enabled ? "true" : "false", updated_at: now });
   }
-
   if (body.platform_fee_ngn !== undefined) {
     const fee = Number(body.platform_fee_ngn);
     if (!Number.isInteger(fee) || fee < 1000) {
@@ -88,7 +84,6 @@ export async function PATCH(req: NextRequest) {
     }
     updates.push({ key: "platform_fee_ngn", value: String(fee), updated_at: now });
   }
-
   if (body.platform_price_1_ngn !== undefined) {
     const p = Number(body.platform_price_1_ngn);
     if (!Number.isInteger(p) || p < 100) {
@@ -96,7 +91,6 @@ export async function PATCH(req: NextRequest) {
     }
     updates.push({ key: "platform_price_1_ngn", value: String(p), updated_at: now });
   }
-
   if (body.platform_price_5_ngn !== undefined) {
     const p = Number(body.platform_price_5_ngn);
     if (!Number.isInteger(p) || p < 500) {
@@ -104,11 +98,9 @@ export async function PATCH(req: NextRequest) {
     }
     updates.push({ key: "platform_price_5_ngn", value: String(p), updated_at: now });
   }
-
   if (body.prompt_only_mode !== undefined) {
     updates.push({ key: "prompt_only_mode", value: body.prompt_only_mode ? "true" : "false", updated_at: now });
   }
-
   if (body.polish_pass_enabled !== undefined) {
     updates.push({ key: "polish_pass_enabled", value: body.polish_pass_enabled ? "true" : "false", updated_at: now });
   }
@@ -117,10 +109,16 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-  const { error } = await service.from("app_config").upsert(updates, { onConflict: "key" });
-  if (error) {
-    console.error("[admin/config] save failed", error);
+  try {
+    for (const u of updates) {
+      await sql`
+        INSERT INTO app_config (key, value, updated_at)
+        VALUES (${u.key}, ${u.value}, ${u.updated_at})
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
+      `;
+    }
+  } catch (err) {
+    console.error("[admin/config] save failed", err);
     return NextResponse.json({ error: "Unable to save config" }, { status: 500 });
   }
 

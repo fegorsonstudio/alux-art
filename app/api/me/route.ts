@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function GET() {
   const supabase = await createClient();
@@ -7,22 +8,20 @@ export async function GET() {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
   const email = user.email ?? "";
   const displayName = typeof user.user_metadata?.full_name === "string"
     ? user.user_metadata.full_name
     : email;
 
-  const { data: profile } = await service
-    .from("profiles")
-    .upsert({
-      id: user.id,
-      email,
-      display_name: displayName,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id" })
-    .select("*")
-    .single();
+  const [profile] = await sql`
+    INSERT INTO profiles (id, email, display_name, updated_at)
+    VALUES (${user.id}, ${email}, ${displayName}, NOW())
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      display_name = EXCLUDED.display_name,
+      updated_at = NOW()
+    RETURNING *
+  `;
 
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
@@ -45,13 +44,13 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const service = createServiceClient();
-  await service.from("profiles").upsert({
-    id: user.id,
-    email: user.email ?? "",
-    currency: body.currency,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "id" });
+  await sql`
+    INSERT INTO profiles (id, email, currency, updated_at)
+    VALUES (${user.id}, ${user.email ?? ""}, ${body.currency}, NOW())
+    ON CONFLICT (id) DO UPDATE SET
+      currency = EXCLUDED.currency,
+      updated_at = NOW()
+  `;
 
   return NextResponse.json({ ok: true });
 }

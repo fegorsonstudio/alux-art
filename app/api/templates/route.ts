@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
 
-async function getPlatformFee(service: ReturnType<typeof createServiceClient>): Promise<number> {
-  const { data } = await service.from("app_config").select("value").eq("key", "platform_fee_ngn").single();
-  return parseInt(data?.value ?? "15000", 10);
+async function getPlatformFee(): Promise<number> {
+  const [row] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
+  return parseInt(row?.value ?? "15000", 10);
 }
 
 export async function GET() {
@@ -16,18 +17,25 @@ export async function GET() {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: templates, error } = await service
-    .from("templates")
-    .select("*, template_images(id, display_order, purpose, tag)")
-    .eq("creator_id", creator.id)
-    .order("created_at", { ascending: false });
+  const templates = await sql`SELECT * FROM templates WHERE creator_id = ${creator.id} ORDER BY created_at DESC`;
 
-  if (error) return NextResponse.json({ error: "Failed to load templates" }, { status: 500 });
-  return NextResponse.json({ templates: templates ?? [] });
+  const templateIds = templates.map((t) => t.id as string);
+  const images: Record<string, unknown>[] = templateIds.length
+    ? await sql`SELECT id, template_id, display_order, purpose, tag FROM template_images WHERE template_id = ANY(${templateIds})`
+    : [];
+
+  const imagesByTemplate: Record<string, Record<string, unknown>[]> = {};
+  for (const img of images) {
+    if (!imagesByTemplate[img.template_id as string]) imagesByTemplate[img.template_id as string] = [];
+    imagesByTemplate[img.template_id as string].push(img);
+  }
+
+  return NextResponse.json({
+    templates: templates.map((t) => ({ ...t, template_images: imagesByTemplate[t.id as string] ?? [] })),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -36,8 +44,7 @@ export async function POST(request: NextRequest) {
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const { data: creator } = await service.from("creators").select("id").eq("user_id", user.id).single();
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
@@ -56,7 +63,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid aspect ratio" }, { status: 400 });
   }
 
-  const platformFeeNgn = await getPlatformFee(service);
+  const platformFeeNgn = await getPlatformFee();
 
   if (!Number.isInteger(priceNgn) || (priceNgn as number) <= platformFeeNgn) {
     return NextResponse.json({ error: `10-image price must be more than ₦${platformFeeNgn.toLocaleString()} (the platform fee)` }, { status: 400 });
@@ -75,26 +82,27 @@ export async function POST(request: NextRequest) {
   const pkg = [1, 5, 10].includes(Number(packageSize)) ? Number(packageSize) : 10;
   const { coverStoragePath } = body;
 
-  const now = new Date().toISOString();
-  const { data: template, error } = await service.from("templates").insert({
-    creator_id: creator.id,
-    title: (title as string).trim(),
-    description: typeof description === "string" ? description.trim() : null,
-    category,
-    tags: Array.isArray(tags) ? (tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10) : [],
-    price_ngn: priceNgn,
-    price_1_ngn: (price1Ngn != null && Number.isInteger(price1Ngn)) ? price1Ngn : null,
-    price_5_ngn: (price5Ngn != null && Number.isInteger(price5Ngn)) ? price5Ngn : null,
-    shoot_mode: shootMode,
-    aspect_ratio: aspectRatio,
-    package_size: pkg,
-    status: (body.status === "published" || body.status === "draft") ? body.status as string : "draft",
-    cover_storage_path: typeof coverStoragePath === "string" && coverStoragePath ? coverStoragePath : null,
-    cover_bucket: "template-images",
-    created_at: now,
-    updated_at: now,
-  }).select().single();
+  const [template] = await sql`
+    INSERT INTO templates
+      (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
+       shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
+       created_at, updated_at)
+    VALUES (
+      ${creator.id},
+      ${(title as string).trim()},
+      ${typeof description === "string" ? description.trim() : null},
+      ${category}, ${JSON.stringify(Array.isArray(tags) ? (tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10) : [])},
+      ${priceNgn as number},
+      ${(price1Ngn != null && Number.isInteger(price1Ngn)) ? price1Ngn as number : null},
+      ${(price5Ngn != null && Number.isInteger(price5Ngn)) ? price5Ngn as number : null},
+      ${shootMode}, ${aspectRatio}, ${pkg},
+      ${(body.status === "published" || body.status === "draft") ? body.status as string : "draft"},
+      ${typeof coverStoragePath === "string" && coverStoragePath ? coverStoragePath : null},
+      'template-images', NOW(), NOW()
+    )
+    RETURNING *
+  `.catch((err) => { console.error("[templates POST]", err); return [null]; });
 
-  if (error) return NextResponse.json({ error: "Failed to create template" }, { status: 500 });
+  if (!template) return NextResponse.json({ error: "Failed to create template" }, { status: 500 });
   return NextResponse.json({ template }, { status: 201 });
 }

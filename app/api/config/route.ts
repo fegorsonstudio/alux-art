@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { ASPECTS, FAL_MODELS, REFERENCE_TAGS, SHOOT_PACKAGES, packagePrice } from "@/lib/types";
-import { createServiceClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function GET() {
-  const supabase = createServiceClient();
-  const [pricingResult, feeResult] = await Promise.all([
-    supabase.from("pricing_configs").select("ngn, usd").order("updated_at", { ascending: false }).limit(1).single(),
-    supabase.from("app_config").select("value").eq("key", "platform_fee_ngn").single(),
-  ]);
+  const [pricingRow] = await sql`SELECT ngn, usd FROM pricing_configs ORDER BY updated_at DESC LIMIT 1`;
+  const [feeRow] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
 
-  const basePricing = pricingResult.data ?? { ngn: 15000, usd: 10 };
-  const platformFeeNgn = parseInt(feeResult.data?.value ?? "15000", 10);
+  const basePricing = pricingRow ?? { ngn: 15000, usd: 10 };
+  const platformFeeNgn = parseInt(feeRow?.value ?? "15000", 10);
 
   return NextResponse.json({
     aspects: ASPECTS,

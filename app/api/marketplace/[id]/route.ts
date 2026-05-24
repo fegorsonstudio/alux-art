@@ -1,103 +1,96 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const service = createServiceClient();
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
-  const { data: template, error } = await service
-    .from("templates")
-    .select("*, creators(*), template_images(*)")
-    .eq("id", id)
-    .eq("status", "published")
-    .single();
+  const [template] = await sql`
+    SELECT t.*, c.id AS cr_id, c.display_name AS cr_display_name, c.bio AS cr_bio,
+           c.instagram_url AS cr_instagram, c.website_url AS cr_website,
+           c.avatar_storage_path AS cr_avatar_path, c.avatar_bucket AS cr_avatar_bucket,
+           c.paystack_subaccount_code AS cr_subaccount, c.theme AS cr_theme,
+           c.font_family AS cr_font_family
+    FROM templates t
+    LEFT JOIN creators c ON c.id = t.creator_id
+    WHERE t.id = ${id} AND t.status = 'published'
+  `;
 
-  if (error || !template) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   let coverUrl: string | null = null;
   if (template.cover_storage_path) {
     coverUrl = await r2SignedDownloadUrl(
-      template.cover_bucket ?? "template-images",
-      template.cover_storage_path,
+      (template.cover_bucket ?? "template-images") as string,
+      template.cover_storage_path as string,
       3600
     ).catch(() => null);
   }
 
-  const cr = template.creators as Record<string, string> | null;
   let avatarUrl: string | null = null;
-  if (cr?.avatar_storage_path) {
+  if (template.cr_avatar_path) {
     avatarUrl = await r2SignedDownloadUrl(
-      cr.avatar_bucket ?? "template-images",
-      cr.avatar_storage_path,
+      (template.cr_avatar_bucket ?? "template-images") as string,
+      template.cr_avatar_path as string,
       3600
     ).catch(() => null);
   }
 
-  const rawImages = (template.template_images ?? []) as Array<{
-    id: string; storage_path: string; storage_bucket: string;
-    display_order: number; purpose: string; tag?: string | null;
-    custom_name?: string | null; note?: string | null; note_hidden?: boolean | null; created_at: string;
-  }>;
+  const rawImages = await sql`
+    SELECT id, storage_path, storage_bucket, display_order, purpose, tag,
+           custom_name, note, note_hidden, created_at
+    FROM template_images WHERE template_id = ${id}
+    ORDER BY display_order ASC
+  `;
 
-  const images = await Promise.all(
-    rawImages
-      .sort((a, b) => a.display_order - b.display_order)
-      .map(async (img) => {
-        // Workflow reference images (tagged + inspiration) are kept private until after
-        // payment — return path/bucket for the book page but no signed URL.
-        const isWorkflowRef = img.purpose === "tagged" || img.purpose === "inspiration";
-        let signedUrl: string | null = null;
-        if (!isWorkflowRef) {
-          signedUrl = await r2SignedDownloadUrl(
-            img.storage_bucket ?? "template-images",
-            img.storage_path,
-            3600
-          ).catch(() => null);
-        }
-        return {
-          id: img.id,
-          templateId: id,
-          storagePath: img.storage_path,
-          storageBucket: img.storage_bucket,
-          displayOrder: img.display_order,
-          purpose: img.purpose,
-          tag: img.tag ?? null,
-          customName: img.custom_name ?? null,
-          note: img.note ?? null,
-          noteHidden: img.note_hidden ?? false,
-          url: signedUrl,
-          createdAt: img.created_at,
-        };
-      })
-  );
+  const images = await Promise.all(rawImages.map(async (img) => {
+    const isWorkflowRef = img.purpose === "tagged" || img.purpose === "inspiration";
+    let signedUrl: string | null = null;
+    if (!isWorkflowRef) {
+      signedUrl = await r2SignedDownloadUrl(
+        (img.storage_bucket ?? "template-images") as string,
+        img.storage_path as string,
+        3600
+      ).catch(() => null);
+    }
+    return {
+      id: img.id,
+      templateId: id,
+      storagePath: img.storage_path,
+      storageBucket: img.storage_bucket,
+      displayOrder: img.display_order,
+      purpose: img.purpose,
+      tag: img.tag ?? null,
+      customName: img.custom_name ?? null,
+      note: img.note ?? null,
+      noteHidden: img.note_hidden ?? false,
+      url: signedUrl,
+      createdAt: img.created_at,
+    };
+  }));
 
-  const { count: templateCount } = await service
-    .from("templates")
-    .select("id", { count: "exact", head: true })
-    .eq("creator_id", template.creator_id)
-    .eq("status", "published");
+  const [{ count: templateCount }] = await sql`
+    SELECT COUNT(*)::int AS count FROM templates
+    WHERE creator_id = ${template.creator_id} AND status = 'published'
+  `;
 
   let userRating: number | null = null;
   if (session?.user) {
-    const { data: ratingRow } = await service
-      .from("template_ratings")
-      .select("rating")
-      .eq("template_id", id)
-      .eq("user_id", session.user.id)
-      .single();
+    const [ratingRow] = await sql`
+      SELECT rating FROM template_ratings
+      WHERE template_id = ${id} AND user_id = ${session.user.id}
+    `;
     userRating = ratingRow?.rating ?? null;
   }
 
-  // Deduplicate tagged images by storagePath before exposing to buyer — duplicate DB
-  // records from creator dashboard re-uploads should appear as a single ref.
   const seenImagePaths = new Set<string>();
-  const deduplicatedImages = images.filter(img => {
+  const deduplicatedImages = images.filter((img) => {
     if (img.purpose === "tagged") {
-      if (seenImagePaths.has(img.storagePath)) return false;
-      seenImagePaths.add(img.storagePath);
+      if (seenImagePaths.has(img.storagePath as string)) return false;
+      seenImagePaths.add(img.storagePath as string);
     }
     return true;
   });
@@ -106,16 +99,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     template: {
       id: template.id,
       creatorId: template.creator_id,
-      creator: cr ? {
-        id: cr.id,
-        displayName: cr.display_name,
-        bio: cr.bio ?? null,
-        instagramUrl: cr.instagram_url ?? null,
-        websiteUrl: cr.website_url ?? null,
+      creator: template.cr_id ? {
+        id: template.cr_id,
+        displayName: template.cr_display_name,
+        bio: template.cr_bio ?? null,
+        instagramUrl: template.cr_instagram ?? null,
+        websiteUrl: template.cr_website ?? null,
         avatarUrl,
         templateCount: templateCount ?? 0,
-        theme: cr.theme ?? "alux",
-        fontFamily: cr.font_family ?? "default",
+        theme: template.cr_theme ?? "alux",
+        fontFamily: template.cr_font_family ?? "default",
       } : null,
       title: template.title,
       description: template.description ?? null,
@@ -128,8 +121,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       aspectRatio: template.aspect_ratio,
       packageSize: template.package_size,
       purchaseCount: template.purchase_count,
-      avgRating: (template as Record<string, unknown>).avg_rating as number | null ?? null,
-      ratingCount: (template as Record<string, unknown>).rating_count as number ?? 0,
+      avgRating: template.avg_rating ?? null,
+      ratingCount: template.rating_count ?? 0,
       userRating,
       coverUrl,
       images: deduplicatedImages,

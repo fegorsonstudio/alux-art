@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
+import { r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -14,124 +16,67 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "shootImageId required" }, { status: 400 });
   }
 
-  const service = createServiceClient();
-
-  // Verify creator owns this template
-  const { data: creator } = await service
-    .from("creators")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-
+  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const { data: template } = await service
-    .from("templates")
-    .select("id, cover_storage_path")
-    .eq("id", templateId)
-    .eq("creator_id", creator.id)
-    .single();
-
+  const [template] = await sql`
+    SELECT id, cover_storage_path FROM templates WHERE id = ${templateId} AND creator_id = ${creator.id}
+  `;
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
-  // Fetch the shoot image (must be COMPLETE and owned by this user)
-  const { data: shootImage } = await service
-    .from("shoot_images")
-    .select("id, shoot_id, slot, status, fal_url, preview_storage_path, preview_storage_bucket")
-    .eq("id", body.shootImageId)
-    .eq("user_id", user.id)
-    .eq("status", "COMPLETE")
-    .single();
-
+  const [shootImage] = await sql`
+    SELECT id, shoot_id, slot, status, fal_url, preview_storage_path, preview_storage_bucket
+    FROM shoot_images
+    WHERE id = ${body.shootImageId} AND user_id = ${user.id} AND status = 'COMPLETE'
+  `;
   if (!shootImage) return NextResponse.json({ error: "Image not found or not complete" }, { status: 404 });
 
-  // Verify the shoot is a showcase shoot for this template
-  const { data: shoot } = await service
-    .from("shoots")
-    .select("id, template_showcase_id")
-    .eq("id", shootImage.shoot_id)
-    .eq("user_id", user.id)
-    .single();
-
+  const [shoot] = await sql`
+    SELECT id, template_showcase_id FROM shoots WHERE id = ${shootImage.shoot_id} AND user_id = ${user.id}
+  `;
   if (!shoot || shoot.template_showcase_id !== templateId) {
     return NextResponse.json({ error: "Image does not belong to a showcase for this template" }, { status: 403 });
   }
 
-  // Resolve source URL: fal CDN first, then signed URL from storage
-  let sourceUrl: string | null = (shootImage as Record<string, unknown>).fal_url as string | null ?? null;
-  if (!sourceUrl) {
-    const previewPath = (shootImage as Record<string, unknown>).preview_storage_path as string | null;
-    const previewBucket = (shootImage as Record<string, unknown>).preview_storage_bucket as string | null;
-    if (previewPath) {
-      const { data: signed } = await service.storage
-        .from(previewBucket ?? "shoot-images")
-        .createSignedUrl(previewPath, 300);
-      sourceUrl = signed?.signedUrl ?? null;
-    }
+  let sourceUrl: string | null = (shootImage.fal_url as string | null) ?? null;
+  if (!sourceUrl && shootImage.preview_storage_path) {
+    sourceUrl = await r2SignedDownloadUrl(
+      (shootImage.preview_storage_bucket ?? "shoot-images") as string,
+      shootImage.preview_storage_path as string,
+      300
+    ).catch(() => null);
   }
   if (!sourceUrl) return NextResponse.json({ error: "No image URL available" }, { status: 422 });
 
-  // Download the image from fal CDN
   const imgRes = await fetch(sourceUrl);
   if (!imgRes.ok) return NextResponse.json({ error: "Failed to fetch image from source" }, { status: 502 });
 
-  const imgBuffer = await imgRes.arrayBuffer();
+  const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
   const contentType = imgRes.headers.get("content-type") ?? "image/jpeg";
   const ext = contentType.includes("png") ? "png" : "jpg";
 
-  // Upload to template-images bucket
   const destPath = `${user.id}/${templateId}/${crypto.randomUUID()}.${ext}`;
-  const { error: uploadErr } = await service.storage
-    .from("template-images")
-    .upload(destPath, imgBuffer, { contentType, upsert: false });
+  await r2Upload("template-images", destPath, imgBuffer, contentType);
 
-  if (uploadErr) return NextResponse.json({ error: uploadErr.message }, { status: 500 });
+  const [{ count }] = await sql`SELECT COUNT(*)::int AS count FROM template_images WHERE template_id = ${templateId}`;
+  const displayOrder = (count as number) ?? 0;
 
-  const now = new Date().toISOString();
-
-  // Count existing gallery images for display_order
-  const { count } = await service
-    .from("template_images")
-    .select("*", { count: "exact", head: true })
-    .eq("template_id", templateId);
-
-  const displayOrder = count ?? 0;
-
-  // Insert template_images row
   const newImageId = crypto.randomUUID();
-  const { error: insertErr } = await service.from("template_images").insert({
-    id: newImageId,
-    template_id: templateId,
-    storage_path: destPath,
-    storage_bucket: "template-images",
-    display_order: displayOrder,
-    purpose: "sample",
-    tag: null,
-    created_at: now,
-  });
+  await sql`
+    INSERT INTO template_images (id, template_id, storage_path, storage_bucket, display_order, purpose, tag, created_at)
+    VALUES (${newImageId}, ${templateId}, ${destPath}, 'template-images', ${displayOrder}, 'sample', NULL, NOW())
+  `;
 
-  if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
-
-  // Auto-set as cover if none exists yet
   if (!template.cover_storage_path) {
-    await service.from("templates")
-      .update({ cover_storage_path: destPath, cover_bucket: "template-images", updated_at: now })
-      .eq("id", templateId);
+    await sql`
+      UPDATE templates SET cover_storage_path = ${destPath}, cover_bucket = 'template-images', updated_at = NOW()
+      WHERE id = ${templateId}
+    `;
   }
 
-  // Return signed URL for immediate display
-  const { data: signed } = await service.storage
-    .from("template-images")
-    .createSignedUrl(destPath, 3600);
+  const signedUrl = await r2SignedDownloadUrl("template-images", destPath, 3600).catch(() => null);
 
   return NextResponse.json({
-    image: {
-      id: newImageId,
-      storagePath: destPath,
-      storageBucket: "template-images",
-      displayOrder,
-      purpose: "sample",
-      url: signed?.signedUrl ?? null,
-    },
+    image: { id: newImageId, storagePath: destPath, storageBucket: "template-images", displayOrder, purpose: "sample", url: signedUrl },
   });
 }

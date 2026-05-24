@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 
 export async function POST(
   req: NextRequest,
@@ -11,15 +12,11 @@ export async function POST(
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
   const ts = () => new Date().toISOString();
 
-  const { data: shoot } = await service
-    .from("shoots")
-    .select("id, user_id, status, character_base_id")
-    .eq("id", shootId)
-    .single();
-
+  const [shoot] = await sql`
+    SELECT id, user_id, status, character_base_id FROM shoots WHERE id = ${shootId}
+  `;
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isOwner = shoot.user_id === user.id;
@@ -29,77 +26,63 @@ export async function POST(
   if (shoot.status !== "BASE_REVIEW") {
     return NextResponse.json({ error: `Shoot is not in BASE_REVIEW state (current: ${shoot.status})` }, { status: 400 });
   }
-
   if (!shoot.character_base_id) {
     return NextResponse.json({ error: "No character base attached" }, { status: 400 });
   }
 
-  // Mark current base as rejected
-  await service.from("character_bases").update({
-    status: "USER_REJECTED",
-    updated_at: ts(),
-  }).eq("id", shoot.character_base_id);
+  await sql`
+    UPDATE character_bases SET status = 'USER_REJECTED', updated_at = ${ts()}
+    WHERE id = ${shoot.character_base_id}
+  `;
 
-  // Count total attempts across all bases for this shoot
-  const { count: totalAttempts } = await service
-    .from("character_bases")
-    .select("id", { count: "exact", head: true })
-    .eq("origin_shoot_id", shootId)
-    .neq("status", "GENERATING");
-
-  const usedAttempts = totalAttempts ?? 0;
+  const [{ count }] = await sql`
+    SELECT COUNT(*)::int AS count FROM character_bases
+    WHERE origin_shoot_id = ${shootId} AND status != 'GENERATING'
+  `;
+  const usedAttempts = count ?? 0;
 
   if (usedAttempts >= 5) {
-    // Terminal: user exhausted all attempts
-    await service.from("shoots").update({
-      status: "BASE_REJECTED",
-      base_lock_status: "USER_REJECTED",
-      updated_at: ts(),
-    }).eq("id", shootId);
-
-    await service.from("generation_events").insert({
-      id: crypto.randomUUID(),
-      shoot_id: shootId,
-      user_id: shoot.user_id,
-      type: "failed",
-      payload: { reason: "Base lock rejected after maximum attempts. Please re-upload identity photos or contact support for a refund." },
-      created_at: ts(),
-    });
-
+    await sql`
+      UPDATE shoots SET status = 'BASE_REJECTED', base_lock_status = 'USER_REJECTED', updated_at = ${ts()}
+      WHERE id = ${shootId}
+    `;
+    await sql`
+      INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
+        'failed',
+        ${JSON.stringify({ reason: "Base lock rejected after maximum attempts. Please re-upload identity photos or contact support for a refund." })},
+        ${ts()}
+      )
+    `;
     return NextResponse.json({ ok: true, terminal: true, status: "BASE_REJECTED" });
   }
 
-  // Trigger a fresh re-roll (new base_id so previous attempt is preserved)
-  await service.from("shoots").update({
-    status: "BASE_LOCKING",
-    base_lock_status: "GENERATING",
-    character_base_id: null,
-    updated_at: ts(),
-  }).eq("id", shootId);
-
-  await service.from("generation_events").insert({
-    id: crypto.randomUUID(),
-    shoot_id: shootId,
-    user_id: shoot.user_id,
-    type: "base_rerolling",
-    payload: { attempt: usedAttempts + 1, attempts_remaining: 5 - usedAttempts - 1 },
-    created_at: ts(),
-  });
+  await sql`
+    UPDATE shoots SET
+      status = 'BASE_LOCKING', base_lock_status = 'GENERATING',
+      character_base_id = null, updated_at = ${ts()}
+    WHERE id = ${shootId}
+  `;
+  await sql`
+    INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
+    VALUES (
+      ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
+      'base_rerolling',
+      ${JSON.stringify({ attempt: usedAttempts + 1, attempts_remaining: 5 - usedAttempts - 1 })},
+      ${ts()}
+    )
+  `;
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
   fetch(`${origin}/api/shoots/${shootId}/base-lock`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
-    },
+    headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     body: JSON.stringify({ attempt: 1 }),
   }).catch(() => {});
 
   return NextResponse.json({
-    ok: true,
-    terminal: false,
-    status: "BASE_LOCKING",
+    ok: true, terminal: false, status: "BASE_LOCKING",
     attemptsRemaining: 5 - usedAttempts - 1,
   });
 }
