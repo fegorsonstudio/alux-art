@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { r2Download, r2 } from "@/lib/r2";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { r2StreamObject, r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 
 export async function GET(
@@ -32,24 +31,27 @@ export async function GET(
   const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
   if (isDownload) {
-    let buf: Buffer, contentType: string;
+    // Stream the file directly from R2 through the server — no full-file buffering in RAM.
+    // Used by mobile/Web Share API path where the browser needs a blob.
+    let stream: ReadableStream<Uint8Array>, contentType: string, contentLength: number | undefined;
     try {
-      ({ buffer: buf, contentType } = await r2Download(storageBucket, storagePath));
+      ({ stream, contentType, contentLength } = await r2StreamObject(storageBucket, storagePath));
     } catch {
       return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
     }
     sql`INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW())`.catch(() => {});
-    return new Response(new Uint8Array(buf), {
+    return new Response(stream, {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
-        "Content-Length": String(buf.byteLength),
+        ...(contentLength ? { "Content-Length": String(contentLength) } : {}),
       },
     });
   }
 
-  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
-  const signedUrl = await getSignedUrl(r2, new GetObjectCommand({ Bucket: storageBucket, Key: storagePath }), { expiresIn: 3600 }).catch(() => null);
+  // Desktop path: return a signed URL with Content-Disposition:attachment baked in.
+  // The browser navigates directly to R2 — zero server memory for the file transfer.
+  const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null);
   if (!signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
 
   return NextResponse.json({

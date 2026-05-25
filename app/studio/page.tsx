@@ -630,48 +630,54 @@ export default function WorkspacePage() {
 
   const downloadImage = async (shoot: Shoot, img: ShootImage) => {
     setStatus({ type: "loading", message: "Preparing download…" });
-    const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
-    if (!res.ok) {
-      setStatus({ type: "error", message: "Download failed — please try again." });
-      return;
-    }
-    const blob = await res.blob();
-    setStatus({ type: "ok", message: "" });
     const filename = `aluxart-slot${img.slot}-${img.kind}.jpg`;
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // Try Web Share API — on iOS/Android this shows the native sheet with "Save to Photos"
+    // Check Web Share file support BEFORE fetching anything — determines which path we take.
+    let canShareFiles = false;
     if (typeof navigator !== "undefined" && "share" in navigator) {
-      const file = new File([blob], filename, { type: "image/jpeg" });
-      let canShareFiles = false;
       try {
-        canShareFiles = typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+        const testFile = new File([new Uint8Array(1)], filename, { type: "image/jpeg" });
+        canShareFiles = typeof navigator.canShare === "function" && navigator.canShare({ files: [testFile] });
       } catch { /* ignore */ }
-      if (canShareFiles) {
-        try {
-          await navigator.share({ files: [file], title: "Your Alux Art portrait" });
-          return;
-        } catch (shareErr) {
-          // User dismissed the share sheet — stop here, don't force a file download
-          if ((shareErr as Error).name === "AbortError") return;
-          // Otherwise fall through
-        }
+    }
+
+    if (!canShareFiles && !isMobile) {
+      // Desktop: get a signed R2 URL and navigate to it directly — file goes R2 → browser,
+      // zero server memory for the transfer.
+      const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}`);
+      if (!res.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
+      const { url } = await res.json();
+      const a = document.createElement("a");
+      a.href = url;
+      a.click();
+      setStatus({ type: "ok", message: "" });
+      return;
+    }
+
+    // Mobile / Web Share: stream the file through the server into a blob.
+    const fileRes = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
+    if (!fileRes.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
+    const blob = await fileRes.blob();
+    setStatus({ type: "ok", message: "" });
+
+    // Try Web Share API — on iOS/Android this shows the native sheet with "Save to Photos"
+    if (canShareFiles) {
+      const file = new File([blob], filename, { type: "image/jpeg" });
+      try {
+        await navigator.share({ files: [file], title: "Your Alux Art portrait" });
+        return;
+      } catch (shareErr) {
+        // User dismissed the share sheet — stop here, don't force a file download
+        if ((shareErr as Error).name === "AbortError") return;
+        // Otherwise fall through to new-tab open
       }
     }
 
+    // Mobile fallback: open image in new tab — user can long-press → Save to Photos / gallery
     const objectUrl = URL.createObjectURL(blob);
-    if (isMobile) {
-      // Open image in new tab — user can long-press → Save to Photos / gallery
-      window.open(objectUrl, "_blank");
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } else {
-      // Desktop: anchor download to file system
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(objectUrl);
-    }
+    window.open(objectUrl, "_blank");
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   };
 
   const downloadZip = async (shoot: Shoot) => {
