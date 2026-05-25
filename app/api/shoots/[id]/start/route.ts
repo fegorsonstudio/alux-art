@@ -76,13 +76,7 @@ export async function POST(
         base_lock_started_at = ${now}, updated_at = ${now}
       WHERE id = ${id}
     `;
-    await sql`
-      INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
-      VALUES (
-        ${crypto.randomUUID()}, ${id}, ${shoot.user_id},
-        'base_locking', ${JSON.stringify({ stage: "Locking character base", progress: 5 })}, ${now}
-      )
-    `;
+    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'base_locking', ${JSON.stringify({ stage: "Locking character base", progress: 5 })}, ${now})`.catch(() => {});
 
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
     fetch(`${origin}/api/shoots/${id}/base-lock`, {
@@ -95,6 +89,19 @@ export async function POST(
     }).catch((err) => console.error("[start] base-lock dispatch failed:", err));
 
     return NextResponse.json({ ok: true, status: "BASE_LOCKING" });
+  }
+
+  // Guard: block generation if no identity references are attached.
+  // This prevents wasting fal.ai credits on shoots that can never succeed.
+  if (shoot.status !== "PROCESSING") {
+    const [identityCheck] = await sql`
+      SELECT COUNT(*)::int AS count FROM shoot_references
+      WHERE shoot_id = ${id} AND purpose = 'identity'
+    `;
+    if (!shoot.character_base_id && (identityCheck?.count ?? 0) === 0) {
+      await sql`UPDATE shoots SET status = 'FAILED', pipeline_stage = 'No identity images — please start a new shoot and upload identity photos', updated_at = ${now} WHERE id = ${id}`;
+      return NextResponse.json({ ok: false, error: "No identity images attached to this shoot. Start a new shoot and upload your identity photos first." }, { status: 400 });
+    }
   }
 
   if (shoot.status !== "PROCESSING") {
@@ -113,13 +120,7 @@ export async function POST(
       UPDATE shoot_images SET status = 'QUEUED', stage = 'Queued for generation', updated_at = ${now}
       WHERE shoot_id = ${id} AND status = ANY(${["PENDING", "FAILED"]})
     `;
-    await sql`
-      INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
-      VALUES (
-        ${crypto.randomUUID()}, ${id}, ${shoot.user_id},
-        'stage', ${JSON.stringify({ stage: "Starting generation", progress: 5 })}, ${now}
-      )
-    `;
+    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'stage', ${JSON.stringify({ stage: "Starting generation", progress: 5 })}, ${now})`.catch(() => {});
 
     const ownerEmail = shoot.owner_email as string | undefined;
     if (ownerEmail) {
