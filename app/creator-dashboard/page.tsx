@@ -133,7 +133,7 @@ function CreatorDashboard() {
   const sampleImgInputRef = useRef<HTMLInputElement>(null);
   const formPanelRef = useRef<HTMLDivElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
-  const [pendingTag, setPendingTag] = useState<string>("inspiration");
+  const pendingTagRef = useRef<string>("inspiration");
   const [replacingId, setReplacingId] = useState<string | null>(null);
 
   // ── Showcase generation state ───────────────────────────────────────────────
@@ -492,8 +492,8 @@ function CreatorDashboard() {
     if (images.length >= 20) { setFormError("Maximum 20 images per template"); return; }
     const remaining = 20 - images.length;
     const toAdd = Array.from(files).slice(0, remaining);
-    const purpose: "inspiration" | "tagged" = pendingTag === "inspiration" ? "inspiration" : "tagged";
-    const tag = (pendingTag === "inspiration" || pendingTag === "__tagged__") ? "OUTFIT" : pendingTag;
+    const purpose: "inspiration" | "tagged" = pendingTagRef.current === "inspiration" ? "inspiration" : "tagged";
+    const tag = (pendingTagRef.current === "inspiration" || pendingTagRef.current === "__tagged__") ? "OUTFIT" : pendingTagRef.current;
     const newImgs: UploadedImage[] = toAdd.map(file => {
       const localId = crypto.randomUUID();
       return { localId, file, preview: URL.createObjectURL(file), storagePath: "", purpose, tag, customName: "", note: "", noteHidden: false, uploading: false };
@@ -938,7 +938,7 @@ function CreatorDashboard() {
                     </div>
                   ))}
                   {images.length < 8 && (
-                    <button type="button" className={styles.addImgBtn} onClick={() => { setPendingTag("inspiration"); imgInputRef.current?.click(); }}>
+                    <button type="button" className={styles.addImgBtn} onClick={() => { pendingTagRef.current = "inspiration"; imgInputRef.current?.click(); }}>
                       + Add
                     </button>
                   )}
@@ -978,7 +978,7 @@ function CreatorDashboard() {
                           );
                         })}
                         {images.length < 20 && (
-                          <button type="button" className={styles.addImgBtn} onClick={() => { setPendingTag("inspiration"); imgInputRef.current?.click(); }}>
+                          <button type="button" className={styles.addImgBtn} onClick={() => { pendingTagRef.current = "inspiration"; imgInputRef.current?.click(); }}>
                             + Add inspiration
                           </button>
                         )}
@@ -1086,7 +1086,7 @@ function CreatorDashboard() {
                   <button
                     type="button"
                     className={`${styles.addImgBtn} ${styles.addImgBtnSm}`}
-                    onClick={() => { setPendingTag("__tagged__"); imgInputRef.current?.click(); }}
+                    onClick={() => { pendingTagRef.current = "__tagged__"; imgInputRef.current?.click(); }}
                   >
                     + Add reference
                   </button>
