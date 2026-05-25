@@ -633,7 +633,12 @@ export default function WorkspacePage() {
     const filename = `aluxart-slot${img.slot}-${img.kind}.jpg`;
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // Check Web Share file support BEFORE fetching anything — determines which path we take.
+    // Get signed R2 URL — only the URL goes through our server, the file does not.
+    const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}`);
+    if (!res.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
+    const { url } = await res.json();
+
+    // Check Web Share file support (iOS/Android native share sheet → "Save to Photos")
     let canShareFiles = false;
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
@@ -642,42 +647,32 @@ export default function WorkspacePage() {
       } catch { /* ignore */ }
     }
 
-    if (!canShareFiles && !isMobile) {
-      // Desktop: get a signed R2 URL and navigate to it directly — file goes R2 → browser,
-      // zero server memory for the transfer.
-      const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}`);
-      if (!res.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
-      const { url } = await res.json();
-      const a = document.createElement("a");
-      a.href = url;
-      a.click();
-      setStatus({ type: "ok", message: "" });
-      return;
-    }
-
-    // Mobile / Web Share: stream the file through the server into a blob.
-    const fileRes = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
-    if (!fileRes.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
-    const blob = await fileRes.blob();
-    setStatus({ type: "ok", message: "" });
-
-    // Try Web Share API — on iOS/Android this shows the native sheet with "Save to Photos"
     if (canShareFiles) {
-      const file = new File([blob], filename, { type: "image/jpeg" });
+      // R2 CORS is configured — fetch directly from R2, no server proxy needed.
       try {
+        const fileRes = await fetch(url);
+        const blob = await fileRes.blob();
+        const file = new File([blob], filename, { type: "image/jpeg" });
         await navigator.share({ files: [file], title: "Your Alux Art portrait" });
+        setStatus({ type: "ok", message: "" });
         return;
       } catch (shareErr) {
-        // User dismissed the share sheet — stop here, don't force a file download
-        if ((shareErr as Error).name === "AbortError") return;
-        // Otherwise fall through to new-tab open
+        if ((shareErr as Error).name === "AbortError") { setStatus({ type: "ok", message: "" }); return; }
+        // Share failed — fall through to direct navigation
       }
     }
 
-    // Mobile fallback: open image in new tab — user can long-press → Save to Photos / gallery
-    const objectUrl = URL.createObjectURL(blob);
-    window.open(objectUrl, "_blank");
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    // Desktop or mobile without Web Share: navigate directly to the signed URL.
+    // R2 sends the file with Content-Disposition:attachment so the browser saves it.
+    setStatus({ type: "ok", message: "" });
+    if (isMobile) {
+      // Open in new tab — user can long-press → Save to Photos / Files
+      window.open(url, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.click();
+    }
   };
 
   const downloadZip = async (shoot: Shoot) => {
