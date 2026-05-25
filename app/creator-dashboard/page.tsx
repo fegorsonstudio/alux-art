@@ -938,11 +938,20 @@ function CreatorDashboard() {
                               {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                               {img.error && <div className={styles.imgError}>{img.error}</div>}
                               {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
-                              <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                              <button type="button" className={styles.imgRemove} onClick={async () => {
+                                if (img.fromDb && panel !== "create") {
+                                  await fetch(`/api/templates/${panel}/images`, {
+                                    method: "DELETE",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ imageId: img.localId }),
+                                  });
+                                }
+                                setImages(prev => prev.filter((_, j) => j !== i));
+                              }}>✕</button>
                             </div>
                           );
                         })}
-                        {insps.length === 0 && images.length < 8 && (
+                        {images.length < 20 && (
                           <button type="button" className={styles.addImgBtn} onClick={() => { setPendingTag("inspiration"); imgInputRef.current?.click(); }}>
                             + Add inspiration
                           </button>
