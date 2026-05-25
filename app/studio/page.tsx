@@ -369,58 +369,21 @@ export default function WorkspacePage() {
         img.src = url;
       });
 
-      // Step 1: get presigned upload URL from server (auth only, no file bytes)
-      const presignRes = await fetch("/api/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: fileToUpload.name, contentType: fileToUpload.type, size: fileToUpload.size, bucket, saveToLibrary: saveLib }),
-      });
-      if (!presignRes.ok) {
-        const err = await presignRes.json().catch(() => ({}));
-        throw new Error(err.error ?? `Presign failed (${presignRes.status})`);
-      }
-      const meta = await presignRes.json();
-
-      // Step 2: PUT bytes directly to Supabase CDN via XHR for real progress tracking
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.timeout = 120_000;
-        xhr.upload.addEventListener("progress", (e) => {
-          if (e.lengthComputable)
-            setUploadProgress(prev => ({ ...prev, [key]: Math.round((e.loaded / e.total) * 95) }));
-        });
-        xhr.addEventListener("load", () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Upload failed (${xhr.status})`));
-        });
-        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
-        xhr.addEventListener("timeout", () => reject(new Error("Upload timed out — try again")));
-        xhr.open("PUT", meta.uploadUrl);
-        xhr.setRequestHeader("Content-Type", fileToUpload.type);
-        xhr.send(fileToUpload);
-      });
-
-      setUploadProgress(prev => ({ ...prev, [key]: 96 }));
-      const finalizeRes = await fetch("/api/upload", {
-        method: "POST",
-        body: new URLSearchParams({
-          saveToLibrary: saveLib ? "true" : "false",
-          id: meta.id,
-          filename: meta.name,
-          contentType: meta.type,
-          size: String(meta.size),
-          storageBucket: meta.storageBucket,
-          storagePath: meta.storagePath,
-        }),
-      });
-      const finalizeData = await finalizeRes.json().catch(() => null);
-      if (!finalizeRes.ok || !finalizeData?.image) {
-        throw new Error(finalizeData?.error ?? `Upload finalize failed (${finalizeRes.status})`);
+      // Upload via server — avoids CORS issues with direct browser-to-R2 PUT
+      setUploadProgress(prev => ({ ...prev, [key]: 30 }));
+      const uploadForm = new FormData();
+      uploadForm.append("file", fileToUpload, fileToUpload.name);
+      uploadForm.append("bucket", bucket);
+      uploadForm.append("saveToLibrary", saveLib ? "true" : "false");
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
+      const uploadData = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok || !uploadData?.image) {
+        throw new Error(uploadData?.error ?? `Upload failed (${uploadRes.status})`);
       }
 
       setUploadProgress(prev => ({ ...prev, [key]: 100 }));
       done();
-      return finalizeData.image as UploadedRef;
+      return uploadData.image as UploadedRef;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       setUploadIssue(`${file.name}: ${message}`);

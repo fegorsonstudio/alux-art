@@ -196,19 +196,15 @@ export default function CollageEditor({ templateId, images, onSave, onClose }: P
     setSaving(true); setErr("");
     let blob: Blob | null = null;
     try { blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/jpeg", 0.93)); }
-    catch { setErr("Export failed — image CORS issue. Try a different browser."); setSaving(false); return; }
+    catch { setErr("Export failed — image could not be read."); setSaving(false); return; }
     if (!blob) { setErr("Export failed"); setSaving(false); return; }
 
-    const presign = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: "cover-collage.jpg", contentType: "image/jpeg", size: blob.size, bucket: "template-images" }),
-    });
-    if (!presign.ok) { setErr("Upload failed"); setSaving(false); return; }
-    const { uploadUrl, storagePath } = await presign.json();
-
-    const put = await fetch(uploadUrl, { method: "PUT", body: blob, headers: { "Content-Type": "image/jpeg" } });
-    if (!put.ok) { setErr("Upload failed"); setSaving(false); return; }
+    const form = new FormData();
+    form.append("file", blob, "cover-collage.jpg");
+    form.append("bucket", "template-images");
+    const upload = await fetch("/api/upload/file", { method: "POST", body: form });
+    if (!upload.ok) { setErr("Upload failed"); setSaving(false); return; }
+    const { storagePath } = await upload.json();
 
     const patch = await fetch(`/api/templates/${templateId}`, {
       method: "PATCH",

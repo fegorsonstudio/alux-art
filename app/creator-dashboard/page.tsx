@@ -440,21 +440,15 @@ function CreatorDashboard() {
   const uploadFile = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true } : img));
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
       setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
       return;
     }
-    const { uploadUrl, storagePath } = await res.json();
-    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
-    if (!putRes.ok) {
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
-      return;
-    }
+    const { storagePath } = await res.json();
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath } : img));
   };
 
@@ -475,21 +469,15 @@ function CreatorDashboard() {
   const uploadSampleFile = async (file: File, localId: string) => {
     setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: true } : s));
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
       setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
       return;
     }
-    const { uploadUrl, storagePath } = await res.json();
-    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
-    if (!putRes.ok) {
-      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
-      return;
-    }
+    const { storagePath } = await res.json();
     setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, storagePath } : s));
   };
 

@@ -170,22 +170,16 @@ export default function BookPage() {
   const uploadIdentityFile = async (file: File, localId: string) => {
     setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: true } : u));
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
       setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
       return;
     }
-    const { uploadUrl, storagePath, storageBucket } = await res.json();
-    const put = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
-    if (!put.ok) {
-      setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
-      return;
-    }
-    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket } : u));
+    const { storagePath } = await res.json();
+    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images" } : u));
   };
 
   const addIdentityFiles = (files: FileList) => {
@@ -208,18 +202,16 @@ export default function BookPage() {
   const uploadPoseFile = async (file: File, localId: string) => {
     setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: true } : u));
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
       setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
       return;
     }
-    const { uploadUrl, storagePath, storageBucket } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
-    setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket } : u));
+    const { storagePath } = await res.json();
+    setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images" } : u));
   };
 
   const addPoseFiles = (files: FileList) => {
@@ -256,16 +248,14 @@ export default function BookPage() {
     if (!replacingTag) return;
     const localPreview = URL.createObjectURL(file);
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) { setReplacingTag(null); return; }
-    const { uploadUrl, storagePath, storageBucket } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    const { storagePath } = await res.json();
     setTaggedRefs(prev => prev.map(r => r.id === replacingTag
-      ? { ...r, storagePath, storageBucket, url: localPreview, isReplaced: true }
+      ? { ...r, storagePath, storageBucket: "identity-images", url: localPreview, isReplaced: true }
       : r
     ));
     setReplacingTag(null);
@@ -275,14 +265,13 @@ export default function BookPage() {
 
   const handleAddRefFile = async (file: File) => {
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) { setAddingRef(false); return; }
-    const { uploadUrl, storagePath, storageBucket } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    const { storagePath } = await res.json();
+    const storageBucket = "identity-images";
     setTaggedRefs(prev => [...prev, {
       id: crypto.randomUUID(),
       tag: addRefTag,

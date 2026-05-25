@@ -49,14 +49,12 @@ export default function BecomeCreatorPage() {
   const uploadAvatar = async (file: File) => {
     setUploadingAvatar(true);
     const f = await resizeIfNeeded(file);
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
-    });
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) { setUploadingAvatar(false); return; }
-    const { uploadUrl, storagePath } = await res.json();
-    await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    const { storagePath } = await res.json();
     setAvatarStoragePath(storagePath);
     setAvatarPreview(URL.createObjectURL(file));
     setUploadingAvatar(false);
