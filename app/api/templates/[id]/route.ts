@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2ProxyUrl } from "@/lib/r2";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -31,13 +31,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     SELECT * FROM template_images WHERE template_id = ${id} ORDER BY display_order ASC
   `;
 
-  const imagesWithUrls = await Promise.all(rawImages.map(async (img) => {
-    const signedUrl = await r2SignedDownloadUrl(
-      (img.storage_bucket ?? "template-images") as string,
-      img.storage_path as string,
-      3600
-    ).catch(() => null);
-    return { ...img, signed_url: signedUrl };
+  const imagesWithUrls = rawImages.map((img) => ({
+    ...img,
+    signed_url: img.storage_path
+      ? r2ProxyUrl((img.storage_bucket ?? "template-images") as string, img.storage_path as string)
+      : null,
   }));
 
   return NextResponse.json({ template: { ...template, template_images: imagesWithUrls } });

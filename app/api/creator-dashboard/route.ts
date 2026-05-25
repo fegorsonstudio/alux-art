@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2ProxyUrl } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -29,29 +29,21 @@ export async function GET() {
     imagesByTemplate[tid].push(img);
   }
 
-  const templates = await Promise.all(rawTemplates.map(async (t) => {
-    let cover_url: string | null = null;
-    if (t.cover_storage_path) {
-      cover_url = await r2SignedDownloadUrl(
-        (t.cover_bucket ?? "template-images") as string,
-        t.cover_storage_path as string,
-        3600
-      ).catch(() => null);
-    }
+  const templates = rawTemplates.map((t) => {
+    const cover_url = t.cover_storage_path
+      ? r2ProxyUrl((t.cover_bucket ?? "template-images") as string, t.cover_storage_path as string)
+      : null;
 
     const rawImages = imagesByTemplate[t.id as string] ?? [];
-    const template_images = await Promise.all(rawImages.map(async (img) => {
-      if (!img.storage_path) return { ...img, signed_url: null };
-      const signed_url = await r2SignedDownloadUrl(
-        (img.storage_bucket ?? "template-images") as string,
-        img.storage_path as string,
-        3600
-      ).catch(() => null);
-      return { ...img, signed_url };
+    const template_images = rawImages.map((img) => ({
+      ...img,
+      signed_url: img.storage_path
+        ? r2ProxyUrl((img.storage_bucket ?? "template-images") as string, img.storage_path as string)
+        : null,
     }));
 
     return { ...t, cover_url, template_images };
-  }));
+  });
 
   const purchases = templateIds.length
     ? await sql`
