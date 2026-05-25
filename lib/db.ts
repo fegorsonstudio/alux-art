@@ -15,6 +15,15 @@ export const sql: postgres.Sql =
     ssl: connectionString?.includes("localhost") || connectionString?.includes("127.0.0.1")
       ? false
       : { rejectUnauthorized: false },
+    // postgres.js returns NUMERIC columns as strings by default — parse them as floats
+    types: {
+      numeric: {
+        to: 1700,
+        from: [1700, 1231],
+        serialize: (x: number | string) => String(x),
+        parse: (x: string) => parseFloat(x),
+      },
+    },
   });
 
 if (process.env.NODE_ENV !== "production") {
