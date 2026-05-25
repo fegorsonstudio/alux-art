@@ -70,6 +70,33 @@ async function toGeminiImagePart(url: string): Promise<GeminiImagePart | null> {
   return { inlineData: { mimeType: "image/jpeg" as const, data: resized.toString("base64") } };
 }
 
+// HEAD-check URLs in parallel to drop any that fal.ai can't download (e.g. R2 objects that don't exist).
+// Called once per shoot so every slot reuses the validated list.
+async function filterReachableUrls(urls: string[]): Promise<string[]> {
+  const results = await Promise.allSettled(
+    urls.map(async (url) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      try {
+        const res = await fetch(url, { method: "HEAD", signal: controller.signal });
+        return res.ok ? url : null;
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timeout);
+      }
+    })
+  );
+  const reachable = results
+    .filter((r): r is PromiseFulfilledResult<string | null> => r.status === "fulfilled")
+    .map((r) => r.value)
+    .filter((u): u is string => u !== null);
+  if (reachable.length < urls.length) {
+    console.warn(`[generate] filterReachableUrls: ${urls.length - reachable.length}/${urls.length} URLs unreachable (filtered before fal.ai call)`);
+  }
+  return reachable;
+}
+
 // Words that trigger fal.ai content moderation even at safety_tolerance "6"
 const FAL_REPLACE: [RegExp, string][] = [
   [/\balluring\b/gi, "intense"],
@@ -1516,6 +1543,11 @@ export async function startGenerationWorker(
     .map((r) => r.url)
     .filter(Boolean);
 
+  // Filter imageUrls to only reachable objects — fal.ai returns 422 if any URL it tries
+  // to download returns 404 (e.g. identity images uploaded before R2 migration).
+  const reachableImageUrls = await filterReachableUrls(imageUrls);
+  console.log(`[generate] imageUrls reachability: ${reachableImageUrls.length}/${imageUrls.length} reachable`);
+
   let failedCount = 0;
 
   for (const slotImg of pendingSlots) {
@@ -1573,7 +1605,7 @@ export async function startGenerationWorker(
         slot,
         identityUrls: identityUrls.length,
         inspirationUrls: inspirationUrls.length,
-        imageUrls: imageUrls.length,
+        imageUrls: reachableImageUrls.length,
       });
 
       try {
@@ -1588,7 +1620,7 @@ export async function startGenerationWorker(
           taggedRefs: refs
             .filter((r) => r.purpose === "tagged")
             .map((r) => ({ tag: r.tag ?? r.customName, url: r.url })),
-          imageUrls,
+          imageUrls: reachableImageUrls,
           identityProfile: typeof identityProfile === "string" ? identityProfile : "",
           shootBrief: typeof shootBrief === "string" ? shootBrief : "",
           quoteText: shoot.quote?.text,
@@ -1598,7 +1630,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, imageUrls, aspectRatio, resolution, dbForbiddenWords, generationModel);
+      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, reachableImageUrls, aspectRatio, resolution, dbForbiddenWords, generationModel);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }

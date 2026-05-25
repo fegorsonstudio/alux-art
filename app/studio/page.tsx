@@ -706,7 +706,11 @@ export default function WorkspacePage() {
       const res = await fetch(`/api/shoots/${shoot.id}/refund`, { method: "POST" });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setRefundError(body.error ?? "Refund request failed. Please contact support.");
+        if (res.status === 404 && typeof body.error === "string" && body.error.toLowerCase().includes("payment")) {
+          setRefundError("No payment was recorded for this shoot. If you were charged, please contact support.");
+        } else {
+          setRefundError(body.error ?? "Refund request failed. Please contact support.");
+        }
         setRefundState("error");
         return;
       }
@@ -1365,7 +1369,7 @@ export default function WorkspacePage() {
                     <p className={styles.refundMsg}>
                       {refundState === "done"
                         ? "Refund processed. Funds will return to your account within 5–10 business days."
-                        : "This shoot failed completely. You are eligible for a full refund."}
+                        : "This shoot failed completely. If you paid for it, you can request a full refund below."}
                     </p>
                     {refundState === "error" && <p className={styles.refundError}>{refundError}</p>}
                     {refundState !== "done" && (
