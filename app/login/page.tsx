@@ -26,7 +26,6 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     const supabase = createClient();
-    await supabase.auth.signOut().catch(() => {});
     const next = new URLSearchParams(location.search).get("next") ?? "/studio";
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
