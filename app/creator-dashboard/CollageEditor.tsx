@@ -22,7 +22,7 @@ const W = 900;
 const H = 1200;
 
 function proxyUrl(url: string) {
-  if (url.startsWith("blob:") || url.startsWith("data:")) return url;
+  if (url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("/")) return url;
   return `/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
