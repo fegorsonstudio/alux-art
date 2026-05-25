@@ -14,6 +14,9 @@ export const r2 = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
+  // R2 doesn't support AWS SDK v3's automatic checksum headers — disable them
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 export async function r2SignedDownloadUrl(
