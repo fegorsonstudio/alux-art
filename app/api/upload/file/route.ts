@@ -14,9 +14,11 @@ function sanitizeFileName(name: string) {
 // Usage: POST multipart/form-data with `file` (Blob) and `bucket` (string) fields.
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error("[upload/file] auth failed:", authError?.message ?? "no user");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   let formData: FormData;
   try {
@@ -40,12 +42,17 @@ export async function POST(req: NextRequest) {
   const storagePath = `${user.id}/${uniqueId}-${sanitizeFileName(file.name)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  await r2.send(new PutObjectCommand({
-    Bucket: bucket,
-    Key: storagePath,
-    Body: buffer,
-    ContentType: file.type,
-  }));
+  try {
+    await r2.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: storagePath,
+      Body: buffer,
+      ContentType: file.type,
+    }));
+  } catch (err) {
+    console.error("[upload/file] R2 upload failed:", err);
+    return NextResponse.json({ error: "Storage upload failed" }, { status: 500 });
+  }
 
   return NextResponse.json({ storagePath, id: uniqueId });
 }

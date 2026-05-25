@@ -346,13 +346,15 @@ function CreatorDashboard() {
       body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "identity-images" }),
     });
     if (!res.ok) {
-      setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: "Upload failed" } : r));
+      const errBody = await res.json().catch(() => ({}));
+      const msg = errBody?.error ?? `Upload failed (${res.status})`;
+      setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: msg } : r));
       return;
     }
     const { uploadUrl, storagePath, storageBucket } = await res.json();
     const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
     if (!putRes.ok) {
-      setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: "Upload failed" } : r));
+      setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, error: `R2 PUT failed (${putRes.status})` } : r));
       return;
     }
     setShowcaseIdentityRefs(prev => prev.map(r => r.localId === localId ? { ...r, uploading: false, storagePath, storageBucket } : r));
@@ -447,7 +449,9 @@ function CreatorDashboard() {
     form.append("bucket", "template-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
+      const errBody = await res.json().catch(() => ({}));
+      const msg = errBody?.error ?? `Upload failed (${res.status})`;
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
       return;
     }
     const { storagePath } = await res.json();
@@ -462,7 +466,9 @@ function CreatorDashboard() {
     form.append("bucket", "template-images");
     const uploadRes = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!uploadRes.ok) {
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
+      const errBody = await uploadRes.json().catch(() => ({}));
+      const msg = errBody?.error ?? `Upload failed (${uploadRes.status})`;
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
       return;
     }
     const { storagePath } = await uploadRes.json();
@@ -504,7 +510,9 @@ function CreatorDashboard() {
     form.append("bucket", "template-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed" } : s));
+      const errBody = await res.json().catch(() => ({}));
+      const msg = errBody?.error ?? `Upload failed (${res.status})`;
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: msg } : s));
       return;
     }
     const { storagePath } = await res.json();
