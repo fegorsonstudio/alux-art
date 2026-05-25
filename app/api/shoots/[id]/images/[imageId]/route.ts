@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2Download, r2 } from "@/lib/r2";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import sql from "@/lib/db";
 
 export async function GET(
@@ -30,24 +31,26 @@ export async function GET(
   const isDownload = request.nextUrl.searchParams.get("download") === "1";
   const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
-  const signedUrl = await r2SignedDownloadUrl(
-    storageBucket,
-    storagePath,
-    3600,
-    isDownload ? filename : undefined
-  ).catch(() => null);
-
-  if (!signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
-
   if (isDownload) {
-    await sql`
-      INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at)
-      VALUES (
-        ${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW()
-      )
-    `;
-    return NextResponse.redirect(signedUrl);
+    let buf: Buffer, contentType: string;
+    try {
+      ({ buffer: buf, contentType } = await r2Download(storageBucket, storagePath));
+    } catch {
+      return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
+    }
+    sql`INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW())`.catch(() => {});
+    return new Response(buf, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": String(buf.byteLength),
+      },
+    });
   }
+
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+  const signedUrl = await getSignedUrl(r2, new GetObjectCommand({ Bucket: storageBucket, Key: storagePath }), { expiresIn: 3600 }).catch(() => null);
+  if (!signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
 
   return NextResponse.json({
     url: signedUrl,

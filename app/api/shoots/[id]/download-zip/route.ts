@@ -29,12 +29,12 @@ export async function GET(
 
   for (const img of completedImages) {
     try {
-      const fileData = await r2Download(
+      const { buffer } = await r2Download(
         img.download_storage_bucket as string,
         img.download_storage_path as string
       );
       const ext = (img.download_storage_path as string).endsWith(".png") ? "png" : "jpg";
-      zip.file(`portrait-${img.slot}.${ext}`, await fileData.arrayBuffer());
+      zip.file(`portrait-${img.slot}.${ext}`, buffer);
     } catch (err) {
       console.error("[download-zip] R2 download error:", img.download_storage_path, err instanceof Error ? err.message : err);
     }

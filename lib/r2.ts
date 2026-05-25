@@ -95,21 +95,10 @@ export async function r2Upload(
   );
 }
 
-export async function r2Download(bucket: string, path: string): Promise<Blob> {
-  const res = await r2.send(
-    new GetObjectCommand({ Bucket: bucket, Key: path })
-  );
-  const chunks: Uint8Array[] = [];
-  const stream = res.Body as ReadableStream<Uint8Array>;
-  const reader = stream.getReader();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (value) chunks.push(value);
-  }
-  return new Blob([Buffer.concat(chunks)], {
-    type: res.ContentType ?? "application/octet-stream",
-  });
+export async function r2Download(bucket: string, path: string): Promise<{ buffer: Buffer; contentType: string }> {
+  const res = await r2.send(new GetObjectCommand({ Bucket: bucket, Key: path }));
+  const bytes = await (res.Body as { transformToByteArray(): Promise<Uint8Array> }).transformToByteArray();
+  return { buffer: Buffer.from(bytes), contentType: res.ContentType ?? "application/octet-stream" };
 }
 
 export async function r2Delete(bucket: string, paths: string[]): Promise<void> {
