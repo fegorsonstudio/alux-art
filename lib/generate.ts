@@ -51,13 +51,16 @@ async function toBase64Block(url: string) {
   };
 }
 
-// Gemini image part — same resize logic, different wrapper format
-async function toGeminiImagePart(url: string) {
+type GeminiImagePart = { inlineData: { mimeType: "image/jpeg"; data: string } };
+
+// Gemini image part — same resize logic, different wrapper format.
+// Returns null (never throws) so a missing image skips gracefully without crashing generation.
+async function toGeminiImagePart(url: string): Promise<GeminiImagePart | null> {
   const urlPath = url ? new URL(url).pathname : "(empty)";
   const res = await fetch(url);
   if (!res.ok) {
-    console.error(`[generate] toGeminiImagePart 404 path: ${urlPath}`);
-    throw new Error(`Image fetch failed: ${res.status}`);
+    console.warn(`[generate] toGeminiImagePart skipped (${res.status}) path: ${urlPath}`);
+    return null;
   }
   const buf = Buffer.from(await res.arrayBuffer());
   const resized = await sharp(buf)
@@ -229,9 +232,14 @@ async function signRefs(
 const IDENTITY_PROFILE_FIELDS = ["Face:", "Skin:", "Eyes:", "Hair:", "Build:", "Distinctive:"];
 
 async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
-  const imageParts = await Promise.all(
+  const allParts = await Promise.all(
     imageUrls.filter(Boolean).slice(0, 4).map(toGeminiImagePart)
   );
+  const imageParts = allParts.filter((p): p is GeminiImagePart => p !== null);
+  if (imageParts.length === 0) {
+    console.warn("[generate] analyzeIdentityImages: no identity images available — returning placeholder profile");
+    return "IDENTITY PROFILE:\nFace: Unknown — no reference images available\nSkin: Unknown\nEyes: Unknown\nHair: Unknown\nBuild: Unknown\nDistinctive: No reference images available";
+  }
 
   const model = genai.getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -428,13 +436,15 @@ async function buildShootBrief(
 
   const poseRefsForBrief = refs.filter((r) => r.purpose === "pose" && r.url);
 
-  const [groupABlocks, groupBBlocks, groupCImageBlocks] = await Promise.all([
+  const [groupAAllBlocks, groupBAllBlocks, groupCAllBlocks] = await Promise.all([
     Promise.all(groupAUrls.slice(0, 4).map(toGeminiImagePart)),
     Promise.all(inspirationRefs.map((r) => toGeminiImagePart(r.url))),
     Promise.all(taggedRefs.map((r) => toGeminiImagePart(r.url))),
   ]);
+  const groupABlocks = groupAAllBlocks.filter((p): p is GeminiImagePart => p !== null);
+  const groupBBlocks = groupBAllBlocks.filter((p): p is GeminiImagePart => p !== null);
 
-  type GeminiPart = { text: string } | { inlineData: { mimeType: "image/jpeg"; data: string } };
+  type GeminiPart = { text: string } | GeminiImagePart;
   const parts: GeminiPart[] = [];
 
   if (groupABlocks.length > 0) {
@@ -449,26 +459,32 @@ async function buildShootBrief(
 
   // Interleave each Group C image with its own tag label so the model
   // knows exactly which image maps to which tag (critical for [HAIRSTYLE] etc.)
-  if (groupCImageBlocks.length > 0) {
+  const hasGroupC = groupCAllBlocks.some((p) => p !== null);
+  if (hasGroupC) {
     parts.push({ text: "GROUP C — Accessories & Overrides: Each tagged reference is labelled immediately before its image." });
     for (let i = 0; i < taggedRefs.length; i++) {
+      if (!groupCAllBlocks[i]) continue;
       const r = taggedRefs[i];
       const tag = r.tag ?? r.customName ?? "unknown";
       const note = r.note ? ` — note: ${r.note}` : "";
       parts.push({ text: `[${tag}] reference image — "${r.name}"${note}: Extract ONLY the ${tag.toLowerCase()} from this image and apply it to all portrait prompts. Ignore all other elements.` });
-      parts.push(groupCImageBlocks[i]);
+      parts.push(groupCAllBlocks[i] as GeminiImagePart);
     }
   }
 
   // GROUP D — pose direction images (Gemini only, never sent to fal.ai)
   if (poseRefsForBrief.length > 0) {
-    const groupDBlocks = await Promise.all(poseRefsForBrief.map((r) => toGeminiImagePart(r.url)));
-    parts.push({
-      text: `GROUP D — Pose Direction (${poseRefsForBrief.length} image${poseRefsForBrief.length !== 1 ? "s" : ""}): The buyer has provided exact pose/expression references. Each image may be a single pose photo OR a collage containing multiple distinct poses — scan every image for all visible poses. Extract all distinct poses across all Group D images and assign them to portrait slots in order (first extracted pose → slot 1, second → slot 2, cycling back if poses run out before slots are filled). Describe each extracted pose in precise photographic language: exact body position, limb placement, hand position, head tilt, and facial expression. Do NOT transfer skin tone, wardrobe, accessories, or background from these images — extract pose and expression only. Group D overrides pose-harvesting from Group B for mapped slots.`,
-    });
-    for (let i = 0; i < poseRefsForBrief.length; i++) {
-      parts.push({ text: `Pose direction image ${i + 1} — scan for all distinct poses (may be a collage):` });
-      parts.push(groupDBlocks[i]);
+    const groupDAllBlocks = await Promise.all(poseRefsForBrief.map((r) => toGeminiImagePart(r.url)));
+    const hasGroupD = groupDAllBlocks.some((p) => p !== null);
+    if (hasGroupD) {
+      parts.push({
+        text: `GROUP D — Pose Direction (${poseRefsForBrief.length} image${poseRefsForBrief.length !== 1 ? "s" : ""}): The buyer has provided exact pose/expression references. Each image may be a single pose photo OR a collage containing multiple distinct poses — scan every image for all visible poses. Extract all distinct poses across all Group D images and assign them to portrait slots in order (first extracted pose → slot 1, second → slot 2, cycling back if poses run out before slots are filled). Describe each extracted pose in precise photographic language: exact body position, limb placement, hand position, head tilt, and facial expression. Do NOT transfer skin tone, wardrobe, accessories, or background from these images — extract pose and expression only. Group D overrides pose-harvesting from Group B for mapped slots.`,
+      });
+      for (let i = 0; i < poseRefsForBrief.length; i++) {
+        if (!groupDAllBlocks[i]) continue;
+        parts.push({ text: `Pose direction image ${i + 1} — scan for all distinct poses (may be a collage):` });
+        parts.push(groupDAllBlocks[i] as GeminiImagePart);
+      }
     }
   }
 
@@ -968,8 +984,9 @@ Return ONLY valid JSON (no markdown):
       model: "gemini-2.5-flash",
       generationConfig: { maxOutputTokens: 256, responseMimeType: "application/json" },
     });
+    const imageParts = [bgPart, portraitPart].filter((p): p is GeminiImagePart => p !== null);
     const designResult = await Promise.race([
-      designModel.generateContent([bgPart, portraitPart, designPromptText]),
+      designModel.generateContent([...imageParts, designPromptText]),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 20_000)),
     ]);
     design = JSON.parse(designResult.response.text());
