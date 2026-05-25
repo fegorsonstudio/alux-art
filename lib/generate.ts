@@ -1367,11 +1367,16 @@ export async function startGenerationWorker(
     console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode, polishPassEnabled });
   } catch { /* non-fatal — defaults apply */ }
 
+  // Fire-and-forget wrapper — generation_events is non-critical UI telemetry.
+  // A missing table or constraint error must never crash image generation.
+  const logEvent = (type: string, payload: Record<string, unknown>) =>
+    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${type}, ${JSON.stringify(payload)}::jsonb, ${ts()})`.catch(() => {});
+
   // --- Step 1: Identity analysis (skip if base provides it) ---
   if (!identityProfile && !hasBase) {
     await sql`UPDATE shoots SET pipeline_stage = 'Analyzing identity', progress = 10, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'stage'}, ${JSON.stringify({ stage: "Analyzing identity", progress: 10 })}::jsonb, ${ts()})`;
+    logEvent('stage', { stage: "Analyzing identity", progress: 10 });
 
     const identityUrls = refs
       .filter((r) => r.purpose === "identity")
@@ -1394,7 +1399,7 @@ export async function startGenerationWorker(
 
     await sql`UPDATE shoots SET pipeline_stage = 'Building shoot brief', progress = 20, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'stage'}, ${JSON.stringify({ stage: "Building shoot brief", progress: 20 })}::jsonb, ${ts()})`;
+    logEvent('stage', { stage: "Building shoot brief", progress: 20 });
 
     // Fetch past Forbidden prompts so Gemini can avoid repeating those language patterns
     let forbiddenExamples: string[] = [];
@@ -1560,7 +1565,7 @@ export async function startGenerationWorker(
 
     await sql`UPDATE shoots SET pipeline_stage = ${`Generating slot ${slot}`}, progress = ${Math.min(85, 20 + Math.round((slot / total) * 65))}, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'slot_update'}, ${JSON.stringify({ image: { slot, status: "GENERATING" } })}::jsonb, ${ts()})`;
+    logEvent('slot_update', { image: { slot, status: "GENERATING" } });
 
     let slotPrompt = ""; // hoisted so catch block can log it for learning
     try {
@@ -1680,7 +1685,7 @@ export async function startGenerationWorker(
         updated_at = ${ts()}
         WHERE id = ${slotImg.id}`;
 
-      await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'slot_complete'}, ${JSON.stringify({ image: { slot, status: "COMPLETE" } })}::jsonb, ${ts()})`;
+      logEvent('slot_complete', { image: { slot, status: "COMPLETE" } });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[generate] slot ${slot} failed:`, message);
@@ -1717,7 +1722,7 @@ export async function startGenerationWorker(
 
           // c) Emit forbidden_detected event — SSE delivers this to the frontend in real-time
           try {
-            await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'forbidden_detected'}, ${JSON.stringify({ slot, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement })}::jsonb, ${ts()})`;
+            logEvent('forbidden_detected', { slot, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement });
           } catch { /* non-fatal */ }
 
           // d) Store structured error — used for page-reload recovery in the frontend
@@ -1726,7 +1731,7 @@ export async function startGenerationWorker(
         } else {
           // Gemini couldn't identify a specific word — log raw prompt for passive learning
           try {
-            await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'forbidden_prompt'}, ${JSON.stringify({ slot, prompt: slotPrompt.slice(0, 2000) })}::jsonb, ${ts()})`;
+            logEvent('forbidden_prompt', { slot, prompt: slotPrompt.slice(0, 2000) });
           } catch { /* non-fatal */ }
 
           await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Failed: ${message.slice(0, 200)}`}, provider_error = ${message}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
@@ -1756,7 +1761,7 @@ export async function startGenerationWorker(
     WHERE id = ${shootId}`;
 
   if (done) {
-    await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${'complete'}, ${JSON.stringify({ progress: 100, stage: "Complete" })}::jsonb, ${ts()})`;
+    logEvent('complete', { progress: 100, stage: "Complete" });
 
     // Delete inspiration + tagged reference files from storage on completion.
     // Identity images are intentionally kept — they power the identity library for future shoots.
