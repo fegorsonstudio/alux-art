@@ -3,7 +3,7 @@ export type ShootMode = "fast" | "advanced";
 export type AspectRatio = "3:4" | "4:5" | "1:1" | "16:9" | "9:16" | "2:3";
 export type ShootStatus =
   | "DRAFT" | "PENDING_PAYMENT" | "QUEUED" | "PROCESSING" | "COMPLETE" | "FAILED"
-  | "BASE_LOCKING" | "BASE_REVIEW" | "BASE_REJECTED";
+  | "BASE_LOCKING" | "BASE_REVIEW" | "BASE_REJECTED" | "REFUNDED";
 
 export type BaseLockStatus =
   | "GENERATING" | "AUTO_APPROVED" | "PENDING_USER_APPROVAL"

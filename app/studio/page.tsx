@@ -64,6 +64,8 @@ export default function WorkspacePage() {
   const [packages, setPackages] = useState<PackagePricing[]>(DEFAULT_PACKAGES);
   const [toTemplateLoading, setToTemplateLoading] = useState(false);
   const [toTemplateError, setToTemplateError] = useState("");
+  const [refundState, setRefundState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [refundError, setRefundError] = useState("");
 
   // Upload state
   const [identityImages, setIdentityImages] = useState<UploadedRef[]>([]);
@@ -696,6 +698,26 @@ export default function WorkspacePage() {
     }
   };
 
+  const requestRefund = async (shoot: Shoot) => {
+    setRefundState("loading");
+    setRefundError("");
+    try {
+      const res = await fetch(`/api/shoots/${shoot.id}/refund`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRefundError(body.error ?? "Refund request failed. Please contact support.");
+        setRefundState("error");
+        return;
+      }
+      setRefundState("done");
+      setCurrentShoot(prev => prev ? { ...prev, status: "REFUNDED" as Shoot["status"] } : prev);
+      setShoots(prev => prev.map(s => s.id === shoot.id ? { ...s, status: "REFUNDED" as Shoot["status"] } : s));
+    } catch {
+      setRefundError("Network error. Please try again.");
+      setRefundState("error");
+    }
+  };
+
   const signOut = async () => { await createClient().auth.signOut(); window.location.href = "/"; };
 
   const turnIntoTemplate = async () => {
@@ -1323,6 +1345,40 @@ export default function WorkspacePage() {
                   {currentShoot.status === "COMPLETE" ? `Download All ${getShootPackageSize(currentShoot)} (ZIP)` : "Download Completed Images (ZIP)"}
                 </button>
               )}
+
+              {/* Refund banner — shown when shoot is fully failed */}
+              {(() => {
+                const fullyFailed =
+                  currentShoot.status === "FAILED" ||
+                  (galleryImages.length > 0 && galleryImages.every(img => img.status === "FAILED"));
+                if (currentShoot.status === "REFUNDED") {
+                  return (
+                    <div className={styles.refundBanner} data-state="done">
+                      <p className={styles.refundMsg}>Refund processed. Funds will return to your account within 5–10 business days.</p>
+                    </div>
+                  );
+                }
+                if (!fullyFailed) return null;
+                return (
+                  <div className={styles.refundBanner} data-state={refundState}>
+                    <p className={styles.refundMsg}>
+                      {refundState === "done"
+                        ? "Refund processed. Funds will return to your account within 5–10 business days."
+                        : "This shoot failed completely. You are eligible for a full refund."}
+                    </p>
+                    {refundState === "error" && <p className={styles.refundError}>{refundError}</p>}
+                    {refundState !== "done" && (
+                      <button
+                        className={styles.refundBtn}
+                        onClick={() => requestRefund(currentShoot)}
+                        disabled={refundState === "loading"}
+                      >
+                        {refundState === "loading" ? "Processing refund…" : "Request Refund"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
               {(() => {
                 const purchases = (currentShoot as unknown as Record<string, unknown>).template_purchases as Array<Record<string, unknown>> | undefined;
                 const sourcedFromOtherCreator = (purchases?.length ?? 0) > 0

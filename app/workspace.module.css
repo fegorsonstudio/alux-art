@@ -465,6 +465,16 @@
 .saveAsTemplateLink:disabled { opacity: 0.55; cursor: not-allowed; }
 .toTemplateError { font-size: 0.78rem; color: #a7463c; margin: 0 0 4px 0; text-align: center; }
 
+/* ---- Refund banner ---- */
+.refundBanner { border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; border: 1px solid rgba(180, 60, 50, 0.3); background: rgba(180, 60, 50, 0.06); }
+.refundBanner[data-state="done"] { border-color: rgba(47, 142, 100, 0.35); background: rgba(47, 142, 100, 0.07); }
+.refundMsg { font-size: 0.84rem; color: #7a2b24; margin: 0; line-height: 1.45; }
+.refundBanner[data-state="done"] .refundMsg { color: #1e6644; }
+.refundError { font-size: 0.8rem; color: #a7463c; margin: 0; }
+.refundBtn { background: #a7463c; color: #fff; border: none; border-radius: 7px; font-size: 0.84rem; font-weight: 700; padding: 9px 16px; cursor: pointer; width: 100%; font-family: inherit; transition: background 0.15s; }
+.refundBtn:hover:not(:disabled) { background: #8f3630; }
+.refundBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* ---- Status bar ---- */
 .statusBar { background: rgba(217, 239, 255, 0.82); border: 1px solid rgba(73, 151, 205, 0.24); border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #2f6a98; display: flex; align-items: center; gap: 8px; }
 .statusBarError { background: rgba(255, 225, 220, 0.9); border-color: rgba(167, 70, 60, 0.24); color: #a7463c; }

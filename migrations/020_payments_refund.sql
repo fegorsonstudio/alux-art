@@ -1,0 +1,4 @@
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS refund_status TEXT NOT NULL DEFAULT 'none',
+  ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS refund_reference TEXT;
