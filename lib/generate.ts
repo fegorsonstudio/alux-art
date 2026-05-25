@@ -235,20 +235,21 @@ async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
 
   const model = genai.getGenerativeModel({
     model: "gemini-2.5-flash",
-    generationConfig: { maxOutputTokens: 512 },
+    generationConfig: { maxOutputTokens: 1024 },
   });
 
   const basePrompt = `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
-Return ONLY this format — ALL 6 fields are required:
+Return ONLY this format — ALL 6 fields are MANDATORY. Do not stop until all 6 are written:
 IDENTITY PROFILE:
 Face: [facial structure — shape, proportions, bone structure]
-Skin: [tone with specific descriptors e.g. warm medium brown, cool fair]
+Skin: [exact tone — e.g. deep ebony, rich dark brown, warm medium brown, cool fair. Be specific about depth and undertone]
 Eyes: [color, shape, spacing]
 Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
 Build: [body type, height impression, proportions]
 Distinctive: [any notable stable features]
 
+CRITICAL: Skin tone accuracy is essential for identity preservation. Dark skin must be described with precise depth and undertone (e.g. "deep ebony with cool undertones", "rich dark brown with warm undertones"). Never default to generic or lighter descriptors.
 Clinical and precise. No subjective judgments. Stable biometric features only.`;
 
   const run = (extra = "") =>
@@ -261,11 +262,17 @@ Clinical and precise. No subjective judgments. Stable biometric features only.`;
 
   let text = (await run()).response.text();
 
-  // Retry once if any field is missing — Gemini sometimes stops early
-  const missing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
-  if (missing.length > 0) {
-    console.warn("[generate] identity profile missing fields:", missing);
-    text = (await run(`\n\nCRITICAL: Your previous response was missing: ${missing.join(", ")}. You MUST include ALL 6 fields.`)).response.text();
+  // Retry up to 2 more times if any field is missing — Gemini sometimes stops early
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const missing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
+    if (missing.length === 0) break;
+    console.warn(`[generate] identity profile missing fields (attempt ${attempt + 1}):`, missing);
+    text = (await run(`\n\nCRITICAL: Your previous response was missing these required fields: ${missing.join(", ")}. You MUST include ALL 6 fields. Start fresh and write all 6.`)).response.text();
+  }
+
+  const stillMissing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
+  if (stillMissing.length > 0) {
+    console.error("[generate] identity profile incomplete after retries:", stillMissing, "| profile:", text.slice(0, 300));
   }
 
   return text;
