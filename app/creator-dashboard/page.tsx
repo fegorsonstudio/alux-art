@@ -129,10 +129,12 @@ function CreatorDashboard() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const sampleImgInputRef = useRef<HTMLInputElement>(null);
   const formPanelRef = useRef<HTMLDivElement>(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [pendingTag, setPendingTag] = useState<string>("inspiration");
+  const [replacingId, setReplacingId] = useState<string | null>(null);
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -450,6 +452,34 @@ function CreatorDashboard() {
     }
     const { storagePath } = await res.json();
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath } : img));
+  };
+
+  const replaceImage = async (file: File, localId: string) => {
+    setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true, error: undefined } : img));
+    const f = await resizeIfNeeded(file);
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "template-images");
+    const uploadRes = await fetch("/api/upload/file", { method: "POST", body: form });
+    if (!uploadRes.ok) {
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed" } : img));
+      return;
+    }
+    const { storagePath } = await uploadRes.json();
+    const target = images.find(i => i.localId === localId);
+    if (target?.fromDb && panel !== "create") {
+      const patchRes = await fetch(`/api/templates/${panel}/images`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId: localId, storagePath }),
+      });
+      if (!patchRes.ok) {
+        setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Replace failed" } : img));
+        return;
+      }
+    }
+    const newPreview = URL.createObjectURL(file);
+    setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath, preview: newPreview } : img));
   };
 
   const addImages = (files: FileList) => {
@@ -978,8 +1008,16 @@ function CreatorDashboard() {
                 {images.filter(img => img.purpose === "tagged").map(img => (
                   <div key={img.localId} className={styles.taggedRefCard}>
                     <div className={styles.taggedRefTop}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.preview} alt="" className={styles.taggedRefThumb} />
+                      <button
+                        type="button"
+                        className={styles.taggedRefThumbBtn}
+                        onClick={() => { setReplacingId(img.localId); replaceInputRef.current?.click(); }}
+                        title="Click to replace image"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.preview} alt="" className={styles.taggedRefThumb} />
+                        <span className={styles.taggedRefReplaceOverlay}>Replace</span>
+                      </button>
                       <div className={styles.taggedRefRight}>
                         <div className={styles.tagPills}>
                           {TEMPLATE_TAGS.map(t => (
@@ -1049,6 +1087,7 @@ function CreatorDashboard() {
             )}
 
             <input type="file" accept="image/*" multiple ref={imgInputRef} className={styles.hidden} onChange={e => { if (e.target.files) addImages(e.target.files); e.target.value = ""; }} />
+            <input type="file" accept="image/*" ref={replaceInputRef} className={styles.hidden} onChange={e => { const f = e.target.files?.[0]; if (f && replacingId) replaceImage(f, replacingId); e.target.value = ""; setReplacingId(null); }} />
           </div>
 
           {/* Gallery images — public showcase; first image = marketplace card thumbnail */}

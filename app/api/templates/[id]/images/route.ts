@@ -84,14 +84,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const { imageId, tag, note, customName, noteHidden } = body;
+  const { imageId, tag, note, customName, noteHidden, storagePath } = body;
 
   if (typeof imageId !== "string") return NextResponse.json({ error: "imageId required" }, { status: 400 });
   if (tag !== undefined && (typeof tag !== "string" || !ALLOWED_TAGS.has(tag as string))) {
     return NextResponse.json({ error: "Invalid tag" }, { status: 400 });
   }
+  if (storagePath !== undefined && (typeof storagePath !== "string" || !storagePath.startsWith(`${user.id}/`))) {
+    return NextResponse.json({ error: "Invalid storage path" }, { status: 400 });
+  }
 
-  const [img] = await sql`SELECT id, template_id FROM template_images WHERE id = ${imageId} AND template_id = ${id}`;
+  const [img] = await sql`SELECT id, template_id, storage_path FROM template_images WHERE id = ${imageId} AND template_id = ${id}`;
   if (!img) return NextResponse.json({ error: "Image not found" }, { status: 404 });
 
   const [tmpl] = await sql`SELECT id FROM templates WHERE id = ${img.template_id} AND creator_id = ${creator.id}`;
@@ -102,6 +105,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (note !== undefined) updates.note = (typeof note === "string" && note.trim()) ? note.trim() : null;
   if (customName !== undefined) updates.custom_name = (typeof customName === "string" && customName.trim()) ? customName.trim() : null;
   if (noteHidden !== undefined) updates.note_hidden = noteHidden === true;
+  if (storagePath !== undefined) {
+    if (img.storage_path) await r2Delete("template-images", [img.storage_path as string]).catch(() => {});
+    updates.storage_path = storagePath;
+  }
 
   if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
