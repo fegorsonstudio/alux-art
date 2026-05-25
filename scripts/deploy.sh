@@ -15,7 +15,7 @@ echo "=== Building ==="
 npm --prefix "$APP_DIR" run build
 
 echo "=== Running new migrations ==="
-node "$APP_DIR/scripts/migrate.mjs"
+node "$APP_DIR/scripts/migrate-vps.mjs"
 
 echo "=== Reloading PM2 ==="
 pm2 reload aluxart
