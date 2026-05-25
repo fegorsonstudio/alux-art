@@ -23,7 +23,7 @@ export async function POST(
   let eligible = shoot.status === "FAILED" || shoot.status === "REFUNDED";
   if (!eligible) {
     const images = await sql`SELECT status FROM shoot_images WHERE shoot_id = ${id}`;
-    if (images.length > 0 && images.every((img: { status: string }) => img.status === "FAILED")) {
+    if (images.length > 0 && images.every(img => String(img.status) === "FAILED")) {
       eligible = true;
     }
   }
