@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "aluxartandframes.shop";
+  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ?? "https";
+  const origin = `${proto}://${host}`;
   const code = searchParams.get("code");
   let next = searchParams.get("next") ?? "/studio";
   if (!next.startsWith("/")) next = "/studio";
