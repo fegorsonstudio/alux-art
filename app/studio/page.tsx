@@ -627,38 +627,49 @@ export default function WorkspacePage() {
   };
 
   const downloadImage = async (shoot: Shoot, img: ShootImage) => {
+    setStatus({ type: "loading", message: "Preparing download…" });
     const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
-    if (!res.ok) return;
+    if (!res.ok) {
+      setStatus({ type: "error", message: "Download failed — please try again." });
+      return;
+    }
     const blob = await res.blob();
-    const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
+    setStatus({ type: "ok", message: "" });
+    const filename = `aluxart-slot${img.slot}-${img.kind}.jpg`;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // On mobile with Web Share API, share the file so it can be saved to the Photos gallery
+    // Try Web Share API — on iOS/Android this shows the native sheet with "Save to Photos"
     if (typeof navigator !== "undefined" && "share" in navigator) {
-      const file = new File([blob], filename, { type: blob.type || "image/png" });
+      const file = new File([blob], filename, { type: "image/jpeg" });
       let canShareFiles = false;
       try {
         canShareFiles = typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
-      } catch { /* canShare may throw on unsupported arguments */ }
+      } catch { /* ignore */ }
       if (canShareFiles) {
         try {
-          await navigator.share({ files: [file], title: "Alux Art Photo" });
+          await navigator.share({ files: [file], title: "Your Alux Art portrait" });
           return;
         } catch (shareErr) {
-          if ((shareErr as Error).name === "AbortError") {
-            // User dismissed without saving — fall through to anchor download
-          } else {
-            // Non-abort share failure — fall through to anchor download
-          }
+          // User dismissed the share sheet — stop here, don't force a file download
+          if ((shareErr as Error).name === "AbortError") return;
+          // Otherwise fall through
         }
       }
     }
 
-    // Desktop / unsupported browsers: anchor element download
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const objectUrl = URL.createObjectURL(blob);
+    if (isMobile) {
+      // Open image in new tab — user can long-press → Save to Photos / gallery
+      window.open(objectUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } else {
+      // Desktop: anchor download to file system
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    }
   };
 
   const downloadZip = async (shoot: Shoot) => {
