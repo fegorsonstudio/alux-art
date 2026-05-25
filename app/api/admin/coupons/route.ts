@@ -4,8 +4,7 @@ import sql from "@/lib/db";
 
 async function requireAdmin() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user || user.email !== process.env.ADMIN_EMAIL) return null;
   return user;
 }

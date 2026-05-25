@@ -9,8 +9,7 @@ export async function POST(
 ) {
   const { id: baseId } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
@@ -35,8 +34,7 @@ export async function PATCH(
 ) {
   const { id: baseId } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
@@ -57,8 +55,7 @@ export async function DELETE(
 ) {
   const { id: baseId } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [base] = await sql`SELECT id, user_id FROM character_bases WHERE id = ${baseId}`;
@@ -76,8 +73,7 @@ export async function GET(
 ) {
   const { id: baseId } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [base] = await sql`SELECT * FROM character_bases WHERE id = ${baseId}`;

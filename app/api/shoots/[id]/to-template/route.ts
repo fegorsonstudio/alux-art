@@ -7,8 +7,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   const { id: shootId } = await params;
 
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;

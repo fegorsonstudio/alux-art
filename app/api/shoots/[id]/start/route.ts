@@ -20,8 +20,7 @@ export async function POST(
 
   if (!isInternal) {
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const [ownerCheck] = await sql`SELECT user_id, status FROM shoots WHERE id = ${id}`;

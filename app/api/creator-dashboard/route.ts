@@ -5,8 +5,7 @@ import { r2ProxyUrl } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [creator] = await sql`SELECT * FROM creators WHERE user_id = ${user.id}`;

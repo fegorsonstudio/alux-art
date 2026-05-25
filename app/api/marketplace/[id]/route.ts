@@ -6,7 +6,7 @@ import { r2SignedDownloadUrl, r2ProxyUrl } from "@/lib/r2";
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   const [template] = await sql`
     SELECT t.*, c.id AS cr_id, c.display_name AS cr_display_name, c.bio AS cr_bio,
@@ -63,10 +63,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   `;
 
   let userRating: number | null = null;
-  if (session?.user) {
+  if (user) {
     const [ratingRow] = await sql`
       SELECT rating FROM template_ratings
-      WHERE template_id = ${id} AND user_id = ${session.user.id}
+      WHERE template_id = ${id} AND user_id = ${user.id}
     `;
     userRating = ratingRow?.rating ?? null;
   }

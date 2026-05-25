@@ -32,8 +32,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const [shootOwner] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;

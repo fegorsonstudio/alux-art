@@ -8,8 +8,7 @@ const VALID_FONTS = FONTS.map((f) => f.value);
 
 export async function PATCH(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id}`;

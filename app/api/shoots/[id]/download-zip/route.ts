@@ -9,8 +9,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [shoot] = await sql`SELECT id, user_id FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
