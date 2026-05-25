@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2ProxyUrl } from "@/lib/r2";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -30,23 +30,13 @@ export async function GET(request: NextRequest) {
   const slice = rows.slice(0, limit);
 
   const templates = await Promise.all(slice.map(async (t) => {
-    let coverUrl: string | null = null;
-    if (t.cover_storage_path) {
-      coverUrl = await r2SignedDownloadUrl(
-        (t.cover_bucket ?? "template-images") as string,
-        t.cover_storage_path as string,
-        3600
-      ).catch(() => null);
-    }
+    const coverUrl = t.cover_storage_path
+      ? r2ProxyUrl(t.cover_bucket ?? "template-images", t.cover_storage_path as string)
+      : null;
 
-    let avatarUrl: string | null = null;
-    if (t.c_avatar_path) {
-      avatarUrl = await r2SignedDownloadUrl(
-        (t.c_avatar_bucket ?? "template-images") as string,
-        t.c_avatar_path as string,
-        3600
-      ).catch(() => null);
-    }
+    const avatarUrl = t.c_avatar_path
+      ? r2ProxyUrl(t.c_avatar_bucket ?? "template-images", t.c_avatar_path as string)
+      : null;
 
     return {
       id: t.id,

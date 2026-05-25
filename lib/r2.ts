@@ -19,6 +19,14 @@ export const r2 = new S3Client({
   responseChecksumValidation: "WHEN_REQUIRED",
 });
 
+// Returns a proxy URL served through the app (avoids R2 CORS/ORB restrictions).
+// Use this for images displayed in <img> tags.
+export function r2ProxyUrl(bucket: string, path: string): string {
+  return `/api/media?b=${encodeURIComponent(bucket)}&p=${encodeURIComponent(path)}`;
+}
+
+// Returns a signed R2 URL for direct file downloads (where CORS doesn't apply).
+// Use this for download buttons and ZIP files.
 export async function r2SignedDownloadUrl(
   bucket: string,
   path: string,

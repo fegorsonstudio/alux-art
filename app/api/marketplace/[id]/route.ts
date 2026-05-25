@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2SignedDownloadUrl, r2ProxyUrl } from "@/lib/r2";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,23 +21,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  let coverUrl: string | null = null;
-  if (template.cover_storage_path) {
-    coverUrl = await r2SignedDownloadUrl(
-      (template.cover_bucket ?? "template-images") as string,
-      template.cover_storage_path as string,
-      3600
-    ).catch(() => null);
-  }
+  const coverUrl = template.cover_storage_path
+    ? r2ProxyUrl(template.cover_bucket ?? "template-images", template.cover_storage_path as string)
+    : null;
 
-  let avatarUrl: string | null = null;
-  if (template.cr_avatar_path) {
-    avatarUrl = await r2SignedDownloadUrl(
-      (template.cr_avatar_bucket ?? "template-images") as string,
-      template.cr_avatar_path as string,
-      3600
-    ).catch(() => null);
-  }
+  const avatarUrl = template.cr_avatar_path
+    ? r2ProxyUrl(template.cr_avatar_bucket ?? "template-images", template.cr_avatar_path as string)
+    : null;
 
   const rawImages = await sql`
     SELECT id, storage_path, storage_bucket, display_order, purpose, tag,
@@ -48,14 +38,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const images = await Promise.all(rawImages.map(async (img) => {
     const isWorkflowRef = img.purpose === "tagged" || img.purpose === "inspiration";
-    let signedUrl: string | null = null;
-    if (!isWorkflowRef) {
-      signedUrl = await r2SignedDownloadUrl(
-        (img.storage_bucket ?? "template-images") as string,
-        img.storage_path as string,
-        3600
-      ).catch(() => null);
-    }
+    const signedUrl = !isWorkflowRef
+      ? r2ProxyUrl(img.storage_bucket ?? "template-images", img.storage_path as string)
+      : null;
     return {
       id: img.id,
       templateId: id,
