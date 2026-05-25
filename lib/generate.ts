@@ -1552,6 +1552,9 @@ export async function startGenerationWorker(
   // to download returns 404 (e.g. identity images uploaded before R2 migration).
   const reachableImageUrls = await filterReachableUrls(imageUrls);
   console.log(`[generate] imageUrls reachability: ${reachableImageUrls.length}/${imageUrls.length} reachable`);
+  if (reachableImageUrls.length === 0 && imageUrls.length > 0) {
+    throw new Error("Identity images are not accessible in storage. Please re-upload your identity photos and start a new shoot.");
+  }
 
   let failedCount = 0;
 
