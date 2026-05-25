@@ -53,8 +53,12 @@ async function toBase64Block(url: string) {
 
 // Gemini image part — same resize logic, different wrapper format
 async function toGeminiImagePart(url: string) {
+  const urlPath = url ? new URL(url).pathname : "(empty)";
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+  if (!res.ok) {
+    console.error(`[generate] toGeminiImagePart 404 path: ${urlPath}`);
+    throw new Error(`Image fetch failed: ${res.status}`);
+  }
   const buf = Buffer.from(await res.arrayBuffer());
   const resized = await sharp(buf)
     .resize(2000, 2000, { fit: "inside", withoutEnlargement: true })
