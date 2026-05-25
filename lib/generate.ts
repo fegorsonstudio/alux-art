@@ -1549,6 +1549,8 @@ export async function startGenerationWorker(
       }
 
       // Log to Airtable before calling fal.ai so the payload is always visible
+      console.log("[generate] slot prompt preview:", slotPrompt.slice(0, 400));
+      console.log("[generate] identity profile preview:", identityProfile.slice(0, 300));
       console.log("[generate] Airtable payload URL counts:", {
         shootId,
         slot,
