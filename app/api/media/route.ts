@@ -26,8 +26,9 @@ export async function GET(req: NextRequest) {
       },
     });
   }
+  const sbMsg = sbError ? sbError.message : "no data";
   if (sbError) {
-    console.error(`[media] Supabase miss b=${bucket} p=${path}: ${sbError.message}`);
+    console.error(`[media] Supabase miss b=${bucket} p=${path}: ${sbMsg}`);
   }
 
   // Fall back to R2 (files uploaded after R2 migration)
@@ -44,6 +45,6 @@ export async function GET(req: NextRequest) {
   } catch (r2Err) {
     const r2Msg = r2Err instanceof Error ? r2Err.message : String(r2Err);
     console.error(`[media] R2 miss b=${bucket} p=${path}: ${r2Msg}`);
-    return new NextResponse(`R2 error: ${r2Msg}`, { status: 404 });
+    return new NextResponse(`Supabase: ${sbMsg} | R2: ${r2Msg}`, { status: 404 });
   }
 }
