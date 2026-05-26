@@ -418,6 +418,12 @@ export default function WorkspacePage() {
     setIdentityImages(prev => prev.filter(img => !libraryImages.some(l => l.id === img.id)));
   };
 
+  const handleArchiveCharacter = async (baseId: string) => {
+    await fetch(`/api/characters/${baseId}`, { method: "DELETE" });
+    setCharacterBases(prev => prev.filter(b => b.id !== baseId));
+    if (selectedBase?.id === baseId) setSelectedBase(null);
+  };
+
   const handleAddFromInspirationLibrary = async (img: UploadedRef) => {
     setInspirationImages(prev =>
       prev.some(i => i.id === img.id) ? prev.filter(i => i.id !== img.id) : [...prev, img]
@@ -791,18 +797,27 @@ export default function WorkspacePage() {
                 {characterBases.map(base => {
                   const isSelected = selectedBase?.id === base.id;
                   return (
-                    <button key={base.id} type="button"
-                      className={`${styles.thumb} ${isSelected ? styles.thumbSelected : ""}`}
-                      onClick={() => setSelectedBase(isSelected ? null : base)}
-                      title={base.user_label ?? `Base from ${new Date(base.created_at).toLocaleDateString()}`}>
-                      {base.base_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={base.base_url} alt={base.user_label ?? "Character base"} />
-                      ) : (
-                        <span className={styles.baseNoThumb}>?</span>
-                      )}
-                      {isSelected && <span className={styles.thumbCheck}>OK</span>}
-                    </button>
+                    <div key={base.id} className={styles.thumb} style={{ position: "relative" }}>
+                      <button type="button"
+                        className={`${styles.thumb} ${isSelected ? styles.thumbSelected : ""}`}
+                        style={{ width: "100%", height: "100%" }}
+                        onClick={() => setSelectedBase(isSelected ? null : base)}
+                        title={base.user_label ?? `Base from ${new Date(base.created_at).toLocaleDateString()}`}>
+                        {base.base_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={base.base_url} alt={base.user_label ?? "Character base"} />
+                        ) : (
+                          <span className={styles.baseNoThumb}>?</span>
+                        )}
+                        {isSelected && <span className={styles.thumbCheck}>OK</span>}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.thumbRemove}
+                        onClick={(e) => { e.stopPropagation(); void handleArchiveCharacter(base.id); }}
+                        title="Remove this saved character"
+                      >×</button>
+                    </div>
                   );
                 })}
               </div>

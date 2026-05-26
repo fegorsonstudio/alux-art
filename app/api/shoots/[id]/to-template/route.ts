@@ -30,7 +30,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       creator_id, title, description, category, tags, shoot_mode, aspect_ratio,
       package_size, price_ngn, status, cover_storage_path, cover_bucket, created_at, updated_at
     ) VALUES (
-      ${creator.id}, 'Untitled Template', '', 'portrait', '[]',
+      ${creator.id}, 'Untitled Template', '', 'portrait', ${[] as string[]},
       ${shoot.mode ?? "advanced"}, ${shoot.aspect_ratio ?? "4:5"},
       ${shoot.package_size ?? 10}, 0, 'draft',
       null, 'template-images', ${now}, ${now}

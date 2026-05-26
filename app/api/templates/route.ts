@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       ${creator.id},
       ${(title as string).trim()},
       ${typeof description === "string" ? description.trim() : null},
-      ${category}, ${JSON.stringify(Array.isArray(tags) ? (tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10) : [])},
+      ${category}, ${(Array.isArray(tags) ? (tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10) : []) as string[]},
       ${priceNgn as number},
       ${(price1Ngn != null && Number.isInteger(price1Ngn)) ? price1Ngn as number : null},
       ${(price5Ngn != null && Number.isInteger(price5Ngn)) ? price5Ngn as number : null},

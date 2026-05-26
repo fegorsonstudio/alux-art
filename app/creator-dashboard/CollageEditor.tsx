@@ -206,12 +206,14 @@ export default function CollageEditor({ templateId, images, onSave, onClose }: P
     if (!upload.ok) { setErr("Upload failed"); setSaving(false); return; }
     const { storagePath } = await upload.json();
 
-    const patch = await fetch(`/api/templates/${templateId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ coverStoragePath: storagePath }),
-    });
-    if (!patch.ok) { setErr("Failed to update cover"); setSaving(false); return; }
+    if (templateId) {
+      const patch = await fetch(`/api/templates/${templateId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverStoragePath: storagePath }),
+      });
+      if (!patch.ok) { setErr("Failed to update cover"); setSaving(false); return; }
+    }
 
     onSave(storagePath, URL.createObjectURL(blob));
   }, [templateId, onSave]);
