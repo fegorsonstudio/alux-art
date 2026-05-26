@@ -41,7 +41,7 @@ export async function POST(
 
   // Find the successful payment that hasn't been refunded yet
   const [payment] = await sql`
-    SELECT id, provider_reference, amount, currency
+    SELECT id, provider_reference
     FROM payments
     WHERE shoot_id = ${id} AND status = 'success' AND refund_status = 'none'
     LIMIT 1

@@ -140,6 +140,11 @@ export async function POST(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ resolution }),
+      }).then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          console.error("[start] self-continuation non-ok:", r.status, body);
+        }
       }).catch((err) => console.error("[start] self-continuation failed:", err));
     } else {
       notifyShootComplete(id).catch(() => {});
