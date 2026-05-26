@@ -70,7 +70,9 @@ async function toGeminiImagePart(url: string): Promise<GeminiImagePart | null> {
   return { inlineData: { mimeType: "image/jpeg" as const, data: resized.toString("base64") } };
 }
 
-// HEAD-check URLs in parallel to drop any that fal.ai can't download (e.g. R2 objects that don't exist).
+// GET-check URLs in parallel to drop any that fal.ai can't download (e.g. R2 objects that don't exist).
+// Uses GET with Range:bytes=0-0 because R2 presigned URLs are signed for GET — sending HEAD
+// returns 403 SignatureDoesNotMatch and would incorrectly mark every URL as unreachable.
 // Called once per shoot so every slot reuses the validated list.
 async function filterReachableUrls(urls: string[]): Promise<string[]> {
   const results = await Promise.allSettled(
@@ -78,8 +80,8 @@ async function filterReachableUrls(urls: string[]): Promise<string[]> {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
       try {
-        const res = await fetch(url, { method: "HEAD", signal: controller.signal });
-        return res.ok ? url : null;
+        const res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-0" }, signal: controller.signal });
+        return (res.ok || res.status === 206) ? url : null;
       } catch {
         return null;
       } finally {

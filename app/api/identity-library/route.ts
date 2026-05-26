@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl, r2Upload, r2Delete } from "@/lib/r2";
+import { r2ProxyUrl, r2Upload, r2Delete } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -12,16 +12,12 @@ export async function GET() {
     SELECT * FROM identity_images WHERE user_id = ${user.id} ORDER BY last_used_at DESC
   `;
 
-  const signedImages = await Promise.all(data.map(async (img) => {
-    const url = await r2SignedDownloadUrl(
-      img.storage_bucket as string,
-      img.storage_path as string,
-      3600
-    ).catch(() => null);
-    return url ? { ...img, url } : null;
+  const images = data.map((img) => ({
+    ...img,
+    url: r2ProxyUrl(img.storage_bucket as string, img.storage_path as string),
   }));
 
-  return NextResponse.json({ images: signedImages.filter(Boolean) });
+  return NextResponse.json({ images });
 }
 
 export async function POST(request: NextRequest) {
