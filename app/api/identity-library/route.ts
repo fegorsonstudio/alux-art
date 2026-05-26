@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     RETURNING *
   `;
 
-  const url = await r2SignedDownloadUrl("identity-images", path, 3600).catch(() => null);
+  const url = r2ProxyUrl("identity-images", path);
   return NextResponse.json({ image: { ...record, url } });
 }
 
