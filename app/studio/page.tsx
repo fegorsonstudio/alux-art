@@ -371,41 +371,15 @@ export default function WorkspacePage() {
         img.src = url;
       });
 
-      // Step 1: get a presigned PUT URL from the server (tiny JSON round-trip)
-      setUploadProgress(prev => ({ ...prev, [key]: 10 }));
-      const presignRes = await fetch("/api/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: fileToUpload.name, contentType: fileToUpload.type, size: fileToUpload.size, bucket }),
-      });
-      const presignData = await presignRes.json().catch(() => null);
-      if (!presignRes.ok || !presignData?.uploadUrl) {
-        throw new Error(presignData?.error ?? `Presign failed (${presignRes.status})`);
-      }
-
-      // Step 2: PUT file directly to R2 from the browser — single network hop
-      setUploadProgress(prev => ({ ...prev, [key]: 20 }));
-      const putRes = await fetch(presignData.uploadUrl, {
-        method: "PUT",
-        body: fileToUpload,
-        headers: { "Content-Type": fileToUpload.type },
-      });
-      if (!putRes.ok) throw new Error(`R2 upload failed (${putRes.status})`);
-
-      // Step 3: confirm with server to save library record and get signed download URL
-      setUploadProgress(prev => ({ ...prev, [key]: 90 }));
-      const confirmForm = new FormData();
-      confirmForm.append("id", presignData.id);
-      confirmForm.append("filename", fileToUpload.name);
-      confirmForm.append("contentType", fileToUpload.type);
-      confirmForm.append("size", String(fileToUpload.size));
-      confirmForm.append("storageBucket", bucket);
-      confirmForm.append("storagePath", presignData.storagePath);
-      confirmForm.append("saveToLibrary", saveLib ? "true" : "false");
-      const confirmRes = await fetch("/api/upload", { method: "POST", body: confirmForm });
-      const uploadData = await confirmRes.json().catch(() => null);
-      if (!confirmRes.ok || !uploadData?.image) {
-        throw new Error(uploadData?.error ?? `Confirm failed (${confirmRes.status})`);
+      setUploadProgress(prev => ({ ...prev, [key]: 30 }));
+      const uploadForm = new FormData();
+      uploadForm.append("file", fileToUpload, fileToUpload.name);
+      uploadForm.append("bucket", bucket);
+      uploadForm.append("saveToLibrary", saveLib ? "true" : "false");
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
+      const uploadData = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok || !uploadData?.image) {
+        throw new Error(uploadData?.error ?? `Upload failed (${uploadRes.status})`);
       }
 
       setUploadProgress(prev => ({ ...prev, [key]: 100 }));
