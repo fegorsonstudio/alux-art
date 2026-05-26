@@ -42,7 +42,8 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (r2Err) {
-    console.error(`[media] R2 miss b=${bucket} p=${path}: ${r2Err instanceof Error ? r2Err.message : String(r2Err)}`);
-    return new NextResponse("Not found", { status: 404 });
+    const r2Msg = r2Err instanceof Error ? r2Err.message : String(r2Err);
+    console.error(`[media] R2 miss b=${bucket} p=${path}: ${r2Msg}`);
+    return new NextResponse(`R2 error: ${r2Msg}`, { status: 404 });
   }
 }
