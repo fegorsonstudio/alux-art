@@ -83,10 +83,10 @@ export async function POST(
   }
 
   await sql`
-    INSERT INTO payments (id, shoot_id, user_id, status, currency, amount, provider, provider_reference, created_at)
+    INSERT INTO payments (id, shoot_id, user_id, status, amount_ngn, provider, provider_reference, created_at)
     VALUES (
       ${crypto.randomUUID()}, ${id}, ${user.id}, 'pending',
-      ${shoot.currency}, ${price}, 'paystack',
+      ${Math.round(price / 100)}, 'paystack',
       ${paystackData.data.reference}, NOW()
     )
   `;
