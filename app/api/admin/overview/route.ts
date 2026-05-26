@@ -20,7 +20,6 @@ export async function GET() {
     [{ failed_shoots }],
     [{ queue_depth }],
     [{ today_shoots }],
-    pricing,
     profiles,
     recentShoots,
   ] = await Promise.all([
@@ -29,7 +28,6 @@ export async function GET() {
     sql`SELECT COUNT(*)::int AS failed_shoots FROM shoots WHERE status = 'FAILED'`,
     sql`SELECT COUNT(*)::int AS queue_depth FROM shoots WHERE status = ANY(${["QUEUED", "PROCESSING", "BASE_LOCKING", "BASE_REVIEW"]})`,
     sql`SELECT COUNT(*)::int AS today_shoots FROM shoots WHERE created_at >= ${todayStart.toISOString()}`,
-    sql`SELECT ngn, usd FROM pricing_configs ORDER BY updated_at DESC LIMIT 1`,
     sql`SELECT id, display_name, email, currency, banned, created_at FROM profiles ORDER BY created_at DESC LIMIT 200`,
     sql`
       SELECT id, status, owner_email, user_id, mode, aspect_ratio, package_size, currency, created_at
@@ -74,7 +72,6 @@ export async function GET() {
   const [{ total_users }] = await sql`SELECT COUNT(*)::int AS total_users FROM profiles`;
 
   return NextResponse.json({
-    pricing: pricing[0] ?? { ngn: 15000, usd: 10 },
     users: profiles,
     shoots,
     metrics: {

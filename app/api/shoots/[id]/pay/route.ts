@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { normalizePackageSize, packagePrice } from "@/lib/types";
+import { normalizePackageSize } from "@/lib/types";
 import sql from "@/lib/db";
+
+const PRICE_KEYS = [
+  "price_1_ngn", "price_5_ngn", "price_10_ngn",
+  "price_1_usd", "price_5_usd", "price_10_usd",
+  "platform_price_1_ngn", "platform_price_5_ngn", "platform_fee_ngn",
+];
+
+const NGN_DEFAULTS: Record<number, number> = { 1: 1500, 5: 7500, 10: 15000 };
+const USD_DEFAULTS: Record<number, number> = { 1: 1, 5: 5, 10: 10 };
 
 export async function POST(
   request: NextRequest,
@@ -9,7 +18,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
@@ -22,7 +31,7 @@ export async function POST(
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
   const packageSize = normalizePackageSize(shoot.package_size);
 
-  // Admin bypass
+  // Admin bypass — no payment required
   if (isAdmin) {
     await sql`
       UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
@@ -37,13 +46,21 @@ export async function POST(
     return NextResponse.json({ bypass: true });
   }
 
-  // Get pricing
-  const [pricing] = await sql`
-    SELECT ngn, usd FROM pricing_configs ORDER BY updated_at DESC LIMIT 1
-  `;
+  // Read explicit package prices from app_config
+  const rows = await sql`SELECT key, value FROM app_config WHERE key = ANY(${PRICE_KEYS})`;
+  const map = Object.fromEntries(rows.map((r) => [r.key as string, r.value as string]));
 
-  const basePrice = shoot.currency === "USD" ? (pricing?.usd ?? 10) : (pricing?.ngn ?? 15000);
-  const price = packagePrice(basePrice, packageSize) * 100;
+  const getPrice = (pkg: number, currency: string): number => {
+    const isUsd = currency === "USD";
+    const newKey = `price_${pkg}_${isUsd ? "usd" : "ngn"}`;
+    const legacyKey = pkg === 10 ? "platform_fee_ngn" : `platform_price_${pkg}_ngn`;
+    const raw = map[newKey] ?? (!isUsd ? map[legacyKey] : undefined);
+    const v = raw ? parseFloat(raw) : 0;
+    const defaults = isUsd ? USD_DEFAULTS : NGN_DEFAULTS;
+    return v > 0 ? v : (defaults[pkg] ?? defaults[10]);
+  };
+
+  const price = Math.round(getPrice(packageSize, shoot.currency as string) * 100);
 
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",

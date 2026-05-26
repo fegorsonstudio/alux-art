@@ -42,7 +42,6 @@ interface ShootRow {
 }
 
 interface AdminData {
-  pricing: { ngn: number; usd: number };
   users: Array<{ id: string; email: string; display_name: string; banned: boolean; currency: string; created_at: string }>;
   shoots: ShootRow[];
   metrics: {
@@ -57,14 +56,28 @@ interface AdminData {
   marketplace: { totalCreators: number; publishedTemplates: number };
 }
 
+interface ShootDebug {
+  shoot_id: string;
+  owner_email: string;
+  status: string;
+  mode: string;
+  identity_profile: string;
+  shoot_brief: { prompts?: Array<{ prompt_index: number; fully_consolidated_prompt?: string }> } | null;
+  slots: Array<{ slot: number; kind: string; status: string; prompt: string | null }>;
+}
+
 interface ModelConfig {
   vision_model: "gemini" | "claude";
   generation_model: "nano-banana" | "seedream";
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
-  platform_price_1_ngn: number;
-  platform_price_5_ngn: number;
+  price_1_ngn: number;
+  price_5_ngn: number;
+  price_10_ngn: number;
+  price_1_usd: number;
+  price_5_usd: number;
+  price_10_usd: number;
   prompt_only_mode: boolean;
   polish_pass_enabled: boolean;
 }
@@ -203,23 +216,28 @@ function MigrationsCard() {
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [err, setErr] = useState("");
-  const [pricingNgn, setPricingNgn] = useState("");
-  const [pricingUsd, setPricingUsd] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
 
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     vision_model: "gemini", generation_model: "nano-banana",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
-    platform_fee_ngn: 15000, platform_price_1_ngn: 1500, platform_price_5_ngn: 7500,
+    platform_fee_ngn: 15000,
+    price_1_ngn: 1500, price_5_ngn: 7500, price_10_ngn: 15000,
+    price_1_usd: 1, price_5_usd: 5, price_10_usd: 10,
     prompt_only_mode: false, polish_pass_enabled: false,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [platformFeeInput, setPlatformFeeInput] = useState("15000");
-  const [price1Input, setPrice1Input] = useState("1500");
-  const [price5Input, setPrice5Input] = useState("7500");
+  const [price1NgnInput, setPrice1NgnInput] = useState("1500");
+  const [price5NgnInput, setPrice5NgnInput] = useState("7500");
+  const [price10NgnInput, setPrice10NgnInput] = useState("15000");
+  const [price1UsdInput, setPrice1UsdInput] = useState("1");
+  const [price5UsdInput, setPrice5UsdInput] = useState("5");
+  const [price10UsdInput, setPrice10UsdInput] = useState("10");
   const [modelSaving, setModelSaving] = useState(false);
   const [modelMsg, setModelMsg] = useState("");
+
+  const [expandedShootId, setExpandedShootId] = useState<string | null>(null);
+  const [shootDebug, setShootDebug] = useState<Record<string, ShootDebug | "loading" | "error">>({});
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponCode, setCouponCode] = useState("");
@@ -238,11 +256,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetch("/api/admin/overview")
       .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error ?? "Error"); return d; })
-      .then(d => {
-        setData(d);
-        setPricingNgn(String(d.pricing?.ngn ?? 15000));
-        setPricingUsd(String(d.pricing?.usd ?? 10));
-      })
+      .then(d => { setData(d); })
       .catch(e => setErr(e.message));
 
     fetch("/api/admin/config")
@@ -252,8 +266,12 @@ export default function AdminPage() {
           setModelConfig(d);
           setRolloutInput(String(d.locked_base_rollout_percent ?? 100));
           setPlatformFeeInput(String(d.platform_fee_ngn ?? 15000));
-          setPrice1Input(String(d.platform_price_1_ngn ?? 1500));
-          setPrice5Input(String(d.platform_price_5_ngn ?? 7500));
+          setPrice1NgnInput(String(d.price_1_ngn ?? 1500));
+          setPrice5NgnInput(String(d.price_5_ngn ?? 7500));
+          setPrice10NgnInput(String(d.price_10_ngn ?? 15000));
+          setPrice1UsdInput(String(d.price_1_usd ?? 1));
+          setPrice5UsdInput(String(d.price_5_usd ?? 5));
+          setPrice10UsdInput(String(d.price_10_usd ?? 10));
         }
       })
       .catch(() => {});
@@ -269,19 +287,19 @@ export default function AdminPage() {
       .catch(() => {});
   }, []);
 
-  const savePricing = async () => {
-    setSaving(true); setMsg("");
+  const loadShootDebug = async (id: string) => {
+    if (expandedShootId === id) { setExpandedShootId(null); return; }
+    setExpandedShootId(id);
+    if (shootDebug[id]) return;
+    setShootDebug(prev => ({ ...prev, [id]: "loading" }));
     try {
-      const res = await fetch("/api/admin/pricing", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ngn: Number(pricingNgn), usd: Number(pricingUsd) }),
-      });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error ?? "Error saving");
-      setData(prev => prev ? { ...prev, pricing: payload.pricing } : prev);
-      setMsg("Saved!");
-    } catch (e) { setMsg(e instanceof Error ? e.message : "Error"); }
-    finally { setSaving(false); setTimeout(() => setMsg(""), 3000); }
+      const res = await fetch(`/api/admin/shoots/${id}/debug`);
+      if (!res.ok) throw new Error("Failed");
+      const d: ShootDebug = await res.json();
+      setShootDebug(prev => ({ ...prev, [id]: d }));
+    } catch {
+      setShootDebug(prev => ({ ...prev, [id]: "error" }));
+    }
   };
 
   const saveModelConfig = async (patch: Partial<ModelConfig>) => {
@@ -445,19 +463,6 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* ---- Pricing ---- */}
-      <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Pricing</h2>
-        <div className={styles.priceRow}>
-          <label className={styles.priceLabel}>NGN (₦)</label>
-          <input className={styles.priceInput} value={pricingNgn} onChange={e => setPricingNgn(e.target.value)} type="number" />
-          <label className={styles.priceLabel}>USD ($)</label>
-          <input className={styles.priceInput} value={pricingUsd} onChange={e => setPricingUsd(e.target.value)} type="number" />
-          <button type="button" className={styles.saveBtn} onClick={savePricing} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
-          {msg && <span className={styles.saveMsg}>{msg}</span>}
-        </div>
-      </div>
-
       {/* ---- AI Model Config ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>AI Model Config</h2>
@@ -570,31 +575,79 @@ export default function AdminPage() {
               const badgeClass = styles[STATUS_CLASS[s.status] ?? "badge"] ?? styles.badge;
               const imageTotal = s.imageCounts.total || s.package_size || 0;
               const imageDone = s.imageCounts.done;
+              const isExpanded = expandedShootId === s.id;
+              const debug = shootDebug[s.id];
               return (
-                <div key={s.id} className={styles.shootItem}>
-                  <div className={styles.shootLeft}>
-                    <span className={styles.shootEmail}>{s.owner_email}</span>
-                    <div className={styles.shootMeta}>
-                      <span className={badgeClass}>{STATUS_LABELS[s.status] ?? s.status}</span>
-                      {s.mode && <span className={styles.modePill}>{s.mode}</span>}
-                      {s.currency && <span className={styles.currencyPill}>{s.currency}</span>}
+                <div key={s.id}>
+                  <div
+                    className={styles.shootItem}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => loadShootDebug(s.id)}
+                  >
+                    <div className={styles.shootLeft}>
+                      <span className={styles.shootEmail}>{s.owner_email}</span>
+                      <div className={styles.shootMeta}>
+                        <span className={badgeClass}>{STATUS_LABELS[s.status] ?? s.status}</span>
+                        {s.mode && <span className={styles.modePill}>{s.mode}</span>}
+                        {s.currency && <span className={styles.currencyPill}>{s.currency}</span>}
+                      </div>
+                    </div>
+                    <div className={styles.shootRight}>
+                      {imageTotal > 0 && (
+                        <div className={styles.imageProgress}>
+                          <div className={styles.imageProgressBar}>
+                            <div
+                              className={styles.imageProgressFill}
+                              style={{ width: `${Math.round((imageDone / imageTotal) * 100)}%` }}
+                            />
+                          </div>
+                          <span className={styles.imageProgressLabel}>{imageDone}/{imageTotal}</span>
+                        </div>
+                      )}
+                      <span className={styles.shootTime}>{timeAgo(s.created_at)}</span>
+                      <span className={styles.shootId}>{s.id.slice(0, 8)}</span>
+                      <span style={{ fontSize: "0.7rem", color: "#7aafb4" }}>{isExpanded ? "▲" : "▼"}</span>
                     </div>
                   </div>
-                  <div className={styles.shootRight}>
-                    {imageTotal > 0 && (
-                      <div className={styles.imageProgress}>
-                        <div className={styles.imageProgressBar}>
-                          <div
-                            className={styles.imageProgressFill}
-                            style={{ width: `${Math.round((imageDone / imageTotal) * 100)}%` }}
-                          />
-                        </div>
-                        <span className={styles.imageProgressLabel}>{imageDone}/{imageTotal}</span>
-                      </div>
-                    )}
-                    <span className={styles.shootTime}>{timeAgo(s.created_at)}</span>
-                    <span className={styles.shootId}>{s.id.slice(0, 8)}</span>
-                  </div>
+                  {isExpanded && (
+                    <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "14px 16px", margin: "2px 0 6px", fontSize: "0.78rem" }}>
+                      {debug === "loading" && <span style={{ color: "#7aafb4" }}>Loading…</span>}
+                      {debug === "error" && <span style={{ color: "#b94a4a" }}>Failed to load debug data.</span>}
+                      {debug && debug !== "loading" && debug !== "error" && (
+                        <>
+                          <details style={{ marginBottom: 12 }}>
+                            <summary style={{ cursor: "pointer", color: "#2f8e9a", fontWeight: 600 }}>
+                              Identity Profile
+                            </summary>
+                            <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", marginTop: 8, fontFamily: "monospace", fontSize: "0.74rem", lineHeight: 1.5, color: "#334" }}>
+                              {debug.identity_profile || "(empty)"}
+                            </pre>
+                          </details>
+                          <div style={{ fontWeight: 600, color: "#2f8e9a", marginBottom: 8 }}>
+                            Slot Prompts ({debug.slots.length})
+                          </div>
+                          {debug.slots.map(slot => (
+                            <div key={slot.slot} style={{ marginBottom: 10, padding: "8px 10px", background: "rgba(255,255,255,0.6)", borderRadius: 6 }}>
+                              <div style={{ display: "flex", gap: 8, marginBottom: 4, alignItems: "center" }}>
+                                <span style={{ fontWeight: 600 }}>#{slot.slot}</span>
+                                <span style={{ color: "#888", fontSize: "0.72rem" }}>{slot.kind}</span>
+                                <span className={styles[STATUS_CLASS[slot.status] ?? "badge"] ?? styles.badge} style={{ fontSize: "0.68rem", padding: "1px 6px" }}>
+                                  {STATUS_LABELS[slot.status] ?? slot.status}
+                                </span>
+                              </div>
+                              {slot.prompt ? (
+                                <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "monospace", fontSize: "0.72rem", lineHeight: 1.5, color: "#334", margin: 0 }}>
+                                  {slot.prompt.length > 600 ? slot.prompt.slice(0, 600) + "…" : slot.prompt}
+                                </pre>
+                              ) : (
+                                <span style={{ color: "#aaa", fontStyle: "italic" }}>No prompt recorded</span>
+                              )}
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -673,49 +726,45 @@ export default function AdminPage() {
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Shoot Package Pricing</h2>
         <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 16px" }}>
-          Platform fee deducted from each template sale. Set explicit prices for each package size.
+          Prices are used at checkout. Changes reflect immediately on the studio page.
         </p>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "10px 16px", alignItems: "center", maxWidth: 480 }}>
+          <div style={{ fontSize: "0.75rem", color: "#7aafb4" }}></div>
+          <div style={{ fontSize: "0.75rem", color: "#7aafb4", textAlign: "center" }}>NGN (₦)</div>
+          <div style={{ fontSize: "0.75rem", color: "#7aafb4", textAlign: "center" }}>USD ($)</div>
+          <div style={{ fontSize: "0.8rem", color: "#4e7076" }}>1 image</div>
+          <input className={styles.priceInput} type="number" min={100} step={100} value={price1NgnInput}
+            onChange={e => setPrice1NgnInput(e.target.value)} style={{ width: "100%" }} />
+          <input className={styles.priceInput} type="number" min={0.5} step={0.5} value={price1UsdInput}
+            onChange={e => setPrice1UsdInput(e.target.value)} style={{ width: "100%" }} />
+          <div style={{ fontSize: "0.8rem", color: "#4e7076" }}>5 images</div>
+          <input className={styles.priceInput} type="number" min={500} step={100} value={price5NgnInput}
+            onChange={e => setPrice5NgnInput(e.target.value)} style={{ width: "100%" }} />
+          <input className={styles.priceInput} type="number" min={2} step={0.5} value={price5UsdInput}
+            onChange={e => setPrice5UsdInput(e.target.value)} style={{ width: "100%" }} />
+          <div style={{ fontSize: "0.8rem", color: "#4e7076" }}>10 images</div>
+          <input className={styles.priceInput} type="number" min={1000} step={500} value={price10NgnInput}
+            onChange={e => setPrice10NgnInput(e.target.value)} style={{ width: "100%" }} />
+          <input className={styles.priceInput} type="number" min={5} step={0.5} value={price10UsdInput}
+            onChange={e => setPrice10UsdInput(e.target.value)} style={{ width: "100%" }} />
+        </div>
+        <div style={{ marginTop: 16, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
-            1 image (₦)
-            <input
-              className={styles.priceInput}
-              type="number" min={100} step={100}
-              value={price1Input}
-              onChange={e => setPrice1Input(e.target.value)}
-              style={{ width: 120 }}
-            />
+            Marketplace commission fee (₦)
+            <input className={styles.priceInput} type="number" min={1000} step={500} value={platformFeeInput}
+              onChange={e => setPlatformFeeInput(e.target.value)} style={{ width: 140 }} />
           </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
-            5 images (₦)
-            <input
-              className={styles.priceInput}
-              type="number" min={500} step={100}
-              value={price5Input}
-              onChange={e => setPrice5Input(e.target.value)}
-              style={{ width: 120 }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
-            10 images (₦)
-            <input
-              className={styles.priceInput}
-              type="number" min={1000} step={500}
-              value={platformFeeInput}
-              onChange={e => setPlatformFeeInput(e.target.value)}
-              style={{ width: 120 }}
-            />
-          </label>
-          <button
-            type="button"
-            className={styles.saveBtn}
-            disabled={modelSaving}
+          <button type="button" className={styles.saveBtn} disabled={modelSaving}
             onClick={() => saveModelConfig({
+              price_1_ngn: Number(price1NgnInput),
+              price_5_ngn: Number(price5NgnInput),
+              price_10_ngn: Number(price10NgnInput),
+              price_1_usd: Number(price1UsdInput),
+              price_5_usd: Number(price5UsdInput),
+              price_10_usd: Number(price10UsdInput),
               platform_fee_ngn: Number(platformFeeInput),
-              platform_price_1_ngn: Number(price1Input),
-              platform_price_5_ngn: Number(price5Input),
             })}
-          >
+            style={{ alignSelf: "flex-end" }}>
             {modelSaving ? "Saving…" : "Save prices"}
           </button>
           {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}
