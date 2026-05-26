@@ -635,48 +635,45 @@ export default function WorkspacePage() {
 
   const downloadImage = async (shoot: Shoot, img: ShootImage) => {
     setStatus({ type: "loading", message: "Preparing download…" });
-    const filename = `aluxart-slot${img.slot}-${img.kind}.jpg`;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
-    // Get signed R2 URL — only the URL goes through our server, the file does not.
-    const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}`);
-    if (!res.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
-    const { url } = await res.json();
+    try {
+      // Stream through server — no CORS issues, no signed URL expiry, works on all devices.
+      const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
+      if (!res.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
+      const blob = await res.blob();
 
-    // Check Web Share file support (iOS/Android native share sheet → "Save to Photos")
-    let canShareFiles = false;
-    if (typeof navigator !== "undefined" && "share" in navigator) {
-      try {
-        const testFile = new File([new Uint8Array(1)], filename, { type: "image/jpeg" });
-        canShareFiles = typeof navigator.canShare === "function" && navigator.canShare({ files: [testFile] });
-      } catch { /* ignore */ }
-    }
-
-    if (canShareFiles) {
-      // R2 CORS is configured — fetch directly from R2, no server proxy needed.
-      try {
-        const fileRes = await fetch(url);
-        const blob = await fileRes.blob();
-        const file = new File([blob], filename, { type: "image/jpeg" });
-        await navigator.share({ files: [file], title: "Your Alux Art portrait" });
-        setStatus({ type: "ok", message: "" });
-        return;
-      } catch (shareErr) {
-        if ((shareErr as Error).name === "AbortError") { setStatus({ type: "ok", message: "" }); return; }
-        // Share failed — fall through to direct navigation
+      // iOS/Android: try native share sheet ("Save to Photos / Files")
+      let shared = false;
+      if (typeof navigator !== "undefined" && "share" in navigator) {
+        try {
+          const testFile = new File([new Uint8Array(1)], filename, { type: blob.type || "image/png" });
+          if (typeof navigator.canShare === "function" && navigator.canShare({ files: [testFile] })) {
+            const file = new File([blob], filename, { type: blob.type || "image/png" });
+            await navigator.share({ files: [file], title: "Your Alux Art portrait" });
+            shared = true;
+          }
+        } catch (shareErr) {
+          if ((shareErr as Error).name === "AbortError") { setStatus({ type: "ok", message: "" }); return; }
+          // Share failed — fall through to anchor download
+        }
       }
-    }
 
-    // Desktop or mobile without Web Share: navigate directly to the signed URL.
-    // R2 sends the file with Content-Disposition:attachment so the browser saves it.
-    setStatus({ type: "ok", message: "" });
-    if (isMobile) {
-      // Open in new tab — user can long-press → Save to Photos / Files
-      window.open(url, "_blank");
-    } else {
-      const a = document.createElement("a");
-      a.href = url;
-      a.click();
+      if (!shared) {
+        // Anchor download — triggers browser save dialog / gallery save on desktop and mobile
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      setStatus({ type: "ok", message: "" });
+    } catch {
+      setStatus({ type: "error", message: "Download failed — please try again." });
     }
   };
 
@@ -1301,22 +1298,31 @@ export default function WorkspacePage() {
                   const remaining = forbidden ? (countdowns.get(Number(img.slot)) ?? Math.max(0, 120 - Math.floor((Date.now() - forbidden.detectedAt) / 1000))) : 0;
                   return (
                   <div key={img.id} className={`${styles.slotCard} ${img.status === "FAILED" ? styles.slotCardFailed : ""}`}>
-                    <div className={styles.slotPreview}>
+                    <div
+                      className={`${styles.slotPreview} ${img.status === "COMPLETE" ? styles.slotPreviewDl : ""}`}
+                      onClick={img.status === "COMPLETE" ? () => downloadImage(currentShoot, img) : undefined}
+                      role={img.status === "COMPLETE" ? "button" : undefined}
+                      aria-label={img.status === "COMPLETE" ? `Download image ${img.slot}` : undefined}
+                    >
                       {(img.previewUrl || img.preview_url) ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={img.previewUrl || img.preview_url as string} alt={`Slot ${img.slot}`} />
                       ) : (img.status === "GENERATING" || img.status === "UPSCALING") ? (
                         <span className={styles.slotSpinner} />
                       ) : null}
+                      {img.status === "COMPLETE" && (
+                        <div className={styles.dlOverlay} aria-hidden="true">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </div>
+                      )}
                     </div>
                     <div className={styles.slotInfo}>
                       <span className={styles.slotNum}>#{img.slot} {img.kind}</span>
                       <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`} title={providerError || "No provider error was saved for this failed slot"}>
                         {img.status === "COMPLETE" ? (
                           <div className={styles.downloadActions}>
-                            <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)}>4K</button>
-                            <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)} title="Download Image" aria-label="Download image">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)} title="Download image" aria-label="Download image">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             </button>
                             {img.kind === "quote" && currentShoot.quote?.text && (
                               <button className={styles.dlBtn} onClick={handleRecompositeQuote} title="Recomposite quote card">
