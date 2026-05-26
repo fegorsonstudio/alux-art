@@ -62,37 +62,56 @@ export async function POST(
 
   const price = Math.round(getPrice(packageSize, shoot.currency as string) * 100);
 
-  const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: user.email,
-      amount: price,
-      currency: shoot.currency,
-      metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
-      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin}/`,
-    }),
-  });
-
-  const paystackData = await paystackRes.json();
-  if (!paystackData.status) {
-    return NextResponse.json({ error: paystackData.message }, { status: 500 });
+  let paystackData: Record<string, unknown>;
+  try {
+    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: user.email,
+        amount: price,
+        currency: shoot.currency,
+        metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
+        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin}/`,
+      }),
+    });
+    paystackData = await paystackRes.json();
+  } catch (err) {
+    console.error("[pay] Paystack fetch failed:", err);
+    return NextResponse.json({ error: `Paystack unreachable: ${String(err)}` }, { status: 502 });
   }
 
-  await sql`
-    INSERT INTO payments (id, shoot_id, user_id, status, amount_ngn, provider, provider_reference, created_at)
-    VALUES (
-      ${crypto.randomUUID()}, ${id}, ${user.id}, 'pending',
-      ${Math.round(price / 100)}, 'paystack',
-      ${paystackData.data.reference}, NOW()
-    )
-  `;
+  console.log("[pay] Paystack response:", JSON.stringify(paystackData).slice(0, 300));
+
+  if (!paystackData.status) {
+    return NextResponse.json({ error: `Paystack error: ${paystackData.message ?? "unknown"}` }, { status: 500 });
+  }
+
+  const pData = paystackData.data as Record<string, unknown> | null;
+  if (!pData?.authorization_url) {
+    console.error("[pay] Missing authorization_url in Paystack response:", JSON.stringify(paystackData).slice(0, 500));
+    return NextResponse.json({ error: "Paystack did not return a payment URL. Check server logs." }, { status: 500 });
+  }
+
+  try {
+    await sql`
+      INSERT INTO payments (id, shoot_id, user_id, status, amount_ngn, provider, provider_reference, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${id}, ${user.id}, 'pending',
+        ${Math.round(price / 100)}, 'paystack',
+        ${pData.reference as string}, NOW()
+      )
+    `;
+  } catch (err) {
+    console.error("[pay] payments INSERT failed:", err);
+    // Don't block payment — log and continue
+  }
 
   return NextResponse.json({
-    authorization_url: paystackData.data.authorization_url,
-    reference: paystackData.data.reference,
+    authorization_url: pData.authorization_url as string,
+    reference: pData.reference as string,
   });
 }
