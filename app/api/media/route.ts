@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
 
   // Try Supabase Storage first
   const supabase = createServiceClient();
-  const { data, error: sbError } = await supabase.storage.from(bucket).download(path);
-  if (!sbError && data) {
+  const { data, error } = await supabase.storage.from(bucket).download(path);
+  if (!error && data) {
     const buffer = await data.arrayBuffer();
     return new NextResponse(buffer, {
       headers: {
@@ -25,10 +25,6 @@ export async function GET(req: NextRequest) {
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },
     });
-  }
-  const sbMsg = sbError ? sbError.message : "no data";
-  if (sbError) {
-    console.error(`[media] Supabase miss b=${bucket} p=${path}: ${sbMsg}`);
   }
 
   // Fall back to R2 (files uploaded after R2 migration)
@@ -42,9 +38,7 @@ export async function GET(req: NextRequest) {
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },
     });
-  } catch (r2Err) {
-    const r2Msg = r2Err instanceof Error ? r2Err.message : String(r2Err);
-    console.error(`[media] R2 miss b=${bucket} p=${path}: ${r2Msg}`);
-    return new NextResponse(`Supabase: ${sbMsg} | R2: ${r2Msg}`, { status: 404 });
+  } catch {
+    return new NextResponse("Not found", { status: 404 });
   }
 }
