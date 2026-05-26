@@ -140,7 +140,7 @@ export default function BookPage() {
           customName: img.customName || img.tag!,
           storagePath: img.storagePath,
           storageBucket: img.storageBucket,
-          url: "",
+          url: img.url ?? "",
           isReplaced: false,
           note: img.noteHidden ? "" : (img.note ?? ""),
           noteHidden: img.noteHidden ?? false,

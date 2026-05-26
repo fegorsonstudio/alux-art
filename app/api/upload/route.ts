@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2Upload, r2SignedDownloadUrl } from "@/lib/r2";
+import { r2Upload, r2ProxyUrl } from "@/lib/r2";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
@@ -61,10 +61,8 @@ export async function POST(req: NextRequest) {
       `.catch((err) => console.error(`[upload] ${libraryTable} upsert:`, err));
     }
 
-    const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600).catch(() => null);
-    if (!signedUrl) return NextResponse.json({ error: "Unable to sign uploaded image" }, { status: 500 });
-
-    return NextResponse.json({ image: { id: imageId, name: filename, type: contentType, size, storageBucket, storagePath, url: signedUrl } });
+    const proxyUrl = r2ProxyUrl(storageBucket, storagePath);
+    return NextResponse.json({ image: { id: imageId, name: filename, type: contentType, size, storageBucket, storagePath, url: proxyUrl } });
   }
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -81,7 +79,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: uploadError instanceof Error ? uploadError.message : "Upload failed" }, { status: 500 });
   }
 
-  const signedUrl = await r2SignedDownloadUrl(bucket, path, 3600).catch(() => null);
+  const proxyUrl = r2ProxyUrl(bucket, path);
 
   const libraryTable = bucket === "identity-images" ? "identity_images"
     : bucket === "inspiration-images" ? "inspiration_images" : null;
@@ -95,5 +93,5 @@ export async function POST(req: NextRequest) {
     `.catch((err) => console.error(`[upload] ${libraryTable} upsert:`, err));
   }
 
-  return NextResponse.json({ image: { id: uniqueId, name: file.name, type: file.type, size: file.size, storageBucket: bucket, storagePath: path, url: signedUrl } });
+  return NextResponse.json({ image: { id: uniqueId, name: file.name, type: file.type, size: file.size, storageBucket: bucket, storagePath: path, url: proxyUrl } });
 }
