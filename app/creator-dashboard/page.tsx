@@ -444,34 +444,44 @@ function CreatorDashboard() {
   const uploadFile = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true } : img));
     const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      const msg = errBody?.error ?? `Upload failed (${res.status})`;
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
+    const presignRes = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
+    });
+    if (!presignRes.ok) {
+      const errBody = await presignRes.json().catch(() => ({}));
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: errBody?.error ?? `Upload failed (${presignRes.status})` } : img));
       return;
     }
-    const { storagePath } = await res.json();
+    const { uploadUrl, storagePath } = await presignRes.json();
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    if (!putRes.ok) {
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: `Upload failed (${putRes.status})` } : img));
+      return;
+    }
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath } : img));
   };
 
   const replaceImage = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true, error: undefined } : img));
     const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "template-images");
-    const uploadRes = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!uploadRes.ok) {
-      const errBody = await uploadRes.json().catch(() => ({}));
-      const msg = errBody?.error ?? `Upload failed (${uploadRes.status})`;
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
+    const presignRes = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
+    });
+    if (!presignRes.ok) {
+      const errBody = await presignRes.json().catch(() => ({}));
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: errBody?.error ?? `Upload failed (${presignRes.status})` } : img));
       return;
     }
-    const { storagePath } = await uploadRes.json();
+    const { uploadUrl, storagePath } = await presignRes.json();
+    const uploadRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    if (!uploadRes.ok) {
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: `Upload failed (${uploadRes.status})` } : img));
+      return;
+    }
     const target = images.find(i => i.localId === localId);
     if (target?.fromDb && panel !== "create") {
       const patchRes = await fetch(`/api/templates/${panel}/images`, {
@@ -505,17 +515,22 @@ function CreatorDashboard() {
   const uploadSampleFile = async (file: File, localId: string) => {
     setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: true } : s));
     const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      const msg = errBody?.error ?? `Upload failed (${res.status})`;
-      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: msg } : s));
+    const presignRes = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: f.name, contentType: f.type, size: f.size, bucket: "template-images" }),
+    });
+    if (!presignRes.ok) {
+      const errBody = await presignRes.json().catch(() => ({}));
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: errBody?.error ?? `Upload failed (${presignRes.status})` } : s));
       return;
     }
-    const { storagePath } = await res.json();
+    const { uploadUrl, storagePath } = await presignRes.json();
+    const putRes = await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type } });
+    if (!putRes.ok) {
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: `Upload failed (${putRes.status})` } : s));
+      return;
+    }
     setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, storagePath } : s));
   };
 
