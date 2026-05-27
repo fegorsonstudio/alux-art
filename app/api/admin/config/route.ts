@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 const ALLOWED_VISION_MODELS = ["gemini", "claude"] as const;
 const ALLOWED_GENERATION_MODELS = ["nano-banana", "seedream"] as const;
@@ -26,7 +27,7 @@ type AdminConfig = {
 async function getAdminSession() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== process.env.ADMIN_EMAIL) return null;
+  if (!user || !isAdminEmail(user.email)) return null;
   return user;
 }
 

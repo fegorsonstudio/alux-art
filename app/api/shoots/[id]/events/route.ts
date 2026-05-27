@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 async function withSignedPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
@@ -36,7 +37,7 @@ export async function GET(
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const [shootOwner] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
-  if (!shootOwner || (shootOwner.user_id !== user.id && user.email !== process.env.ADMIN_EMAIL)) {
+  if (!shootOwner || (shootOwner.user_id !== user.id && !isAdminEmail(user.email))) {
     return new Response("Not found", { status: 404 });
   }
 

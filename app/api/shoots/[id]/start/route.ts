@@ -4,6 +4,7 @@ import { startGenerationWorker } from "@/lib/generate";
 import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 export const maxDuration = 300;
 
@@ -25,7 +26,7 @@ export async function POST(
 
     const [ownerCheck] = await sql`SELECT user_id, status FROM shoots WHERE id = ${id}`;
     const isOwner = ownerCheck?.user_id === user.id;
-    const isAdmin = user.email === process.env.ADMIN_EMAIL;
+    const isAdmin = isAdminEmail(user.email);
     if (!isOwner && !isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (!isAdmin && ownerCheck?.status === "PENDING_PAYMENT")

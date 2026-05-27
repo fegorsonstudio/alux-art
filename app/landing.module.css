@@ -112,6 +112,135 @@
   color: rgba(255, 248, 234, 0.4);
 }
 
+/* ---- 4K feature strip ---- */
+.featuresStrip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 40px 60px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.featuresBadge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 248, 234, 0.04);
+  border: 1px solid rgba(255, 248, 234, 0.08);
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+.featuresBadgeIcon {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #2f8e9a;
+  background: rgba(47, 142, 154, 0.12);
+  border: 1px solid rgba(47, 142, 154, 0.24);
+  border-radius: 5px;
+  padding: 3px 7px;
+  flex-shrink: 0;
+}
+
+.featuresBadgeText {
+  font-size: 0.82rem;
+  color: rgba(255, 248, 234, 0.55);
+}
+
+/* ---- Creator earning section ---- */
+.creatorSection {
+  padding: 80px 40px;
+  border-top: 1px solid rgba(255, 248, 234, 0.06);
+  border-bottom: 1px solid rgba(255, 248, 234, 0.06);
+  background: rgba(47, 142, 154, 0.04);
+}
+
+.creatorInner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.creatorEyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2f8e9a;
+  margin: 0 0 16px;
+}
+
+.creatorHeading {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #fff8ea;
+  margin: 0 0 14px;
+  max-width: 520px;
+}
+
+.creatorSub {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(255, 248, 234, 0.45);
+  margin: 0 0 52px;
+  max-width: 460px;
+}
+
+.creatorSteps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.creatorStep {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.creatorStepNum {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(47, 142, 154, 0.7);
+  letter-spacing: 0.1em;
+}
+
+.creatorStepTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff8ea;
+  margin: 0;
+}
+
+.creatorStepDesc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: rgba(255, 248, 234, 0.4);
+  margin: 0;
+}
+
+.creatorCta {
+  display: inline-block;
+  background: transparent;
+  color: #fff8ea;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 13px 30px;
+  border-radius: 8px;
+  text-decoration: none;
+  border: 1px solid rgba(255, 248, 234, 0.22);
+  transition: border-color 0.15s, background 0.15s;
+}
+.creatorCta:hover { border-color: #2f8e9a; background: rgba(47, 142, 154, 0.08); }
+
 /* ---- How it works ---- */
 .howSection {
   padding: 80px 40px;
@@ -301,6 +430,9 @@
   .looksGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .footer { padding: 24px 20px; }
   .heroActions { flex-direction: column; gap: 14px; }
+  .featuresStrip { padding: 0 20px 40px; gap: 8px; }
+  .creatorSection { padding: 60px 20px; }
+  .creatorSteps { grid-template-columns: 1fr; gap: 28px; }
 }
 
 @media (max-width: 420px) {

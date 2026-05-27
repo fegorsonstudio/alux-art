@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { r2Exists } from "@/lib/r2";
 import { ASPECTS, REFERENCE_TAGS, normalizePackageSize } from "@/lib/types";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
 const ALLOWED_TAGS = new Set<string>(REFERENCE_TAGS);
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "One or more selected reference images no longer exists. Refresh and choose saved images that still show previews." }, { status: 400 });
   }
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
 
   // Validate saved character base if provided
   let resolvedBaseId: string | null = null;

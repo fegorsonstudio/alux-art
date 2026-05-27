@@ -24,6 +24,7 @@ interface AdminCreator {
   account_name: string | null;
   paystack_subaccount_code: string | null;
   is_active: boolean;
+  status: string | null;
   templateCount: number;
   created_at: string;
 }
@@ -361,6 +362,27 @@ export default function AdminPage() {
       body: JSON.stringify({ id, isActive: !isActive }),
     });
     setAdminCreators(prev => prev.map(c => c.id === id ? { ...c, is_active: !isActive } : c));
+  };
+
+  const approveCreator = async (id: string) => {
+    const res = await fetch("/api/admin/creators", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "approve" }),
+    });
+    if (res.ok) {
+      setAdminCreators(prev => prev.map(c => c.id === id ? { ...c, is_active: true, status: "approved" } : c));
+    }
+  };
+
+  const declineCreator = async (id: string) => {
+    if (!confirm("Decline this application? The creator will be notified.")) return;
+    const res = await fetch("/api/admin/creators", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "decline" }),
+    });
+    if (res.ok) {
+      setAdminCreators(prev => prev.map(c => c.id === id ? { ...c, is_active: false, status: "declined" } : c));
+    }
   };
 
   const toggleBan = async (userId: string, banned: boolean) => {
@@ -771,20 +793,56 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* ---- Pending Creator Applications ---- */}
+      {adminCreators.filter(c => c.status === "pending").length > 0 && (
+        <div className={styles.card} style={{ border: "1px solid rgba(213, 163, 60, 0.32)", background: "rgba(255, 248, 220, 0.6)" }}>
+          <h2 className={styles.cardTitle}>
+            Pending Creator Applications
+            <span style={{ marginLeft: 8, background: "rgba(213, 163, 60, 0.2)", color: "#8a6000", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 12 }}>
+              {adminCreators.filter(c => c.status === "pending").length}
+            </span>
+          </h2>
+          <p style={{ fontSize: "0.8rem", color: "#7a6030", margin: "0 0 14px" }}>
+            Review each application and approve or decline. Approved creators receive a welcome email and can log in to their dashboard.
+          </p>
+          <table className={styles.table}>
+            <thead><tr><th>Name</th><th>Bank</th><th>Subaccount</th><th>Applied</th><th></th></tr></thead>
+            <tbody>
+              {adminCreators.filter(c => c.status === "pending").map(c => (
+                <tr key={c.id}>
+                  <td style={{ fontWeight: 600 }}>{c.display_name}</td>
+                  <td>{c.bank_name ?? "—"}{c.account_name ? ` · ${c.account_name}` : ""}</td>
+                  <td className={styles.mono}>{c.paystack_subaccount_code ? c.paystack_subaccount_code.slice(0, 18) + "…" : "Not set"}</td>
+                  <td>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
+                  <td style={{ display: "flex", gap: 6 }}>
+                    <button className={styles.banBtn} style={{ color: "#177767", borderColor: "rgba(23, 119, 103, 0.4)" }} onClick={() => approveCreator(c.id)}>Approve</button>
+                    <button className={styles.banBtn} onClick={() => declineCreator(c.id)}>Decline</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* ---- Creators ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Creators</h2>
         <table className={styles.table}>
           <thead><tr><th>Name</th><th>Bank</th><th>Subaccount</th><th>Templates</th><th>Joined</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {adminCreators.map(c => (
+            {adminCreators.filter(c => c.status !== "pending").map(c => (
               <tr key={c.id}>
                 <td>{c.display_name}</td>
                 <td>{c.bank_name ?? "—"}{c.account_name ? ` · ${c.account_name}` : ""}</td>
                 <td className={styles.mono}>{c.paystack_subaccount_code ? c.paystack_subaccount_code.slice(0, 18) + "…" : "Not set"}</td>
                 <td>{c.templateCount}</td>
                 <td>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
-                <td><span className={c.is_active ? styles.activeBadge : styles.bannedBadge}>{c.is_active ? "Active" : "Suspended"}</span></td>
+                <td>
+                  <span className={c.is_active ? styles.activeBadge : styles.bannedBadge}>
+                    {c.status === "declined" ? "Declined" : c.is_active ? "Active" : "Suspended"}
+                  </span>
+                </td>
                 <td><button className={styles.banBtn} onClick={() => toggleCreator(c.id, c.is_active)}>{c.is_active ? "Suspend" : "Activate"}</button></td>
               </tr>
             ))}

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const [creator] = await sql`
     INSERT INTO creators
       (user_id, display_name, bio, avatar_storage_path, instagram_url, website_url,
-       bank_name, account_number, account_name, created_at, updated_at)
+       bank_name, account_number, account_name, is_active, status, created_at, updated_at)
     VALUES (
       ${user.id}, ${displayName.trim()},
       ${typeof bio === "string" ? bio.trim() : null},
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       ${typeof bankName === "string" ? bankName.trim() : null},
       ${typeof accountNumber === "string" ? accountNumber.trim() : null},
       ${typeof accountName === "string" ? accountName.trim() : null},
-      NOW(), NOW()
+      false, 'pending', NOW(), NOW()
     )
     RETURNING *
   `.catch((err) => { console.error("[creators POST]", err); return [null]; });

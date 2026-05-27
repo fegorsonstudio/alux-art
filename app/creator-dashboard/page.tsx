@@ -61,7 +61,7 @@ interface ShowcaseShoot {
 }
 
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
-interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; theme?: string; font_family?: string; }
+interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
 
 const SHOWCASE_PACKAGES = [
   { count: 1, label: "1 image", price: 1000 },
@@ -155,6 +155,16 @@ function CreatorDashboard() {
   const [storefrontFont, setStorefrontFont] = useState("default");
   const [storefrontSaving, setStorefrontSaving] = useState(false);
   const [storefrontSaved, setStorefrontSaved] = useState(false);
+
+  // WhatsApp connect state
+  const [waOpen, setWaOpen] = useState(false);
+  const [waConnected, setWaConnected] = useState(false);
+  const [waPhoneNumberId, setWaPhoneNumberId] = useState("");
+  const [waAccessToken, setWaAccessToken] = useState("");
+  const [waVerifyToken, setWaVerifyToken] = useState("");
+  const [waWebhookUrl, setWaWebhookUrl] = useState("");
+  const [waSaving, setWaSaving] = useState(false);
+  const [waMsg, setWaMsg] = useState("");
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = useCallback(async () => {
@@ -670,6 +680,46 @@ function CreatorDashboard() {
     setTimeout(() => setStorefrontSaved(false), 2000);
   };
 
+  const loadWhatsAppStatus = useCallback(async () => {
+    const res = await fetch("/api/creator/whatsapp-connect");
+    if (!res.ok) return;
+    const d = await res.json();
+    setWaConnected(d.connected);
+    setWaVerifyToken(d.verifyToken ?? "");
+    setWaWebhookUrl(d.webhookUrl ?? "");
+  }, []);
+
+  useEffect(() => { loadWhatsAppStatus(); }, [loadWhatsAppStatus]);
+
+  const saveWhatsApp = async () => {
+    setWaSaving(true); setWaMsg("");
+    const res = await fetch("/api/creator/whatsapp-connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumberId: waPhoneNumberId, accessToken: waAccessToken }),
+    });
+    const d = await res.json();
+    if (res.ok) {
+      setWaConnected(true);
+      setWaVerifyToken(d.verifyToken);
+      setWaWebhookUrl(d.webhookUrl);
+      setWaMsg("Connected!");
+      setWaPhoneNumberId(""); setWaAccessToken("");
+    } else {
+      setWaMsg(d.error ?? "Failed to connect");
+    }
+    setWaSaving(false);
+    setTimeout(() => setWaMsg(""), 4000);
+  };
+
+  const disconnectWhatsApp = async () => {
+    if (!confirm("Disconnect WhatsApp? Pending sessions will be deleted.")) return;
+    await fetch("/api/creator/whatsapp-connect", { method: "DELETE" });
+    setWaConnected(false); setWaVerifyToken(""); setWaWebhookUrl("");
+    setWaMsg("Disconnected.");
+    setTimeout(() => setWaMsg(""), 3000);
+  };
+
   const toggleStatus = async (t: TemplateRow) => {
     const next = t.status === "published" ? "draft" : "published";
     await fetch(`/api/templates/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next }) });
@@ -688,6 +738,53 @@ function CreatorDashboard() {
   };
 
   if (loading) return <div className={styles.loading}>Loading dashboard...</div>;
+
+  if (creator?.status === "pending") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
+          <h1 className={styles.title}>Creator Dashboard</h1>
+        </header>
+        <div className={styles.main}>
+          <div style={{ maxWidth: 520, margin: "60px auto", textAlign: "center", padding: "0 24px" }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(213, 163, 60, 0.12)", border: "2px solid rgba(213, 163, 60, 0.4)", color: "#8a6000", fontSize: "1.4rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>⏳</div>
+            <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#263235", margin: "0 0 12px" }}>Application under review</h2>
+            <p style={{ fontSize: "0.875rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 24px" }}>
+              Your creator application has been received. We review every application carefully and aim to respond within 48 hours. You&apos;ll receive an email once a decision has been made.
+            </p>
+            <Link href="/marketplace" style={{ display: "inline-block", background: "rgba(67, 159, 169, 0.08)", border: "1px solid rgba(67, 159, 169, 0.24)", borderRadius: 8, color: "#2f8e9a", fontSize: "0.875rem", fontWeight: 600, padding: "10px 20px", textDecoration: "none" }}>
+              Browse the marketplace →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (creator?.status === "declined") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
+          <h1 className={styles.title}>Creator Dashboard</h1>
+        </header>
+        <div className={styles.main}>
+          <div style={{ maxWidth: 520, margin: "60px auto", textAlign: "center", padding: "0 24px" }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(167, 70, 60, 0.08)", border: "2px solid rgba(167, 70, 60, 0.3)", color: "#a7463c", fontSize: "1.2rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>✕</div>
+            <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#263235", margin: "0 0 12px" }}>Application not approved</h2>
+            <p style={{ fontSize: "0.875rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 24px" }}>
+              Unfortunately your creator application was not approved at this time. If you believe this is a mistake or would like to discuss further, please reach out to us at{" "}
+              <a href="mailto:aluxartandframes@gmail.com" style={{ color: "#2f8e9a" }}>aluxartandframes@gmail.com</a>.
+            </p>
+            <Link href="/marketplace" style={{ display: "inline-block", background: "rgba(67, 159, 169, 0.08)", border: "1px solid rgba(67, 159, 169, 0.24)", borderRadius: 8, color: "#2f8e9a", fontSize: "0.875rem", fontWeight: 600, padding: "10px 20px", textDecoration: "none" }}>
+              Browse the marketplace →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -779,6 +876,91 @@ function CreatorDashboard() {
                 {storefrontSaved ? "Saved!" : storefrontSaving ? "Saving..." : "Save storefront"}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* WhatsApp Connect section */}
+      <div className={styles.storefrontSection}>
+        <button type="button" className={styles.storefrontToggle} onClick={() => setWaOpen(o => !o)}>
+          <span>
+            WhatsApp Booking Bot
+            {waConnected
+              ? <span style={{ marginLeft: 8, fontSize: "0.72rem", background: "rgba(23, 119, 103, 0.1)", color: "#177767", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>Connected</span>
+              : <span style={{ marginLeft: 8, fontSize: "0.72rem", background: "rgba(66, 66, 66, 0.08)", color: "#888", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>Not connected</span>
+            }
+          </span>
+          <span>{waOpen ? "▲" : "▼"}</span>
+        </button>
+        {waOpen && (
+          <div className={styles.storefrontContent}>
+            <p style={{ fontSize: "0.82rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 20px" }}>
+              Connect your WhatsApp Business number so customers can book photoshoots directly in your WhatsApp chat.
+              The bot will show them your styles, collect selfies, and send them a payment link — all without leaving WhatsApp.
+            </p>
+
+            {waConnected ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: "rgba(23, 119, 103, 0.06)", border: "1px solid rgba(23, 119, 103, 0.18)", borderRadius: 8, padding: "14px 16px" }}>
+                  <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4e7076", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Webhook URL</p>
+                  <p style={{ fontSize: "0.8rem", color: "#263235", margin: "0 0 4px", wordBreak: "break-all", fontFamily: "monospace" }}>{waWebhookUrl}</p>
+                  <p style={{ fontSize: "0.72rem", color: "#7aafb4", margin: "4px 0 0" }}>Paste this into your Meta App webhook settings</p>
+                </div>
+                {waVerifyToken && (
+                  <div style={{ background: "rgba(67, 159, 169, 0.06)", border: "1px solid rgba(67, 159, 169, 0.18)", borderRadius: 8, padding: "14px 16px" }}>
+                    <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4e7076", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Verify Token</p>
+                    <p style={{ fontSize: "0.8rem", color: "#263235", margin: 0, fontFamily: "monospace" }}>{waVerifyToken}</p>
+                    <p style={{ fontSize: "0.72rem", color: "#7aafb4", margin: "4px 0 0" }}>Paste this into Meta App webhook verify token field</p>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button type="button" className={styles.storefrontSaveBtn} style={{ background: "rgba(167, 70, 60, 0.08)", color: "#a7463c", border: "1px solid rgba(167, 70, 60, 0.2)" }} onClick={disconnectWhatsApp}>
+                    Disconnect WhatsApp
+                  </button>
+                  {waMsg && <span style={{ fontSize: "0.8rem", color: "#4e7076" }}>{waMsg}</span>}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ background: "rgba(67, 159, 169, 0.04)", border: "1px solid rgba(67, 159, 169, 0.14)", borderRadius: 8, padding: "14px 16px" }}>
+                  <p style={{ fontSize: "0.8rem", fontWeight: 600, color: "#2f8e9a", margin: "0 0 8px" }}>How to set up</p>
+                  <ol style={{ fontSize: "0.8rem", color: "#4e7076", lineHeight: 1.7, margin: 0, paddingLeft: "1.2em" }}>
+                    <li>Apply for Meta Business Cloud API access at <strong>developers.facebook.com</strong></li>
+                    <li>Create a WhatsApp Business app and get your <strong>Phone Number ID</strong> and a <strong>Permanent Access Token</strong></li>
+                    <li>Enter those below and click Save</li>
+                    <li>Copy the Webhook URL and Verify Token shown after saving</li>
+                    <li>In your Meta App, go to Webhooks and subscribe to the <strong>messages</strong> field</li>
+                  </ol>
+                </div>
+                <label className={styles.storefrontGroup} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4e7076", textTransform: "uppercase", letterSpacing: "0.06em" }}>Phone Number ID</span>
+                  <input
+                    className={styles.titleInput}
+                    placeholder="e.g. 123456789012345"
+                    value={waPhoneNumberId}
+                    onChange={e => setWaPhoneNumberId(e.target.value)}
+                    style={{ maxWidth: 340 }}
+                  />
+                </label>
+                <label className={styles.storefrontGroup} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4e7076", textTransform: "uppercase", letterSpacing: "0.06em" }}>Permanent Access Token</span>
+                  <input
+                    className={styles.titleInput}
+                    placeholder="EAAxx..."
+                    value={waAccessToken}
+                    onChange={e => setWaAccessToken(e.target.value)}
+                    type="password"
+                    style={{ maxWidth: 340 }}
+                  />
+                </label>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button type="button" className={styles.storefrontSaveBtn} onClick={saveWhatsApp} disabled={waSaving || !waPhoneNumberId || !waAccessToken}>
+                    {waSaving ? "Connecting..." : "Connect WhatsApp"}
+                  </button>
+                  {waMsg && <span style={{ fontSize: "0.8rem", color: "#a7463c" }}>{waMsg}</span>}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -69,6 +69,26 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* 4K feature callout strip */}
+      <section className={styles.featuresStrip}>
+        <div className={styles.featuresBadge}>
+          <span className={styles.featuresBadgeIcon}>4K</span>
+          <span className={styles.featuresBadgeText}>4K resolution portraits</span>
+        </div>
+        <div className={styles.featuresBadge}>
+          <span className={styles.featuresBadgeIcon}>10</span>
+          <span className={styles.featuresBadgeText}>10 images per shoot</span>
+        </div>
+        <div className={styles.featuresBadge}>
+          <span className={styles.featuresBadgeIcon}>1h</span>
+          <span className={styles.featuresBadgeText}>Ready in about an hour</span>
+        </div>
+        <div className={styles.featuresBadge}>
+          <span className={styles.featuresBadgeIcon}>AI</span>
+          <span className={styles.featuresBadgeText}>No photographer needed</span>
+        </div>
+      </section>
+
       {/* How it works */}
       <section className={styles.howSection}>
         <h2 className={styles.sectionHeading}>How it works</h2>
@@ -98,6 +118,33 @@ export default async function LandingPage() {
               Every image keeps your unique look — same face, same skin tone, same you.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Creator earning section */}
+      <section className={styles.creatorSection}>
+        <div className={styles.creatorInner}>
+          <p className={styles.creatorEyebrow}>For photographers &amp; stylists</p>
+          <h2 className={styles.creatorHeading}>Earn every time someone books your style</h2>
+          <p className={styles.creatorSub}>Build a template once. Set your price. Collect earnings on every shoot it powers.</p>
+          <div className={styles.creatorSteps}>
+            <div className={styles.creatorStep}>
+              <span className={styles.creatorStepNum}>01</span>
+              <h3 className={styles.creatorStepTitle}>Build a style template</h3>
+              <p className={styles.creatorStepDesc}>Upload outfit references, set the mood, define the visual direction. Your template becomes the blueprint every shoot follows.</p>
+            </div>
+            <div className={styles.creatorStep}>
+              <span className={styles.creatorStepNum}>02</span>
+              <h3 className={styles.creatorStepTitle}>Set your price</h3>
+              <p className={styles.creatorStepDesc}>You decide what your style is worth. Your payout is transferred directly to your bank account through Paystack after every successful booking.</p>
+            </div>
+            <div className={styles.creatorStep}>
+              <span className={styles.creatorStepNum}>03</span>
+              <h3 className={styles.creatorStepTitle}>Earn on every booking</h3>
+              <p className={styles.creatorStepDesc}>Customers discover your style in the marketplace and book it. No client management, no scheduling — just passive income from your creative work.</p>
+            </div>
+          </div>
+          <Link href="/become-creator" className={styles.creatorCta}>Apply to become a creator →</Link>
         </div>
       </section>
 

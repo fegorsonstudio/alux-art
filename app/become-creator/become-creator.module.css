@@ -236,8 +236,74 @@ select.input { appearance: none; cursor: pointer; }
 .submitBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 32px rgba(48, 141, 151, 0.22); }
 .submitBtn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
+/* ---- Application success screen ---- */
+.successBox {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(47, 142, 154, 0.22);
+  border-radius: 16px;
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  margin-top: 20px;
+  box-shadow: 0 18px 50px rgba(53, 130, 143, 0.12);
+}
+
+.successIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(47, 142, 154, 0.12);
+  border: 2px solid rgba(47, 142, 154, 0.32);
+  color: #2f8e9a;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.successTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #263235;
+  margin: 0;
+}
+
+.successBody {
+  font-size: 0.875rem;
+  color: #4e7076;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 340px;
+}
+
+.backToMarketplace {
+  display: inline-block;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #aff0e4 48%, #9fd7ff 100%);
+  color: #263235;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 12px 24px;
+  text-decoration: none;
+  box-shadow: 0 10px 26px rgba(48, 141, 151, 0.16);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.backToMarketplace:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(48, 141, 151, 0.22);
+}
+
 @media (max-width: 600px) {
   .nav { padding: 14px 20px; }
   .container { padding: 32px 20px 60px; }
   .form { padding: 18px 16px; }
+  .successBox { padding: 32px 20px; }
 }

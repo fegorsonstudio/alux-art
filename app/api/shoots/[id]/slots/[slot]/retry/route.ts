@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { startGenerationWorker } from "@/lib/generate";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 export const maxDuration = 300;
 
@@ -24,7 +25,7 @@ export async function POST(
   const [shoot] = await sql`SELECT user_id, status FROM shoots WHERE id = ${id}`;
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
   if (shoot.user_id !== user.id && !isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
