@@ -709,12 +709,15 @@ export default function AdminPage() {
       {/* ---- Coupons ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Coupon Codes</h2>
+        <p style={{ fontSize: "0.78rem", color: "#4e7076", margin: "0 0 12px" }}>
+          Discounts come entirely from Alux Art&apos;s earnings. Creator payouts are never reduced.
+        </p>
         <div className={styles.couponForm}>
           <input className={styles.priceInput} style={{ width: 110 }} placeholder="CODE" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} maxLength={20} />
           <input className={styles.priceInput} style={{ width: 180 }} placeholder="Description" value={couponDesc} onChange={e => setCouponDesc(e.target.value)} />
           <select className={`${styles.priceInput} ${styles.selectInput}`} value={couponType} onChange={e => setCouponType(e.target.value as "percent" | "fixed")}>
-            <option value="percent">% off platform fee</option>
-            <option value="fixed">₦ off platform fee</option>
+            <option value="percent">% off (Alux Art absorbs)</option>
+            <option value="fixed">₦ off (Alux Art absorbs)</option>
           </select>
           <input className={styles.priceInput} style={{ width: 70 }} type="number" placeholder={couponType === "percent" ? "%" : "₦"} value={couponValue} onChange={e => setCouponValue(e.target.value)} min={1} max={couponType === "percent" ? 100 : undefined} />
           <input className={styles.priceInput} style={{ width: 80 }} type="number" placeholder="Max uses" value={couponMaxUses} onChange={e => setCouponMaxUses(e.target.value)} />
@@ -728,7 +731,7 @@ export default function AdminPage() {
             {coupons.map(c => (
               <tr key={c.id}>
                 <td className={styles.mono}>{c.code}</td>
-                <td>{c.discount_type === "percent" ? `${c.discount_value}% off fee` : `₦${c.discount_value.toLocaleString()} off fee`}</td>
+                <td>{c.discount_type === "percent" ? `${c.discount_value}% discount` : `₦${c.discount_value.toLocaleString()} discount`}</td>
                 <td>{c.use_count}{c.max_uses ? ` / ${c.max_uses}` : ""}</td>
                 <td>{c.expires_at ? new Date(c.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—"}</td>
                 <td><span className={c.is_active ? styles.activeBadge : styles.bannedBadge}>{c.is_active ? "Active" : "Off"}</span></td>
@@ -749,8 +752,7 @@ export default function AdminPage() {
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Pricing & Commission</h2>
         <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 16px" }}>
-          <strong style={{ color: "#7aafb4" }}>Direct studio prices</strong> — used when customers book directly from the studio page (not the marketplace). Each creator&apos;s template has its own price they set themselves.<br />
-          <strong style={{ color: "#7aafb4" }}>Marketplace commission fee</strong> — the flat fee Alux Art keeps from every marketplace booking. The creator receives: (their template price) minus (this fee). It must always be less than any template price.
+          Used when customers book directly from the studio page. Each creator&apos;s template on the marketplace has its own price set by the creator.
         </p>
         <p style={{ fontSize: "0.75rem", color: "#4e7076", margin: "0 0 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Direct Studio Prices</p>
         <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "10px 16px", alignItems: "center", maxWidth: 480 }}>
@@ -773,16 +775,7 @@ export default function AdminPage() {
           <input className={styles.priceInput} type="number" min={5} step={0.5} value={price10UsdInput}
             onChange={e => setPrice10UsdInput(e.target.value)} style={{ width: "100%" }} />
         </div>
-        <div style={{ marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16, display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
-            <span style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.75rem" }}>Marketplace Commission Fee (₦)</span>
-            <span style={{ color: "#4e7076", fontSize: "0.74rem", marginBottom: 4 }}>
-              Alux Art keeps this amount per booking. Creator receives: template price − this fee.<br />
-              Scales automatically: 5 images = ½ fee, 1 image = 1/10 fee.
-            </span>
-            <input className={styles.priceInput} type="number" min={1000} step={500} value={platformFeeInput}
-              onChange={e => setPlatformFeeInput(e.target.value)} style={{ width: 140 }} />
-          </label>
+        <div style={{ marginTop: 20, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
           <button type="button" className={styles.saveBtn} disabled={modelSaving}
             onClick={() => saveModelConfig({
               price_1_ngn: Number(price1NgnInput),
@@ -792,8 +785,7 @@ export default function AdminPage() {
               price_5_usd: Number(price5UsdInput),
               price_10_usd: Number(price10UsdInput),
               platform_fee_ngn: Number(platformFeeInput),
-            })}
-            style={{ alignSelf: "flex-end" }}>
+            })}>
             {modelSaving ? "Saving…" : "Save prices"}
           </button>
           {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}
