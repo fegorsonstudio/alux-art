@@ -149,36 +149,23 @@ export default async function LandingPage() {
       </section>
 
       {/* Featured styles */}
-      {templates.length > 0 && (
-        <section className={styles.featuredSection}>
-          <h2 className={styles.sectionHeading}>Featured styles</h2>
-          <div className={styles.templateGrid}>
-            {templates.map((t) => (
-              <Link key={t.id} href={`/marketplace/${t.id}`} className={styles.templateCard}>
-                {t.coverUrl && (
-                  <div className={styles.templateCardImage}>
-                    <img src={t.coverUrl} alt={t.title} />
-                  </div>
-                )}
-                <div className={styles.templateCardInfo}>
-                  <span className={styles.templateCategory}>{t.category}</span>
-                  <h3 className={styles.templateTitle}>{t.title}</h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className={styles.browseMore}>
-            <Link href="/marketplace" className={styles.secondaryBtn}>Browse all styles</Link>
-          </div>
-        </section>
-      )}
-
-      {/* RotatingStyles component */}
-      <RotatingStyles templates={templates} />
+      <section className={styles.looksSection}>
+        <h2 className={styles.sectionHeading}>Featured styles</h2>
+        <RotatingStyles templates={templates} />
+        <div className={styles.looksFooter}>
+          <Link href="/marketplace" className={styles.ghostBtn}>Browse all styles</Link>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className={styles.footer}>
-        <p>© 2025 Alux Art. All rights reserved.</p>
+        <span className={styles.footerBrand}>Alux Art</span>
+        <div className={styles.footerLinks}>
+          <Link href="/privacy" className={styles.footerLink}>Privacy</Link>
+          <Link href="/terms" className={styles.footerLink}>Terms</Link>
+          <Link href="/support" className={styles.footerLink}>Support</Link>
+        </div>
+        <span className={styles.footerNote}>© 2026 Alux Art and Frames</span>
       </footer>
     </div>
   );
