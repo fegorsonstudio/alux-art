@@ -165,6 +165,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
   const amountNgn = buyerAmountNgn - couponDiscountNgn;
+  // Paystack rejects split_share >= total_amount — cap creator payout to leave at least ₦1
+  const safeCreatorPayout = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - 1));
   const now = new Date();
   const shootId = crypto.randomUUID();
 
@@ -276,10 +278,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         user_id: user.id,
         coupon_id: couponId,
       },
-      split: creatorPayoutNgn > 0 ? {
+      split: safeCreatorPayout > 0 ? {
         type: "flat",
         bearer_type: "account",
-        subaccounts: [{ subaccount: template.cr_subaccount, share: creatorPayoutNgn * 100 }],
+        subaccounts: [{ subaccount: template.cr_subaccount, share: safeCreatorPayout * 100 }],
       } : undefined,
     }),
   });
