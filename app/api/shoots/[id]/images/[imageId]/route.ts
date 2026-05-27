@@ -32,13 +32,13 @@ export async function GET(
 
   if (isDownload) {
     // Try R2 first (new files), fall back to Supabase Storage (older files).
-    let body: ReadableStream<Uint8Array> | ArrayBuffer | Uint8Array;
+    let body: ReadableStream<Uint8Array> | ArrayBuffer;
     let contentType = "image/png";
     let contentLength: number | undefined;
 
     try {
       const { buffer, contentType: ct } = await r2Download(storageBucket, storagePath);
-      body = buffer;
+      body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
       contentType = ct;
       contentLength = buffer.byteLength;
     } catch {
