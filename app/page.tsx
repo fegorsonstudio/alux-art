@@ -1,6 +1,6 @@
 import Link from "next/link";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2ProxyUrl } from "@/lib/r2";
 import styles from "./landing.module.css";
 import RotatingStyles from "./RotatingStyles";
 
@@ -22,19 +22,14 @@ async function getFeaturedTemplates(): Promise<FeaturedTemplate[]> {
       ORDER BY purchase_count DESC
     `;
 
-    return await Promise.all(
-      rows.map(async (r) => {
-        let coverUrl: string | null = null;
-        if (r.cover_storage_path) {
-          coverUrl = await r2SignedDownloadUrl(
-            r.cover_bucket ?? "template-images",
-            r.cover_storage_path,
-            3600
-          ).catch(() => null);
-        }
-        return { id: r.id, title: r.title, coverUrl, category: r.category };
-      })
-    );
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      coverUrl: r.cover_storage_path
+        ? r2ProxyUrl(r.cover_bucket ?? "template-images", r.cover_storage_path)
+        : null,
+      category: r.category,
+    }));
   } catch {
     return [];
   }

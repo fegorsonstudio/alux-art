@@ -605,8 +605,8 @@
   /* Progress bar labels */
   .progressName { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* Package options — stack to 2-col on narrow screens */
-  .packagesGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  /* Package options — already 2-col by default; ensure no overflow on narrow screens */
+  .packageGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
   /* Shoot cards in sidebar */
   .shootCard { padding: 10px 12px; }
@@ -617,6 +617,12 @@
   /* Prevent any child from blowing out the width */
   .panel * { max-width: 100%; }
   .panel :global(img) { max-width: 100%; height: auto; }
+}
+
+/* ---- Very small phones (375px and below) ---- */
+@media (max-width: 375px) {
+  /* Keep only theme toggle + sign out in nav; hide nav links to save space */
+  .navRight > a.adminLink { display: none; }
 }
 
 /* ---- Interaction feedback (press states) ---- */

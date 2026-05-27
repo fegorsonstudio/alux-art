@@ -145,3 +145,8 @@
   font-weight: 500;
 }
 .backLink:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+  .card { padding: 32px 20px; }
+  .backLink { top: 12px; left: 12px; }
+}
