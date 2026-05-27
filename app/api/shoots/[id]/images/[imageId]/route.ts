@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { r2StreamObject, r2SignedDownloadUrl } from "@/lib/r2";
+import { r2Download, r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 
 export async function GET(
@@ -37,10 +37,10 @@ export async function GET(
     let contentLength: number | undefined;
 
     try {
-      const r2Result = await r2StreamObject(storageBucket, storagePath);
-      body = r2Result.stream;
-      contentType = r2Result.contentType;
-      contentLength = r2Result.contentLength;
+      const { buffer, contentType: ct } = await r2Download(storageBucket, storagePath);
+      body = buffer;
+      contentType = ct;
+      contentLength = buffer.byteLength;
     } catch {
       const supa = createServiceClient();
       const { data: blob, error: sbErr } = await supa.storage.from(storageBucket).download(storagePath);
