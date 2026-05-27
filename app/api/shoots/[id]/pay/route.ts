@@ -85,7 +85,6 @@ export async function POST(
     return NextResponse.json({ error: `Paystack unreachable: ${String(err)}` }, { status: 502 });
   }
 
-  console.log("[pay] Paystack response:", JSON.stringify(paystackData).slice(0, 300));
 
   if (!paystackData.status) {
     return NextResponse.json({ error: `Paystack error: ${paystackData.message ?? "unknown"}` }, { status: 500 });
@@ -107,8 +106,8 @@ export async function POST(
       )
     `;
   } catch (err) {
-    console.error("[pay] payments INSERT failed:", err);
-    // Don't block payment — log and continue
+    console.error("[pay] payments INSERT failed:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: "Could not record payment — please try again." }, { status: 500 });
   }
 
   return NextResponse.json({

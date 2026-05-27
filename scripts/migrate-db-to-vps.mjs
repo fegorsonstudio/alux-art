@@ -11,8 +11,7 @@
  *      SUPABASE_DB_URL   — Supabase direct connection string (not pooler)
  *                          Format: postgresql://postgres.<project>:<password>@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
  *                          Get from: Supabase dashboard > Project Settings > Database > Connection String > URI
- *      DATABASE_URL      — VPS PostgreSQL connection string
- *                          Default: postgresql://aluxart:aluxart_db_2026@localhost:5432/aluxart
+ *      DATABASE_URL      — VPS PostgreSQL connection string (required)
  *
  * What it does:
  *   - Copies all rows from every table in the priority order below
@@ -28,11 +27,15 @@ import postgres from "postgres";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://aluxart:aluxart_db_2026@localhost:5432/aluxart";
+const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   console.error("Run: source .env.local && node scripts/migrate-db-to-vps.mjs");
+  process.exit(1);
+}
+if (!DATABASE_URL) {
+  console.error("Missing DATABASE_URL — set it before running this script.");
   process.exit(1);
 }
 

@@ -29,15 +29,14 @@ export async function DELETE(
 function withPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
   const images = ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map((img) => {
-    if (img.status === "COMPLETE") {
-      if (img.preview_storage_bucket && img.preview_storage_path) {
-        return { ...img, previewUrl: r2ProxyUrl(img.preview_storage_bucket as string, img.preview_storage_path as string) };
-      }
-      if (img.fal_url && img.kind !== "quote") {
-        return { ...img, previewUrl: img.fal_url };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { fal_url, ...safeImg } = img as Record<string, unknown>;
+    if (safeImg.status === "COMPLETE") {
+      if (safeImg.preview_storage_bucket && safeImg.preview_storage_path) {
+        return { ...safeImg, previewUrl: r2ProxyUrl(safeImg.preview_storage_bucket as string, safeImg.preview_storage_path as string) };
       }
     }
-    return img;
+    return safeImg;
   });
   return { ...shoot, shoot_images: images };
 }

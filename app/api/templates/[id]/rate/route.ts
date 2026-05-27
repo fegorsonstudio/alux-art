@@ -14,11 +14,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Rating must be 1–5" }, { status: 400 });
   }
 
-  await sql`
-    INSERT INTO template_ratings (template_id, user_id, rating, updated_at)
-    VALUES (${templateId}, ${user.id}, ${rating}, NOW())
-    ON CONFLICT (template_id, user_id) DO UPDATE SET rating = EXCLUDED.rating, updated_at = NOW()
-  `.catch((err) => { return NextResponse.json({ error: String(err) }, { status: 500 }); });
+  try {
+    await sql`
+      INSERT INTO template_ratings (template_id, user_id, rating, updated_at)
+      VALUES (${templateId}, ${user.id}, ${rating}, NOW())
+      ON CONFLICT (template_id, user_id) DO UPDATE SET rating = EXCLUDED.rating, updated_at = NOW()
+    `;
+  } catch (err) {
+    return NextResponse.json({ error: "Could not save rating" }, { status: 500 });
+  }
 
   const [t] = await sql`SELECT avg_rating, rating_count FROM templates WHERE id = ${templateId}`;
   return NextResponse.json({ ok: true, avgRating: t?.avg_rating, ratingCount: t?.rating_count });

@@ -65,19 +65,19 @@ export async function POST(
 
   const rawBody = await request.text();
 
-  // Verify Meta signature
+  // Verify Meta signature — fail closed if the secret is not configured.
   const appSecret = process.env.WHATSAPP_APP_SECRET;
-  if (appSecret) {
-    const signature = request.headers.get("x-hub-signature-256");
-    if (!signature) {
-      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
-    }
-    const expected =
-      "sha256=" +
-      crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
+  if (!appSecret) {
+    console.error("[whatsapp webhook] WHATSAPP_APP_SECRET not set — rejecting all events");
+    return NextResponse.json({ error: "Webhook misconfigured" }, { status: 500 });
+  }
+  const signature = request.headers.get("x-hub-signature-256") ?? "";
+  const expected = "sha256=" + crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
+  if (
+    signature.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  ) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   let body: WaWebhookBody;

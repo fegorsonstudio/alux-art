@@ -8,10 +8,21 @@ export async function GET() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [creator] = await sql`SELECT * FROM creators WHERE user_id = ${user.id}`;
+  const [creator] = await sql`
+    SELECT id, user_id, display_name, bio, avatar_url, portfolio_url,
+           bank_name, account_name, is_active, status, whatsapp_connected,
+           whatsapp_phone_number_id, created_at, updated_at,
+           (paystack_subaccount_code IS NOT NULL AND paystack_subaccount_code != '') AS payout_connected
+    FROM creators WHERE user_id = ${user.id}
+  `;
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
-  const rawTemplates = await sql`SELECT * FROM templates WHERE creator_id = ${creator.id} ORDER BY created_at DESC`;
+  const rawTemplates = await sql`
+    SELECT id, creator_id, title, description, status, shoot_mode, aspect_ratio,
+           price_1_ngn, price_5_ngn, price_ngn, purchase_count, avg_rating, rating_count,
+           cover_storage_path, cover_bucket, created_at, updated_at
+    FROM templates WHERE creator_id = ${creator.id} ORDER BY created_at DESC
+  `;
 
   const templateIds = rawTemplates.map((t) => t.id as string);
   const allImages: Record<string, unknown>[] = templateIds.length

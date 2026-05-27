@@ -14,8 +14,8 @@ export async function GET() {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const creators = await sql`
-    SELECT c.id, c.user_id, c.display_name, c.bank_name, c.account_number, c.account_name,
-           c.paystack_subaccount_code, c.is_active, c.status, c.created_at,
+    SELECT c.id, c.user_id, c.display_name, c.is_active, c.status, c.created_at,
+           (c.paystack_subaccount_code IS NOT NULL AND c.paystack_subaccount_code != '') AS payout_connected,
            u.email
     FROM creators c
     LEFT JOIN auth.users u ON u.id = c.user_id

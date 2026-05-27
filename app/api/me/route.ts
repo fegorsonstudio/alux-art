@@ -43,9 +43,10 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const currency = body.currency === "USD" ? "USD" : "NGN";
   await sql`
     INSERT INTO profiles (id, email, currency, updated_at)
-    VALUES (${user.id}, ${user.email ?? ""}, ${body.currency}, NOW())
+    VALUES (${user.id}, ${user.email ?? ""}, ${currency}, NOW())
     ON CONFLICT (id) DO UPDATE SET
       currency = EXCLUDED.currency,
       updated_at = NOW()

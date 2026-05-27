@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase-server";
 
 const ALLOWED_HOST = "owdfoxglbxrqhgqbvkon.supabase.co";
 
 export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
   const url = request.nextUrl.searchParams.get("url");
   if (!url) return new NextResponse(null, { status: 400 });
 

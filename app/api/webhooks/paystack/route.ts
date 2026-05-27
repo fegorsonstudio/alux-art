@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import sql from "@/lib/db";
 import { SITE_URL } from "@/lib/site-url";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-paystack-signature") ?? "";
-  const secret = process.env.PAYSTACK_SECRET_KEY ?? "";
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+
+  if (!secret) {
+    console.error("[paystack webhook] PAYSTACK_SECRET_KEY is not set — rejecting all events");
+    return NextResponse.json({ error: "Webhook misconfigured" }, { status: 500 });
+  }
 
   const hash = createHmac("sha512", secret).update(rawBody).digest("hex");
-  if (hash !== signature) {
+  const sigOk = signature.length === hash.length &&
+    timingSafeEqual(Buffer.from(hash), Buffer.from(signature));
+  if (!sigOk) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
