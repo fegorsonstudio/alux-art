@@ -102,6 +102,7 @@ export default function WorkspacePage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedShootId, setCopiedShootId] = useState<string | null>(null);
+  const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null);
   const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState("");
   const [editingTag, setEditingTag] = useState("");
@@ -701,6 +702,25 @@ export default function WorkspacePage() {
     }
   };
 
+  const handleVerifyPayment = async (shootId: string) => {
+    setVerifyingPaymentId(shootId);
+    try {
+      const res = await fetch(`/api/shoots/${shootId}/verify-payment`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatus({ type: "error", message: body.error ?? "Payment check failed. Contact support if you were charged." });
+        return;
+      }
+      setStatus({ type: "ok", message: "Payment confirmed! Your shoot is now queued." });
+      setShoots(prev => prev.map(s => s.id === shootId ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
+      setCurrentShoot(prev => prev?.id === shootId ? { ...prev, status: "QUEUED" as Shoot["status"] } : prev);
+    } catch {
+      setStatus({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setVerifyingPaymentId(null);
+    }
+  };
+
   const requestRefund = async (shoot: Shoot) => {
     setRefundState("loading");
     setRefundError("");
@@ -709,7 +729,7 @@ export default function WorkspacePage() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 404 && typeof body.error === "string" && body.error.toLowerCase().includes("payment")) {
-          setRefundError("No payment was recorded for this shoot. If you were charged, please contact support.");
+          setRefundError("No payment was recorded for this shoot. If you were charged, please visit /support with your shoot ID.");
         } else {
           setRefundError(body.error ?? "Refund request failed. Please contact support.");
         }
@@ -766,6 +786,7 @@ export default function WorkspacePage() {
         </div>
         <div className={styles.navRight}>
           <Link href="/marketplace" className={styles.adminLink}>Marketplace</Link>
+          <Link href="/support" className={styles.adminLink}>Support</Link>
           {isAdmin && <a href="/admin" className={styles.adminLink}>Admin</a>}
           <span className={styles.navEmail}>{user?.email}</span>
           <button className={styles.themeToggle} onClick={toggleTheme} aria-pressed={theme === "dark"}>
@@ -1206,6 +1227,16 @@ export default function WorkspacePage() {
                           </button>
                           <button className={styles.deleteConfirmNo} onClick={() => setConfirmDeleteId(null)}>Cancel</button>
                         </span>
+                      )}
+                      {s.status === "PENDING_PAYMENT" && !isConfirming && (
+                        <button
+                          className={styles.verifyPaymentBtn}
+                          onClick={() => handleVerifyPayment(s.id)}
+                          disabled={verifyingPaymentId === s.id}
+                          title="Already paid? Click to check and activate your shoot"
+                        >
+                          {verifyingPaymentId === s.id ? "Checking…" : "Already paid?"}
+                        </button>
                       )}
                     </div>
                   );

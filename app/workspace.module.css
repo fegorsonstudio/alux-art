@@ -407,6 +407,9 @@
 .deleteShootBtn:hover { background: #fff0f0; border-color: rgba(200,80,80,0.6); }
 .deleteShootBtnActive { border-color: rgba(200,100,0,0.4); color: #b55000; background: rgba(255,245,230,0.9); }
 .deleteShootBtnActive:hover { background: #fff3e0; border-color: rgba(200,100,0,0.7); }
+.verifyPaymentBtn { flex-shrink: 0; appearance: none; font: inherit; font-size: 0.72rem; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(30,130,80,0.35); background: rgba(230,255,240,0.9); color: #1a6b40; cursor: pointer; transition: background 0.15s, border-color 0.15s; white-space: nowrap; }
+.verifyPaymentBtn:hover { background: #d0f5e0; border-color: rgba(30,130,80,0.6); }
+.verifyPaymentBtn:disabled { opacity: 0.6; cursor: default; }
 .deleteConfirm { display: flex; gap: 5px; flex-shrink: 0; }
 .deleteConfirmYes { appearance: none; font: inherit; font-size: 0.72rem; padding: 6px 9px; border-radius: 6px; border: 1px solid rgba(180,40,40,0.5); background: #ffe0e0; color: #900; cursor: pointer; }
 .deleteConfirmYes:hover { background: #fcc; }
