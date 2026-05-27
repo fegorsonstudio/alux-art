@@ -5,6 +5,7 @@ import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
+import { SITE_URL } from "@/lib/site-url";
 
 export const maxDuration = 300;
 
@@ -79,7 +80,7 @@ export async function POST(
     `;
     sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'base_locking', ${JSON.stringify({ stage: "Locking character base", progress: 5 })}, ${now})`.catch(() => {});
 
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+    const origin = SITE_URL;
     fetch(`${origin}/api/shoots/${id}/base-lock`, {
       method: "POST",
       headers: {
@@ -133,7 +134,7 @@ export async function POST(
     const result = await startGenerationWorker(id, { maxSlots: 1, resolution });
 
     if (!result.done) {
-      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+      const origin = SITE_URL;
       fetch(`${origin}/api/shoots/${id}/start`, {
         method: "POST",
         headers: {

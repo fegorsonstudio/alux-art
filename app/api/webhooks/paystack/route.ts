@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import sql from "@/lib/db";
+import { SITE_URL } from "@/lib/site-url";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -19,9 +20,6 @@ export async function POST(request: NextRequest) {
 
   const { metadata, reference, amount, currency } = event.data;
   const now = new Date().toISOString();
-
-  const proto = request.headers.get("x-forwarded-proto") ?? "https";
-  const host = request.headers.get("host") ?? "";
 
   // ── Creator showcase generation ─────────────────────────────────────────
   if (metadata?.type === "creator_showcase") {
@@ -43,7 +41,7 @@ export async function POST(request: NextRequest) {
       )
     `;
 
-    fetch(`${proto}://${host}/api/shoots/${showcaseShootId}/start`, {
+    fetch(`${SITE_URL}/api/shoots/${showcaseShootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     }).catch(() => {});
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
         await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
       }
 
-      fetch(`${proto}://${host}/api/shoots/${existingShootId}/start`, {
+      fetch(`${SITE_URL}/api/shoots/${existingShootId}/start`, {
         method: "POST",
         headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
       }).catch(() => {});
@@ -159,7 +157,7 @@ export async function POST(request: NextRequest) {
       await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
     }
 
-    fetch(`${proto}://${host}/api/shoots/${shootId}/start`, {
+    fetch(`${SITE_URL}/api/shoots/${shootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     }).catch(() => {});
@@ -198,7 +196,7 @@ export async function POST(request: NextRequest) {
     )
   `;
 
-  fetch(`${proto}://${host}/api/shoots/${shoot_id}/start`, {
+  fetch(`${SITE_URL}/api/shoots/${shoot_id}/start`, {
     method: "POST",
     headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
   }).catch(() => {});

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { packagePrice } from "@/lib/types";
+import { SITE_URL } from "@/lib/site-url";
 
 interface RefInput {
   name?: string;
@@ -165,8 +166,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
   const amountNgn = buyerAmountNgn - couponDiscountNgn;
   const now = new Date();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL
-    ?? `${request.headers.get("x-forwarded-proto") ?? "https"}://${request.headers.get("host") ?? ""}`;
   const shootId = crypto.randomUUID();
 
   const [shootRow] = await sql`
@@ -268,7 +267,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ? Math.ceil((amountNgn / usdToNgn) * 100)
         : amountNgn * 100,
       currency: payCurrency,
-      callback_url: `${origin}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
+      callback_url: `${SITE_URL}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
       metadata: {
         type: "template_purchase",
         template_id: templateId,

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { normalizePackageSize } from "@/lib/types";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
+import { SITE_URL } from "@/lib/site-url";
 
 const PRICE_KEYS = [
   "price_1_ngn", "price_5_ngn", "price_10_ngn",
@@ -38,8 +39,7 @@ export async function POST(
       UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
       WHERE id = ${id} AND status = 'PENDING_PAYMENT'
     `;
-    const origin = new URL(request.url).origin;
-    fetch(`${origin}/api/shoots/${id}/start`, {
+    fetch(`${SITE_URL}/api/shoots/${id}/start`, {
       method: "POST",
       headers: process.env.INTERNAL_API_SECRET ? { "x-internal-secret": process.env.INTERNAL_API_SECRET } : {},
       cache: "no-store",
@@ -76,7 +76,7 @@ export async function POST(
         amount: price,
         currency: shoot.currency,
         metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin}/`,
+        callback_url: `${SITE_URL}/`,
       }),
     });
     paystackData = await paystackRes.json();
