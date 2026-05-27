@@ -8,9 +8,7 @@ async function withSignedPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
   const images = await Promise.all(
     ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
-      // Strip fal_url — never expose provider URLs to the browser.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { fal_url, ...safeImg } = img as Record<string, unknown>;
+      const { fal_url: _fal_url, ...safeImg } = img as Record<string, unknown>;
       if (safeImg.status === "COMPLETE") {
         if (safeImg.preview_storage_bucket && safeImg.preview_storage_path) {
           const previewUrl = await r2SignedDownloadUrl(

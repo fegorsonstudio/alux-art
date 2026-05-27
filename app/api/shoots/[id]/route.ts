@@ -29,8 +29,7 @@ export async function DELETE(
 function withPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
   const images = ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map((img) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { fal_url, ...safeImg } = img as Record<string, unknown>;
+    const { fal_url: _fal_url, ...safeImg } = img as Record<string, unknown>;
     if (safeImg.status === "COMPLETE") {
       if (safeImg.preview_storage_bucket && safeImg.preview_storage_path) {
         return { ...safeImg, previewUrl: r2ProxyUrl(safeImg.preview_storage_bucket as string, safeImg.preview_storage_path as string) };
