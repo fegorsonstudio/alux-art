@@ -20,6 +20,7 @@ interface Coupon {
 interface AdminCreator {
   id: string;
   display_name: string;
+  email: string | null;
   bank_name: string | null;
   account_name: string | null;
   paystack_subaccount_code: string | null;
@@ -746,10 +747,12 @@ export default function AdminPage() {
 
       {/* ---- Shoot Package Pricing ---- */}
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Shoot Package Pricing</h2>
+        <h2 className={styles.cardTitle}>Pricing & Commission</h2>
         <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 16px" }}>
-          Prices are used at checkout. Changes reflect immediately on the studio page.
+          <strong style={{ color: "#7aafb4" }}>Direct studio prices</strong> — used when customers book directly from the studio page (not the marketplace). Each creator&apos;s template has its own price they set themselves.<br />
+          <strong style={{ color: "#7aafb4" }}>Marketplace commission fee</strong> — the flat fee Alux Art keeps from every marketplace booking. The creator receives: (their template price) minus (this fee). It must always be less than any template price.
         </p>
+        <p style={{ fontSize: "0.75rem", color: "#4e7076", margin: "0 0 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Direct Studio Prices</p>
         <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "10px 16px", alignItems: "center", maxWidth: 480 }}>
           <div style={{ fontSize: "0.75rem", color: "#7aafb4" }}></div>
           <div style={{ fontSize: "0.75rem", color: "#7aafb4", textAlign: "center" }}>NGN (₦)</div>
@@ -770,9 +773,13 @@ export default function AdminPage() {
           <input className={styles.priceInput} type="number" min={5} step={0.5} value={price10UsdInput}
             onChange={e => setPrice10UsdInput(e.target.value)} style={{ width: "100%" }} />
         </div>
-        <div style={{ marginTop: 16, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16, display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
-            Marketplace commission fee (₦)
+            <span style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.75rem" }}>Marketplace Commission Fee (₦)</span>
+            <span style={{ color: "#4e7076", fontSize: "0.74rem", marginBottom: 4 }}>
+              Alux Art keeps this amount per booking. Creator receives: template price − this fee.<br />
+              Scales automatically: 5 images = ½ fee, 1 image = 1/10 fee.
+            </span>
             <input className={styles.priceInput} type="number" min={1000} step={500} value={platformFeeInput}
               onChange={e => setPlatformFeeInput(e.target.value)} style={{ width: 140 }} />
           </label>
@@ -794,36 +801,44 @@ export default function AdminPage() {
       </div>
 
       {/* ---- Pending Creator Applications ---- */}
-      {adminCreators.filter(c => c.status === "pending").length > 0 && (
-        <div className={styles.card} style={{ border: "1px solid rgba(213, 163, 60, 0.32)", background: "rgba(255, 248, 220, 0.6)" }}>
-          <h2 className={styles.cardTitle}>
-            Pending Creator Applications
-            <span style={{ marginLeft: 8, background: "rgba(213, 163, 60, 0.2)", color: "#8a6000", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 12 }}>
-              {adminCreators.filter(c => c.status === "pending").length}
-            </span>
-          </h2>
-          <p style={{ fontSize: "0.8rem", color: "#7a6030", margin: "0 0 14px" }}>
-            Review each application and approve or decline. Approved creators receive a welcome email and can log in to their dashboard.
-          </p>
-          <table className={styles.table}>
-            <thead><tr><th>Name</th><th>Bank</th><th>Subaccount</th><th>Applied</th><th></th></tr></thead>
-            <tbody>
-              {adminCreators.filter(c => c.status === "pending").map(c => (
-                <tr key={c.id}>
-                  <td style={{ fontWeight: 600 }}>{c.display_name}</td>
-                  <td>{c.bank_name ?? "—"}{c.account_name ? ` · ${c.account_name}` : ""}</td>
-                  <td className={styles.mono}>{c.paystack_subaccount_code ? c.paystack_subaccount_code.slice(0, 18) + "…" : "Not set"}</td>
-                  <td>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
-                  <td style={{ display: "flex", gap: 6 }}>
-                    <button className={styles.banBtn} style={{ color: "#177767", borderColor: "rgba(23, 119, 103, 0.4)" }} onClick={() => approveCreator(c.id)}>Approve</button>
-                    <button className={styles.banBtn} onClick={() => declineCreator(c.id)}>Decline</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {(() => {
+        const pending = adminCreators.filter(c => c.status === "pending");
+        return (
+          <div className={styles.card} style={{ border: `1px solid ${pending.length > 0 ? "rgba(213, 163, 60, 0.32)" : "rgba(255,255,255,0.06)"}`, background: pending.length > 0 ? "rgba(255, 248, 220, 0.6)" : undefined }}>
+            <h2 className={styles.cardTitle}>
+              Pending Creator Applications
+              <span style={{ marginLeft: 8, background: pending.length > 0 ? "rgba(213, 163, 60, 0.2)" : "rgba(255,255,255,0.08)", color: pending.length > 0 ? "#8a6000" : "rgba(255,255,255,0.3)", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 12 }}>
+                {pending.length}
+              </span>
+            </h2>
+            <p style={{ fontSize: "0.8rem", color: pending.length > 0 ? "#7a6030" : "rgba(255,255,255,0.3)", margin: "0 0 14px" }}>
+              {pending.length > 0
+                ? "Review each application and approve or decline. Approved creators receive a welcome email and can log in to their dashboard."
+                : "No pending applications right now."}
+            </p>
+            {pending.length > 0 && (
+              <table className={styles.table}>
+                <thead><tr><th>Name</th><th>Email</th><th>Bank</th><th>Subaccount</th><th>Applied</th><th></th></tr></thead>
+                <tbody>
+                  {pending.map(c => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 600 }}>{c.display_name}</td>
+                      <td className={styles.mono} style={{ fontSize: "0.76rem" }}>{c.email ?? "—"}</td>
+                      <td>{c.bank_name ?? "—"}{c.account_name ? ` · ${c.account_name}` : ""}</td>
+                      <td className={styles.mono}>{c.paystack_subaccount_code ? c.paystack_subaccount_code.slice(0, 18) + "…" : "Not set"}</td>
+                      <td>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
+                      <td style={{ display: "flex", gap: 6 }}>
+                        <button className={styles.banBtn} style={{ color: "#177767", borderColor: "rgba(23, 119, 103, 0.4)" }} onClick={() => approveCreator(c.id)}>Approve</button>
+                        <button className={styles.banBtn} onClick={() => declineCreator(c.id)}>Decline</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ---- Creators ---- */}
       <div className={styles.card}>

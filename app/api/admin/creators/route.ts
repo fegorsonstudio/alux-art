@@ -14,9 +14,12 @@ export async function GET() {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const creators = await sql`
-    SELECT id, user_id, display_name, bank_name, account_number, account_name,
-           paystack_subaccount_code, is_active, status, created_at
-    FROM creators ORDER BY created_at DESC
+    SELECT c.id, c.user_id, c.display_name, c.bank_name, c.account_number, c.account_name,
+           c.paystack_subaccount_code, c.is_active, c.status, c.created_at,
+           u.email
+    FROM creators c
+    LEFT JOIN auth.users u ON u.id = c.user_id
+    ORDER BY c.created_at DESC
   `;
 
   const withCounts = await Promise.all(creators.map(async (c) => {
