@@ -457,4 +457,16 @@ await run("whatsapp_sessions table", `
   );
 `);
 
+// ── download_logs table ───────────────────────────────────────────────────────
+await run("download_logs table", `
+  CREATE TABLE IF NOT EXISTS download_logs (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    shoot_id   uuid,
+    image_id   uuid,
+    type       text,
+    created_at timestamptz DEFAULT now()
+  );
+`);
+
 console.log("\n✅ Migration complete.");
