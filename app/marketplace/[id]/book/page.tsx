@@ -629,28 +629,7 @@ export default function BookPage() {
           </div>
         )}
 
-        <div className={styles.couponRow}>
-          <input
-            className={styles.couponInput}
-            placeholder="Coupon code"
-            value={couponCode}
-            onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null); }}
-          />
-          <button
-            type="button"
-            className={styles.couponBtn}
-            onClick={validateCoupon}
-            disabled={validating || !couponCode.trim()}
-          >{validating ? "..." : "Apply"}</button>
-        </div>
-
-        {couponResult && (
-          <p className={couponResult.valid ? styles.couponSuccess : styles.couponError}>
-            {couponResult.valid
-              ? `${couponResult.discountDescription} — save ${formatPrice(couponResult.discountNgn ?? 0)}`
-              : couponResult.message}
-          </p>
-        )}
+        {/* Coupons temporarily disabled */}
 
         {error && <p className={styles.bookError}>{error}</p>}
 
