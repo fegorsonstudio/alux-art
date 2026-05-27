@@ -32,7 +32,7 @@ export async function GET(
 
   if (isDownload) {
     // Try R2 first (new files), fall back to Supabase Storage (older files).
-    let body: ReadableStream<Uint8Array> | ArrayBuffer;
+    let body: ReadableStream<Uint8Array> | ArrayBuffer | Uint8Array;
     let contentType = "image/png";
     let contentLength: number | undefined;
 
