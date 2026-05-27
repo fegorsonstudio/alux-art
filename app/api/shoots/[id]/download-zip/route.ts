@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createServiceClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2Download, r2Upload } from "@/lib/r2";
 
@@ -27,16 +27,23 @@ export async function GET(
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
+  const supa = createServiceClient();
   for (const img of completedImages) {
+    const bucket = img.download_storage_bucket as string;
+    const path = img.download_storage_path as string;
+    let buffer: Buffer | undefined;
     try {
-      const { buffer } = await r2Download(
-        img.download_storage_bucket as string,
-        img.download_storage_path as string
-      );
-      const ext = (img.download_storage_path as string).endsWith(".png") ? "png" : "jpg";
+      ({ buffer } = await r2Download(bucket, path));
+    } catch {
+      // Fall back to Supabase Storage for older files
+      const { data: blob } = await supa.storage.from(bucket).download(path);
+      if (blob) buffer = Buffer.from(await blob.arrayBuffer());
+    }
+    if (buffer) {
+      const ext = path.endsWith(".png") ? "png" : "jpg";
       zip.file(`portrait-${img.slot}.${ext}`, buffer);
-    } catch (err) {
-      console.error("[download-zip] R2 download error:", img.download_storage_path, err instanceof Error ? err.message : err);
+    } else {
+      console.error("[download-zip] not found in R2 or Supabase:", path);
     }
   }
 

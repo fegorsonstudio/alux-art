@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { r2StreamObject, r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 
@@ -31,16 +31,27 @@ export async function GET(
   const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
   if (isDownload) {
-    // Stream the file directly from R2 through the server — no full-file buffering in RAM.
-    // Used by mobile/Web Share API path where the browser needs a blob.
-    let stream: ReadableStream<Uint8Array>, contentType: string, contentLength: number | undefined;
+    // Try R2 first (new files), fall back to Supabase Storage (older files).
+    let body: ReadableStream<Uint8Array> | ArrayBuffer;
+    let contentType = "image/png";
+    let contentLength: number | undefined;
+
     try {
-      ({ stream, contentType, contentLength } = await r2StreamObject(storageBucket, storagePath));
+      const r2Result = await r2StreamObject(storageBucket, storagePath);
+      body = r2Result.stream;
+      contentType = r2Result.contentType;
+      contentLength = r2Result.contentLength;
     } catch {
-      return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
+      const supa = createServiceClient();
+      const { data: blob, error: sbErr } = await supa.storage.from(storageBucket).download(storagePath);
+      if (sbErr || !blob) return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
+      body = await blob.arrayBuffer();
+      contentType = blob.type || "image/png";
+      contentLength = body.byteLength;
     }
+
     sql`INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW())`.catch(() => {});
-    return new Response(stream, {
+    return new Response(body, {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
