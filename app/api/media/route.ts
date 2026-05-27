@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   // Try R2 first (all files after migration)
   try {
     const { buffer, contentType } = await r2Download(bucket, path);
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
