@@ -118,8 +118,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return true;
   });
 
-  const [feeRow] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
-  const basePlatformFeeNgn = parseInt(feeRow?.value ?? "15000", 10);
+  const configRows = await sql`SELECT key, value FROM app_config WHERE key IN ('platform_fee_ngn', 'test_price_per_image_ngn')`;
+  const configMap = new Map(configRows.map(r => [r.key as string, r.value as string]));
+  let basePlatformFeeNgn = parseInt(configMap.get('platform_fee_ngn') ?? "15000", 10);
+
+  const testPriceRaw = configMap.get('test_price_per_image_ngn');
+  if (testPriceRaw) {
+    const testPriceNgn = parseInt(testPriceRaw, 10);
+    if (testPriceNgn > 0) {
+      template.price_1_ngn = testPriceNgn;
+      template.price_5_ngn = testPriceNgn * 5;
+      template.price_ngn = testPriceNgn * 10;
+      basePlatformFeeNgn = Math.max(10, Math.floor(testPriceNgn * 0.1));
+    }
+  }
+
   const platformFeeNgn = packagePrice(basePlatformFeeNgn, buyerPackageSize);
 
   const priceMap: Record<1 | 5 | 10, number | null> = {
