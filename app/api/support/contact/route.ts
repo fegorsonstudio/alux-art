@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   // Send email via Resend if API key is configured
   const resendKey = process.env.RESEND_API_KEY;
-  const toEmail = process.env.ADMIN_EMAIL ?? "fegorsonphotography@gmail.com";
+  const toEmail = process.env.ADMIN_EMAIL ?? "aluxartandframes@gmail.com";
   const fromDomain = process.env.RESEND_FROM_EMAIL ?? "support@aluxartandframes.shop";
 
   if (resendKey) {

@@ -104,7 +104,7 @@ export default function SupportPage() {
 
         <p style={{ marginTop: 32, color: "#999", fontSize: "0.8rem" }}>
           You can also email us directly at{" "}
-          <a href="mailto:fegorsonphotography@gmail.com" style={{ color: "#555" }}>fegorsonphotography@gmail.com</a>
+          <a href="mailto:aluxartandframes@gmail.com" style={{ color: "#555" }}>aluxartandframes@gmail.com</a>
         </p>
       </div>
     </div>
