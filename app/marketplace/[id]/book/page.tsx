@@ -159,7 +159,7 @@ export default function BookPage() {
     fetch("/api/coupons/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, templateId: id }),
+      body: JSON.stringify({ code, templateId: id, packageSize: selectedPkg }),
     })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setCouponResult(d); });
@@ -296,7 +296,7 @@ export default function BookPage() {
     const res = await fetch("/api/coupons/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: couponCode, templateId: id }),
+      body: JSON.stringify({ code: couponCode, templateId: id, packageSize: selectedPkg }),
     });
     if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
@@ -606,7 +606,7 @@ export default function BookPage() {
                 key={o.n}
                 type="button"
                 className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
-                onClick={() => setSelectedPkg(o.n)}
+                onClick={() => { setSelectedPkg(o.n); setCouponResult(null); }}
               >
                 {o.n} {o.n === 1 ? "image" : "images"} — {formatPrice(o.price)}
               </button>
