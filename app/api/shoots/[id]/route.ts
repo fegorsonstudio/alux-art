@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2ProxyUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 
 export async function DELETE(
@@ -25,26 +25,19 @@ export async function DELETE(
   return NextResponse.json({ ok: true });
 }
 
-async function withSignedPreviewUrls(shoot: Record<string, unknown> | null) {
+function withPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
-  const images = await Promise.all(
-    ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
-      if (img.status === "COMPLETE") {
-        if (img.fal_url && img.kind !== "quote") {
-          return { ...img, previewUrl: img.fal_url };
-        }
-        if (img.preview_storage_bucket && img.preview_storage_path) {
-          const previewUrl = await r2SignedDownloadUrl(
-            img.preview_storage_bucket as string,
-            img.preview_storage_path as string,
-            3600
-          ).catch(() => null);
-          return { ...img, previewUrl };
-        }
+  const images = ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map((img) => {
+    if (img.status === "COMPLETE") {
+      if (img.preview_storage_bucket && img.preview_storage_path) {
+        return { ...img, previewUrl: r2ProxyUrl(img.preview_storage_bucket as string, img.preview_storage_path as string) };
       }
-      return img;
-    })
-  );
+      if (img.fal_url && img.kind !== "quote") {
+        return { ...img, previewUrl: img.fal_url };
+      }
+    }
+    return img;
+  });
   return { ...shoot, shoot_images: images };
 }
 
@@ -69,6 +62,6 @@ export async function GET(
   const shoot_images = await sql`SELECT * FROM shoot_images WHERE shoot_id = ${id} ORDER BY slot`;
   const fullShoot = { ...shoot, shoot_images };
 
-  const result = await withSignedPreviewUrls(fullShoot);
+  const result = withPreviewUrls(fullShoot);
   return NextResponse.json({ shoot: result });
 }
