@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { startGenerationWorker } from "@/lib/generate";
 import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
+import { markShootGenerating, markShootComplete } from "@/lib/whatsapp-bot";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
@@ -39,7 +40,7 @@ export async function POST(
   }
 
   const [shoot] = await sql`
-    SELECT status, user_id, owner_email, character_base_id FROM shoots WHERE id = ${id}
+    SELECT status, user_id, owner_email, character_base_id, source FROM shoots WHERE id = ${id}
   `;
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
   if (shoot.status === "COMPLETE")
@@ -128,6 +129,10 @@ export async function POST(
     if (ownerEmail) {
       notifyGenerationStarted(id, ownerEmail).catch(() => {});
     }
+
+    if (shoot.source === "whatsapp") {
+      markShootGenerating(id).catch(() => {});
+    }
   }
 
   try {
@@ -150,6 +155,23 @@ export async function POST(
       }).catch((err) => console.error("[start] self-continuation failed:", err));
     } else {
       notifyShootComplete(id).catch(() => {});
+
+      if (shoot.source === "whatsapp") {
+        // Load creator WhatsApp credentials from the shoot owner
+        sql`
+          SELECT c.id, c.whatsapp_phone_number_id, c.whatsapp_access_token
+          FROM creators c WHERE c.user_id = ${shoot.user_id as string}
+            AND c.whatsapp_phone_number_id IS NOT NULL
+            AND c.whatsapp_access_token IS NOT NULL
+          LIMIT 1
+        `.then((rows) => {
+          const creator = rows[0];
+          if (creator) {
+            markShootComplete(id, creator as { id: string; whatsapp_phone_number_id: string; whatsapp_access_token: string }, SITE_URL)
+              .catch((err) => console.error("[start] markShootComplete error:", err));
+          }
+        }).catch(() => {});
+      }
     }
 
     return NextResponse.json({ ok: true, provider: "vercel-fal", ...result });

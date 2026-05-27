@@ -2,7 +2,7 @@
 
 import sql from "@/lib/db";
 import { sendWhatsAppMessage, sendWhatsAppImage, downloadWhatsAppMedia } from "@/lib/whatsapp";
-import { r2Upload } from "@/lib/r2";
+import { r2Upload, r2SignedDownloadUrl } from "@/lib/r2";
 
 export type BotState =
   | "IDLE"
@@ -222,28 +222,28 @@ export async function handleIncomingMessage(
       return;
     }
 
-    // Create the shoot via internal API
+    // Create the shoot via internal WhatsApp endpoint
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aluxartandframes.shop";
-    const shootRes = await fetch(`${baseUrl}/api/shoots`, {
+    const shootRes = await fetch(`${baseUrl}/api/internal/whatsapp-shoot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
-        "x-whatsapp-customer-phone": customerPhone,
-        "x-whatsapp-creator-id": creatorId,
       },
       body: JSON.stringify({
         templateId: template.id,
+        creatorId,
+        customerPhone,
         mode: "fast",
         packageSize: 5,
-        currency: "NGN",
         identityStoragePaths: session.selfie_paths,
-        inspirationStoragePath: inspirationPath ?? undefined,
-        source: "whatsapp",
+        inspirationStoragePath: inspirationPath ?? null,
       }),
     });
 
     if (!shootRes.ok) {
+      const errBody = await shootRes.text().catch(() => "");
+      console.error("[whatsapp-bot] shoot creation failed:", shootRes.status, errBody);
       await reply("Sorry, I had trouble setting up your shoot. Please try again.");
       return;
     }
@@ -319,10 +319,36 @@ export async function markShootComplete(
     WHERE id = ${session.id}
   `;
 
+  // Fetch the completed image storage paths
+  const images = await sql`
+    SELECT preview_storage_bucket, preview_storage_path FROM shoot_images
+    WHERE shoot_id = ${shootId} AND status = 'COMPLETE' AND preview_storage_path IS NOT NULL
+    ORDER BY slot ASC
+    LIMIT 10
+  `;
+
   await sendWhatsAppMessage(
     session.customer_phone,
     creator.whatsapp_phone_number_id,
     creator.whatsapp_access_token,
-    `Your portraits are ready! 🎨\n\nView and download them here:\n${baseUrl}/studio?shoot=${shootId}`
+    `✅ Your portraits are ready! Sending ${images.length} image${images.length !== 1 ? "s" : ""} now:`
   );
+
+  // Send each image via WhatsApp using short-lived R2 signed URLs
+  // (WhatsApp downloads the image immediately; 2-hour TTL is more than enough)
+  for (const img of images) {
+    const bucket = (img.preview_storage_bucket as string) ?? "generated-4k";
+    const path = img.preview_storage_path as string;
+    try {
+      const signedUrl = await r2SignedDownloadUrl(bucket, path, 7200);
+      await sendWhatsAppImage(
+        session.customer_phone,
+        creator.whatsapp_phone_number_id,
+        creator.whatsapp_access_token,
+        signedUrl,
+      );
+    } catch (err) {
+      console.error("[markShootComplete] image send error:", err);
+    }
+  }
 }

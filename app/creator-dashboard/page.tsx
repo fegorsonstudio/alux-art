@@ -122,6 +122,7 @@ function CreatorDashboard() {
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [panel, setPanel] = useState<"none" | "create" | string>("none"); // "create" or templateId
   const [form, setForm] = useState(defaultForm());
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -168,15 +169,20 @@ function CreatorDashboard() {
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = useCallback(async () => {
-    const res = await fetch("/api/creator-dashboard");
-    if (res.status === 401) { router.push("/login?redirect=/creator-dashboard"); return; }
-    if (res.status === 404) { router.push("/become-creator"); return; }
-    if (!res.ok) return;
-    const d = await res.json();
-    setCreator(d.creator);
-    setTemplates(d.templates ?? []);
-    setStats(d.stats);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/creator-dashboard");
+      if (res.status === 401) { router.push("/login?redirect=/creator-dashboard"); return; }
+      if (res.status === 404) { router.push("/become-creator"); return; }
+      if (!res.ok) { setLoadError(true); setLoading(false); return; }
+      const d = await res.json();
+      setCreator(d.creator);
+      setTemplates(d.templates ?? []);
+      setStats(d.stats);
+      setLoading(false);
+    } catch {
+      setLoadError(true);
+      setLoading(false);
+    }
   }, [router]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
@@ -738,6 +744,13 @@ function CreatorDashboard() {
   };
 
   if (loading) return <div className={styles.loading}>Loading dashboard...</div>;
+  if (loadError) return (
+    <div className={styles.loading} style={{ flexDirection: "column", gap: 12 }}>
+      <p style={{ margin: 0, fontWeight: 600 }}>Failed to load dashboard</p>
+      <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>Check your connection and try again.</p>
+      <button onClick={() => { setLoadError(false); setLoading(true); loadDashboard(); }} style={{ marginTop: 8, padding: "8px 20px", borderRadius: 8, border: "none", background: "#2f8e9a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Retry</button>
+    </div>
+  );
 
   if (creator?.status === "pending") {
     return (
