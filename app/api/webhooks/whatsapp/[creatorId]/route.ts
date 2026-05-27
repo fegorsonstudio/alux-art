@@ -30,9 +30,9 @@ interface WaWebhookBody {
 // GET — Meta webhook verification
 export async function GET(
   request: NextRequest,
-  { params }: { params: { creatorId: string } }
+  { params }: { params: Promise<{ creatorId: string }> }
 ) {
-  const { creatorId } = params;
+  const { creatorId } = await params;
   const searchParams = request.nextUrl.searchParams;
   const mode = searchParams.get("hub.mode");
   const token = searchParams.get("hub.verify_token");
@@ -59,9 +59,9 @@ export async function GET(
 // POST — Receive incoming messages
 export async function POST(
   request: NextRequest,
-  { params }: { params: { creatorId: string } }
+  { params }: { params: Promise<{ creatorId: string }> }
 ) {
-  const { creatorId } = params;
+  const { creatorId } = await params;
 
   const rawBody = await request.text();
 
