@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl } from "@/lib/r2";
+import { r2ProxyUrl } from "@/lib/r2";
 
 export async function GET() {
   const rows = await sql`
@@ -9,17 +9,12 @@ export async function GET() {
     FROM creators WHERE is_active = true ORDER BY created_at DESC
   `;
 
-  const creators = await Promise.all(rows.map(async (c) => {
-    let avatarUrl: string | null = null;
-    if (c.avatar_storage_path) {
-      avatarUrl = await r2SignedDownloadUrl(
-        (c.avatar_bucket ?? "template-images") as string,
-        c.avatar_storage_path as string,
-        3600
-      ).catch(() => null);
-    }
+  const creators = rows.map((c) => {
+    const avatarUrl = c.avatar_storage_path
+      ? r2ProxyUrl((c.avatar_bucket ?? "template-images") as string, c.avatar_storage_path as string)
+      : null;
     return { id: c.id, displayName: c.display_name, bio: c.bio, avatarUrl, instagramUrl: c.instagram_url, websiteUrl: c.website_url, createdAt: c.created_at };
-  }));
+  });
 
   return NextResponse.json({ creators });
 }
