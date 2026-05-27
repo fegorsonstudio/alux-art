@@ -10,7 +10,7 @@ export async function GET() {
 
   const [creator] = await sql`
     SELECT id, user_id, display_name, bio, avatar_url, portfolio_url,
-           bank_name, account_name, is_active, status, whatsapp_connected,
+           is_active, status, whatsapp_connected,
            whatsapp_phone_number_id, created_at, updated_at,
            (paystack_subaccount_code IS NOT NULL AND paystack_subaccount_code != '') AS payout_connected
     FROM creators WHERE user_id = ${user.id}
