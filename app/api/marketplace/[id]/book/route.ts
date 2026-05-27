@@ -165,8 +165,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
   const amountNgn = buyerAmountNgn - couponDiscountNgn;
-  // Paystack rejects split_share >= total_amount — cap creator payout to leave at least ₦1
-  const safeCreatorPayout = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - 1));
+  // Paystack fee ≈ 1.5% of transaction (bearer_type "account" = main account pays fee).
+  // Cap creator split to ensure the platform retains enough to cover the Paystack fee.
+  const estimatedPaystackFeeNgn = Math.min(Math.ceil(amountNgn * 0.015), 2000);
+  const minPlatformNgn = estimatedPaystackFeeNgn + 50;
+  const safeCreatorPayout = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - minPlatformNgn));
   const now = new Date();
   const shootId = crypto.randomUUID();
 
