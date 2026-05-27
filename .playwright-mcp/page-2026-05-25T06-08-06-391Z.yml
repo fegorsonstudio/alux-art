@@ -1,0 +1,108 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e6]:
+      - generic [ref=e7]:
+        - link "Supabase" [ref=e9] [cursor=pointer]:
+          - /url: /dashboard/org/xkyyjcklveqysuewphva
+          - img "Supabase" [ref=e10]
+        - generic [ref=e11]:
+          - generic [ref=e13] [cursor=pointer]: Feedback
+          - generic [ref=e14]:
+            - button "Search..." [ref=e15]:
+              - generic [ref=e16]:
+                - img [ref=e17]
+                - paragraph [ref=e20]: Search...
+              - generic [ref=e22]: Ctrl K
+            - button "Help" [ref=e23] [cursor=pointer]:
+              - generic [ref=e24]:
+                - img [ref=e25]
+                - generic [ref=e28]: Help
+            - button "Advisor Center" [ref=e30] [cursor=pointer]:
+              - generic [ref=e31]:
+                - img [ref=e32]
+                - generic [ref=e34]: Advisor Center
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e38]
+    - generic [ref=e40]:
+      - button "Sidebar control" [ref=e48] [cursor=pointer]:
+        - img [ref=e50]
+      - generic [ref=e57]:
+        - generic [ref=e61]:
+          - heading "Authentication" [level=4] [ref=e63]
+          - menu "Sidebar" [disabled] [ref=e66]:
+            - list [ref=e67]:
+              - generic [ref=e70]:
+                - generic [ref=e74]: Manage
+                - generic [ref=e75]:
+                  - link "Users" [disabled] [ref=e76] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/users
+                    - menuitem "Users" [disabled] [ref=e77]:
+                      - generic [ref=e81]: Users
+                  - link "OAuth Apps" [disabled] [ref=e82] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/oauth-apps
+                    - menuitem "OAuth Apps" [disabled] [ref=e83]:
+                      - generic [ref=e87]: OAuth Apps
+              - generic [ref=e91]:
+                - generic [ref=e95]: Notifications
+                - link "Emails" [disabled] [ref=e97] [cursor=pointer]:
+                  - /url: /dashboard/project/undefined/auth/templates
+                  - menuitem "Emails" [disabled] [ref=e98]:
+                    - generic [ref=e102]: Emails
+              - generic [ref=e106]:
+                - generic [ref=e110]: Configuration
+                - generic [ref=e111]:
+                  - link "Policies" [disabled] [ref=e112] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/policies
+                    - menuitem "Policies" [disabled] [ref=e113]:
+                      - generic [ref=e117]: Policies
+                  - link "Sign In / Providers" [disabled] [ref=e118] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/providers
+                    - menuitem "Sign In / Providers" [disabled] [ref=e119]:
+                      - generic [ref=e123]: Sign In / Providers
+                  - link "OAuth Server Beta" [disabled] [ref=e124] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/oauth-server
+                    - menuitem "OAuth Server Beta" [disabled] [ref=e125]:
+                      - generic [ref=e128]:
+                        - generic [ref=e129]: OAuth Server
+                        - generic [ref=e130]: Beta
+                  - link "Sessions" [disabled] [ref=e131] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/sessions
+                    - menuitem "Sessions" [disabled] [ref=e132]:
+                      - generic [ref=e136]: Sessions
+                  - link "Rate Limits" [disabled] [ref=e137] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/rate-limits
+                    - menuitem "Rate Limits" [disabled] [ref=e138]:
+                      - generic [ref=e142]: Rate Limits
+                  - link "Multi-Factor" [disabled] [ref=e143] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/mfa
+                    - menuitem "Multi-Factor" [disabled] [ref=e144]:
+                      - generic [ref=e148]: Multi-Factor
+                  - link "URL Configuration" [disabled] [ref=e149] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/url-configuration
+                    - menuitem "URL Configuration" [disabled] [ref=e150]:
+                      - generic [ref=e154]: URL Configuration
+                  - link "Attack Protection" [disabled] [ref=e155] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/protection
+                    - menuitem "Attack Protection" [disabled] [ref=e156]:
+                      - generic [ref=e160]: Attack Protection
+                  - link "Auth Hooks Beta" [disabled] [ref=e161] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/hooks
+                    - menuitem "Auth Hooks Beta" [disabled] [ref=e162]:
+                      - generic [ref=e165]:
+                        - generic [ref=e166]: Auth Hooks
+                        - generic [ref=e167]: Beta
+                  - link "Audit Logs" [disabled] [ref=e168] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/audit-logs
+                    - menuitem "Audit Logs" [disabled] [ref=e169]:
+                      - generic [ref=e173]: Audit Logs
+                  - link "Performance" [disabled] [ref=e174] [cursor=pointer]:
+                    - /url: /dashboard/project/undefined/auth/performance
+                    - menuitem "Performance" [disabled] [ref=e175]:
+                      - generic [ref=e179]: Performance
+        - separator [disabled] [ref=e180]:
+          - img [ref=e182]
+        - main [ref=e191]:
+          - generic [ref=e195]:
+            - heading "URL Configuration" [level=1] [ref=e196]
+            - generic [ref=e197]: Configure site URL and redirect URLs for authentication
+  - alert [ref=e205]

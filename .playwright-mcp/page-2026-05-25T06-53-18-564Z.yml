@@ -1,0 +1,123 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - link "Supabase" [ref=e9] [cursor=pointer]:
+            - /url: /dashboard/org/xkyyjcklveqysuewphva
+            - img "Supabase" [ref=e10]
+          - generic [ref=e12]:
+            - img [ref=e14]
+            - generic [ref=e16]:
+              - link "Aluxart" [ref=e17] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                - img [ref=e18]
+                - generic "Aluxart" [ref=e21]
+              - button [ref=e22] [cursor=pointer]:
+                - img [ref=e24]
+            - img [ref=e28]
+          - button "Connect" [ref=e32] [cursor=pointer]:
+            - img [ref=e34]
+            - generic [ref=e36]: Connect
+        - generic [ref=e37]:
+          - generic [ref=e39] [cursor=pointer]: Feedback
+          - generic [ref=e40]:
+            - button "Search..." [ref=e41]:
+              - generic [ref=e42]:
+                - img [ref=e43]
+                - paragraph [ref=e46]: Search...
+              - generic [ref=e48]: Ctrl K
+            - button "Help" [ref=e49] [cursor=pointer]:
+              - generic [ref=e50]:
+                - img [ref=e51]
+                - generic [ref=e54]: Help
+            - button "Advisor Center" [ref=e56] [cursor=pointer]:
+              - generic [ref=e57]:
+                - img [ref=e58]
+                - generic [ref=e60]: Advisor Center
+            - button "SQL Editor" [ref=e61] [cursor=pointer]:
+              - generic [ref=e62]:
+                - img [ref=e63]
+                - generic [ref=e65]: SQL Editor
+            - button "AI Assistant" [ref=e66] [cursor=pointer]:
+              - generic [ref=e67]:
+                - img [ref=e70]
+                - generic [ref=e73]: AI Assistant
+          - button [ref=e74] [cursor=pointer]:
+            - img [ref=e77]
+    - generic [ref=e79]:
+      - generic [ref=e83]:
+        - list [ref=e86]:
+          - generic [ref=e87]:
+            - listitem [ref=e88]:
+              - link "Project Overview" [ref=e89] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                - img [ref=e90]
+                - generic: Project Overview
+            - listitem [ref=e92]:
+              - link "Table Editor" [ref=e93] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/editor
+                - img [ref=e94]
+                - generic: Table Editor
+            - listitem [ref=e96]:
+              - link "SQL Editor" [ref=e97] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/sql
+                - img [ref=e98]
+                - generic: SQL Editor
+          - generic [ref=e100]:
+            - listitem [ref=e101]:
+              - link "Database" [ref=e102] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/database/schemas
+                - img [ref=e103]
+                - generic: Database
+            - listitem [ref=e107]:
+              - link "Authentication" [ref=e108] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/auth/users
+                - img [ref=e109]
+                - generic: Authentication
+            - listitem [ref=e111]:
+              - link "Storage" [ref=e112] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/storage/files
+                - img [ref=e113]
+                - generic: Storage
+            - listitem [ref=e115]:
+              - link "Edge Functions" [ref=e116] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/functions
+                - img [ref=e117]
+                - generic: Edge Functions
+            - listitem [ref=e122]:
+              - link "Realtime" [ref=e123] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/realtime/inspector
+                - img [ref=e124]
+                - generic: Realtime
+          - generic [ref=e126]:
+            - listitem [ref=e128]:
+              - link "Advisors" [ref=e129] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/advisors/security
+                - img [ref=e130]
+                - generic: Advisors
+            - listitem [ref=e132]:
+              - link "Observability" [ref=e133] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/observability
+                - img [ref=e134]
+                - generic: Observability
+            - listitem [ref=e142]:
+              - link "Logs" [ref=e143] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/logs/explorer
+                - img [ref=e144]
+                - generic: Logs
+            - listitem [ref=e145]:
+              - link "Integrations" [ref=e146] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations
+                - img [ref=e147]
+                - generic: Integrations
+          - listitem [ref=e151]:
+            - link "Project Settings" [ref=e152] [cursor=pointer]:
+              - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/general
+              - img [ref=e153]
+              - generic: Project Settings
+        - button "Sidebar control" [ref=e158] [cursor=pointer]:
+          - img [ref=e160]
+      - main [ref=e170]:
+        - img [ref=e173]
+  - alert [ref=e175]: Auth Logs | Logs & Analytics | Supabase

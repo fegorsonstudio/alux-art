@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e5]: Alux Art
+  - generic [ref=e73]:
+    - img "Alux Art" [ref=e75]
+    - heading "Your AI Photoshoot Studio" [level=1] [ref=e76]
+    - paragraph [ref=e77]: Upload your photos. We generate a professional shoot, 1 to 10 images, no prompts needed.
+    - button "Continue with Google" [ref=e78] [cursor=pointer]:
+      - img [ref=e79]
+      - text: Continue with Google
+    - paragraph [ref=e84]: By signing in you agree to our terms of service.

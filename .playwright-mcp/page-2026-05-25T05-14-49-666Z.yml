@@ -1,0 +1,144 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - banner [ref=e6]:
+        - generic [ref=e7]:
+          - link "Supabase" [ref=e9] [cursor=pointer]:
+            - /url: /dashboard/org/xkyyjcklveqysuewphva
+            - img "Supabase" [ref=e10]
+          - generic [ref=e11]:
+            - generic [ref=e13] [cursor=pointer]: Feedback
+            - generic [ref=e14]:
+              - button "Search..." [ref=e15]:
+                - generic [ref=e16]:
+                  - img [ref=e17]
+                  - paragraph [ref=e20]: Search...
+                - generic [ref=e22]: Ctrl K
+              - button "Help" [ref=e23] [cursor=pointer]:
+                - generic [ref=e24]:
+                  - img [ref=e25]
+                  - generic [ref=e28]: Help
+              - button "Advisor Center" [ref=e30] [cursor=pointer]:
+                - generic [ref=e31]:
+                  - img [ref=e32]
+                  - generic [ref=e34]: Advisor Center
+            - button [ref=e35] [cursor=pointer]:
+              - img [ref=e38]
+      - generic [ref=e40]:
+        - button "Sidebar control" [ref=e48] [cursor=pointer]:
+          - img [ref=e50]
+        - generic [ref=e57]:
+          - generic [ref=e61]:
+            - heading "Settings" [level=4] [ref=e63]
+            - menu "Sidebar" [disabled] [ref=e66]:
+              - list [ref=e67]:
+                - generic [ref=e70]:
+                  - generic [ref=e74]: Configuration
+                  - generic [ref=e75]:
+                    - link "General" [disabled] [ref=e76] [cursor=pointer]:
+                      - /url: /dashboard/project/undefined/settings/general
+                      - menuitem "General" [disabled] [ref=e77]:
+                        - generic "General" [ref=e80]:
+                          - generic [ref=e81]: General
+                    - generic:
+                      - menuitem "Compute and Disk" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "Compute and Disk":
+                              - generic: Compute and Disk
+                    - generic:
+                      - menuitem "Infrastructure" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "Infrastructure":
+                              - generic: Infrastructure
+                    - generic:
+                      - menuitem "Integrations" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "Integrations":
+                              - generic: Integrations
+                    - generic:
+                      - menuitem "API Keys" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "API Keys":
+                              - generic: API Keys
+                    - generic:
+                      - menuitem "JWT Keys" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "JWT Keys":
+                              - generic: JWT Keys
+                    - generic:
+                      - menuitem "Log Drains" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "Log Drains":
+                              - generic: Log Drains
+                    - link "Add-ons" [disabled] [ref=e82] [cursor=pointer]:
+                      - /url: /dashboard/project/undefined/settings/addons
+                      - menuitem "Add-ons" [disabled] [ref=e83]:
+                        - generic "Add-ons" [ref=e86]:
+                          - generic [ref=e87]: Add-ons
+                - generic [ref=e91]:
+                  - generic [ref=e95]: Integrations
+                  - generic [ref=e96]:
+                    - generic:
+                      - menuitem "Data API" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "Data API":
+                              - generic: Data API
+                            - generic:
+                              - img
+                    - generic:
+                      - menuitem "Vault Beta" [disabled]:
+                        - generic:
+                          - generic:
+                            - generic "Vault":
+                              - generic: Vault
+                              - generic: Beta
+                            - generic:
+                              - img
+                - generic [ref=e100]:
+                  - generic [ref=e104]: Billing
+                  - generic [ref=e105]:
+                    - link "Subscription" [disabled] [ref=e106] [cursor=pointer]:
+                      - /url: /dashboard/org/undefined/billing
+                      - menuitem "Subscription" [disabled] [ref=e107]:
+                        - generic [ref=e109]:
+                          - generic "Subscription" [ref=e110]:
+                            - generic [ref=e111]: Subscription
+                          - img [ref=e113]
+                    - link "Usage" [disabled] [ref=e116] [cursor=pointer]:
+                      - /url: /dashboard/org/undefined/usage?projectRef=undefined
+                      - menuitem "Usage" [disabled] [ref=e117]:
+                        - generic [ref=e119]:
+                          - generic "Usage" [ref=e120]:
+                            - generic [ref=e121]: Usage
+                          - img [ref=e123]
+          - separator [disabled] [ref=e126]:
+            - img [ref=e128]
+          - main [ref=e137]:
+            - generic [ref=e141]:
+              - heading "Add-ons" [level=1] [ref=e142]
+              - generic [ref=e143]: Level up your project with add-ons
+    - generic [ref=e175]:
+      - generic:
+        - generic:
+          - generic:
+            - img "Background pattern"
+          - generic:
+            - generic:
+              - button "Close banner":
+                - generic:
+                  - img
+            - generic:
+              - generic: Notice
+              - generic:
+                - paragraph: We've updated our Terms of Service
+                - paragraph: Updates define the responsibilities of both you and Supabase in the use of AI.
+              - button "Learn more":
+                - generic: Learn more
+  - alert [ref=e176]

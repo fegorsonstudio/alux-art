@@ -1,0 +1,871 @@
+- generic [ref=e8]:
+  - generic [ref=e13]:
+    - complementary [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - link [ref=e17] [cursor=pointer]:
+            - /url: /
+            - img [ref=e19]
+          - generic "Fegorsonphotography@gmail.com's Account" [ref=e24]
+        - navigation [ref=e26]:
+          - generic [ref=e30]:
+            - button "Quick search..." [ref=e32] [cursor=pointer]:
+              - generic [ref=e34]:
+                - img [ref=e35]
+                - generic [ref=e37]: Quick search...
+                - generic [ref=e38]: Ctrl K
+            - generic [ref=e41]:
+              - link "Back to Domains" [ref=e44] [cursor=pointer]:
+                - /url: /7712fc9b80b642faec724476bde0d6f2/domains/overview
+                - generic [ref=e45]:
+                  - img [ref=e46]
+                  - generic [ref=e48]: Back to Domains
+              - list [ref=e51]:
+                - listitem [ref=e52]:
+                  - link "Overview" [ref=e53] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/
+                    - generic [ref=e54]:
+                      - img [ref=e55]
+                      - generic [ref=e58]: Overview
+                - listitem [ref=e59]:
+                  - button "Recents" [ref=e60] [cursor=pointer]:
+                    - generic [ref=e61]:
+                      - img [ref=e62]
+                      - generic [ref=e65]: Recents
+                      - img [ref=e66]
+                  - list [ref=e68]:
+                    - listitem [ref=e70]:
+                      - link "test R2" [ref=e71] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/test
+                        - generic [ref=e72]:
+                          - generic [ref=e73]: test
+                          - generic [ref=e75]: R2
+                      - button "Pin" [ref=e77] [cursor=pointer]:
+                        - generic [ref=e78]:
+                          - img [ref=e79]
+                          - img [ref=e84]
+                    - listitem [ref=e86]:
+                      - link "shoot-zips R2" [ref=e87] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/shoot-zips
+                        - generic [ref=e88]:
+                          - generic [ref=e89]: shoot-zips
+                          - generic [ref=e91]: R2
+                      - button "Pin" [ref=e93] [cursor=pointer]:
+                        - generic [ref=e94]:
+                          - img [ref=e95]
+                          - img [ref=e100]
+                    - listitem [ref=e102]:
+                      - link "generated-4k R2" [ref=e103] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/generated-4k
+                        - generic [ref=e104]:
+                          - generic [ref=e105]: generated-4k
+                          - generic [ref=e107]: R2
+                      - button "Pin" [ref=e109] [cursor=pointer]:
+                        - generic [ref=e110]:
+                          - img [ref=e111]
+                          - img [ref=e116]
+                    - listitem [ref=e118]:
+                      - link "Overview R2 Object Storage" [ref=e119] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/overview
+                        - generic [ref=e120]:
+                          - generic [ref=e121]: Overview
+                          - generic [ref=e123]: R2 Object Storage
+                      - button "Pin" [ref=e125] [cursor=pointer]:
+                        - generic [ref=e126]:
+                          - img [ref=e127]
+                          - img [ref=e132]
+                    - listitem [ref=e134]:
+                      - link "character-bases R2" [ref=e135] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/character-bases
+                        - generic [ref=e136]:
+                          - generic [ref=e137]: character-bases
+                          - generic [ref=e139]: R2
+                      - button "Pin" [ref=e141] [cursor=pointer]:
+                        - generic [ref=e142]:
+                          - img [ref=e143]
+                          - img [ref=e148]
+                - listitem [ref=e150]:
+                  - button "AI Crawl Control" [ref=e151] [cursor=pointer]:
+                    - generic [ref=e152]:
+                      - img [ref=e153]
+                      - generic [ref=e156]: AI Crawl Control
+                      - img [ref=e157]
+                  - list [ref=e159]:
+                    - listitem [ref=e161]:
+                      - link "Overview" [ref=e162] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ai/overview
+                        - generic [ref=e163]: Overview
+                    - listitem [ref=e164]:
+                      - link "Crawlers" [ref=e165] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ai/bots
+                        - generic [ref=e166]: Crawlers
+                    - listitem [ref=e167]:
+                      - link "Metrics" [ref=e168] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ai/metrics
+                        - generic [ref=e169]: Metrics
+                    - listitem [ref=e170]:
+                      - link "Directives" [ref=e171] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ai/directives
+                        - generic [ref=e172]: Directives
+                    - listitem [ref=e173]:
+                      - link "Settings" [ref=e174] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ai/settings
+                        - generic [ref=e175]: Settings
+                - listitem [ref=e176]:
+                  - button "Investigate" [ref=e177] [cursor=pointer]:
+                    - generic [ref=e178]:
+                      - img [ref=e179]
+                      - generic [ref=e182]: Investigate
+                      - img [ref=e183]
+                  - list [ref=e185]:
+                    - listitem [ref=e187]:
+                      - button "Log Explorer" [ref=e188] [cursor=pointer]:
+                        - generic [ref=e190]: Log Explorer
+                        - img [ref=e191]
+                      - list [ref=e193]:
+                        - listitem [ref=e195]:
+                          - link "Log search" [ref=e196] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/log-explorer/log-search
+                            - generic [ref=e197]: Log search
+                    - listitem [ref=e198]:
+                      - link "Trace Beta" [ref=e199] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/rules/trace/search
+                        - generic [ref=e200]: Trace
+                        - generic [ref=e202]: Beta
+                    - listitem [ref=e203]:
+                      - link "Logpush" [ref=e204] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/analytics/logs
+                        - generic [ref=e205]: Logpush
+                - listitem [ref=e206]:
+                  - button "Analytics" [ref=e207] [cursor=pointer]:
+                    - generic [ref=e208]:
+                      - img [ref=e209]
+                      - generic [ref=e212]: Analytics
+                      - img [ref=e213]
+                  - list [ref=e215]:
+                    - listitem [ref=e217]:
+                      - link "Dashboards New" [ref=e218] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/dashboards
+                        - generic [ref=e219]: Dashboards
+                        - generic [ref=e221]: New
+                    - listitem [ref=e222]:
+                      - link "HTTP Traffic" [ref=e223] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/analytics/traffic
+                        - generic [ref=e224]: HTTP Traffic
+                    - listitem [ref=e225]:
+                      - link "Performance" [ref=e226] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/analytics/performance
+                        - generic [ref=e227]: Performance
+                    - listitem [ref=e228]:
+                      - link "Workers" [ref=e229] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/analytics/workers
+                        - generic [ref=e230]: Workers
+                - listitem [ref=e231]:
+                  - button "DNS" [expanded] [ref=e232] [cursor=pointer]:
+                    - generic [ref=e233]:
+                      - img [ref=e234]
+                      - generic [ref=e236]: DNS
+                      - img [ref=e237]
+                  - list [ref=e241]:
+                    - listitem [ref=e243]:
+                      - link "Records" [ref=e244] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/dns/records
+                        - generic [ref=e245]: Records
+                    - listitem [ref=e246]:
+                      - link "Analytics" [ref=e247] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/dns/analytics
+                        - generic [ref=e248]: Analytics
+                    - listitem [ref=e249]:
+                      - link "Settings" [ref=e250] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/dns/settings
+                        - generic [ref=e251]: Settings
+                - listitem [ref=e252]:
+                  - button "Email" [ref=e253] [cursor=pointer]:
+                    - generic [ref=e254]:
+                      - img [ref=e255]
+                      - generic [ref=e259]: Email
+                      - img [ref=e260]
+                  - list [ref=e262]:
+                    - listitem [ref=e264]:
+                      - link "Email Routing" [ref=e265] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/email/routing
+                        - generic [ref=e266]: Email Routing
+                    - listitem [ref=e267]:
+                      - link "DMARC Management" [ref=e268] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/email/dmarc-management
+                        - generic [ref=e269]: DMARC Management
+                    - listitem [ref=e270]:
+                      - link "Email Security" [ref=e271] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/email/security
+                        - generic [ref=e272]: Email Security
+                - listitem [ref=e273]:
+                  - button "SSL/TLS" [ref=e274] [cursor=pointer]:
+                    - generic [ref=e275]:
+                      - img [ref=e276]
+                      - generic [ref=e279]: SSL/TLS
+                      - img [ref=e280]
+                  - list [ref=e282]:
+                    - listitem [ref=e284]:
+                      - link "Overview" [ref=e285] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ssl-tls
+                        - generic [ref=e286]: Overview
+                    - listitem [ref=e287]:
+                      - link "Edge Certificates" [ref=e288] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ssl-tls/edge-certificates
+                        - generic [ref=e289]: Edge Certificates
+                    - listitem [ref=e290]:
+                      - link "Client Certificates" [ref=e291] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ssl-tls/client-certificates
+                        - generic [ref=e292]: Client Certificates
+                    - listitem [ref=e293]:
+                      - link "Origin Server" [ref=e294] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ssl-tls/origin
+                        - generic [ref=e295]: Origin Server
+                    - listitem [ref=e296]:
+                      - link "Custom Hostnames" [ref=e297] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ssl-tls/custom-hostnames
+                        - generic [ref=e298]: Custom Hostnames
+                - listitem [ref=e299]:
+                  - button "Security" [ref=e300] [cursor=pointer]:
+                    - generic [ref=e301]:
+                      - img [ref=e302]
+                      - generic [ref=e304]: Security
+                      - img [ref=e305]
+                  - list [ref=e307]:
+                    - listitem [ref=e309]:
+                      - link "Overview" [ref=e310] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/security/overview
+                        - generic [ref=e311]: Overview
+                    - listitem [ref=e312]:
+                      - link "Analytics" [ref=e313] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/security/analytics
+                        - generic [ref=e314]: Analytics
+                    - listitem [ref=e315]:
+                      - link "Web assets" [ref=e316] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/security/web-assets
+                        - generic [ref=e317]: Web assets
+                    - listitem [ref=e318]:
+                      - link "Security rules" [ref=e319] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/security/security-rules
+                        - generic [ref=e320]: Security rules
+                    - listitem [ref=e321]:
+                      - link "Settings" [ref=e322] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/security/settings
+                        - generic [ref=e323]: Settings
+                - listitem [ref=e324]:
+                  - link "Access" [ref=e325] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/access
+                    - generic [ref=e326]:
+                      - img [ref=e327]
+                      - generic [ref=e330]: Access
+                - listitem [ref=e331]:
+                  - button "Speed" [ref=e332] [cursor=pointer]:
+                    - generic [ref=e333]:
+                      - img [ref=e334]
+                      - generic [ref=e336]: Speed
+                      - img [ref=e337]
+                  - list [ref=e339]:
+                    - listitem [ref=e341]:
+                      - link "Observatory Beta" [ref=e342] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/speed
+                        - generic [ref=e343]: Observatory
+                        - generic [ref=e345]: Beta
+                    - listitem [ref=e346]:
+                      - link "Origin Analytics Beta" [ref=e347] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/speed/origin-analytics
+                        - generic [ref=e348]: Origin Analytics
+                        - generic [ref=e350]: Beta
+                    - listitem [ref=e351]:
+                      - link "Synthetic monitoring Beta" [ref=e352] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/speed/test
+                        - generic [ref=e353]: Synthetic monitoring
+                        - generic [ref=e355]: Beta
+                    - listitem [ref=e356]:
+                      - link "Settings" [ref=e357] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/speed/optimization
+                        - generic [ref=e358]: Settings
+                    - listitem [ref=e359]:
+                      - link "Smart Shield" [ref=e360] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/speed/smart-shield
+                        - generic [ref=e361]: Smart Shield
+                - listitem [ref=e362]:
+                  - button "Caching" [ref=e363] [cursor=pointer]:
+                    - generic [ref=e364]:
+                      - img [ref=e365]
+                      - generic [ref=e370]: Caching
+                      - img [ref=e371]
+                  - list [ref=e373]:
+                    - listitem [ref=e375]:
+                      - link "Overview" [ref=e376] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/caching
+                        - generic [ref=e377]: Overview
+                    - listitem [ref=e378]:
+                      - link "Configuration" [ref=e379] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/caching/configuration
+                        - generic [ref=e380]: Configuration
+                    - listitem [ref=e381]:
+                      - link "Cache Rules" [ref=e382] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/caching/cache-rules
+                        - generic [ref=e383]: Cache Rules
+                    - listitem [ref=e384]:
+                      - link "Tiered Cache" [ref=e385] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/caching/tiered-cache
+                        - generic [ref=e386]: Tiered Cache
+                    - listitem [ref=e387]:
+                      - link "Cache Reserve" [ref=e388] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/caching/cache-reserve
+                        - generic [ref=e389]: Cache Reserve
+                - listitem [ref=e390]:
+                  - link "Workers Routes" [ref=e391] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/workers
+                    - generic [ref=e392]:
+                      - img [ref=e393]
+                      - generic [ref=e397]: Workers Routes
+                - listitem [ref=e398]:
+                  - button "Rules" [ref=e399] [cursor=pointer]:
+                    - generic [ref=e400]:
+                      - img [ref=e401]
+                      - generic [ref=e404]: Rules
+                      - img [ref=e405]
+                  - list [ref=e407]:
+                    - listitem [ref=e409]:
+                      - link "Overview" [ref=e410] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/rules/overview
+                        - generic [ref=e411]: Overview
+                    - listitem [ref=e412]:
+                      - link "Snippets" [ref=e413] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/rules/snippets
+                        - generic [ref=e414]: Snippets
+                    - listitem [ref=e415]:
+                      - link "Cloud Connector Beta" [ref=e416] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/rules/cloud-connector
+                        - generic [ref=e417]: Cloud Connector
+                        - generic [ref=e419]: Beta
+                    - listitem [ref=e420]:
+                      - link "Page Rules" [ref=e421] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/rules/page-rules
+                        - generic [ref=e422]: Page Rules
+                    - listitem [ref=e423]:
+                      - link "Settings" [ref=e424] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/rules/settings
+                        - generic [ref=e425]: Settings
+                - listitem [ref=e426]:
+                  - link "Error Pages New" [ref=e427] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/error-pages
+                    - generic [ref=e428]:
+                      - img [ref=e429]
+                      - generic [ref=e432]: Error Pages
+                      - generic [ref=e434]: New
+                - listitem [ref=e435]:
+                  - link "Network" [ref=e436] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/network
+                    - generic [ref=e437]:
+                      - img [ref=e438]
+                      - generic [ref=e441]: Network
+                - listitem [ref=e442]:
+                  - button "Traffic" [ref=e443] [cursor=pointer]:
+                    - generic [ref=e444]:
+                      - img [ref=e445]
+                      - generic [ref=e447]: Traffic
+                      - img [ref=e448]
+                  - list [ref=e450]:
+                    - listitem [ref=e452]:
+                      - link "Argo Smart Routing" [ref=e453] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/traffic
+                        - generic [ref=e454]: Argo Smart Routing
+                    - listitem [ref=e455]:
+                      - link "Load Balancing" [ref=e456] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/traffic/load-balancing
+                        - generic [ref=e457]: Load Balancing
+                    - listitem [ref=e458]:
+                      - link "Load Balancing Analytics" [ref=e459] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/traffic/load-balancing-analytics
+                        - generic [ref=e460]: Load Balancing Analytics
+                    - listitem [ref=e461]:
+                      - link "Health Checks" [ref=e462] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/traffic/health-checks
+                        - generic [ref=e463]: Health Checks
+                    - listitem [ref=e464]:
+                      - link "Waiting Room" [ref=e465] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/traffic/waiting-rooms
+                        - generic [ref=e466]: Waiting Room
+                - listitem [ref=e467]:
+                  - link "Web3" [ref=e468] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/web3
+                    - generic [ref=e469]:
+                      - img [ref=e470]
+                      - generic [ref=e473]: Web3
+                - listitem [ref=e474]
+                - listitem [ref=e476]:
+                  - button "Manage account" [ref=e477] [cursor=pointer]:
+                    - generic [ref=e478]:
+                      - img [ref=e479]
+                      - generic [ref=e482]: Manage account
+                      - img [ref=e483]
+                  - list [ref=e485]:
+                    - listitem [ref=e487]:
+                      - link "Members" [ref=e488] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/members
+                        - generic [ref=e489]: Members
+                    - listitem [ref=e490]:
+                      - link "Billing" [ref=e491] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/billing
+                        - generic [ref=e492]: Billing
+                    - listitem [ref=e493]:
+                      - link "Account API tokens" [ref=e494] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/api-tokens
+                        - generic [ref=e495]: Account API tokens
+                    - listitem [ref=e496]:
+                      - link "Audit logs" [ref=e497] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/audit-log
+                        - generic [ref=e498]: Audit logs
+                    - listitem [ref=e499]:
+                      - link "Notifications" [ref=e500] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/notifications
+                        - generic [ref=e501]: Notifications
+                    - listitem [ref=e502]:
+                      - link "Shared config Alpha" [ref=e503] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/shared-configurations
+                        - generic [ref=e504]: Shared config
+                        - generic [ref=e506]: Alpha
+                    - listitem [ref=e507]:
+                      - link "Blocked content" [ref=e508] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/blocked-content
+                        - generic [ref=e509]: Blocked content
+                    - listitem [ref=e510]:
+                      - link "Abuse reports Beta" [ref=e511] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/abuse-reports
+                        - generic [ref=e512]: Abuse reports
+                        - generic [ref=e514]: Beta
+                    - listitem [ref=e515]:
+                      - link "Carbon Impact Report" [ref=e516] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/carbon
+                        - generic [ref=e517]: Carbon Impact Report
+                    - listitem [ref=e518]:
+                      - link "Configurations" [ref=e519] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/configurations
+                        - generic [ref=e520]: Configurations
+                    - listitem [ref=e521]:
+                      - link "Tagged Resources Beta" [ref=e522] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/tags
+                        - generic [ref=e523]: Tagged Resources
+                        - generic [ref=e525]: Beta
+      - button "Collapse sidebar" [expanded] [ref=e528]:
+        - generic [ref=e529]:
+          - img
+    - generic [ref=e530]:
+      - banner [ref=e531]:
+        - generic [ref=e532]:
+          - button "aluxartandframes.shop" [ref=e534] [cursor=pointer]:
+            - generic [ref=e535]:
+              - generic [ref=e536]: aluxartandframes.shop
+              - img [ref=e537]
+          - button "Star domain" [ref=e540] [cursor=pointer]:
+            - img "Star domain" [ref=e541]
+          - button "Free" [ref=e544] [cursor=pointer]
+        - generic [ref=e545]:
+          - button "Ask AI" [ref=e546] [cursor=pointer]:
+            - img [ref=e547]
+            - generic [ref=e550]: Ask AI
+          - link "Support" [ref=e551] [cursor=pointer]:
+            - /url: /?to=/:account/support
+            - img [ref=e552]
+            - generic [ref=e554]: Support
+          - button "User menu" [ref=e555] [cursor=pointer]:
+            - img [ref=e556]
+      - main [ref=e558]:
+        - generic [ref=e560]:
+          - generic [ref=e562]:
+            - paragraph [ref=e563]: DNS
+            - heading "Records Try New DNS Experience" [level=1] [ref=e565]:
+              - generic [ref=e566]:
+                - text: Records
+                - button "Try New DNS Experience" [ref=e567] [cursor=pointer]:
+                  - img [ref=e568]
+                  - generic [ref=e570]: Try New DNS Experience
+            - paragraph [ref=e571]:
+              - text: Configure DNS records and review
+              - link "proxy statusdocumentation" [ref=e572] [cursor=pointer]:
+                - /url: https://developers.cloudflare.com/dns/manage-dns-records/reference/proxied-dns-records/
+                - text: proxy status
+                - img "documentation" [ref=e574]
+              - text: of your hostnames.
+            - button "open documentation" [ref=e577] [cursor=pointer]:
+              - button "open documentation" [ref=e578]:
+                - img [ref=e579]
+                - text: DNS documentation
+          - generic [ref=e582]:
+            - text: aluxartandframes.shop is
+            - strong [ref=e583]: pending
+            - text: until you complete the instructions on the
+            - link "Overview page" [ref=e584] [cursor=pointer]:
+              - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop
+            - text: and we are able to verify ownership. Learn more about
+            - link "pending domains.documentation" [ref=e585] [cursor=pointer]:
+              - /url: https://developers.cloudflare.com/dns/zone-setups/reference/domain-status/#pending
+              - text: pending domains.
+              - img "documentation" [ref=e587]
+          - generic [ref=e590]:
+            - generic [ref=e591]:
+              - heading "Recommendations Hide" [level=3] [ref=e592]:
+                - generic [ref=e593]: Recommendations
+                - button "Hide" [expanded] [ref=e594] [cursor=pointer]
+              - generic [ref=e610]:
+                - img [ref=e612]
+                - generic [ref=e614]:
+                  - text: Add an MX record to receive email.
+                  - button "Set up SPF, DKIM, and DMARC records" [ref=e615] [cursor=pointer]
+                  - text: to prevent email spoofing.
+                  - generic [ref=e617]: New Alert
+            - generic [ref=e618]:
+              - generic [ref=e619]:
+                - generic [ref=e620]:
+                  - heading "DNS management for aluxartandframes.shop" [level=3] [ref=e621]:
+                    - generic [ref=e622]:
+                      - text: DNS management for
+                      - generic [ref=e623]: aluxartandframes.shop
+                  - generic [ref=e624]: Review, add, and edit DNS records. Changes propagate globally within minutes.
+                - generic [ref=e625]:
+                  - generic [ref=e626]:
+                    - generic [ref=e627]:
+                      - generic [ref=e628]: "DNS Setup:"
+                      - generic [ref=e629]: Full
+                    - button "More information about DNS Setup" [ref=e631] [cursor=pointer]:
+                      - img [ref=e632]
+                  - button "Import and Export" [ref=e634] [cursor=pointer]:
+                    - generic [ref=e635]:
+                      - generic [ref=e636]: Import and Export
+                      - img [ref=e637]
+                  - button "Dashboard Display Settings" [ref=e639] [cursor=pointer]:
+                    - generic [ref=e640]:
+                      - img [ref=e641]
+                      - generic [ref=e642]: Dashboard Display Settings
+              - generic [ref=e643]:
+                - generic [ref=e647]:
+                  - button "Add filter" [ref=e649] [cursor=pointer]:
+                    - img [ref=e650]
+                    - generic [ref=e652]: Add filter
+                  - generic [ref=e653]:
+                    - generic [ref=e655]:
+                      - generic [ref=e656]:
+                        - generic [ref=e657]: Search DNS Records
+                        - generic [ref=e658]:
+                          - img [ref=e660]
+                          - textbox "Search DNS Records" [ref=e662]
+                      - button "Search" [ref=e663] [cursor=pointer]:
+                        - generic [ref=e664]: Search
+                    - button "Add record" [ref=e665] [cursor=pointer]:
+                      - img [ref=e666]
+                      - generic [ref=e668]: Add record
+                - status [ref=e669]: Your search yielded 8 results
+                - table [ref=e671] [cursor=pointer]:
+                  - rowgroup [ref=e672]:
+                    - row "Type More information about Type caret-right Name More information about Name Content More information about Content Proxy status More information about Proxy status TTL More information about TTL Actions" [ref=e673]:
+                      - columnheader [ref=e674]:
+                        - checkbox [ref=e676]
+                      - columnheader [ref=e677]
+                      - columnheader "Type More information about Type caret-right" [ref=e678]:
+                        - generic [ref=e679]:
+                          - generic [ref=e680]:
+                            - generic [ref=e681]: Type
+                            - button "More information about Type" [ref=e683]:
+                              - img [ref=e684]
+                          - img "caret-right" [ref=e1228]
+                      - columnheader "Name More information about Name" [ref=e689]:
+                        - generic [ref=e691]:
+                          - generic [ref=e692]: Name
+                          - button "More information about Name" [ref=e694]:
+                            - img [ref=e695]
+                      - columnheader "Content More information about Content" [ref=e697]:
+                        - generic [ref=e699]:
+                          - generic [ref=e700]: Content
+                          - button "More information about Content" [ref=e702]:
+                            - img [ref=e703]
+                      - columnheader "Proxy status More information about Proxy status" [ref=e705]:
+                        - generic [ref=e707]:
+                          - generic [ref=e708]: Proxy status
+                          - button "More information about Proxy status" [ref=e710]:
+                            - img [ref=e711]
+                      - columnheader "TTL More information about TTL" [ref=e713]:
+                        - generic [ref=e715]:
+                          - generic [ref=e716]: TTL
+                          - button "More information about TTL" [ref=e718]:
+                            - img [ref=e719]
+                      - columnheader "Actions" [ref=e721]
+                  - rowgroup [ref=e722]:
+                    - row "Warning A * 216.150.16.1 Proxied Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e851]:
+                      - cell [ref=e852]:
+                        - checkbox [ref=e854]
+                      - cell "Warning" [ref=e855]:
+                        - button "Warning" [ref=e856]:
+                          - img [ref=e857]
+                      - cell "A" [ref=e860]:
+                        - generic "A - modified 19 hours ago" [ref=e862]: A
+                      - cell "*" [ref=e863]:
+                        - generic "*.aluxartandframes.shop" [ref=e864]: "*"
+                      - cell "216.150.16.1" [ref=e865]:
+                        - generic "216.150.16.1" [ref=e868]
+                      - cell "Proxied" [ref=e869]:
+                        - paragraph [ref=e876]: Proxied
+                      - cell "Auto" [ref=e877]:
+                        - generic [ref=e879]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e880]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [expanded] [active] [ref=e881]:
+                          - text: Edit
+                          - generic [ref=e882]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e884]
+                    - row "Type A Name (required) * Use @ for root IPv4 address (required) 216.150.16.1 Proxy status Proxied TTL Auto This hostname is not covered by a certificate. To ensure full coverage, purchase Advanced Certificate Manager to use Total TLS for full certificate coverage of proxied hostnames. Record Attributes Documentation The information provided here will not impact DNS record resolution and is only meant for your reference. Comment Delete Cancel Save" [ref=e1230]:
+                      - cell "Type A Name (required) * Use @ for root IPv4 address (required) 216.150.16.1 Proxy status Proxied TTL Auto This hostname is not covered by a certificate. To ensure full coverage, purchase Advanced Certificate Manager to use Total TLS for full certificate coverage of proxied hostnames. Record Attributes Documentation The information provided here will not impact DNS record resolution and is only meant for your reference. Comment Delete Cancel Save" [ref=e1231]:
+                        - generic [ref=e1232]:
+                          - generic [ref=e1233]:
+                            - generic [ref=e1234]:
+                              - generic [ref=e1236]: Type
+                              - generic [ref=e1245]:
+                                - generic [ref=e1246]: A
+                                - combobox "Type" [ref=e1248]
+                            - generic [ref=e1252]:
+                              - generic [ref=e1253]:
+                                - generic [ref=e1254]: Name
+                                - text: (required)
+                              - generic [ref=e1256]:
+                                - textbox "Name (required)" [ref=e1257]: "*"
+                                - generic [ref=e1258]: Use @ for root
+                            - generic [ref=e1259]:
+                              - generic [ref=e1260]:
+                                - generic [ref=e1261]: IPv4 address
+                                - text: (required)
+                              - textbox "IPv4 address (required)" [ref=e1264]: 216.150.16.1
+                            - generic [ref=e1265]:
+                              - generic [ref=e1267]: Proxy status
+                              - generic [ref=e1269]:
+                                - checkbox "Proxy status" [checked] [ref=e1271]
+                                - paragraph [ref=e1277]: Proxied
+                            - generic [ref=e1278]:
+                              - generic [ref=e1280]: TTL
+                              - generic [ref=e1284]: Auto
+                          - generic [ref=e1285]:
+                            - text: This hostname is not covered by a certificate. To ensure full coverage, purchase
+                            - link "Advanced Certificate Manager" [ref=e1286]:
+                              - /url: /7712fc9b80b642faec724476bde0d6f2/aluxartandframes.shop/ssl-tls/acm
+                            - text: to use Total TLS for full certificate coverage of proxied hostnames.
+                          - generic [ref=e1288]:
+                            - generic [ref=e1289]:
+                              - generic [ref=e1290]: Record Attributes
+                              - link "Documentation" [ref=e1291]:
+                                - /url: https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/
+                                - img [ref=e1292]
+                                - text: Documentation
+                            - generic [ref=e1295]: The information provided here will not impact DNS record resolution and is only meant for your reference.
+                            - generic [ref=e1297]:
+                              - generic [ref=e1298]: Comment
+                              - textbox "Comment" [ref=e1299]:
+                                - /placeholder: Enter your comment here (up to 100 characters).
+                          - generic [ref=e1300]:
+                            - button "Delete" [ref=e1301]
+                            - generic [ref=e1302]:
+                              - button "Cancel" [ref=e1303]
+                              - button "Save" [ref=e1304]
+                    - row "A aluxartandframes.shop 178.104.133.89 DNS only Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e886]:
+                      - cell [ref=e887]:
+                        - checkbox [ref=e889]
+                      - cell [ref=e890]
+                      - cell "A" [ref=e891]:
+                        - generic "A - modified 19 hours ago" [ref=e893]: A
+                      - cell "aluxartandframes.shop" [ref=e894]:
+                        - generic "aluxartandframes.shop" [ref=e895]
+                      - cell "178.104.133.89" [ref=e896]:
+                        - generic "178.104.133.89" [ref=e899]
+                      - cell "DNS only" [ref=e900]:
+                        - paragraph [ref=e907]: DNS only
+                      - cell "Auto" [ref=e908]:
+                        - generic [ref=e910]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e911]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e912]:
+                          - text: Edit
+                          - generic [ref=e913]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e915]
+                    - row "A www 178.104.133.89 DNS only Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e917]:
+                      - cell [ref=e918]:
+                        - checkbox [ref=e920]
+                      - cell [ref=e921]
+                      - cell "A" [ref=e922]:
+                        - generic "A - modified 19 hours ago" [ref=e924]: A
+                      - cell "www" [ref=e925]:
+                        - generic "www.aluxartandframes.shop" [ref=e926]: www
+                      - cell "178.104.133.89" [ref=e927]:
+                        - generic "178.104.133.89" [ref=e930]
+                      - cell "DNS only" [ref=e931]:
+                        - paragraph [ref=e938]: DNS only
+                      - cell "Auto" [ref=e939]:
+                        - generic [ref=e941]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e942]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e943]:
+                          - text: Edit
+                          - generic [ref=e944]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e946]
+                    - row "Warning CAA aluxartandframes.shop 0 issue sectigo.com DNS only Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e948]:
+                      - cell [ref=e949]:
+                        - checkbox [ref=e951]
+                      - cell "Warning" [ref=e952]:
+                        - button "Warning" [ref=e953]:
+                          - img [ref=e954]
+                      - cell "CAA" [ref=e957]:
+                        - generic "CAA - modified 19 hours ago" [ref=e959]: CAA
+                      - cell "aluxartandframes.shop" [ref=e960]:
+                        - generic "aluxartandframes.shop" [ref=e961]
+                      - cell "0 issue sectigo.com" [ref=e962]:
+                        - generic "0 issue sectigo.com" [ref=e965]
+                      - cell "DNS only" [ref=e966]:
+                        - paragraph [ref=e967]: DNS only
+                      - cell "Auto" [ref=e968]:
+                        - generic [ref=e970]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e971]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e972]:
+                          - text: Edit
+                          - generic [ref=e973]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e975]
+                    - row "Warning CAA aluxartandframes.shop 0 issue pki.goog DNS only Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e977]:
+                      - cell [ref=e978]:
+                        - checkbox [ref=e980]
+                      - cell "Warning" [ref=e981]:
+                        - button "Warning" [ref=e982]:
+                          - img [ref=e983]
+                      - cell "CAA" [ref=e986]:
+                        - generic "CAA - modified 19 hours ago" [ref=e988]: CAA
+                      - cell "aluxartandframes.shop" [ref=e989]:
+                        - generic "aluxartandframes.shop" [ref=e990]
+                      - cell "0 issue pki.goog" [ref=e991]:
+                        - generic "0 issue pki.goog" [ref=e994]
+                      - cell "DNS only" [ref=e995]:
+                        - paragraph [ref=e996]: DNS only
+                      - cell "Auto" [ref=e997]:
+                        - generic [ref=e999]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1000]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1001]:
+                          - text: Edit
+                          - generic [ref=e1002]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e1004]
+                    - row "Warning CAA aluxartandframes.shop 0 issue letsencrypt.org DNS only Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1006]:
+                      - cell [ref=e1007]:
+                        - checkbox [ref=e1009]
+                      - cell "Warning" [ref=e1010]:
+                        - button "Warning" [ref=e1011]:
+                          - img [ref=e1012]
+                      - cell "CAA" [ref=e1015]:
+                        - generic "CAA - modified 19 hours ago" [ref=e1017]: CAA
+                      - cell "aluxartandframes.shop" [ref=e1018]:
+                        - generic "aluxartandframes.shop" [ref=e1019]
+                      - cell "0 issue letsencrypt.org" [ref=e1020]:
+                        - generic "0 issue letsencrypt.org" [ref=e1023]
+                      - cell "DNS only" [ref=e1024]:
+                        - paragraph [ref=e1025]: DNS only
+                      - cell "Auto" [ref=e1026]:
+                        - generic [ref=e1028]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1029]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1030]:
+                          - text: Edit
+                          - generic [ref=e1031]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e1033]
+                    - row "CNAME auth owdfoxglbxrqhgqbvkon.supabase.co DNS only Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1035]:
+                      - cell [ref=e1036]:
+                        - checkbox [ref=e1038]
+                      - cell [ref=e1039]
+                      - cell "CNAME" [ref=e1040]:
+                        - generic "CNAME - modified 13 minutes ago" [ref=e1223]: CNAME
+                      - cell "auth" [ref=e1043]:
+                        - generic "auth.aluxartandframes.shop" [ref=e1044]: auth
+                      - cell "owdfoxglbxrqhgqbvkon.supabase.co" [ref=e1045]:
+                        - generic "owdfoxglbxrqhgqbvkon.supabase.co" [ref=e1048]
+                      - cell "DNS only" [ref=e1049]:
+                        - paragraph [ref=e1056]: DNS only
+                      - cell "Auto" [ref=e1057]:
+                        - generic [ref=e1059]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1060]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1061]:
+                          - text: Edit
+                          - generic [ref=e1062]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e1064]
+                    - row "CNAME _domainconnect _domainconnect.vercel-dns.com Proxied Auto Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1066]:
+                      - cell [ref=e1067]:
+                        - checkbox [ref=e1069]
+                      - cell [ref=e1070]
+                      - cell "CNAME" [ref=e1071]:
+                        - generic "CNAME - modified 19 hours ago" [ref=e1073]: CNAME
+                      - cell "_domainconnect" [ref=e1074]:
+                        - generic "_domainconnect.aluxartandframes.shop" [ref=e1075]: _domainconnect
+                      - cell "_domainconnect.vercel-dns.com" [ref=e1076]:
+                        - generic "_domainconnect.vercel-dns.com" [ref=e1079]
+                      - cell "Proxied" [ref=e1080]:
+                        - paragraph [ref=e1087]: Proxied
+                      - cell "Auto" [ref=e1088]:
+                        - generic [ref=e1090]: Auto
+                      - cell "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1091]:
+                        - button "Edit When toggled open, an additional table row will be added below this row to enable editing DNS records. caret-right" [ref=e1092]:
+                          - text: Edit
+                          - generic [ref=e1093]: When toggled open, an additional table row will be added below this row to enable editing DNS records.
+                          - img "caret-right" [ref=e1095]
+          - generic [ref=e729]:
+            - generic [ref=e731]:
+              - heading "Cloudflare Nameservers" [level=3] [ref=e732]
+              - paragraph [ref=e734]:
+                - text: To use Cloudflare,
+                - link "change your nameservers" [ref=e735] [cursor=pointer]:
+                  - /url: https://developers.cloudflare.com/dns/zone-setups/full-setup
+                - text: ", or authoritative DNS servers. These are your assigned Cloudflare nameservers."
+            - table [ref=e738] [cursor=pointer]:
+              - rowgroup [ref=e739]:
+                - row "Type Value" [ref=e740]:
+                  - columnheader "Type" [ref=e741]
+                  - columnheader "Value" [ref=e742]
+              - rowgroup [ref=e743]:
+                - row "NS betty.ns.cloudflare.com" [ref=e744]:
+                  - cell "NS" [ref=e745]
+                  - cell "betty.ns.cloudflare.com" [ref=e746]
+                - row "NS rocco.ns.cloudflare.com" [ref=e747]:
+                  - cell "NS" [ref=e748]
+                  - cell "rocco.ns.cloudflare.com" [ref=e749]
+      - contentinfo [ref=e750]:
+        - list [ref=e752]:
+          - listitem [ref=e753]:
+            - link "Support" [ref=e754] [cursor=pointer]:
+              - /url: https://support.cloudflare.com
+          - listitem [ref=e755]:
+            - link "System status" [ref=e756] [cursor=pointer]:
+              - /url: https://www.cloudflarestatus.com
+          - listitem [ref=e757]:
+            - link "Careers" [ref=e758] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/careers/
+          - listitem [ref=e759]:
+            - link "Terms of Use" [ref=e760] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/website-terms/
+          - listitem [ref=e761]:
+            - link "Report Security Issues" [ref=e762] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/disclosure/
+          - listitem [ref=e763]:
+            - link "Privacy Policy" [ref=e764] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/privacypolicy/
+          - listitem [ref=e765]:
+            - button "A blue and white pill with a checkmark and an x, representing privacy choices Cookie Preferences" [ref=e766] [cursor=pointer]:
+              - img "A blue and white pill with a checkmark and an x, representing privacy choices" [ref=e767]
+              - text: Cookie Preferences
+          - listitem [ref=e768]:
+            - generic [ref=e769]: © 2026 Cloudflare, Inc.
+  - generic [ref=e789]:
+    - generic [ref=e790]:
+      - heading "Enable Agent Lee access" [level=3] [ref=e791]
+      - paragraph [ref=e792]: Agent Lee needs a read-only API token to access your account.
+      - button "Read more" [ref=e795] [cursor=pointer]:
+        - text: Read more
+        - img [ref=e796]
+    - button "Create Token" [ref=e798] [cursor=pointer]
+  - generic:
+    - region "Notifications"
+  - status [ref=e799]:
+    - generic [ref=e800]:
+      - img [ref=e802]
+      - generic [ref=e805]:
+        - paragraph [ref=e806]: Try the new DNS experience
+        - paragraph [ref=e807]: Easier record management with resizable columns, pinned records, and more.
+        - button "Try now" [ref=e809] [cursor=pointer]
+      - button "Dismiss" [ref=e810] [cursor=pointer]:
+        - img [ref=e811]

@@ -1,0 +1,142 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - link "Alux Art" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - link "Browse styles" [ref=e5] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e6]:
+      - paragraph [ref=e7]: Legal
+      - heading "Privacy Policy" [level=1] [ref=e8]
+      - paragraph [ref=e9]: "Effective date: 21 May 2026"
+      - generic [ref=e10]:
+        - heading "1. Who We Are" [level=2] [ref=e11]
+        - paragraph [ref=e12]: Alux Art and Frames (“Alux Art”, “we”, “us”) operates the Virtual Photo Studio at aluxartandframes.shop. This Privacy Policy explains what personal data we collect, why we collect it, and how we protect it.
+        - paragraph [ref=e13]:
+          - strong [ref=e14]: "Data Controller:"
+          - text: Alux Art and Frames, Nigeria.
+          - strong [ref=e15]: "Contact:"
+          - link "aluxartandframes@gmail.com" [ref=e16] [cursor=pointer]:
+            - /url: mailto:aluxartandframes@gmail.com
+        - heading "2. Data We Collect" [level=2] [ref=e17]
+        - paragraph [ref=e18]:
+          - strong [ref=e19]: "Account data:"
+          - text: Your email address, display name (if provided), and authentication credentials when you register.
+        - paragraph [ref=e20]:
+          - strong [ref=e21]: "Identity photos:"
+          - text: When you create a shoot, you upload photos of your face and body. These are used by our AI system to generate your portraits. Because these photos contain biometric information, we treat them with the highest level of care and restrict their use strictly to your shoot.
+        - paragraph [ref=e22]:
+          - strong [ref=e23]: "Transaction data:"
+          - text: Purchase history, template identifiers, Paystack transaction references, and shoot credits.
+        - paragraph [ref=e24]:
+          - strong [ref=e25]: "Creator data:"
+          - text: If you register as a Creator, we collect your bank account details (account number, bank name, and account name) for payout purposes.
+        - paragraph [ref=e26]:
+          - strong [ref=e27]: "Usage data:"
+          - text: Pages visited, features used, and error logs for debugging purposes. We do not use third-party analytics or advertising trackers.
+        - heading "3. How We Use Your Data" [level=2] [ref=e28]
+        - table [ref=e29]:
+          - rowgroup [ref=e30]:
+            - row "Data Purpose" [ref=e31]:
+              - columnheader "Data" [ref=e32]
+              - columnheader "Purpose" [ref=e33]
+          - rowgroup [ref=e34]:
+            - row "Email address Account management, purchase receipts, service notifications" [ref=e35]:
+              - cell "Email address" [ref=e36]
+              - cell "Account management, purchase receipts, service notifications" [ref=e37]
+            - row "Identity photos AI portrait generation for your specific shoot only" [ref=e38]:
+              - cell "Identity photos" [ref=e39]
+              - cell "AI portrait generation for your specific shoot only" [ref=e40]
+            - row "Transaction data Payment processing, dispute resolution, purchase history" [ref=e41]:
+              - cell "Transaction data" [ref=e42]
+              - cell "Payment processing, dispute resolution, purchase history" [ref=e43]
+            - row "Creator bank details Paystack subaccount creation and payout settlements" [ref=e44]:
+              - cell "Creator bank details" [ref=e45]
+              - cell "Paystack subaccount creation and payout settlements" [ref=e46]
+            - row "Usage data Debugging and improving the service" [ref=e47]:
+              - cell "Usage data" [ref=e48]
+              - cell "Debugging and improving the service" [ref=e49]
+        - paragraph [ref=e50]: We do not sell your data. We do not use your identity photos to train AI models. We do not run advertising on the Platform.
+        - heading "4. Identity Photos — Special Notice" [level=2] [ref=e51]
+        - paragraph [ref=e52]: "Your identity photos (selfies and pose references you upload) receive the strongest protections we apply:"
+        - list [ref=e53]:
+          - listitem [ref=e54]: Stored in Supabase secure storage, accessible only to you and our generation pipeline during your active shoot.
+          - listitem [ref=e55]: Used solely to generate your requested portraits for that shoot.
+          - listitem [ref=e56]: Not shared with third parties.
+          - listitem [ref=e57]: Automatically and permanently deleted within 48 hours of shoot completion or expiry.
+        - paragraph [ref=e58]: We process your identity photos under the consent you give when you create a shoot. You may withdraw consent at any time by not submitting new shoots; existing photos will be deleted on their normal 48-hour cycle.
+        - heading "5. Sharing Your Data" [level=2] [ref=e59]
+        - paragraph [ref=e60]: "We share data only where necessary to deliver the Service:"
+        - paragraph [ref=e61]:
+          - strong [ref=e62]: "Paystack:"
+          - text: Processes all payments. Your payment card details are handled entirely by Paystack and are never stored on our servers. Their privacy policy governs payment data.
+        - paragraph [ref=e63]: We do not share your data with advertisers, data brokers, or any other third parties beyond Paystack.
+        - heading "6. Data Retention" [level=2] [ref=e64]
+        - table [ref=e65]:
+          - rowgroup [ref=e66]:
+            - row "Data Retention Period" [ref=e67]:
+              - columnheader "Data" [ref=e68]
+              - columnheader "Retention Period" [ref=e69]
+          - rowgroup [ref=e70]:
+            - row "Account data Until you delete your account" [ref=e71]:
+              - cell "Account data" [ref=e72]
+              - cell "Until you delete your account" [ref=e73]
+            - row "Identity photos 48 hours after shoot completion or expiry" [ref=e74]:
+              - cell "Identity photos" [ref=e75]
+              - cell "48 hours after shoot completion or expiry" [ref=e76]
+            - row "Generated portraits 48 hours after shoot completion or expiry" [ref=e77]:
+              - cell "Generated portraits" [ref=e78]
+              - cell "48 hours after shoot completion or expiry" [ref=e79]
+            - row "Transaction records 7 years (tax and legal compliance)" [ref=e80]:
+              - cell "Transaction records" [ref=e81]
+              - cell "7 years (tax and legal compliance)" [ref=e82]
+            - row "Creator bank details Until the Creator removes them or closes their account" [ref=e83]:
+              - cell "Creator bank details" [ref=e84]
+              - cell "Until the Creator removes them or closes their account" [ref=e85]
+        - heading "7. Your Rights" [level=2] [ref=e86]
+        - paragraph [ref=e87]: "You have the right to:"
+        - list [ref=e88]:
+          - listitem [ref=e89]:
+            - strong [ref=e90]: Access
+            - text: the personal data we hold about you.
+          - listitem [ref=e91]:
+            - strong [ref=e92]: Correct
+            - text: inaccurate or incomplete data.
+          - listitem [ref=e93]:
+            - strong [ref=e94]: Delete
+            - text: your account and associated personal data.
+          - listitem [ref=e95]:
+            - strong [ref=e96]: Withdraw consent
+            - text: for processing of identity photos by not submitting new shoots.
+          - listitem [ref=e97]:
+            - strong [ref=e98]: Object
+            - text: to processing where we rely on legitimate interest.
+        - paragraph [ref=e99]:
+          - text: To exercise any of these rights, email us at
+          - link "aluxartandframes@gmail.com" [ref=e100] [cursor=pointer]:
+            - /url: mailto:aluxartandframes@gmail.com
+          - text: . We will respond within 30 days.
+        - heading "8. Security" [level=2] [ref=e101]
+        - paragraph [ref=e102]: We use encrypted connections (HTTPS) for all data in transit, Supabase Row-Level Security to enforce access controls on our database, and server-side-only API keys that never reach the browser. We do not store payment card details — Paystack handles all card data in a PCI-compliant environment.
+        - heading "9. Cookies" [level=2] [ref=e103]
+        - paragraph [ref=e104]: We use only functional cookies required for authentication and session management. We do not use advertising, tracking, or third-party analytics cookies.
+        - heading "10. Children" [level=2] [ref=e105]
+        - paragraph [ref=e106]: The Platform is not intended for users under 18 years of age. We do not knowingly collect personal data from minors. If you believe a minor has provided us with personal data, please contact us and we will delete it promptly.
+        - heading "11. Changes to This Policy" [level=2] [ref=e107]
+        - paragraph [ref=e108]: We may update this Privacy Policy from time to time. When we do, we will update the effective date at the top of this page. Your continued use of the Platform after changes are posted constitutes your acceptance of the revised Policy.
+        - heading "12. Contact" [level=2] [ref=e109]
+        - paragraph [ref=e110]:
+          - strong [ref=e111]: Alux Art and Frames
+          - text: "Email:"
+          - link "aluxartandframes@gmail.com" [ref=e112] [cursor=pointer]:
+            - /url: mailto:aluxartandframes@gmail.com
+          - text: "Website: aluxartandframes.shop"
+        - generic [ref=e113]:
+          - link "Terms of Service →" [ref=e114] [cursor=pointer]:
+            - /url: /terms
+          - link "← Back to Home" [ref=e115] [cursor=pointer]:
+            - /url: /
+    - contentinfo [ref=e116]:
+      - generic [ref=e117]: Alux Art
+      - generic [ref=e118]: © 2026 Alux Art and Frames. All rights reserved.
+  - alert [ref=e119]
