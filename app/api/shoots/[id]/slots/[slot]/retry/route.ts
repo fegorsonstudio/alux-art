@@ -34,8 +34,8 @@ export async function POST(
     SELECT id, status FROM shoot_images WHERE shoot_id = ${id} AND slot = ${slotNum}
   `;
   if (!slotRow) return NextResponse.json({ error: "Slot not found" }, { status: 404 });
-  if (slotRow.status !== "FAILED") {
-    return NextResponse.json({ error: "Slot is not in FAILED state", status: slotRow.status }, { status: 409 });
+  if (slotRow.status !== "FAILED" && slotRow.status !== "GENERATING") {
+    return NextResponse.json({ error: "Slot is not in a retryable state", status: slotRow.status }, { status: 409 });
   }
 
   await sql`

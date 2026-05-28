@@ -131,6 +131,22 @@ export async function POST(
 
   }
 
+  // Reset slots stuck in GENERATING for > 10 minutes — Vercel timeout can orphan them
+  // mid-save (fal.ai call succeeds but R2 upload times out), leaving no worker to continue.
+  const stuckCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const stuckReset = await sql`
+    UPDATE shoot_images
+    SET status = 'QUEUED', stage = 'Reset: timed out during save', updated_at = ${now}
+    WHERE shoot_id = ${id}
+    AND status = 'GENERATING'
+    AND updated_at < ${stuckCutoff}
+    RETURNING slot
+  `.catch(() => []);
+  if ((stuckReset as { slot: number }[]).length > 0) {
+    console.warn(`[start] reset ${(stuckReset as { slot: number }[]).length} stuck GENERATING slot(s):`,
+      (stuckReset as { slot: number }[]).map((r) => r.slot));
+  }
+
   try {
     const result = await startGenerationWorker(id, { maxSlots: 1, resolution });
 
