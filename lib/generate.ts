@@ -6,7 +6,7 @@ import sql from "./db";
 import { normalizePackageSize, type AspectRatio } from "./types";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
-import { r2SignedDownloadUrl, r2Upload, r2Delete } from "./r2";
+import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -830,17 +830,27 @@ async function saveSlotImage(
 ): Promise<string> {
   const imageRes = await fetch(imageUrl);
   if (!imageRes.ok) throw new Error(`Image fetch failed: ${imageRes.status}`);
+  if (!imageRes.body) throw new Error(`Image fetch returned no body`);
 
   const contentType =
     imageRes.headers.get("content-type")?.startsWith("image/")
       ? imageRes.headers.get("content-type")!
       : "image/png";
-  const bytes = Buffer.from(await imageRes.arrayBuffer());
   const ext = contentType === "image/jpeg" ? "jpg" : "png";
   const storagePath = `${userId}/${shootId}/slot-${slot}.${ext}`;
   const bucket = isTestMode ? "test" : "generated-4k";
 
-  await r2Upload(bucket, storagePath, bytes, contentType);
+  // Stream directly from fal.ai CDN → R2 without buffering the full image in memory.
+  // A 4K PNG can be 20-50MB; the old arraybuffer approach loaded everything into heap
+  // and took 60-120s, frequently hitting Vercel's 300s timeout and orphaning slots.
+  const contentLength = imageRes.headers.get("content-length");
+  await r2StreamUpload(
+    bucket,
+    storagePath,
+    imageRes.body,
+    contentType,
+    contentLength ? Number(contentLength) : undefined
+  );
   return storagePath;
 }
 

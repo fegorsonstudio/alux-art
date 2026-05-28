@@ -240,6 +240,8 @@ export default function AdminPage() {
 
   const [expandedShootId, setExpandedShootId] = useState<string | null>(null);
   const [shootDebug, setShootDebug] = useState<Record<string, ShootDebug | "loading" | "error">>({});
+  const [restartingId, setRestartingId] = useState<string | null>(null);
+  const [restartMsg, setRestartMsg] = useState<Record<string, string>>({});
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponCode, setCouponCode] = useState("");
@@ -288,6 +290,31 @@ export default function AdminPage() {
       .then(d => { if (d?.creators) setAdminCreators(d.creators); })
       .catch(() => {});
   }, []);
+
+  const restartShoot = async (shootId: string) => {
+    setRestartingId(shootId);
+    setRestartMsg(prev => ({ ...prev, [shootId]: "" }));
+    try {
+      const res = await fetch(`/api/shoots/${shootId}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolution: "4K" }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? "Error");
+      setRestartMsg(prev => ({ ...prev, [shootId]: `Started — status: ${d.status ?? "processing"}` }));
+      setTimeout(() => {
+        fetch("/api/admin/overview")
+          .then(r => r.json())
+          .then(d => setData(d))
+          .catch(() => {});
+      }, 2500);
+    } catch (e) {
+      setRestartMsg(prev => ({ ...prev, [shootId]: e instanceof Error ? e.message : "Error" }));
+    } finally {
+      setRestartingId(null);
+    }
+  };
 
   const loadShootDebug = async (id: string) => {
     if (expandedShootId === id) { setExpandedShootId(null); return; }
@@ -634,6 +661,23 @@ export default function AdminPage() {
                   </div>
                   {isExpanded && (
                     <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "14px 16px", margin: "2px 0 6px", fontSize: "0.78rem" }}>
+                      {s.status !== "COMPLETE" && (
+                        <div style={{ marginBottom: 14, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                          <button
+                            className={styles.banBtn}
+                            style={{ background: "rgba(47,142,154,0.12)", borderColor: "rgba(47,142,154,0.4)", color: "#2f8e9a", fontWeight: 600 }}
+                            onClick={(e) => { e.stopPropagation(); restartShoot(s.id); }}
+                            disabled={restartingId === s.id}
+                          >
+                            {restartingId === s.id ? "Restarting…" : "Restart generation"}
+                          </button>
+                          {restartMsg[s.id] && (
+                            <span style={{ fontSize: "0.74rem", color: restartMsg[s.id].startsWith("Started") ? "#177767" : "#b94a4a" }}>
+                              {restartMsg[s.id]}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {debug === "loading" && <span style={{ color: "#7aafb4" }}>Loading…</span>}
                       {debug === "error" && <span style={{ color: "#b94a4a" }}>Failed to load debug data.</span>}
                       {debug && debug !== "loading" && debug !== "error" && (

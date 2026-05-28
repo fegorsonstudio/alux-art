@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   allowedDevOrigins: ["172.20.10.2"],
   poweredByHeader: false,
+  // Raise incoming request body limit — default 4MB is too small for
+  // any route that might receive base64-encoded image payloads.
+  experimental: {
+    serverBodyLimit: "50mb",
+  },
   images: {
     remotePatterns: [
       {
