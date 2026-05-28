@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useCurrency } from "@/lib/useCurrency";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
+import CheckoutPanel from "./CheckoutPanel";
 
 function renderMarkdown(text: string) {
   // Split into lines, handle > blockquotes, then bold **...**
@@ -33,6 +34,11 @@ interface TemplateImage {
   url: string | null;
   purpose: string;
   tag?: string;
+  customName?: string | null;
+  note?: string | null;
+  noteHidden?: boolean;
+  storagePath: string;
+  storageBucket: string;
   displayOrder: number;
 }
 
@@ -113,7 +119,6 @@ function StarWidget({
 
 export default function TemplatePage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
   const [template, setTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,11 +127,11 @@ export default function TemplatePage() {
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [validating, setValidating] = useState(false);
-  const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -233,12 +238,11 @@ export default function TemplatePage() {
   };
 
   const purchase = () => {
-    setBuying(true);
-    const params = new URLSearchParams();
-    params.set("pkg", String(selectedPkg));
-    params.set("currency", currency);
-    if (couponCode) params.set("coupon", couponCode);
-    router.push(`/marketplace/${id}/book?${params.toString()}`);
+    if (!isLoggedIn) {
+      window.location.href = `/login?next=/marketplace/${id}`;
+      return;
+    }
+    setCheckoutOpen(true);
   };
 
   if (loading) {
@@ -473,12 +477,7 @@ export default function TemplatePage() {
               type="button"
               className={styles.buyBtn}
               onClick={purchase}
-              disabled={buying}
-            >{buying ? "Loading..." : "Book This Look"}</button>
-
-            <p className={styles.buyNote}>
-              Add your identity photos, customise the reference images, then pay — all on the next screen.
-            </p>
+            >Book This Look</button>
           </div>
 
           <div className={styles.metaGrid}>
@@ -496,6 +495,20 @@ export default function TemplatePage() {
           )}
         </div>
       </div>
+
+      {checkoutOpen && (
+        <CheckoutPanel
+          templateId={id}
+          template={template}
+          initialPkg={selectedPkg}
+          pkgOptions={pkgOptions}
+          currency={currency}
+          formatPrice={formatPrice}
+          couponCode={couponCode}
+          couponResult={couponResult}
+          onClose={() => setCheckoutOpen(false)}
+        />
+      )}
     </div>
   );
 }
