@@ -18,7 +18,7 @@ const SHOOT_BRIEF_TIMEOUT_MS = 270_000;
 const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
 
 // Appended to every fal.ai prompt as positive anatomical facts
-const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. Closed composed lips with neutral or subtle expression. Symmetrical natural facial anatomy.";
+const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. Natural lips with a subtle micro-expression — fractionally parted or carrying a micro-asymmetric curve; no smile, no visible teeth, no open mouth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -378,7 +378,9 @@ To lock in the image generator's behavioral constraints and protect the subject'
 III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 
 1. The Dentition Safeguard — ABSOLUTE RULE
-NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. This is an unconditional rule that applies regardless of what the identity photos show. Every single pose in every prompt MUST specify closed lips or a neutral/serious expression. Do not add smiles or laughter even if identity photos show them.
+NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. These are unconditionally prohibited regardless of what the identity photos show. Do not add smiles or laughter even if identity photos show them.
+
+HOWEVER — "closed lips" is no longer the target. The target is ALIVE lips. The following subtle mouth states are not only permitted but required: lips fractionally parted (natural breathing stance), subtle asymmetric lip curve, soft tension in the lower lip, relaxed jawline. The distinction is: NO SMILING / NO TEETH / NO OPEN MOUTH — but natural, unlocked, human lip micro-states are mandatory.
 
 2. Styling, Hairstyles, and Overrides
 By default, preserve the hair shown in Group A identity images. However, if Group C contains an image tagged [HAIRSTYLE], you MUST override all hair descriptions from Group A and Group B with the EXACT hairstyle visible in the [HAIRSTYLE] reference image. This override is absolute — even if the [HAIRSTYLE] image shows a shaved head, bald head, very short crop, or any other style that differs dramatically from Group A, you must describe that exact style in every portrait prompt. Never fall back to Group A hair when a [HAIRSTYLE] tag is present.
@@ -395,7 +397,7 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 - No Background Spills: Do NOT mix background environment elements of Group C into the Group B background setting.
 
 4. Cohesive Portfolio Rule
-Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Every portrait prompt must state anatomical facts positively: exactly two hands with five natural fingers each, eyes with natural catchlights, and closed composed lips with a neutral or subtle expression. State these as descriptive facts in the prompt body, not as negative constraints.
+Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Every portrait prompt must state anatomical facts positively: exactly two hands with five natural fingers each, natural eyes with catchlights, and natural lips with a subtle micro-expression (fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth). State these as descriptive facts in the prompt body, not as negative constraints.
 
 5. Camera & Lens Consistency
 Dynamically select one of the world's top 4 medium-format camera systems (Hasselblad, Phase One, Fujifilm GFX, or Leica S) and keep it identical across all 9 portrait prompts. Vary focal lengths per shot type.
@@ -405,6 +407,51 @@ Every prompt must incorporate organic atmospheric elements: volumetric dust mote
 
 7. Self-Containment Mandate
 Every single prompt must be fully self-contained. Never reference other prompts. Fully articulate all details in every prompt, even if repeated. Do NOT include any internal reasoning phrases such as "as seen in identity photo X", "from reference image Y", "per Group C", or any other meta-references to the input assets. The output prompt text is sent directly to an image generator that has no context about the input groups — describe everything explicitly in photographic language.
+
+9. Micro-Expression Mandate — REQUIRED IN EVERY PORTRAIT PROMPT
+Every portrait prompt MUST include exactly one phrase from each of the three pools below. Choose phrases that match the slot's mood, pose, and shot type. Vary your choices across all slots — no two slots should carry the same combination.
+
+CRITICAL CONSTRAINT: These phrases describe impression, gaze quality, and lip state ONLY. They must never alter face shape, eye spacing, nose shape, jawline, or skin tone. They describe how the subject LOOKS in a captured moment — not structural modification.
+
+EYE & BROW POOL (choose 1 per slot):
+- "subtle crow's feet at the outer corners of the eyes — natural warmth"
+- "slightly parted upper eyelids — focused and fully present"
+- "micro-lift of the inner brow — a trace of soft curiosity"
+- "faint crinkle between the eyebrows — deep, inward thought"
+- "a fractional squint — natural reaction to studio light, eyes alive and intense"
+- "sharp glint of focus in the pupils — deliberate connection with the lens"
+
+MOUTH & JAW POOL (choose 1 per slot):
+- "lips fractionally parted — natural relaxed breathing stance"
+- "subtle asymmetric lip curve — an unspoken thought at the surface"
+- "soft tension in the lower lip — quiet determination"
+- "relaxed jawline with lips barely parted — unheld, genuinely human"
+- "slight upturn of one mouth corner — micro-confidence, not a smile"
+
+GLOBAL IMPRESSION POOL (choose 1 per slot):
+- "mid-thought expression — a candid, unrepeatable moment"
+- "fleeting look of serene contemplation"
+- "micro-expression of warmth — neutral pose with underlying emotion"
+- "an understated knowing glance — the subject is actively engaging the viewer"
+- "subtle breath-in expression — the micro-second before speaking"
+- "candid unposed facial micro-movements — the opposite of synthetic perfection"
+
+Place these three chosen phrases inside the Subject section of the prompt, grouped after the pose description. Write them as positive descriptive facts, not as instructions to the generator.
+
+CATCHLIGHT RULE — REQUIRED when the shot type is headshot, close-up, or medium (i.e. any shot where the eyes are a prominent feature). Skip for full-body shots where the face is small in frame.
+
+For every applicable slot, add one phrase from this pool that describes the shape, position, and light source of the catchlight in the subject's eyes. This is what separates a live eye from a painted surface:
+
+CATCHLIGHT POOL (choose 1 per applicable slot — vary across slots):
+- "a sharp circular catchlight from a direct softbox at 10 o'clock, reflected in the iris"
+- "dual rectangular window catchlights — natural light quality with real depth in the iris"
+- "a ring light catchlight as a fine white halo in the iris, adding magnetic pull"
+- "single butterfly catchlight high and centered — classic studio beauty, eyes like glass"
+- "diffused octagonal catchlight with warm color temperature in the reflection"
+- "small key-light catchlight at 2 o'clock — precise, intentional, alive"
+- "a soft crescent catchlight from a large fill panel — gentle and editorial"
+
+Place the catchlight phrase immediately after the eye/brow micro-expression phrase in the Subject section.
 
 IV. THE 10th PROMPT: THE GRAPHIC QUOTE CARD
 
@@ -422,7 +469,7 @@ IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolida
     {
       "prompt_index": 1,
       "is_quote_card": false,
-      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — closed lips, neutral/composed; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, closed composed lips."
+      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — micro-expression from the three pools: one eye/brow phrase, one mouth/jaw phrase, one global impression phrase; catchlight phrase if eyes are visible; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, natural lips with subtle micro-expression (fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)."
     },
     {
       "prompt_index": 10,
