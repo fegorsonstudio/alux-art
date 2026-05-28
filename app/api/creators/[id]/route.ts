@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { r2ProxyUrl } from "@/lib/r2";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [creator] = await sql`SELECT * FROM creators WHERE id = ${id} AND is_active = true`;
+  const isUuid = UUID_RE.test(id);
+  const [creator] = isUuid
+    ? await sql`SELECT * FROM creators WHERE id = ${id} AND is_active = true`
+    : await sql`SELECT * FROM creators WHERE LOWER(username) = LOWER(${id}) AND is_active = true`;
+
   if (!creator) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const avatarUrl = creator.avatar_storage_path
@@ -14,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const templates = await sql`
     SELECT id, title, category, price_ngn, purchase_count, cover_storage_path, cover_bucket, created_at
-    FROM templates WHERE creator_id = ${id} AND status = 'published' ORDER BY created_at DESC
+    FROM templates WHERE creator_id = ${creator.id} AND status = 'published' ORDER BY created_at DESC
   `;
 
   const templatesWithUrls = templates.map((t) => ({
@@ -28,6 +34,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json({
     creator: {
       id: creator.id,
+      username: creator.username ?? null,
       displayName: creator.display_name,
       bio: creator.bio,
       avatarUrl,

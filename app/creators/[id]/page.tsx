@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./creator.module.css";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface CreatorProfile {
   id: string;
+  username: string | null;
   displayName: string;
   bio?: string;
   avatarUrl: string | null;
@@ -29,6 +32,7 @@ interface CreatorProfile {
 
 export default function CreatorPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,9 +42,17 @@ export default function CreatorPage() {
   useEffect(() => {
     fetch(`/api/creators/${id}`)
       .then(r => r.json())
-      .then(d => { if (d.creator) setCreator(d.creator); })
+      .then(d => {
+        if (d.creator) {
+          setCreator(d.creator);
+          // If accessed by UUID but creator has a username, redirect to clean URL
+          if (UUID_RE.test(id) && d.creator.username) {
+            router.replace(`/creators/${d.creator.username}`);
+          }
+        }
+      })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
     if (!storFont.googleUrl) return;

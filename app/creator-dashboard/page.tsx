@@ -61,7 +61,7 @@ interface ShowcaseShoot {
 }
 
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
-interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
+interface Creator { id: string; display_name: string; username?: string | null; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
 
 const SHOWCASE_PACKAGES = [
   { count: 1, label: "1 image", price: 1000 },
@@ -156,6 +156,10 @@ function CreatorDashboard() {
   const [storefrontFont, setStorefrontFont] = useState("default");
   const [storefrontSaving, setStorefrontSaving] = useState(false);
   const [storefrontSaved, setStorefrontSaved] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "saving" | "saved">("idle");
+  const [usernameMsg, setUsernameMsg] = useState("");
+  const usernameCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
@@ -167,6 +171,7 @@ function CreatorDashboard() {
       if (!res.ok) { setLoadError(true); setLoading(false); return; }
       const d = await res.json();
       setCreator(d.creator);
+      setUsernameInput(d.creator.username ?? "");
       setTemplates(d.templates ?? []);
       setStats(d.stats);
       setLoading(false);
@@ -665,6 +670,42 @@ function CreatorDashboard() {
     loadDashboard();
   };
 
+  const handleUsernameChange = (val: string) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    setUsernameInput(clean);
+    setUsernameStatus("idle");
+    setUsernameMsg("");
+    if (usernameCheckRef.current) clearTimeout(usernameCheckRef.current);
+    if (!clean || clean === creator?.username) return;
+    if (clean.length < 3) { setUsernameStatus("invalid"); setUsernameMsg("At least 3 characters"); return; }
+    setUsernameStatus("checking");
+    usernameCheckRef.current = setTimeout(async () => {
+      const r = await fetch(`/api/creators/check-username?q=${encodeURIComponent(clean)}`);
+      const d = await r.json();
+      if (d.available) { setUsernameStatus("available"); setUsernameMsg("Available"); }
+      else { setUsernameStatus("taken"); setUsernameMsg(d.reason ?? "Already taken"); }
+    }, 500);
+  };
+
+  const saveUsername = async () => {
+    if (usernameStatus !== "available") return;
+    setUsernameStatus("saving");
+    const r = await fetch("/api/creator-dashboard/username", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usernameInput }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      setCreator(c => c ? { ...c, username: d.username } : c);
+      setUsernameStatus("saved");
+      setUsernameMsg(`aluxartandframes.shop/creators/${d.username}`);
+    } else {
+      setUsernameStatus("taken");
+      setUsernameMsg(d.error ?? "Could not save");
+    }
+  };
+
   const saveStorefront = async () => {
     setStorefrontSaving(true);
     await fetch("/api/creator/storefront", {
@@ -776,6 +817,76 @@ function CreatorDashboard() {
         </div>
       )}
 
+      {/* Username / profile URL */}
+      <div className={styles.storefrontSection}>
+        <button type="button" className={styles.storefrontToggle} onClick={() => {}}>
+          <span>Your Profile URL</span>
+        </button>
+        <div className={styles.storefrontContent}>
+          <div className={styles.storefrontGroup}>
+            <span className={styles.label}>Custom username</span>
+            <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 10px" }}>
+              {creator?.username
+                ? <>Your link: <strong>aluxartandframes.shop/creators/{creator.username}</strong></>
+                : "Set a username so people can find you at a clean URL."}
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ position: "relative", flex: 1 }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#7aafb4", fontSize: "0.85rem", pointerEvents: "none" }}>@</span>
+                <input
+                  value={usernameInput}
+                  onChange={e => handleUsernameChange(e.target.value)}
+                  placeholder="yourname"
+                  maxLength={30}
+                  style={{
+                    width: "100%",
+                    paddingLeft: 28,
+                    paddingRight: 12,
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                    borderRadius: 8,
+                    border: `1px solid ${usernameStatus === "available" ? "#2f8e9a" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#a7463c" : "rgba(67,159,169,0.28)"}`,
+                    background: "rgba(255,255,255,0.78)",
+                    fontSize: "0.9rem",
+                    fontFamily: "inherit",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={saveUsername}
+                disabled={usernameStatus !== "available"}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(67,159,169,0.3)",
+                  background: usernameStatus === "available" ? "#2f8e9a" : "rgba(255,255,255,0.6)",
+                  color: usernameStatus === "available" ? "#fff" : "#7aafb4",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  cursor: usernameStatus === "available" ? "pointer" : "not-allowed",
+                  whiteSpace: "nowrap",
+                  fontFamily: "inherit",
+                }}
+              >
+                {usernameStatus === "saving" ? "Saving..." : usernameStatus === "saved" ? "Saved!" : "Save"}
+              </button>
+            </div>
+            {usernameMsg && (
+              <p style={{
+                fontSize: "0.78rem",
+                marginTop: 6,
+                color: usernameStatus === "available" || usernameStatus === "saved" ? "#177767" : usernameStatus === "checking" ? "#7aafb4" : "#a7463c",
+              }}>
+                {usernameStatus === "checking" ? "Checking..." : usernameMsg}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Storefront settings */}
       <div className={styles.storefrontSection}>
         <button type="button" className={styles.storefrontToggle} onClick={() => setStorefrontOpen(o => !o)}>
@@ -823,7 +934,7 @@ function CreatorDashboard() {
             <div className={styles.storefrontActions}>
               {creator && (
                 <a
-                  href={`/creators/${creator.id}`}
+                  href={`/creators/${creator.username ?? creator.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.storefrontPreviewLink}
