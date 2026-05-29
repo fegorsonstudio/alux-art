@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCurrency, type Currency } from "@/lib/useCurrency";
 import styles from "./book.module.css";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import { Analytics } from "@/lib/analytics";
 
 interface TemplateImage {
   id: string;
@@ -132,6 +133,7 @@ export default function BookPage() {
       if (templateData.template) {
         const t: TemplateDetail = templateData.template;
         setTemplate(t);
+        Analytics.bookingStarted(t.id, t.title, t.priceNgn);
         // Initialize tagged refs from template images
         const tagged = (t.images ?? []).filter(img => img.purpose === "tagged" && img.tag);
         setTaggedRefs(tagged.map(img => ({
@@ -342,6 +344,7 @@ export default function BookPage() {
     if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
     if (data.authorizationUrl) {
+      Analytics.paymentInitiated(id as string, template?.title ?? "", pkgPrice ?? 0);
       window.location.href = data.authorizationUrl;
     } else {
       setError(data.error ?? "Payment initialization failed. Please try again.");

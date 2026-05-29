@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import styles from "./success.module.css";
+import { Analytics } from "@/lib/analytics";
 
 export default function BookSuccessPage() {
   const searchParams = useSearchParams();
   const shootId = searchParams.get("shoot_id");
+
+  useEffect(() => {
+    Analytics.paymentCompleted(shootId ?? "unknown", 0);
+  }, [shootId]);
 
   return (
     <div className={styles.page}>

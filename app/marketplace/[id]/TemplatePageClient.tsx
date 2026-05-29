@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Analytics } from "@/lib/analytics";
 import { useCurrency } from "@/lib/useCurrency";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
@@ -151,6 +152,7 @@ export default function TemplatePage() {
           setAvgRating(d.template.avgRating ?? null);
           setRatingCount(d.template.ratingCount ?? 0);
           setUserRating(d.template.userRating ?? null);
+          Analytics.templateViewed(d.template.id, d.template.title);
         }
       })
       .finally(() => setLoading(false));

@@ -9,6 +9,7 @@ import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
+import { Analytics } from "@/lib/analytics";
 
 const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
 type TemplateTag = typeof TEMPLATE_TAGS[number];
@@ -175,6 +176,7 @@ function CreatorDashboard() {
       setTemplates(d.templates ?? []);
       setStats(d.stats);
       setLoading(false);
+      Analytics.creatorDashboard();
     } catch {
       setLoadError(true);
       setLoading(false);
