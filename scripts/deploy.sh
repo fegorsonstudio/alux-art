@@ -15,6 +15,9 @@ echo "=== Building ==="
 npm --prefix "$APP_DIR" run build
 
 echo "=== Running new migrations ==="
+if [ -f "$APP_DIR/.env.local" ]; then
+  set -a; source "$APP_DIR/.env.local"; set +a
+fi
 node "$APP_DIR/scripts/migrate-vps.mjs"
 
 echo "=== Reloading PM2 ==="

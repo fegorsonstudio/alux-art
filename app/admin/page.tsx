@@ -222,11 +222,11 @@ function MigrationsCard() {
         </div>
       </div>
       <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "8px 0 12px" }}>
-        These columns must be added to Supabase before themes and custom reference names work.
-        Copy the SQL below and run it in the{" "}
-        <a href={SUPABASE_SQL_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#2f8e9a" }}>
-          Supabase SQL editor ↗
-        </a>
+        These must be applied to your VPS PostgreSQL database. Copy the SQL and run it on the VPS:
+        <br />
+        <code style={{ fontSize: "0.72rem", color: "#4e7076", background: "rgba(0,0,0,0.2)", padding: "2px 6px", borderRadius: 4 }}>
+          node --env-file=/home/aluxart/app/.env.local /home/aluxart/app/scripts/migrate-vps.mjs
+        </code>
       </p>
       <pre style={{
         background: "rgba(0,0,0,0.06)", borderRadius: 8, padding: "12px 14px",
@@ -236,10 +236,6 @@ function MigrationsCard() {
       <button className={styles.banBtn} onClick={copy} style={{ marginRight: 8 }}>
         {copied ? "Copied!" : "Copy SQL"}
       </button>
-      <a href={SUPABASE_SQL_URL} target="_blank" rel="noopener noreferrer" className={styles.banBtn}
-        style={{ textDecoration: "none", display: "inline-block" }}>
-        Open SQL editor ↗
-      </a>
     </div>
   );
 }
