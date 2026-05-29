@@ -38,6 +38,26 @@ export default function RootLayout({
         gtag('js', new Date());
         gtag('config', '${GA_ID}', { page_path: window.location.pathname });
       `}</Script>
+      <Script id="ga-errors" strategy="afterInteractive">{`
+        window.addEventListener('error', function(e) {
+          if (typeof gtag !== 'function') return;
+          gtag('event', 'js_error', {
+            error_message: (e.message || 'unknown').slice(0, 150),
+            error_source:  (e.filename || '').replace(window.location.origin, '').slice(0, 100),
+            error_line:    e.lineno || 0,
+            page_path:     window.location.pathname,
+          });
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+          if (typeof gtag !== 'function') return;
+          var msg = e.reason instanceof Error ? e.reason.message : String(e.reason || 'unhandled rejection');
+          gtag('event', 'js_error', {
+            error_message: msg.slice(0, 150),
+            error_source:  'promise',
+            page_path:     window.location.pathname,
+          });
+        });
+      `}</Script>
     </html>
   );
 }

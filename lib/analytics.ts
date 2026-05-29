@@ -30,4 +30,7 @@ export const Analytics = {
 
   marketplaceSearch: (query: string) =>
     trackEvent("search",             { search_term: query }),
+
+  apiError: (route: string, status: number) =>
+    trackEvent("api_error",          { route, status }),
 };
