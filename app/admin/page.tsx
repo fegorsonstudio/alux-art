@@ -233,6 +233,30 @@ function ErrorsPanel() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [resolving, setResolving] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyForClaude = () => {
+    if (errors.length === 0) return;
+    const lines = [
+      `Fix these errors from the Alux Art admin error log (${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}):`,
+      "",
+      ...errors.map((g, i) => {
+        const badge = g.type === "api_error" ? "API" : "JS";
+        const pages = g.pages?.slice(0, 3).join(", ") ?? "";
+        const parts = [
+          `${i + 1}. [${badge}] ${g.count}× — last seen ${timeAgo(g.last_seen)}`,
+          `   Message: ${g.message}`,
+        ];
+        if (g.source) parts.push(`   Source: ${g.source}`);
+        if (pages)    parts.push(`   Pages: ${pages}`);
+        return parts.join("\n");
+      }),
+    ];
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -287,6 +311,12 @@ function ErrorsPanel() {
           <button className={styles.banBtn} onClick={() => setRefreshKey(k => k + 1)} disabled={loading} style={{ marginLeft: 4 }}>
             {loading ? "…" : "↺"}
           </button>
+          {errors.length > 0 && (
+            <button className={styles.banBtn} onClick={copyForClaude}
+              style={{ borderColor: copied ? "rgba(68,204,136,0.4)" : undefined, color: copied ? "#44cc88" : undefined }}>
+              {copied ? "Copied!" : "Copy for Claude"}
+            </button>
+          )}
         </div>
       </div>
       {loading && errors.length === 0 ? (
