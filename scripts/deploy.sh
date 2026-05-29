@@ -16,9 +16,10 @@ npm --prefix "$APP_DIR" run build
 
 echo "=== Running new migrations ==="
 if [ -f "$APP_DIR/.env.local" ]; then
-  set -a; source "$APP_DIR/.env.local"; set +a
+  node --env-file="$APP_DIR/.env.local" "$APP_DIR/scripts/migrate-vps.mjs"
+else
+  node "$APP_DIR/scripts/migrate-vps.mjs"
 fi
-node "$APP_DIR/scripts/migrate-vps.mjs"
 
 echo "=== Reloading PM2 ==="
 pm2 reload aluxart
