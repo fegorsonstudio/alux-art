@@ -114,13 +114,18 @@ function dateBucket(iso: string): string {
   d.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (d.getTime() === today.getTime()) return "Today";
-  if (d.getTime() === yesterday.getTime()) return "Yesterday";
-  const diff = Math.floor((today.getTime() - d.getTime()) / 86400000);
-  if (diff < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const diffDays = Math.floor((today.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  // Start of current week (Monday)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  // Start of last week
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(weekStart.getDate() - 7);
+  if (d >= weekStart) return "This week";
+  if (d >= lastWeekStart) return "Last week";
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 function groupShootsByDate(shoots: ShootRow[]): { label: string; items: ShootRow[] }[] {
