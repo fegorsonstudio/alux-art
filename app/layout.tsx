@@ -39,22 +39,40 @@ export default function RootLayout({
         gtag('config', '${GA_ID}', { page_path: window.location.pathname });
       `}</Script>
       <Script id="ga-errors" strategy="afterInteractive">{`
+        function _logError(payload) {
+          if (typeof gtag === 'function') {
+            gtag('event', 'js_error', {
+              error_message: payload.message,
+              error_source:  payload.source,
+              error_line:    payload.line_number || 0,
+              page_path:     payload.page_path,
+            });
+          }
+          fetch('/api/errors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true,
+          }).catch(function(){});
+        }
         window.addEventListener('error', function(e) {
-          if (typeof gtag !== 'function') return;
-          gtag('event', 'js_error', {
-            error_message: (e.message || 'unknown').slice(0, 150),
-            error_source:  (e.filename || '').replace(window.location.origin, '').slice(0, 100),
-            error_line:    e.lineno || 0,
-            page_path:     window.location.pathname,
+          _logError({
+            type:        'js_error',
+            message:     (e.message || 'unknown').slice(0, 150),
+            source:      (e.filename || '').replace(window.location.origin, '').slice(0, 100),
+            line_number: e.lineno || 0,
+            page_path:   window.location.pathname,
+            user_agent:  navigator.userAgent.slice(0, 200),
           });
         });
         window.addEventListener('unhandledrejection', function(e) {
-          if (typeof gtag !== 'function') return;
           var msg = e.reason instanceof Error ? e.reason.message : String(e.reason || 'unhandled rejection');
-          gtag('event', 'js_error', {
-            error_message: msg.slice(0, 150),
-            error_source:  'promise',
-            page_path:     window.location.pathname,
+          _logError({
+            type:      'js_error',
+            message:   msg.slice(0, 150),
+            source:    'promise',
+            page_path: window.location.pathname,
+            user_agent: navigator.userAgent.slice(0, 200),
           });
         });
       `}</Script>

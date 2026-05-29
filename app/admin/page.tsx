@@ -68,6 +68,17 @@ interface ShootDebug {
   slots: Array<{ slot: number; kind: string; status: string; prompt: string | null }>;
 }
 
+interface ErrorGroup {
+  type: string;
+  message: string;
+  source: string | null;
+  count: number;
+  last_seen: string;
+  first_seen: string;
+  pages: string[] | null;
+  resolved?: boolean;
+}
+
 interface ModelConfig {
   vision_model: "gemini" | "claude";
   generation_model: "nano-banana" | "seedream";
@@ -214,6 +225,111 @@ function MigrationsCard() {
   );
 }
 
+
+function ErrorsPanel() {
+  const [errors, setErrors] = useState<ErrorGroup[]>([]);
+  const [total, setTotal] = useState(0);
+  const [filter, setFilter] = useState<"unresolved" | "all" | "resolved">("unresolved");
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [resolving, setResolving] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/admin/errors?filter=${filter}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d) return;
+        setErrors(d.errors ?? []);
+        setTotal(d.total_unresolved ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [filter, refreshKey]);
+
+  const resolve = async (group: ErrorGroup) => {
+    const key = `${group.type}:${group.message}:${group.source ?? ""}`;
+    setResolving(key);
+    try {
+      await fetch("/api/admin/errors", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: group.type, message: group.message, source: group.source }),
+      });
+      setRefreshKey(k => k + 1);
+    } finally {
+      setResolving(null);
+    }
+  };
+
+  return (
+    <div className={styles.card}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+        <h2 className={styles.cardTitle} style={{ margin: 0 }}>
+          Error Log
+          {total > 0 && (
+            <span style={{ marginLeft: 8, background: "rgba(255,70,70,0.15)", color: "#ff6b6b", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 12 }}>
+              {total} unresolved
+            </span>
+          )}
+        </h2>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div className={styles.filterTabs}>
+            {(["unresolved", "all", "resolved"] as const).map(f => (
+              <button key={f} className={`${styles.filterTab} ${filter === f ? styles.filterTabActive : ""}`}
+                onClick={() => setFilter(f)}>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button className={styles.banBtn} onClick={() => setRefreshKey(k => k + 1)} disabled={loading} style={{ marginLeft: 4 }}>
+            {loading ? "…" : "↺"}
+          </button>
+        </div>
+      </div>
+      {loading && errors.length === 0 ? (
+        <p className={styles.empty}>Loading…</p>
+      ) : errors.length === 0 ? (
+        <p className={styles.empty}>
+          {filter === "unresolved" ? "No unresolved errors — all clear." : "No errors found."}
+        </p>
+      ) : (
+        <div>
+          {errors.map((group) => {
+            const key = `${group.type}:${group.message}:${group.source ?? ""}`;
+            return (
+              <div key={key} className={styles.errorRow}>
+                <div className={styles.errorLeft}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span className={group.type === "api_error" ? styles.errorBadgeApi : styles.errorBadgeJs}>
+                      {group.type === "api_error" ? "API" : "JS"}
+                    </span>
+                    <span className={styles.errorCount}>{group.count}×</span>
+                    <span className={styles.errorTime}>{timeAgo(group.last_seen)}</span>
+                    {group.resolved && <span style={{ fontSize: "0.65rem", color: "#44cc88" }}>resolved</span>}
+                  </div>
+                  <p className={styles.errorMessage}>{group.message}</p>
+                  {group.source && <p className={styles.errorSource}>{group.source}</p>}
+                  {group.pages && group.pages.length > 0 && (
+                    <p className={styles.errorPages}>{group.pages.slice(0, 3).join(" · ")}</p>
+                  )}
+                </div>
+                {filter !== "resolved" && (
+                  <button className={styles.banBtn} style={{ flexShrink: 0, alignSelf: "flex-start" }}
+                    onClick={() => resolve(group)} disabled={resolving === key}>
+                    {resolving === key ? "…" : "Resolve"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
@@ -788,6 +904,9 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      {/* ---- Error log ---- */}
+      <ErrorsPanel />
 
       {/* ---- Pending migrations ---- */}
       <MigrationsCard />

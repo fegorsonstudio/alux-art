@@ -31,6 +31,22 @@ export const Analytics = {
   marketplaceSearch: (query: string) =>
     trackEvent("search",             { search_term: query }),
 
-  apiError: (route: string, status: number) =>
-    trackEvent("api_error",          { route, status }),
+  apiError: (route: string, status: number) => {
+    trackEvent("api_error", { route, status });
+    if (typeof window !== "undefined") {
+      fetch("/api/errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "api_error",
+          message: `${status} ${route}`,
+          source: route,
+          http_status: status,
+          page_path: window.location.pathname,
+          user_agent: navigator.userAgent.slice(0, 200),
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  },
 };
