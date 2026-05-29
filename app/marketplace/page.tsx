@@ -95,7 +95,7 @@ export default function MarketplacePage() {
         <div className={styles.navRight}>
           <Link href="/studio" className={styles.navLink}>Studio</Link>
           {isCreator
-            ? <Link href="/creator-dashboard" className={styles.navCta}>Creator Dashboard</Link>
+            ? <Link href="/creator-dashboard" className={`${styles.navCta} ${styles.navCtaDash}`}>Dashboard</Link>
             : <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
           }
           <button className={styles.currencyToggle} onClick={toggleCurrency} type="button">
