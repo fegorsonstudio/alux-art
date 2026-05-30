@@ -50,7 +50,7 @@ export async function POST(
   `;
 
   const body = await req.json().catch(() => ({}));
-  const resolution: string = typeof body.resolution === "string" ? body.resolution : "1K";
+  const resolution: string = typeof body.resolution === "string" ? body.resolution : "4K";
 
   startGenerationWorker(id, { maxSlots: 1, resolution }).catch((err) => {
     console.error(`[retry] slot ${slotNum} worker error:`, err);

@@ -77,7 +77,7 @@ export default function WorkspacePage() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [currency, setCurrency] = useState<Currency>("NGN");
   const [packageSize, setPackageSize] = useState<ShootPackageSize>(10);
-  const [resolution, setResolution] = useState("1K");
+  const [resolution, setResolution] = useState("4K");
   const [quote, setQuote] = useState({ text: "", attribution: "" });
 
   // Shoots

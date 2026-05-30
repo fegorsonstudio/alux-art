@@ -45,6 +45,7 @@ const SEEDED = [
   "017_creator_storefront",
   "018_template_images_note_hidden",
   "019_shoots_shot_type",
+  "020_payments_refund",
 ];
 
 const db = postgres(DATABASE_URL, {

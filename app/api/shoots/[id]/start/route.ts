@@ -15,7 +15,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  const resolution: string = typeof body.resolution === "string" ? body.resolution : "1K";
+  const resolution: string = typeof body.resolution === "string" ? body.resolution : "4K";
   const internalSecret = req.headers.get("x-internal-secret");
   const isInternal =
     internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;

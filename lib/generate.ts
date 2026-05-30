@@ -1323,7 +1323,7 @@ export async function startGenerationWorker(
   opts: { maxSlots?: number; resolution?: string } = {}
 ): Promise<WorkerResult> {
   const maxSlots = opts.maxSlots ?? 1;
-  const resolution = opts.resolution ?? "1K";
+  const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
   const [shoot] = await sql`SELECT id, user_id, owner_email, mode, aspect_ratio, package_size, quote, identity_profile, shoot_brief, character_base_id FROM shoots WHERE id = ${shootId}`;
