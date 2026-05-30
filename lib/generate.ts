@@ -1415,6 +1415,7 @@ export async function startGenerationWorker(
   let visionModel: "gemini" | "claude" = "gemini";
   let generationModel: "nano-banana" | "seedream" = "nano-banana";
   let promptOnlyMode = false;
+  let adminPromptOnlyMode = false;
   let polishPassEnabled = false;
   try {
     const cfgData = await sql`SELECT key, value FROM app_config`;
@@ -1422,9 +1423,15 @@ export async function startGenerationWorker(
     if (cfgMap.vision_model === "claude") visionModel = "claude";
     if (cfgMap.generation_model === "seedream") generationModel = "seedream";
     promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
+    adminPromptOnlyMode = cfgMap.admin_prompt_only_mode === "true" || cfgMap.admin_prompt_only_mode === true;
     polishPassEnabled = cfgMap.polish_pass_enabled === "true" || cfgMap.polish_pass_enabled === true;
-    console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode, polishPassEnabled });
+    console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode, adminPromptOnlyMode, polishPassEnabled });
   } catch { /* non-fatal — defaults apply */ }
+
+  // Resolve whether this shoot's owner is an admin (for admin-only prompt-only mode)
+  const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
+    .split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+  const shootOwnerIsAdmin = adminEmails.includes(((shoot.owner_email ?? "") as string).toLowerCase());
 
   // Fire-and-forget wrapper — generation_events is non-critical UI telemetry.
   // A missing table or constraint error must never crash image generation.
@@ -1658,9 +1665,11 @@ export async function startGenerationWorker(
       await sql`UPDATE shoot_images SET prompt = ${slotPrompt}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
 
       // Prompt-only mode: skip fal.ai entirely — mark slot complete with prompt saved
-      if (promptOnlyMode) {
-        await sql`UPDATE shoot_images SET status = 'COMPLETE', provider = 'prompt-only', stage = 'Prompt saved (prompt-only mode)', updated_at = ${ts()} WHERE id = ${slotImg.id}`;
-        console.log(`[generate] slot ${slot}: prompt-only mode — skipping fal.ai`);
+      const effectivePromptOnly = promptOnlyMode || (adminPromptOnlyMode && shootOwnerIsAdmin);
+      if (effectivePromptOnly) {
+        const reason = adminPromptOnlyMode && shootOwnerIsAdmin ? "admin prompt-only mode" : "prompt-only mode";
+        await sql`UPDATE shoot_images SET status = 'COMPLETE', provider = 'prompt-only', stage = ${`Prompt saved (${reason})`}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
+        console.log(`[generate] slot ${slot}: ${reason} — skipping fal.ai`);
         continue;
       }
 

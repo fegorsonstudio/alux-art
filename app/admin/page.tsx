@@ -92,6 +92,7 @@ interface ModelConfig {
   price_5_usd: number;
   price_10_usd: number;
   prompt_only_mode: boolean;
+  admin_prompt_only_mode: boolean;
   polish_pass_enabled: boolean;
 }
 
@@ -391,7 +392,7 @@ export default function AdminPage() {
     platform_fee_ngn: 15000,
     price_1_ngn: 1500, price_5_ngn: 7500, price_10_ngn: 15000,
     price_1_usd: 1, price_5_usd: 5, price_10_usd: 10,
-    prompt_only_mode: false, polish_pass_enabled: false,
+    prompt_only_mode: false, admin_prompt_only_mode: false, polish_pass_enabled: false,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [platformFeeInput, setPlatformFeeInput] = useState("15000");
@@ -745,7 +746,20 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
-            <div className={styles.modelHint}>{modelConfig.prompt_only_mode ? "ON — prompts are generated and saved but fal.ai calls are skipped. Use Template Lab to generate images later." : "OFF — normal generation pipeline with fal.ai."}</div>
+            <div className={styles.modelHint}>{modelConfig.prompt_only_mode ? "ON — prompts are generated and saved but fal.ai calls are skipped. Affects every user." : "OFF — normal generation pipeline with fal.ai."}</div>
+          </div>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Admin Prompt-Only <span style={{ background: "rgba(201,169,110,0.12)", color: "#c9a96e", fontSize: "0.6rem", padding: "1px 6px", borderRadius: 4, marginLeft: 6, letterSpacing: "0.04em" }}>ADMIN ONLY</span></div>
+            <div className={styles.modelPills}>
+              {([false, true] as const).map(val => (
+                <button key={String(val)} type="button"
+                  className={`${styles.modelPill} ${modelConfig.admin_prompt_only_mode === val ? styles.modelPillActive : ""}`}
+                  onClick={() => saveModelConfig({ admin_prompt_only_mode: val })} disabled={modelSaving}>
+                  {val ? "Enabled" : "Disabled"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.modelHint}>{modelConfig.admin_prompt_only_mode ? "ON — your own shoots stop at the prompt stage. Copy the prompt and use it elsewhere. Other users generate normally." : "OFF — your shoots go to fal.ai like everyone else."}</div>
           </div>
           <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Polish Pass (Z-Image Turbo)</div>
