@@ -14,7 +14,7 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [img] = await sql`
-    SELECT * FROM shoot_images WHERE id = ${imageId} AND shoot_id = ${id}
+    SELECT id, slot, kind, status, preview_storage_bucket, preview_storage_path, download_storage_path, download_storage_bucket FROM shoot_images WHERE id = ${imageId} AND shoot_id = ${id}
   `;
   if (!img) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

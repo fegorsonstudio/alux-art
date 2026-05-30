@@ -1326,9 +1326,9 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "1K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${shootId}`;
+  const [shoot] = await sql`SELECT id, user_id, owner_email, mode, aspect_ratio, package_size, quote, identity_profile, shoot_brief, character_base_id FROM shoots WHERE id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
-  const rawRefs = await sql`SELECT * FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
+  const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
 
   const total = normalizePackageSize(shoot.package_size);

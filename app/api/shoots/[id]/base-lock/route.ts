@@ -33,10 +33,10 @@ export async function POST(
 
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${shootId}`;
+  const [shoot] = await sql`SELECT id, user_id, mode, identity_profile FROM shoots WHERE id = ${shootId}`;
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
 
-  const refs = await sql`SELECT * FROM shoot_references WHERE shoot_id = ${shootId}`;
+  const refs = await sql`SELECT purpose, tag, storage_bucket, storage_path, name FROM shoot_references WHERE shoot_id = ${shootId}`;
 
   type RefRow = {
     purpose: string; tag: string | null; storage_bucket: string;
@@ -70,7 +70,7 @@ export async function POST(
   // Cache lookup
   if (attempt === 1) {
     const [cached] = await sql`
-      SELECT * FROM character_bases
+      SELECT id, status FROM character_bases
       WHERE user_id = ${shoot.user_id}
         AND cache_key = ${cacheKey}
         AND status = ANY(${["AUTO_APPROVED", "USER_APPROVED"]})

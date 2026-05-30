@@ -14,14 +14,14 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const [shoot] = await sql`
-    SELECT * FROM shoots WHERE id = ${shootId} AND user_id = ${user.id}
+    SELECT id, status, mode, aspect_ratio, package_size FROM shoots WHERE id = ${shootId} AND user_id = ${user.id}
   `;
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
   if (shoot.status !== "COMPLETE") {
     return NextResponse.json({ error: "Shoot must be complete before turning into a template" }, { status: 422 });
   }
 
-  const refs = await sql`SELECT * FROM shoot_references WHERE shoot_id = ${shootId}`;
+  const refs = await sql`SELECT purpose, tag, custom_name, note, type, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}`;
 
   const now = new Date().toISOString();
 

@@ -69,7 +69,7 @@ export async function DELETE(request: NextRequest) {
   const imageId = searchParams.get("id");
 
   if (imageId) {
-    const [img] = await sql`SELECT * FROM identity_images WHERE id = ${imageId} AND user_id = ${user.id}`;
+    const [img] = await sql`SELECT storage_bucket, storage_path FROM identity_images WHERE id = ${imageId} AND user_id = ${user.id}`;
     if (img) {
       await r2Delete(img.storage_bucket as string, [img.storage_path as string]).catch(() => {});
       await sql`DELETE FROM identity_images WHERE id = ${imageId}`;

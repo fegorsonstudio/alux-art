@@ -12,7 +12,7 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
+  const [shoot] = await sql`SELECT id, status, user_id FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (shoot.status !== "PENDING_PAYMENT") {

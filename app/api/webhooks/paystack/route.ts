@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, duplicate: true });
     }
 
-    const [template] = await sql`SELECT * FROM templates WHERE id = ${template_id}`;
+    const [template] = await sql`SELECT id, shoot_mode, aspect_ratio, package_size FROM templates WHERE id = ${template_id}`;
     if (!template) {
       await sql`UPDATE template_purchases SET status = 'failed' WHERE id = ${purchase_id}`;
       return NextResponse.json({ ok: true });

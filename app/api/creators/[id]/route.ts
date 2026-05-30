@@ -9,8 +9,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const isUuid = UUID_RE.test(id);
   const [creator] = isUuid
-    ? await sql`SELECT * FROM creators WHERE id = ${id} AND is_active = true`
-    : await sql`SELECT * FROM creators WHERE LOWER(username) = LOWER(${id}) AND is_active = true`;
+    ? await sql`SELECT id, username, display_name, bio, avatar_storage_path, avatar_bucket, instagram_url, website_url, created_at, theme, font_family FROM creators WHERE id = ${id} AND is_active = true`
+    : await sql`SELECT id, username, display_name, bio, avatar_storage_path, avatar_bucket, instagram_url, website_url, created_at, theme, font_family FROM creators WHERE LOWER(username) = LOWER(${id}) AND is_active = true`;
 
   if (!creator) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

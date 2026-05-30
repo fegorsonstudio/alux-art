@@ -67,7 +67,7 @@ export async function GET(
       // If shoot is in BASE_REVIEW, replay the last base_review_required event
       if (shootRow?.status === "BASE_REVIEW") {
         const [reviewEvent] = await sql`
-          SELECT * FROM generation_events
+          SELECT type, payload FROM generation_events
           WHERE shoot_id = ${id} AND type = 'base_review_required'
           ORDER BY created_at DESC
           LIMIT 1
@@ -89,7 +89,7 @@ export async function GET(
       const interval = setInterval(async () => {
         try {
           const events = await sql`
-            SELECT * FROM generation_events
+            SELECT type, payload, created_at FROM generation_events
             WHERE shoot_id = ${id} AND created_at > ${lastEventCreatedAt}
             ORDER BY created_at ASC
           `;
