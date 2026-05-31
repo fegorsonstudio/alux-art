@@ -16,18 +16,16 @@ export async function GET() {
   const creators = await sql`
     SELECT c.id, c.user_id, c.display_name, c.is_active, c.status, c.created_at,
            (c.paystack_subaccount_code IS NOT NULL AND c.paystack_subaccount_code != '') AS payout_connected,
-           u.email
+           u.email,
+           COUNT(t.id)::int AS "templateCount"
     FROM creators c
     LEFT JOIN auth.users u ON u.id = c.user_id
+    LEFT JOIN templates t ON t.creator_id = c.id
+    GROUP BY c.id, u.email
     ORDER BY c.created_at DESC
   `;
 
-  const withCounts = await Promise.all(creators.map(async (c) => {
-    const [{ count }] = await sql`SELECT COUNT(*)::int AS count FROM templates WHERE creator_id = ${c.id}`;
-    return { ...c, templateCount: count ?? 0 };
-  }));
-
-  return NextResponse.json({ creators: withCounts });
+  return NextResponse.json({ creators });
 }
 
 export async function PATCH(request: NextRequest) {
