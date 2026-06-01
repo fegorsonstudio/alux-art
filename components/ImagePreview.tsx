@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 type Props = React.ImgHTMLAttributes<HTMLImageElement> & {
@@ -12,9 +14,73 @@ function addParams(src: string, width: number, quality: number, fmt = "webp") {
   return `${src}${sep}width=${width}&quality=${quality}&format=${fmt}`;
 }
 
-export default function ImagePreview({ src, alt = "", className, preferredWidth = 600, preferredQuality = 75, sizes, ...rest }: Props) {
-  if (!src) {
-    return <img src={src as any} alt={alt} className={className} loading="lazy" decoding="async" {...rest} />;
+export default function ImagePreview({
+  src,
+  alt = "",
+  className,
+  preferredWidth = 600,
+  preferredQuality = 75,
+  sizes,
+  onError,
+  ...rest
+}: Props) {
+  const [hasError, setHasError] = React.useState(false);
+
+  const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (hasError) {
+      return;
+    }
+    setHasError(true);
+
+    const failedSrc = event.currentTarget?.src || src || "";
+    const payload = {
+      type: "image_error",
+      message: "Image failed to load",
+      source: failedSrc.slice(0, 1000),
+      page_path: typeof window !== "undefined" ? window.location.pathname : null,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (typeof window !== "undefined") {
+      fetch("/api/errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    if (typeof onError === "function") {
+      onError(event);
+    }
+  };
+
+  if (!src || hasError) {
+    return (
+      <div
+        className={className}
+        role="img"
+        aria-label="Preview unavailable"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 120,
+          minWidth: 120,
+          width: "100%",
+          color: "#6b7280",
+          backgroundColor: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          borderRadius: 12,
+          fontSize: 14,
+          textAlign: "center",
+          padding: 16,
+        }}
+      >
+        Preview Unavailable
+      </div>
+    );
   }
 
   const w1 = Math.min(320, preferredWidth);
@@ -38,6 +104,7 @@ export default function ImagePreview({ src, alt = "", className, preferredWidth 
       className={className}
       loading="lazy"
       decoding="async"
+      onError={handleError}
       {...rest}
     />
   );
