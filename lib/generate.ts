@@ -16,6 +16,8 @@ fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" }
 const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
 const SHOOT_BRIEF_TIMEOUT_MS = 270_000;
 const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
+const USE_MOCK_FAL = process.env.MOCK_URL_SKIPPED_FOR_CREDIT_PROTECTION === "1";
+const MOCK_FAL_PLACEHOLDER_IMAGE_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
 
 // Appended to every fal.ai prompt as positive anatomical facts
 const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. Natural lips with a subtle micro-expression — fractionally parted or carrying a micro-asymmetric curve; no smile, no visible teeth, no open mouth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
@@ -621,6 +623,10 @@ async function generateImageWithFal(
   aspectRatio: string,
   resolution = "1K"
 ): Promise<string> {
+  if (USE_MOCK_FAL) {
+    return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
+  }
+
   // Free fallback for testing when FAL_KEY has no credits
   if (process.env.FAL_TEST_MODE === "1") {
     const dims: Record<string, string> = {
@@ -655,6 +661,10 @@ async function generateImageWithFal(
 }
 
 async function polishImageWithFal(imageUrl: string, prompt: string): Promise<string> {
+  if (USE_MOCK_FAL) {
+    return imageUrl;
+  }
+
   try {
     const response = await fal.subscribe("fal-ai/z-image-turbo", {
       input: {
@@ -698,6 +708,10 @@ async function generateImageWithSeedream(
   aspectRatio: string,
   resolution = "1K"
 ): Promise<string> {
+  if (USE_MOCK_FAL) {
+    return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
+  }
+
   const tier = resolution === "4K" ? "4K" : "1K";
   const imageSize = SEEDREAM_SIZES[tier]?.[aspectRatio] ?? SEEDREAM_SIZES["1K"]["4:5"];
 
