@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { r2ProxyUrl } from "@/lib/r2";
 
+const CACHE_TTL_MS = 60_000;
+const marketplaceCache = (globalThis as any).__MARKETPLACE_CACHE ||= new Map();
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const category = searchParams.get("category");
   const search = searchParams.get("q");
   const cursor = searchParams.get("cursor");
   const limit = Math.min(Number(searchParams.get("limit") ?? 24), 48);
+  const cacheKey = `category:${category ?? "all"}|search:${search ?? ""}|cursor:${cursor ?? ""}|limit:${limit}`;
+
+  const cached = marketplaceCache.get(cacheKey);
+  if (cached && cached.expiry > Date.now()) {
+    return NextResponse.json(cached.payload);
+  }
 
   const rows = await sql`
     SELECT t.id, t.creator_id, t.title, t.description, t.category, t.tags,
@@ -59,5 +68,7 @@ export async function GET(request: NextRequest) {
   }));
 
   const nextCursor = hasMore ? slice[slice.length - 1]?.created_at : null;
-  return NextResponse.json({ templates, nextCursor });
+  const payload = { templates, nextCursor };
+  marketplaceCache.set(cacheKey, { payload, expiry: Date.now() + CACHE_TTL_MS });
+  return NextResponse.json(payload);
 }
