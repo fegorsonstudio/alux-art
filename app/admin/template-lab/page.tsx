@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
 import labStyles from "./lab.module.css";
+import ImagePreview from "@/components/ImagePreview";
 
 interface SlotRow {
   id: string;
@@ -142,7 +143,7 @@ export default function TemplateLabPage() {
                   <div className={labStyles.refsRow}>
                     {selectedShoot.refs.map(ref => (
                       <div key={ref.id} className={labStyles.refThumb}>
-                        {ref.signedUrl && <img src={ref.signedUrl} alt={ref.tag ?? ref.purpose} className={labStyles.refImg} />}
+                        {ref.signedUrl && <ImagePreview src={ref.signedUrl} alt={ref.tag ?? ref.purpose} className={labStyles.refImg} preferredWidth={120} />}
                         {ref.tag && <span className={labStyles.refTag}>{ref.tag}</span>}
                       </div>
                     ))}
@@ -171,7 +172,7 @@ export default function TemplateLabPage() {
                       )}
 
                       {gs?.resultUrl && (
-                        <img src={gs.resultUrl} alt={`Slot ${slot.slot}`} className={labStyles.resultImg} />
+                        <ImagePreview src={gs.resultUrl} alt={`Slot ${slot.slot}`} className={labStyles.resultImg} preferredWidth={400} />
                       )}
 
                       {gs?.error && <p className={labStyles.slotErr}>{gs.error}</p>}

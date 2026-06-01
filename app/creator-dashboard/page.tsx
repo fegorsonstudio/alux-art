@@ -7,6 +7,7 @@ import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
+import ImagePreview from "@/components/ImagePreview";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
 import { Analytics } from "@/lib/analytics";
@@ -1104,7 +1105,7 @@ function CreatorDashboard() {
                   {images.map((img, i) => (
                     <div key={img.localId} className={styles.imgItem}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.preview} alt="" className={styles.imgPreview} />
+                      <ImagePreview src={img.preview} alt="" className={styles.imgPreview} />
                       {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                       {img.error && <div className={styles.imgError}>{img.error}</div>}
                       {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
@@ -1134,7 +1135,7 @@ function CreatorDashboard() {
                           return (
                             <div key={img.localId} className={styles.imgItem}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={img.preview} alt="" className={styles.imgPreview} />
+                              <ImagePreview src={img.preview} alt="" className={styles.imgPreview} />
                               {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                               {img.error && <div className={styles.imgError}>{img.error}</div>}
                               {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
@@ -1197,7 +1198,7 @@ function CreatorDashboard() {
                         title="Click to replace image"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.preview} alt="" className={styles.taggedRefThumb} />
+                        <ImagePreview src={img.preview} alt="" className={styles.taggedRefThumb} />
                         <span className={styles.taggedRefReplaceOverlay}>Replace</span>
                       </button>
                       <div className={styles.taggedRefRight}>
@@ -1283,7 +1284,7 @@ function CreatorDashboard() {
                 <div key={item.localId} className={styles.imgItem}>
                   {idx === 0 && <div className={styles.imgDbBadge} style={{ background: "var(--accent, #2d9)" }}>cover</div>}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.preview} alt="" className={styles.imgPreview} />
+                  <ImagePreview src={item.preview} alt="" className={styles.imgPreview} />
                   {item.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                   {item.error && <div className={styles.imgError}>{item.error}</div>}
                   {item.fromDb && idx !== 0 && <div className={styles.imgDbBadge}>saved</div>}
@@ -1351,7 +1352,7 @@ function CreatorDashboard() {
             <div className={styles.imagesGrid}>
               {showcaseIdentityRefs.map(ref => (
                 <div key={ref.localId} className={styles.imgItem}>
-                  <img src={ref.preview} alt="" className={styles.imgPreview} />
+                  <ImagePreview src={ref.preview} alt="" className={styles.imgPreview} />
                   {ref.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                   {ref.error && <div className={styles.imgError}>{ref.error}</div>}
                   <button type="button" className={styles.imgRemove} onClick={() => setShowcaseIdentityRefs(prev => prev.filter(r => r.localId !== ref.localId))}>✕</button>
@@ -1418,7 +1419,7 @@ function CreatorDashboard() {
                     {(shoot.shoot_images ?? []).filter(img => img.status === "COMPLETE").map(img => (
                       <div key={img.id} className={styles.showcaseImageItem}>
                         {img.preview_url
-                          ? <img src={img.preview_url} alt={`Slot ${img.slot}`} className={styles.showcaseImg} />
+                          ? <ImagePreview src={img.preview_url} alt={`Slot ${img.slot}`} className={styles.showcaseImg} />
                           : <div className={styles.showcaseImgPlaceholder}>Image ready</div>
                         }
                         <div className={styles.showcaseImageActions}>

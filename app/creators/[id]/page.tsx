@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./creator.module.css";
+import ImagePreview from "@/components/ImagePreview";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -94,7 +95,7 @@ export default function CreatorPage() {
 
       <section className={styles.hero}>
         {creator.avatarUrl
-          ? <img src={creator.avatarUrl} alt={creator.displayName} className={styles.avatar} />
+          ? <ImagePreview src={creator.avatarUrl} alt={creator.displayName} className={styles.avatar} preferredWidth={160} />
           : <div className={styles.avatarFallback}>{creator.displayName[0]}</div>
         }
         <h1 className={styles.name}>{creator.displayName}</h1>
@@ -119,7 +120,7 @@ export default function CreatorPage() {
               <Link key={t.id} href={`/marketplace/${t.id}`} className={styles.card}>
                 <div className={styles.cardImg}>
                   {t.coverUrl
-                    ? <img src={t.coverUrl} alt={t.title} className={styles.cardCover} />
+                    ? <ImagePreview src={t.coverUrl} alt={t.title} className={styles.cardCover} preferredWidth={240} />
                     : <div className={styles.cardPlaceholder} />
                   }
                   <span className={styles.categoryBadge}>{t.category}</span>
