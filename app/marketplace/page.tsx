@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TEMPLATE_CATEGORIES } from "@/lib/types";
 import { useCurrency } from "@/lib/useCurrency";
 import styles from "./marketplace.module.css";
+import ImagePreview from "@/components/ImagePreview";
 
 interface TemplateCard {
   id: string;
@@ -150,7 +151,7 @@ export default function MarketplacePage() {
               <Link key={t.id} href={`/marketplace/${t.id}`} className={styles.card}>
                 <div className={styles.cardImg}>
                   {t.coverUrl
-                    ? <img src={t.coverUrl} alt={t.title} className={styles.cardCover} />
+                    ? <ImagePreview src={t.coverUrl} alt={t.title} className={styles.cardCover} />
                     : <div className={styles.cardPlaceholder}><span className={styles.placeholderText}>No preview</span></div>
                   }
                   <span className={styles.categoryBadge}>{t.category}</span>
@@ -160,7 +161,7 @@ export default function MarketplacePage() {
                   {t.creator && (
                     <div className={styles.cardCreator}>
                       {t.creator.avatarUrl
-                        ? <img src={t.creator.avatarUrl} alt={t.creator.displayName} className={styles.creatorAvatar} />
+                        ? <ImagePreview src={t.creator.avatarUrl} alt={t.creator.displayName} className={styles.creatorAvatar} preferredWidth={80} />
                         : <div className={styles.creatorAvatarFallback}>{t.creator.displayName[0]}</div>
                       }
                       <span className={styles.creatorName}>{t.creator.displayName}</span>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./become-creator.module.css";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import ImagePreview from "@/components/ImagePreview";
 
 interface Bank { name: string; code: string; }
 
@@ -132,7 +133,7 @@ export default function BecomeCreatorPage() {
             <div className={styles.avatarSection}>
               <div className={styles.avatarPreview} onClick={() => avatarRef.current?.click()} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && avatarRef.current?.click()}>
                 {avatarPreview
-                  ? <img src={avatarPreview} alt="Avatar" className={styles.avatarImg} />
+                  ? <ImagePreview src={avatarPreview} alt="Avatar" className={styles.avatarImg} preferredWidth={140} />
                   : <span className={styles.avatarPlaceholder}>{uploadingAvatar ? "Uploading..." : "Add photo"}</span>
                 }
               </div>

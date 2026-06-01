@@ -7,6 +7,7 @@ import { Analytics } from "@/lib/analytics";
 import { useCurrency } from "@/lib/useCurrency";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
+import ImagePreview from "@/components/ImagePreview";
 import CheckoutPanel from "./CheckoutPanel";
 
 function renderMarkdown(text: string) {
@@ -290,7 +291,7 @@ export default function TemplatePage() {
           <button type="button" className={styles.lightboxClose} onClick={() => setLightboxOpen(false)} aria-label="Close">✕</button>
           <div className={styles.lightboxImgWrap} onClick={e => e.stopPropagation()}>
             {allImages[galleryIdx]?.url
-              ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.lightboxImg} />
+              ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.lightboxImg} />
               : <div className={styles.lightboxPlaceholder}>No image</div>
             }
             {allImages.length > 1 && (
@@ -348,7 +349,7 @@ export default function TemplatePage() {
               aria-label="Expand image"
             >
               {allImages[galleryIdx]?.url
-                ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
+                ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
                 : <div className={styles.imgPlaceholder}>No image</div>
               }
               <div className={styles.expandHint}>Tap to expand</div>
@@ -377,7 +378,7 @@ export default function TemplatePage() {
                   onClick={() => setGalleryIdx(i)}
                 >
                   {img.url
-                    ? <img src={img.url} alt="" className={styles.thumbImg} />
+                    ? <ImagePreview src={img.url} alt="" className={styles.thumbImg} preferredWidth={160} />
                     : <div className={styles.thumbPlaceholder} />
                   }
                   {img.tag && <span className={styles.thumbTag}>{img.tag}</span>}
@@ -405,7 +406,7 @@ export default function TemplatePage() {
           {template.creator && (
             <Link href={`/creators/${template.creator.id}`} className={styles.creatorCard}>
               {template.creator.avatarUrl
-                ? <img src={template.creator.avatarUrl} alt={template.creator.displayName} className={styles.creatorAvatar} />
+                ? <ImagePreview src={template.creator.avatarUrl} alt={template.creator.displayName} className={styles.creatorAvatar} preferredWidth={80} />
                 : <div className={styles.creatorAvatarFallback}>{template.creator.displayName[0]}</div>
               }
               <div className={styles.creatorInfo}>

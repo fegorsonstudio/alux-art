@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "./landing.module.css";
+import ImagePreview from "@/components/ImagePreview";
 
 interface FeaturedTemplate {
   id: string;
@@ -41,7 +42,7 @@ export default function RotatingStyles({ templates }: { templates: FeaturedTempl
       {shown.map((t, i) => (
         <Link key={`${t.id}-${offset}-${i}`} href={`/marketplace/${t.id}`} className={styles.lookCard}>
           {t.coverUrl
-            ? <img src={t.coverUrl} alt={t.title} className={styles.lookImg} />
+            ? <ImagePreview src={t.coverUrl} alt={t.title} className={styles.lookImg} preferredWidth={280} />
             : <div className={styles.lookPlaceholder} />
           }
           <div className={styles.lookMeta}>
