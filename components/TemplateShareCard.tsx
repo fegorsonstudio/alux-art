@@ -10,71 +10,158 @@ interface Props {
   onClose: () => void;
 }
 
-// Capture a DOM element as a PNG Blob using SVG foreignObject → Canvas.
-// No external libraries, no network requests — resolves synchronously after
-// the image loads from a local blob: URL Chrome creates in-process.
-async function captureAsPng(el: HTMLElement): Promise<Blob> {
-  const { width, height } = el.getBoundingClientRect();
-  const scale = 2;
-  const W = Math.round(width * scale);
-  const H = Math.round(height * scale);
-
-  const clone = el.cloneNode(true) as HTMLElement;
-  // Remove any <image> / <img> nodes — Chrome blocks cross-origin resources
-  // inside SVG foreignObject, and we don't need them for this card.
-  clone.querySelectorAll("image, img").forEach(n => n.remove());
-
-  // Serialize the cloned HTML into an SVG with a foreignObject wrapper.
-  const xml = new XMLSerializer().serializeToString(
-    (() => {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-      svg.setAttribute("width", String(W));
-      svg.setAttribute("height", String(H));
-
-      const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-      fo.setAttribute("width", String(W));
-      fo.setAttribute("height", String(H));
-
-      const wrapper = document.createElementNS("http://www.w3.org/1999/xhtml", "div");
-      wrapper.setAttribute(
-        "style",
-        `transform:scale(${scale});transform-origin:top left;` +
-          `width:${width}px;height:${height}px;overflow:hidden;`
-      );
-      wrapper.appendChild(clone);
-      fo.appendChild(wrapper);
-      svg.appendChild(fo);
-      return svg;
-    })()
-  );
-
-  const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(svgBlob);
-
-  try {
-    const img = await new Promise<HTMLImageElement>((res, rej) => {
-      const i = new Image();
-      i.onload = () => res(i);
-      i.onerror = () => rej(new Error("SVG render failed"));
-      i.src = url;
-    });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
-    canvas.getContext("2d")!.drawImage(img, 0, 0);
-
-    return new Promise<Blob>((res, rej) =>
-      canvas.toBlob(b => (b ? res(b) : rej(new Error("PNG encode failed"))), "image/png")
-    );
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+function roundedFill(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fill();
 }
 
-export default function TemplateShareCard({ templateUrl, creatorUsername, coverUrl, onClose }: Props) {
-  const cardRef = useRef<HTMLDivElement>(null);
+// Build the card as a canvas PNG using Canvas 2D only.
+// The QR SVG is drawn by loading it as a plain SVG image (no foreignObject →
+// no canvas taint → canvas.toBlob() works in Chrome).
+async function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
+  const S = 2;
+
+  // Extract the QR code SVG rendered by QRCodeSVG (pure <path>/<rect> elements,
+  // no <foreignObject>, no external URLs — drawing it to canvas is taint-free).
+  const svgEl = cardEl.querySelector("svg");
+  if (!svgEl) throw new Error("QR SVG not found");
+  const svgClone = svgEl.cloneNode(true) as SVGSVGElement;
+  svgClone.setAttribute("width",  String(200 * S));
+  svgClone.setAttribute("height", String(200 * S));
+  const svgXml  = new XMLSerializer().serializeToString(svgClone);
+  const svgBlob = new Blob([svgXml], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl  = URL.createObjectURL(svgBlob);
+  const qrImg   = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image();
+    i.onload  = () => res(i);
+    i.onerror = () => rej(new Error("QR SVG render failed"));
+    i.src = svgUrl;
+  });
+  URL.revokeObjectURL(svgUrl);
+
+  // Layout (pixels at 2× scale)
+  const CARD_W = 300 * S;
+  const PX     = 28 * S;   // horizontal padding
+  const PT     = 32 * S;   // padding top
+  const PB     = 28 * S;   // padding bottom
+  const GAP    = 16 * S;
+  const QR     = 200 * S;
+  const PP     = 24 * S;   // plinth inner padding
+  const PW     = QR + 2 * PP;
+  const PH     = QR + 2 * PP;
+  const INSTRH = 88 * S;
+  const CARD_H = PT + PH + GAP + 20 * S + GAP + 16 * S + GAP + S + GAP + INSTRH + PB;
+
+  const canvas  = document.createElement("canvas");
+  canvas.width  = CARD_W;
+  canvas.height = CARD_H;
+  const ctx     = canvas.getContext("2d")!;
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, CARD_H);
+  bg.addColorStop(0, "#0d0826");
+  bg.addColorStop(1, "#03010a");
+  ctx.fillStyle = bg;
+  roundedFill(ctx, 0, 0, CARD_W, CARD_H, 24 * S);
+
+  let y = PT;
+  const plinthX = (CARD_W - PW) / 2;
+
+  // White plinth with shadow
+  ctx.save();
+  ctx.shadowColor   = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur    = 40;
+  ctx.shadowOffsetY = 20;
+  ctx.fillStyle     = "#ffffff";
+  roundedFill(ctx, plinthX, y, PW, PH, 16 * S);
+  ctx.restore();
+  ctx.fillStyle = "#ffffff";
+  roundedFill(ctx, plinthX, y, PW, PH, 16 * S);
+
+  // QR code (pure SVG image, no taint)
+  ctx.drawImage(qrImg, plinthX + PP, y + PP, QR, QR);
+  y += PH + GAP;
+
+  // Creator handle
+  ctx.save();
+  ctx.font        = `bold ${15 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.fillStyle   = "#c4b5fd";
+  ctx.textAlign   = "center";
+  ctx.shadowColor = "rgba(167,139,250,0.6)";
+  ctx.shadowBlur  = 12;
+  ctx.fillText(handle, CARD_W / 2, y + 15 * S);
+  ctx.restore();
+  y += 20 * S + GAP;
+
+  // Platform label
+  ctx.save();
+  ctx.font      = `${11 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.textAlign = "center";
+  ctx.fillText("aluxartandframes.shop", CARD_W / 2, y + 11 * S);
+  ctx.restore();
+  y += 16 * S + GAP;
+
+  // Divider
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(PX, y, CARD_W - 2 * PX, S);
+  y += S + GAP;
+
+  // Instructions — two columns
+  const MX     = CARD_W / 2;
+  const COLGAP = 12 * S;
+  const COLW   = MX - PX - COLGAP;
+
+  const drawCol = (lines: string[], cx: number) => {
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.font      = `bold ${10 * S}px system-ui,-apple-system,sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.fillText(lines[0].toUpperCase(), cx, y + 10 * S);
+    ctx.font      = `${11 * S}px system-ui,-apple-system,sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
+    for (let i = 1; i < lines.length; i++) {
+      ctx.fillText(lines[i], cx, y + (16 + i * 18) * S);
+    }
+    ctx.restore();
+  };
+
+  drawCol(
+    ["iPhone", "📸 Screenshot", "🖼 Open Photos", "👆 Hold QR Code"],
+    PX + COLW / 2
+  );
+
+  // Vertical column divider
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(MX - S / 2, y, S, INSTRH);
+
+  drawCol(
+    ["Android", "📸 Screenshot", "🔍 Google Lens", "🔗 Tap the Link"],
+    MX + COLGAP + COLW / 2
+  );
+
+  return new Promise<Blob>((res, rej) =>
+    canvas.toBlob(b => (b ? res(b) : rej(new Error("PNG encode failed"))), "image/png")
+  );
+}
+
+export default function TemplateShareCard({
+  templateUrl, creatorUsername, coverUrl, onClose,
+}: Props) {
+  const cardRef           = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
   const handle = "@" + creatorUsername.toUpperCase().replace(/\s+/g, "_");
@@ -83,11 +170,11 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
     if (typeof window === "undefined" || !cardRef.current) return;
     setDownloading(true);
     try {
-      const blob = await captureAsPng(cardRef.current);
+      const blob    = await buildCardPng(cardRef.current, handle);
       const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link    = document.createElement("a");
       link.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-qr-share.png`;
-      link.href = blobUrl;
+      link.href     = blobUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -95,19 +182,17 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
 
       if (coverUrl) {
         try {
-          const res = await fetch(coverUrl);
+          const res       = await fetch(coverUrl);
           const coverBlob = await res.blob();
-          const coverUrl2 = URL.createObjectURL(coverBlob);
-          const a = document.createElement("a");
-          a.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
-          a.href = coverUrl2;
+          const cu        = URL.createObjectURL(coverBlob);
+          const a         = document.createElement("a");
+          a.download      = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
+          a.href          = cu;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          URL.revokeObjectURL(coverUrl2);
-        } catch {
-          // cover download is best-effort
-        }
+          URL.revokeObjectURL(cu);
+        } catch {/* cover is best-effort */}
       }
     } finally {
       setDownloading(false);
@@ -116,9 +201,8 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
 
   return (
     <div style={wrapStyle}>
-      {/* Capture target */}
+      {/* Capture target — used to extract the QR SVG */}
       <div ref={cardRef} style={cardStyle}>
-        {/* QR plinth */}
         <div style={plinthStyle}>
           <QRCodeSVG
             value={templateUrl}
@@ -127,17 +211,9 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
             bgColor="transparent"
           />
         </div>
-
-        {/* Creator handle */}
         <p style={handleStyle}>{handle}</p>
-
-        {/* Platform label */}
         <p style={platformStyle}>aluxartandframes.shop</p>
-
-        {/* Divider */}
         <div style={dividerStyle} />
-
-        {/* Two-column instructions */}
         <div style={instructionsGrid}>
           <div style={instrColStyle}>
             <p style={instrHeadStyle}>iPhone</p>
@@ -155,7 +231,6 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
         </div>
       </div>
 
-      {/* Action buttons (outside capture target) */}
       <button style={downloadBtnStyle} onClick={handleDownload} disabled={downloading}>
         {downloading ? "Saving..." : "Download Card + Cover"}
       </button>
@@ -164,7 +239,7 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
   );
 }
 
-/* ── Inline styles (no CSS module needed — isolated component) ── */
+/* ── Inline styles ── */
 
 const wrapStyle: React.CSSProperties = {
   display: "flex",
