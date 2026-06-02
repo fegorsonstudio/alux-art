@@ -9,6 +9,12 @@ import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import CheckoutPanel from "./CheckoutPanel";
+import dynamic from "next/dynamic";
+
+const TemplateShareCard = dynamic(
+  () => import("@/components/TemplateShareCard"),
+  { ssr: false }
+);
 
 function renderMarkdown(text: string) {
   // Split into lines, handle > blockquotes, then bold **...**
@@ -135,6 +141,7 @@ export default function TemplatePage() {
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
+  const [showQR, setShowQR] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
@@ -393,6 +400,7 @@ export default function TemplatePage() {
           <div className={styles.categoryRow}>
             <span className={styles.categoryPill}>{template.category}</span>
             <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel}</button>
+            <button type="button" className={styles.shareBtn} onClick={() => setShowQR(true)}>QR Code</button>
           </div>
           <h1 className={styles.title}>{template.title}</h1>
 
@@ -498,6 +506,24 @@ export default function TemplatePage() {
           )}
         </div>
       </div>
+
+      {showQR && (
+        <div style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.8)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 100, overflowY: "auto",
+        }} onClick={() => setShowQR(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <TemplateShareCard
+              templateUrl={`https://aluxartandframes.shop/marketplace/${template.id}`}
+              creatorUsername={template.creator?.displayName ?? "AluxArt"}
+              coverUrl={template.coverUrl}
+              onClose={() => setShowQR(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {checkoutOpen && (
         <CheckoutPanel
