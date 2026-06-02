@@ -10,6 +10,10 @@ interface Props {
   onClose: () => void;
 }
 
+// Module-level cache so the chunk is shared across all card instances
+// and survives re-renders.
+let _html2canvas: Awaited<typeof import("html2canvas")>["default"] | null = null;
+
 export default function TemplateShareCard({ templateUrl, creatorUsername, coverUrl, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -17,7 +21,8 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
 
   const handle = "@" + creatorUsername.toUpperCase().replace(/\s+/g, "_");
 
-  // Pre-load logo as data URL so html2canvas doesn't need to fetch it during capture
+  // Pre-load both the logo and the html2canvas chunk as soon as the card
+  // opens so there is zero network wait when the user clicks Download.
   useEffect(() => {
     fetch("/logo.png")
       .then(r => r.blob())
@@ -27,25 +32,36 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
         reader.readAsDataURL(blob);
       })
       .catch(() => {/* logo is optional */});
+
+    if (!_html2canvas) {
+      import("html2canvas").then(m => { _html2canvas = m.default; });
+    }
   }, []);
 
   const handleDownload = async () => {
     if (typeof window === "undefined" || !cardRef.current) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvas = _html2canvas ?? (await import("html2canvas")).default;
 
       // useCORS:false — the card is inline-styled so we don't need external
       // stylesheet access. useCORS:true causes html2canvas to re-fetch
       // cross-origin sheets (e.g. Google Fonts) which have no CORS headers
       // and hang indefinitely.
       const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: false });
+      // Use toBlob + createObjectURL instead of toDataURL — blob: URLs trigger
+      // browser download dialogs reliably (data: URLs can be silently blocked).
+      const blob = await new Promise<Blob>((res, rej) =>
+        canvas.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
+      );
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-qr-share.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = blobUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
 
       if (coverUrl) {
         try {
