@@ -26,7 +26,9 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
       const link = document.createElement("a");
       link.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-qr-share.png`;
       link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
       if (coverUrl) {
         try {
@@ -36,7 +38,9 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
           const a = document.createElement("a");
           a.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
           a.href = blobUrl;
+          document.body.appendChild(a);
           a.click();
+          document.body.removeChild(a);
           URL.revokeObjectURL(blobUrl);
         } catch {
           // cover download is best-effort
