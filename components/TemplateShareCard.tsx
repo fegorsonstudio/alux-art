@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 
 interface Props {
   templateUrl: string;
@@ -28,38 +28,24 @@ function roundedFill(
   ctx.fill();
 }
 
-// Build the card as a canvas PNG using Canvas 2D only.
-// The QR SVG is drawn by loading it as a plain SVG image (no foreignObject →
-// no canvas taint → canvas.toBlob() works in Chrome).
-async function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
+// Build the card as a PNG by drawing to Canvas 2D.
+// QRCodeCanvas renders the QR into a <canvas> element — copying canvas to
+// canvas via drawImage() is always taint-free and never hangs.
+function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
+  // Get the QR canvas rendered by QRCodeCanvas
+  const qrCanvas = cardEl.querySelector("canvas") as HTMLCanvasElement | null;
+  if (!qrCanvas) return Promise.reject(new Error("QR canvas not found"));
+
   const S = 2;
 
-  // Extract the QR code SVG rendered by QRCodeSVG (pure <path>/<rect> elements,
-  // no <foreignObject>, no external URLs — drawing it to canvas is taint-free).
-  const svgEl = cardEl.querySelector("svg");
-  if (!svgEl) throw new Error("QR SVG not found");
-  const svgClone = svgEl.cloneNode(true) as SVGSVGElement;
-  svgClone.setAttribute("width",  String(200 * S));
-  svgClone.setAttribute("height", String(200 * S));
-  const svgXml  = new XMLSerializer().serializeToString(svgClone);
-  const svgBlob = new Blob([svgXml], { type: "image/svg+xml;charset=utf-8" });
-  const svgUrl  = URL.createObjectURL(svgBlob);
-  const qrImg   = await new Promise<HTMLImageElement>((res, rej) => {
-    const i = new Image();
-    i.onload  = () => res(i);
-    i.onerror = () => rej(new Error("QR SVG render failed"));
-    i.src = svgUrl;
-  });
-  URL.revokeObjectURL(svgUrl);
-
-  // Layout (pixels at 2× scale)
+  // Layout (all values in pixels at 2× scale)
   const CARD_W = 300 * S;
-  const PX     = 28 * S;   // horizontal padding
-  const PT     = 32 * S;   // padding top
-  const PB     = 28 * S;   // padding bottom
+  const PX     = 28 * S;
+  const PT     = 32 * S;
+  const PB     = 28 * S;
   const GAP    = 16 * S;
-  const QR     = 200 * S;
-  const PP     = 24 * S;   // plinth inner padding
+  const QR     = 200 * S;   // QR display size on output canvas
+  const PP     = 24 * S;    // plinth padding
   const PW     = QR + 2 * PP;
   const PH     = QR + 2 * PP;
   const INSTRH = 88 * S;
@@ -91,8 +77,8 @@ async function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blo
   ctx.fillStyle = "#ffffff";
   roundedFill(ctx, plinthX, y, PW, PH, 16 * S);
 
-  // QR code (pure SVG image, no taint)
-  ctx.drawImage(qrImg, plinthX + PP, y + PP, QR, QR);
+  // QR code — canvas-to-canvas, never taints
+  ctx.drawImage(qrCanvas, plinthX + PP, y + PP, QR, QR);
   y += PH + GAP;
 
   // Creator handle
@@ -153,6 +139,7 @@ async function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blo
     MX + COLGAP + COLW / 2
   );
 
+  // canvas.toBlob is async but runs on the GPU thread — no hanging
   return new Promise<Blob>((res, rej) =>
     canvas.toBlob(b => (b ? res(b) : rej(new Error("PNG encode failed"))), "image/png")
   );
@@ -201,14 +188,21 @@ export default function TemplateShareCard({
 
   return (
     <div style={wrapStyle}>
-      {/* Capture target — used to extract the QR SVG */}
       <div ref={cardRef} style={cardStyle}>
         <div style={plinthStyle}>
-          <QRCodeSVG
+          {/*
+            QRCodeCanvas renders into a <canvas> element. We read that canvas
+            in buildCardPng and copy it via drawImage() — always taint-free,
+            no blob/Image loading, no hanging.
+            size=400 (2× display size) keeps the QR crisp in the download;
+            CSS scales it down to 200×200 for the on-screen card.
+          */}
+          <QRCodeCanvas
             value={templateUrl}
-            size={200}
+            size={400}
             fgColor="#3730a3"
-            bgColor="transparent"
+            bgColor="#ffffff"
+            style={{ width: "200px", height: "200px", display: "block" }}
           />
         </div>
         <p style={handleStyle}>{handle}</p>
