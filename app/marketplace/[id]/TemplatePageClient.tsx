@@ -9,12 +9,7 @@ import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import CheckoutPanel from "./CheckoutPanel";
-import dynamic from "next/dynamic";
-
-const TemplateShareCard = dynamic(
-  () => import("@/components/TemplateShareCard"),
-  { ssr: false }
-);
+import TemplateShareCard from "@/components/TemplateShareCard";
 
 function renderMarkdown(text: string) {
   // Split into lines, handle > blockquotes, then bold **...**
