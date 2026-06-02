@@ -157,6 +157,7 @@ export default function TemplateShareCard({
     if (typeof window === "undefined" || !cardRef.current) return;
     setDownloading(true);
     try {
+      // Build and download the QR card PNG.
       const blob    = await buildCardPng(cardRef.current, handle);
       const blobUrl = URL.createObjectURL(blob);
       const link    = document.createElement("a");
@@ -166,23 +167,26 @@ export default function TemplateShareCard({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
+    } finally {
+      // Reset button as soon as the QR card is done — don't block on cover fetch.
+      setDownloading(false);
+    }
 
-      if (coverUrl) {
-        try {
-          const res       = await fetch(coverUrl);
-          const coverBlob = await res.blob();
-          const cu        = URL.createObjectURL(coverBlob);
-          const a         = document.createElement("a");
-          a.download      = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
-          a.href          = cu;
+    // Cover download is fire-and-forget so it never blocks the button state.
+    if (coverUrl) {
+      fetch(coverUrl)
+        .then(r => r.blob())
+        .then(coverBlob => {
+          const cu = URL.createObjectURL(coverBlob);
+          const a  = document.createElement("a");
+          a.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
+          a.href     = cu;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(cu);
-        } catch {/* cover is best-effort */}
-      }
-    } finally {
-      setDownloading(false);
+        })
+        .catch(() => {/* best-effort */});
     }
   };
 
