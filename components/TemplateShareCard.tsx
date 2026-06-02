@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 interface Props {
@@ -13,8 +13,21 @@ interface Props {
 export default function TemplateShareCard({ templateUrl, creatorUsername, coverUrl, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | undefined>(undefined);
 
   const handle = "@" + creatorUsername.toUpperCase().replace(/\s+/g, "_");
+
+  // Pre-load logo as data URL so html2canvas doesn't need to fetch it during capture
+  useEffect(() => {
+    fetch("/logo.png")
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoDataUrl(reader.result as string);
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {/* logo is optional */});
+  }, []);
 
   const handleDownload = async () => {
     if (typeof window === "undefined" || !cardRef.current) return;
@@ -62,12 +75,12 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
             size={200}
             fgColor="#3730a3"
             bgColor="transparent"
-            imageSettings={{
-              src: "/logo.png",
+            imageSettings={logoDataUrl ? {
+              src: logoDataUrl,
               height: 40,
               width: 40,
               excavate: true,
-            }}
+            } : undefined}
           />
         </div>
 
