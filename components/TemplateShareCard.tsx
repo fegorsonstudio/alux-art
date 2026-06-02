@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 interface Props {
@@ -10,50 +10,80 @@ interface Props {
   onClose: () => void;
 }
 
-// Module-level cache so the chunk is shared across all card instances
-// and survives re-renders.
-let _html2canvas: Awaited<typeof import("html2canvas")>["default"] | null = null;
+// Capture a DOM element as a PNG Blob using SVG foreignObject → Canvas.
+// No external libraries, no network requests — resolves synchronously after
+// the image loads from a local blob: URL Chrome creates in-process.
+async function captureAsPng(el: HTMLElement): Promise<Blob> {
+  const { width, height } = el.getBoundingClientRect();
+  const scale = 2;
+  const W = Math.round(width * scale);
+  const H = Math.round(height * scale);
+
+  const clone = el.cloneNode(true) as HTMLElement;
+  // Remove any <image> / <img> nodes — Chrome blocks cross-origin resources
+  // inside SVG foreignObject, and we don't need them for this card.
+  clone.querySelectorAll("image, img").forEach(n => n.remove());
+
+  // Serialize the cloned HTML into an SVG with a foreignObject wrapper.
+  const xml = new XMLSerializer().serializeToString(
+    (() => {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      svg.setAttribute("width", String(W));
+      svg.setAttribute("height", String(H));
+
+      const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+      fo.setAttribute("width", String(W));
+      fo.setAttribute("height", String(H));
+
+      const wrapper = document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+      wrapper.setAttribute(
+        "style",
+        `transform:scale(${scale});transform-origin:top left;` +
+          `width:${width}px;height:${height}px;overflow:hidden;`
+      );
+      wrapper.appendChild(clone);
+      fo.appendChild(wrapper);
+      svg.appendChild(fo);
+      return svg;
+    })()
+  );
+
+  const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error("SVG render failed"));
+      i.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    canvas.getContext("2d")!.drawImage(img, 0, 0);
+
+    return new Promise<Blob>((res, rej) =>
+      canvas.toBlob(b => (b ? res(b) : rej(new Error("PNG encode failed"))), "image/png")
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 export default function TemplateShareCard({ templateUrl, creatorUsername, coverUrl, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  const [logoDataUrl, setLogoDataUrl] = useState<string | undefined>(undefined);
 
   const handle = "@" + creatorUsername.toUpperCase().replace(/\s+/g, "_");
-
-  // Pre-load both the logo and the html2canvas chunk as soon as the card
-  // opens so there is zero network wait when the user clicks Download.
-  useEffect(() => {
-    fetch("/logo.png")
-      .then(r => r.blob())
-      .then(blob => {
-        const reader = new FileReader();
-        reader.onloadend = () => setLogoDataUrl(reader.result as string);
-        reader.readAsDataURL(blob);
-      })
-      .catch(() => {/* logo is optional */});
-
-    if (!_html2canvas) {
-      import("html2canvas").then(m => { _html2canvas = m.default; });
-    }
-  }, []);
 
   const handleDownload = async () => {
     if (typeof window === "undefined" || !cardRef.current) return;
     setDownloading(true);
     try {
-      const html2canvas = _html2canvas ?? (await import("html2canvas")).default;
-
-      // useCORS:false — the card is inline-styled so we don't need external
-      // stylesheet access. useCORS:true causes html2canvas to re-fetch
-      // cross-origin sheets (e.g. Google Fonts) which have no CORS headers
-      // and hang indefinitely.
-      const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: false });
-      // Use toBlob + createObjectURL instead of toDataURL — blob: URLs trigger
-      // browser download dialogs reliably (data: URLs can be silently blocked).
-      const blob = await new Promise<Blob>((res, rej) =>
-        canvas.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
-      );
+      const blob = await captureAsPng(cardRef.current);
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-qr-share.png`;
@@ -66,15 +96,15 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
       if (coverUrl) {
         try {
           const res = await fetch(coverUrl);
-          const blob = await res.blob();
-          const blobUrl = URL.createObjectURL(blob);
+          const coverBlob = await res.blob();
+          const coverUrl2 = URL.createObjectURL(coverBlob);
           const a = document.createElement("a");
           a.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
-          a.href = blobUrl;
+          a.href = coverUrl2;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          URL.revokeObjectURL(blobUrl);
+          URL.revokeObjectURL(coverUrl2);
         } catch {
           // cover download is best-effort
         }
@@ -95,12 +125,6 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
             size={200}
             fgColor="#3730a3"
             bgColor="transparent"
-            imageSettings={logoDataUrl ? {
-              src: logoDataUrl,
-              height: 40,
-              width: 40,
-              excavate: true,
-            } : undefined}
           />
         </div>
 
