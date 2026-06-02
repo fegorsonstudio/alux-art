@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
-import { createServiceClient } from "@/lib/supabase-server";
+import sql from "@/lib/db";
 import TemplatePageClient from "./TemplatePageClient";
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const service = createServiceClient();
 
-  const { data: template } = await service
-    .from("templates")
-    .select("title, description, price_ngn, package_size, cover_storage_path, cover_bucket")
-    .eq("id", id)
-    .eq("status", "published")
-    .single();
+  const [template] = await sql`
+    SELECT title, description, price_ngn, package_size, cover_storage_path, cover_bucket
+    FROM templates WHERE id = ${id} AND status = 'published'
+  `;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aluxartandframes.shop";
   const pageUrl = `${siteUrl}/marketplace/${id}`;
