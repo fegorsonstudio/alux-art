@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      { source: "/llms.txt", destination: "/api/llms" },
+    ];
+  },
   async headers() {
     return [
       {
