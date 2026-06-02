@@ -35,7 +35,15 @@ export default function TemplateShareCard({ templateUrl, creatorUsername, coverU
     try {
       const html2canvas = (await import("html2canvas")).default;
 
-      const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        useCORS: true,
+        onclone: (doc) => {
+          // Remove external stylesheets (e.g. Google Fonts) that block CORS
+          // during capture. The card uses only inline styles so this is safe.
+          doc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+        },
+      });
       const link = document.createElement("a");
       link.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-qr-share.png`;
       link.href = canvas.toDataURL("image/png");
