@@ -1,0 +1,58 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]: Alux Art
+      - generic [ref=e5]:
+        - link "Browse looks" [ref=e6] [cursor=pointer]:
+          - /url: /marketplace
+        - link "Sign in" [ref=e7] [cursor=pointer]:
+          - /url: /login
+    - generic [ref=e8]:
+      - paragraph [ref=e9]: Tired of expensive shoots, the planning, and waiting weeks just to get your photos?
+      - heading "Ready to see yourself in a whole new light?" [level=1] [ref=e10]:
+        - text: Ready to see yourself
+        - text: in a whole new light?
+      - paragraph [ref=e11]: Upload 3 selfies. Choose a style. Get 10 editorial portraits in minutes. No photographer. No studio. No prompts.
+      - link "Browse styles" [ref=e13] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e14]:
+      - heading "How it works" [level=2] [ref=e15]
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: "01"
+          - heading "Upload your photos" [level=3] [ref=e19]
+          - paragraph [ref=e20]: "Start with 3 clear selfies — these lock your face, skin tone, and features. Then add pose references for any angles you want: a back shot, a side profile, a full-body look. The AI only knows what you show it, so if you want a pose it has not seen, upload a reference that shows it."
+        - generic [ref=e21]:
+          - generic [ref=e22]: "02"
+          - heading "Choose a style" [level=3] [ref=e23]
+          - paragraph [ref=e24]: Pick from editorial, fashion, corporate, or creative looks designed by photographers.
+        - generic [ref=e25]:
+          - generic [ref=e26]: "03"
+          - heading "Download your portraits" [level=3] [ref=e27]
+          - paragraph [ref=e28]: 10 images delivered to your studio. Every shot is you — same face, different look.
+    - generic [ref=e29]:
+      - heading "Current styles" [level=2] [ref=e30]
+      - generic [ref=e31]:
+        - link "Old money Old money portrait" [ref=e32] [cursor=pointer]:
+          - /url: /marketplace/58efb498-dc5f-4ab5-a11c-2681fae0e9c9
+          - img "Old money" [ref=e33]
+          - generic [ref=e34]:
+            - generic [ref=e35]: Old money
+            - generic [ref=e36]: portrait
+        - link "THE CANON G7x iii THE CANON G7x iii editorial" [ref=e37] [cursor=pointer]:
+          - /url: /marketplace/062c8d0d-753e-402a-902d-04625135c6f4
+          - img "THE CANON G7x iii" [ref=e38]
+          - generic [ref=e39]:
+            - generic [ref=e40]: THE CANON G7x iii
+            - generic [ref=e41]: editorial
+      - link "Browse all styles →" [ref=e43] [cursor=pointer]:
+        - /url: /marketplace
+    - contentinfo [ref=e44]:
+      - generic [ref=e45]: Alux Art
+      - generic [ref=e46]:
+        - link "Terms of Service" [ref=e47] [cursor=pointer]:
+          - /url: /terms
+        - link "Privacy Policy" [ref=e48] [cursor=pointer]:
+          - /url: /privacy
+      - generic [ref=e49]: © 2026 Alux Art and Frames. All rights reserved.
+  - alert [ref=e50]

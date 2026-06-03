@@ -1,0 +1,284 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e177]:
+      - generic [ref=e181]:
+        - generic [ref=e183]:
+          - img [ref=e184]
+          - generic [ref=e186]:
+            - paragraph [ref=e187]: Upcoming maintenance
+            - generic [ref=e188]:
+              - generic [ref=e189]: ·
+              - generic [ref=e190]:
+                - text: Shared pooler maintenance in
+                - link "eu-west-1" [ref=e191] [cursor=pointer]:
+                  - /url: https://status.supabase.com/incidents/3t293hpd545z
+                - text: on 01 Jun, 14:00.
+        - button "Dismiss banner" [ref=e192] [cursor=pointer]:
+          - img [ref=e194]
+      - banner [ref=e198]:
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - link "Supabase" [ref=e201] [cursor=pointer]:
+              - /url: /dashboard/org/xkyyjcklveqysuewphva
+              - img "Supabase" [ref=e202]
+            - generic [ref=e203]:
+              - img [ref=e205]
+              - generic [ref=e207]:
+                - link "fegorsonphotography@gmail.com's Org Pro" [ref=e208] [cursor=pointer]:
+                  - /url: /dashboard/org/xkyyjcklveqysuewphva
+                  - img [ref=e209]
+                  - generic [ref=e219]: fegorsonphotography@gmail.com's Org
+                  - generic [ref=e220]: Pro
+                - button [ref=e221] [cursor=pointer]:
+                  - img [ref=e223]
+              - generic [ref=e226]:
+                - img [ref=e228]
+                - generic [ref=e230]:
+                  - link "Aluxart" [ref=e231] [cursor=pointer]:
+                    - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                    - img [ref=e232]
+                    - generic "Aluxart" [ref=e235]
+                  - button [ref=e236] [cursor=pointer]:
+                    - img [ref=e238]
+                - img [ref=e242]
+                - generic [ref=e244]:
+                  - link "main Production" [ref=e245] [cursor=pointer]:
+                    - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                    - generic "main" [ref=e246]
+                    - generic [ref=e247]: Production
+                  - button [ref=e248] [cursor=pointer]:
+                    - img [ref=e250]
+            - button "Connect" [ref=e254] [cursor=pointer]:
+              - img [ref=e256]
+              - generic [ref=e258]: Connect
+          - generic [ref=e259]:
+            - generic [ref=e261] [cursor=pointer]: Feedback
+            - generic [ref=e262]:
+              - button "Search..." [ref=e263]:
+                - generic [ref=e264]:
+                  - img [ref=e265]
+                  - paragraph [ref=e268]: Search...
+                - generic [ref=e270]: Ctrl K
+              - button "Help" [ref=e628] [cursor=pointer]:
+                - generic [ref=e272]:
+                  - img [ref=e273]
+                  - generic [ref=e276]: Help
+              - button "Advisor Center" [ref=e629] [cursor=pointer]:
+                - generic [ref=e279]:
+                  - img [ref=e280]
+                  - generic [ref=e282]: Advisor Center
+              - button "SQL Editor" [ref=e630] [cursor=pointer]:
+                - generic [ref=e285]:
+                  - img [ref=e286]
+                  - generic [ref=e288]: SQL Editor
+              - button "AI Assistant" [ref=e631] [cursor=pointer]:
+                - generic [ref=e290]:
+                  - img [ref=e293]
+                  - generic [ref=e296]: AI Assistant
+            - button [ref=e297] [cursor=pointer]:
+              - figure [ref=e299]:
+                - img [ref=e300]
+      - generic [ref=e302]:
+        - generic [ref=e306]:
+          - list [ref=e309]:
+            - generic [ref=e310]:
+              - listitem [ref=e311]:
+                - link "Project Overview" [ref=e312] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                  - img [ref=e313]
+                  - generic: Project Overview
+              - listitem [ref=e315]:
+                - link "Table Editor" [ref=e316] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/editor
+                  - img [ref=e317]
+                  - generic: Table Editor
+              - listitem [ref=e319]:
+                - link "SQL Editor" [ref=e320] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/sql
+                  - img [ref=e321]
+                  - generic: SQL Editor
+            - generic [ref=e323]:
+              - listitem [ref=e324]:
+                - link "Database" [ref=e325] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/database/schemas
+                  - img [ref=e326]
+                  - generic: Database
+              - listitem [ref=e330]:
+                - link "Authentication" [ref=e331] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/auth/users
+                  - img [ref=e332]
+                  - generic: Authentication
+              - listitem [ref=e334]:
+                - link "Storage" [ref=e335] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/storage/files
+                  - img [ref=e336]
+                  - generic: Storage
+              - listitem [ref=e338]:
+                - link "Edge Functions" [ref=e339] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/functions
+                  - img [ref=e340]
+                  - generic: Edge Functions
+              - listitem [ref=e345]:
+                - link "Realtime" [ref=e346] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/realtime/inspector
+                  - img [ref=e347]
+                  - generic: Realtime
+            - generic [ref=e349]:
+              - listitem [ref=e351]:
+                - link "Advisors" [ref=e352] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/advisors/security
+                  - img [ref=e353]
+                  - generic: Advisors
+              - listitem [ref=e355]:
+                - link "Observability" [ref=e356] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/observability
+                  - img [ref=e357]
+                  - generic: Observability
+              - listitem [ref=e365]:
+                - link "Logs" [ref=e366] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/logs/explorer
+                  - img [ref=e367]
+                  - generic: Logs
+              - listitem [ref=e368]:
+                - link "Integrations" [ref=e369] [cursor=pointer]:
+                  - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations
+                  - img [ref=e370]
+                  - generic: Integrations
+            - listitem [ref=e374]:
+              - link "Project Settings" [ref=e375] [cursor=pointer]:
+                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/general
+                - img [ref=e376]
+                - generic: Project Settings
+          - button "Sidebar control" [ref=e381] [cursor=pointer]:
+            - img [ref=e383]
+        - generic [ref=e390]:
+          - generic [ref=e394]:
+            - heading "Settings" [level=4] [ref=e396]
+            - menu "Sidebar" [disabled] [ref=e399]:
+              - list [ref=e400]:
+                - generic [ref=e403]:
+                  - generic [ref=e407]: Configuration
+                  - generic [ref=e408]:
+                    - link "General" [disabled] [ref=e409] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/general
+                      - menuitem "General" [disabled] [ref=e410]:
+                        - generic "General" [ref=e413]:
+                          - generic [ref=e414]: General
+                    - link "Compute and Disk" [disabled] [ref=e415] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/compute-and-disk
+                      - menuitem "Compute and Disk" [disabled] [ref=e416]:
+                        - generic "Compute and Disk" [ref=e419]:
+                          - generic [ref=e420]: Compute and Disk
+                    - link "Infrastructure" [disabled] [ref=e421] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/infrastructure
+                      - menuitem "Infrastructure" [disabled] [ref=e422]:
+                        - generic "Infrastructure" [ref=e425]:
+                          - generic [ref=e426]: Infrastructure
+                    - link "Integrations" [disabled] [ref=e427] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/integrations
+                      - menuitem "Integrations" [disabled] [ref=e428]:
+                        - generic "Integrations" [ref=e431]:
+                          - generic [ref=e432]: Integrations
+                    - link "API Keys" [disabled] [ref=e433] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/api-keys
+                      - menuitem "API Keys" [disabled] [ref=e434]:
+                        - generic "API Keys" [ref=e437]:
+                          - generic [ref=e438]: API Keys
+                    - link "JWT Keys" [disabled] [ref=e439] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/jwt
+                      - menuitem "JWT Keys" [disabled] [ref=e440]:
+                        - generic "JWT Keys" [ref=e443]:
+                          - generic [ref=e444]: JWT Keys
+                    - link "Log Drains" [disabled] [ref=e445] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/log-drains
+                      - menuitem "Log Drains" [disabled] [ref=e446]:
+                        - generic "Log Drains" [ref=e449]:
+                          - generic [ref=e450]: Log Drains
+                    - link "Add-ons" [disabled] [ref=e451] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/addons
+                      - menuitem "Add-ons" [disabled] [ref=e452]:
+                        - generic "Add-ons" [ref=e455]:
+                          - generic [ref=e456]: Add-ons
+                - generic [ref=e460]:
+                  - generic [ref=e464]: Integrations
+                  - generic [ref=e465]:
+                    - link "Data API" [disabled] [ref=e466] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations/data_api/overview
+                      - menuitem "Data API" [disabled] [ref=e467]:
+                        - generic [ref=e469]:
+                          - generic "Data API" [ref=e470]:
+                            - generic [ref=e471]: Data API
+                          - img [ref=e473]
+                    - link "Vault Beta" [disabled] [ref=e476] [cursor=pointer]:
+                      - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations/vault/overview
+                      - menuitem "Vault Beta" [disabled] [ref=e477]:
+                        - generic [ref=e479]:
+                          - generic "Vault" [ref=e480]:
+                            - generic [ref=e481]: Vault
+                            - generic [ref=e482]: Beta
+                          - img [ref=e484]
+                - generic [ref=e490]:
+                  - generic [ref=e494]: Billing
+                  - generic [ref=e495]:
+                    - link "Subscription" [disabled] [ref=e496] [cursor=pointer]:
+                      - /url: /dashboard/org/xkyyjcklveqysuewphva/billing
+                      - menuitem "Subscription" [disabled] [ref=e497]:
+                        - generic [ref=e499]:
+                          - generic "Subscription" [ref=e500]:
+                            - generic [ref=e501]: Subscription
+                          - img [ref=e503]
+                    - link "Usage" [disabled] [ref=e506] [cursor=pointer]:
+                      - /url: /dashboard/org/xkyyjcklveqysuewphva/usage?projectRef=owdfoxglbxrqhgqbvkon
+                      - menuitem "Usage" [disabled] [ref=e507]:
+                        - generic [ref=e509]:
+                          - generic "Usage" [ref=e510]:
+                            - generic [ref=e511]: Usage
+                          - img [ref=e513]
+          - separator [disabled] [ref=e516]:
+            - img [ref=e518]
+          - main [ref=e527]:
+            - generic [ref=e531]:
+              - heading "Add-ons" [level=1] [ref=e532]
+              - generic [ref=e533]: Level up your project with add-ons
+            - generic [ref=e536]:
+              - button "IPv4 Dedicated IPv4 address Reserve a dedicated IPv4 address for your project. About IPv4 deprecation Disabled" [ref=e537] [cursor=pointer]:
+                - img "IPv4" [ref=e539]
+                - generic [ref=e541]:
+                  - generic [ref=e542]: Dedicated IPv4 address
+                  - paragraph [ref=e543]: Reserve a dedicated IPv4 address for your project.
+                  - link "About IPv4 deprecation" [ref=e544]:
+                    - /url: https://supabase.com/docs/guides/platform/ipv4-address
+                - generic [ref=e547]: Disabled
+                - img [ref=e548]
+              - button "PITR Point in time recovery Restore your database to a specific moment in the past. About PITR backups Disabled" [ref=e550] [cursor=pointer]:
+                - img "PITR" [ref=e552]
+                - generic [ref=e554]:
+                  - generic [ref=e555]: Point in time recovery
+                  - paragraph [ref=e556]: Restore your database to a specific moment in the past.
+                  - link "About PITR backups" [ref=e557]:
+                    - /url: https://supabase.com/docs/guides/platform/backups#point-in-time-recovery
+                - generic [ref=e560]: Disabled
+                - img [ref=e561]
+              - button "Custom Domain Custom domain Serve your project on your own domain name. About custom domains Enabled" [ref=e563] [cursor=pointer]:
+                - img "Custom Domain" [ref=e565]
+                - generic [ref=e567]:
+                  - generic [ref=e568]: Custom domain
+                  - paragraph [ref=e569]: Serve your project on your own domain name.
+                  - link "About custom domains" [ref=e570]:
+                    - /url: https://supabase.com/docs/guides/platform/custom-domains
+                - generic [ref=e573]: Enabled
+                - img [ref=e574]
+    - generic [ref=e633]:
+      - generic:
+        - img "Background pattern"
+      - generic [ref=e634]:
+        - button "Close banner" [ref=e636] [cursor=pointer]:
+          - img [ref=e638]
+        - generic [ref=e641]:
+          - generic [ref=e642]: Notice
+          - generic [ref=e643]:
+            - paragraph [ref=e644]: We've updated our Terms of Service
+            - paragraph [ref=e645]: Updates define the responsibilities of both you and Supabase in the use of AI.
+          - button "Learn more" [ref=e646] [cursor=pointer]:
+            - generic [ref=e647]: Learn more
+  - alert [ref=e176]: Add-ons | Settings | Aluxart | fegorsonphotography@gmail.com's Org | Supabase

@@ -1,0 +1,925 @@
+- generic [ref=e8]:
+  - generic [ref=e9]:
+    - generic [ref=e13]:
+      - complementary [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - link [ref=e17] [cursor=pointer]:
+              - /url: /
+              - img [ref=e19]
+            - generic "Fegorsonphotography@gmail.com's Account" [ref=e24]
+          - navigation [ref=e26]:
+            - generic [ref=e30]:
+              - button "Quick search..." [ref=e32] [cursor=pointer]:
+                - generic [ref=e34]:
+                  - img [ref=e35]
+                  - generic [ref=e37]: Quick search...
+                  - generic [ref=e38]: Ctrl K
+              - list [ref=e42]:
+                - listitem [ref=e43]:
+                  - link "Account home" [ref=e44] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/home
+                    - generic [ref=e45]:
+                      - img [ref=e46]
+                      - generic [ref=e49]: Account home
+                - listitem [ref=e50]:
+                  - button "Recents" [ref=e51] [cursor=pointer]:
+                    - generic [ref=e52]:
+                      - img [ref=e53]
+                      - generic [ref=e56]: Recents
+                      - img [ref=e57]
+                  - list [ref=e59]:
+                    - listitem [ref=e61]:
+                      - link "inspiration-images R2" [ref=e62] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/inspiration-images/settings
+                        - generic [ref=e63]:
+                          - generic [ref=e64]: inspiration-images
+                          - generic [ref=e66]: R2
+                      - button "Pin" [ref=e68] [cursor=pointer]:
+                        - generic [ref=e69]:
+                          - img [ref=e70]
+                          - img [ref=e75]
+                    - listitem [ref=e77]:
+                      - link "identity-images R2" [ref=e78] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/identity-images
+                        - generic [ref=e79]:
+                          - generic [ref=e80]: identity-images
+                          - generic [ref=e82]: R2
+                      - button "Pin" [ref=e84] [cursor=pointer]:
+                        - generic [ref=e85]:
+                          - img [ref=e86]
+                          - img [ref=e91]
+                    - listitem [ref=e93]:
+                      - link "test R2" [ref=e94] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/test
+                        - generic [ref=e95]:
+                          - generic [ref=e96]: test
+                          - generic [ref=e98]: R2
+                      - button "Pin" [ref=e100] [cursor=pointer]:
+                        - generic [ref=e101]:
+                          - img [ref=e102]
+                          - img [ref=e107]
+                    - listitem [ref=e109]:
+                      - link "shoot-zips R2" [ref=e110] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/shoot-zips
+                        - generic [ref=e111]:
+                          - generic [ref=e112]: shoot-zips
+                          - generic [ref=e114]: R2
+                      - button "Pin" [ref=e116] [cursor=pointer]:
+                        - generic [ref=e117]:
+                          - img [ref=e118]
+                          - img [ref=e123]
+                    - listitem [ref=e125]:
+                      - link "generated-4k R2" [ref=e126] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/generated-4k
+                        - generic [ref=e127]:
+                          - generic [ref=e128]: generated-4k
+                          - generic [ref=e130]: R2
+                      - button "Pin" [ref=e132] [cursor=pointer]:
+                        - generic [ref=e133]:
+                          - img [ref=e134]
+                          - img [ref=e139]
+                - listitem [ref=e141]:
+                  - button "Domains" [ref=e142] [cursor=pointer]:
+                    - generic [ref=e143]:
+                      - img [ref=e144]
+                      - generic [ref=e146]: Domains
+                      - img [ref=e147]
+                  - list [ref=e149]:
+                    - listitem [ref=e151]:
+                      - link "Overview" [ref=e152] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/domains/overview
+                        - generic [ref=e153]: Overview
+                    - listitem [ref=e154]:
+                      - link "Registrations" [ref=e155] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/domains/registrations
+                        - generic [ref=e156]: Registrations
+                    - listitem [ref=e157]:
+                      - link "Transfers" [ref=e158] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/domains/transfers
+                        - generic [ref=e159]: Transfers
+                - listitem [ref=e160]:
+                  - generic [ref=e162]: Observe
+                - listitem [ref=e163]:
+                  - button "Investigate" [ref=e164] [cursor=pointer]:
+                    - generic [ref=e165]:
+                      - img [ref=e166]
+                      - generic [ref=e169]: Investigate
+                      - img [ref=e170]
+                  - list [ref=e172]:
+                    - listitem [ref=e174]:
+                      - button "Log Explorer" [ref=e175] [cursor=pointer]:
+                        - generic [ref=e177]: Log Explorer
+                        - img [ref=e178]
+                      - list [ref=e180]:
+                        - listitem [ref=e182]:
+                          - link "Log search" [ref=e183] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/log-explorer/log-search
+                            - generic [ref=e184]: Log search
+                    - listitem [ref=e185]:
+                      - link "Trace Beta" [ref=e186] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/trace
+                        - generic [ref=e187]: Trace
+                        - generic [ref=e189]: Beta
+                    - listitem [ref=e190]:
+                      - link "Logpush" [ref=e191] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/logs
+                        - generic [ref=e192]: Logpush
+                - listitem [ref=e193]:
+                  - button "Analytics" [ref=e194] [cursor=pointer]:
+                    - generic [ref=e195]:
+                      - img [ref=e196]
+                      - generic [ref=e199]: Analytics
+                      - img [ref=e200]
+                  - list [ref=e202]:
+                    - listitem [ref=e204]:
+                      - link "Dashboards New" [ref=e205] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/dashboards
+                        - generic [ref=e206]: Dashboards
+                        - generic [ref=e208]: New
+                    - listitem [ref=e209]:
+                      - link "Account analytics" [ref=e210] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/analytics
+                        - generic [ref=e211]: Account analytics
+                    - listitem [ref=e212]:
+                      - link "Web analytics" [ref=e213] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/web-analytics
+                        - generic [ref=e214]: Web analytics
+                - listitem [ref=e215]:
+                  - generic [ref=e217]: Build
+                - listitem [ref=e218]:
+                  - button "Compute" [ref=e219] [cursor=pointer]:
+                    - generic [ref=e220]:
+                      - img [ref=e221]
+                      - generic [ref=e225]: Compute
+                      - img [ref=e226]
+                  - list [ref=e228]:
+                    - listitem [ref=e230]:
+                      - link "Workers & Pages" [ref=e231] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers-and-pages
+                        - generic [ref=e232]: Workers & Pages
+                    - listitem [ref=e233]:
+                      - link "Observability" [ref=e234] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/observability
+                        - generic [ref=e235]: Observability
+                    - listitem [ref=e236]:
+                      - link "Workers for Platforms" [ref=e237] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers-for-platforms
+                        - generic [ref=e238]: Workers for Platforms
+                    - listitem [ref=e239]:
+                      - link "Containers" [ref=e240] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/containers
+                        - generic [ref=e241]: Containers
+                    - listitem [ref=e242]:
+                      - link "Durable Objects" [ref=e243] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/durable-objects
+                        - generic [ref=e244]: Durable Objects
+                    - listitem [ref=e245]:
+                      - link "Queues" [ref=e246] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/queues
+                        - generic [ref=e247]: Queues
+                    - listitem [ref=e248]:
+                      - link "Workflows" [ref=e249] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/workflows
+                        - generic [ref=e250]: Workflows
+                    - listitem [ref=e251]:
+                      - link "Browser Run" [ref=e252] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/browser-run
+                        - generic [ref=e253]: Browser Run
+                    - listitem [ref=e254]:
+                      - link "VPC Beta" [ref=e255] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/vpc
+                        - generic [ref=e256]: VPC
+                        - generic [ref=e258]: Beta
+                    - listitem [ref=e259]:
+                      - button "Email Service" [ref=e260] [cursor=pointer]:
+                        - generic [ref=e262]: Email Service
+                        - img [ref=e263]
+                      - list [ref=e265]:
+                        - listitem [ref=e267]:
+                          - link "Email Sending Beta" [ref=e268] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/email-service/sending
+                            - generic [ref=e269]: Email Sending
+                            - generic [ref=e271]: Beta
+                        - listitem [ref=e272]:
+                          - link "Email Routing" [ref=e273] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/email-service/routing
+                            - generic [ref=e274]: Email Routing
+                    - listitem [ref=e275]:
+                      - link "Workers plans" [ref=e276] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/plans
+                        - generic [ref=e277]: Workers plans
+                - listitem [ref=e278]:
+                  - button "AI" [ref=e279] [cursor=pointer]:
+                    - generic [ref=e280]:
+                      - img [ref=e281]
+                      - generic [ref=e283]: AI
+                      - img [ref=e284]
+                  - list [ref=e286]:
+                    - listitem [ref=e288]:
+                      - link "Models" [ref=e289] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/ai/models
+                        - generic [ref=e290]: Models
+                    - listitem [ref=e291]:
+                      - link "Workers AI" [ref=e292] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/ai/workers-ai
+                        - generic [ref=e293]: Workers AI
+                    - listitem [ref=e294]:
+                      - link "AI Gateway" [ref=e295] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/ai/ai-gateway
+                        - generic [ref=e296]: AI Gateway
+                    - listitem [ref=e297]:
+                      - link "Vectorize" [ref=e298] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/ai/vectorize
+                        - generic [ref=e299]: Vectorize
+                    - listitem [ref=e300]:
+                      - link "AI Search Beta" [ref=e301] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/ai/ai-search
+                        - generic [ref=e302]: AI Search
+                        - generic [ref=e304]: Beta
+                - listitem [ref=e305]:
+                  - button "Storage & databases" [expanded] [ref=e306] [cursor=pointer]:
+                    - generic [ref=e307]:
+                      - img [ref=e308]
+                      - generic [ref=e311]: Storage & databases
+                      - img [ref=e312]
+                  - list [ref=e316]:
+                    - listitem [ref=e318]:
+                      - button "R2 Object Storage" [expanded] [ref=e319] [cursor=pointer]:
+                        - generic [ref=e321]: R2 Object Storage
+                        - img [ref=e322]
+                      - list [ref=e326]:
+                        - listitem [ref=e328]:
+                          - link "Overview" [ref=e329] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/r2/overview
+                            - generic [ref=e330]: Overview
+                        - listitem [ref=e331]:
+                          - link "Data migration" [ref=e332] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/r2/slurper
+                            - generic [ref=e333]: Data migration
+                    - listitem [ref=e334]:
+                      - link "Hyperdrive" [ref=e335] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/hyperdrive
+                        - generic [ref=e336]: Hyperdrive
+                    - listitem [ref=e337]:
+                      - link "Workers KV" [ref=e338] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/kv/namespaces
+                        - generic [ref=e339]: Workers KV
+                    - listitem [ref=e340]:
+                      - link "D1 SQL database" [ref=e341] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/d1
+                        - generic [ref=e342]: D1 SQL database
+                    - listitem [ref=e343]:
+                      - link "Analytics Engine" [ref=e344] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/analytics-engine
+                        - generic [ref=e345]: Analytics Engine
+                    - listitem [ref=e346]:
+                      - button "Pipelines Beta" [ref=e347] [cursor=pointer]:
+                        - generic [ref=e348]:
+                          - generic [ref=e349]: Pipelines
+                          - generic [ref=e351]: Beta
+                        - img [ref=e352]
+                      - list [ref=e354]:
+                        - listitem [ref=e356]:
+                          - link "Pipelines" [ref=e357] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/pipelines/overview
+                            - generic [ref=e358]: Pipelines
+                    - listitem [ref=e359]:
+                      - link "Secrets Store New" [ref=e360] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/secrets-store
+                        - generic [ref=e361]: Secrets Store
+                        - generic [ref=e363]: New
+                - listitem [ref=e364]:
+                  - button "Media" [ref=e365] [cursor=pointer]:
+                    - generic [ref=e366]:
+                      - img [ref=e367]
+                      - generic [ref=e370]: Media
+                      - img [ref=e371]
+                  - list [ref=e373]:
+                    - listitem [ref=e375]:
+                      - button "Stream" [ref=e376] [cursor=pointer]:
+                        - generic [ref=e378]: Stream
+                        - img [ref=e379]
+                      - list [ref=e381]:
+                        - listitem [ref=e383]:
+                          - link "Plans" [ref=e384] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/stream/plans
+                            - generic [ref=e385]: Plans
+                    - listitem [ref=e386]:
+                      - button "Images" [ref=e387] [cursor=pointer]:
+                        - generic [ref=e389]: Images
+                        - img [ref=e390]
+                      - list [ref=e392]:
+                        - listitem [ref=e394]:
+                          - link "Transformations" [ref=e395] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/images/transformations
+                            - generic [ref=e396]: Transformations
+                        - listitem [ref=e397]:
+                          - link "Hosted images" [ref=e398] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/images/hosted
+                            - generic [ref=e399]: Hosted images
+                        - listitem [ref=e400]:
+                          - link "Plans" [ref=e401] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/images/plans
+                            - generic [ref=e402]: Plans
+                    - listitem [ref=e403]:
+                      - button "Realtime" [ref=e404] [cursor=pointer]:
+                        - generic [ref=e406]: Realtime
+                        - img [ref=e407]
+                      - list [ref=e409]:
+                        - listitem [ref=e411]:
+                          - link "RealtimeKit Beta" [ref=e412] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/realtime/kit
+                            - generic [ref=e413]: RealtimeKit
+                            - generic [ref=e415]: Beta
+                        - listitem [ref=e416]:
+                          - link "TURN Server" [ref=e417] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/realtime/turn
+                            - generic [ref=e418]: TURN Server
+                        - listitem [ref=e419]:
+                          - link "Serverless SFU" [ref=e420] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/realtime/sfu
+                            - generic [ref=e421]: Serverless SFU
+                        - listitem [ref=e422]:
+                          - link "MoQ Relay Alpha" [ref=e423] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/realtime/moq
+                            - generic [ref=e424]: MoQ Relay
+                            - generic [ref=e426]: Alpha
+                        - listitem [ref=e427]:
+                          - link "MoQ Bench" [ref=e428] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/realtime/moq-bench
+                            - generic [ref=e429]: MoQ Bench
+                - listitem [ref=e430]:
+                  - generic [ref=e432]: Protect & Connect
+                - listitem [ref=e433]:
+                  - button "Application security" [ref=e434] [cursor=pointer]:
+                    - generic [ref=e435]:
+                      - img [ref=e436]
+                      - generic [ref=e439]: Application security
+                      - img [ref=e440]
+                  - list [ref=e442]:
+                    - listitem [ref=e444]:
+                      - link "Security insights" [ref=e445] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/security-center
+                        - generic [ref=e446]: Security insights
+                    - listitem [ref=e447]:
+                      - link "WAF" [ref=e448] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/application-security/waf
+                        - generic [ref=e449]: WAF
+                    - listitem [ref=e450]:
+                      - link "Investigate" [ref=e451] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/application-security/investigate
+                        - generic [ref=e452]: Investigate
+                    - listitem [ref=e453]:
+                      - link "Infrastructure" [ref=e454] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/security-center/inventory
+                        - generic [ref=e455]: Infrastructure
+                    - listitem [ref=e456]:
+                      - link "Turnstile" [ref=e457] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/turnstile
+                        - generic [ref=e458]: Turnstile
+                - listitem [ref=e459]:
+                  - link "Zero Trust" [ref=e460] [cursor=pointer]:
+                    - /url: /7712fc9b80b642faec724476bde0d6f2/zero-trust/landing-page
+                    - generic [ref=e461]:
+                      - img [ref=e462]
+                      - generic [ref=e465]: Zero Trust
+                - listitem [ref=e466]:
+                  - button "Networking" [ref=e467] [cursor=pointer]:
+                    - generic [ref=e468]:
+                      - img [ref=e469]
+                      - generic [ref=e471]: Networking
+                      - img [ref=e472]
+                  - list [ref=e474]:
+                    - listitem [ref=e476]:
+                      - link "Overview New" [ref=e477] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/magic-networks/overview
+                        - generic [ref=e478]: Overview
+                        - generic [ref=e480]: New
+                    - listitem [ref=e481]:
+                      - button "Insights" [ref=e482] [cursor=pointer]:
+                        - generic [ref=e484]: Insights
+                        - img [ref=e485]
+                      - list [ref=e487]:
+                        - listitem [ref=e489]:
+                          - link "Network flow" [ref=e490] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/networking-insights/analytics/network-analytics/flow-analytics
+                            - generic [ref=e491]: Network flow
+                    - listitem [ref=e492]:
+                      - link "Tunnels New" [ref=e493] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/tunnels
+                        - generic [ref=e494]: Tunnels
+                        - generic [ref=e496]: New
+                    - listitem [ref=e497]:
+                      - link "Mesh Beta" [ref=e498] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/mesh
+                        - generic [ref=e499]: Mesh
+                        - generic [ref=e501]: Beta
+                    - listitem [ref=e502]:
+                      - button "IP addresses" [ref=e503] [cursor=pointer]:
+                        - generic [ref=e505]: IP addresses
+                        - img [ref=e506]
+                      - list [ref=e508]:
+                        - listitem [ref=e510]:
+                          - link "Address space" [ref=e511] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/ip-addresses/address-space
+                            - generic [ref=e512]: Address space
+                        - listitem [ref=e513]:
+                          - link "Address maps" [ref=e514] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/ip-addresses/proxy-ips
+                            - generic [ref=e515]: Address maps
+                - listitem [ref=e516]:
+                  - button "Delivery & performance" [ref=e517] [cursor=pointer]:
+                    - generic [ref=e518]:
+                      - img [ref=e519]
+                      - generic [ref=e521]: Delivery & performance
+                      - img [ref=e522]
+                  - list [ref=e524]:
+                    - listitem [ref=e526]:
+                      - link "Bulk redirects" [ref=e527] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/bulk-redirects
+                        - generic [ref=e528]: Bulk redirects
+                    - listitem [ref=e529]:
+                      - link "Load Balancing" [ref=e530] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/load-balancing
+                        - generic [ref=e531]: Load Balancing
+                    - listitem [ref=e532]:
+                      - button "Web tag management" [ref=e533] [cursor=pointer]:
+                        - generic [ref=e535]: Web tag management
+                        - img [ref=e536]
+                      - list [ref=e538]:
+                        - listitem [ref=e540]:
+                          - link "Tag setup" [ref=e541] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/zaraz
+                            - generic [ref=e542]: Tag setup
+                        - listitem [ref=e543]:
+                          - link "Consent" [ref=e544] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/consent
+                            - generic [ref=e545]: Consent
+                        - listitem [ref=e546]:
+                          - link "History" [ref=e547] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/history
+                            - generic [ref=e548]: History
+                        - listitem [ref=e549]:
+                          - link "Monitoring" [ref=e550] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/monitoring
+                            - generic [ref=e551]: Monitoring
+                        - listitem [ref=e552]:
+                          - link "Settings" [ref=e553] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/settings
+                            - generic [ref=e554]: Settings
+                        - listitem [ref=e555]:
+                          - link "Zaraz plans" [ref=e556] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/plans
+                            - generic [ref=e557]: Zaraz plans
+                        - listitem [ref=e558]:
+                          - link "Google Tag Gateway" [ref=e559] [cursor=pointer]:
+                            - /url: /7712fc9b80b642faec724476bde0d6f2/tag-management/google-tag-gateway
+                            - generic [ref=e560]: Google Tag Gateway
+                - listitem [ref=e561]
+                - listitem [ref=e563]:
+                  - button "Manage account" [ref=e564] [cursor=pointer]:
+                    - generic [ref=e565]:
+                      - img [ref=e566]
+                      - generic [ref=e569]: Manage account
+                      - img [ref=e570]
+                  - list [ref=e572]:
+                    - listitem [ref=e574]:
+                      - link "Members" [ref=e575] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/members
+                        - generic [ref=e576]: Members
+                    - listitem [ref=e577]:
+                      - link "Billing" [ref=e578] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/billing
+                        - generic [ref=e579]: Billing
+                    - listitem [ref=e580]:
+                      - link "Account API tokens" [ref=e581] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/api-tokens
+                        - generic [ref=e582]: Account API tokens
+                    - listitem [ref=e583]:
+                      - link "Audit logs" [ref=e584] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/audit-log
+                        - generic [ref=e585]: Audit logs
+                    - listitem [ref=e586]:
+                      - link "Notifications" [ref=e587] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/notifications
+                        - generic [ref=e588]: Notifications
+                    - listitem [ref=e589]:
+                      - link "Shared config Alpha" [ref=e590] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/shared-configurations
+                        - generic [ref=e591]: Shared config
+                        - generic [ref=e593]: Alpha
+                    - listitem [ref=e594]:
+                      - link "Blocked content" [ref=e595] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/blocked-content
+                        - generic [ref=e596]: Blocked content
+                    - listitem [ref=e597]:
+                      - link "Abuse reports Beta" [ref=e598] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/abuse-reports
+                        - generic [ref=e599]: Abuse reports
+                        - generic [ref=e601]: Beta
+                    - listitem [ref=e602]:
+                      - link "Carbon Impact Report" [ref=e603] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/carbon
+                        - generic [ref=e604]: Carbon Impact Report
+                    - listitem [ref=e605]:
+                      - link "Configurations" [ref=e606] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/configurations
+                        - generic [ref=e607]: Configurations
+                    - listitem [ref=e608]:
+                      - link "Tagged Resources Beta" [ref=e609] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/tags
+                        - generic [ref=e610]: Tagged Resources
+                        - generic [ref=e612]: Beta
+        - button "Collapse sidebar" [expanded] [ref=e615]:
+          - generic [ref=e616]:
+            - img
+      - generic [ref=e617]:
+        - banner [ref=e618]:
+          - navigation "breadcrumb" [ref=e621]:
+            - generic [ref=e622]:
+              - link "R2 Object Storage" [ref=e623] [cursor=pointer]:
+                - /url: /7712fc9b80b642faec724476bde0d6f2/r2
+                - img [ref=e625]
+                - generic [ref=e627]: R2 Object Storage
+              - img [ref=e629]
+              - generic [ref=e632]: inspiration-images
+              - button "Copy" [ref=e633] [cursor=pointer]:
+                - img [ref=e635]
+          - generic [ref=e637]:
+            - button "Ask AI" [ref=e638] [cursor=pointer]:
+              - img [ref=e639]
+              - generic [ref=e642]: Ask AI
+            - link "Support" [ref=e643] [cursor=pointer]:
+              - /url: /?to=/:account/support
+              - img [ref=e644]
+              - generic [ref=e646]: Support
+            - button "User menu" [ref=e647] [cursor=pointer]:
+              - img [ref=e648]
+        - main [ref=e650]:
+          - tablist [ref=e654]:
+            - tab "Objects" [ref=e655] [cursor=pointer]
+            - tab "Metrics" [ref=e656] [cursor=pointer]
+            - tab "Settings" [selected] [ref=e657] [cursor=pointer]
+          - generic [ref=e661]:
+            - complementary [ref=e662]:
+              - navigation [ref=e665]:
+                - list [ref=e666]:
+                  - listitem [ref=e667]:
+                    - link "General" [ref=e668] [cursor=pointer]:
+                      - /url: "#general"
+                      - paragraph [ref=e670]: General
+                  - listitem [ref=e671]:
+                    - link "Custom Domains" [ref=e672] [cursor=pointer]:
+                      - /url: "#domains"
+                      - paragraph [ref=e674]: Custom Domains
+                  - listitem [ref=e675]:
+                    - link "Public Development URL" [ref=e676] [cursor=pointer]:
+                      - /url: "#public-dev-url"
+                      - paragraph [ref=e678]: Public Development URL
+                  - listitem [ref=e679]:
+                    - link "R2 Data Catalog Beta" [ref=e680] [cursor=pointer]:
+                      - /url: "#r2-data-catalog"
+                      - generic [ref=e681]:
+                        - paragraph [ref=e682]: R2 Data Catalog
+                        - generic [ref=e684]: Beta
+                  - listitem [ref=e685]:
+                    - link "CORS Policy" [ref=e686] [cursor=pointer]:
+                      - /url: "#cors-policy"
+                      - paragraph [ref=e688]: CORS Policy
+                  - listitem [ref=e689]:
+                    - link "Object Lifecycle Rules" [ref=e690] [cursor=pointer]:
+                      - /url: "#object-lifecycle-rules"
+                      - paragraph [ref=e692]: Object Lifecycle Rules
+                  - listitem [ref=e693]:
+                    - link "Bucket Lock Rules" [ref=e694] [cursor=pointer]:
+                      - /url: "#bucket-lock-rules"
+                      - paragraph [ref=e696]: Bucket Lock Rules
+                  - listitem [ref=e697]:
+                    - link "Event Notifications" [ref=e698] [cursor=pointer]:
+                      - /url: "#event-notifications"
+                      - paragraph [ref=e700]: Event Notifications
+                  - listitem [ref=e701]:
+                    - link "On Demand Migration" [ref=e702] [cursor=pointer]:
+                      - /url: "#on-demand-migration"
+                      - paragraph [ref=e704]: On Demand Migration
+                  - listitem [ref=e705]:
+                    - link "Local Uploads Beta" [ref=e706] [cursor=pointer]:
+                      - /url: "#local-uploads"
+                      - generic [ref=e707]:
+                        - paragraph [ref=e708]: Local Uploads
+                        - generic [ref=e710]: Beta
+                  - listitem [ref=e711]:
+                    - link "Default Storage Class" [ref=e712] [cursor=pointer]:
+                      - /url: "#storage-class"
+                      - paragraph [ref=e714]: Default Storage Class
+                  - listitem [ref=e715]:
+                    - link "Empty Bucket" [ref=e716] [cursor=pointer]:
+                      - /url: "#empty"
+                      - paragraph [ref=e718]: Empty Bucket
+                  - listitem [ref=e719]:
+                    - link "Delete Bucket" [ref=e720] [cursor=pointer]:
+                      - /url: "#delete"
+                      - paragraph [ref=e722]: Delete Bucket
+            - generic [ref=e724]:
+              - generic [ref=e725]:
+                - heading "General" [level=2] [ref=e728]
+                - listitem [ref=e730]:
+                  - generic [ref=e733]:
+                    - generic [ref=e735]:
+                      - generic [ref=e736]: "Name:"
+                      - paragraph [ref=e737]: inspiration-images
+                    - generic [ref=e739]:
+                      - generic [ref=e740]: "Created:"
+                      - generic [ref=e741]: May 24, 2026
+                    - generic [ref=e743]:
+                      - generic [ref=e744]: "Location:"
+                      - paragraph [ref=e746]: Western Europe (WEUR)
+                    - generic [ref=e748]:
+                      - generic [ref=e749]: "S3 API:"
+                      - generic [ref=e751]:
+                        - code [ref=e756]:
+                          - generic [ref=e760]: https://7712fc9b80b642faec724476bde0d6f2.r2.cloudflarestorage.com/inspiration-images
+                        - button "Click to copy" [ref=e761] [cursor=pointer]:
+                          - img [ref=e762]
+                          - generic [ref=e765]: Click to copy
+              - generic [ref=e766]:
+                - generic [ref=e767]:
+                  - generic [ref=e768]:
+                    - heading "Custom Domains" [level=2] [ref=e769]
+                    - link "Documentation" [ref=e770] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/public-buckets/#custom-domains
+                      - img [ref=e772]
+                  - paragraph [ref=e775]: Expose the contents of this R2 bucket to the internet through a custom domain. Recommended for production use.
+                  - button "Add" [ref=e777] [cursor=pointer]:
+                    - img [ref=e778]
+                    - generic [ref=e780]: Add
+                - generic [ref=e782]: There is no custom domain assigned to this bucket.
+              - generic [ref=e783]:
+                - generic [ref=e784]:
+                  - generic [ref=e785]:
+                    - heading "Public Development URL" [level=2] [ref=e786]
+                    - link "Documentation" [ref=e787] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/public-buckets/#managed-public-buckets-through-r2dev
+                      - img [ref=e789]
+                  - paragraph [ref=e792]: Expose the contents of this R2 bucket to the internet through the Public Development URL when enabled.
+                  - button "Enable" [ref=e794] [cursor=pointer]:
+                    - generic [ref=e795]: Enable
+                - generic [ref=e797]: The public development URL is disabled for this bucket.
+              - generic [ref=e798]:
+                - generic [ref=e799]:
+                  - generic [ref=e800]:
+                    - heading "R2 Data Catalog Beta" [level=2] [ref=e801]:
+                      - generic [ref=e802]:
+                        - generic [ref=e803]: R2 Data Catalog
+                        - generic [ref=e805]: Beta
+                    - link "Documentation" [ref=e806] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/data-catalog
+                      - img [ref=e808]
+                  - paragraph [ref=e811]: Add an Apache Iceberg REST catalog, to allow query engines to manage and query Iceberg tables stored in R2.
+                  - button "Enable" [ref=e813] [cursor=pointer]:
+                    - generic [ref=e814]: Enable
+                - generic [ref=e816]: The R2 Data Catalog is disabled for this bucket.
+              - generic [ref=e817]:
+                - generic [ref=e818]:
+                  - generic [ref=e819]:
+                    - heading "CORS Policy" [level=2] [ref=e820]
+                    - link "Documentation" [ref=e821] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/cors/
+                      - img [ref=e823]
+                  - paragraph [ref=e826]: Configure CORS headers that R2 will set when accessing this bucket's contents from a browser.
+                  - button "Add" [ref=e828] [cursor=pointer]:
+                    - img [ref=e829]
+                    - generic [ref=e831]: Add
+                - generic [ref=e833]: There is no CORS Policy defined for this bucket.
+              - generic [ref=e834]:
+                - generic [ref=e835]:
+                  - generic [ref=e836]:
+                    - heading "Object Lifecycle Rules" [level=2] [ref=e837]
+                    - link "Documentation" [ref=e838] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/object-lifecycles/
+                      - img [ref=e840]
+                  - paragraph [ref=e843]: Specify rules to automatically manage objects after a specified time.
+                  - button "Add" [ref=e845] [cursor=pointer]:
+                    - img [ref=e846]
+                    - generic [ref=e848]: Add
+                - listitem [ref=e851]:
+                  - table [ref=e856]:
+                    - rowgroup [ref=e857]:
+                      - row "Rule Name Prefix Actions Status" [ref=e858]:
+                        - columnheader [ref=e859]:
+                          - checkbox [ref=e862] [cursor=pointer]
+                        - columnheader "Rule Name" [ref=e863]:
+                          - generic [ref=e864]: Rule Name
+                        - columnheader "Prefix" [ref=e865]:
+                          - generic [ref=e866]: Prefix
+                        - columnheader "Actions" [ref=e867]:
+                          - generic [ref=e868]: Actions
+                        - columnheader "Status" [ref=e869]:
+                          - generic [ref=e870]: Status
+                        - columnheader [ref=e871]
+                    - rowgroup [ref=e872]:
+                      - row "Default Multipart Abort Rule -- Abort uploads after 7 day(s) Enabled" [ref=e874]:
+                        - cell [ref=e875]:
+                          - checkbox [ref=e878] [cursor=pointer]
+                        - cell "Default Multipart Abort Rule" [ref=e879]:
+                          - generic "Default Multipart Abort Rule" [ref=e880]:
+                            - generic [ref=e881]: Default Multipart Abort Rule
+                        - cell "--" [ref=e882]:
+                          - generic [ref=e883]: "--"
+                        - cell "Abort uploads after 7 day(s)" [ref=e884]:
+                          - code [ref=e885]:
+                            - generic [ref=e887]: Abort uploads after 7 day(s)
+                        - cell "Enabled" [ref=e888]:
+                          - generic [ref=e891]: Enabled
+                        - cell [ref=e892]:
+                          - button [ref=e895] [cursor=pointer]:
+                            - img [ref=e896]
+              - generic [ref=e898]:
+                - generic [ref=e899]:
+                  - generic [ref=e900]:
+                    - heading "Bucket Lock Rules" [level=2] [ref=e901]
+                    - link "Documentation" [ref=e902] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/bucket-locks/
+                      - img [ref=e904]
+                  - paragraph [ref=e907]: Set a retention policy to prevent object overwrites and deletions until the specified period ends.
+                  - button "Add" [ref=e909] [cursor=pointer]:
+                    - img [ref=e910]
+                    - generic [ref=e912]: Add
+                - generic [ref=e914]: There are no bucket lock rules defined for this bucket.
+              - generic [ref=e915]:
+                - generic [ref=e916]:
+                  - generic [ref=e917]:
+                    - heading "Event Notifications" [level=2] [ref=e918]
+                    - link "Documentation" [ref=e919] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/event-notifications/
+                      - img [ref=e921]
+                  - paragraph [ref=e924]: Automatically trigger Workers and take action when data in your R2 bucket changes by using Cloudflare Queues.
+                - listitem [ref=e926]:
+                  - generic [ref=e929]:
+                    - generic [ref=e930]: Using event notifications requires you to purchase a Workers Paid plan.
+                    - heading "Explore what's offered." [level=2] [ref=e931]
+                    - generic [ref=e932]:
+                      - generic [ref=e933]:
+                        - link "Blog post" [ref=e935] [cursor=pointer]:
+                          - /url: https://blog.cloudflare.com/data-anywhere-events-pipelines-durable-execution-workflows/
+                          - generic [ref=e936]: Blog post
+                          - img [ref=e937]
+                        - paragraph [ref=e940]: Read our blog post to learn more about what's new and how event notifications can be used to create automated functions.
+                      - generic [ref=e941]:
+                        - link "Documentation" [ref=e943] [cursor=pointer]:
+                          - /url: https://developers.cloudflare.com/r2/buckets/event-notifications/
+                          - generic [ref=e944]: Documentation
+                          - img [ref=e945]
+                        - paragraph [ref=e948]: Read our documentation to learn more about functionality and how to use event notifications.
+                    - generic [ref=e949]:
+                      - generic [ref=e950]:
+                        - generic [ref=e951]: Pay-as-you-go
+                        - heading "Workers Paid Plan required" [level=2] [ref=e952]
+                      - link "Purchase Workers Paid" [ref=e953] [cursor=pointer]:
+                        - /url: /7712fc9b80b642faec724476bde0d6f2/workers/plans
+                        - button "Purchase Workers Paid" [ref=e954]:
+                          - generic [ref=e955]: Purchase Workers Paid
+              - generic [ref=e956]:
+                - generic [ref=e957]:
+                  - generic [ref=e958]:
+                    - heading "On Demand Migration" [level=2] [ref=e959]
+                    - link "Documentation" [ref=e960] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/data-migration/sippy/
+                      - img [ref=e962]
+                  - paragraph [ref=e965]: Continuously migrate data from an Amazon S3 and Google Cloud bucket to this bucket only as read requests are made.
+                  - button "Enable" [ref=e967] [cursor=pointer]:
+                    - generic [ref=e968]: Enable
+                - generic [ref=e970]: On Demand Migration is not enabled for this bucket.
+              - generic [ref=e971]:
+                - generic [ref=e972]:
+                  - generic [ref=e973]:
+                    - heading "Local Uploads Beta" [level=2] [ref=e974]:
+                      - generic [ref=e975]:
+                        - generic [ref=e976]: Local Uploads
+                        - generic [ref=e978]: Beta
+                    - link "Documentation" [ref=e979] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/local-uploads/
+                      - img [ref=e981]
+                  - paragraph [ref=e984]:
+                    - text: Improve performance for cross-region uploads. Check your
+                    - link "Request Distribution" [ref=e985] [cursor=pointer]:
+                      - /url: /7712fc9b80b642faec724476bde0d6f2/r2/default/buckets/inspiration-images/metrics/request-distribution
+                    - text: metrics to see where your requests originate.
+                  - button "Enable" [ref=e987] [cursor=pointer]:
+                    - generic [ref=e988]: Enable
+                - listitem [ref=e990]:
+                  - generic [ref=e991]:
+                    - heading "Local Uploads" [level=3] [ref=e992]
+                    - generic [ref=e995]: Disabled
+              - generic [ref=e996]:
+                - generic [ref=e997]:
+                  - generic [ref=e998]:
+                    - heading "Default Storage Class" [level=2] [ref=e999]
+                    - link "Documentation" [ref=e1000] [cursor=pointer]:
+                      - /url: https://developers.cloudflare.com/r2/buckets/storage-classes/#set-default-storage-class-for-buckets
+                      - img [ref=e1002]
+                  - paragraph [ref=e1005]: Specify which storage class new objects will automatically be placed in.
+                - listitem [ref=e1007]:
+                  - generic [ref=e1008]:
+                    - heading "Class:" [level=3] [ref=e1009]:
+                      - generic [ref=e1012]: "Class:"
+                    - generic [ref=e1015]: Standard
+                  - button "Edit" [ref=e1017] [cursor=pointer]:
+                    - img [ref=e1018]
+                    - generic [ref=e1020]: Edit
+              - generic [ref=e1021]:
+                - heading "Empty Bucket" [level=2] [ref=e1024]
+                - listitem [ref=e1027]:
+                  - generic [ref=e1030]:
+                    - generic [ref=e1031]: Delete all objects and folders in this bucket. The bucket and its configurations will remain.
+                    - button "Empty" [ref=e1032] [cursor=pointer]:
+                      - generic [ref=e1033]:
+                        - button "Empty" [disabled]:
+                          - generic: Empty
+              - generic [ref=e1034]:
+                - heading "Delete Bucket" [level=2] [ref=e1037]
+                - listitem [ref=e1040]:
+                  - generic [ref=e1043]:
+                    - generic [ref=e1044]: Permanently delete this bucket and all configurations associated with it.
+                    - button "Delete" [ref=e1045] [cursor=pointer]:
+                      - generic [ref=e1046]: Delete
+        - contentinfo [ref=e1048]:
+          - list [ref=e1050]:
+            - listitem [ref=e1051]:
+              - link "Support" [ref=e1052] [cursor=pointer]:
+                - /url: https://support.cloudflare.com
+            - listitem [ref=e1053]:
+              - link "System status" [ref=e1054] [cursor=pointer]:
+                - /url: https://www.cloudflarestatus.com
+            - listitem [ref=e1055]:
+              - link "Careers" [ref=e1056] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/careers/
+            - listitem [ref=e1057]:
+              - link "Terms of Use" [ref=e1058] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/website-terms/
+            - listitem [ref=e1059]:
+              - link "Report Security Issues" [ref=e1060] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/disclosure/
+            - listitem [ref=e1061]:
+              - link "Privacy Policy" [ref=e1062] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/privacypolicy/
+            - listitem [ref=e1063]:
+              - button "A blue and white pill with a checkmark and an x, representing privacy choices Cookie Preferences" [ref=e1064] [cursor=pointer]:
+                - img "A blue and white pill with a checkmark and an x, representing privacy choices" [ref=e1065]
+                - text: Cookie Preferences
+            - listitem [ref=e1066]:
+              - generic [ref=e1067]: © 2026 Cloudflare, Inc.
+    - dialog "CORS Policy" [active] [ref=e1098]:
+      - generic [ref=e1099]:
+        - heading "CORS Policy" [level=1] [ref=e1100]
+        - heading "Configure CORS headers that R2 will set when accessing this bucket's contents from a browser." [level=2] [ref=e1101]
+        - button "Dismiss" [ref=e1102] [cursor=pointer]:
+          - img [ref=e1103]
+        - link "Documentationdocumentation" [ref=e1106] [cursor=pointer]:
+          - /url: https://developers.cloudflare.com/r2/buckets/cors/
+          - text: Documentation
+          - img "documentation" [ref=e1108]
+      - generic [ref=e1112]:
+        - generic [ref=e1116]:
+          - generic [ref=e1118]:
+            - generic [ref=e1119]: "1"
+            - generic [ref=e1120]: "2"
+            - generic [ref=e1121]: "3"
+            - generic [ref=e1122]: "4"
+            - generic [ref=e1123]: "5"
+            - generic [ref=e1124]: "6"
+            - generic [ref=e1125]: "7"
+            - generic [ref=e1126]: "8"
+            - generic [ref=e1127]: "9"
+            - generic [ref=e1128]: "10"
+          - textbox [ref=e1131]:
+            - generic [ref=e1132]: "["
+            - generic [ref=e1133]: "{"
+            - generic [ref=e1134]: "\"AllowedOrigins\": ["
+            - generic [ref=e1135]: "\"http://localhost:3000\""
+            - generic [ref=e1136]: "],"
+            - generic [ref=e1137]: "\"AllowedMethods\": ["
+            - generic [ref=e1138]: "\"GET\""
+            - generic [ref=e1139]: "]"
+            - generic [ref=e1140]: "}"
+            - generic [ref=e1141]: "]"
+        - generic [ref=e1142]:
+          - separator [ref=e1143]
+          - generic [ref=e1144]:
+            - button "Cancel" [ref=e1145] [cursor=pointer]:
+              - generic [ref=e1146]: Cancel
+            - button "Save" [ref=e1147] [cursor=pointer]:
+              - generic [ref=e1148]: Save
+  - generic [ref=e1087]:
+    - generic [ref=e1088]:
+      - heading "Enable Agent Lee access" [level=3] [ref=e1089]
+      - paragraph [ref=e1090]: Agent Lee needs a read-only API token to access your account.
+      - button "Read more" [ref=e1093] [cursor=pointer]:
+        - text: Read more
+        - img [ref=e1094]
+    - button "Create Token" [ref=e1096] [cursor=pointer]
+  - generic:
+    - region "Notifications"
+  - generic:
+    - region "Notifications"

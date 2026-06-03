@@ -13,6 +13,7 @@ import {
 } from "@/lib/base-lock";
 import { logBaseLockAttempt, logBaseLockResult } from "@/lib/airtable";
 import sql from "@/lib/db";
+import { SITE_URL } from "@/lib/site-url";
 
 export const maxDuration = 300;
 
@@ -32,10 +33,10 @@ export async function POST(
 
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${shootId}`;
+  const [shoot] = await sql`SELECT id, user_id, mode, identity_profile FROM shoots WHERE id = ${shootId}`;
   if (!shoot) return NextResponse.json({ error: "Shoot not found" }, { status: 404 });
 
-  const refs = await sql`SELECT * FROM shoot_references WHERE shoot_id = ${shootId}`;
+  const refs = await sql`SELECT purpose, tag, storage_bucket, storage_path, name FROM shoot_references WHERE shoot_id = ${shootId}`;
 
   type RefRow = {
     purpose: string; tag: string | null; storage_bucket: string;
@@ -69,7 +70,7 @@ export async function POST(
   // Cache lookup
   if (attempt === 1) {
     const [cached] = await sql`
-      SELECT * FROM character_bases
+      SELECT id, status FROM character_bases
       WHERE user_id = ${shoot.user_id}
         AND cache_key = ${cacheKey}
         AND status = ANY(${["AUTO_APPROVED", "USER_APPROVED"]})
@@ -95,7 +96,7 @@ export async function POST(
         )
       `;
 
-      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+      const origin = SITE_URL;
       fetch(`${origin}/api/shoots/${shootId}/start`, {
         method: "POST",
         headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
@@ -196,7 +197,7 @@ export async function POST(
     console.error("[base-lock] fal.ai generation failed:", message);
 
     if (attempt < 3) {
-      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+      const origin = SITE_URL;
       fetch(`${origin}/api/shoots/${shootId}/base-lock`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
@@ -258,7 +259,7 @@ export async function POST(
     backgroundClean: gateResult.background_is_clean_studio, notes: gateResult.notes,
   }).catch(() => {});
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+  const origin = SITE_URL;
 
   if (decision === "AUTO_APPROVED") {
     await sql`UPDATE character_bases SET status = 'AUTO_APPROVED', updated_at = ${ts()} WHERE id = ${baseId}`;

@@ -77,7 +77,7 @@ export default function WorkspacePage() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("4:5");
   const [currency, setCurrency] = useState<Currency>("NGN");
   const [packageSize, setPackageSize] = useState<ShootPackageSize>(10);
-  const [resolution, setResolution] = useState("1K");
+  const [resolution, setResolution] = useState("4K");
   const [quote, setQuote] = useState({ text: "", attribution: "" });
 
   // Shoots
@@ -132,48 +132,53 @@ export default function WorkspacePage() {
   // Load critical data: auth, config, shoots — blocks initial render
   useEffect(() => {
     (async () => {
-      const [meRes, configRes, shootsRes, creatorStatusRes] = await Promise.all([
-        fetch("/api/me"),
-        fetch("/api/config"),
-        fetch("/api/shoots"),
-        fetch("/api/user/creator-status"),
-      ]);
-      if (meRes.status === 401) {
-        window.location.href = "/login?next=/studio";
-        return;
-      }
-      if (meRes.ok) setUser((await meRes.json()).user);
-      if (creatorStatusRes.ok) { const d = await creatorStatusRes.json(); setIsCreator(d.isCreator === true); }
-      if (configRes.ok) {
-        const c = await configRes.json();
-        if (Array.isArray(c.packages) && c.packages.length > 0) {
-          setPackages(c.packages);
-        } else if (c.pricing) {
-          setPackages(Object.values(SHOOT_PACKAGES).map((pkg) => ({
-            imageCount: pkg.imageCount,
-            label: pkg.label,
-            ngn: packagePrice(c.pricing.ngn, pkg.imageCount),
-            usd: packagePrice(c.pricing.usd, pkg.imageCount),
-          })));
+      try {
+        const [meRes, configRes, shootsRes, creatorStatusRes] = await Promise.all([
+          fetch("/api/me"),
+          fetch("/api/config"),
+          fetch("/api/shoots"),
+          fetch("/api/user/creator-status"),
+        ]);
+        if (meRes.status === 401) {
+          window.location.href = "/login?next=/studio";
+          return;
         }
-      }
-      if (shootsRes.ok) {
-        const shootList: Shoot[] = (await shootsRes.json()).shoots ?? [];
-        setShoots(shootList);
-        if (shootList.length > 0) {
-          const enrichRes = await fetch(`/api/shoots/${shootList[0].id}`);
-          if (enrichRes.ok) {
-            const enrichData = await enrichRes.json();
-            if (enrichData.shoot) {
-              setCurrentShoot(enrichData.shoot);
-              setShoots(prev => prev.map(p => p.id === enrichData.shoot.id ? enrichData.shoot : p));
+        if (meRes.ok) setUser((await meRes.json()).user);
+        if (creatorStatusRes.ok) { const d = await creatorStatusRes.json(); setIsCreator(d.isCreator === true); }
+        if (configRes.ok) {
+          const c = await configRes.json();
+          if (Array.isArray(c.packages) && c.packages.length > 0) {
+            setPackages(c.packages);
+          } else if (c.pricing) {
+            setPackages(Object.values(SHOOT_PACKAGES).map((pkg) => ({
+              imageCount: pkg.imageCount,
+              label: pkg.label,
+              ngn: packagePrice(c.pricing.ngn, pkg.imageCount),
+              usd: packagePrice(c.pricing.usd, pkg.imageCount),
+            })));
+          }
+        }
+        if (shootsRes.ok) {
+          const shootList: Shoot[] = (await shootsRes.json()).shoots ?? [];
+          setShoots(shootList);
+          if (shootList.length > 0) {
+            const enrichRes = await fetch(`/api/shoots/${shootList[0].id}`);
+            if (enrichRes.ok) {
+              const enrichData = await enrichRes.json();
+              if (enrichData.shoot) {
+                setCurrentShoot(enrichData.shoot);
+                setShoots(prev => prev.map(p => p.id === enrichData.shoot.id ? enrichData.shoot : p));
+              }
             }
           }
         }
+      } catch {
+        setStatus({ type: "error", message: "Could not load studio. Check your connection and refresh." });
       }
 
       // After auth confirmed, load non-critical data without blocking
       void (async () => {
+        try {
         const [libRes, inspirationLibRes, charsRes] = await Promise.all([
           fetch("/api/identity-library"),
           fetch("/api/inspiration-library"),
@@ -211,6 +216,7 @@ export default function WorkspacePage() {
           const charsData = await charsRes.json();
           setCharacterBases(charsData.characters ?? []);
         }
+        } catch { /* non-critical, ignore */ }
       })();
     })();
   }, []);

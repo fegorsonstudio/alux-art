@@ -8,7 +8,7 @@ const globalForDb = global as unknown as { _db?: postgres.Sql };
 export const sql: postgres.Sql =
   globalForDb._db ??
   postgres(connectionString, {
-    max: 10,
+    max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 50,
     idle_timeout: 30,
     connect_timeout: 10,
     // Disable SSL for local VPS connections (localhost)

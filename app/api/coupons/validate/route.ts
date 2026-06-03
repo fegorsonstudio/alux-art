@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { packagePrice, normalizePackageSize } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json() as { code?: string; templateId?: string };
+  const body = await request.json() as { code?: string; templateId?: string; packageSize?: unknown };
   if (typeof body.code !== "string" || !body.code.trim()) {
     return NextResponse.json({ error: "Coupon code is required" }, { status: 400 });
   }
@@ -15,14 +16,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Template ID is required" }, { status: 400 });
   }
 
+  const pkgSize = normalizePackageSize(body.packageSize ?? 10);
+
   const [template] = await sql`
-    SELECT price_ngn, package_size FROM templates
+    SELECT price_ngn FROM templates
     WHERE id = ${body.templateId} AND status = 'published'
   `;
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
-  const [feeRow] = await sql`SELECT ngn FROM pricing_configs ORDER BY updated_at DESC LIMIT 1`;
-  const platformFeeNgn: number = (feeRow?.ngn as number | null) ?? 15000;
+  // Read fee from same source as /api/marketplace/[id]/book
+  const [feeRow] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
+  const baseFeeNgn = parseInt(feeRow?.value ?? "15000", 10);
+  const platformFeeNgn = packagePrice(baseFeeNgn, pkgSize);
 
   const [coupon] = await sql`
     SELECT id, discount_type, discount_value, max_uses, use_count, expires_at, is_active

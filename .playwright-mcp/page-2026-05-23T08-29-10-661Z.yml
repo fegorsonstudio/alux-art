@@ -1,0 +1,77 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e6]:
+      - link "← Marketplace" [ref=e7] [cursor=pointer]:
+        - /url: /marketplace
+      - link "Alux Art" [ref=e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e9]:
+        - button "₦ NGN" [ref=e10] [cursor=pointer]
+        - link "Sign in →" [ref=e11] [cursor=pointer]:
+          - /url: /login?next=/marketplace/e272ea3c-cc47-47cb-9a7a-4595ac6caa75
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - button "Expand image" [ref=e15]:
+            - img "THE CANON G7x iii" [ref=e16]
+            - generic: Tap to expand
+          - button "Previous image" [ref=e72] [cursor=pointer]: ‹
+          - button "Next image" [active] [ref=e17] [cursor=pointer]: ›
+          - generic: 3 / 6
+        - generic [ref=e18]:
+          - button [ref=e19] [cursor=pointer]
+          - button [ref=e20] [cursor=pointer]
+          - button [ref=e21] [cursor=pointer]
+          - button [ref=e22] [cursor=pointer]
+          - button [ref=e23] [cursor=pointer]
+          - button [ref=e24] [cursor=pointer]
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: editorial
+          - button "Share" [ref=e28] [cursor=pointer]
+        - heading "THE CANON G7x iii" [level=1] [ref=e29]
+        - generic [ref=e31]:
+          - button "Rate 1 star" [ref=e32] [cursor=pointer]: ★
+          - button "Rate 2 stars" [ref=e33] [cursor=pointer]: ★
+          - button "Rate 3 stars" [ref=e34] [cursor=pointer]: ★
+          - button "Rate 4 stars" [ref=e35] [cursor=pointer]: ★
+          - button "Rate 5 stars" [ref=e36] [cursor=pointer]: ★
+        - link "Fegorson Studio Fegorson Studio 2 styles →" [ref=e37] [cursor=pointer]:
+          - /url: /creators/ae32d95e-85f5-4c8d-bcbb-5446153314f8
+          - img "Fegorson Studio" [ref=e38]
+          - generic [ref=e39]:
+            - generic [ref=e40]: Fegorson Studio
+            - generic [ref=e41]: 2 styles
+          - generic [ref=e42]: →
+        - paragraph [ref=e43]: Step into your soft life era. ✨📸 This look perfectly recreates the highly coveted **Canon G7X III direct-flash look**. Expect rich, glowing melanin, butter-smooth skin, and that sharp, high-end nightlife aesthetic. Whether you want a luxury hotel lobby vibe or a paparazzi-style club shot, this gets you that premium "It Girl" look instantly. > **Make it entirely yours:**
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: Images
+            - generic [ref=e47]:
+              - button "1 image ₦600" [ref=e48] [cursor=pointer]:
+                - text: 1 image
+                - generic [ref=e49]: ₦600
+              - button "5 images ₦9,000" [ref=e50] [cursor=pointer]:
+                - text: 5 images
+                - generic [ref=e51]: ₦9,000
+              - button "10 images ₦15,000" [ref=e52] [cursor=pointer]:
+                - text: 10 images
+                - generic [ref=e53]: ₦15,000
+          - generic [ref=e54]:
+            - textbox "Coupon code" [ref=e55]
+            - button "Apply" [disabled] [ref=e56] [cursor=pointer]
+          - generic [ref=e58]: ₦15,000
+          - button "Book This Look" [ref=e59] [cursor=pointer]
+          - paragraph [ref=e60]: Add your identity photos, customise the reference images, then pay — all on the next screen.
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - generic [ref=e63]: Style
+            - generic [ref=e64]: Full customisation
+          - generic [ref=e65]:
+            - generic [ref=e66]: Ratio
+            - generic [ref=e67]: 4:5
+        - generic [ref=e68]:
+          - generic [ref=e69]: Lagos
+          - generic [ref=e70]: Abuja
+          - generic [ref=e71]: Nigeria
+  - alert [ref=e5]

@@ -1,4 +1,4 @@
-/* Shared legal page styles */
+/* Shared legal + support page styles */
 
 .page {
   min-height: 100vh;
@@ -63,21 +63,41 @@
 }
 
 .effectiveDate {
-  font-size: 0.85rem;
-  color: rgba(255, 248, 234, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: rgba(255, 248, 234, 0.35);
+  background: rgba(255, 248, 234, 0.04);
+  border: 1px solid rgba(255, 248, 234, 0.07);
+  border-radius: 20px;
+  padding: 4px 12px;
   margin: 0 0 56px;
 }
 
 /* ---- Prose ---- */
 .prose h2 {
-  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 248, 234, 0.3);
-  margin: 48px 0 16px;
-  padding-top: 48px;
+  color: rgba(255, 248, 234, 0.45);
+  margin: 52px 0 18px;
+  padding-top: 52px;
   border-top: 1px solid rgba(255, 248, 234, 0.06);
+}
+
+.prose h2::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: #2f8e9a;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .prose h2:first-child {
@@ -88,32 +108,42 @@
 
 .prose p {
   font-size: 0.95rem;
-  line-height: 1.75;
-  color: rgba(255, 248, 234, 0.65);
+  line-height: 1.8;
+  color: rgba(255, 248, 234, 0.62);
   margin: 0 0 16px;
 }
 
 .prose strong {
-  color: #fff8ea;
+  color: rgba(255, 248, 234, 0.9);
   font-weight: 600;
 }
 
 .prose ul {
-  margin: 0 0 16px;
-  padding-left: 20px;
+  margin: 0 0 20px;
+  padding-left: 0;
+  list-style: none;
 }
 
 .prose li {
   font-size: 0.95rem;
   line-height: 1.75;
-  color: rgba(255, 248, 234, 0.65);
-  margin-bottom: 6px;
+  color: rgba(255, 248, 234, 0.62);
+  margin-bottom: 8px;
+  padding-left: 18px;
+  position: relative;
+}
+
+.prose li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: rgba(255, 248, 234, 0.2);
 }
 
 .prose table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0 0 24px;
+  margin: 0 0 28px;
   font-size: 0.88rem;
 }
 
@@ -123,17 +153,17 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 248, 234, 0.3);
+  color: rgba(255, 248, 234, 0.28);
   padding: 8px 16px 8px 0;
   border-bottom: 1px solid rgba(255, 248, 234, 0.08);
 }
 
 .prose td {
-  padding: 10px 16px 10px 0;
-  color: rgba(255, 248, 234, 0.6);
+  padding: 11px 16px 11px 0;
+  color: rgba(255, 248, 234, 0.58);
   border-bottom: 1px solid rgba(255, 248, 234, 0.04);
   vertical-align: top;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .prose td:first-child {
@@ -144,32 +174,42 @@
 }
 
 .prose a {
-  color: #2f8e9a;
+  color: #3aa0ad;
   text-decoration: none;
 }
-.prose a:hover { text-decoration: underline; }
+.prose a:hover {
+  color: #5bbdc9;
+  text-decoration: underline;
+}
 
 /* ---- Sibling links ---- */
 .siblingLinks {
   margin-top: 64px;
-  padding-top: 32px;
+  padding-top: 28px;
   border-top: 1px solid rgba(255, 248, 234, 0.06);
   display: flex;
-  gap: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .siblingLink {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: rgba(255, 248, 234, 0.4);
+  color: rgba(255, 248, 234, 0.35);
   text-decoration: none;
-  transition: color 0.15s;
+  border: 1px solid rgba(255, 248, 234, 0.08);
+  border-radius: 6px;
+  padding: 7px 14px;
+  transition: color 0.15s, border-color 0.15s;
 }
-.siblingLink:hover { color: #fff8ea; }
+.siblingLink:hover {
+  color: #fff8ea;
+  border-color: rgba(255, 248, 234, 0.2);
+}
 
 /* ---- Footer ---- */
 .footer {
-  padding: 32px 40px;
+  padding: 28px 40px;
   border-top: 1px solid rgba(255, 248, 234, 0.06);
   display: flex;
   align-items: center;
@@ -181,18 +221,198 @@
 .footerBrand {
   font-size: 0.88rem;
   font-weight: 700;
-  color: rgba(255, 248, 234, 0.3);
+  color: rgba(255, 248, 234, 0.25);
   letter-spacing: 0.04em;
 }
 
 .footerNote {
   font-size: 0.78rem;
+  color: rgba(255, 248, 234, 0.18);
+}
+
+/* ════════════════════════════════════════
+   Support / contact form styles
+   ════════════════════════════════════════ */
+
+.formCard {
+  background: rgba(255, 248, 234, 0.03);
+  border: 1px solid rgba(255, 248, 234, 0.07);
+  border-radius: 12px;
+  padding: 36px 32px;
+}
+
+.formIntro {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: rgba(255, 248, 234, 0.5);
+  margin: 0 0 32px;
+}
+
+.formRow {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  margin-bottom: 16px;
+}
+
+.formFieldNoMargin {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 248, 234, 0.45);
+  text-transform: uppercase;
+}
+
+.labelNote {
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(255, 248, 234, 0.25);
+}
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 248, 234, 0.1);
+  background: rgba(255, 248, 234, 0.04);
+  color: #fff8ea;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.input::placeholder {
   color: rgba(255, 248, 234, 0.2);
 }
+
+.input:focus {
+  border-color: rgba(47, 142, 154, 0.5);
+  background: rgba(255, 248, 234, 0.05);
+}
+
+.textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 248, 234, 0.1);
+  background: rgba(255, 248, 234, 0.04);
+  color: #fff8ea;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 130px;
+  transition: border-color 0.15s;
+}
+
+.textarea::placeholder {
+  color: rgba(255, 248, 234, 0.2);
+}
+
+.textarea:focus {
+  border-color: rgba(47, 142, 154, 0.5);
+  background: rgba(255, 248, 234, 0.05);
+}
+
+.formError {
+  font-size: 0.82rem;
+  color: #e07070;
+  margin: 0;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 13px 24px;
+  border-radius: 8px;
+  border: none;
+  background: #fff8ea;
+  color: #080808;
+  font-weight: 700;
+  font-size: 0.92rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+
+.submitBtn:hover { opacity: 0.9; }
+.submitBtn:disabled { opacity: 0.4; cursor: default; }
+
+.successCard {
+  background: rgba(47, 142, 154, 0.08);
+  border: 1px solid rgba(47, 142, 154, 0.25);
+  border-radius: 12px;
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.successTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #5bbdc9;
+  margin: 0 0 8px;
+}
+
+.successBody {
+  font-size: 0.9rem;
+  color: rgba(255, 248, 234, 0.55);
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+.successLink {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 248, 234, 0.4);
+  text-decoration: none;
+  border: 1px solid rgba(255, 248, 234, 0.1);
+  border-radius: 6px;
+  padding: 8px 16px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.successLink:hover {
+  color: #fff8ea;
+  border-color: rgba(255, 248, 234, 0.25);
+}
+
+.directEmail {
+  margin-top: 24px;
+  font-size: 0.8rem;
+  color: rgba(255, 248, 234, 0.25);
+  text-align: center;
+}
+
+.directEmail a {
+  color: rgba(255, 248, 234, 0.4);
+  text-decoration: none;
+}
+.directEmail a:hover { color: #fff8ea; }
 
 /* ---- Mobile ---- */
 @media (max-width: 680px) {
   .nav { padding: 16px 20px; }
   .content { padding: 40px 20px 80px; }
   .footer { padding: 24px 20px; }
+  .formCard { padding: 24px 18px; }
+  .successCard { padding: 24px 18px; }
+  .formRow { flex-direction: column; gap: 0; }
 }

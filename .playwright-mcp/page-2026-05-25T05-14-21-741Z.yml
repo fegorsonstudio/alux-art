@@ -1,0 +1,17 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e5]:
+      - link "supabase" [ref=e8] [cursor=pointer]:
+        - /url: /dashboard/projects
+        - generic [ref=e9]:
+          - img [ref=e11]
+          - img "supabase" [ref=e12]
+    - heading "404" [level=1] [ref=e14]
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - heading "Looking for something? 🔍" [level=3] [ref=e17]
+        - paragraph [ref=e18]: We couldn't find the page that you're looking for!
+      - link "Head back" [ref=e20] [cursor=pointer]:
+        - /url: /dashboard/projects
+        - generic [ref=e21]: Head back
+  - alert [ref=e22]

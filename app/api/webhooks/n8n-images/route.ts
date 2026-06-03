@@ -72,15 +72,29 @@ export async function POST(request: NextRequest) {
     WHERE id = ${shootId}
   `;
 
+  // Only fetch from known fal.ai image delivery hosts to prevent SSRF.
+  const ALLOWED_IMAGE_HOSTS = /^(v[0-9]+[a-z]?\.fal\.media|storage\.googleapis\.com|[a-z0-9-]+\.fal\.run)$/;
+  const MAX_IMAGE_BYTES = 50 * 1024 * 1024; // 50 MB
+
   for (const image of images) {
     try {
+      let parsedUrl: URL;
+      try { parsedUrl = new URL(image.url); } catch { failed.push({ slot: image.slot, error: "Invalid URL" }); continue; }
+      if (!ALLOWED_IMAGE_HOSTS.test(parsedUrl.hostname)) {
+        failed.push({ slot: image.slot, error: `Disallowed image host: ${parsedUrl.hostname}` });
+        continue;
+      }
+
       const imageRes = await fetch(image.url);
       if (!imageRes.ok) throw new Error(`Fal image fetch failed: ${imageRes.status}`);
 
-      const contentType = imageRes.headers.get("content-type")?.includes("image/")
-        ? imageRes.headers.get("content-type")!
-        : "image/png";
-      const bytes = Buffer.from(await imageRes.arrayBuffer());
+      const ct = imageRes.headers.get("content-type") ?? "";
+      if (!ct.startsWith("image/")) throw new Error(`Unexpected content-type: ${ct}`);
+      const contentType = ct.includes("image/") ? ct : "image/png";
+
+      const arrayBuf = await imageRes.arrayBuffer();
+      if (arrayBuf.byteLength > MAX_IMAGE_BYTES) throw new Error("Image exceeds 50 MB limit");
+      const bytes = Buffer.from(arrayBuf);
       const storagePath = `${shoot.user_id}/${shootId}/slot-${image.slot}.png`;
 
       await r2Upload("generated-4k", storagePath, bytes, contentType);

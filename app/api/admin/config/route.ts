@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 const ALLOWED_VISION_MODELS = ["gemini", "claude"] as const;
 const ALLOWED_GENERATION_MODELS = ["nano-banana", "seedream"] as const;
@@ -20,13 +21,14 @@ type AdminConfig = {
   price_5_usd: number;
   price_10_usd: number;
   prompt_only_mode: boolean;
+  admin_prompt_only_mode: boolean;
   polish_pass_enabled: boolean;
 };
 
 async function getAdminSession() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== process.env.ADMIN_EMAIL) return null;
+  if (!user || !isAdminEmail(user.email)) return null;
   return user;
 }
 
@@ -61,6 +63,7 @@ export async function GET() {
     price_5_usd: f("price_5_usd", 5),
     price_10_usd: f("price_10_usd", 10),
     prompt_only_mode: map.prompt_only_mode === "true",
+    admin_prompt_only_mode: map.admin_prompt_only_mode === "true",
     polish_pass_enabled: map.polish_pass_enabled === "true",
   } satisfies AdminConfig);
 }
@@ -135,6 +138,9 @@ export async function PATCH(req: NextRequest) {
   }
   if (body.prompt_only_mode !== undefined) {
     push("prompt_only_mode", body.prompt_only_mode ? "true" : "false");
+  }
+  if (body.admin_prompt_only_mode !== undefined) {
+    push("admin_prompt_only_mode", body.admin_prompt_only_mode ? "true" : "false");
   }
   if (body.polish_pass_enabled !== undefined) {
     push("polish_pass_enabled", body.polish_pass_enabled ? "true" : "false");

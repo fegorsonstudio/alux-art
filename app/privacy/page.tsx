@@ -47,6 +47,15 @@ export default function PrivacyPage() {
           <p>
             <strong>Creator data:</strong> If you register as a Creator, we collect your bank
             account details (account number, bank name, and account name) for payout purposes.
+            Creator applicant profile data (display name, bio, social links, bank details) is
+            retained until the application is approved or declined. If declined, we retain only
+            a minimal record necessary for abuse prevention and then delete the application data
+            within 30 days.
+          </p>
+          <p>
+            <strong>Support contact data:</strong> If you submit a message through our contact
+            form, we collect your name, email address, and message content. This information is
+            used solely to respond to your enquiry and is not retained beyond 90 days.
           </p>
           <p>
             <strong>Usage data:</strong> Pages visited, features used, and error logs for
@@ -106,6 +115,24 @@ export default function PrivacyPage() {
             photos will be deleted on their normal 48-hour cycle.
           </p>
 
+          <h2>4a. WhatsApp Integration</h2>
+          <p>
+            Creators may optionally connect their WhatsApp Business Cloud API account to the
+            Platform to enable conversational bookings directly inside their WhatsApp chat.
+            If a Creator activates this integration:
+          </p>
+          <ul>
+            <li>The Creator&apos;s WhatsApp Business phone number identifier and access credentials
+              are stored securely in our database and used only to route messages on their behalf.</li>
+            <li>When a customer sends a message to a connected Creator&apos;s WhatsApp number, that
+              message is processed by the Platform&apos;s automated booking flow to facilitate the
+              shoot booking. Messages are not retained beyond the active session.</li>
+            <li>Customers interacting via WhatsApp should be aware that their messages are
+              processed by Alux Art&apos;s systems as part of the booking flow.</li>
+            <li>The WhatsApp integration is subject to Meta&apos;s Messaging Policies. Alux Art does
+              not use WhatsApp message data for advertising or profiling purposes.</li>
+          </ul>
+
           <h2>5. Sharing Your Data</h2>
           <p>We share data only where necessary to deliver the Service:</p>
           <p>
@@ -146,6 +173,14 @@ export default function PrivacyPage() {
               <tr>
                 <td>Creator bank details</td>
                 <td>Until the Creator removes them or closes their account</td>
+              </tr>
+              <tr>
+                <td>Support contact messages</td>
+                <td>90 days from submission</td>
+              </tr>
+              <tr>
+                <td>Creator application data (declined)</td>
+                <td>30 days after decline decision</td>
               </tr>
             </tbody>
           </table>

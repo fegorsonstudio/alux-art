@@ -1,0 +1,11 @@
+- generic [ref=e2]:
+  - link "← Browse looks" [ref=e3] [cursor=pointer]:
+    - /url: /marketplace
+  - generic [ref=e4]:
+    - img "Alux Art" [ref=e6]
+    - heading "Your AI Photoshoot Studio" [level=1] [ref=e7]
+    - paragraph [ref=e8]: Upload your photos. We generate a professional shoot, 1 to 10 images, no prompts needed.
+    - button "Continue with Google" [ref=e9] [cursor=pointer]:
+      - img [ref=e10]
+      - text: Continue with Google
+    - paragraph [ref=e15]: By signing in you agree to our terms of service.

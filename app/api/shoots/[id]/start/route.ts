@@ -4,6 +4,8 @@ import { startGenerationWorker } from "@/lib/generate";
 import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
+import { SITE_URL } from "@/lib/site-url";
 
 export const maxDuration = 300;
 
@@ -13,7 +15,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  const resolution: string = typeof body.resolution === "string" ? body.resolution : "1K";
+  const resolution: string = typeof body.resolution === "string" ? body.resolution : "4K";
   const internalSecret = req.headers.get("x-internal-secret");
   const isInternal =
     internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
@@ -25,7 +27,7 @@ export async function POST(
 
     const [ownerCheck] = await sql`SELECT user_id, status FROM shoots WHERE id = ${id}`;
     const isOwner = ownerCheck?.user_id === user.id;
-    const isAdmin = user.email === process.env.ADMIN_EMAIL;
+    const isAdmin = isAdminEmail(user.email);
     if (!isOwner && !isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (!isAdmin && ownerCheck?.status === "PENDING_PAYMENT")
@@ -78,7 +80,7 @@ export async function POST(
     `;
     sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'base_locking', ${JSON.stringify({ stage: "Locking character base", progress: 5 })}, ${now})`.catch(() => {});
 
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+    const origin = SITE_URL;
     fetch(`${origin}/api/shoots/${id}/base-lock`, {
       method: "POST",
       headers: {
@@ -126,13 +128,30 @@ export async function POST(
     if (ownerEmail) {
       notifyGenerationStarted(id, ownerEmail).catch(() => {});
     }
+
+  }
+
+  // Reset slots stuck in GENERATING for > 10 minutes — Vercel timeout can orphan them
+  // mid-save (fal.ai call succeeds but R2 upload times out), leaving no worker to continue.
+  const stuckCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const stuckReset = await sql`
+    UPDATE shoot_images
+    SET status = 'QUEUED', stage = 'Reset: timed out during save', updated_at = ${now}
+    WHERE shoot_id = ${id}
+    AND status = 'GENERATING'
+    AND updated_at < ${stuckCutoff}
+    RETURNING slot
+  `.catch(() => []);
+  if ((stuckReset as { slot: number }[]).length > 0) {
+    console.warn(`[start] reset ${(stuckReset as { slot: number }[]).length} stuck GENERATING slot(s):`,
+      (stuckReset as { slot: number }[]).map((r) => r.slot));
   }
 
   try {
     const result = await startGenerationWorker(id, { maxSlots: 1, resolution });
 
     if (!result.done) {
-      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+      const origin = SITE_URL;
       fetch(`${origin}/api/shoots/${id}/start`, {
         method: "POST",
         headers: {

@@ -1,0 +1,510 @@
+- generic [active] [ref=e1]:
+  - navigation:
+    - generic:
+      - heading "Close " [level=4]:
+        - text: Close
+        - generic [ref=e2]: 
+    - generic:
+      - link "Server Auction from € 48.43 " [ref=e3] [cursor=pointer]:
+        - /url: /sb/
+        - generic [ref=e5]:
+          - generic [ref=e6]: Server Auction
+          - generic [ref=e10]:
+            - generic: from
+            - generic [ref=e11]: € 48.43
+        - generic [ref=e12]: 
+      - separator [ref=e13]
+      - link "Server Finder from € 45.70 " [ref=e14] [cursor=pointer]:
+        - /url: /dedicated-rootserver/
+        - generic [ref=e16]:
+          - generic [ref=e17]: Server Finder
+          - generic [ref=e21]:
+            - generic: from
+            - generic [ref=e22]: € 45.70
+        - generic [ref=e23]: 
+      - separator [ref=e24]
+      - separator [ref=e25]
+      - generic:
+        - generic:
+          - heading "Dedicated " [level=4]:
+            - text: Dedicated
+            - generic [ref=e26] [cursor=pointer]: 
+        - link "Cloud":
+          - /url: /cloud/
+          - heading "Cloud" [level=4]
+        - generic:
+          - heading "Web & Managed " [level=4]:
+            - text: Web & Managed
+            - generic [ref=e27] [cursor=pointer]: 
+        - generic:
+          - heading "Storage " [level=4]:
+            - text: Storage
+            - generic [ref=e28] [cursor=pointer]: 
+        - generic:
+          - heading "Services " [level=4]:
+            - text: Services
+            - generic [ref=e29] [cursor=pointer]: 
+      - separator [ref=e30]
+      - generic:
+        - link "Jobs":
+          - /url: https://career.hetzner.com/
+          - heading "Jobs" [level=4]
+        - link "Community":
+          - /url: https://community.hetzner.com/
+          - heading "Community" [level=4]
+        - generic:
+          - heading "About us " [level=4]:
+            - text: About us
+            - generic [ref=e31] [cursor=pointer]: 
+        - link "Support":
+          - /url: /support/
+          - heading "Support" [level=4]
+        - generic:
+          - heading "Login " [level=4]:
+            - text: Login
+            - generic [ref=e32] [cursor=pointer]: 
+  - banner:
+    - text: 
+    - navigation [ref=e33]:
+      - text:  
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - link "Community" [ref=e38] [cursor=pointer]:
+            - /url: https://community.hetzner.com/
+          - link "Jobs" [ref=e39] [cursor=pointer]:
+            - /url: https://career.hetzner.com/de/
+          - button "About us " [ref=e41] [cursor=pointer]:
+            - generic [ref=e42]:
+              - text: About us
+              - generic [ref=e43]: 
+        - generic [ref=e44]:
+          - generic [ref=e46]:
+            - button "EUR VAT 0%" [ref=e47] [cursor=pointer]:
+              - generic [ref=e51]: EUR
+              - generic [ref=e53]:
+                - text: VAT
+                - generic [ref=e54]: 0%
+            - text:       
+          - link " Support" [ref=e55] [cursor=pointer]:
+            - /url: /support/
+            - generic [ref=e56]: 
+            - text: Support
+          - button " Login " [ref=e58] [cursor=pointer]:
+            - generic [ref=e59]:
+              - generic [ref=e60]: 
+              - text: Login
+              - generic [ref=e61]: 
+      - generic [ref=e62]:
+        - link "Logo Hetzner Online" [ref=e64] [cursor=pointer]:
+          - /url: https://www.hetzner.com/
+          - img "Logo Hetzner Online" [ref=e65]
+        - list [ref=e67]:
+          - listitem [ref=e68] [cursor=pointer]: Dedicated 
+          - listitem [ref=e69] [cursor=pointer]:
+            - link "Cloud" [ref=e70]:
+              - /url: /cloud/
+          - listitem [ref=e71] [cursor=pointer]: Web & Managed 
+          - listitem [ref=e72] [cursor=pointer]: Storage 
+          - listitem [ref=e73] [cursor=pointer]: Services 
+  - main [ref=e74]:
+    - generic [ref=e75]:
+      - img "hetzner european cloud header lg" [ref=e77]
+      - generic [ref=e81]:
+        - generic [ref=e82]: EUROPEAN CLOUD
+        - heading "CHEAP VPS HOSTING IN EUROPE" [level=1] [ref=e84]: CHEAP VPS HOSTING IN EUROPE
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e89]: 
+            - text: GDPR-compliant
+          - generic [ref=e90]:
+            - generic [ref=e92]: 
+            - text: DIN ISO/IEC 27001:2022 certified
+          - generic [ref=e93]:
+            - generic [ref=e95]: 
+            - text: Fair prices
+    - generic [ref=e97]:
+      - generic [ref=e100]:
+        - heading "The secure cloud from Europe" [level=1] [ref=e101]
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - heading "Lower costs, more data sovereignty – with Hetzner Cloud" [level=3] [ref=e104]
+            - paragraph [ref=e105]: The Hetzner Cloud delivers powerful performance, high data protection standards, and exceptional ease of use – all at a highly attractive price. With fair, transparent pricing and hourly billing, you only pay for the resources you actually use. The user-friendly interface and powerful API make setting up and managing your cloud projects effortless – perfect for developers, startups, and businesses of all sizes. Best of all, your data is secure with Hetzner. As a German provider, Hetzner guarantees full GDPR compliance and protects your data according to the strictest European standards.
+            - generic [ref=e106]:
+              - img "europe flag round" [ref=e107]
+              - generic [ref=e108]:
+                - generic [ref=e109]: Made in Europe
+                - text: Hosted GDPR-compliant
+          - img "Hetzner European Cloud Data protection" [ref=e111]
+      - generic [ref=e114]:
+        - generic [ref=e116]:
+          - generic [ref=e118]: 
+          - generic [ref=e119]:
+            - generic [ref=e120]: Data sovereignty
+            - paragraph [ref=e122]: Customer data is not transferred to third countries
+        - generic [ref=e124]:
+          - generic [ref=e126]: 
+          - generic [ref=e127]:
+            - generic [ref=e128]: Certified security
+            - paragraph [ref=e130]: Hetzner is certified in accordance with DIN ISO/IEC 27001:2022
+        - generic [ref=e132]:
+          - generic [ref=e134]: 
+          - generic [ref=e135]:
+            - generic [ref=e136]: The Simple Cloud
+            - paragraph [ref=e138]: Easy to use and quick to launch for any project
+        - generic [ref=e140]:
+          - generic [ref=e142]: 
+          - generic [ref=e143]:
+            - generic [ref=e144]: Price-performance
+            - paragraph [ref=e146]: Affordable prices combined with high quality and reliability
+    - text:  
+    - generic [ref=e147]:
+      - img "decoration left" [ref=e148]
+      - img "decoration right" [ref=e149]
+      - generic [ref=e150]:
+        - generic [ref=e152]:
+          - generic:
+            - heading [level=2]
+            - paragraph
+        - generic [ref=e153]:
+          - generic [ref=e155]:
+            - generic [ref=e157] [cursor=pointer]: Dedicated General Purpose
+            - generic [ref=e158] [cursor=pointer]:
+              - generic [ref=e159]: New
+              - generic [ref=e160]: Shared Regular Performance
+            - generic [ref=e162] [cursor=pointer]: Shared Cost-Optimized
+          - paragraph [ref=e165]: Optimized for cost efficiency, available only in limited capacity.
+        - generic [ref=e167]:
+          - generic [ref=e168]:
+            - generic [ref=e169]: Location
+            - generic [ref=e170]:
+              - generic [ref=e171]:
+                - combobox [ref=e172] [cursor=pointer]
+                - combobox "Germany" [ref=e175] [cursor=pointer]:
+                  - textbox "Germany" [ref=e176]
+                  - text: 
+              - generic [ref=e178]: NBG1
+          - generic [ref=e180]:
+            - generic [ref=e181] [cursor=pointer]:
+              - generic [ref=e182]: Primary IPv4
+              - img [ref=e183]
+              - generic [ref=e186]: IPv6 only
+            - generic [ref=e190]:
+              - generic: spare
+              - generic [ref=e191]: € 0.50
+        - generic [ref=e194]:
+          - generic [ref=e195]:
+            - generic [ref=e196]: VCPU
+            - generic [ref=e197]: RAM
+            - generic [ref=e198]: SSD
+            - generic [ref=e199]: Traffic incl.
+            - generic [ref=e200]: IPv4
+            - generic [ref=e201]:
+              - text: Hourly
+              - generic [ref=e204] [cursor=pointer]: 
+            - generic [ref=e206]: Monthly
+          - text:                                                   
+          - generic [ref=e207]:
+            - generic [ref=e210]: CX23
+            - generic [ref=e213]: "2"
+            - generic [ref=e215]: 4 GB
+            - generic [ref=e217]: 40 GB
+            - generic [ref=e219]: 20 TB
+            - generic [ref=e221]:
+              - generic "IPv4" [ref=e222]: 
+              - text: 
+            - generic [ref=e223]:
+              - text: 
+              - generic [ref=e224]:
+                - generic [ref=e230]: € 0.0072
+                - generic [ref=e231]:
+                  - generic [ref=e237]: € 4.49
+                  - generic [ref=e238]: max.
+          - generic [ref=e239]:
+            - generic [ref=e242]: CAX11
+            - generic [ref=e245]: "2"
+            - generic [ref=e247]: 4 GB
+            - generic [ref=e249]: 40 GB
+            - generic [ref=e251]: 20 TB
+            - generic [ref=e253]:
+              - generic "IPv4" [ref=e254]: 
+              - text: 
+            - generic [ref=e255]:
+              - text: 
+              - generic [ref=e256]:
+                - generic [ref=e262]: € 0.0080
+                - generic [ref=e263]:
+                  - generic [ref=e269]: € 4.99
+                  - generic [ref=e270]: max.
+          - generic [ref=e271]:
+            - generic [ref=e274]: CX33
+            - generic [ref=e277]: "4"
+            - generic [ref=e279]: 8 GB
+            - generic [ref=e281]: 80 GB
+            - generic [ref=e283]: 20 TB
+            - generic [ref=e285]:
+              - generic "IPv4" [ref=e286]: 
+              - text: 
+            - generic [ref=e287]:
+              - text: 
+              - generic [ref=e288]:
+                - generic [ref=e294]: € 0.0112
+                - generic [ref=e295]:
+                  - generic [ref=e301]: € 6.99
+                  - generic [ref=e302]: max.
+          - generic [ref=e303]:
+            - generic [ref=e306]: CAX21
+            - generic [ref=e309]: "4"
+            - generic [ref=e311]: 8 GB
+            - generic [ref=e313]: 80 GB
+            - generic [ref=e315]: 20 TB
+            - generic [ref=e317]:
+              - generic "IPv4" [ref=e318]: 
+              - text: 
+            - generic [ref=e319]:
+              - text: 
+              - generic [ref=e320]:
+                - generic [ref=e326]: € 0.0136
+                - generic [ref=e327]:
+                  - generic [ref=e333]: € 8.49
+                  - generic [ref=e334]: max.
+          - generic [ref=e335]:
+            - generic [ref=e338]: CX43
+            - generic [ref=e341]: "8"
+            - generic [ref=e343]: 16 GB
+            - generic [ref=e345]: 160 GB
+            - generic [ref=e347]: 20 TB
+            - generic [ref=e349]:
+              - generic "IPv4" [ref=e350]: 
+              - text: 
+            - generic [ref=e351]:
+              - text: 
+              - generic [ref=e352]:
+                - generic [ref=e358]: € 0.0200
+                - generic [ref=e359]:
+                  - generic [ref=e365]: € 12.49
+                  - generic [ref=e366]: max.
+          - generic [ref=e367]:
+            - generic [ref=e370]: CAX31
+            - generic [ref=e373]: "8"
+            - generic [ref=e375]: 16 GB
+            - generic [ref=e377]: 160 GB
+            - generic [ref=e379]: 20 TB
+            - generic [ref=e381]:
+              - generic "IPv4" [ref=e382]: 
+              - text: 
+            - generic [ref=e383]:
+              - text: 
+              - generic [ref=e384]:
+                - generic [ref=e390]: € 0.0264
+                - generic [ref=e391]:
+                  - generic [ref=e397]: € 16.49
+                  - generic [ref=e398]: max.
+          - generic [ref=e399]:
+            - generic [ref=e402]: CX53
+            - generic [ref=e405]: "16"
+            - generic [ref=e407]: 32 GB
+            - generic [ref=e409]: 320 GB
+            - generic [ref=e411]: 20 TB
+            - generic [ref=e413]:
+              - generic "IPv4" [ref=e414]: 
+              - text: 
+            - generic [ref=e415]:
+              - text: 
+              - generic [ref=e416]:
+                - generic [ref=e422]: € 0.0368
+                - generic [ref=e423]:
+                  - generic [ref=e429]: € 22.99
+                  - generic [ref=e430]: max.
+          - generic [ref=e431]:
+            - generic [ref=e434]: CAX41
+            - generic [ref=e437]: "16"
+            - generic [ref=e439]: 32 GB
+            - generic [ref=e441]: 320 GB
+            - generic [ref=e443]: 20 TB
+            - generic [ref=e445]:
+              - generic "IPv4" [ref=e446]: 
+              - text: 
+            - generic [ref=e447]:
+              - text: 
+              - generic [ref=e448]:
+                - generic [ref=e454]: € 0.0513
+                - generic [ref=e455]:
+                  - generic [ref=e461]: € 31.99
+                  - generic [ref=e462]: max.
+        - generic [ref=e463]:
+          - link "Get started " [ref=e464] [cursor=pointer]:
+            - /url: https://console.hetzner.com
+            - text: Get started
+            - generic [ref=e465]: 
+          - paragraph [ref=e466]:
+            - generic [ref=e469]: excl. VAT.
+    - generic [ref=e471]:
+      - heading "The European Cloud - for maximum data protection" [level=2] [ref=e472]
+      - paragraph [ref=e474]: The Hetzner Cloud provides strong security in accordance with European data protection standards, even at international locations in the USA and Singapore.
+      - tablist [ref=e478]:
+        - listitem [ref=e479] [cursor=pointer]: Hetzner Cloud international
+        - listitem [ref=e480] [cursor=pointer]: US CLOUD Act explained
+      - generic [ref=e483]:
+        - img "Hetzner European Cloud international Cloud" [ref=e485]
+        - generic [ref=e486]:
+          - heading "Why should I choose the Hetzner Cloud even outside Europe?" [level=3] [ref=e487]
+          - generic [ref=e488]:
+            - paragraph [ref=e489]: The Hetzner Cloud is also available in the USA and Singapore. At these international locations, our cloud services are fully GDPR-compliant, just like our European data centers, because we do not transfer any customer master data to subsidiaries in these countries.
+            - paragraph [ref=e490]:
+              - link "Data privacy in the US" [ref=e491] [cursor=pointer]:
+                - /url: https://docs.hetzner.com/general/company-and-policy/data-protection-at-hetzner/#further-information-on-data-protection-at-our-us-locations
+            - paragraph [ref=e492]:
+              - link "Data privacy in Singapore" [ref=e493] [cursor=pointer]:
+                - /url: https://docs.hetzner.com/general/company-and-policy/data-protection-at-hetzner/#further-information-on-data-protection-at-our-singapore-location
+    - generic [ref=e499]:
+      - list [ref=e500]:
+        - listitem [ref=e501]: Switch your projects to our secure European cloud now
+        - listitem
+      - generic [ref=e504]:
+        - generic [ref=e505]: starting at only
+        - generic [ref=e506]: € 3.29
+      - link "Go to cloud overview" [ref=e508] [cursor=pointer]:
+        - /url: /cloud
+    - generic [ref=e510]:
+      - link "Migrate data from another provider to Hetzner Docs" [ref=e511] [cursor=pointer]:
+        - /url: https://docs.hetzner.com/cloud/servers/getting-started/migrate-data
+        - generic [ref=e512]: Migrate data from another provider to Hetzner
+        - generic [ref=e513]: Docs
+        - text: 
+      - link "Migrate partition from another provider to Hetzner Docs" [ref=e514] [cursor=pointer]:
+        - /url: https://docs.hetzner.com/cloud/servers/getting-started/migrate-partition
+        - generic [ref=e515]: Migrate partition from another provider to Hetzner
+        - generic [ref=e516]: Docs
+        - text: 
+      - 'link "Getting started: Creating a server Docs" [ref=e517] [cursor=pointer]':
+        - /url: https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server
+        - generic [ref=e518]: "Getting started: Creating a server"
+        - generic [ref=e519]: Docs
+        - text: 
+    - generic [ref=e525]:
+      - heading "Frequently Asked Questions" [level=2] [ref=e526]
+      - list [ref=e530]:
+        - listitem [ref=e531]:
+          - button " How can you guarantee data protection at your locations in the USA and Singapore?" [ref=e532] [cursor=pointer]:
+            - generic [ref=e533]: 
+            - paragraph: How can you guarantee data protection at your locations in the USA and Singapore?
+        - listitem [ref=e534]:
+          - button " Is a cloud provider automatically governed by European law if it operates servers in Europe?" [ref=e535] [cursor=pointer]:
+            - generic [ref=e536]: 
+            - paragraph: Is a cloud provider automatically governed by European law if it operates servers in Europe?
+        - listitem [ref=e537]:
+          - button " Why should I choose a European cloud provider?" [ref=e538] [cursor=pointer]:
+            - generic [ref=e539]: 
+            - paragraph: Why should I choose a European cloud provider?
+        - listitem [ref=e540]:
+          - button " How can I determine if my cloud provider is subject to the US Cloud Act?" [ref=e541] [cursor=pointer]:
+            - generic [ref=e542]: 
+            - paragraph: How can I determine if my cloud provider is subject to the US Cloud Act?
+        - listitem [ref=e543]:
+          - button " Why is GDPR-compliant hosting so important?" [ref=e544] [cursor=pointer]:
+            - generic [ref=e545]: 
+            - paragraph: Why is GDPR-compliant hosting so important?
+  - contentinfo [ref=e546]:
+    - generic [ref=e548]:
+      - generic [ref=e549]:
+        - generic [ref=e550]:
+          - link "Logo Hetzner Online" [ref=e551] [cursor=pointer]:
+            - /url: https://www.hetzner.com/
+            - img "Logo Hetzner Online" [ref=e552]
+          - generic [ref=e553]:
+            - generic [ref=e554]: Subscribe to our Newsletter
+            - generic [ref=e556]:
+              - textbox "mail address" [ref=e557]
+              - button "" [ref=e559] [cursor=pointer]:
+                - generic [ref=e560]: 
+        - generic [ref=e561]:
+          - generic [ref=e562]:
+            - generic [ref=e563]: Hetzner 
+            - generic [ref=e564]:
+              - link "Company" [ref=e565] [cursor=pointer]:
+                - /url: /unternehmen/ueber-uns/
+                - generic [ref=e566]: Company
+              - link "Our Customers" [ref=e567] [cursor=pointer]:
+                - /url: /customers/
+                - generic [ref=e568]: Our Customers
+              - link "Sustainability" [ref=e569] [cursor=pointer]:
+                - /url: /unternehmen/nachhaltigkeit/
+                - generic [ref=e570]: Sustainability
+              - link "new new Career" [ref=e571] [cursor=pointer]:
+                - /url: https://career.hetzner.com/de/
+                - generic [ref=e573]: new new
+                - generic [ref=e574]: Career
+              - link "Pressroom" [ref=e575] [cursor=pointer]:
+                - /url: /pressroom/
+                - generic [ref=e576]: Pressroom
+          - generic [ref=e577]:
+            - generic [ref=e578]: Support 
+            - generic [ref=e579]:
+              - link "Support Center" [ref=e580] [cursor=pointer]:
+                - /url: /support/
+                - generic [ref=e581]: Support Center
+              - link "Contact" [ref=e582] [cursor=pointer]:
+                - /url: /support-form/
+                - generic [ref=e583]: Contact
+              - link "Downloads" [ref=e584] [cursor=pointer]:
+                - /url: /unternehmen/downloads/
+                - generic [ref=e585]: Downloads
+              - link "Hetzner Docs" [ref=e586] [cursor=pointer]:
+                - /url: https://docs.hetzner.com/
+                - generic [ref=e587]: Hetzner Docs
+              - link "Status" [ref=e588] [cursor=pointer]:
+                - /url: https://status.hetzner.com/de
+                - generic [ref=e589]: Status
+          - generic [ref=e590]:
+            - generic [ref=e591]: Legal 
+            - generic [ref=e592]:
+              - link "Legal notice" [ref=e593] [cursor=pointer]:
+                - /url: /legal/legal-notice/
+                - generic [ref=e594]: Legal notice
+              - link "Data privacy" [ref=e595] [cursor=pointer]:
+                - /url: /legal/privacy-policy/
+                - generic [ref=e596]: Data privacy
+              - link "System policies" [ref=e597] [cursor=pointer]:
+                - /url: /legal/system-policies/
+                - generic [ref=e598]: System policies
+              - link "Terms and conditions" [ref=e599] [cursor=pointer]:
+                - /url: /legal/terms-and-conditions/
+                - generic [ref=e600]: Terms and conditions
+              - link "Digital Services Act" [ref=e601] [cursor=pointer]:
+                - /url: /legal/digital-services-act/
+                - generic [ref=e602]: Digital Services Act
+              - link "Abuse form" [ref=e603] [cursor=pointer]:
+                - /url: https://abuse.hetzner.com/
+                - generic [ref=e604]: Abuse form
+      - generic [ref=e605]:
+        - generic [ref=e606]:
+          - generic [ref=e608]:
+            - button "EUR VAT 0%" [ref=e609] [cursor=pointer]:
+              - generic [ref=e613]: EUR
+              - generic [ref=e615]:
+                - text: VAT
+                - generic [ref=e616]: 0%
+            - text:       
+          - generic [ref=e617]:
+            - text: © 2026 Hetzner Online GmbH. All Rights Reserved. Prices
+            - generic [ref=e619]: incl. 19 % VAT
+        - generic [ref=e620]:
+          - link "Visit us on facebook" [ref=e621] [cursor=pointer]:
+            - /url: https://www.facebook.com/hetzner.de/
+            - img "facebook logo" [ref=e622]
+          - link "Visit us on instagram" [ref=e623] [cursor=pointer]:
+            - /url: https://www.instagram.com/hetzner.online/
+            - img "instagram logo" [ref=e624]
+          - link "Visit us on youtube" [ref=e625] [cursor=pointer]:
+            - /url: https://www.youtube.com/user/HetznerOnline/
+            - img "youtube logo" [ref=e626]
+          - link "Visit us on Mastodon" [ref=e627] [cursor=pointer]:
+            - /url: https://mastodon.hetzner.social/@Hetzner
+            - img "mastodon logo" [ref=e628]
+          - link "Visit us on x.com (formerly twitter)" [ref=e629] [cursor=pointer]:
+            - /url: https://twitter.com/Hetzner_Online/
+            - img "twitter logo" [ref=e630]
+          - link "Visit us on linkedin" [ref=e631] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/hetzner-online/
+            - img "linkedin logo" [ref=e632]
+  - generic [ref=e634] [cursor=pointer]: 

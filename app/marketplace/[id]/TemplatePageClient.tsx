@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { Analytics } from "@/lib/analytics";
 import { useCurrency } from "@/lib/useCurrency";
 import { getTheme, getFont } from "@/lib/storefront-themes";
 import styles from "./template.module.css";
+import ImagePreview from "@/components/ImagePreview";
+import CheckoutPanel from "./CheckoutPanel";
+import TemplateShareCard from "@/components/TemplateShareCard";
 
 function renderMarkdown(text: string) {
   // Split into lines, handle > blockquotes, then bold **...**
@@ -33,6 +37,11 @@ interface TemplateImage {
   url: string | null;
   purpose: string;
   tag?: string;
+  customName?: string | null;
+  note?: string | null;
+  noteHidden?: boolean;
+  storagePath: string;
+  storageBucket: string;
   displayOrder: number;
 }
 
@@ -113,7 +122,6 @@ function StarWidget({
 
 export default function TemplatePage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
   const [template, setTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,12 +130,19 @@ export default function TemplatePage() {
   const [couponCode, setCouponCode] = useState("");
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [validating, setValidating] = useState(false);
-  const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
+  const [showQR, setShowQR] = useState(false);
+  const [showGift, setShowGift] = useState(false);
+  const [giftBuying, setGiftBuying] = useState(false);
+  const [giftName, setGiftName] = useState("");
+  const [giftMessage, setGiftMessage] = useState("");
+  const [giftError, setGiftError] = useState("");
+  const [userName, setUserName] = useState("");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
@@ -146,11 +161,15 @@ export default function TemplatePage() {
           setAvgRating(d.template.avgRating ?? null);
           setRatingCount(d.template.ratingCount ?? 0);
           setUserRating(d.template.userRating ?? null);
+          Analytics.templateViewed(d.template.id, d.template.title);
         }
       })
       .finally(() => setLoading(false));
     fetch("/api/user/creator-status").then(r => r.ok ? r.json() : { isCreator: false }).then(d => setIsCreator(d.isCreator));
-    fetch("/api/me").then(r => setIsLoggedIn(r.ok));
+    fetch("/api/me").then(r => {
+      setIsLoggedIn(r.ok);
+      if (r.ok) r.json().then(d => { if (d.user?.name) setUserName(d.user.name); });
+    });
   }, [id]);
 
   useEffect(() => {
@@ -233,12 +252,11 @@ export default function TemplatePage() {
   };
 
   const purchase = () => {
-    setBuying(true);
-    const params = new URLSearchParams();
-    params.set("pkg", String(selectedPkg));
-    params.set("currency", currency);
-    if (couponCode) params.set("coupon", couponCode);
-    router.push(`/marketplace/${id}/book?${params.toString()}`);
+    if (!isLoggedIn) {
+      window.location.href = `/login?next=/marketplace/${id}`;
+      return;
+    }
+    setCheckoutOpen(true);
   };
 
   if (loading) {
@@ -284,7 +302,7 @@ export default function TemplatePage() {
           <button type="button" className={styles.lightboxClose} onClick={() => setLightboxOpen(false)} aria-label="Close">✕</button>
           <div className={styles.lightboxImgWrap} onClick={e => e.stopPropagation()}>
             {allImages[galleryIdx]?.url
-              ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.lightboxImg} />
+              ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.lightboxImg} />
               : <div className={styles.lightboxPlaceholder}>No image</div>
             }
             {allImages.length > 1 && (
@@ -342,7 +360,7 @@ export default function TemplatePage() {
               aria-label="Expand image"
             >
               {allImages[galleryIdx]?.url
-                ? <img src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
+                ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
                 : <div className={styles.imgPlaceholder}>No image</div>
               }
               <div className={styles.expandHint}>Tap to expand</div>
@@ -371,7 +389,7 @@ export default function TemplatePage() {
                   onClick={() => setGalleryIdx(i)}
                 >
                   {img.url
-                    ? <img src={img.url} alt="" className={styles.thumbImg} />
+                    ? <ImagePreview src={img.url} alt="" className={styles.thumbImg} preferredWidth={160} />
                     : <div className={styles.thumbPlaceholder} />
                   }
                   {img.tag && <span className={styles.thumbTag}>{img.tag}</span>}
@@ -386,6 +404,14 @@ export default function TemplatePage() {
           <div className={styles.categoryRow}>
             <span className={styles.categoryPill}>{template.category}</span>
             <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel}</button>
+            <button type="button" className={styles.shareBtn} onClick={() => setShowQR(true)}>QR Code</button>
+            <button type="button" className={styles.shareBtn} onClick={() => {
+              if (!isLoggedIn) { window.location.href = `/login?next=/marketplace/${id}`; return; }
+              setGiftName(userName);
+              setGiftMessage("");
+              setGiftError("");
+              setShowGift(true);
+            }}>Gift a Friend</button>
           </div>
           <h1 className={styles.title}>{template.title}</h1>
 
@@ -399,7 +425,7 @@ export default function TemplatePage() {
           {template.creator && (
             <Link href={`/creators/${template.creator.id}`} className={styles.creatorCard}>
               {template.creator.avatarUrl
-                ? <img src={template.creator.avatarUrl} alt={template.creator.displayName} className={styles.creatorAvatar} />
+                ? <ImagePreview src={template.creator.avatarUrl} alt={template.creator.displayName} className={styles.creatorAvatar} preferredWidth={80} />
                 : <div className={styles.creatorAvatarFallback}>{template.creator.displayName[0]}</div>
               }
               <div className={styles.creatorInfo}>
@@ -473,12 +499,7 @@ export default function TemplatePage() {
               type="button"
               className={styles.buyBtn}
               onClick={purchase}
-              disabled={buying}
-            >{buying ? "Loading..." : "Book This Look"}</button>
-
-            <p className={styles.buyNote}>
-              Add your identity photos, customise the reference images, then pay — all on the next screen.
-            </p>
+            >Book This Look</button>
           </div>
 
           <div className={styles.metaGrid}>
@@ -496,6 +517,189 @@ export default function TemplatePage() {
           )}
         </div>
       </div>
+
+      {showQR && (
+        <div style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.8)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 100, overflowY: "auto",
+        }} onClick={() => setShowQR(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <TemplateShareCard
+              templateUrl={`https://aluxartandframes.shop/marketplace/${template.id}`}
+              creatorUsername={template.creator?.displayName ?? "AluxArt"}
+              coverUrl={template.coverUrl}
+              onClose={() => setShowQR(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showGift && (
+        <div style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.88)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 100, padding: "16px", overflowY: "auto",
+        }} onClick={() => !giftBuying && setShowGift(false)}>
+          <div style={{
+            background: "linear-gradient(160deg, #0f0c2e 0%, #080618 100%)",
+            border: "1px solid rgba(109,40,217,0.3)",
+            borderRadius: "20px",
+            padding: "36px 28px",
+            maxWidth: 440,
+            width: "100%",
+            fontFamily: "system-ui, sans-serif",
+            boxShadow: "0 30px 80px rgba(55,48,163,0.4)",
+          }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
+              <div>
+                <p style={{ margin: "0 0 4px", fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(196,181,253,0.5)" }}>
+                  Gift this style
+                </p>
+                <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#f5f3ff" }}>
+                  Gift a Friend
+                </h2>
+              </div>
+              <button type="button" onClick={() => setShowGift(false)} style={{
+                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px", color: "rgba(255,255,255,0.5)", cursor: "pointer",
+                width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.1rem", padding: 0, flexShrink: 0,
+              }} aria-label="Close">✕</button>
+            </div>
+
+            {/* Session summary */}
+            <div style={{
+              background: "rgba(109,40,217,0.1)", border: "1px solid rgba(109,40,217,0.2)",
+              borderRadius: "10px", padding: "12px 16px", marginBottom: "24px",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <div>
+                <p style={{ margin: 0, color: "#f5f3ff", fontSize: "0.88rem", fontWeight: 600 }}>{template.title}</p>
+                <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>
+                  {activePkg?.n ?? selectedPkg} images · {template.category}
+                </p>
+              </div>
+              <span style={{ color: "#c4b5fd", fontSize: "1.1rem", fontWeight: 700 }}>
+                {formatPrice(pkgPrice)}
+              </span>
+            </div>
+
+            {/* Sender name */}
+            <label style={{ display: "block", marginBottom: "16px" }}>
+              <span style={{ display: "block", marginBottom: "6px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
+                YOUR NAME (required)
+              </span>
+              <input
+                type="text"
+                value={giftName}
+                onChange={e => setGiftName(e.target.value.slice(0, 80))}
+                placeholder="Your name"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "10px", padding: "10px 14px",
+                  color: "#f5f3ff", fontSize: "0.9rem", outline: "none",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              />
+            </label>
+
+            {/* Custom message */}
+            <label style={{ display: "block", marginBottom: "20px" }}>
+              <span style={{ display: "block", marginBottom: "6px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
+                PERSONAL MESSAGE (optional)
+              </span>
+              <textarea
+                value={giftMessage}
+                onChange={e => setGiftMessage(e.target.value.slice(0, 300))}
+                placeholder="Write something special for your friend..."
+                rows={3}
+                style={{
+                  width: "100%", boxSizing: "border-box", resize: "none",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "10px", padding: "10px 14px",
+                  color: "#f5f3ff", fontSize: "0.88rem", outline: "none",
+                  fontFamily: "system-ui, sans-serif", lineHeight: 1.5,
+                }}
+              />
+              <span style={{ display: "block", textAlign: "right", fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", marginTop: "3px" }}>
+                {giftMessage.length}/300
+              </span>
+            </label>
+
+            {giftError && (
+              <p style={{ margin: "0 0 14px", color: "#f87171", fontSize: "0.83rem" }}>{giftError}</p>
+            )}
+
+            <button
+              type="button"
+              disabled={giftBuying || !giftName.trim()}
+              onClick={async () => {
+                if (!giftName.trim()) { setGiftError("Please enter your name."); return; }
+                setGiftBuying(true);
+                setGiftError("");
+                try {
+                  const res = await fetch("/api/gift/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      templateId: id,
+                      senderName: giftName.trim(),
+                      customMessage: giftMessage.trim() || null,
+                      packageSize: activePkg?.n ?? selectedPkg,
+                      currency,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { setGiftError(data.error ?? "Failed to create gift. Please try again."); setGiftBuying(false); return; }
+                  if (data.authorizationUrl) { window.location.href = data.authorizationUrl; return; }
+                  setGiftError("Unexpected response. Please try again.");
+                  setGiftBuying(false);
+                } catch {
+                  setGiftError("Network error. Please try again.");
+                  setGiftBuying(false);
+                }
+              }}
+              style={{
+                width: "100%",
+                background: giftBuying || !giftName.trim()
+                  ? "rgba(109,40,217,0.35)"
+                  : "linear-gradient(135deg, #3730a3, #6d28d9)",
+                color: "#fff", border: "none", borderRadius: "12px",
+                padding: "14px 20px", fontSize: "0.95rem", fontWeight: 700,
+                cursor: giftBuying || !giftName.trim() ? "default" : "pointer",
+                fontFamily: "system-ui, sans-serif",
+                boxShadow: giftBuying || !giftName.trim() ? "none" : "0 6px 24px rgba(109,40,217,0.4)",
+                transition: "opacity 0.2s",
+              }}
+            >
+              {giftBuying ? "Redirecting to payment..." : `Pay ${formatPrice(pkgPrice)} — Send Gift`}
+            </button>
+
+            <p style={{ margin: "12px 0 0", textAlign: "center", fontSize: "0.73rem", color: "rgba(255,255,255,0.25)", lineHeight: 1.5 }}>
+              Your friend will receive a private link valid for 30 days. They&apos;ll upload their photos when they claim it.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {checkoutOpen && (
+        <CheckoutPanel
+          templateId={id}
+          template={template}
+          initialPkg={selectedPkg}
+          pkgOptions={pkgOptions}
+          currency={currency}
+          formatPrice={formatPrice}
+          couponCode={couponCode}
+          couponResult={couponResult}
+          onClose={() => setCheckoutOpen(false)}
+        />
+      )}
     </div>
   );
 }

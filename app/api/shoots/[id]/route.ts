@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { r2ProxyUrl } from "@/lib/r2";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 export async function DELETE(
   _request: NextRequest,
@@ -12,7 +13,7 @@ export async function DELETE(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
   const [shoot] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (shoot.user_id !== user.id && !isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -28,15 +29,13 @@ export async function DELETE(
 function withPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
   const images = ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map((img) => {
-    if (img.status === "COMPLETE") {
-      if (img.preview_storage_bucket && img.preview_storage_path) {
-        return { ...img, previewUrl: r2ProxyUrl(img.preview_storage_bucket as string, img.preview_storage_path as string) };
-      }
-      if (img.fal_url && img.kind !== "quote") {
-        return { ...img, previewUrl: img.fal_url };
+    const { fal_url: _fal_url, ...safeImg } = img as Record<string, unknown>;
+    if (safeImg.status === "COMPLETE") {
+      if (safeImg.preview_storage_bucket && safeImg.preview_storage_path) {
+        return { ...safeImg, previewUrl: r2ProxyUrl(safeImg.preview_storage_bucket as string, safeImg.preview_storage_path as string) };
       }
     }
-    return img;
+    return safeImg;
   });
   return { ...shoot, shoot_images: images };
 }
@@ -50,7 +49,7 @@ export async function GET(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
 
   const shootRows = isAdmin
     ? await sql`SELECT * FROM shoots WHERE id = ${id}`

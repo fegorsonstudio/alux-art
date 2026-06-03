@@ -6,6 +6,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCurrency, type Currency } from "@/lib/useCurrency";
 import styles from "./book.module.css";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import { Analytics } from "@/lib/analytics";
+import ImagePreview from "@/components/ImagePreview";
 
 interface TemplateImage {
   id: string;
@@ -132,6 +134,7 @@ export default function BookPage() {
       if (templateData.template) {
         const t: TemplateDetail = templateData.template;
         setTemplate(t);
+        Analytics.bookingStarted(t.id, t.title, t.priceNgn);
         // Initialize tagged refs from template images
         const tagged = (t.images ?? []).filter(img => img.purpose === "tagged" && img.tag);
         setTaggedRefs(tagged.map(img => ({
@@ -159,7 +162,7 @@ export default function BookPage() {
     fetch("/api/coupons/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, templateId: id }),
+      body: JSON.stringify({ code, templateId: id, packageSize: selectedPkg }),
     })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setCouponResult(d); });
@@ -296,7 +299,7 @@ export default function BookPage() {
     const res = await fetch("/api/coupons/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: couponCode, templateId: id }),
+      body: JSON.stringify({ code: couponCode, templateId: id, packageSize: selectedPkg }),
     });
     if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
@@ -342,6 +345,7 @@ export default function BookPage() {
     if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
     if (data.authorizationUrl) {
+      Analytics.paymentInitiated(id as string, template?.title ?? "", pkgPrice ?? 0);
       window.location.href = data.authorizationUrl;
     } else {
       setError(data.error ?? "Payment initialization failed. Please try again.");
@@ -418,7 +422,7 @@ export default function BookPage() {
                       return next;
                     })}
                   >
-                    <img src={ref.url} alt={ref.name} className={styles.savedImg} />
+                    <ImagePreview src={ref.url} alt={ref.name} className={styles.savedImg} preferredWidth={120} />
                     {selectedSaved.has(ref.id) && <div className={styles.selectedTick}>✓</div>}
                   </button>
                 ))}
@@ -452,7 +456,7 @@ export default function BookPage() {
             <div className={styles.uploadGrid}>
               {newUploads.map(u => (
                 <div key={u.localId} className={styles.uploadItem}>
-                  <img src={u.preview} alt="" className={styles.uploadImg} />
+                  <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
                   {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
                   {u.error && <div className={styles.uploadError}>{u.error}</div>}
                   <button type="button" className={styles.removeBtn} onClick={() => setNewUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
@@ -476,7 +480,7 @@ export default function BookPage() {
             <div className={styles.uploadGrid}>
               {poseUploads.map(u => (
                 <div key={u.localId} className={styles.uploadItem}>
-                  <img src={u.preview} alt="" className={styles.uploadImg} />
+                  <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
                   {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
                   {u.error && <div className={styles.uploadError}>{u.error}</div>}
                   <button type="button" className={styles.removeBtn} onClick={() => setPoseUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
@@ -512,7 +516,7 @@ export default function BookPage() {
                 <div key={ref.id} className={`${styles.refListRow} ${ref.isReplaced ? styles.refListRowReplaced : ""}`}>
                   <div className={styles.refListLeft}>
                     {ref.isReplaced && ref.url && (
-                      <img src={ref.url} alt={ref.tag} className={styles.refThumbSmall} />
+                      <ImagePreview src={ref.url} alt={ref.tag} className={styles.refThumbSmall} preferredWidth={60} />
                     )}
                     <span className={styles.refTag}>{ref.customName}</span>
                   </div>
@@ -606,7 +610,7 @@ export default function BookPage() {
                 key={o.n}
                 type="button"
                 className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
-                onClick={() => setSelectedPkg(o.n)}
+                onClick={() => { setSelectedPkg(o.n); setCouponResult(null); }}
               >
                 {o.n} {o.n === 1 ? "image" : "images"} — {formatPrice(o.price)}
               </button>
@@ -629,28 +633,7 @@ export default function BookPage() {
           </div>
         )}
 
-        <div className={styles.couponRow}>
-          <input
-            className={styles.couponInput}
-            placeholder="Coupon code"
-            value={couponCode}
-            onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null); }}
-          />
-          <button
-            type="button"
-            className={styles.couponBtn}
-            onClick={validateCoupon}
-            disabled={validating || !couponCode.trim()}
-          >{validating ? "..." : "Apply"}</button>
-        </div>
-
-        {couponResult && (
-          <p className={couponResult.valid ? styles.couponSuccess : styles.couponError}>
-            {couponResult.valid
-              ? `${couponResult.discountDescription} — save ${formatPrice(couponResult.discountNgn ?? 0)}`
-              : couponResult.message}
-          </p>
-        )}
+        {/* Coupons temporarily disabled */}
 
         {error && <p className={styles.bookError}>{error}</p>}
 

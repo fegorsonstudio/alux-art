@@ -1,0 +1,65 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]: Alux Art
+      - generic [ref=e5]:
+        - link "Browse looks" [ref=e6] [cursor=pointer]:
+          - /url: /marketplace
+        - link "Sign in" [ref=e7] [cursor=pointer]:
+          - /url: /login
+    - generic [ref=e8]:
+      - paragraph [ref=e9]: Tired of expensive shoots, the planning, and waiting weeks just to get your photos?
+      - heading "Ready to see yourself in a whole new light?" [level=1] [ref=e10]:
+        - text: Ready to see yourself
+        - text: in a whole new light?
+      - paragraph [ref=e11]: Upload 3 selfies. Choose a style. Get 10 editorial portraits in minutes. No photographer. No studio. No prompts.
+      - link "Browse styles" [ref=e13] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e14]:
+      - heading "How it works" [level=2] [ref=e15]
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: "01"
+          - heading "Upload your photos" [level=3] [ref=e19]
+          - paragraph [ref=e20]: "Start with 3 clear selfies — these lock your face, skin tone, and features. Then add pose references for any angles you want: a back shot, a side profile, a full-body look. The AI only knows what you show it, so if you want a pose it has not seen, upload a reference that shows it."
+        - generic [ref=e21]:
+          - generic [ref=e22]: "02"
+          - heading "Choose a style" [level=3] [ref=e23]
+          - paragraph [ref=e24]: Browse our curated collection of editorial styles — from minimal studio looks to bold fashion editorials. Each style controls the wardrobe, lighting, and visual direction of your shoot.
+        - generic [ref=e25]:
+          - generic [ref=e26]: "03"
+          - heading "Get your portraits" [level=3] [ref=e27]
+          - paragraph [ref=e28]: Our AI generates high-resolution portraits in minutes. Download individually or as a full set. Every image keeps your unique look — same face, same skin tone, same you.
+    - generic [ref=e29]:
+      - heading "Featured styles" [level=2] [ref=e30]
+      - generic [ref=e31]:
+        - link "THE CANON G7x iii editorial THE CANON G7x iii" [ref=e32] [cursor=pointer]:
+          - /url: /marketplace/e272ea3c-cc47-47cb-9a7a-4595ac6caa75
+          - img "THE CANON G7x iii" [ref=e34]
+          - generic [ref=e35]:
+            - text: editorial
+            - heading "THE CANON G7x iii" [level=3] [ref=e36]
+        - link "Old money portrait Old money" [ref=e37] [cursor=pointer]:
+          - /url: /marketplace/58efb498-dc5f-4ab5-a11c-2681fae0e9c9
+          - img "Old money" [ref=e39]
+          - generic [ref=e40]:
+            - text: portrait
+            - heading "Old money" [level=3] [ref=e41]
+      - link "Browse all styles" [ref=e43] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e44]:
+      - link "THE CANON G7x iii THE CANON G7x iii editorial" [ref=e45] [cursor=pointer]:
+        - /url: /marketplace/e272ea3c-cc47-47cb-9a7a-4595ac6caa75
+        - img "THE CANON G7x iii" [ref=e46]
+        - generic [ref=e47]:
+          - generic [ref=e48]: THE CANON G7x iii
+          - generic [ref=e49]: editorial
+      - link "Old money Old money portrait" [ref=e50] [cursor=pointer]:
+        - /url: /marketplace/58efb498-dc5f-4ab5-a11c-2681fae0e9c9
+        - img "Old money" [ref=e51]
+        - generic [ref=e52]:
+          - generic [ref=e53]: Old money
+          - generic [ref=e54]: portrait
+    - contentinfo [ref=e55]:
+      - paragraph [ref=e56]: © 2025 Alux Art. All rights reserved.
+  - alert [ref=e57]

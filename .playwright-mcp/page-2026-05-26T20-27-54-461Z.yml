@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - link "← Studio" [ref=e4] [cursor=pointer]:
+        - /url: /studio
+      - heading "Creator Dashboard" [level=1] [ref=e5]
+      - link "Browse marketplace →" [ref=e6] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]: "4"
+          - generic [ref=e11]: Templates
+        - generic [ref=e12]:
+          - generic [ref=e13]: "2"
+          - generic [ref=e14]: Published
+        - generic [ref=e15]:
+          - generic [ref=e16]: "16"
+          - generic [ref=e17]: Sales
+        - generic [ref=e18]:
+          - generic [ref=e19]: ₦4,900
+          - generic [ref=e20]: Total Earned
+      - button "Storefront Settings ▼" [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: Storefront Settings
+        - generic [ref=e24]: ▼
+      - generic [ref=e25]:
+        - heading "My Templates" [level=2] [ref=e26]
+        - button "+ New Template" [ref=e181] [cursor=pointer]
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - generic [ref=e31]: THE CANON G7x iii
+            - generic [ref=e32]: portrait · advanced · 4:5 · 10 images
+          - generic [ref=e33]:
+            - generic [ref=e34]: ₦16,000
+            - generic [ref=e35]: 3 sales
+            - generic [ref=e36]: published
+            - generic [ref=e37]:
+              - button "Edit" [ref=e38] [cursor=pointer]
+              - button "Unpublish" [ref=e39] [cursor=pointer]
+              - button "Generate images" [ref=e40] [cursor=pointer]
+              - button "Delete" [ref=e41] [cursor=pointer]
+              - button "Copy link" [ref=e42] [cursor=pointer]
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: THE CANON G7x iii
+            - generic [ref=e46]: editorial · advanced · 4:5 · 1 images
+          - generic [ref=e47]:
+            - generic [ref=e48]: ₦15,000
+            - generic [ref=e49]: 7 sales
+            - generic [ref=e50]: draft
+            - generic [ref=e51]:
+              - button "Edit" [ref=e52] [cursor=pointer]
+              - button "Publish" [ref=e53] [cursor=pointer]
+              - button "Generate images" [ref=e54] [cursor=pointer]
+              - button "Delete" [ref=e55] [cursor=pointer]
+              - button "Copy link" [ref=e56] [cursor=pointer]
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]: THE CANON G7x iii
+            - generic [ref=e60]: editorial · advanced · 4:5 · 5 images
+          - generic [ref=e61]:
+            - generic [ref=e62]: ₦15,000
+            - generic [ref=e63]: 0 sales
+            - generic [ref=e64]: draft
+            - generic [ref=e65]:
+              - button "Edit" [ref=e66] [cursor=pointer]
+              - button "Publish" [ref=e67] [cursor=pointer]
+              - button "Generate images" [ref=e68] [cursor=pointer]
+              - button "Delete" [ref=e69] [cursor=pointer]
+              - button "Copy link" [ref=e70] [cursor=pointer]
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - generic [ref=e73]: Old money
+            - generic [ref=e74]: portrait · advanced · 4:5 · 5 images
+          - generic [ref=e75]:
+            - generic [ref=e76]: ₦16,000
+            - generic [ref=e77]: 0 sales
+            - generic [ref=e78]: published
+            - generic [ref=e79]:
+              - button "Edit" [ref=e80] [cursor=pointer]
+              - button "Unpublish" [ref=e81] [cursor=pointer]
+              - button "Generate images" [ref=e82] [cursor=pointer]
+              - button "Delete" [ref=e83] [cursor=pointer]
+              - button "Copy link" [ref=e84] [cursor=pointer]
+  - alert [ref=e85]

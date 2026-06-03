@@ -42,10 +42,10 @@ export async function middleware(request: NextRequest) {
     p === "/marketplace" ||
     (p.startsWith("/marketplace/") && !p.includes("/book")) ||
     p.includes("/book/success") ||
-    p.startsWith("/creators/");
+    p.startsWith("/creators/") ||
+    p.startsWith("/gift/");  // gift unboxing + success pages are public links
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user && !isAuthPath && !isPublicPath) {
     const url = request.nextUrl.clone();

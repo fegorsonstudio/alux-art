@@ -17,20 +17,24 @@
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "dotenv": "^17.4.2",
+    "html2canvas": "^1.4.1",
     "jszip": "^3.10.1",
     "next": "^15",
     "postgres": "^3.4.9",
+    "qrcode.react": "^4.2.0",
     "react": "^18",
     "react-dom": "^18",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "^15",
     "pg": "^8.21.0",
+    "playwright": "^1.60.0",
     "typescript": "^5"
   }
 }

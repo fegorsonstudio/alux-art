@@ -7,6 +7,6 @@ export async function GET() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ isCreator: false });
 
-  const [creator] = await sql`SELECT id FROM creators WHERE user_id = ${user.id} LIMIT 1`;
-  return NextResponse.json({ isCreator: Boolean(creator) });
+  const [creator] = await sql`SELECT id, status FROM creators WHERE user_id = ${user.id} LIMIT 1`;
+  return NextResponse.json({ isCreator: Boolean(creator), status: creator?.status ?? null });
 }

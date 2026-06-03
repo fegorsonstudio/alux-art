@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./become-creator.module.css";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import ImagePreview from "@/components/ImagePreview";
 
 interface Bank { name: string; code: string; }
 
@@ -101,7 +102,7 @@ export default function BecomeCreatorPage() {
       setSubmitting(false);
       return;
     }
-    router.push("/creator-dashboard");
+    setStep(3);
   };
 
   return (
@@ -132,7 +133,7 @@ export default function BecomeCreatorPage() {
             <div className={styles.avatarSection}>
               <div className={styles.avatarPreview} onClick={() => avatarRef.current?.click()} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && avatarRef.current?.click()}>
                 {avatarPreview
-                  ? <img src={avatarPreview} alt="Avatar" className={styles.avatarImg} />
+                  ? <ImagePreview src={avatarPreview} alt="Avatar" className={styles.avatarImg} preferredWidth={140} />
                   : <span className={styles.avatarPlaceholder}>{uploadingAvatar ? "Uploading..." : "Add photo"}</span>
                 }
               </div>
@@ -198,6 +199,18 @@ export default function BecomeCreatorPage() {
 
             <p className={styles.payFootNote}>Payment processing by Paystack. Alux Art does not store your bank credentials.</p>
           </form>
+        )}
+
+        {step === 3 && (
+          <div className={styles.successBox}>
+            <div className={styles.successIcon}>✓</div>
+            <h2 className={styles.successTitle}>Application received!</h2>
+            <p className={styles.successBody}>
+              We&apos;ll review your application and email you within 48 hours.
+              Once approved, you can log in and start building your templates.
+            </p>
+            <Link href="/marketplace" className={styles.backToMarketplace}>Browse the marketplace →</Link>
+          </div>
         )}
       </div>
     </div>

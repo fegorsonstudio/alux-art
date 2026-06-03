@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
+import { SITE_URL } from "@/lib/site-url";
 
 export async function POST(
   req: NextRequest,
@@ -19,7 +21,7 @@ export async function POST(
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isOwner = shoot.user_id === user.id;
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
   if (!isOwner && !isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   if (shoot.status !== "BASE_REVIEW") {
@@ -73,7 +75,7 @@ export async function POST(
     )
   `;
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+  const origin = SITE_URL;
   fetch(`${origin}/api/shoots/${shootId}/base-lock`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },

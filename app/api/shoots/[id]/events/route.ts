@@ -2,25 +2,24 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 async function withSignedPreviewUrls(shoot: Record<string, unknown> | null) {
   if (!shoot) return shoot;
   const images = await Promise.all(
     ((shoot.shoot_images as Record<string, unknown>[] | undefined) ?? []).map(async (img) => {
-      if (img.status === "COMPLETE") {
-        if (img.fal_url && img.kind !== "quote") {
-          return { ...img, previewUrl: img.fal_url };
-        }
-        if (img.preview_storage_bucket && img.preview_storage_path) {
+      const { fal_url: _fal_url, ...safeImg } = img as Record<string, unknown>;
+      if (safeImg.status === "COMPLETE") {
+        if (safeImg.preview_storage_bucket && safeImg.preview_storage_path) {
           const previewUrl = await r2SignedDownloadUrl(
-            img.preview_storage_bucket as string,
-            img.preview_storage_path as string,
+            safeImg.preview_storage_bucket as string,
+            safeImg.preview_storage_path as string,
             3600
           ).catch(() => null);
-          return { ...img, previewUrl };
+          return { ...safeImg, previewUrl };
         }
       }
-      return img;
+      return safeImg;
     })
   );
   return { ...shoot, shoot_images: images };
@@ -36,7 +35,7 @@ export async function GET(
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const [shootOwner] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
-  if (!shootOwner || (shootOwner.user_id !== user.id && user.email !== process.env.ADMIN_EMAIL)) {
+  if (!shootOwner || (shootOwner.user_id !== user.id && !isAdminEmail(user.email))) {
     return new Response("Not found", { status: 404 });
   }
 
@@ -68,7 +67,7 @@ export async function GET(
       // If shoot is in BASE_REVIEW, replay the last base_review_required event
       if (shootRow?.status === "BASE_REVIEW") {
         const [reviewEvent] = await sql`
-          SELECT * FROM generation_events
+          SELECT type, payload FROM generation_events
           WHERE shoot_id = ${id} AND type = 'base_review_required'
           ORDER BY created_at DESC
           LIMIT 1
@@ -90,7 +89,7 @@ export async function GET(
       const interval = setInterval(async () => {
         try {
           const events = await sql`
-            SELECT * FROM generation_events
+            SELECT type, payload, created_at FROM generation_events
             WHERE shoot_id = ${id} AND created_at > ${lastEventCreatedAt}
             ORDER BY created_at ASC
           `;

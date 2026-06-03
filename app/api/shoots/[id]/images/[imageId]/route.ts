@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { r2Download, r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
@@ -13,12 +14,12 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [img] = await sql`
-    SELECT * FROM shoot_images WHERE id = ${imageId} AND shoot_id = ${id}
+    SELECT id, slot, kind, status, preview_storage_bucket, preview_storage_path, download_storage_path, download_storage_bucket FROM shoot_images WHERE id = ${imageId} AND shoot_id = ${id}
   `;
   if (!img) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const [shoot] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
   if (!shoot || (!isAdmin && shoot.user_id !== user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

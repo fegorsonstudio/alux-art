@@ -3,13 +3,14 @@ import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { fal } from "@fal-ai/client";
 import { r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
+import { isAdminEmail } from "@/lib/auth";
 
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
 async function getAdminSession() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (!user || user.email !== process.env.ADMIN_EMAIL) return null;
+  if (!user || !isAdminEmail(user.email)) return null;
   return user;
 }
 

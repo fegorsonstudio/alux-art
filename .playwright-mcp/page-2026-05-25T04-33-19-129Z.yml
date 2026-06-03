@@ -1,0 +1,64 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - img "Alux Art" [ref=e5]
+        - text: Alux Art
+      - generic [ref=e6]:
+        - link "Marketplace" [ref=e7] [cursor=pointer]:
+          - /url: /marketplace
+        - button "Light" [pressed] [ref=e8] [cursor=pointer]
+        - button "Sign out" [ref=e9] [cursor=pointer]
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - paragraph [ref=e14]: Identity Photos (min. 3)
+        - generic [ref=e15] [cursor=pointer]:
+          - paragraph [ref=e16]: Click to add identity photos
+          - paragraph [ref=e17]: 0/3 minimum
+        - generic [ref=e18] [cursor=pointer]:
+          - checkbox "Save to my identity library" [checked] [ref=e19]
+          - generic [ref=e20]: Save to my identity library
+      - generic [ref=e21]:
+        - paragraph [ref=e23]: Inspiration (min. 1)
+        - paragraph [ref=e25] [cursor=pointer]: Click to add mood/inspiration photos
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - paragraph [ref=e28]: Mode
+          - generic [ref=e29]:
+            - button "fast" [ref=e30] [cursor=pointer]
+            - button "advanced" [ref=e31] [cursor=pointer]
+        - generic [ref=e32]:
+          - paragraph [ref=e33]: Aspect Ratio
+          - generic [ref=e34]:
+            - button "Portrait 3:4" [ref=e35] [cursor=pointer]
+            - button "Instagram 4:5" [ref=e36] [cursor=pointer]
+            - button "Square 1:1" [ref=e37] [cursor=pointer]
+            - button "Landscape 16:9" [ref=e38] [cursor=pointer]
+            - button "Vertical 9:16" [ref=e39] [cursor=pointer]
+            - button "Classic 2:3" [ref=e40] [cursor=pointer]
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: Currency
+          - generic [ref=e43]:
+            - button "NGN" [ref=e44] [cursor=pointer]
+            - button "USD" [ref=e45] [cursor=pointer]
+        - generic [ref=e46]:
+          - paragraph [ref=e47]: Package
+          - generic [ref=e48]:
+            - button "1 image NGN 1,500" [ref=e49] [cursor=pointer]:
+              - generic [ref=e50]: 1 image
+              - strong [ref=e51]: NGN 1,500
+            - button "5 images NGN 7,500" [ref=e52] [cursor=pointer]:
+              - generic [ref=e53]: 5 images
+              - strong [ref=e54]: NGN 7,500
+            - button "10 images NGN 15,000" [ref=e55] [cursor=pointer]:
+              - generic [ref=e56]: 10 images
+              - strong [ref=e57]: NGN 15,000
+          - paragraph [ref=e58]: Paid slots stay retryable for 48 hours if a generation fails.
+      - generic [ref=e59]:
+        - paragraph [ref=e60]: Quote (optional)
+        - textbox "Inspirational quote text..." [ref=e61]
+        - textbox "- Attribution" [ref=e62]
+      - generic [ref=e63]:
+        - paragraph [ref=e64]: Add 3 more identity photos
+        - button "Pay NGN 15,000 & Generate 10" [disabled] [ref=e65]
+  - alert [ref=e67]

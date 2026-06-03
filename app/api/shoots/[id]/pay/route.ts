@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { normalizePackageSize } from "@/lib/types";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
+import { SITE_URL } from "@/lib/site-url";
 
 const PRICE_KEYS = [
   "price_1_ngn", "price_5_ngn", "price_10_ngn",
@@ -21,14 +23,14 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [shoot] = await sql`SELECT * FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
+  const [shoot] = await sql`SELECT id, status, currency, package_size, user_id FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (shoot.status !== "PENDING_PAYMENT") {
     return NextResponse.json({ error: "This shoot has already been paid or is not payable" }, { status: 409 });
   }
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
   const packageSize = normalizePackageSize(shoot.package_size);
 
   // Admin bypass — no payment required
@@ -37,8 +39,7 @@ export async function POST(
       UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
       WHERE id = ${id} AND status = 'PENDING_PAYMENT'
     `;
-    const origin = new URL(request.url).origin;
-    fetch(`${origin}/api/shoots/${id}/start`, {
+    fetch(`${SITE_URL}/api/shoots/${id}/start`, {
       method: "POST",
       headers: process.env.INTERNAL_API_SECRET ? { "x-internal-secret": process.env.INTERNAL_API_SECRET } : {},
       cache: "no-store",
@@ -75,7 +76,7 @@ export async function POST(
         amount: price,
         currency: shoot.currency,
         metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin}/`,
+        callback_url: `${SITE_URL}/`,
       }),
     });
     paystackData = await paystackRes.json();
@@ -84,7 +85,6 @@ export async function POST(
     return NextResponse.json({ error: `Paystack unreachable: ${String(err)}` }, { status: 502 });
   }
 
-  console.log("[pay] Paystack response:", JSON.stringify(paystackData).slice(0, 300));
 
   if (!paystackData.status) {
     return NextResponse.json({ error: `Paystack error: ${paystackData.message ?? "unknown"}` }, { status: 500 });
@@ -106,8 +106,8 @@ export async function POST(
       )
     `;
   } catch (err) {
-    console.error("[pay] payments INSERT failed:", err);
-    // Don't block payment — log and continue
+    console.error("[pay] payments INSERT failed:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: "Could not record payment — please try again." }, { status: 500 });
   }
 
   return NextResponse.json({

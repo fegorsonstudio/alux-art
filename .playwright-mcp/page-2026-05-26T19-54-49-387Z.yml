@@ -1,0 +1,285 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e4]:
+      - link "← Studio" [ref=e5] [cursor=pointer]:
+        - /url: /studio
+      - heading "Creator Dashboard" [level=1] [ref=e6]
+      - link "Browse marketplace →" [ref=e7] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: "4"
+          - generic [ref=e12]: Templates
+        - generic [ref=e13]:
+          - generic [ref=e14]: "2"
+          - generic [ref=e15]: Published
+        - generic [ref=e16]:
+          - generic [ref=e17]: "16"
+          - generic [ref=e18]: Sales
+        - generic [ref=e19]:
+          - generic [ref=e20]: ₦4,900
+          - generic [ref=e21]: Total Earned
+      - button "Storefront Settings ▼" [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]: Storefront Settings
+        - generic [ref=e25]: ▼
+      - heading "My Templates" [level=2] [ref=e27]
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: THE CANON G7x iii
+            - generic [ref=e33]: portrait · advanced · 4:5 · 10 images
+          - generic [ref=e34]:
+            - generic [ref=e35]: ₦16,000
+            - generic [ref=e36]: 3 sales
+            - generic [ref=e37]: published
+            - generic [ref=e38]:
+              - button "Edit" [active] [ref=e39] [cursor=pointer]
+              - button "Unpublish" [ref=e40] [cursor=pointer]
+              - button "Generate images" [ref=e41] [cursor=pointer]
+              - button "Delete" [ref=e42] [cursor=pointer]
+              - button "Copy link" [ref=e43] [cursor=pointer]
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: THE CANON G7x iii
+            - generic [ref=e47]: editorial · advanced · 4:5 · 1 images
+          - generic [ref=e48]:
+            - generic [ref=e49]: ₦15,000
+            - generic [ref=e50]: 7 sales
+            - generic [ref=e51]: draft
+            - generic [ref=e52]:
+              - button "Edit" [ref=e53] [cursor=pointer]
+              - button "Publish" [ref=e54] [cursor=pointer]
+              - button "Generate images" [ref=e55] [cursor=pointer]
+              - button "Delete" [ref=e56] [cursor=pointer]
+              - button "Copy link" [ref=e57] [cursor=pointer]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: THE CANON G7x iii
+            - generic [ref=e61]: editorial · advanced · 4:5 · 5 images
+          - generic [ref=e62]:
+            - generic [ref=e63]: ₦15,000
+            - generic [ref=e64]: 0 sales
+            - generic [ref=e65]: draft
+            - generic [ref=e66]:
+              - button "Edit" [ref=e67] [cursor=pointer]
+              - button "Publish" [ref=e68] [cursor=pointer]
+              - button "Generate images" [ref=e69] [cursor=pointer]
+              - button "Delete" [ref=e70] [cursor=pointer]
+              - button "Copy link" [ref=e71] [cursor=pointer]
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]: Old money
+            - generic [ref=e75]: portrait · advanced · 4:5 · 5 images
+          - generic [ref=e76]:
+            - generic [ref=e77]: ₦15,000
+            - generic [ref=e78]: 0 sales
+            - generic [ref=e79]: published
+            - generic [ref=e80]:
+              - button "Edit" [ref=e81] [cursor=pointer]
+              - button "Unpublish" [ref=e82] [cursor=pointer]
+              - button "Generate images" [ref=e83] [cursor=pointer]
+              - button "Delete" [ref=e84] [cursor=pointer]
+              - button "Copy link" [ref=e85] [cursor=pointer]
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - heading "Edit Template" [level=3] [ref=e88]
+          - button "✕" [ref=e89] [cursor=pointer]
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: Title *
+            - textbox "Title *" [ref=e93]:
+              - /placeholder: e.g. Sunset Lagos Editorial
+              - text: THE CANON G7x iii
+          - generic [ref=e94]:
+            - generic [ref=e95]: Category
+            - combobox "Category" [ref=e96] [cursor=pointer]:
+              - option "Portrait" [selected]
+              - option "Editorial"
+              - option "Corporate"
+              - option "Glamour"
+              - option "Wedding"
+              - option "Maternity"
+              - option "Fantasy"
+              - option "Boudoir"
+              - option "Street"
+              - option "Other"
+        - generic [ref=e97]:
+          - generic [ref=e98]: Description
+          - textbox "Description" [ref=e99]:
+            - /placeholder: Describe the vibe, setting, and aesthetic...
+            - text: Step into your soft life era. ✨📸 This look perfectly recreates the highly coveted **Canon G7X III direct-flash look**. Expect rich, glowing melanin, butter-smooth skin, and that sharp, high-end nightlife aesthetic. Whether you want a luxury hotel lobby vibe or a paparazzi-style club shot, this gets you that premium "It Girl" look instantly. > **Make it entirely yours:**
+        - generic [ref=e100]:
+          - generic [ref=e101]: Tags (comma-separated)
+          - textbox "Tags (comma-separated)" [ref=e102]:
+            - /placeholder: lagos, studio, editorial, luxury
+            - text: Lagos, Abuja, Nigeria
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]: 10-image price (₦) *
+            - spinbutton "10-image price (₦) * You earn ₦1,000 per sale" [ref=e106]: "16000"
+            - generic [ref=e107]: You earn ₦1,000 per sale
+          - generic [ref=e108]:
+            - generic [ref=e109]: 1-image price (₦) (optional)
+            - spinbutton "1-image price (₦) (optional) You earn ₦100" [ref=e110]: "1600"
+            - generic [ref=e111]: You earn ₦100
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]: 5-image price (₦) (optional)
+            - spinbutton "5-image price (₦) (optional) You earn ₦1,500" [ref=e115]: "9000"
+            - generic [ref=e116]: You earn ₦1,500
+          - generic [ref=e117]:
+            - generic [ref=e118]: Shoot mode
+            - generic [ref=e119]:
+              - button "Shoot mode advanced" [ref=e120] [cursor=pointer]: fast
+              - button "advanced" [ref=e121] [cursor=pointer]
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - generic [ref=e124]: Aspect ratio
+            - generic [ref=e125]:
+              - button "Aspect ratio 4:5 1:1 16:9 9:16 2:3" [ref=e126] [cursor=pointer]: 3:4
+              - button "4:5" [ref=e127] [cursor=pointer]
+              - button "1:1" [ref=e128] [cursor=pointer]
+              - button "16:9" [ref=e129] [cursor=pointer]
+              - button "9:16" [ref=e130] [cursor=pointer]
+              - button "2:3" [ref=e131] [cursor=pointer]
+          - generic [ref=e132]:
+            - generic [ref=e133]: Package size
+            - generic [ref=e134]:
+              - button "Package size 5 images 10 images" [ref=e135] [cursor=pointer]: 1 image
+              - button "5 images" [ref=e136] [cursor=pointer]
+              - button "10 images" [ref=e137] [cursor=pointer]
+        - generic [ref=e138]:
+          - generic [ref=e139]: Reference images (7/8)
+          - paragraph [ref=e140]: "Advanced mode: add a main inspiration image, then optional override references for specific elements. Buyers' portraits will use these references to match each category."
+          - generic [ref=e141]:
+            - generic [ref=e142]: Inspiration — main look, outfit & mood (required)
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - generic: saved
+                - button "✕" [ref=e145] [cursor=pointer]
+              - button "+ Add inspiration" [ref=e146] [cursor=pointer]
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149]: Tagged references — upload images and tag each one (optional)
+              - button "Clear all" [ref=e150] [cursor=pointer]
+            - generic [ref=e152]:
+              - button "Replace" [ref=e153] [cursor=pointer]:
+                - generic [ref=e154]: Replace
+              - generic [ref=e155]:
+                - generic [ref=e156]:
+                  - button "OUTFIT" [ref=e157] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e158] [cursor=pointer]
+                  - button "MAKEUP" [ref=e159] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e160] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e161] [cursor=pointer]
+                  - button "LIGHTING" [ref=e162] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e163] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e164]
+                - textbox "Styling note (optional)..." [ref=e165]
+              - button "✕" [ref=e166] [cursor=pointer]
+            - generic [ref=e168]:
+              - button "Replace" [ref=e169] [cursor=pointer]:
+                - generic [ref=e170]: Replace
+              - generic [ref=e171]:
+                - generic [ref=e172]:
+                  - button "OUTFIT" [ref=e173] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e174] [cursor=pointer]
+                  - button "MAKEUP" [ref=e175] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e176] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e177] [cursor=pointer]
+                  - button "LIGHTING" [ref=e178] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e179] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e180]: Shoe
+                - textbox "Styling note (optional)..." [ref=e181]
+              - button "✕" [ref=e182] [cursor=pointer]
+            - generic [ref=e184]:
+              - button "Replace" [ref=e185] [cursor=pointer]:
+                - generic [ref=e186]: Replace
+              - generic [ref=e187]:
+                - generic [ref=e188]:
+                  - button "OUTFIT" [ref=e189] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e190] [cursor=pointer]
+                  - button "MAKEUP" [ref=e191] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e192] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e193] [cursor=pointer]
+                  - button "LIGHTING" [ref=e194] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e195] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e196]
+                - textbox "Styling note (optional)..." [ref=e197]
+              - button "✕" [ref=e198] [cursor=pointer]
+            - generic [ref=e200]:
+              - button "Replace" [ref=e201] [cursor=pointer]:
+                - generic [ref=e202]: Replace
+              - generic [ref=e203]:
+                - generic [ref=e204]:
+                  - button "OUTFIT" [ref=e205] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e206] [cursor=pointer]
+                  - button "MAKEUP" [ref=e207] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e208] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e209] [cursor=pointer]
+                  - button "LIGHTING" [ref=e210] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e211] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e212]
+                - textbox "Styling note (optional)..." [ref=e213]: "Starting now, you will follow a new rule for all image prompts: You must append the following text verbatim as the 'Lighting & Photography' section to every new prompt you create. This rule ensures all our images have the distinct direct-flash, high-saturation, cool-foreground-warm-background aesthetic seen in these references. (Canon G7X III direct on-camera flash photography. High-contrast, sharp, and glossy finish. The subject is intensely illuminated by a cooler, daylight-balanced direct flash, creating bright specular highlights and a smooth look on skin with rapidly falling-off light. A sharp, soft edge, dark drop shadow is cast immediately behind the subject,just like in each image in this collage,against the background. Contrast this by making the background elements (like walls, steps, and shelves) emit a very rich overly exaggerated warm, golden (2700K–3200K) tungsten-toned ambient light from integrated architectural sources. This background ambient light should be lower in relative intensity but create a soft, inviting, warm diffused glow, setting a dramatic and luxurious \"night out\" tone.\"). Describe the catch lights in the subjects eyes in every prompt and her skin texture with fine pores and radiant glow"
+                - button "Hide note from buyer" [ref=e214] [cursor=pointer]
+              - button "✕" [ref=e215] [cursor=pointer]
+            - generic [ref=e217]:
+              - button "Replace" [ref=e218] [cursor=pointer]:
+                - generic [ref=e219]: Replace
+              - generic [ref=e220]:
+                - generic [ref=e221]:
+                  - button "OUTFIT" [ref=e222] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e223] [cursor=pointer]
+                  - button "MAKEUP" [ref=e224] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e225] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e226] [cursor=pointer]
+                  - button "LIGHTING" [ref=e227] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e228] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e229]: Bag
+                - textbox "Styling note (optional)..." [ref=e230]
+              - button "✕" [ref=e231] [cursor=pointer]
+            - generic [ref=e233]:
+              - button "Replace" [ref=e234] [cursor=pointer]:
+                - generic [ref=e235]: Replace
+              - generic [ref=e236]:
+                - generic [ref=e237]:
+                  - button "OUTFIT" [ref=e238] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e239] [cursor=pointer]
+                  - button "MAKEUP" [ref=e240] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e241] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e242] [cursor=pointer]
+                  - button "LIGHTING" [ref=e243] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e244] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e245]: Pose
+                - textbox "Styling note (optional)..." [ref=e246]: Randomly pick and describe poses from this collage for this shoot make sure not to repeat poses or shot types
+                - button "Note hidden from buyer" [ref=e247] [cursor=pointer]
+              - button "✕" [ref=e248] [cursor=pointer]
+            - button "+ Add reference" [ref=e249] [cursor=pointer]
+        - generic [ref=e250]:
+          - generic [ref=e251]: Gallery images (5/10)
+          - paragraph [ref=e252]: Upload up to 10 images shown in the public gallery. The first image is used as the template thumbnail on the marketplace listing. Workflow reference images are kept private from buyers.
+          - generic [ref=e253]:
+            - generic [ref=e254]:
+              - generic: cover
+              - button "✕" [ref=e255] [cursor=pointer]
+            - generic [ref=e256]:
+              - generic: saved
+              - button "✕" [ref=e257] [cursor=pointer]
+            - generic [ref=e258]:
+              - generic: saved
+              - button "✕" [ref=e259] [cursor=pointer]
+            - generic [ref=e260]:
+              - generic: saved
+              - button "✕" [ref=e261] [cursor=pointer]
+            - generic [ref=e262]:
+              - generic: saved
+              - button "✕" [ref=e263] [cursor=pointer]
+            - button "+ Add image" [ref=e264] [cursor=pointer]
+          - button "Create collage cover from gallery" [ref=e265] [cursor=pointer]
+        - generic [ref=e266]:
+          - generic [ref=e267]:
+            - button "Save as draft" [ref=e268] [cursor=pointer]
+            - button "Publish" [ref=e269] [cursor=pointer]
+          - button "Save changes" [ref=e270] [cursor=pointer]
+  - alert [ref=e3]

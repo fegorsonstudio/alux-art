@@ -7,8 +7,11 @@ import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
+import ImagePreview from "@/components/ImagePreview";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
+import { Analytics } from "@/lib/analytics";
+import TemplateShareCard from "@/components/TemplateShareCard";
 
 const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
 type TemplateTag = typeof TEMPLATE_TAGS[number];
@@ -61,7 +64,7 @@ interface ShowcaseShoot {
 }
 
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
-interface Creator { id: string; display_name: string; paystack_subaccount_code?: string; theme?: string; font_family?: string; }
+interface Creator { id: string; display_name: string; username?: string | null; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
 
 const SHOWCASE_PACKAGES = [
   { count: 1, label: "1 image", price: 1000 },
@@ -122,6 +125,7 @@ function CreatorDashboard() {
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [panel, setPanel] = useState<"none" | "create" | string>("none"); // "create" or templateId
   const [form, setForm] = useState(defaultForm());
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -148,6 +152,7 @@ function CreatorDashboard() {
   const [galleryAdded, setGalleryAdded] = useState<Map<string, string>>(new Map());
   const [settingCover, setSettingCover] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [qrTemplateId, setQrTemplateId] = useState<string | null>(null);
   const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
   const [showCollageEditor, setShowCollageEditor] = useState(false);
   const [storefrontOpen, setStorefrontOpen] = useState(false);
@@ -155,18 +160,30 @@ function CreatorDashboard() {
   const [storefrontFont, setStorefrontFont] = useState("default");
   const [storefrontSaving, setStorefrontSaving] = useState(false);
   const [storefrontSaved, setStorefrontSaved] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "saving" | "saved">("idle");
+  const [usernameMsg, setUsernameMsg] = useState("");
+  const usernameCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const showcaseIdInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = useCallback(async () => {
-    const res = await fetch("/api/creator-dashboard");
-    if (res.status === 401) { router.push("/login?redirect=/creator-dashboard"); return; }
-    if (res.status === 404) { router.push("/become-creator"); return; }
-    if (!res.ok) return;
-    const d = await res.json();
-    setCreator(d.creator);
-    setTemplates(d.templates ?? []);
-    setStats(d.stats);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/creator-dashboard");
+      if (res.status === 401) { router.push("/login?redirect=/creator-dashboard"); return; }
+      if (res.status === 404) { router.push("/become-creator"); return; }
+      if (!res.ok) { setLoadError(true); setLoading(false); return; }
+      const d = await res.json();
+      setCreator(d.creator);
+      setUsernameInput(d.creator.username ?? "");
+      setTemplates(d.templates ?? []);
+      setStats(d.stats);
+      setLoading(false);
+      Analytics.creatorDashboard();
+    } catch {
+      setLoadError(true);
+      setLoading(false);
+    }
   }, [router]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
@@ -658,6 +675,42 @@ function CreatorDashboard() {
     loadDashboard();
   };
 
+  const handleUsernameChange = (val: string) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    setUsernameInput(clean);
+    setUsernameStatus("idle");
+    setUsernameMsg("");
+    if (usernameCheckRef.current) clearTimeout(usernameCheckRef.current);
+    if (!clean || clean === creator?.username) return;
+    if (clean.length < 3) { setUsernameStatus("invalid"); setUsernameMsg("At least 3 characters"); return; }
+    setUsernameStatus("checking");
+    usernameCheckRef.current = setTimeout(async () => {
+      const r = await fetch(`/api/creators/check-username?q=${encodeURIComponent(clean)}`);
+      const d = await r.json();
+      if (d.available) { setUsernameStatus("available"); setUsernameMsg("Available"); }
+      else { setUsernameStatus("taken"); setUsernameMsg(d.reason ?? "Already taken"); }
+    }, 500);
+  };
+
+  const saveUsername = async () => {
+    if (usernameStatus !== "available") return;
+    setUsernameStatus("saving");
+    const r = await fetch("/api/creator-dashboard/username", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usernameInput }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      setCreator(c => c ? { ...c, username: d.username } : c);
+      setUsernameStatus("saved");
+      setUsernameMsg(`aluxartandframes.shop/creators/${d.username}`);
+    } else {
+      setUsernameStatus("taken");
+      setUsernameMsg(d.error ?? "Could not save");
+    }
+  };
+
   const saveStorefront = async () => {
     setStorefrontSaving(true);
     await fetch("/api/creator/storefront", {
@@ -688,6 +741,60 @@ function CreatorDashboard() {
   };
 
   if (loading) return <div className={styles.loading}>Loading dashboard...</div>;
+  if (loadError) return (
+    <div className={styles.loading} style={{ flexDirection: "column", gap: 12 }}>
+      <p style={{ margin: 0, fontWeight: 600 }}>Failed to load dashboard</p>
+      <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>Check your connection and try again.</p>
+      <button onClick={() => { setLoadError(false); setLoading(true); loadDashboard(); }} style={{ marginTop: 8, padding: "8px 20px", borderRadius: 8, border: "none", background: "#2f8e9a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Retry</button>
+    </div>
+  );
+
+  if (creator?.status === "pending") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
+          <h1 className={styles.title}>Creator Dashboard</h1>
+        </header>
+        <div className={styles.main}>
+          <div style={{ maxWidth: 520, margin: "60px auto", textAlign: "center", padding: "0 24px" }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(213, 163, 60, 0.12)", border: "2px solid rgba(213, 163, 60, 0.4)", color: "#8a6000", fontSize: "1.4rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>⏳</div>
+            <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#263235", margin: "0 0 12px" }}>Application under review</h2>
+            <p style={{ fontSize: "0.875rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 24px" }}>
+              Your creator application has been received. We review every application carefully and aim to respond within 48 hours. You&apos;ll receive an email once a decision has been made.
+            </p>
+            <Link href="/marketplace" style={{ display: "inline-block", background: "rgba(67, 159, 169, 0.08)", border: "1px solid rgba(67, 159, 169, 0.24)", borderRadius: 8, color: "#2f8e9a", fontSize: "0.875rem", fontWeight: 600, padding: "10px 20px", textDecoration: "none" }}>
+              Browse the marketplace →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (creator?.status === "declined") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
+          <h1 className={styles.title}>Creator Dashboard</h1>
+        </header>
+        <div className={styles.main}>
+          <div style={{ maxWidth: 520, margin: "60px auto", textAlign: "center", padding: "0 24px" }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(167, 70, 60, 0.08)", border: "2px solid rgba(167, 70, 60, 0.3)", color: "#a7463c", fontSize: "1.2rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>✕</div>
+            <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#263235", margin: "0 0 12px" }}>Application not approved</h2>
+            <p style={{ fontSize: "0.875rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 24px" }}>
+              Unfortunately your creator application was not approved at this time. If you believe this is a mistake or would like to discuss further, please reach out to us at{" "}
+              <a href="mailto:aluxartandframes@gmail.com" style={{ color: "#2f8e9a" }}>aluxartandframes@gmail.com</a>.
+            </p>
+            <Link href="/marketplace" style={{ display: "inline-block", background: "rgba(67, 159, 169, 0.08)", border: "1px solid rgba(67, 159, 169, 0.24)", borderRadius: 8, color: "#2f8e9a", fontSize: "0.875rem", fontWeight: 600, padding: "10px 20px", textDecoration: "none" }}>
+              Browse the marketplace →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -714,6 +821,76 @@ function CreatorDashboard() {
           <div className={styles.stat}><span className={styles.statVal}>₦{stats.totalEarnedNgn.toLocaleString()}</span><span className={styles.statLabel}>Total Earned</span></div>
         </div>
       )}
+
+      {/* Username / profile URL */}
+      <div className={styles.storefrontSection}>
+        <button type="button" className={styles.storefrontToggle} onClick={() => {}}>
+          <span>Your Profile URL</span>
+        </button>
+        <div className={styles.storefrontContent}>
+          <div className={styles.storefrontGroup}>
+            <span className={styles.label}>Custom username</span>
+            <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 10px" }}>
+              {creator?.username
+                ? <>Your link: <strong>aluxartandframes.shop/creators/{creator.username}</strong></>
+                : "Set a username so people can find you at a clean URL."}
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ position: "relative", flex: 1 }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#7aafb4", fontSize: "0.85rem", pointerEvents: "none" }}>@</span>
+                <input
+                  value={usernameInput}
+                  onChange={e => handleUsernameChange(e.target.value)}
+                  placeholder="yourname"
+                  maxLength={30}
+                  style={{
+                    width: "100%",
+                    paddingLeft: 28,
+                    paddingRight: 12,
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                    borderRadius: 8,
+                    border: `1px solid ${usernameStatus === "available" ? "#2f8e9a" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#a7463c" : "rgba(67,159,169,0.28)"}`,
+                    background: "rgba(255,255,255,0.78)",
+                    fontSize: "0.9rem",
+                    fontFamily: "inherit",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={saveUsername}
+                disabled={usernameStatus !== "available"}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(67,159,169,0.3)",
+                  background: usernameStatus === "available" ? "#2f8e9a" : "rgba(255,255,255,0.6)",
+                  color: usernameStatus === "available" ? "#fff" : "#7aafb4",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  cursor: usernameStatus === "available" ? "pointer" : "not-allowed",
+                  whiteSpace: "nowrap",
+                  fontFamily: "inherit",
+                }}
+              >
+                {usernameStatus === "saving" ? "Saving..." : usernameStatus === "saved" ? "Saved!" : "Save"}
+              </button>
+            </div>
+            {usernameMsg && (
+              <p style={{
+                fontSize: "0.78rem",
+                marginTop: 6,
+                color: usernameStatus === "available" || usernameStatus === "saved" ? "#177767" : usernameStatus === "checking" ? "#7aafb4" : "#a7463c",
+              }}>
+                {usernameStatus === "checking" ? "Checking..." : usernameMsg}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Storefront settings */}
       <div className={styles.storefrontSection}>
@@ -762,7 +939,7 @@ function CreatorDashboard() {
             <div className={styles.storefrontActions}>
               {creator && (
                 <a
-                  href={`/creators/${creator.id}`}
+                  href={`/creators/${creator.username ?? creator.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.storefrontPreviewLink}
@@ -808,19 +985,51 @@ function CreatorDashboard() {
               <span className={styles.templateSales}>{t.purchase_count} sales</span>
               <span className={t.status === "published" ? styles.published : styles.draft}>{t.status}</span>
               <div className={styles.templateActions}>
-                <button type="button" className={styles.actionBtn} onClick={() => openEdit(t)}>
-                  Edit
-                </button>
-                <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}>
-                  {t.status === "published" ? "Unpublish" : "Publish"}
-                </button>
-                <button type="button" className={`${styles.actionBtn} ${styles.actionBtnShowcase}`} onClick={() => openShowcase(t.id)}>
-                  Generate images
-                </button>
-                <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)}>Delete</button>
-                <button type="button" className={styles.actionBtn} onClick={() => copyLink(t.id)}>
-                  {copiedId === t.id ? "Copied!" : "Copy link"}
-                </button>
+                {/* Primary row — Edit + Generate Images */}
+                <div className={styles.actPrimary}>
+                  <button type="button" className={styles.actionBtn} onClick={() => openEdit(t)}>
+                    Edit
+                  </button>
+                  <button type="button" className={`${styles.actionBtn} ${styles.actionBtnShowcase}`} onClick={() => openShowcase(t.id)}>
+                    Generate images
+                  </button>
+                </div>
+                {/* Secondary row — icon-only on mobile */}
+                <div className={styles.actSecondary}>
+                  <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}
+                    title={t.status === "published" ? "Unpublish" : "Publish"}>
+                    <span className={styles.btnText}>{t.status === "published" ? "Unpublish" : "Publish"}</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {t.status === "published"
+                        ? <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" />
+                        : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
+                    </svg>
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)} title="Delete">
+                    <span className={styles.btnText}>Delete</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                    </svg>
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={() => copyLink(t.id)} title="Copy link">
+                    <span className={styles.btnText}>{copiedId === t.id ? "Copied!" : "Copy link"}</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                    </svg>
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={() => setQrTemplateId(t.id)} title="QR Code">
+                    <span className={styles.btnText}>QR Code</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                      <rect x="18" y="14" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                      <rect x="14" y="18" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                      <rect x="18" y="18" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -930,7 +1139,7 @@ function CreatorDashboard() {
                   {images.map((img, i) => (
                     <div key={img.localId} className={styles.imgItem}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.preview} alt="" className={styles.imgPreview} />
+                      <ImagePreview src={img.preview} alt="" className={styles.imgPreview} />
                       {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                       {img.error && <div className={styles.imgError}>{img.error}</div>}
                       {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
@@ -960,7 +1169,7 @@ function CreatorDashboard() {
                           return (
                             <div key={img.localId} className={styles.imgItem}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={img.preview} alt="" className={styles.imgPreview} />
+                              <ImagePreview src={img.preview} alt="" className={styles.imgPreview} />
                               {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                               {img.error && <div className={styles.imgError}>{img.error}</div>}
                               {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
@@ -1023,7 +1232,7 @@ function CreatorDashboard() {
                         title="Click to replace image"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.preview} alt="" className={styles.taggedRefThumb} />
+                        <ImagePreview src={img.preview} alt="" className={styles.taggedRefThumb} />
                         <span className={styles.taggedRefReplaceOverlay}>Replace</span>
                       </button>
                       <div className={styles.taggedRefRight}>
@@ -1109,7 +1318,7 @@ function CreatorDashboard() {
                 <div key={item.localId} className={styles.imgItem}>
                   {idx === 0 && <div className={styles.imgDbBadge} style={{ background: "var(--accent, #2d9)" }}>cover</div>}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.preview} alt="" className={styles.imgPreview} />
+                  <ImagePreview src={item.preview} alt="" className={styles.imgPreview} />
                   {item.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                   {item.error && <div className={styles.imgError}>{item.error}</div>}
                   {item.fromDb && idx !== 0 && <div className={styles.imgDbBadge}>saved</div>}
@@ -1177,7 +1386,7 @@ function CreatorDashboard() {
             <div className={styles.imagesGrid}>
               {showcaseIdentityRefs.map(ref => (
                 <div key={ref.localId} className={styles.imgItem}>
-                  <img src={ref.preview} alt="" className={styles.imgPreview} />
+                  <ImagePreview src={ref.preview} alt="" className={styles.imgPreview} />
                   {ref.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                   {ref.error && <div className={styles.imgError}>{ref.error}</div>}
                   <button type="button" className={styles.imgRemove} onClick={() => setShowcaseIdentityRefs(prev => prev.filter(r => r.localId !== ref.localId))}>✕</button>
@@ -1244,7 +1453,7 @@ function CreatorDashboard() {
                     {(shoot.shoot_images ?? []).filter(img => img.status === "COMPLETE").map(img => (
                       <div key={img.id} className={styles.showcaseImageItem}>
                         {img.preview_url
-                          ? <img src={img.preview_url} alt={`Slot ${img.slot}`} className={styles.showcaseImg} />
+                          ? <ImagePreview src={img.preview_url} alt={`Slot ${img.slot}`} className={styles.showcaseImg} />
                           : <div className={styles.showcaseImgPlaceholder}>Image ready</div>
                         }
                         <div className={styles.showcaseImageActions}>
@@ -1290,6 +1499,27 @@ function CreatorDashboard() {
       </div>
 
       {/* Collage cover editor modal */}
+      {qrTemplateId && (() => {
+        const t = templates.find(x => x.id === qrTemplateId);
+        if (!t) return null;
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 200, overflowY: "auto" }}
+            onClick={() => setQrTemplateId(null)}>
+            <div onClick={e => e.stopPropagation()}>
+              <TemplateShareCard
+                templateUrl={`https://aluxartandframes.shop/marketplace/${t.id}`}
+                creatorUsername={creator?.display_name ?? "AluxArt"}
+                coverUrl={t.cover_url ?? null}
+                includeCover={true}
+                onClose={() => setQrTemplateId(null)}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       {showCollageEditor && (
         <CollageEditor
           templateId={panel === "create" ? "" : panel}

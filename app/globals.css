@@ -5,3 +5,16 @@ html, body {
   max-width: 100%;
   width: 100%;
 }
+
+/* Prevent 300ms tap delay on older iOS; remove grey tap flash */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent iOS from zooming into focused inputs (font-size < 16px triggers zoom) */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}

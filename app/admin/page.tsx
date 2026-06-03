@@ -20,10 +20,12 @@ interface Coupon {
 interface AdminCreator {
   id: string;
   display_name: string;
+  email: string | null;
   bank_name: string | null;
   account_name: string | null;
   paystack_subaccount_code: string | null;
   is_active: boolean;
+  status: string | null;
   templateCount: number;
   created_at: string;
 }
@@ -66,6 +68,17 @@ interface ShootDebug {
   slots: Array<{ slot: number; kind: string; status: string; prompt: string | null }>;
 }
 
+interface ErrorGroup {
+  type: string;
+  message: string;
+  source: string | null;
+  count: number;
+  last_seen: string;
+  first_seen: string;
+  pages: string[] | null;
+  resolved?: boolean;
+}
+
 interface ModelConfig {
   vision_model: "gemini" | "claude";
   generation_model: "nano-banana" | "seedream";
@@ -79,6 +92,7 @@ interface ModelConfig {
   price_5_usd: number;
   price_10_usd: number;
   prompt_only_mode: boolean;
+  admin_prompt_only_mode: boolean;
   polish_pass_enabled: boolean;
 }
 
@@ -101,13 +115,18 @@ function dateBucket(iso: string): string {
   d.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (d.getTime() === today.getTime()) return "Today";
-  if (d.getTime() === yesterday.getTime()) return "Yesterday";
-  const diff = Math.floor((today.getTime() - d.getTime()) / 86400000);
-  if (diff < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const diffDays = Math.floor((today.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  // Start of current week (Monday)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  // Start of last week
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(weekStart.getDate() - 7);
+  if (d >= weekStart) return "This week";
+  if (d >= lastWeekStart) return "Last week";
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 function groupShootsByDate(shoots: ShootRow[]): { label: string; items: ShootRow[] }[] {
@@ -155,6 +174,25 @@ const PENDING_MIGRATIONS = [
     sql: "ALTER TABLE creators ADD COLUMN IF NOT EXISTS font_family text DEFAULT 'default';",
     check: null,
   },
+  {
+    id: "024",
+    name: "error_logs table",
+    sql: `CREATE TABLE IF NOT EXISTS error_logs (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type         TEXT NOT NULL DEFAULT 'js_error',
+  message      TEXT NOT NULL,
+  source       TEXT,
+  line_number  INTEGER,
+  page_path    TEXT,
+  http_status  INTEGER,
+  user_agent   TEXT,
+  resolved     BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS error_logs_created_idx ON error_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS error_logs_resolved_idx ON error_logs (resolved);`,
+    check: null,
+  },
 ];
 
 const MIGRATION_SQL = PENDING_MIGRATIONS.map(m => m.sql).join("\n");
@@ -190,11 +228,11 @@ function MigrationsCard() {
         </div>
       </div>
       <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "8px 0 12px" }}>
-        These columns must be added to Supabase before themes and custom reference names work.
-        Copy the SQL below and run it in the{" "}
-        <a href={SUPABASE_SQL_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#2f8e9a" }}>
-          Supabase SQL editor ↗
-        </a>
+        These must be applied to your VPS PostgreSQL database. Copy the SQL and run it on the VPS:
+        <br />
+        <code style={{ fontSize: "0.72rem", color: "#4e7076", background: "rgba(0,0,0,0.2)", padding: "2px 6px", borderRadius: 4 }}>
+          node --env-file=/home/aluxart/app/.env.local /home/aluxart/app/scripts/migrate-vps.mjs
+        </code>
       </p>
       <pre style={{
         background: "rgba(0,0,0,0.06)", borderRadius: 8, padding: "12px 14px",
@@ -204,14 +242,145 @@ function MigrationsCard() {
       <button className={styles.banBtn} onClick={copy} style={{ marginRight: 8 }}>
         {copied ? "Copied!" : "Copy SQL"}
       </button>
-      <a href={SUPABASE_SQL_URL} target="_blank" rel="noopener noreferrer" className={styles.banBtn}
-        style={{ textDecoration: "none", display: "inline-block" }}>
-        Open SQL editor ↗
-      </a>
     </div>
   );
 }
 
+
+function ErrorsPanel() {
+  const [errors, setErrors] = useState<ErrorGroup[]>([]);
+  const [total, setTotal] = useState(0);
+  const [filter, setFilter] = useState<"unresolved" | "all" | "resolved">("unresolved");
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyForClaude = () => {
+    if (errors.length === 0) return;
+    const lines = [
+      `Fix these errors from the Alux Art admin error log (${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}):`,
+      "",
+      ...errors.map((g, i) => {
+        const badge = g.type === "api_error" ? "API" : "JS";
+        const pages = g.pages?.slice(0, 3).join(", ") ?? "";
+        const parts = [
+          `${i + 1}. [${badge}] ${g.count}× — last seen ${timeAgo(g.last_seen)}`,
+          `   Message: ${g.message}`,
+        ];
+        if (g.source) parts.push(`   Source: ${g.source}`);
+        if (pages)    parts.push(`   Pages: ${pages}`);
+        return parts.join("\n");
+      }),
+    ];
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/admin/errors?filter=${filter}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d) return;
+        setErrors(d.errors ?? []);
+        setTotal(d.total_unresolved ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [filter, refreshKey]);
+
+  const resolve = async (group: ErrorGroup) => {
+    const key = `${group.type}:${group.message}:${group.source ?? ""}`;
+    setResolving(key);
+    try {
+      await fetch("/api/admin/errors", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: group.type, message: group.message, source: group.source }),
+      });
+      setRefreshKey(k => k + 1);
+    } finally {
+      setResolving(null);
+    }
+  };
+
+  return (
+    <div className={styles.card}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+        <h2 className={styles.cardTitle} style={{ margin: 0 }}>
+          Error Log
+          {total > 0 && (
+            <span style={{ marginLeft: 8, background: "rgba(255,70,70,0.15)", color: "#ff6b6b", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 12 }}>
+              {total} unresolved
+            </span>
+          )}
+        </h2>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div className={styles.filterTabs}>
+            {(["unresolved", "all", "resolved"] as const).map(f => (
+              <button key={f} className={`${styles.filterTab} ${filter === f ? styles.filterTabActive : ""}`}
+                onClick={() => setFilter(f)}>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button className={styles.banBtn} onClick={() => setRefreshKey(k => k + 1)} disabled={loading} style={{ marginLeft: 4 }}>
+            {loading ? "…" : "↺"}
+          </button>
+          {errors.length > 0 && (
+            <button className={styles.banBtn} onClick={copyForClaude}
+              style={{ borderColor: copied ? "rgba(68,204,136,0.4)" : undefined, color: copied ? "#44cc88" : undefined }}>
+              {copied ? "Copied!" : "Copy for Claude"}
+            </button>
+          )}
+        </div>
+      </div>
+      {loading && errors.length === 0 ? (
+        <p className={styles.empty}>Loading…</p>
+      ) : errors.length === 0 ? (
+        <p className={styles.empty}>
+          {filter === "unresolved" ? "No unresolved errors — all clear." : "No errors found."}
+        </p>
+      ) : (
+        <div>
+          {errors.map((group) => {
+            const key = `${group.type}:${group.message}:${group.source ?? ""}`;
+            return (
+              <div key={key} className={styles.errorRow}>
+                <div className={styles.errorLeft}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span className={group.type === "api_error" ? styles.errorBadgeApi : styles.errorBadgeJs}>
+                      {group.type === "api_error" ? "API" : "JS"}
+                    </span>
+                    <span className={styles.errorCount}>{group.count}×</span>
+                    <span className={styles.errorTime}>{timeAgo(group.last_seen)}</span>
+                    {group.resolved && <span style={{ fontSize: "0.65rem", color: "#44cc88" }}>resolved</span>}
+                  </div>
+                  <p className={styles.errorMessage}>{group.message}</p>
+                  {group.source && <p className={styles.errorSource}>{group.source}</p>}
+                  {group.pages && group.pages.length > 0 && (
+                    <p className={styles.errorPages}>{group.pages.slice(0, 3).join(" · ")}</p>
+                  )}
+                </div>
+                {filter !== "resolved" && (
+                  <button className={styles.banBtn} style={{ flexShrink: 0, alignSelf: "flex-start" }}
+                    onClick={() => resolve(group)} disabled={resolving === key}>
+                    {resolving === key ? "…" : "Resolve"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
@@ -223,7 +392,7 @@ export default function AdminPage() {
     platform_fee_ngn: 15000,
     price_1_ngn: 1500, price_5_ngn: 7500, price_10_ngn: 15000,
     price_1_usd: 1, price_5_usd: 5, price_10_usd: 10,
-    prompt_only_mode: false, polish_pass_enabled: false,
+    prompt_only_mode: false, admin_prompt_only_mode: false, polish_pass_enabled: false,
   });
   const [rolloutInput, setRolloutInput] = useState("100");
   const [platformFeeInput, setPlatformFeeInput] = useState("15000");
@@ -238,6 +407,8 @@ export default function AdminPage() {
 
   const [expandedShootId, setExpandedShootId] = useState<string | null>(null);
   const [shootDebug, setShootDebug] = useState<Record<string, ShootDebug | "loading" | "error">>({});
+  const [restartingId, setRestartingId] = useState<string | null>(null);
+  const [restartMsg, setRestartMsg] = useState<Record<string, string>>({});
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponCode, setCouponCode] = useState("");
@@ -286,6 +457,31 @@ export default function AdminPage() {
       .then(d => { if (d?.creators) setAdminCreators(d.creators); })
       .catch(() => {});
   }, []);
+
+  const restartShoot = async (shootId: string) => {
+    setRestartingId(shootId);
+    setRestartMsg(prev => ({ ...prev, [shootId]: "" }));
+    try {
+      const res = await fetch(`/api/shoots/${shootId}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolution: "4K" }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? "Error");
+      setRestartMsg(prev => ({ ...prev, [shootId]: `Started — status: ${d.status ?? "processing"}` }));
+      setTimeout(() => {
+        fetch("/api/admin/overview")
+          .then(r => r.json())
+          .then(d => setData(d))
+          .catch(() => {});
+      }, 2500);
+    } catch (e) {
+      setRestartMsg(prev => ({ ...prev, [shootId]: e instanceof Error ? e.message : "Error" }));
+    } finally {
+      setRestartingId(null);
+    }
+  };
 
   const loadShootDebug = async (id: string) => {
     if (expandedShootId === id) { setExpandedShootId(null); return; }
@@ -361,6 +557,27 @@ export default function AdminPage() {
       body: JSON.stringify({ id, isActive: !isActive }),
     });
     setAdminCreators(prev => prev.map(c => c.id === id ? { ...c, is_active: !isActive } : c));
+  };
+
+  const approveCreator = async (id: string) => {
+    const res = await fetch("/api/admin/creators", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "approve" }),
+    });
+    if (res.ok) {
+      setAdminCreators(prev => prev.map(c => c.id === id ? { ...c, is_active: true, status: "approved" } : c));
+    }
+  };
+
+  const declineCreator = async (id: string) => {
+    if (!confirm("Decline this application? The creator will be notified.")) return;
+    const res = await fetch("/api/admin/creators", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "decline" }),
+    });
+    if (res.ok) {
+      setAdminCreators(prev => prev.map(c => c.id === id ? { ...c, is_active: false, status: "declined" } : c));
+    }
   };
 
   const toggleBan = async (userId: string, banned: boolean) => {
@@ -529,7 +746,20 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
-            <div className={styles.modelHint}>{modelConfig.prompt_only_mode ? "ON — prompts are generated and saved but fal.ai calls are skipped. Use Template Lab to generate images later." : "OFF — normal generation pipeline with fal.ai."}</div>
+            <div className={styles.modelHint}>{modelConfig.prompt_only_mode ? "ON — prompts are generated and saved but fal.ai calls are skipped. Affects every user." : "OFF — normal generation pipeline with fal.ai."}</div>
+          </div>
+          <div className={styles.modelSection}>
+            <div className={styles.modelLabel}>Admin Prompt-Only <span style={{ background: "rgba(201,169,110,0.12)", color: "#c9a96e", fontSize: "0.6rem", padding: "1px 6px", borderRadius: 4, marginLeft: 6, letterSpacing: "0.04em" }}>ADMIN ONLY</span></div>
+            <div className={styles.modelPills}>
+              {([false, true] as const).map(val => (
+                <button key={String(val)} type="button"
+                  className={`${styles.modelPill} ${modelConfig.admin_prompt_only_mode === val ? styles.modelPillActive : ""}`}
+                  onClick={() => saveModelConfig({ admin_prompt_only_mode: val })} disabled={modelSaving}>
+                  {val ? "Enabled" : "Disabled"}
+                </button>
+              ))}
+            </div>
+            <div className={styles.modelHint}>{modelConfig.admin_prompt_only_mode ? "ON — your own shoots stop at the prompt stage. Copy the prompt and use it elsewhere. Other users generate normally." : "OFF — your shoots go to fal.ai like everyone else."}</div>
           </div>
           <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Polish Pass (Z-Image Turbo)</div>
@@ -611,6 +841,23 @@ export default function AdminPage() {
                   </div>
                   {isExpanded && (
                     <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "14px 16px", margin: "2px 0 6px", fontSize: "0.78rem" }}>
+                      {s.status !== "COMPLETE" && (
+                        <div style={{ marginBottom: 14, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                          <button
+                            className={styles.banBtn}
+                            style={{ background: "rgba(47,142,154,0.12)", borderColor: "rgba(47,142,154,0.4)", color: "#2f8e9a", fontWeight: 600 }}
+                            onClick={(e) => { e.stopPropagation(); restartShoot(s.id); }}
+                            disabled={restartingId === s.id}
+                          >
+                            {restartingId === s.id ? "Restarting…" : "Restart generation"}
+                          </button>
+                          {restartMsg[s.id] && (
+                            <span style={{ fontSize: "0.74rem", color: restartMsg[s.id].startsWith("Started") ? "#177767" : "#b94a4a" }}>
+                              {restartMsg[s.id]}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {debug === "loading" && <span style={{ color: "#7aafb4" }}>Loading…</span>}
                       {debug === "error" && <span style={{ color: "#b94a4a" }}>Failed to load debug data.</span>}
                       {debug && debug !== "loading" && debug !== "error" && (
@@ -686,12 +933,15 @@ export default function AdminPage() {
       {/* ---- Coupons ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Coupon Codes</h2>
+        <p style={{ fontSize: "0.78rem", color: "#4e7076", margin: "0 0 12px" }}>
+          Discounts come entirely from Alux Art&apos;s earnings. Creator payouts are never reduced.
+        </p>
         <div className={styles.couponForm}>
           <input className={styles.priceInput} style={{ width: 110 }} placeholder="CODE" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} maxLength={20} />
           <input className={styles.priceInput} style={{ width: 180 }} placeholder="Description" value={couponDesc} onChange={e => setCouponDesc(e.target.value)} />
           <select className={`${styles.priceInput} ${styles.selectInput}`} value={couponType} onChange={e => setCouponType(e.target.value as "percent" | "fixed")}>
-            <option value="percent">% off platform fee</option>
-            <option value="fixed">₦ off platform fee</option>
+            <option value="percent">% off (Alux Art absorbs)</option>
+            <option value="fixed">₦ off (Alux Art absorbs)</option>
           </select>
           <input className={styles.priceInput} style={{ width: 70 }} type="number" placeholder={couponType === "percent" ? "%" : "₦"} value={couponValue} onChange={e => setCouponValue(e.target.value)} min={1} max={couponType === "percent" ? 100 : undefined} />
           <input className={styles.priceInput} style={{ width: 80 }} type="number" placeholder="Max uses" value={couponMaxUses} onChange={e => setCouponMaxUses(e.target.value)} />
@@ -705,7 +955,7 @@ export default function AdminPage() {
             {coupons.map(c => (
               <tr key={c.id}>
                 <td className={styles.mono}>{c.code}</td>
-                <td>{c.discount_type === "percent" ? `${c.discount_value}% off fee` : `₦${c.discount_value.toLocaleString()} off fee`}</td>
+                <td>{c.discount_type === "percent" ? `${c.discount_value}% discount` : `₦${c.discount_value.toLocaleString()} discount`}</td>
                 <td>{c.use_count}{c.max_uses ? ` / ${c.max_uses}` : ""}</td>
                 <td>{c.expires_at ? new Date(c.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—"}</td>
                 <td><span className={c.is_active ? styles.activeBadge : styles.bannedBadge}>{c.is_active ? "Active" : "Off"}</span></td>
@@ -719,15 +969,19 @@ export default function AdminPage() {
         </table>
       </div>
 
+      {/* ---- Error log ---- */}
+      <ErrorsPanel />
+
       {/* ---- Pending migrations ---- */}
       <MigrationsCard />
 
       {/* ---- Shoot Package Pricing ---- */}
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Shoot Package Pricing</h2>
+        <h2 className={styles.cardTitle}>Pricing & Commission</h2>
         <p style={{ fontSize: "0.8rem", color: "#7aafb4", margin: "0 0 16px" }}>
-          Prices are used at checkout. Changes reflect immediately on the studio page.
+          Used when customers book directly from the studio page. Each creator&apos;s template on the marketplace has its own price set by the creator.
         </p>
+        <p style={{ fontSize: "0.75rem", color: "#4e7076", margin: "0 0 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Direct Studio Prices</p>
         <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "10px 16px", alignItems: "center", maxWidth: 480 }}>
           <div style={{ fontSize: "0.75rem", color: "#7aafb4" }}></div>
           <div style={{ fontSize: "0.75rem", color: "#7aafb4", textAlign: "center" }}>NGN (₦)</div>
@@ -748,12 +1002,7 @@ export default function AdminPage() {
           <input className={styles.priceInput} type="number" min={5} step={0.5} value={price10UsdInput}
             onChange={e => setPrice10UsdInput(e.target.value)} style={{ width: "100%" }} />
         </div>
-        <div style={{ marginTop: 16, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "#4e7076" }}>
-            Marketplace commission fee (₦)
-            <input className={styles.priceInput} type="number" min={1000} step={500} value={platformFeeInput}
-              onChange={e => setPlatformFeeInput(e.target.value)} style={{ width: 140 }} />
-          </label>
+        <div style={{ marginTop: 20, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
           <button type="button" className={styles.saveBtn} disabled={modelSaving}
             onClick={() => saveModelConfig({
               price_1_ngn: Number(price1NgnInput),
@@ -763,13 +1012,52 @@ export default function AdminPage() {
               price_5_usd: Number(price5UsdInput),
               price_10_usd: Number(price10UsdInput),
               platform_fee_ngn: Number(platformFeeInput),
-            })}
-            style={{ alignSelf: "flex-end" }}>
+            })}>
             {modelSaving ? "Saving…" : "Save prices"}
           </button>
           {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}
         </div>
       </div>
+
+      {/* ---- Pending Creator Applications ---- */}
+      {(() => {
+        const pending = adminCreators.filter(c => c.status === "pending");
+        return (
+          <div className={styles.card} style={{ border: `1px solid ${pending.length > 0 ? "rgba(213, 163, 60, 0.32)" : "rgba(255,255,255,0.06)"}`, background: pending.length > 0 ? "rgba(255, 248, 220, 0.6)" : undefined }}>
+            <h2 className={styles.cardTitle}>
+              Pending Creator Applications
+              <span style={{ marginLeft: 8, background: pending.length > 0 ? "rgba(213, 163, 60, 0.2)" : "rgba(255,255,255,0.08)", color: pending.length > 0 ? "#8a6000" : "rgba(255,255,255,0.3)", fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 12 }}>
+                {pending.length}
+              </span>
+            </h2>
+            <p style={{ fontSize: "0.8rem", color: pending.length > 0 ? "#7a6030" : "rgba(255,255,255,0.3)", margin: "0 0 14px" }}>
+              {pending.length > 0
+                ? "Review each application and approve or decline. Approved creators receive a welcome email and can log in to their dashboard."
+                : "No pending applications right now."}
+            </p>
+            {pending.length > 0 && (
+              <table className={styles.table}>
+                <thead><tr><th>Name</th><th>Email</th><th>Bank</th><th>Subaccount</th><th>Applied</th><th></th></tr></thead>
+                <tbody>
+                  {pending.map(c => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 600 }}>{c.display_name}</td>
+                      <td className={styles.mono} style={{ fontSize: "0.76rem" }}>{c.email ?? "—"}</td>
+                      <td>{c.bank_name ?? "—"}{c.account_name ? ` · ${c.account_name}` : ""}</td>
+                      <td className={styles.mono}>{c.paystack_subaccount_code ? c.paystack_subaccount_code.slice(0, 18) + "…" : "Not set"}</td>
+                      <td>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
+                      <td style={{ display: "flex", gap: 6 }}>
+                        <button className={styles.banBtn} style={{ color: "#177767", borderColor: "rgba(23, 119, 103, 0.4)" }} onClick={() => approveCreator(c.id)}>Approve</button>
+                        <button className={styles.banBtn} onClick={() => declineCreator(c.id)}>Decline</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ---- Creators ---- */}
       <div className={styles.card}>
@@ -777,14 +1065,18 @@ export default function AdminPage() {
         <table className={styles.table}>
           <thead><tr><th>Name</th><th>Bank</th><th>Subaccount</th><th>Templates</th><th>Joined</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {adminCreators.map(c => (
+            {adminCreators.filter(c => c.status !== "pending").map(c => (
               <tr key={c.id}>
                 <td>{c.display_name}</td>
                 <td>{c.bank_name ?? "—"}{c.account_name ? ` · ${c.account_name}` : ""}</td>
                 <td className={styles.mono}>{c.paystack_subaccount_code ? c.paystack_subaccount_code.slice(0, 18) + "…" : "Not set"}</td>
                 <td>{c.templateCount}</td>
                 <td>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
-                <td><span className={c.is_active ? styles.activeBadge : styles.bannedBadge}>{c.is_active ? "Active" : "Suspended"}</span></td>
+                <td>
+                  <span className={c.is_active ? styles.activeBadge : styles.bannedBadge}>
+                    {c.status === "declined" ? "Declined" : c.is_active ? "Active" : "Suspended"}
+                  </span>
+                </td>
                 <td><button className={styles.banBtn} onClick={() => toggleCreator(c.id, c.is_active)}>{c.is_active ? "Suspend" : "Activate"}</button></td>
               </tr>
             ))}

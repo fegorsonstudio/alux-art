@@ -1,0 +1,415 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - paragraph: Upcoming maintenance
+                    - generic:
+                      - generic: ·
+                      - generic:
+                        - text: Shared pooler maintenance in
+                        - link:
+                          - /url: https://status.supabase.com/incidents/3t293hpd545z
+                          - text: eu-west-1
+                        - text: on 01 Jun, 14:00.
+                - button:
+                  - generic:
+                    - img
+        - generic:
+          - banner:
+            - generic:
+              - generic:
+                - link:
+                  - /url: /dashboard/org/xkyyjcklveqysuewphva
+                  - img
+                - generic:
+                  - generic:
+                    - img
+                  - generic:
+                    - link:
+                      - /url: /dashboard/org/xkyyjcklveqysuewphva
+                      - img
+                      - generic: fegorsonphotography@gmail.com's Org
+                      - generic: Pro
+                    - button:
+                      - generic:
+                        - img
+                  - generic:
+                    - generic:
+                      - img
+                    - generic:
+                      - link:
+                        - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                        - img
+                        - generic: Aluxart
+                      - button:
+                        - generic:
+                          - img
+                    - generic:
+                      - img
+                    - generic:
+                      - link:
+                        - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                        - generic: main
+                        - generic: Production
+                      - button:
+                        - generic:
+                          - img
+                - generic:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Connect
+              - generic:
+                - generic:
+                  - generic: Feedback
+                - generic:
+                  - button:
+                    - generic:
+                      - img
+                      - paragraph: Search...
+                    - generic:
+                      - generic: Ctrl K
+                  - button [ref=e578] [cursor=pointer]:
+                    - generic [ref=e272]:
+                      - img [ref=e273]
+                      - generic [ref=e276]: Help
+                  - button [ref=e579] [cursor=pointer]:
+                    - generic [ref=e279]:
+                      - img [ref=e280]
+                      - generic [ref=e282]: Advisor Center
+                  - button [ref=e580] [cursor=pointer]:
+                    - generic [ref=e285]:
+                      - img [ref=e286]
+                      - generic [ref=e288]: SQL Editor
+                  - button [ref=e581] [cursor=pointer]:
+                    - generic [ref=e290]:
+                      - img [ref=e293]
+                      - generic [ref=e296]: AI Assistant
+                - button [ref=e297] [cursor=pointer]:
+                  - figure [ref=e299]:
+                    - img [ref=e300]
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - list:
+                      - generic:
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/editor
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/sql
+                            - img
+                      - generic:
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/database/schemas
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/auth/users
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/storage/files
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/functions
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/realtime/inspector
+                            - img
+                      - generic:
+                        - generic:
+                          - listitem:
+                            - link:
+                              - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/advisors/security
+                              - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/observability
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/logs/explorer
+                            - img
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations
+                            - img
+                      - generic:
+                        - listitem:
+                          - link:
+                            - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/general
+                            - img
+                - generic:
+                  - generic:
+                    - button:
+                      - generic:
+                        - img
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - heading [level=4]: Settings
+                              - generic:
+                                - generic:
+                                  - menu [disabled]:
+                                    - list:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: Configuration
+                                            - generic:
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/general
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: General
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/compute-and-disk
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Compute and Disk
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/infrastructure
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Infrastructure
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/integrations
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Integrations
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/api-keys
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: API Keys
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/jwt
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: JWT Keys
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/log-drains
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Log Drains
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/addons
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Add-ons
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: Integrations
+                                            - generic:
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations/data_api/overview
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Data API
+                                                      - generic:
+                                                        - img
+                                              - link [disabled]:
+                                                - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/integrations/vault/overview
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Vault
+                                                        - generic: Beta
+                                                      - generic:
+                                                        - img
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: Billing
+                                            - generic:
+                                              - link [disabled]:
+                                                - /url: /dashboard/org/xkyyjcklveqysuewphva/billing
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Subscription
+                                                      - generic:
+                                                        - img
+                                              - link [disabled]:
+                                                - /url: /dashboard/org/xkyyjcklveqysuewphva/usage?projectRef=owdfoxglbxrqhgqbvkon
+                                                - menuitem [disabled]:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Usage
+                                                      - generic:
+                                                        - img
+                      - separator [disabled]:
+                        - generic:
+                          - img
+                      - generic:
+                        - generic:
+                          - main:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - heading [level=1]: Add-ons
+                                    - generic: Level up your project with add-ons
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button:
+                                    - generic:
+                                      - img
+                                    - generic:
+                                      - generic:
+                                        - generic: Dedicated IPv4 address
+                                        - paragraph: Reserve a dedicated IPv4 address for your project.
+                                        - link:
+                                          - /url: https://supabase.com/docs/guides/platform/ipv4-address
+                                          - text: About IPv4 deprecation
+                                    - generic:
+                                      - generic:
+                                        - generic: Disabled
+                                    - img
+                                  - button:
+                                    - generic:
+                                      - img
+                                    - generic:
+                                      - generic:
+                                        - generic: Point in time recovery
+                                        - paragraph: Restore your database to a specific moment in the past.
+                                        - link:
+                                          - /url: https://supabase.com/docs/guides/platform/backups#point-in-time-recovery
+                                          - text: About PITR backups
+                                    - generic:
+                                      - generic:
+                                        - generic: Disabled
+                                    - img
+                                  - button:
+                                    - generic:
+                                      - img
+                                    - generic:
+                                      - generic:
+                                        - generic: Custom domain
+                                        - paragraph: Serve your project on your own domain name.
+                                        - link:
+                                          - /url: https://supabase.com/docs/guides/platform/custom-domains
+                                          - text: About custom domains
+                                    - generic:
+                                      - generic:
+                                        - generic: Enabled
+                                    - img
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - generic:
+                  - button:
+                    - generic:
+                      - img
+                - generic:
+                  - generic: Notice
+                  - generic:
+                    - paragraph: We've updated our Terms of Service
+                    - paragraph: Updates define the responsibilities of both you and Supabase in the use of AI.
+                  - button:
+                    - generic: Learn more
+  - generic:
+    - alert: Add-ons | Settings | Aluxart | fegorsonphotography@gmail.com's Org | Supabase
+  - dialog [ref=e583]:
+    - banner [ref=e584]:
+      - generic [ref=e585]:
+        - heading "Custom domains" [level=4] [ref=e586]
+        - link "Docs" [ref=e587] [cursor=pointer]:
+          - /url: https://supabase.com/docs/guides/platform/custom-domains
+          - img [ref=e589]
+          - generic [ref=e592]: Docs
+    - generic [ref=e595]:
+      - paragraph [ref=e596]:
+        - text: Custom domains allow you to present a branded experience to your users. You may set up your custom domain in the
+        - link "General Settings" [ref=e597] [cursor=pointer]:
+          - /url: /dashboard/project/owdfoxglbxrqhgqbvkon/settings/general#custom-domains
+        - text: page after enabling the add-on.
+      - generic [ref=e598]:
+        - radiogroup [ref=e599]:
+          - radio "No custom domain Use the default supabase domain for your API $0 / month" [ref=e600]:
+            - generic [ref=e603] [cursor=pointer]:
+              - paragraph [ref=e605]: No custom domain
+              - generic [ref=e606]:
+                - paragraph [ref=e607]: Use the default supabase domain for your API
+                - generic [ref=e608]:
+                  - paragraph [ref=e609]: $0
+                  - paragraph [ref=e610]: / month
+          - radio "Custom Domain Present a branded experience to your users $10.00 / month" [checked] [active] [ref=e611]:
+            - generic [ref=e614] [cursor=pointer]:
+              - paragraph [ref=e616]: Custom Domain
+              - generic [ref=e617]:
+                - paragraph [ref=e618]: Present a branded experience to your users
+                - generic [ref=e619]:
+                  - paragraph [ref=e620]: $10.00
+                  - paragraph [ref=e621]: / month
+        - paragraph [ref=e622]: Prices shown do not include applicable taxes.
+    - generic [ref=e623]:
+      - button "Cancel" [ref=e625] [cursor=pointer]:
+        - generic [ref=e626]: Cancel
+      - generic [ref=e627]:
+        - button "Confirm" [disabled]:
+          - generic: Confirm

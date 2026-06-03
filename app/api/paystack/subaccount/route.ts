@@ -51,5 +51,5 @@ export async function POST(request: NextRequest) {
     WHERE id = ${creator.id}
   `;
 
-  return NextResponse.json({ subaccountCode });
+  return NextResponse.json({ connected: true });
 }

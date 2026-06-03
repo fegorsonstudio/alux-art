@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
   const toEmail = process.env.ADMIN_EMAIL ?? "aluxartandframes@gmail.com";
   const fromDomain = process.env.RESEND_FROM_EMAIL ?? "support@aluxartandframes.shop";
 
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
   if (resendKey) {
     try {
       const emailRes = await fetch("https://api.resend.com/emails", {
@@ -41,25 +43,24 @@ export async function POST(request: NextRequest) {
           from: `Alux Art Support <${fromDomain}>`,
           to: [toEmail],
           reply_to: email,
-          subject: subject ? `[Support] ${subject}` : `[Support] Message from ${name}`,
+          subject: subject ? `[Support] ${esc(subject)}` : `[Support] Message from ${esc(name)}`,
           html: `
-            <p><strong>From:</strong> ${name} (${email})</p>
-            ${shootId ? `<p><strong>Shoot ID:</strong> ${shootId}</p>` : ""}
-            <p><strong>Subject:</strong> ${subject || "(none)"}</p>
+            <p><strong>From:</strong> ${esc(name)} (${esc(email)})</p>
+            ${shootId ? `<p><strong>Shoot ID:</strong> ${esc(shootId)}</p>` : ""}
+            <p><strong>Subject:</strong> ${esc(subject) || "(none)"}</p>
             <hr/>
-            <p style="white-space:pre-wrap">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <p style="white-space:pre-wrap">${esc(message)}</p>
           `,
         }),
       });
       if (!emailRes.ok) {
-        const errBody = await emailRes.text();
-        console.error("[support/contact] Resend error:", errBody);
+        console.error("[support/contact] Resend error:", emailRes.status);
       }
     } catch (err) {
-      console.error("[support/contact] Email send failed:", err);
+      console.error("[support/contact] Email send failed:", err instanceof Error ? err.message : "unknown");
     }
   } else {
-    console.log("[support/contact] No RESEND_API_KEY — email not sent. Message:", { name, email, subject, shootId, message });
+    console.error("[support/contact] No RESEND_API_KEY configured — support email not sent.");
   }
 
   return NextResponse.json({ ok: true });

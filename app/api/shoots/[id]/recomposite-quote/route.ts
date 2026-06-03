@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { compositeQuoteCard } from "@/lib/generate";
+import { isAdminEmail } from "@/lib/auth";
 
 export const maxDuration = 120;
 
@@ -15,7 +16,7 @@ export async function POST(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
 
   const [shoot] = await sql`
     SELECT id, user_id, quote, package_size, aspect_ratio, shoot_brief, status

@@ -1,0 +1,4 @@
+- generic [active] [ref=e1]:
+  - link "← Marketplace" [ref=e3] [cursor=pointer]:
+    - /url: /marketplace
+  - alert [ref=e4]

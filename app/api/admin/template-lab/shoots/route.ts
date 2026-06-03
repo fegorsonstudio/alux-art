@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2SignedDownloadUrl } from "@/lib/r2";
+import { isAdminEmail } from "@/lib/auth";
 
 async function getAdminSession() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (!user || user.email !== process.env.ADMIN_EMAIL) return null;
+  if (!user || !isAdminEmail(user.email)) return null;
   return user;
 }
 
@@ -38,18 +39,26 @@ export async function GET() {
     imagesByShoot[img.shoot_id].push(img);
   }
 
-  const result = await Promise.all(shoots.map(async (shoot) => {
-    const refs = await sql`
-      SELECT id, purpose, tag, storage_bucket, storage_path
-      FROM shoot_references WHERE shoot_id = ${shoot.id} AND purpose != 'identity'
-    `;
+  const allRefs = await sql`
+    SELECT id, shoot_id, purpose, tag, storage_bucket, storage_path
+    FROM shoot_references WHERE shoot_id = ANY(${shootIds}) AND purpose != 'identity'
+  `;
 
-    const signedRefs = await Promise.all(refs.map(async (ref) => {
-      const signedUrl = await r2SignedDownloadUrl(ref.storage_bucket as string, ref.storage_path as string, 3600);
-      return { id: ref.id, purpose: ref.purpose, tag: ref.tag, signedUrl };
-    }));
+  const signedRefs = await Promise.all(allRefs.map(async (ref) => {
+    const signedUrl = await r2SignedDownloadUrl(ref.storage_bucket as string, ref.storage_path as string, 3600);
+    return { id: ref.id, shoot_id: ref.shoot_id, purpose: ref.purpose, tag: ref.tag, signedUrl };
+  }));
 
-    return { ...shoot, shoot_images: imagesByShoot[shoot.id] ?? [], refs: signedRefs };
+  const refsByShoot: Record<string, typeof signedRefs> = {};
+  for (const ref of signedRefs) {
+    if (!refsByShoot[ref.shoot_id]) refsByShoot[ref.shoot_id] = [];
+    refsByShoot[ref.shoot_id].push(ref);
+  }
+
+  const result = shoots.map((shoot) => ({
+    ...shoot,
+    shoot_images: imagesByShoot[shoot.id] ?? [],
+    refs: refsByShoot[shoot.id] ?? [],
   }));
 
   return NextResponse.json({ shoots: result });

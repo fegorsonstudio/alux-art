@@ -1,0 +1,190 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - link "← Studio" [ref=e4] [cursor=pointer]:
+        - /url: /studio
+      - heading "Creator Dashboard" [level=1] [ref=e5]
+      - link "Browse marketplace →" [ref=e6] [cursor=pointer]:
+        - /url: /marketplace
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]: "4"
+          - generic [ref=e11]: Templates
+        - generic [ref=e12]:
+          - generic [ref=e13]: "2"
+          - generic [ref=e14]: Published
+        - generic [ref=e15]:
+          - generic [ref=e16]: "16"
+          - generic [ref=e17]: Sales
+        - generic [ref=e18]:
+          - generic [ref=e19]: ₦4,900
+          - generic [ref=e20]: Total Earned
+      - button "Storefront Settings ▼" [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: Storefront Settings
+        - generic [ref=e24]: ▼
+      - heading "My Templates" [level=2] [ref=e26]
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - generic [ref=e31]: THE CANON G7x iii
+            - generic [ref=e32]: portrait · advanced · 4:5 · 10 images
+          - generic [ref=e33]:
+            - generic [ref=e34]: ₦16,000
+            - generic [ref=e35]: 3 sales
+            - generic [ref=e36]: published
+            - generic [ref=e37]:
+              - button "Edit" [ref=e38] [cursor=pointer]
+              - button "Unpublish" [ref=e39] [cursor=pointer]
+              - button "Generate images" [ref=e40] [cursor=pointer]
+              - button "Delete" [ref=e41] [cursor=pointer]
+              - button "Copy link" [ref=e42] [cursor=pointer]
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: THE CANON G7x iii
+            - generic [ref=e46]: editorial · advanced · 4:5 · 1 images
+          - generic [ref=e47]:
+            - generic [ref=e48]: ₦15,000
+            - generic [ref=e49]: 7 sales
+            - generic [ref=e50]: draft
+            - generic [ref=e51]:
+              - button "Edit" [ref=e52] [cursor=pointer]
+              - button "Publish" [ref=e53] [cursor=pointer]
+              - button "Generate images" [ref=e54] [cursor=pointer]
+              - button "Delete" [ref=e55] [cursor=pointer]
+              - button "Copy link" [ref=e56] [cursor=pointer]
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]: THE CANON G7x iii
+            - generic [ref=e60]: editorial · advanced · 4:5 · 5 images
+          - generic [ref=e61]:
+            - generic [ref=e62]: ₦15,000
+            - generic [ref=e63]: 0 sales
+            - generic [ref=e64]: draft
+            - generic [ref=e65]:
+              - button "Edit" [ref=e66] [cursor=pointer]
+              - button "Publish" [ref=e67] [cursor=pointer]
+              - button "Generate images" [ref=e68] [cursor=pointer]
+              - button "Delete" [ref=e69] [cursor=pointer]
+              - button "Copy link" [ref=e70] [cursor=pointer]
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - generic [ref=e73]: Old money
+            - generic [ref=e74]: portrait · advanced · 4:5 · 5 images
+          - generic [ref=e75]:
+            - generic [ref=e76]: ₦16,000
+            - generic [ref=e77]: 0 sales
+            - generic [ref=e78]: published
+            - generic [ref=e79]:
+              - button "Edit" [active] [ref=e80] [cursor=pointer]
+              - button "Unpublish" [ref=e81] [cursor=pointer]
+              - button "Generate images" [ref=e82] [cursor=pointer]
+              - button "Delete" [ref=e83] [cursor=pointer]
+              - button "Copy link" [ref=e84] [cursor=pointer]
+      - generic [ref=e182]:
+        - generic [ref=e183]:
+          - heading "Edit Template" [level=3] [ref=e184]
+          - button "✕" [ref=e185] [cursor=pointer]
+        - generic [ref=e186]:
+          - generic [ref=e187]:
+            - generic [ref=e188]: Title *
+            - textbox "Title *" [ref=e189]:
+              - /placeholder: e.g. Sunset Lagos Editorial
+              - text: Old money
+          - generic [ref=e190]:
+            - generic [ref=e191]: Category
+            - combobox "Category" [ref=e192] [cursor=pointer]:
+              - option "Portrait" [selected]
+              - option "Editorial"
+              - option "Corporate"
+              - option "Glamour"
+              - option "Wedding"
+              - option "Maternity"
+              - option "Fantasy"
+              - option "Boudoir"
+              - option "Street"
+              - option "Other"
+        - generic [ref=e193]:
+          - generic [ref=e194]: Description
+          - textbox "Description" [ref=e195]:
+            - /placeholder: Describe the vibe, setting, and aesthetic...
+            - text: Old money vibe for the modern man
+        - generic [ref=e196]:
+          - generic [ref=e197]: Tags (comma-separated)
+          - textbox "Tags (comma-separated)" [ref=e198]:
+            - /placeholder: lagos, studio, editorial, luxury
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - generic [ref=e201]: 10-image price (₦) *
+            - spinbutton "10-image price (₦) * You earn ₦1,000 per sale" [ref=e202]: "16000"
+            - generic [ref=e203]: You earn ₦1,000 per sale
+          - generic [ref=e204]:
+            - generic [ref=e205]: 1-image price (₦) (optional)
+            - spinbutton "1-image price (₦) (optional) You earn ₦500" [ref=e206]: "2000"
+            - generic [ref=e207]: You earn ₦500
+        - generic [ref=e208]:
+          - generic [ref=e209]:
+            - generic [ref=e210]: 5-image price (₦) (optional)
+            - spinbutton "5-image price (₦) (optional) You earn ₦500" [ref=e211]: "8000"
+            - generic [ref=e212]: You earn ₦500
+          - generic [ref=e213]:
+            - generic [ref=e214]: Shoot mode
+            - generic [ref=e215]:
+              - button "Shoot mode advanced" [ref=e216] [cursor=pointer]: fast
+              - button "advanced" [ref=e217] [cursor=pointer]
+        - generic [ref=e218]:
+          - generic [ref=e219]:
+            - generic [ref=e220]: Aspect ratio
+            - generic [ref=e221]:
+              - button "Aspect ratio 4:5 1:1 16:9 9:16 2:3" [ref=e222] [cursor=pointer]: 3:4
+              - button "4:5" [ref=e223] [cursor=pointer]
+              - button "1:1" [ref=e224] [cursor=pointer]
+              - button "16:9" [ref=e225] [cursor=pointer]
+              - button "9:16" [ref=e226] [cursor=pointer]
+              - button "2:3" [ref=e227] [cursor=pointer]
+          - generic [ref=e228]:
+            - generic [ref=e229]: Package size
+            - generic [ref=e230]:
+              - button "Package size 5 images 10 images" [ref=e231] [cursor=pointer]: 1 image
+              - button "5 images" [ref=e232] [cursor=pointer]
+              - button "10 images" [ref=e233] [cursor=pointer]
+        - generic [ref=e234]:
+          - generic [ref=e235]: Reference images (2/8)
+          - paragraph [ref=e236]: "Advanced mode: add a main inspiration image, then optional override references for specific elements. Buyers' portraits will use these references to match each category."
+          - generic [ref=e237]:
+            - generic [ref=e238]: Inspiration — main look, outfit & mood (required)
+            - generic [ref=e239]:
+              - generic [ref=e240]:
+                - generic: saved
+                - button "✕" [ref=e241] [cursor=pointer]
+              - button "+ Add inspiration" [ref=e242] [cursor=pointer]
+          - generic [ref=e243]:
+            - generic [ref=e244]:
+              - generic [ref=e245]: Tagged references — upload images and tag each one (optional)
+              - button "Clear all" [ref=e246] [cursor=pointer]
+            - generic [ref=e248]:
+              - button "Replace" [ref=e249] [cursor=pointer]:
+                - generic [ref=e250]: Replace
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - button "OUTFIT" [ref=e253] [cursor=pointer]
+                  - button "HAIRSTYLE" [ref=e254] [cursor=pointer]
+                  - button "MAKEUP" [ref=e255] [cursor=pointer]
+                  - button "NAIL DESIGN" [ref=e256] [cursor=pointer]
+                  - button "BACKGROUND" [ref=e257] [cursor=pointer]
+                  - button "LIGHTING" [ref=e258] [cursor=pointer]
+                  - button "ACCESSORY" [ref=e259] [cursor=pointer]
+                - textbox "Reference name (optional)..." [ref=e260]
+                - textbox "Styling note (optional)..." [ref=e261]
+              - button "✕" [ref=e262] [cursor=pointer]
+            - button "+ Add reference" [ref=e263] [cursor=pointer]
+        - generic [ref=e264]:
+          - generic [ref=e265]: Gallery images (0/10)
+          - paragraph [ref=e266]: Upload up to 10 images shown in the public gallery. The first image is used as the template thumbnail on the marketplace listing. Workflow reference images are kept private from buyers.
+          - button "+ Add image" [ref=e268] [cursor=pointer]
+        - generic [ref=e269]:
+          - generic [ref=e270]:
+            - button "Save as draft" [ref=e271] [cursor=pointer]
+            - button "Publish" [ref=e272] [cursor=pointer]
+          - button "Save changes" [ref=e273] [cursor=pointer]
+  - alert [ref=e85]

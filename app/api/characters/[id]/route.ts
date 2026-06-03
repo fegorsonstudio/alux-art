@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { signBasePath } from "@/lib/base-lock";
+import { isAdminEmail } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
@@ -78,7 +79,7 @@ export async function GET(
 
   const [base] = await sql`SELECT * FROM character_bases WHERE id = ${baseId}`;
 
-  if (!base || (base.user_id !== user.id && user.email !== process.env.ADMIN_EMAIL)) {
+  if (!base || (base.user_id !== user.id && !isAdminEmail(user.email))) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

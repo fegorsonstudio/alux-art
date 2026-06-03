@@ -82,12 +82,38 @@ export default function TermsPage() {
           </p>
 
           <h2>8. Creator Terms</h2>
-          <p>Creators who list templates on the Platform agree to:</p>
+          <p>
+            Access to the Creator programme requires submitting an application and receiving
+            explicit written approval from Alux Art. Applying does not guarantee access.
+            Approved Creator status may be suspended or revoked at any time for violations of
+            these Terms, conduct harmful to customers or the Platform, or at Alux Art&apos;s sole
+            discretion. Creators whose access is revoked will not be entitled to compensation
+            for lost future earnings.
+          </p>
+          <p>Creators who are approved and list templates on the Platform further agree to:</p>
           <ul>
             <li>Only upload template images and content they own or have properly licensed.</li>
             <li>Not upload explicit, offensive, discriminatory, or otherwise unlawful content.</li>
             <li>Acknowledge that Alux Art retains a platform fee on each transaction processed through their template.</li>
             <li>Provide accurate bank account details for payouts. Alux Art is not responsible for failed settlements caused by incorrect bank information.</li>
+          </ul>
+
+          <h2>8a. WhatsApp Business Integration</h2>
+          <p>
+            Approved Creators may optionally connect their WhatsApp Business Cloud API account
+            to enable automated booking conversations (&ldquo;WhatsApp Bot&rdquo;) on their behalf.
+            By connecting their account, Creators:
+          </p>
+          <ul>
+            <li>Consent to Alux Art processing customer messages received on their WhatsApp
+              Business number for the sole purpose of facilitating template bookings.</li>
+            <li>Confirm they hold a valid WhatsApp Business Cloud API account and comply with
+              Meta&apos;s Messaging Policies and WhatsApp Business Policy.</li>
+            <li>Acknowledge that Alux Art acts as a processor of customer messages on their
+              behalf, and Creators bear responsibility for ensuring their use of the
+              WhatsApp integration complies with applicable laws and Meta&apos;s policies.</li>
+            <li>Agree that disconnecting the WhatsApp integration will immediately stop
+              message processing. Residual session data will be deleted within 24 hours.</li>
           </ul>
 
           <h2>9. Payments</h2>

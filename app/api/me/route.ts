@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 export async function GET() {
   const supabase = await createClient();
@@ -22,7 +23,7 @@ export async function GET() {
     RETURNING *
   `;
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
 
   return NextResponse.json({
     user: {
@@ -42,9 +43,10 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const currency = body.currency === "USD" ? "USD" : "NGN";
   await sql`
     INSERT INTO profiles (id, email, currency, updated_at)
-    VALUES (${user.id}, ${user.email ?? ""}, ${body.currency}, NOW())
+    VALUES (${user.id}, ${user.email ?? ""}, ${currency}, NOW())
     ON CONFLICT (id) DO UPDATE SET
       currency = EXCLUDED.currency,
       updated_at = NOW()
