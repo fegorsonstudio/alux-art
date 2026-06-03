@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   const templateId = typeof body.templateId === "string" ? body.templateId : null;
   const senderName = typeof body.senderName === "string" ? body.senderName.trim().slice(0, 80) : "";
   const customMessage = typeof body.customMessage === "string" ? body.customMessage.trim().slice(0, 300) : null;
-  const giftPackageSize: 5 | 10 = body.packageSize === 5 ? 5 : 10;
+  const giftPackageSize: 1 | 5 | 10 = [1, 5, 10].includes(body.packageSize as number) ? (body.packageSize as 1 | 5 | 10) : 10;
   const currency = body.currency === "USD" ? "USD" : "NGN";
 
   if (!templateId) return NextResponse.json({ error: "Template is required" }, { status: 400 });
@@ -48,13 +48,15 @@ export async function POST(request: NextRequest) {
   if (testPriceRaw) {
     const tp = parseInt(testPriceRaw, 10);
     if (tp > 0) {
+      template.price_1_ngn = tp;
       template.price_5_ngn = tp * 5;
       template.price_ngn = tp * 10;
       basePlatformFeeNgn = Math.max(10, Math.floor(tp * 0.1));
     }
   }
 
-  const priceMap: Record<5 | 10, number | null> = {
+  const priceMap: Record<1 | 5 | 10, number | null> = {
+    1: (template.price_1_ngn as number | null) ?? null,
     5: (template.price_5_ngn as number | null) ?? null,
     10: template.price_ngn as number,
   };
@@ -117,6 +119,11 @@ export async function POST(request: NextRequest) {
         template_id: templateId,
         user_id: user.id,
         sender_name: senderName,
+        imageCount: giftPackageSize,
+        custom_fields: [
+          { display_name: "Package Size", variable_name: "package_size", value: String(giftPackageSize) },
+          { display_name: "Image Count", variable_name: "image_count", value: String(giftPackageSize) },
+        ],
       },
       split: safeCreatorPayout > 0 ? {
         type: "flat",
