@@ -39,6 +39,7 @@ export async function middleware(request: NextRequest) {
     p === "/" ||
     p === "/terms" ||
     p === "/privacy" ||
+    p === "/support" ||
     p === "/marketplace" ||
     (p.startsWith("/marketplace/") && !p.includes("/book")) ||
     p.includes("/book/success") ||

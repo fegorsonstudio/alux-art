@@ -8,7 +8,7 @@ export default defineConfig({
   retries: 0,
   reporter: "list",
   use: {
-    baseURL: "https://aluxartandframes.shop",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "https://aluxartandframes.shop",
     headless: true,
     trace: "on-first-retry",
   },

@@ -4,7 +4,7 @@ import { r2ProxyUrl } from "@/lib/r2";
 import styles from "./landing.module.css";
 import RotatingStyles from "./RotatingStyles";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 interface FeaturedTemplate {
   id: string;

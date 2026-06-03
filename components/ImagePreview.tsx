@@ -62,24 +62,8 @@ export default function ImagePreview({
         className={className}
         role="img"
         aria-label="Preview unavailable"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 120,
-          minWidth: 120,
-          width: "100%",
-          color: "#6b7280",
-          backgroundColor: "#f8fafc",
-          border: "1px solid #e2e8f0",
-          borderRadius: 12,
-          fontSize: 14,
-          textAlign: "center",
-          padding: 16,
-        }}
-      >
-        Preview Unavailable
-      </div>
+        style={{ minHeight: 120, minWidth: 120, width: "100%" }}
+      />
     );
   }
 

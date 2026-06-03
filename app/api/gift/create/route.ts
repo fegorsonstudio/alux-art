@@ -55,10 +55,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const price10 = Number(template.price_ngn) || 0;
   const priceMap: Record<1 | 5 | 10, number | null> = {
-    1: (template.price_1_ngn as number | null) ?? null,
-    5: (template.price_5_ngn as number | null) ?? null,
-    10: template.price_ngn as number,
+    1: template.price_1_ngn != null ? Number(template.price_1_ngn) : (price10 ? Math.round(price10 * 0.12) : null),
+    5: template.price_5_ngn != null ? Number(template.price_5_ngn) : (price10 ? Math.round(price10 * 0.60) : null),
+    10: price10 || null,
   };
   const amountNgn: number | null = priceMap[giftPackageSize];
   if (!amountNgn) {

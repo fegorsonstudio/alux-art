@@ -29,14 +29,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const cacheControl = PUBLIC_BUCKETS.has(bucket)
+    ? "public, max-age=86400, stale-while-revalidate=604800"
+    : "private, max-age=3600, stale-while-revalidate=86400";
+
   // Try R2 first (all files after migration)
   try {
     const { buffer, contentType } = await r2Download(bucket, path);
     return new NextResponse(buffer.buffer as ArrayBuffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
-      },
+      headers: { "Content-Type": contentType, "Cache-Control": cacheControl },
     });
   } catch {
     // fall through to Supabase for older files
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": data.type || "application/octet-stream",
-        "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": cacheControl,
       },
     });
   }

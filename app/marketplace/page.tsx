@@ -46,6 +46,7 @@ export default function MarketplacePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [navOpen, setNavOpen] = useState(false);
   const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
 
   useEffect(() => {
@@ -93,11 +94,20 @@ export default function MarketplacePage() {
     <div className={styles.page} data-theme={theme}>
       <header className={styles.nav}>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
-        <div className={styles.navRight}>
-          <Link href="/studio" className={styles.navLink}>Studio</Link>
+        <button
+          className={styles.hamburger}
+          onClick={() => setNavOpen(o => !o)}
+          aria-label="Toggle navigation"
+          aria-expanded={navOpen}
+          type="button"
+        >
+          {navOpen ? "✕" : "☰"}
+        </button>
+        <div className={navOpen ? `${styles.navRight} ${styles.navRightOpen}` : styles.navRight}>
+          <Link href="/studio" className={styles.navLink} onClick={() => setNavOpen(false)}>Studio</Link>
           {isCreator
-            ? <Link href="/creator-dashboard" className={`${styles.navCta} ${styles.navCtaDash}`}>Dashboard</Link>
-            : <Link href="/become-creator" className={styles.navCta}>Become a Creator</Link>
+            ? <Link href="/creator-dashboard" className={`${styles.navCta} ${styles.navCtaDash}`} onClick={() => setNavOpen(false)}>Dashboard</Link>
+            : <Link href="/become-creator" className={styles.navCta} onClick={() => setNavOpen(false)}>Become a Creator</Link>
           }
           <button className={styles.currencyToggle} onClick={toggleCurrency} type="button">
             {currency === "NGN" ? "₦ NGN" : "$ USD"}

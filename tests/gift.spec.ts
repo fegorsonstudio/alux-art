@@ -196,4 +196,70 @@ test.describe("Gift modal — authenticated", () => {
     await msgBox.fill("Hello, enjoy this gift!");
     await expect(page.locator("text=/\\d+\\/300/")).toBeVisible();
   });
+
+  test("1-image gift: modal price and Paystack checkout amount match (not 10-image price)", async ({ page }) => {
+    // ── Step 1: select the 1-image package on the main booking page ──────────
+    const oneImageBtn = page.locator("button").filter({ hasText: /^1\s+image/i });
+    if (await oneImageBtn.count() > 0) {
+      await oneImageBtn.first().click();
+      await page.waitForTimeout(500);
+    }
+
+    // ── Step 2: open the Gift modal ──────────────────────────────────────────
+    await page.getByRole("button", { name: "Gift a Friend" }).click();
+    await expect(page.locator("text=Gift this style")).toBeVisible({ timeout: 5_000 });
+
+    // ── Step 3: modal session summary must say "1 image" ────────────────────
+    const summaryLine = page.locator("p").filter({ hasText: /1 image/ });
+    await expect(summaryLine).toBeVisible({ timeout: 3_000 });
+
+    // ── Step 4: read the price shown on the Pay button ───────────────────────
+    const payBtn = page.locator("button").filter({ hasText: /Pay .* — Send Gift/ });
+    const payBtnLabel = (await payBtn.textContent()) ?? "";
+    // e.g. "Pay ₦1,600 — Send Gift" → extract numeric digits + commas
+    const priceMatch = payBtnLabel.match(/([\d,]+)/);
+    const priceDigits = priceMatch ? priceMatch[1].replace(/,/g, "") : "";
+    console.log("[pricing-test] Pay button label:", payBtnLabel);
+    expect(Number(priceDigits)).toBeGreaterThan(0);
+
+    // ── Step 5: fill in sender name and intercept the API call ───────────────
+    let capturedPackageSize: unknown;
+    await page.route("**/api/gift/create", async route => {
+      try { capturedPackageSize = (route.request().postDataJSON() as Record<string, unknown>)?.packageSize; } catch { /* */ }
+      await route.continue();
+    });
+
+    await page.locator("input[placeholder='Your name']").fill("E2E Pricing Test");
+
+    const [apiRes] = await Promise.all([
+      page.waitForResponse(r => r.url().includes("/api/gift/create") && r.request().method() === "POST", { timeout: 15_000 }),
+      payBtn.click(),
+    ]);
+
+    // ── Step 6: assert the API received packageSize: 1 ───────────────────────
+    expect(capturedPackageSize).toBe(1);
+    expect(apiRes.status()).toBe(200);
+
+    const resBody = await apiRes.json().catch(() => ({} as Record<string, unknown>));
+    const authUrl = resBody.authorizationUrl as string | undefined;
+    expect(authUrl).toBeTruthy();
+    console.log("[pricing-test] Paystack auth URL:", authUrl);
+
+    // ── Step 7: visit Paystack checkout and read the displayed amount ─────────
+    await page.goto(authUrl!);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(4_000); // let Paystack JS render
+    await page.screenshot({ path: "paystack-pricing-check.jpeg" });
+
+    const pageText = await page.evaluate(() => document.body.innerText);
+    console.log("[pricing-test] Paystack page text (first 600 chars):\n", pageText.slice(0, 600));
+
+    // The 10-image price (₦25,000) must NOT appear
+    expect(pageText).not.toMatch(/25[,.]?000/);
+
+    // The 1-image price from the Pay button must appear
+    if (priceDigits) {
+      expect(pageText).toContain(priceDigits);
+    }
+  });
 });

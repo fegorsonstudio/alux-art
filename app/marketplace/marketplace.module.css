@@ -48,6 +48,18 @@
 
 .navRight { display: flex; align-items: center; gap: 12px; }
 
+.hamburger {
+  display: none;
+  background: none;
+  border: 1px solid rgba(67, 159, 169, 0.22);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 1.1rem;
+  color: #3f6166;
+  line-height: 1;
+}
+
 .navLink {
   background: rgba(255, 255, 255, 0.76);
   border: 1px solid rgba(67, 159, 169, 0.22);
@@ -589,14 +601,34 @@
   .bannerInner { flex-direction: column; align-items: flex-start; }
   .creatorBanner { padding: 40px 20px; }
 
-  /* Nav: hide "Become a Creator" — it appears in the banner below */
-  /* Keep "Dashboard" link visible for creators */
-  .navCta:not(.navCtaDash) { display: none; }
-  .navCtaDash { font-size: 0.72rem; padding: 7px 9px; }
-  .navRight { gap: 6px; }
-  .navLink { font-size: 0.78rem; padding: 8px 10px; min-height: 36px; }
-  .currencyToggle { font-size: 0.78rem; padding: 8px 10px; min-height: 36px; }
-  .themeToggle { font-size: 0.78rem; padding: 8px 10px; min-height: 36px; }
+  /* Nav: collapse to hamburger */
+  .hamburger { display: flex; align-items: center; }
+  .navRight { display: none; }
+  .navRightOpen {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: absolute;
+    top: 57px;
+    left: 0;
+    right: 0;
+    background: rgba(255, 248, 234, 0.97);
+    border-bottom: 1px solid rgba(67, 159, 169, 0.15);
+    padding: 12px 20px 16px;
+    gap: 8px;
+    z-index: 20;
+    backdrop-filter: blur(18px);
+  }
+  .navRightOpen .navLink,
+  .navRightOpen .navCta,
+  .navRightOpen .currencyToggle,
+  .navRightOpen .themeToggle {
+    width: 100%;
+    text-align: left;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    min-height: 40px;
+  }
 
   /* Cards: tighter on small phones */
   .card { border-radius: 10px; }
