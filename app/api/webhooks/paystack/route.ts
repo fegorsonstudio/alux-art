@@ -109,6 +109,16 @@ export async function POST(request: NextRequest) {
       WHERE id = ${gift_id} AND payment_status = 'pending'
     `;
 
+    // Belt-and-suspenders: confirm package_size from custom_fields matches DB record
+    const customFields = (event.data?.metadata?.custom_fields ?? []) as Array<{ variable_name: string; value: string }>;
+    const cfPackageSize = customFields.find(f => f.variable_name === "package_size")?.value;
+    if (cfPackageSize) {
+      const [stored] = await sql`SELECT package_size FROM gift_links WHERE id = ${gift_id}`;
+      if (stored && String(stored.package_size) !== cfPackageSize) {
+        console.warn(`[paystack webhook] gift ${gift_id}: custom_fields package_size=${cfPackageSize} differs from stored package_size=${stored.package_size}`);
+      }
+    }
+
     return NextResponse.json({ ok: true });
   }
 
