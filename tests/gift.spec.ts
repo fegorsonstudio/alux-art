@@ -30,7 +30,10 @@ test.describe("Gift button — template page", () => {
     await page.waitForURL(/\/login/, { timeout: 10_000 });
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("next=");
-    expect(page.url()).toContain(encodeURIComponent("/marketplace/"));
+    // next= value may be URL-encoded or plain depending on browser/Next.js version
+    const url = page.url();
+    const hasMarketplace = url.includes("/marketplace/") || url.includes("%2Fmarketplace%2F");
+    expect(hasMarketplace).toBe(true);
   });
 
   test("QR Code button still works after Gift button added", async ({ page }) => {
