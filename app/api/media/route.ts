@@ -11,7 +11,7 @@ async function processImage(
   widthParam: string | null,
   qualityParam: string | null,
   formatParam: string | null,
-): Promise<{ data: Buffer; contentType: string } | null> {
+): Promise<{ data: ArrayBuffer; contentType: string } | null> {
   if (!widthParam && !formatParam) return null;
   try {
     const sharp = (await import("sharp")).default;
@@ -22,8 +22,8 @@ async function processImage(
     const fmt = formatParam === "avif" ? "avif" : "webp";
     const quality = qualityParam ? Math.min(Math.max(Number(qualityParam), 1), 100) : 75;
     pipeline = pipeline[fmt]({ quality });
-    const data = await pipeline.toBuffer();
-    return { data, contentType: `image/${fmt}` };
+    const buf = await pipeline.toBuffer();
+    return { data: buf.buffer as ArrayBuffer, contentType: `image/${fmt}` };
   } catch {
     return null;
   }
