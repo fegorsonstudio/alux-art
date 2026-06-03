@@ -50,9 +50,9 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
   // QR plinth: 65% of card width
   const PW     = Math.round(CARD_W * 0.65);  // 390
   const PP     = 16 * S;                      // plinth padding
-  const QR     = PW - 2 * PP;                 // 326 — QR display size on canvas
+  const QR     = PW - 2 * PP;                 // 326 — QR size on canvas
   const PH     = PW;                           // square plinth
-  const plinthX = Math.round((CARD_W - PW) / 2); // 105
+  const plinthX = Math.round((CARD_W - PW) / 2);
 
   const canvas  = document.createElement("canvas");
   canvas.width  = CARD_W;
@@ -68,15 +68,15 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
 
   let y = PT;
 
-  // CTA — "TAKE A SCREENSHOT NOW!"
+  // CTA — "TAKE A SCREENSHOT NOW!" (1.1rem → 18px display → 36px canvas)
   ctx.save();
-  ctx.font        = `bold ${12 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.font        = `bold ${18 * S}px system-ui,-apple-system,sans-serif`;
   ctx.fillStyle   = "rgba(255,255,255,0.92)";
   ctx.textAlign   = "center";
   ctx.letterSpacing = "0.15em";
-  ctx.fillText("TAKE A SCREENSHOT NOW!", CARD_W / 2, y + 12 * S);
+  ctx.fillText("TAKE A SCREENSHOT NOW!", CARD_W / 2, y + 18 * S);
   ctx.restore();
-  y += 14 * S + GAP;
+  y += 20 * S + GAP;
 
   // White plinth with shadow
   ctx.save();
@@ -93,25 +93,25 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
   ctx.drawImage(qrCanvas, plinthX + PP, y + PP, QR, QR);
   y += PH + GAP;
 
-  // Creator handle
+  // Creator handle (1.2rem → 19px display → 38px canvas)
   ctx.save();
-  ctx.font        = `bold ${13 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.font        = `bold ${19 * S}px system-ui,-apple-system,sans-serif`;
   ctx.fillStyle   = "#c4b5fd";
   ctx.textAlign   = "center";
   ctx.shadowColor = "rgba(167,139,250,0.6)";
   ctx.shadowBlur  = 10;
-  ctx.fillText(handle, CARD_W / 2, y + 13 * S);
+  ctx.fillText(handle, CARD_W / 2, y + 19 * S);
+  ctx.restore();
+  y += 22 * S + GAP;
+
+  // Platform label (0.85rem → 14px display → 28px canvas)
+  ctx.save();
+  ctx.font      = `${14 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.4)";
+  ctx.textAlign = "center";
+  ctx.fillText("aluxartandframes.shop", CARD_W / 2, y + 14 * S);
   ctx.restore();
   y += 16 * S + GAP;
-
-  // Platform label
-  ctx.save();
-  ctx.font      = `${10 * S}px system-ui,-apple-system,sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.textAlign = "center";
-  ctx.fillText("aluxartandframes.shop", CARD_W / 2, y + 10 * S);
-  ctx.restore();
-  y += 14 * S + GAP;
 
   // Divider
   ctx.fillStyle = "rgba(255,255,255,0.08)";
@@ -183,12 +183,20 @@ export default function TemplateShareCard({
       setDownloading(false);
     }
 
-    // Cover download is fire-and-forget so it never blocks the button state.
+    // Cover download — Image+canvas approach, fire-and-forget.
     if (includeCover && coverUrl) {
-      fetch(coverUrl)
-        .then(r => r.blob())
-        .then(coverBlob => {
-          const cu = URL.createObjectURL(coverBlob);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const cvs = document.createElement("canvas");
+        cvs.width  = img.naturalWidth;
+        cvs.height = img.naturalHeight;
+        const ctx2d = cvs.getContext("2d");
+        if (!ctx2d) return;
+        ctx2d.drawImage(img, 0, 0);
+        cvs.toBlob(b => {
+          if (!b) return;
+          const cu = URL.createObjectURL(b);
           const a  = document.createElement("a");
           a.download = `${creatorUsername.toLowerCase().replace(/\s+/g, "-")}-cover.png`;
           a.href     = cu;
@@ -196,8 +204,10 @@ export default function TemplateShareCard({
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(cu);
-        })
-        .catch(() => {/* best-effort */});
+        }, "image/png");
+      };
+      img.onerror = () => {/* best-effort */};
+      img.src = coverUrl;
     }
   };
 
@@ -210,8 +220,7 @@ export default function TemplateShareCard({
         <div style={plinthStyle}>
           {/*
             QRCodeCanvas renders into a <canvas> element. We read that canvas
-            in buildCardPng and copy it via drawImage() — always taint-free,
-            no blob/Image loading, no hanging.
+            in buildCardPng and copy it via drawImage() — always taint-free.
             size=326 (2× display size 163px) keeps the QR crisp in the download.
           */}
           <QRCodeCanvas
@@ -223,9 +232,13 @@ export default function TemplateShareCard({
           />
         </div>
 
-        <p style={handleStyle}>{handle}</p>
-        <p style={platformStyle}>aluxartandframes.shop</p>
+        <div style={handleGroupStyle}>
+          <p style={handleStyle}>{handle}</p>
+          <p style={platformStyle}>aluxartandframes.shop</p>
+        </div>
+
         <div style={dividerStyle} />
+
         <div style={instructionsGrid}>
           <div style={instrColStyle}>
             <p style={instrHeadStyle}>iPhone</p>
@@ -269,7 +282,8 @@ const cardStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: "10px",
+  justifyContent: "space-between",
+  gap: "8px",
   width: "300px",
   height: "375px",
   overflow: "hidden",
@@ -277,20 +291,19 @@ const cardStyle: React.CSSProperties = {
 };
 
 const ctaStyle: React.CSSProperties = {
-  margin: 0,
+  margin: "0 0 8px",
   color: "rgba(255,255,255,0.92)",
   fontWeight: 700,
-  fontSize: "11px",
+  fontSize: "1.1rem",
   letterSpacing: "0.15em",
   textTransform: "uppercase",
   fontFamily: "system-ui, sans-serif",
-  flexShrink: 0,
 };
 
 const plinthStyle: React.CSSProperties = {
   background: "#ffffff",
   borderRadius: "16px",
-  padding: "16px",
+  padding: "20px",
   boxShadow: "0 14px 30px rgba(0,0,0,0.4)",
   display: "flex",
   alignItems: "center",
@@ -298,31 +311,37 @@ const plinthStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
+const handleGroupStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "4px",
+  flexShrink: 0,
+};
+
 const handleStyle: React.CSSProperties = {
   margin: 0,
   color: "#c4b5fd",
   fontWeight: 700,
-  fontSize: "13px",
+  fontSize: "1.2rem",
   letterSpacing: "0.15em",
   textTransform: "uppercase",
   textShadow: "0 0 10px rgba(167,139,250,0.6)",
   fontFamily: "system-ui, sans-serif",
-  flexShrink: 0,
 };
 
 const platformStyle: React.CSSProperties = {
-  margin: 0,
-  color: "rgba(255,255,255,0.35)",
-  fontSize: "10px",
+  margin: "4px 0 0",
+  color: "rgba(255,255,255,0.4)",
+  fontSize: "0.85rem",
   letterSpacing: "0.08em",
   fontFamily: "system-ui, sans-serif",
-  flexShrink: 0,
 };
 
 const dividerStyle: React.CSSProperties = {
   width: "100%",
   height: "1px",
-  background: "rgba(255,255,255,0.08)",
+  background: "rgba(255,255,255,0.1)",
   flexShrink: 0,
 };
 
@@ -332,6 +351,8 @@ const instructionsGrid: React.CSSProperties = {
   gap: "0",
   width: "100%",
   flexShrink: 0,
+  paddingBottom: "16px",
+  boxSizing: "border-box",
 };
 
 const instrColStyle: React.CSSProperties = {

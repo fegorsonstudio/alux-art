@@ -985,22 +985,51 @@ function CreatorDashboard() {
               <span className={styles.templateSales}>{t.purchase_count} sales</span>
               <span className={t.status === "published" ? styles.published : styles.draft}>{t.status}</span>
               <div className={styles.templateActions}>
-                <button type="button" className={styles.actionBtn} onClick={() => openEdit(t)}>
-                  Edit
-                </button>
-                <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}>
-                  {t.status === "published" ? "Unpublish" : "Publish"}
-                </button>
-                <button type="button" className={`${styles.actionBtn} ${styles.actionBtnShowcase}`} onClick={() => openShowcase(t.id)}>
-                  Generate images
-                </button>
-                <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)}>Delete</button>
-                <button type="button" className={styles.actionBtn} onClick={() => copyLink(t.id)}>
-                  {copiedId === t.id ? "Copied!" : "Copy link"}
-                </button>
-                <button type="button" className={styles.actionBtn} onClick={() => setQrTemplateId(t.id)}>
-                  QR Code
-                </button>
+                {/* Primary row — Edit + Generate Images */}
+                <div className={styles.actPrimary}>
+                  <button type="button" className={styles.actionBtn} onClick={() => openEdit(t)}>
+                    Edit
+                  </button>
+                  <button type="button" className={`${styles.actionBtn} ${styles.actionBtnShowcase}`} onClick={() => openShowcase(t.id)}>
+                    Generate images
+                  </button>
+                </div>
+                {/* Secondary row — icon-only on mobile */}
+                <div className={styles.actSecondary}>
+                  <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}
+                    title={t.status === "published" ? "Unpublish" : "Publish"}>
+                    <span className={styles.btnText}>{t.status === "published" ? "Unpublish" : "Publish"}</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {t.status === "published"
+                        ? <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" />
+                        : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
+                    </svg>
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={() => deleteTemplate(t.id)} title="Delete">
+                    <span className={styles.btnText}>Delete</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                    </svg>
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={() => copyLink(t.id)} title="Copy link">
+                    <span className={styles.btnText}>{copiedId === t.id ? "Copied!" : "Copy link"}</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                    </svg>
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={() => setQrTemplateId(t.id)} title="QR Code">
+                    <span className={styles.btnText}>QR Code</span>
+                    <svg className={styles.btnIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                      <rect x="18" y="14" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                      <rect x="14" y="18" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                      <rect x="18" y="18" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

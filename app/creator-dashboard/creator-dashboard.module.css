@@ -206,7 +206,13 @@
   border: 1px solid rgba(67, 159, 169, 0.18);
 }
 
-.templateActions { display: flex; gap: 6px; }
+.templateActions { display: flex; gap: 6px; align-items: center; }
+
+/* Desktop: sub-groups flow as one inline row */
+.actPrimary  { display: contents; }
+.actSecondary { display: contents; }
+.btnText { display: inline; }
+.btnIcon { display: none; }
 
 .actionBtn {
   background: rgba(255, 255, 255, 0.76);
@@ -1016,4 +1022,18 @@ select.input { appearance: none; cursor: pointer; }
   .main { padding: 20px 16px; }
   .showcaseImageGrid { grid-template-columns: repeat(2, 1fr); }
   .themeGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .templateActions  { flex-direction: column; gap: 8px; width: 100%; }
+  .actPrimary       { display: flex; gap: 8px; width: 100%; }
+  .actPrimary .actionBtn { flex: 1; padding: 10px 6px; font-size: 0.78rem; text-align: center; justify-content: center; }
+  .actSecondary     { display: flex; gap: 8px; }
+  .actSecondary .actionBtn {
+    width: 44px; min-width: 44px; height: 44px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+  }
+  .btnText { display: none; }
+  .btnIcon { display: block; width: 18px; height: 18px; }
 }
