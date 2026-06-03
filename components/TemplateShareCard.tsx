@@ -40,7 +40,7 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
 
   // 4:5 aspect ratio — 600 × 750 at 2× scale
   const CARD_W = 300 * S;   // 600
-  const CARD_H = 375 * S;   // 750
+  const CARD_H = 430 * S;   // 860
 
   const PX     = 20 * S;    // horizontal margin
   const PT     = 24 * S;    // top padding (before CTA)
@@ -282,11 +282,9 @@ const cardStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "space-between",
+  justifyContent: "flex-start",
   gap: "8px",
   width: "300px",
-  height: "375px",
-  overflow: "hidden",
   boxSizing: "border-box",
 };
 
