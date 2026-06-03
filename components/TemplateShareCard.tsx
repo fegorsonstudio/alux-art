@@ -29,28 +29,30 @@ function roundedFill(
   ctx.fill();
 }
 
-// Build the card as a PNG by drawing to Canvas 2D.
+// Build the 4:5 card as a PNG by drawing to Canvas 2D.
 // QRCodeCanvas renders the QR into a <canvas> element — copying canvas to
 // canvas via drawImage() is always taint-free and never hangs.
 function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
-  // Get the QR canvas rendered by QRCodeCanvas
   const qrCanvas = cardEl.querySelector("canvas") as HTMLCanvasElement | null;
   if (!qrCanvas) return Promise.reject(new Error("QR canvas not found"));
 
   const S = 2;
 
-  // Layout (all values in pixels at 2× scale)
-  const CARD_W = 300 * S;
-  const PX     = 28 * S;
-  const PT     = 32 * S;
-  const PB     = 28 * S;
-  const GAP    = 16 * S;
-  const QR     = 200 * S;   // QR display size on output canvas
-  const PP     = 24 * S;    // plinth padding
-  const PW     = QR + 2 * PP;
-  const PH     = QR + 2 * PP;
-  const INSTRH = 88 * S;
-  const CARD_H = PT + PH + GAP + 20 * S + GAP + 16 * S + GAP + S + GAP + INSTRH + PB;
+  // 4:5 aspect ratio — 600 × 750 at 2× scale
+  const CARD_W = 300 * S;   // 600
+  const CARD_H = 375 * S;   // 750
+
+  const PX     = 20 * S;    // horizontal margin
+  const PT     = 24 * S;    // top padding (before CTA)
+  const PB     = 20 * S;    // bottom padding
+  const GAP    = 10 * S;    // vertical gap between sections
+
+  // QR plinth: 65% of card width
+  const PW     = Math.round(CARD_W * 0.65);  // 390
+  const PP     = 16 * S;                      // plinth padding
+  const QR     = PW - 2 * PP;                 // 326 — QR display size on canvas
+  const PH     = PW;                           // square plinth
+  const plinthX = Math.round((CARD_W - PW) / 2); // 105
 
   const canvas  = document.createElement("canvas");
   canvas.width  = CARD_W;
@@ -65,13 +67,22 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
   roundedFill(ctx, 0, 0, CARD_W, CARD_H, 24 * S);
 
   let y = PT;
-  const plinthX = (CARD_W - PW) / 2;
+
+  // CTA — "TAKE A SCREENSHOT NOW!"
+  ctx.save();
+  ctx.font        = `bold ${12 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.fillStyle   = "rgba(255,255,255,0.92)";
+  ctx.textAlign   = "center";
+  ctx.letterSpacing = "0.15em";
+  ctx.fillText("TAKE A SCREENSHOT NOW!", CARD_W / 2, y + 12 * S);
+  ctx.restore();
+  y += 14 * S + GAP;
 
   // White plinth with shadow
   ctx.save();
   ctx.shadowColor   = "rgba(0,0,0,0.4)";
-  ctx.shadowBlur    = 40;
-  ctx.shadowOffsetY = 20;
+  ctx.shadowBlur    = 30;
+  ctx.shadowOffsetY = 14;
   ctx.fillStyle     = "#ffffff";
   roundedFill(ctx, plinthX, y, PW, PH, 16 * S);
   ctx.restore();
@@ -84,23 +95,23 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
 
   // Creator handle
   ctx.save();
-  ctx.font        = `bold ${15 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.font        = `bold ${13 * S}px system-ui,-apple-system,sans-serif`;
   ctx.fillStyle   = "#c4b5fd";
   ctx.textAlign   = "center";
   ctx.shadowColor = "rgba(167,139,250,0.6)";
-  ctx.shadowBlur  = 12;
-  ctx.fillText(handle, CARD_W / 2, y + 15 * S);
+  ctx.shadowBlur  = 10;
+  ctx.fillText(handle, CARD_W / 2, y + 13 * S);
   ctx.restore();
-  y += 20 * S + GAP;
+  y += 16 * S + GAP;
 
   // Platform label
   ctx.save();
-  ctx.font      = `${11 * S}px system-ui,-apple-system,sans-serif`;
+  ctx.font      = `${10 * S}px system-ui,-apple-system,sans-serif`;
   ctx.fillStyle = "rgba(255,255,255,0.35)";
   ctx.textAlign = "center";
-  ctx.fillText("aluxartandframes.shop", CARD_W / 2, y + 11 * S);
+  ctx.fillText("aluxartandframes.shop", CARD_W / 2, y + 10 * S);
   ctx.restore();
-  y += 16 * S + GAP;
+  y += 14 * S + GAP;
 
   // Divider
   ctx.fillStyle = "rgba(255,255,255,0.08)";
@@ -108,20 +119,21 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
   y += S + GAP;
 
   // Instructions — two columns
+  const INSTRH = CARD_H - y - PB;
   const MX     = CARD_W / 2;
-  const COLGAP = 12 * S;
+  const COLGAP = 10 * S;
   const COLW   = MX - PX - COLGAP;
 
   const drawCol = (lines: string[], cx: number) => {
     ctx.save();
     ctx.textAlign = "center";
-    ctx.font      = `bold ${10 * S}px system-ui,-apple-system,sans-serif`;
+    ctx.font      = `bold ${9 * S}px system-ui,-apple-system,sans-serif`;
     ctx.fillStyle = "rgba(255,255,255,0.6)";
-    ctx.fillText(lines[0].toUpperCase(), cx, y + 10 * S);
-    ctx.font      = `${11 * S}px system-ui,-apple-system,sans-serif`;
+    ctx.fillText(lines[0].toUpperCase(), cx, y + 9 * S);
+    ctx.font      = `${10 * S}px system-ui,-apple-system,sans-serif`;
     ctx.fillStyle = "rgba(255,255,255,0.45)";
     for (let i = 1; i < lines.length; i++) {
-      ctx.fillText(lines[i], cx, y + (16 + i * 18) * S);
+      ctx.fillText(lines[i], cx, y + (14 + i * 16) * S);
     }
     ctx.restore();
   };
@@ -140,7 +152,6 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
     MX + COLGAP + COLW / 2
   );
 
-  // canvas.toBlob is async but runs on the GPU thread — no hanging
   return new Promise<Blob>((res, rej) =>
     canvas.toBlob(b => (b ? res(b) : rej(new Error("PNG encode failed"))), "image/png")
   );
@@ -158,7 +169,6 @@ export default function TemplateShareCard({
     if (typeof window === "undefined" || !cardRef.current) return;
     setDownloading(true);
     try {
-      // Build and download the QR card PNG.
       const blob    = await buildCardPng(cardRef.current, handle);
       const blobUrl = URL.createObjectURL(blob);
       const link    = document.createElement("a");
@@ -194,22 +204,25 @@ export default function TemplateShareCard({
   return (
     <div style={wrapStyle}>
       <div ref={cardRef} style={cardStyle}>
+        {/* CTA — sits above the plinth against the dark background */}
+        <p style={ctaStyle}>Take a Screenshot Now!</p>
+
         <div style={plinthStyle}>
           {/*
             QRCodeCanvas renders into a <canvas> element. We read that canvas
             in buildCardPng and copy it via drawImage() — always taint-free,
             no blob/Image loading, no hanging.
-            size=400 (2× display size) keeps the QR crisp in the download;
-            CSS scales it down to 200×200 for the on-screen card.
+            size=326 (2× display size 163px) keeps the QR crisp in the download.
           */}
           <QRCodeCanvas
             value={templateUrl}
-            size={400}
+            size={326}
             fgColor="#3730a3"
             bgColor="#ffffff"
-            style={{ width: "200px", height: "200px", display: "block" }}
+            style={{ width: "163px", height: "163px", display: "block" }}
           />
         </div>
+
         <p style={handleStyle}>{handle}</p>
         <p style={platformStyle}>aluxartandframes.shop</p>
         <div style={dividerStyle} />
@@ -252,47 +265,65 @@ const cardStyle: React.CSSProperties = {
   background: "linear-gradient(180deg, #0d0826 0%, #03010a 100%)",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: "24px",
-  padding: "32px 28px 28px",
+  padding: "24px 20px 20px",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: "16px",
+  gap: "10px",
   width: "300px",
+  height: "375px",
+  overflow: "hidden",
+  boxSizing: "border-box",
+};
+
+const ctaStyle: React.CSSProperties = {
+  margin: 0,
+  color: "rgba(255,255,255,0.92)",
+  fontWeight: 700,
+  fontSize: "11px",
+  letterSpacing: "0.15em",
+  textTransform: "uppercase",
+  fontFamily: "system-ui, sans-serif",
+  flexShrink: 0,
 };
 
 const plinthStyle: React.CSSProperties = {
   background: "#ffffff",
   borderRadius: "16px",
-  padding: "24px",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+  padding: "16px",
+  boxShadow: "0 14px 30px rgba(0,0,0,0.4)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  flexShrink: 0,
 };
 
 const handleStyle: React.CSSProperties = {
   margin: 0,
   color: "#c4b5fd",
   fontWeight: 700,
-  fontSize: "15px",
+  fontSize: "13px",
   letterSpacing: "0.15em",
   textTransform: "uppercase",
-  textShadow: "0 0 12px rgba(167,139,250,0.6)",
+  textShadow: "0 0 10px rgba(167,139,250,0.6)",
   fontFamily: "system-ui, sans-serif",
+  flexShrink: 0,
 };
 
 const platformStyle: React.CSSProperties = {
   margin: 0,
   color: "rgba(255,255,255,0.35)",
-  fontSize: "11px",
+  fontSize: "10px",
   letterSpacing: "0.08em",
   fontFamily: "system-ui, sans-serif",
+  flexShrink: 0,
 };
 
 const dividerStyle: React.CSSProperties = {
   width: "100%",
   height: "1px",
   background: "rgba(255,255,255,0.08)",
+  flexShrink: 0,
 };
 
 const instructionsGrid: React.CSSProperties = {
@@ -300,26 +331,27 @@ const instructionsGrid: React.CSSProperties = {
   alignItems: "flex-start",
   gap: "0",
   width: "100%",
+  flexShrink: 0,
 };
 
 const instrColStyle: React.CSSProperties = {
   flex: 1,
   display: "flex",
   flexDirection: "column",
-  gap: "4px",
+  gap: "2px",
 };
 
 const instrDivStyle: React.CSSProperties = {
   width: "1px",
   alignSelf: "stretch",
   background: "rgba(255,255,255,0.08)",
-  margin: "0 12px",
+  margin: "0 10px",
 };
 
 const instrHeadStyle: React.CSSProperties = {
-  margin: "0 0 6px",
+  margin: "0 0 4px",
   color: "rgba(255,255,255,0.6)",
-  fontSize: "10px",
+  fontSize: "9px",
   fontWeight: 700,
   letterSpacing: "0.1em",
   textTransform: "uppercase",
@@ -329,8 +361,8 @@ const instrHeadStyle: React.CSSProperties = {
 const instrLineStyle: React.CSSProperties = {
   margin: 0,
   color: "rgba(255,255,255,0.45)",
-  fontSize: "11px",
-  lineHeight: 1.6,
+  fontSize: "10px",
+  lineHeight: 1.5,
   fontFamily: "system-ui, sans-serif",
 };
 
