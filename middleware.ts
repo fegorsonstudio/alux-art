@@ -42,7 +42,8 @@ export async function middleware(request: NextRequest) {
     p === "/marketplace" ||
     (p.startsWith("/marketplace/") && !p.includes("/book")) ||
     p.includes("/book/success") ||
-    p.startsWith("/creators/");
+    p.startsWith("/creators/") ||
+    p.startsWith("/gift/");  // gift unboxing + success pages are public links
 
   const { data: { user } } = await supabase.auth.getUser();
 
