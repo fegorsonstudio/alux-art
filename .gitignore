@@ -65,3 +65,9 @@ FACEBOOK_SETUP_AGENT.md
 PRIVACY_POLICY_AGENT.md
 SECURITY_AGENT.md
 alux-drafts/
+
+# Playwright output and ad-hoc investigation files
+test-results/
+scratch/
+*.playwright-mcp/
+.playwright-mcp/
