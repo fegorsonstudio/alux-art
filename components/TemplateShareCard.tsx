@@ -213,7 +213,7 @@ export default function TemplateShareCard({
 
   return (
     <div style={wrapStyle}>
-      <div ref={cardRef} style={cardStyle}>
+      <div ref={cardRef} style={cardStyle} data-testid="luxury-qr-card">
         {/* CTA — sits above the plinth against the dark background */}
         <p style={ctaStyle}>Take a Screenshot Now!</p>
 

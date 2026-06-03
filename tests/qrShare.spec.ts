@@ -76,4 +76,28 @@ test.describe("Luxury QR Share Card", () => {
     await page.getByRole("button", { name: /✕ Close/ }).click();
     await expect(page.locator("text=iPhone")).not.toBeVisible({ timeout: 3_000 });
   });
+
+  test("visual snapshot — 4:5 card layout matches baseline", async ({ page }) => {
+    await page.getByRole("button", { name: "QR Code" }).click();
+    await page.waitForSelector("text=iPhone", { timeout: 15_000 });
+
+    // data-testid only exists after the updated TemplateShareCard is deployed.
+    // Skip gracefully on the pre-deployment live site; assert once deployed.
+    const card = page.locator('[data-testid="luxury-qr-card"]');
+    const isPresent = await card.isVisible({ timeout: 3_000 }).catch(() => false);
+    if (!isPresent) {
+      console.warn("SKIP: data-testid='luxury-qr-card' not found — deploy component first to establish baseline");
+      test.skip();
+      return;
+    }
+
+    // Give QRCodeCanvas one animation frame to finish painting.
+    await page.waitForTimeout(300);
+
+    // First run writes the golden snapshot; subsequent runs diff against it.
+    // maxDiffPixelRatio: 0.01 allows up to 1% changed pixels (font rounding, etc.).
+    await expect(card).toHaveScreenshot("luxury-qr-4x5.png", {
+      maxDiffPixelRatio: 0.01,
+    });
+  });
 });
