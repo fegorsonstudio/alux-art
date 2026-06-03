@@ -69,5 +69,8 @@ alux-drafts/
 # Playwright output and ad-hoc investigation files
 test-results/
 scratch/
-*.playwright-mcp/
 .playwright-mcp/
+
+# Debug screenshots and one-off test scripts in project root
+*.jpeg
+test-payment.mjs
