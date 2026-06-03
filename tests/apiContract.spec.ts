@@ -255,11 +255,11 @@ test.describe("GET /api/marketplace/[id] — template detail schema", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Auth-guarded endpoints — 401 shapes", () => {
-  test("GET /api/me returns 401 when not logged in", async ({ request }) => {
+  test("GET /api/me returns 200 with user: null when not logged in", async ({ request }) => {
     const res = await request.get("/api/me");
-    expect(res.status()).toBe(401);
+    expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body).toHaveProperty("error");
+    expect(body).toHaveProperty("user", null);
   });
 
   test("POST /api/gift/create returns 401 without session", async ({ request }) => {

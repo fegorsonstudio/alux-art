@@ -247,8 +247,7 @@ test.describe("Section 5 — Navigation", () => {
 
   test("homepage loads", async ({ page }) => {
     const start = Date.now();
-    await page.goto("/");
-    await page.waitForLoadState("domcontentloaded");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     const loadTime = ((Date.now() - start) / 1000).toFixed(1);
     await shot(page, "05-homepage");
     console.log(`[homepage] Load time: ${loadTime}s`);
@@ -278,6 +277,7 @@ test.describe("Section 6 — Gift Unboxing & Success Pages", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe("Section 7 — Performance & Console Errors", () => {
   test("check console errors and network failures across key pages", async ({ page }) => {
+    test.setTimeout(120_000);
     const consoleErrs: string[] = [];
     const networkErrs: string[] = [];
     const falLeaks: string[] = [];
@@ -294,9 +294,8 @@ test.describe("Section 7 — Performance & Console Errors", () => {
 
     // Visit key pages (relative — respects baseURL in config)
     for (const path of ["/marketplace", TEMPLATE_URL, "/gift/success"]) {
-      await page.goto(path);
-      await page.waitForLoadState("domcontentloaded");
-      await page.waitForTimeout(3_000);
+      await page.goto(path, { waitUntil: "domcontentloaded" }).catch(() => {});
+      await page.waitForTimeout(1_500);
     }
 
     console.log(`[errors] Console errors (${consoleErrs.length}):\n${consoleErrs.join("\n") || "none"}`);

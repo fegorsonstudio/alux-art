@@ -25,15 +25,11 @@ test.describe("Gift button — template page", () => {
     await expect(page.getByRole("button", { name: "Gift a Friend" })).toBeVisible();
   });
 
-  test("Gift a Friend click while not logged in redirects to /login with ?next=", async ({ page }) => {
+  test("Gift a Friend click while not logged in opens the gift modal (auth required at payment, not upfront)", async ({ page }) => {
     await page.getByRole("button", { name: "Gift a Friend" }).click();
-    await page.waitForURL(/\/login/, { timeout: 10_000 });
-    expect(page.url()).toContain("/login");
-    expect(page.url()).toContain("next=");
-    // next= value may be URL-encoded or plain depending on browser/Next.js version
-    const url = page.url();
-    const hasMarketplace = url.includes("/marketplace/") || url.includes("%2Fmarketplace%2F");
-    expect(hasMarketplace).toBe(true);
+    // Modal opens immediately; login is required only when the user tries to pay.
+    await expect(page.locator("text=Gift this style")).toBeVisible({ timeout: 10_000 });
+    expect(page.url()).not.toContain("/login");
   });
 
   test("QR Code button still works after Gift button added", async ({ page }) => {
