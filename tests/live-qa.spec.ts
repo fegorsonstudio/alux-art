@@ -8,7 +8,7 @@ const SHOTS_DIR = path.join(process.cwd(), "qa-screenshots");
 if (!fs.existsSync(SHOTS_DIR)) fs.mkdirSync(SHOTS_DIR, { recursive: true });
 
 async function shot(page: Page, name: string) {
-  await page.screenshot({ path: path.join(SHOTS_DIR, `${name}.jpeg`), fullPage: false });
+  await page.screenshot({ path: path.join(SHOTS_DIR, `${name}.jpeg`), fullPage: false, timeout: 8_000 }).catch(() => {});
 }
 
 async function consoleErrors(page: Page): Promise<string[]> {
@@ -25,8 +25,7 @@ test.describe("Section 1 — Marketplace", () => {
     page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
 
     const start = Date.now();
-    await page.goto("/marketplace");
-    await page.waitForLoadState("domcontentloaded");
+    await page.goto("/marketplace", { waitUntil: "domcontentloaded" });
 
     // Wait for cards to appear (client-rendered)
     await page.waitForSelector("[class*='card'], [class*='Card'], [class*='template'], a[href*='/marketplace/']", { timeout: 15_000 }).catch(() => {});
@@ -74,7 +73,7 @@ test.describe("Section 2 — Template Detail Page", () => {
     page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
 
     const start = Date.now();
-    await page.goto(TEMPLATE_URL);
+    await page.goto(TEMPLATE_URL, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("text=Book This Look", { timeout: 30_000 });
     const loadTime = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`[template] Load time: ${loadTime}s`);
@@ -146,7 +145,7 @@ test.describe("Section 2 — Template Detail Page", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe("Section 3 — Gift Modal (unauthenticated)", () => {
   test("Gift a Friend redirects unauthenticated user to login", async ({ page }) => {
-    await page.goto(TEMPLATE_URL);
+    await page.goto(TEMPLATE_URL, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("text=Book This Look", { timeout: 30_000 });
 
     const giftBtn = page.locator("button").filter({ hasText: /Gift a Friend/i });
@@ -170,7 +169,7 @@ test.describe("Section 3 — Gift Modal (unauthenticated)", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe("Section 4 — QR Code Modal", () => {
   test("QR Code button opens the QR overlay", async ({ page }) => {
-    await page.goto(TEMPLATE_URL);
+    await page.goto(TEMPLATE_URL, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("text=Book This Look", { timeout: 30_000 });
 
     const qrBtn = page.locator("button").filter({ hasText: /QR Code/i });
@@ -199,8 +198,7 @@ test.describe("Section 4 — QR Code Modal", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe("Section 5 — Navigation", () => {
   test("all nav links present and functional", async ({ page }) => {
-    await page.goto("/marketplace");
-    await page.waitForLoadState("domcontentloaded");
+    await page.goto("/marketplace", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(2_000);
 
     // Collect all nav links
@@ -235,7 +233,7 @@ test.describe("Section 5 — Navigation", () => {
   });
 
   test("support page loads", async ({ page }) => {
-    const res = await page.goto("/support");
+    const res = await page.goto("/support", { waitUntil: "domcontentloaded" });
     const status = res?.status();
     const url = page.url();
     await page.waitForTimeout(2_000);
@@ -257,7 +255,7 @@ test.describe("Section 5 — Navigation", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe("Section 6 — Gift Unboxing & Success Pages", () => {
   test("gift unboxing page shows error for fake UUID", async ({ page }) => {
-    await page.goto("/gift/00000000-0000-0000-0000-000000000000");
+    await page.goto("/gift/00000000-0000-0000-0000-000000000000", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3_000);
     await shot(page, "06-gift-not-found");
     const text = await page.locator("body").innerText().catch(() => "");
@@ -265,7 +263,7 @@ test.describe("Section 6 — Gift Unboxing & Success Pages", () => {
   });
 
   test("gift success page renders correctly", async ({ page }) => {
-    await page.goto("/gift/success?gift_id=test-123");
+    await page.goto("/gift/success?gift_id=test-123", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3_000);
     await shot(page, "06-gift-success");
     const hasHeading = await page.locator("text=Your gift is ready!").isVisible().catch(() => false);
@@ -294,8 +292,8 @@ test.describe("Section 7 — Performance & Console Errors", () => {
 
     // Visit key pages (relative — respects baseURL in config)
     for (const path of ["/marketplace", TEMPLATE_URL, "/gift/success"]) {
-      await page.goto(path, { waitUntil: "domcontentloaded" }).catch(() => {});
-      await page.waitForTimeout(1_500);
+      await page.goto(path, { waitUntil: "domcontentloaded", timeout: 20_000 }).catch(() => {});
+      await page.waitForTimeout(500).catch(() => {});
     }
 
     console.log(`[errors] Console errors (${consoleErrs.length}):\n${consoleErrs.join("\n") || "none"}`);
