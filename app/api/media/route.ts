@@ -6,8 +6,31 @@ import { isAdminEmail } from "@/lib/auth";
 // Buckets that are publicly viewable (marketplace browse, template previews).
 const PUBLIC_BUCKETS = new Set(["template-images"]);
 
+async function processImage(
+  rawBuffer: ArrayBuffer,
+  widthParam: string | null,
+  qualityParam: string | null,
+  formatParam: string | null,
+): Promise<{ data: Buffer; contentType: string } | null> {
+  if (!widthParam && !formatParam) return null;
+  try {
+    const sharp = (await import("sharp")).default;
+    let pipeline = sharp(Buffer.from(rawBuffer));
+    if (widthParam) {
+      pipeline = pipeline.resize(Math.min(Number(widthParam), 2400), undefined, { withoutEnlargement: true });
+    }
+    const fmt = formatParam === "avif" ? "avif" : "webp";
+    const quality = qualityParam ? Math.min(Math.max(Number(qualityParam), 1), 100) : 75;
+    pipeline = pipeline[fmt]({ quality });
+    const data = await pipeline.toBuffer();
+    return { data, contentType: `image/${fmt}` };
+  } catch {
+    return null;
+  }
+}
+
 // Proxy storage files through the app server to avoid CORS/ORB restrictions.
-// Usage: /api/media?b=<bucket>&p=<path>
+// Usage: /api/media?b=<bucket>&p=<path>[&width=N&quality=N&format=webp]
 export async function GET(req: NextRequest) {
   const bucket = req.nextUrl.searchParams.get("b");
   const path   = req.nextUrl.searchParams.get("p");
@@ -29,6 +52,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const widthParam   = req.nextUrl.searchParams.get("width");
+  const qualityParam = req.nextUrl.searchParams.get("quality");
+  const formatParam  = req.nextUrl.searchParams.get("format");
+
   const cacheControl = PUBLIC_BUCKETS.has(bucket)
     ? "public, max-age=86400, stale-while-revalidate=604800"
     : "private, max-age=3600, stale-while-revalidate=86400";
@@ -36,7 +63,14 @@ export async function GET(req: NextRequest) {
   // Try R2 first (all files after migration)
   try {
     const { buffer, contentType } = await r2Download(bucket, path);
-    return new NextResponse(buffer.buffer as ArrayBuffer, {
+    const raw = buffer.buffer as ArrayBuffer;
+    const processed = await processImage(raw, widthParam, qualityParam, formatParam);
+    if (processed) {
+      return new NextResponse(processed.data, {
+        headers: { "Content-Type": processed.contentType, "Cache-Control": cacheControl },
+      });
+    }
+    return new NextResponse(raw, {
       headers: { "Content-Type": contentType, "Cache-Control": cacheControl },
     });
   } catch {
@@ -47,8 +81,14 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceClient();
   const { data, error } = await supabase.storage.from(bucket).download(path);
   if (!error && data) {
-    const buffer = await data.arrayBuffer();
-    return new NextResponse(buffer, {
+    const raw = await data.arrayBuffer();
+    const processed = await processImage(raw, widthParam, qualityParam, formatParam);
+    if (processed) {
+      return new NextResponse(processed.data, {
+        headers: { "Content-Type": processed.contentType, "Cache-Control": cacheControl },
+      });
+    }
+    return new NextResponse(raw, {
       headers: {
         "Content-Type": data.type || "application/octet-stream",
         "Cache-Control": cacheControl,
