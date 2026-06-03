@@ -11,6 +11,7 @@ import ImagePreview from "@/components/ImagePreview";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
 import { Analytics } from "@/lib/analytics";
+import TemplateShareCard from "@/components/TemplateShareCard";
 
 const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
 type TemplateTag = typeof TEMPLATE_TAGS[number];
@@ -151,6 +152,7 @@ function CreatorDashboard() {
   const [galleryAdded, setGalleryAdded] = useState<Map<string, string>>(new Map());
   const [settingCover, setSettingCover] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [qrTemplateId, setQrTemplateId] = useState<string | null>(null);
   const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
   const [showCollageEditor, setShowCollageEditor] = useState(false);
   const [storefrontOpen, setStorefrontOpen] = useState(false);
@@ -996,6 +998,9 @@ function CreatorDashboard() {
                 <button type="button" className={styles.actionBtn} onClick={() => copyLink(t.id)}>
                   {copiedId === t.id ? "Copied!" : "Copy link"}
                 </button>
+                <button type="button" className={styles.actionBtn} onClick={() => setQrTemplateId(t.id)}>
+                  QR Code
+                </button>
               </div>
             </div>
           </div>
@@ -1465,6 +1470,27 @@ function CreatorDashboard() {
       </div>
 
       {/* Collage cover editor modal */}
+      {qrTemplateId && (() => {
+        const t = templates.find(x => x.id === qrTemplateId);
+        if (!t) return null;
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 200, overflowY: "auto" }}
+            onClick={() => setQrTemplateId(null)}>
+            <div onClick={e => e.stopPropagation()}>
+              <TemplateShareCard
+                templateUrl={`https://aluxartandframes.shop/marketplace/${t.id}`}
+                creatorUsername={creator?.display_name ?? "AluxArt"}
+                coverUrl={t.cover_url ?? null}
+                includeCover={true}
+                onClose={() => setQrTemplateId(null)}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       {showCollageEditor && (
         <CollageEditor
           templateId={panel === "create" ? "" : panel}

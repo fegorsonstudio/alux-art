@@ -8,6 +8,7 @@ interface Props {
   creatorUsername: string;
   coverUrl: string | null;
   onClose: () => void;
+  includeCover?: boolean;
 }
 
 function roundedFill(
@@ -146,7 +147,7 @@ function buildCardPng(cardEl: HTMLDivElement, handle: string): Promise<Blob> {
 }
 
 export default function TemplateShareCard({
-  templateUrl, creatorUsername, coverUrl, onClose,
+  templateUrl, creatorUsername, coverUrl, onClose, includeCover = false,
 }: Props) {
   const cardRef           = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -173,7 +174,7 @@ export default function TemplateShareCard({
     }
 
     // Cover download is fire-and-forget so it never blocks the button state.
-    if (coverUrl) {
+    if (includeCover && coverUrl) {
       fetch(coverUrl)
         .then(r => r.blob())
         .then(coverBlob => {
@@ -230,7 +231,7 @@ export default function TemplateShareCard({
       </div>
 
       <button style={downloadBtnStyle} onClick={handleDownload} disabled={downloading}>
-        {downloading ? "Saving..." : "Download Card + Cover"}
+        {downloading ? "Saving..." : includeCover ? "Download Card + Cover" : "Download Card"}
       </button>
       <button style={closeBtnStyle} onClick={onClose}>✕ Close</button>
     </div>
