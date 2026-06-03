@@ -143,7 +143,6 @@ export default function TemplatePage() {
   const [giftMessage, setGiftMessage] = useState("");
   const [giftError, setGiftError] = useState("");
   const [userName, setUserName] = useState("");
-  const [giftQuantity, setGiftQuantity] = useState<1 | 5 | 10>(1);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
@@ -287,9 +286,6 @@ export default function TemplatePage() {
 
   const activePkg = pkgOptions.find(o => o.n === selectedPkg) ?? pkgOptions[pkgOptions.length - 1];
   const pkgPrice = activePkg?.price ?? template.priceNgn;
-
-  const giftPkg = pkgOptions.find(o => o.n === giftQuantity) ?? pkgOptions[0];
-  const giftPrice = giftPkg?.price ?? template.priceNgn ?? 0;
 
   const displayedPrice = couponResult?.valid && couponResult.discountNgn
     ? pkgPrice - couponResult.discountNgn
@@ -575,56 +571,21 @@ export default function TemplatePage() {
               }} aria-label="Close">✕</button>
             </div>
 
-            {/* Package selector */}
-            <div style={{ marginBottom: "24px" }}>
-              <p style={{ margin: "0 0 10px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em", textTransform: "uppercase" as const }}>
-                Choose package
-              </p>
-              <div style={{ display: "flex", gap: "8px" }}>
-                {pkgOptions.map(opt => {
-                  const isSelected = giftQuantity === opt.n;
-                  return (
-                    <button
-                      key={opt.n}
-                      type="button"
-                      onClick={() => setGiftQuantity(opt.n)}
-                      style={{
-                        flex: 1,
-                        background: isSelected
-                          ? "linear-gradient(135deg, rgba(109,40,217,0.5), rgba(55,48,163,0.5))"
-                          : "rgba(255,255,255,0.04)",
-                        border: isSelected
-                          ? "1px solid rgba(196,181,253,0.6)"
-                          : "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "10px",
-                        padding: "10px 6px",
-                        cursor: "pointer",
-                        textAlign: "center" as const,
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      <div style={{ color: isSelected ? "#f5f3ff" : "rgba(255,255,255,0.6)", fontSize: "0.88rem", fontWeight: 700, lineHeight: 1.2 }}>
-                        {opt.n} {opt.n === 1 ? "image" : "images"}
-                      </div>
-                      <div style={{ color: isSelected ? "#c4b5fd" : "rgba(255,255,255,0.35)", fontSize: "0.75rem", marginTop: "4px" }}>
-                        {formatPrice(opt.price)}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{
-                background: "rgba(109,40,217,0.1)", border: "1px solid rgba(109,40,217,0.2)",
-                borderRadius: "10px", padding: "10px 14px", marginTop: "10px",
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <p style={{ margin: 0, color: "rgba(255,255,255,0.5)", fontSize: "0.78rem" }}>
-                  {template.title} · {template.category}
+            {/* Session summary — synced with main page selection */}
+            <div style={{
+              background: "rgba(109,40,217,0.1)", border: "1px solid rgba(109,40,217,0.2)",
+              borderRadius: "10px", padding: "12px 16px", marginBottom: "24px",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <div>
+                <p style={{ margin: 0, color: "#f5f3ff", fontSize: "0.88rem", fontWeight: 600 }}>{template.title}</p>
+                <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>
+                  {activePkg?.n ?? selectedPkg} {(activePkg?.n ?? selectedPkg) === 1 ? "image" : "images"} · {template.category}
                 </p>
-                <span style={{ color: "#c4b5fd", fontSize: "1rem", fontWeight: 700 }}>
-                  {formatPrice(giftPrice)}
-                </span>
               </div>
+              <span style={{ color: "#c4b5fd", fontSize: "1.1rem", fontWeight: 700 }}>
+                {formatPrice(pkgPrice)}
+              </span>
             </div>
 
             {/* Sender name */}
@@ -689,7 +650,7 @@ export default function TemplatePage() {
                       templateId: id,
                       senderName: giftName.trim(),
                       customMessage: giftMessage.trim() || null,
-                      packageSize: giftQuantity,
+                      packageSize: activePkg?.n ?? selectedPkg,
                       currency,
                     }),
                   });
@@ -716,7 +677,7 @@ export default function TemplatePage() {
                 transition: "opacity 0.2s",
               }}
             >
-              {giftBuying ? "Redirecting to payment..." : `Pay ${formatPrice(giftPrice)} — Send Gift`}
+              {giftBuying ? "Redirecting to payment..." : `Pay ${formatPrice(pkgPrice)} — Send Gift`}
             </button>
 
             <p style={{ margin: "12px 0 0", textAlign: "center", fontSize: "0.73rem", color: "rgba(255,255,255,0.25)", lineHeight: 1.5 }}>
