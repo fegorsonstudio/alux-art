@@ -137,6 +137,12 @@ export default function TemplatePage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
   const [showQR, setShowQR] = useState(false);
+  const [showGift, setShowGift] = useState(false);
+  const [giftBuying, setGiftBuying] = useState(false);
+  const [giftName, setGiftName] = useState("");
+  const [giftMessage, setGiftMessage] = useState("");
+  const [giftError, setGiftError] = useState("");
+  const [userName, setUserName] = useState("");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
@@ -160,7 +166,10 @@ export default function TemplatePage() {
       })
       .finally(() => setLoading(false));
     fetch("/api/user/creator-status").then(r => r.ok ? r.json() : { isCreator: false }).then(d => setIsCreator(d.isCreator));
-    fetch("/api/me").then(r => setIsLoggedIn(r.ok));
+    fetch("/api/me").then(r => {
+      setIsLoggedIn(r.ok);
+      if (r.ok) r.json().then(d => { if (d.user?.name) setUserName(d.user.name); });
+    });
   }, [id]);
 
   useEffect(() => {
@@ -396,6 +405,13 @@ export default function TemplatePage() {
             <span className={styles.categoryPill}>{template.category}</span>
             <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel}</button>
             <button type="button" className={styles.shareBtn} onClick={() => setShowQR(true)}>QR Code</button>
+            <button type="button" className={styles.shareBtn} onClick={() => {
+              if (!isLoggedIn) { window.location.href = `/login?next=/marketplace/${id}`; return; }
+              setGiftName(userName);
+              setGiftMessage("");
+              setGiftError("");
+              setShowGift(true);
+            }}>Gift a Friend</button>
           </div>
           <h1 className={styles.title}>{template.title}</h1>
 
@@ -516,6 +532,157 @@ export default function TemplatePage() {
               coverUrl={template.coverUrl}
               onClose={() => setShowQR(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {showGift && (
+        <div style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.88)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 100, padding: "16px", overflowY: "auto",
+        }} onClick={() => !giftBuying && setShowGift(false)}>
+          <div style={{
+            background: "linear-gradient(160deg, #0f0c2e 0%, #080618 100%)",
+            border: "1px solid rgba(109,40,217,0.3)",
+            borderRadius: "20px",
+            padding: "36px 28px",
+            maxWidth: 440,
+            width: "100%",
+            fontFamily: "system-ui, sans-serif",
+            boxShadow: "0 30px 80px rgba(55,48,163,0.4)",
+          }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
+              <div>
+                <p style={{ margin: "0 0 4px", fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(196,181,253,0.5)" }}>
+                  Gift this style
+                </p>
+                <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#f5f3ff" }}>
+                  Gift a Friend
+                </h2>
+              </div>
+              <button type="button" onClick={() => setShowGift(false)} style={{
+                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px", color: "rgba(255,255,255,0.5)", cursor: "pointer",
+                width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.1rem", padding: 0, flexShrink: 0,
+              }} aria-label="Close">✕</button>
+            </div>
+
+            {/* Session summary */}
+            <div style={{
+              background: "rgba(109,40,217,0.1)", border: "1px solid rgba(109,40,217,0.2)",
+              borderRadius: "10px", padding: "12px 16px", marginBottom: "24px",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <div>
+                <p style={{ margin: 0, color: "#f5f3ff", fontSize: "0.88rem", fontWeight: 600 }}>{template.title}</p>
+                <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>
+                  {activePkg?.n ?? selectedPkg} images · {template.category}
+                </p>
+              </div>
+              <span style={{ color: "#c4b5fd", fontSize: "1.1rem", fontWeight: 700 }}>
+                {formatPrice(pkgPrice)}
+              </span>
+            </div>
+
+            {/* Sender name */}
+            <label style={{ display: "block", marginBottom: "16px" }}>
+              <span style={{ display: "block", marginBottom: "6px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
+                YOUR NAME (required)
+              </span>
+              <input
+                type="text"
+                value={giftName}
+                onChange={e => setGiftName(e.target.value.slice(0, 80))}
+                placeholder="Your name"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "10px", padding: "10px 14px",
+                  color: "#f5f3ff", fontSize: "0.9rem", outline: "none",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              />
+            </label>
+
+            {/* Custom message */}
+            <label style={{ display: "block", marginBottom: "20px" }}>
+              <span style={{ display: "block", marginBottom: "6px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
+                PERSONAL MESSAGE (optional)
+              </span>
+              <textarea
+                value={giftMessage}
+                onChange={e => setGiftMessage(e.target.value.slice(0, 300))}
+                placeholder="Write something special for your friend..."
+                rows={3}
+                style={{
+                  width: "100%", boxSizing: "border-box", resize: "none",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "10px", padding: "10px 14px",
+                  color: "#f5f3ff", fontSize: "0.88rem", outline: "none",
+                  fontFamily: "system-ui, sans-serif", lineHeight: 1.5,
+                }}
+              />
+              <span style={{ display: "block", textAlign: "right", fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", marginTop: "3px" }}>
+                {giftMessage.length}/300
+              </span>
+            </label>
+
+            {giftError && (
+              <p style={{ margin: "0 0 14px", color: "#f87171", fontSize: "0.83rem" }}>{giftError}</p>
+            )}
+
+            <button
+              type="button"
+              disabled={giftBuying || !giftName.trim()}
+              onClick={async () => {
+                if (!giftName.trim()) { setGiftError("Please enter your name."); return; }
+                setGiftBuying(true);
+                setGiftError("");
+                try {
+                  const res = await fetch("/api/gift/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      templateId: id,
+                      senderName: giftName.trim(),
+                      customMessage: giftMessage.trim() || null,
+                      packageSize: activePkg?.n ?? selectedPkg,
+                      currency,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { setGiftError(data.error ?? "Failed to create gift. Please try again."); setGiftBuying(false); return; }
+                  if (data.authorizationUrl) { window.location.href = data.authorizationUrl; return; }
+                  setGiftError("Unexpected response. Please try again.");
+                  setGiftBuying(false);
+                } catch {
+                  setGiftError("Network error. Please try again.");
+                  setGiftBuying(false);
+                }
+              }}
+              style={{
+                width: "100%",
+                background: giftBuying || !giftName.trim()
+                  ? "rgba(109,40,217,0.35)"
+                  : "linear-gradient(135deg, #3730a3, #6d28d9)",
+                color: "#fff", border: "none", borderRadius: "12px",
+                padding: "14px 20px", fontSize: "0.95rem", fontWeight: 700,
+                cursor: giftBuying || !giftName.trim() ? "default" : "pointer",
+                fontFamily: "system-ui, sans-serif",
+                boxShadow: giftBuying || !giftName.trim() ? "none" : "0 6px 24px rgba(109,40,217,0.4)",
+                transition: "opacity 0.2s",
+              }}
+            >
+              {giftBuying ? "Redirecting to payment..." : `Pay ${formatPrice(pkgPrice)} — Send Gift`}
+            </button>
+
+            <p style={{ margin: "12px 0 0", textAlign: "center", fontSize: "0.73rem", color: "rgba(255,255,255,0.25)", lineHeight: 1.5 }}>
+              Your friend will receive a private link valid for 30 days. They&apos;ll upload their photos when they claim it.
+            </p>
           </div>
         </div>
       )}

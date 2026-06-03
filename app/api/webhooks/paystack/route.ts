@@ -98,6 +98,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // ── Gift purchase fulfillment ────────────────────────────────────────────
+  if (metadata?.type === "gift_purchase") {
+    const { gift_id } = metadata as Record<string, string>;
+    if (!gift_id) return NextResponse.json({ ok: true });
+
+    await sql`
+      UPDATE gift_links
+      SET payment_status = 'paid', paystack_reference = ${reference}
+      WHERE id = ${gift_id} AND payment_status = 'pending'
+    `;
+
+    return NextResponse.json({ ok: true });
+  }
+
   // ── Template purchase fulfillment ────────────────────────────────────────
   if (metadata?.type === "template_purchase") {
     const { purchase_id, template_id, shoot_id: existingShootId, user_id, coupon_id } = metadata as Record<string, string>;
