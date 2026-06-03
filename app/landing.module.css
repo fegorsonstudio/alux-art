@@ -505,7 +505,8 @@
 /* ---- Mobile ---- */
 @media (max-width: 680px) {
   .nav { padding: 16px 20px; }
-  .hero { padding: 60px 20px 50px; }
+  .hero { padding: 44px 20px 40px; }
+  .headline { font-size: clamp(1.65rem, 7.5vw, 2.4rem); }
   .howSection, .looksSection { padding-left: 20px; padding-right: 20px; }
   .steps { grid-template-columns: 1fr; gap: 32px; }
   .looksGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -521,5 +522,5 @@
 @media (max-width: 420px) {
   .looksGrid { grid-template-columns: 1fr; }
   .templateGrid { grid-template-columns: 1fr; }
-  .featuresBadge { width: 100%; }
+  .featuresBadge { width: calc(50% - 4px); }
 }
