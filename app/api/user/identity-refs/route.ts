@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2SignedDownloadUrl, r2Delete } from "@/lib/r2";
+import { r2ProxyUrl, r2Delete } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -24,16 +24,15 @@ export async function GET() {
     return true;
   }).slice(0, 20);
 
-  const signed = await Promise.all(deduped.map(async (ref) => {
-    const url = await r2SignedDownloadUrl(
-      ref.storage_bucket as string,
-      ref.storage_path as string,
-      3600
-    ).catch(() => null);
-    return { id: ref.id, name: ref.name, storagePath: ref.storage_path, storageBucket: ref.storage_bucket, url };
+  const signed = deduped.map((ref) => ({
+    id: ref.id,
+    name: ref.name,
+    storagePath: ref.storage_path,
+    storageBucket: ref.storage_bucket,
+    url: r2ProxyUrl(ref.storage_bucket as string, ref.storage_path as string),
   }));
 
-  return NextResponse.json({ refs: signed.filter((r) => r.url !== null) });
+  return NextResponse.json({ refs: signed });
 }
 
 export async function DELETE() {

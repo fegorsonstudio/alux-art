@@ -10,6 +10,7 @@ type Props = React.ImgHTMLAttributes<HTMLImageElement> & {
 
 function addParams(src: string, width: number, quality: number, fmt = "webp") {
   if (!src) return src;
+  if (src.startsWith("blob:") || src.startsWith("data:")) return src;
   const sep = src.includes("?") ? "&" : "?";
   return `${src}${sep}width=${width}&quality=${quality}&format=${fmt}`;
 }
