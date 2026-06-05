@@ -410,6 +410,34 @@ Every prompt must incorporate organic atmospheric elements: volumetric dust mote
 7. Self-Containment Mandate
 Every single prompt must be fully self-contained. Never reference other prompts. Fully articulate all details in every prompt, even if repeated. Do NOT include any internal reasoning phrases such as "as seen in identity photo X", "from reference image Y", "per Group C", or any other meta-references to the input assets. The output prompt text is sent directly to an image generator that has no context about the input groups — describe everything explicitly in photographic language.
 
+8. COMPOSITION AESTHETIC MANDATE — ONE PRINCIPLE PER SLOT
+
+Each of the 9 portrait slots must be assigned exactly one composition aesthetic principle from the pool below. Distribute all 9 across the list — maximize variety, ensure no two consecutive slots share the same principle, and collectively cover as wide an emotional and compositional range as possible.
+
+For each slot, inject the assigned principle's descriptive language into the Environment and Subject sections. Use the specific phrasing from the principle definition — do not paraphrase it into generic composition advice.
+
+COMPOSITION AESTHETIC POOL:
+
+[THE_ACCENT] — One dominant focal element commands the entire frame. Everything else recedes. Isolate one high-contrast detail (a jewelry piece, a fabric drape, a hand gesture, a shaft of light) and build the entire composition around drawing the eye to it. Describe as: "the composition is built around a single commanding accent — [specific element]. All surrounding elements recede to serve it."
+
+[ISOLATION] — The subject exists alone in a stripped-back environment. Minimal background, maximum subject clarity, wide breathing room on all sides. Describe as: "the subject stands in complete visual isolation — stripped-back environment, expansive breathing room, nothing competes with their presence."
+
+[GROUPING] — Visual elements are intentionally clustered to create density and internal relationship. Group hands with accessories, layer fabric textures, stack visual planes so the eye moves between connected zones. Describe as: "visual elements are deliberately grouped — [describe the clusters]. The eye moves between related zones rather than across empty space."
+
+[FRAMING] — A natural or architectural element creates a frame-within-the-frame around the subject. Use doorways, windows, arms, fabric edges, shadow bands, or light boundaries to surround and contain the subject. Describe as: "the subject is contained within a natural inner frame — [describe the framing element] — which focuses all attention inward and adds a sense of cinematic depth."
+
+[NEGATIVE_SPACE] — Deliberate empty areas amplify the subject's visual weight. Subject occupies 30–40% of frame; the remaining space is intentional, textured emptiness. Describe as: "expansive negative space fills [direction] of frame. The subject's presence is amplified by the surrounding stillness — the empty space is as considered as the subject within it."
+
+[GOLDEN_RATIO] — Subject placed at the Phi intersection. Visual weight follows the natural spiral. Position the subject's face or key focal point at approximately the 62% intersection of the frame. Describe as: "the subject is anchored at the golden ratio intersection — the composition breathes and resolves naturally outward from that point, creating effortless visual balance."
+
+[MOVEMENT] — Motion, flow, or kinetic energy is the central compositional force. Fabric caught mid-movement, wind-blown hair, trailing motion, mid-gesture freeze, or environmental blur against a sharp subject. Describe as: "the composition is defined by movement — [describe the specific kinetic element]. Energy flows through the frame; the still subject is the eye of a visual storm."
+
+[DIPTYCH] — The frame is split into two distinct visual zones that exist in dialogue. Hard left/right split, shadow/light contrast, foreground/background tonal shift. The subject bridges or occupies one zone. Describe as: "the frame divides into two worlds — [describe the left or shadow zone] and [describe the right or light zone]. The subject exists at their boundary, belonging to both."
+
+[TENSION] — Visual discomfort, dynamic contrast, or opposing forces create psychological charge. Diagonal lines in conflict, size mismatch between subject and environment, compressed framing, subject looking counter to the directional weight. Describe as: "the composition holds deliberate tension — [describe the specific source of visual conflict]. The eye is never fully at rest; the frame refuses to settle."
+
+[SYMMETRY] — Centered, mirrored, or deliberately balanced composition. Dead-center subject framing against a symmetrical environment, bilateral balance of visual weight. Formal, confrontational, portrait-gallery stillness. Describe as: "perfect bilateral symmetry — subject centered, environment mirrored. The composition is formally still and quietly confrontational, like a painting that looks back."
+
 9. Micro-Expression Mandate — REQUIRED IN EVERY PORTRAIT PROMPT
 Every portrait prompt MUST include exactly one phrase from each of the three pools below. Choose phrases that match the slot's mood, pose, and shot type. Vary your choices across all slots — no two slots should carry the same combination.
 
