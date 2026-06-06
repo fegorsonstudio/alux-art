@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 const PRICE_PER_IMAGE_NGN = 1000;
 const ALLOWED_COUNTS = new Set([1, 5, 10]);
@@ -94,6 +95,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })),
   ];
   await sql`INSERT INTO shoot_references ${sql(allRefs)}`;
+
+  const isAdmin = isAdminEmail(user.email);
+
+  if (isAdmin) {
+    await sql`
+      UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
+      WHERE id = ${shootId} AND status = 'PENDING_PAYMENT'
+    `;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      ?? `${request.headers.get("x-forwarded-proto") ?? "https"}://${request.headers.get("host") ?? ""}`;
+    fetch(`${siteUrl}/api/shoots/${shootId}/start`, {
+      method: "POST",
+      headers: process.env.INTERNAL_API_SECRET
+        ? { "x-internal-secret": process.env.INTERNAL_API_SECRET }
+        : {},
+      cache: "no-store",
+    }).catch(console.error);
+    return NextResponse.json({
+      bypass: true,
+      shootId,
+      callbackUrl: `${siteUrl}/creator-dashboard?showcase_paid=1&shoot_id=${shootId}`,
+    });
+  }
 
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
   const host = request.headers.get("host") ?? "";

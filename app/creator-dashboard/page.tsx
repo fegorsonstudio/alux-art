@@ -405,7 +405,11 @@ function CreatorDashboard() {
     const d = await res.json();
     setShowcasePaying(false);
     if (!res.ok) { setShowcaseError(d.error ?? "Failed to start showcase generation"); return; }
-    window.location.href = d.authorizationUrl;
+    if (d.bypass && d.callbackUrl) {
+      window.location.href = d.callbackUrl;
+    } else {
+      window.location.href = d.authorizationUrl;
+    }
   };
 
   const addToGallery = async (templateId: string | null, shootImageId: string) => {
