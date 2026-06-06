@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { packagePrice } from "@/lib/types";
 import { SITE_URL } from "@/lib/site-url";
+import { isAdminEmail } from "@/lib/auth";
 
 interface RefInput {
   name?: string;
@@ -85,7 +86,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   `;
 
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
-  if (!template.cr_subaccount) {
+  const isAdmin = isAdminEmail(user.email);
+
+  if (!template.cr_subaccount && !isAdmin) {
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
@@ -259,6 +262,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await sql`DELETE FROM shoots WHERE id = ${shootId}`;
       return NextResponse.json({ error: "Failed to save references" }, { status: 500 });
     }
+  }
+
+  if (isAdmin) {
+    await sql`UPDATE shoots SET status = 'QUEUED', updated_at = NOW() WHERE id = ${shootId} AND status = 'PENDING_PAYMENT'`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      ?? `${request.headers.get("x-forwarded-proto") ?? "https"}://${request.headers.get("host") ?? ""}`;
+    fetch(`${siteUrl}/api/shoots/${shootId}/start`, {
+      method: "POST",
+      headers: process.env.INTERNAL_API_SECRET
+        ? { "x-internal-secret": process.env.INTERNAL_API_SECRET }
+        : {},
+      cache: "no-store",
+    }).catch(console.error);
+    return NextResponse.json({
+      bypass: true,
+      shootId,
+      callbackUrl: `/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
+    });
   }
 
   const purchaseId = crypto.randomUUID();
