@@ -77,9 +77,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (typeof body.defaultRole === "string") updates.default_role = body.defaultRole.trim().slice(0, 100) || null;
   if (Array.isArray(body.roleChips)) updates.role_chips = (body.roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6);
   const scenesArray = Array.isArray(body.scenes) ? (body.scenes as unknown[]) : null;
+  const scenesClause = scenesArray !== null ? sql`, scenes = ${sql.json(scenesArray)}` : sql``;
 
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)}${scenesArray !== null ? sql`, scenes = ${sql.json(scenesArray)}` : sql``}
+    UPDATE templates SET ${sql(updates)}${scenesClause}
     WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 
