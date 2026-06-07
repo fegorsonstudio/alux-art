@@ -35,6 +35,11 @@ interface TemplateRow {
   cover_url?: string | null;
   template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; note?: string | null; custom_name?: string | null; note_hidden?: boolean | null; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
   created_at: string;
+  is_story?: boolean;
+  story_type?: string | null;
+  default_role?: string | null;
+  role_chips?: string[];
+  scenes?: StoryScene[];
 }
 
 interface ShowcaseIdentityRef {
@@ -103,6 +108,19 @@ interface SampleImageItem {
   error?: string;
 }
 
+interface StoryScene {
+  slot: number;
+  title: string;
+  description: string;
+  environment: string;
+  wardrobe: string;
+  coCharacter: string;
+}
+
+const defaultScene = (slot: number): StoryScene => ({
+  slot, title: "", description: "", environment: "", wardrobe: "", coCharacter: "",
+});
+
 const defaultForm = () => ({
   title: "",
   description: "",
@@ -116,6 +134,10 @@ const defaultForm = () => ({
   packageSize: 10,
   status: "draft",
   coverStoragePath: "",
+  isStory: false,
+  storyType: "solo" as "solo" | "duo" | "group",
+  defaultRole: "",
+  roleChipsInput: "",
 });
 
 function CreatorDashboard() {
@@ -139,6 +161,7 @@ function CreatorDashboard() {
   const [coverPreview, setCoverPreview] = useState("");
   const pendingTagRef = useRef<string>("inspiration");
   const [replacingId, setReplacingId] = useState<string | null>(null);
+  const [storyScenes, setStoryScenes] = useState<StoryScene[]>([defaultScene(1)]);
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -219,6 +242,10 @@ function CreatorDashboard() {
           packageSize: [1, 5, 10].includes(Number(shoot.package_size)) ? Number(shoot.package_size) as 1 | 5 | 10 : 10,
           status: "draft",
           coverStoragePath: "",
+          isStory: false,
+          storyType: "solo" as const,
+          defaultRole: "",
+          roleChipsInput: "",
         });
         setImages([]);
         setCoverPreview("");
@@ -283,7 +310,16 @@ function CreatorDashboard() {
       packageSize: t.package_size,
       status: t.status,
       coverStoragePath: t.cover_storage_path ?? "",
+      isStory: t.is_story === true,
+      storyType: (["solo", "duo", "group"].includes(String(t.story_type ?? "")) ? t.story_type : "solo") as "solo" | "duo" | "group",
+      defaultRole: t.default_role ?? "",
+      roleChipsInput: (t.role_chips ?? []).join(", "),
     });
+    if (Array.isArray(t.scenes) && t.scenes.length > 0) {
+      setStoryScenes(t.scenes.map((s, i) => ({ ...defaultScene(i + 1), ...s })));
+    } else {
+      setStoryScenes([defaultScene(1)]);
+    }
     setCoverPreview(t.cover_url ?? "");
     // Use already-loaded template_images (signed URLs included from dashboard API)
     const imgs = t.template_images ?? [];
@@ -332,6 +368,10 @@ function CreatorDashboard() {
       packageSize: linked?.package_size ?? 10,
       status: "draft",
       coverStoragePath: "",
+      isStory: false,
+      storyType: "solo" as const,
+      defaultRole: "",
+      roleChipsInput: "",
     });
     setImages([]);
     setCoverPreview("");
@@ -597,6 +637,11 @@ function CreatorDashboard() {
       packageSize: form.packageSize,
       status: form.status,
       coverStoragePath: form.coverStoragePath || coverFromGallery || undefined,
+      isStory: form.isStory,
+      storyType: form.isStory ? form.storyType : null,
+      defaultRole: form.isStory ? form.defaultRole.trim() || null : null,
+      roleChips: form.isStory ? form.roleChipsInput.split(",").map(c => c.trim()).filter(Boolean).slice(0, 6) : [],
+      scenes: form.isStory ? storyScenes : [],
     };
 
     let templateId: string;
@@ -676,6 +721,7 @@ function CreatorDashboard() {
     setImages([]);
     setSampleImages([]);
     setCoverPreview("");
+    setStoryScenes([defaultScene(1)]);
     loadDashboard();
   };
 
@@ -967,7 +1013,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); }}>
             + New Template
           </button>
         )}
@@ -1355,6 +1401,159 @@ function CreatorDashboard() {
               >
                 Create collage cover from gallery
               </button>
+            )}
+          </div>
+
+          {/* Story builder */}
+          <div className={styles.field}>
+            <label className={styles.checkRow}>
+              <input
+                type="checkbox"
+                checked={form.isStory}
+                onChange={e => setForm(f => ({ ...f, isStory: e.target.checked }))}
+              />
+              <span className={styles.label}>This template is a Story</span>
+            </label>
+            {form.isStory && (
+              <div className={styles.storyBuilder}>
+                <div className={styles.fieldRow}>
+                  <span className={styles.label}>Story type</span>
+                  <div className={styles.pills}>
+                    {(["solo", "duo", "group"] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`${styles.pill} ${form.storyType === t ? styles.pillActive : ""}`}
+                        onClick={() => setForm(f => ({ ...f, storyType: t }))}
+                      >
+                        {t === "solo" ? "Solo" : t === "duo" ? "Duo (co-star)" : "Group"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.fieldRow}>
+                  <label className={styles.label}>Default role</label>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder='e.g. "the fan in the stands"'
+                    maxLength={100}
+                    value={form.defaultRole}
+                    onChange={e => setForm(f => ({ ...f, defaultRole: e.target.value }))}
+                  />
+                  <p className={styles.fieldHint}>Pre-fills the "I'm the ___" prompt for buyers. Leave blank to let them write freely.</p>
+                </div>
+
+                <div className={styles.fieldRow}>
+                  <label className={styles.label}>Role chips (comma-separated, max 6)</label>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder='e.g. "the referee, a photographer, a journalist"'
+                    value={form.roleChipsInput}
+                    onChange={e => setForm(f => ({ ...f, roleChipsInput: e.target.value }))}
+                  />
+                  <p className={styles.fieldHint}>Quick-pick options shown to buyers when selecting their role.</p>
+                </div>
+
+                <div className={styles.fieldRow}>
+                  <div className={styles.storySceneHeader}>
+                    <span className={styles.label}>Scenes ({storyScenes.length})</span>
+                    {storyScenes.length < 10 && (
+                      <button
+                        type="button"
+                        className={styles.addSceneBtn}
+                        onClick={() => setStoryScenes(prev => [...prev, defaultScene(prev.length + 1)])}
+                      >
+                        + Add scene
+                      </button>
+                    )}
+                  </div>
+                  <p className={styles.fieldHint}>Each scene = one generated image. Scene 1 is always used for 1-image packages.</p>
+
+                  {storyScenes.map((scene, idx) => (
+                    <div key={idx} className={styles.sceneCard}>
+                      <div className={styles.sceneCardHeader}>
+                        <span className={styles.sceneNum}>Scene {idx + 1}</span>
+                        <div className={styles.sceneActions}>
+                          {idx > 0 && (
+                            <button
+                              type="button"
+                              className={styles.sceneMove}
+                              title="Move up"
+                              onClick={() => setStoryScenes(prev => {
+                                const next = [...prev];
+                                [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                                return next.map((s, i) => ({ ...s, slot: i + 1 }));
+                              })}
+                            >↑</button>
+                          )}
+                          {idx < storyScenes.length - 1 && (
+                            <button
+                              type="button"
+                              className={styles.sceneMove}
+                              title="Move down"
+                              onClick={() => setStoryScenes(prev => {
+                                const next = [...prev];
+                                [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                                return next.map((s, i) => ({ ...s, slot: i + 1 }));
+                              })}
+                            >↓</button>
+                          )}
+                          {storyScenes.length > 1 && (
+                            <button
+                              type="button"
+                              className={styles.sceneRemove}
+                              onClick={() => setStoryScenes(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, slot: i + 1 })))}
+                            >✕</button>
+                          )}
+                        </div>
+                      </div>
+                      <div className={styles.sceneFields}>
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="Scene title (e.g. Arrival at the Stadium)"
+                          maxLength={80}
+                          value={scene.title}
+                          onChange={e => setStoryScenes(prev => prev.map((s, i) => i === idx ? { ...s, title: e.target.value } : s))}
+                        />
+                        <textarea
+                          className={styles.textarea}
+                          placeholder="Scene description — what happens here?"
+                          rows={2}
+                          value={scene.description}
+                          onChange={e => setStoryScenes(prev => prev.map((s, i) => i === idx ? { ...s, description: e.target.value } : s))}
+                        />
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="Environment (e.g. packed stadium gates, golden hour)"
+                          value={scene.environment}
+                          onChange={e => setStoryScenes(prev => prev.map((s, i) => i === idx ? { ...s, environment: e.target.value } : s))}
+                        />
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="Wardrobe (e.g. team jersey, casual jeans)"
+                          value={scene.wardrobe}
+                          onChange={e => setStoryScenes(prev => prev.map((s, i) => i === idx ? { ...s, wardrobe: e.target.value } : s))}
+                        />
+                        {form.storyType === "duo" && (
+                          <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Co-character description (e.g. rival player in opposing team jersey)"
+                            value={scene.coCharacter}
+                            onChange={e => setStoryScenes(prev => prev.map((s, i) => i === idx ? { ...s, coCharacter: e.target.value } : s))}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
