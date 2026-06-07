@@ -229,12 +229,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
       'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
-      '', ${shotType}, ${rolePrompt}, ${now}, ${now}
+      '', ${shotType}, ${rolePrompt}, ${templateId}, ${now}, ${now}
     )
     RETURNING id
   `.catch((err) => { console.error("[book] shoot insert failed:", err); return [null]; });

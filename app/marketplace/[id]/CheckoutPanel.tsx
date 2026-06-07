@@ -563,8 +563,8 @@ export default function CheckoutPanel({
           {template.isStory && template.requiresCostar && (
             <div>
               <div className={styles.divider} />
-              <p className={styles.sectionTitle}>Your Co-star <span className={styles.optionalTag}>(optional)</span></p>
-              <p className={styles.sectionHint}>Upload 2–3 clear photos of the person you want to appear with you.</p>
+              <p className={styles.sectionTitle}>Your Co-star <span className={styles.optionalTag}>(required for Duo stories)</span></p>
+              <p className={styles.sectionHint}>Upload 2–3 clear photos of the person you want to appear with you. At least 1 required to proceed.</p>
               {costarUploads.length > 0 && (
                 <div className={styles.uploadGrid}>
                   {costarUploads.map(u => (
