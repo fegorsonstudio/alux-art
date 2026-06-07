@@ -1024,6 +1024,66 @@ select.input { appearance: none; cursor: pointer; }
   .themeGrid { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ---- Story builder ---- */
+.checkRow { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkRow input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2f8e9a; cursor: pointer; }
+
+.storyBuilder { display: flex; flex-direction: column; gap: 16px; margin-top: 12px; padding: 16px; background: rgba(47, 142, 154, 0.05); border: 1px solid rgba(47, 142, 154, 0.18); border-radius: 10px; }
+
+.fieldRow { display: flex; flex-direction: column; gap: 6px; }
+
+.storySceneHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+
+.addSceneBtn {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  color: #2f8e9a;
+  background: rgba(47, 142, 154, 0.07);
+  border: 1px solid rgba(47, 142, 154, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.addSceneBtn:hover { background: rgba(47, 142, 154, 0.14); }
+
+.sceneCard {
+  border: 1px solid rgba(47, 142, 154, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  margin-bottom: 10px;
+}
+
+.sceneCardHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sceneNum { font-size: 0.78rem; font-weight: 600; color: #2f8e9a; text-transform: uppercase; letter-spacing: 0.04em; }
+.sceneActions { display: flex; gap: 4px; }
+
+.sceneMove {
+  padding: 3px 7px;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(47, 142, 154, 0.25);
+  border-radius: 5px;
+  cursor: pointer;
+  color: #3d7880;
+  transition: background 0.1s;
+}
+.sceneMove:hover { background: rgba(47, 142, 154, 0.1); }
+
+.sceneRemove {
+  padding: 3px 7px;
+  font-size: 0.78rem;
+  background: rgba(255, 80, 80, 0.06);
+  border: 1px solid rgba(220, 80, 80, 0.2);
+  border-radius: 5px;
+  cursor: pointer;
+  color: #c04040;
+  transition: background 0.1s;
+}
+.sceneRemove:hover { background: rgba(220, 80, 80, 0.12); }
+
+.sceneFields { display: flex; flex-direction: column; gap: 7px; }
+
 @media (max-width: 768px) {
   .templateActions  { flex-direction: column; gap: 8px; width: 100%; }
   .actPrimary       { display: flex; gap: 8px; width: 100%; }

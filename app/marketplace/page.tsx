@@ -15,6 +15,7 @@ interface TemplateCard {
   purchaseCount: number;
   avgRating: number | null;
   ratingCount: number;
+  isStory: boolean;
   coverUrl: string | null;
   creator: { id: string; displayName: string; avatarUrl: string | null } | null;
   createdAt: string;
@@ -65,7 +66,12 @@ export default function MarketplacePage() {
   const load = useCallback(async (cat: string, q: string, cursor?: string) => {
     if (!cursor) setLoading(true); else setLoadingMore(true);
     const p = new URLSearchParams({ limit: "24" });
-    if (cat !== "all") p.set("category", cat);
+    if (cat === "story") {
+      p.set("isStory", "true");
+    } else {
+      p.set("isStory", "false");
+      if (cat !== "all") p.set("category", cat);
+    }
     if (q) p.set("q", q);
     if (cursor) p.set("cursor", cursor);
     const res = await fetch(`/api/marketplace?${p}`);
@@ -140,7 +146,13 @@ export default function MarketplacePage() {
           className={`${styles.pill} ${category === "all" ? styles.pillActive : ""}`}
           onClick={() => setCategory("all")}
         >All</button>
-        {TEMPLATE_CATEGORIES.map(c => (
+        {/* Stories pill — visually distinct, always first */}
+        <button
+          type="button"
+          className={`${styles.pill} ${styles.pillStory} ${category === "story" ? styles.pillActive : ""}`}
+          onClick={() => setCategory("story")}
+        >📖 Stories</button>
+        {TEMPLATE_CATEGORIES.filter(c => c.value !== "story").map(c => (
           <button
             key={c.value}
             type="button"
@@ -158,13 +170,14 @@ export default function MarketplacePage() {
         ) : (
           <div className={styles.grid}>
             {templates.map(t => (
-              <Link key={t.id} href={`/marketplace/${t.id}`} className={styles.card}>
+              <Link key={t.id} href={`/marketplace/${t.id}`} className={`${styles.card} ${t.isStory ? styles.cardStory : ""}`}>
                 <div className={styles.cardImg}>
                   {t.coverUrl
                     ? <ImagePreview src={t.coverUrl} alt={t.title} className={styles.cardCover} />
                     : <div className={styles.cardPlaceholder}><span className={styles.placeholderText}>No preview</span></div>
                   }
                   <span className={styles.categoryBadge}>{t.category}</span>
+                  {t.isStory && <span className={styles.storyBadge}>📖 STORY</span>}
                 </div>
                 <div className={styles.cardBody}>
                   <h3 className={styles.cardTitle}>{t.title}</h3>

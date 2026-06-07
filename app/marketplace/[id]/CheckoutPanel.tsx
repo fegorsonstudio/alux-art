@@ -26,6 +26,14 @@ interface TemplateDetail {
   shootMode: string;
   aspectRatio: string;
   images: TemplateImage[];
+  // Story fields
+  isStory?: boolean;
+  storyType?: string;
+  defaultRole?: string;
+  roleChips?: string[];
+  requiresCostar?: boolean;
+  requiresGroup?: boolean;
+  requiresBrand?: boolean;
 }
 
 interface CouponResult {
@@ -116,10 +124,21 @@ export default function CheckoutPanel({
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
 
+  // Story-specific state
+  const [rolePrompt, setRolePrompt] = useState("");
+  const [costarUploads, setCostarUploads] = useState<NewIdentityUpload[]>([]);
+  const [groupPhotoUpload, setGroupPhotoUpload] = useState<NewIdentityUpload | null>(null);
+  const [brandUploads, setBrandUploads] = useState<NewIdentityUpload[]>([]);
+  const [brandPlacement, setBrandPlacement] = useState<"everywhere" | "background" | "subtle">("everywhere");
+  const [costarConsent, setCostarConsent] = useState(false);
+
   const identityInputRef = useRef<HTMLInputElement>(null);
   const poseInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const addRefInputRef = useRef<HTMLInputElement>(null);
+  const costarInputRef = useRef<HTMLInputElement>(null);
+  const groupInputRef = useRef<HTMLInputElement>(null);
+  const brandInputRef = useRef<HTMLInputElement>(null);
 
   // Lock body scroll while panel is open
   useEffect(() => {
@@ -167,6 +186,27 @@ export default function CheckoutPanel({
     }
     const { storagePath } = await res.json();
     setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images" } : u));
+  };
+
+  // ── Story asset upload (costar / brand) ───────────────────────────────────
+
+  const uploadStoryAssetFile = async (
+    file: File,
+    localId: string,
+    setter: React.Dispatch<React.SetStateAction<NewIdentityUpload[]>>
+  ) => {
+    setter(prev => prev.map(u => u.localId === localId ? { ...u, uploading: true } : u));
+    const f = await resizeIfNeeded(file);
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
+    if (!res.ok) {
+      setter(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
+      return;
+    }
+    const { storagePath } = await res.json();
+    setter(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images" } : u));
   };
 
   const addIdentityFiles = (files: FileList) => {
@@ -285,8 +325,15 @@ export default function CheckoutPanel({
     })),
   ];
 
-  const anyUploading = newUploads.some(u => u.uploading) || poseUploads.some(u => u.uploading);
-  const canPay = allIdentityRefs.length > 0 && !anyUploading && !newUploads.some(u => u.error) && !buying;
+  const anyUploading = newUploads.some(u => u.uploading) || poseUploads.some(u => u.uploading)
+    || costarUploads.some(u => u.uploading) || (groupPhotoUpload?.uploading ?? false)
+    || brandUploads.some(u => u.uploading);
+  const canPay = allIdentityRefs.length > 0
+    && !anyUploading
+    && !newUploads.some(u => u.error)
+    && !buying
+    && (!template.requiresCostar || (costarUploads.some(u => u.storagePath) && costarConsent))
+    && (!template.requiresGroup || !!groupPhotoUpload?.storagePath);
 
   const book = async () => {
     if (!canPay) return;
@@ -306,6 +353,19 @@ export default function CheckoutPanel({
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: selectedPkg,
         currency,
+        rolePrompt: rolePrompt.trim() || undefined,
+        storyAssets: (template.isStory && (costarUploads.length > 0 || groupPhotoUpload?.storagePath || brandUploads.length > 0)) ? {
+          costarRefs: costarUploads.filter(u => u.storagePath).map(u => ({
+            storagePath: u.storagePath, storageBucket: u.storageBucket, name: u.file.name,
+          })),
+          groupPhotoRef: groupPhotoUpload?.storagePath ? {
+            storagePath: groupPhotoUpload.storagePath, storageBucket: groupPhotoUpload.storageBucket,
+          } : undefined,
+          brandRefs: brandUploads.filter(u => u.storagePath).map(u => ({
+            storagePath: u.storagePath, storageBucket: u.storageBucket,
+            placement: brandPlacement, name: u.file.name,
+          })),
+        } : undefined,
       }),
     });
 
@@ -354,7 +414,7 @@ export default function CheckoutPanel({
           {/* Package picker */}
           {pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>Images</span>
+              <span className={styles.pkgLabel}>{template.isStory ? "Scenes" : "Images"}</span>
               <div className={styles.pkgPills}>
                 {pkgOptions.map(o => (
                   <button
@@ -363,7 +423,9 @@ export default function CheckoutPanel({
                     className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
                     onClick={() => setSelectedPkg(o.n)}
                   >
-                    {o.n} {o.n === 1 ? "image" : "images"}
+                    {template.isStory
+                      ? `${o.n} ${o.n === 1 ? "scene" : "scenes"}`
+                      : `${o.n} ${o.n === 1 ? "image" : "images"}`}
                     <span className={styles.pkgPillPrice}>{formatPrice(o.price)}</span>
                   </button>
                 ))}
@@ -391,6 +453,44 @@ export default function CheckoutPanel({
           )}
 
           <div className={styles.divider} />
+
+          {/* Story: Role prompt section */}
+          {template.isStory && (
+            <div className={styles.roleSection}>
+              <p className={styles.sectionTitle}>🎭 Your Angle in This Story <span className={styles.optionalTag}>(optional)</span></p>
+              <div className={styles.roleInputWrap}>
+                <span className={styles.rolePrefix}>I&apos;m the</span>
+                <input
+                  type="text"
+                  className={styles.roleInput}
+                  placeholder={template.defaultRole ?? "fan in the stands"}
+                  value={rolePrompt}
+                  onChange={e => setRolePrompt(e.target.value.slice(0, 60))}
+                  maxLength={60}
+                />
+                {rolePrompt.length > 45 && (
+                  <span className={styles.roleCounter}>{rolePrompt.length}/60</span>
+                )}
+              </div>
+              {template.roleChips && template.roleChips.length > 0 && (
+                <div className={styles.roleChips}>
+                  {template.roleChips.map((chip, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`${styles.roleChip} ${rolePrompt === chip ? styles.roleChipActive : ""}`}
+                      onClick={() => setRolePrompt(prev => prev === chip ? "" : chip)}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {template.defaultRole && !rolePrompt && (
+                <p className={styles.roleDefault}>Default: {template.defaultRole}</p>
+              )}
+            </div>
+          )}
 
           {/* Identity photos */}
           <div>
@@ -459,7 +559,153 @@ export default function CheckoutPanel({
             )}
           </div>
 
-          <div className={styles.divider} />
+          {/* Story: Co-star upload */}
+          {template.isStory && template.requiresCostar && (
+            <div>
+              <div className={styles.divider} />
+              <p className={styles.sectionTitle}>Your Co-star <span className={styles.optionalTag}>(required for Duo stories)</span></p>
+              <p className={styles.sectionHint}>Upload 2–3 clear photos of the person you want to appear with you. At least 1 required to proceed.</p>
+              {costarUploads.length > 0 && (
+                <div className={styles.uploadGrid}>
+                  {costarUploads.map(u => (
+                    <div key={u.localId} className={styles.uploadItem}>
+                      <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                      {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                      {u.error && <div className={styles.uploadError}>{u.error}</div>}
+                      <button type="button" className={styles.removeBtn} onClick={() => setCostarUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {costarUploads.length < 3 && (
+                <button type="button" className={styles.uploadBtn} onClick={() => costarInputRef.current?.click()}>
+                  + Add co-star photo
+                </button>
+              )}
+              <input type="file" accept="image/*" multiple ref={costarInputRef} className={styles.hidden}
+                onChange={e => {
+                  if (!e.target.files) return;
+                  const files = Array.from(e.target.files).slice(0, 3 - costarUploads.length);
+                  const items: NewIdentityUpload[] = files.map(file => ({
+                    localId: crypto.randomUUID(), file, preview: URL.createObjectURL(file),
+                    storagePath: "", storageBucket: "identity-images", uploading: false,
+                  }));
+                  setCostarUploads(prev => [...prev, ...items]);
+                  items.forEach(u => uploadStoryAssetFile(u.file, u.localId, setCostarUploads));
+                  e.target.value = "";
+                }}
+              />
+              <label className={styles.consentRow}>
+                <input type="checkbox" checked={costarConsent} onChange={e => setCostarConsent(e.target.checked)} />
+                <span className={styles.consentText}>I confirm I have this person&apos;s permission to use their photos</span>
+              </label>
+            </div>
+          )}
+
+          {/* Story: Group photo upload */}
+          {template.isStory && template.requiresGroup && (
+            <div>
+              <div className={styles.divider} />
+              <p className={styles.sectionTitle}>Your Group Photo <span className={styles.optionalTag}>(optional)</span></p>
+              <p className={styles.sectionHint}>Upload one group photo — we&apos;ll place everyone in the story together.</p>
+              {groupPhotoUpload ? (
+                <div className={styles.uploadItem} style={{ maxWidth: 200 }}>
+                  <ImagePreview src={groupPhotoUpload.preview} alt="" className={styles.uploadImg} preferredWidth={200} />
+                  {groupPhotoUpload.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                  <button type="button" className={styles.removeBtn} onClick={() => setGroupPhotoUpload(null)}>✕</button>
+                </div>
+              ) : (
+                <button type="button" className={styles.uploadBtn} onClick={() => groupInputRef.current?.click()}>
+                  + Upload group photo
+                </button>
+              )}
+              <input type="file" accept="image/*" ref={groupInputRef} className={styles.hidden}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const localId = crypto.randomUUID();
+                  const item: NewIdentityUpload = {
+                    localId, file, preview: URL.createObjectURL(file),
+                    storagePath: "", storageBucket: "identity-images", uploading: true,
+                  };
+                  setGroupPhotoUpload(item);
+                  resizeIfNeeded(file).then(f => {
+                    const form = new FormData();
+                    form.append("file", f, f.name);
+                    form.append("bucket", "identity-images");
+                    return fetch("/api/upload/file", { method: "POST", body: form });
+                  }).then(r => r.ok ? r.json() : null).then(d => {
+                    if (d?.storagePath) {
+                      setGroupPhotoUpload(prev => prev ? { ...prev, storagePath: d.storagePath, uploading: false } : prev);
+                    } else {
+                      setGroupPhotoUpload(prev => prev ? { ...prev, uploading: false, error: "Upload failed" } : prev);
+                    }
+                  }).catch(() => {
+                    setGroupPhotoUpload(prev => prev ? { ...prev, uploading: false, error: "Upload failed" } : prev);
+                  });
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          )}
+
+          {/* Story: Brand assets upload */}
+          {template.isStory && template.requiresBrand && (
+            <div>
+              <div className={styles.divider} />
+              <p className={styles.sectionTitle}>Your Brand Assets <span className={styles.optionalTag}>(optional)</span></p>
+              <p className={styles.sectionHint}>Upload your logo and/or product images. PNG with transparent background works best.</p>
+              {brandUploads.length > 0 && (
+                <div className={styles.uploadGrid}>
+                  {brandUploads.map(u => (
+                    <div key={u.localId} className={styles.uploadItem}>
+                      <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                      {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                      {u.error && <div className={styles.uploadError}>{u.error}</div>}
+                      <button type="button" className={styles.removeBtn} onClick={() => setBrandUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {brandUploads.length < 5 && (
+                <button type="button" className={styles.uploadBtn} onClick={() => brandInputRef.current?.click()}>
+                  + Add brand image
+                </button>
+              )}
+              <input type="file" accept="image/*" multiple ref={brandInputRef} className={styles.hidden}
+                onChange={e => {
+                  if (!e.target.files) return;
+                  const files = Array.from(e.target.files).slice(0, 5 - brandUploads.length);
+                  const items: NewIdentityUpload[] = files.map(file => ({
+                    localId: crypto.randomUUID(), file, preview: URL.createObjectURL(file),
+                    storagePath: "", storageBucket: "identity-images", uploading: false,
+                  }));
+                  setBrandUploads(prev => [...prev, ...items]);
+                  items.forEach(u => uploadStoryAssetFile(u.file, u.localId, setBrandUploads));
+                  e.target.value = "";
+                }}
+              />
+              <div className={styles.placementRow}>
+                <p className={styles.sectionTitle} style={{ margin: "12px 0 8px" }}>Where should your brand appear?</p>
+                {([  
+                  { value: "everywhere" as const, label: "Everywhere (banners, screens, shirts)" },
+                  { value: "background" as const, label: "Mainly in the background" },
+                  { value: "subtle" as const, label: "Subtly — one or two placements" },
+                ]).map(opt => (
+                  <label key={opt.value} className={styles.placementOption}>
+                    <input
+                      type="radio"
+                      name="brandPlacement"
+                      value={opt.value}
+                      checked={brandPlacement === opt.value}
+                      onChange={() => setBrandPlacement(opt.value)}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Advanced options toggle */}
           <button

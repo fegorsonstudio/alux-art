@@ -518,6 +518,8 @@ async function buildShootBrief(
     aspect_ratio: string;
     shot_type?: string | null;
     quote?: { text: string; attribution: string } | null;
+    storyContext?: string;
+    storyImageUrls?: Array<{ url: string; label: string }>;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -606,6 +608,19 @@ async function buildShootBrief(
     parts.push({
       text: `GENERATION FAILURE MEMORY — Learned Restrictions:\nThe following prompts were previously REJECTED by the image generation engine for content policy violations. Study the exact wording carefully. Identify which specific words or phrases likely caused the rejection and NEVER use similar language in any prompt you generate:\n\n${forbiddenExamples.map((p, i) => `Rejected example ${i + 1}:\n"${p.slice(0, 300)}"`).join("\n\n")}\n\nAvoid ALL similar wording. This is critical — rejected prompts waste user credits.`,
     });
+  }
+
+  // Inject Story context and story image assets (co-star, group photo, brand)
+  if (shoot.storyContext) {
+    parts.push({ text: shoot.storyContext });
+  }
+  if (shoot.storyImageUrls && shoot.storyImageUrls.length > 0) {
+    for (const asset of shoot.storyImageUrls) {
+      if (!asset.url) continue;
+      parts.push({ text: asset.label });
+      const imgPart = await toGeminiImagePart(asset.url);
+      if (imgPart) parts.push(imgPart);
+    }
   }
 
   let shotTypeConstraint = "";
@@ -814,6 +829,8 @@ async function buildShootBriefClaude(
     aspect_ratio: string;
     shot_type?: string | null;
     quote?: { text: string; attribution: string } | null;
+    storyContext?: string;
+    storyImageUrls?: Array<{ url: string; label: string }>;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -879,6 +896,18 @@ async function buildShootBriefClaude(
 
   if (forbiddenExamples && forbiddenExamples.length > 0) {
     content.push({ type: "text", text: `GENERATION FAILURE MEMORY — Learned Restrictions:\nThe following prompts were previously REJECTED by the image generation engine for content policy violations. Study the exact wording carefully. NEVER use similar language:\n\n${forbiddenExamples.map((p, i) => `Rejected example ${i + 1}:\n"${p.slice(0, 300)}"`).join("\n\n")}` });
+  }
+
+  // Inject Story context and story image assets (co-star, group photo, brand)
+  if (shoot.storyContext) {
+    content.push({ type: "text", text: shoot.storyContext });
+  }
+  if (shoot.storyImageUrls && shoot.storyImageUrls.length > 0) {
+    for (const asset of shoot.storyImageUrls) {
+      if (!asset.url) continue;
+      content.push({ type: "text", text: asset.label });
+      content.push({ type: "image", source: { type: "url", url: asset.url } });
+    }
   }
 
   const claudeShotTypeLabel = SHOT_TYPE_LABELS[shoot.shot_type ?? ""];
@@ -1368,7 +1397,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT id, user_id, owner_email, mode, aspect_ratio, package_size, quote, identity_profile, shoot_brief, character_base_id FROM shoots WHERE id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, t.is_story, t.story_type, t.scenes FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1382,6 +1411,20 @@ export async function startGenerationWorker(
   const rawBrief = shoot.shoot_brief;
   let shootBrief: string =
     typeof rawBrief === "string" ? rawBrief : "";
+
+  // Story fields — derive from shoot_references (no story_assets column)
+  const rolePrompt: string | null = typeof shoot.role_prompt === "string" ? shoot.role_prompt.trim() : null;
+  const isStoryShoot = shoot.is_story === true;
+  const templateScenes: Array<{ slot: number; title: string; description: string; environment: string; wardrobe: string; coCharacter?: string }> =
+    Array.isArray(shoot.scenes) ? shoot.scenes : [];
+  const costarRefRows = rawRefs.filter(r => r.purpose === "costar");
+  const groupPhotoRefRow = rawRefs.find(r => r.purpose === "group_photo");
+  const storyAssets = (isStoryShoot || costarRefRows.length > 0 || groupPhotoRefRow) ? {
+    costarRefs: costarRefRows.map(r => ({ storagePath: r.storage_path, storageBucket: r.storage_bucket, name: r.name })),
+    groupPhotoRef: groupPhotoRefRow ? { storagePath: groupPhotoRefRow.storage_path, storageBucket: groupPhotoRefRow.storage_bucket } : undefined,
+    brandRefs: [] as Array<{ storagePath: string; storageBucket: string; placement?: string; name?: string }>,
+  } : null;
+
 
   const refs = await signRefs(rawRefs);
 
@@ -1530,11 +1573,85 @@ export async function startGenerationWorker(
       }
     } catch { /* non-fatal — table may not exist yet */ }
 
+    // Build Story context block (role prompt + co-star / group / brand signed URLs)
+    let storyContextParts: string[] = [];
+    let storyImageUrls: Array<{ url: string; label: string }> = [];
+
+    // Inject story scene structure from template so each slot gets its own environment
+    if (isStoryShoot && templateScenes.length > 0) {
+      const packageSize = normalizePackageSize(shoot.package_size);
+      const scenesForPackage = templateScenes.slice(0, packageSize);
+      const sceneList = scenesForPackage.map(s =>
+        `  Scene ${s.slot}: "${s.title}" — ${s.description}` +
+        (s.environment ? `\n    Environment: ${s.environment}` : "") +
+        (s.wardrobe ? `\n    Wardrobe: ${s.wardrobe}` : "") +
+        (s.coCharacter ? `\n    Co-character: ${s.coCharacter}` : "")
+      ).join("\n\n");
+      storyContextParts.push(
+        `STORY SCENE STRUCTURE (${scenesForPackage.length} scene${scenesForPackage.length !== 1 ? "s" : ""} for this package):\n` +
+        `Each prompt_index maps to one scene. Scene 1 → prompt_index 1, Scene 2 → prompt_index 2, etc.\n` +
+        `Generate one prompt per scene. Do NOT reuse scenes. Use the scene's exact Environment and Wardrobe as the foundation for that slot's Scene and Important Details sections.\n\n` +
+        sceneList
+      );
+    }
+
+    if (rolePrompt) {
+      storyContextParts.push(`ROLE OVERRIDE: The user has specified their angle in this story. In every prompt, the subject is described as: "${rolePrompt}". Weave this role naturally into the Subject, Environment, and Styling sections. Do NOT change the story's scene or background — only the subject's perspective and positioning within it.`);
+    }
+
+    if (storyAssets) {
+      // Sign co-star refs
+      if (storyAssets.costarRefs && storyAssets.costarRefs.length > 0) {
+        const signed = await Promise.all(
+          storyAssets.costarRefs.map(async (r, i) => {
+            const url = await r2SignedDownloadUrl(r.storageBucket, r.storagePath, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => "");
+            return { url, label: `Co-star reference ${i + 1} (${r.name ?? "unnamed"})` };
+          })
+        );
+        const valid = signed.filter(s => s.url);
+        storyImageUrls.push(...valid);
+        if (valid.length > 0) {
+          storyContextParts.push(`GROUP E — Co-star References: ${valid.length} photo(s) of the person who should appear alongside the subject in duo or group scenes. Preserve their likeness and include them naturally in the scene alongside the main subject.`);
+        }
+      }
+
+      // Sign group photo ref
+      if (storyAssets.groupPhotoRef?.storagePath) {
+        const gUrl = await r2SignedDownloadUrl(storyAssets.groupPhotoRef.storageBucket, storyAssets.groupPhotoRef.storagePath, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => "");
+        if (gUrl) {
+          storyImageUrls.push({ url: gUrl, label: "Group photo reference" });
+          storyContextParts.push(`GROUP F — Group Photo: A photo of the entire group to appear together in this story. Preserve all individuals' likenesses and arrange them naturally in the scene.`);
+        }
+      }
+
+      // Sign brand asset refs
+      if (storyAssets.brandRefs && storyAssets.brandRefs.length > 0) {
+        const signed = await Promise.all(
+          storyAssets.brandRefs.map(async (r, i) => {
+            const url = await r2SignedDownloadUrl(r.storageBucket, r.storagePath, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => "");
+            return { url, label: `Brand asset ${i + 1} (${r.name ?? "unnamed"}, placement: ${r.placement ?? "everywhere"})`, placement: r.placement ?? "everywhere" };
+          })
+        );
+        const valid = signed.filter(s => s.url);
+        storyImageUrls.push(...valid);
+        if (valid.length > 0) {
+          const placements = [...new Set(valid.map(v => (v as typeof valid[0]).placement))].join(", ");
+          storyContextParts.push(`GROUP G — Brand Assets: ${valid.length} brand/logo/product image(s). Integrate these brand elements into the scenes — placement preference: ${placements}. The brand should appear naturally within the environment, on screens, banners, clothing, or as subtle environmental elements.`);
+        }
+      }
+    }
+
+    const storyContext = storyContextParts.length > 0
+      ? `\n\nSTORY CONTEXT:\n${storyContextParts.join("\n\n")}`
+      : "";
+
     // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
     // Retrying a timed-out Claude call would double the budget and kill the function.
+    const shootForBrief = { ...shoot, storyContext, storyImageUrls } as never;
     shootBrief = await (visionModel === "claude"
-      ? buildShootBriefClaude(shoot as never, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief)
-      : buildShootBrief(shoot as never, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief));
+      ? buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief)
+      : buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief));
+
     // Validate before storing — truncation at max_tokens produces broken JSON
     try {
       JSON.parse(shootBrief);

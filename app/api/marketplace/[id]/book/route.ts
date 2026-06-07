@@ -32,6 +32,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     couponCode?: string;
     packageSize?: number;
     currency?: string;
+    // Story fields
+    rolePrompt?: string;
+    storyAssets?: {
+      costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
+      groupPhotoRef?: { storagePath: string; storageBucket: string; name?: string };
+      brandRefs?: Array<{ storagePath: string; storageBucket: string; placement?: string; name?: string }>;
+    };
   };
 
   const identityRefs: RefInput[] = body.identityRefs ?? [];
@@ -44,6 +51,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   for (const ref of identityRefs) {
     if (typeof ref.storagePath !== "string" || !ref.storagePath.startsWith(`${user.id}/`)) {
       return NextResponse.json({ error: "Invalid identity image reference" }, { status: 400 });
+    }
+  }
+
+  // Validate and sanitise role prompt (Story-only field)
+  const rawRolePrompt = typeof body.rolePrompt === "string" ? body.rolePrompt.trim().slice(0, 100) : null;
+  const rolePrompt = rawRolePrompt || null;
+
+  // Validate story assets
+  const storyAssets = body.storyAssets ?? null;
+  const VALID_BRAND_PLACEMENTS = new Set(["everywhere", "background", "subtle"]);
+  if (storyAssets) {
+    // Co-star refs
+    for (const ref of storyAssets.costarRefs ?? []) {
+      if (!ref.storagePath.startsWith(`${user.id}/`)) {
+        return NextResponse.json({ error: "Invalid co-star image reference" }, { status: 400 });
+      }
+    }
+    // Group photo
+    if (storyAssets.groupPhotoRef && !storyAssets.groupPhotoRef.storagePath.startsWith(`${user.id}/`)) {
+      return NextResponse.json({ error: "Invalid group photo reference" }, { status: 400 });
+    }
+    // Brand refs
+    for (const ref of storyAssets.brandRefs ?? []) {
+      if (!ref.storagePath.startsWith(`${user.id}/`)) {
+        return NextResponse.json({ error: "Invalid brand image reference" }, { status: 400 });
+      }
+      if (ref.placement && !VALID_BRAND_PLACEMENTS.has(ref.placement)) {
+        return NextResponse.json({ error: "Invalid brand placement value" }, { status: 400 });
+      }
     }
   }
 
@@ -193,12 +229,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
       'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
-      '', ${shotType}, ${now}, ${now}
+      '', ${shotType}, ${rolePrompt}, ${templateId}, ${now}, ${now}
     )
     RETURNING id
   `.catch((err) => { console.error("[book] shoot insert failed:", err); return [null]; });
@@ -253,6 +289,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
       created_at: now,
     })),
+    // Story: co-star photos
+    ...(storyAssets?.costarRefs ?? []).map((ref, i) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "costar", tag: null, custom_name: null, note: null,
+      name: ref.name ?? `costar-${i + 1}`, type: "image/jpeg", size: 1,
+      storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
+      created_at: now,
+    })),
+    // Story: group photo
+    ...(storyAssets?.groupPhotoRef ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "group_photo", tag: null, custom_name: null, note: null,
+      name: storyAssets.groupPhotoRef.name ?? "group-photo", type: "image/jpeg", size: 1,
+      storage_bucket: storyAssets.groupPhotoRef.storageBucket,
+      storage_path: storyAssets.groupPhotoRef.storagePath,
+      created_at: now,
+    }] : []),
   ];
 
   if (allRefs.length > 0) {

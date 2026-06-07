@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("q");
   const cursor = searchParams.get("cursor");
   const limit = Math.min(Number(searchParams.get("limit") ?? 24), 48);
-  const cacheKey = `category:${category ?? "all"}|search:${search ?? ""}|cursor:${cursor ?? ""}|limit:${limit}`;
+  const isStoryFilter = searchParams.get("isStory") === "true";
+  const storyType = searchParams.get("storyType"); // solo | duo | group
+  const cacheKey = `category:${category ?? "all"}|search:${search ?? ""}|cursor:${cursor ?? ""}|limit:${limit}|story:${isStoryFilter}|storyType:${storyType ?? ""}`;
 
   const cached = marketplaceCache.get(cacheKey);
   if (cached && cached.expiry > Date.now()) {
@@ -22,14 +24,22 @@ export async function GET(request: NextRequest) {
     SELECT t.id, t.creator_id, t.title, t.description, t.category, t.tags,
            t.price_ngn, t.shoot_mode, t.aspect_ratio, t.package_size, t.purchase_count,
            t.cover_storage_path, t.cover_bucket, t.created_at,
-           t.avg_rating, t.rating_count,
+           t.avg_rating, t.rating_count, t.is_story, t.story_type,
+           CASE
+             WHEN jsonb_typeof(t.scenes) = 'array' THEN jsonb_array_length(t.scenes)
+             WHEN jsonb_typeof(t.scenes) = 'string' THEN jsonb_array_length((t.scenes #>> '{}')::jsonb)
+             ELSE 0
+           END AS scene_count,
+           t.price_1_ngn, t.price_5_ngn,
            c.id AS c_id, c.display_name AS c_display_name,
            c.avatar_storage_path AS c_avatar_path, c.avatar_bucket AS c_avatar_bucket
     FROM templates t
     LEFT JOIN creators c ON c.id = t.creator_id
     WHERE t.status = 'published'
+      AND t.is_story = ${isStoryFilter}
       ${category && category !== "all" ? sql`AND t.category = ${category}` : sql``}
       ${search ? sql`AND t.title ILIKE ${"%" + search + "%"}` : sql``}
+      ${storyType ? sql`AND t.story_type = ${storyType}` : sql``}
       ${cursor ? sql`AND t.created_at < ${cursor}` : sql``}
     ORDER BY t.created_at DESC
     LIMIT ${limit + 1}
@@ -62,6 +72,11 @@ export async function GET(request: NextRequest) {
       purchaseCount: t.purchase_count,
       avgRating: t.avg_rating ?? null,
       ratingCount: t.rating_count ?? 0,
+      isStory: t.is_story ?? false,
+      storyType: t.story_type ?? null,
+      sceneCount: t.scene_count ?? 0,
+      price1Ngn: t.price_1_ngn != null ? Number(t.price_1_ngn) : null,
+      price5Ngn: t.price_5_ngn != null ? Number(t.price_5_ngn) : null,
       coverUrl,
       createdAt: t.created_at,
     };

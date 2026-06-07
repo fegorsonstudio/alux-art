@@ -469,4 +469,22 @@ await run("download_logs table", `
   );
 `);
 
+// ── Story Photoshoot columns ─────────────────────────────────────────────────
+await run("templates story columns", `
+  ALTER TABLE templates
+    ADD COLUMN IF NOT EXISTS is_story      BOOLEAN     NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS story_type    VARCHAR(20) CHECK (story_type IN ('solo','duo','group')),
+    ADD COLUMN IF NOT EXISTS default_role  VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS role_chips    TEXT[]      DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS scenes        JSONB       DEFAULT '[]';
+`);
+
+await run("shoots role_prompt column", `
+  ALTER TABLE shoots ADD COLUMN IF NOT EXISTS role_prompt VARCHAR(100);
+`);
+
+await run("templates is_story index", `
+  CREATE INDEX IF NOT EXISTS idx_templates_is_story ON templates(is_story) WHERE is_story = TRUE;
+`);
+
 console.log("\n✅ Migration complete.");
