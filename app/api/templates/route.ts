@@ -5,7 +5,7 @@ import { ASPECTS, packagePrice } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
-const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group"]);
+const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group", "brand", "group_brand"]);
 
 async function getPlatformFee(): Promise<number> {
   const [row] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;

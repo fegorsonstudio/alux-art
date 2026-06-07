@@ -135,7 +135,7 @@ const defaultForm = () => ({
   status: "draft",
   coverStoragePath: "",
   isStory: false,
-  storyType: "solo" as "solo" | "duo" | "group",
+  storyType: "solo" as "solo" | "duo" | "group" | "brand",
   defaultRole: "",
   roleChipsInput: "",
 });
@@ -311,7 +311,7 @@ function CreatorDashboard() {
       status: t.status,
       coverStoragePath: t.cover_storage_path ?? "",
       isStory: t.is_story === true,
-      storyType: (["solo", "duo", "group"].includes(String(t.story_type ?? "")) ? t.story_type : "solo") as "solo" | "duo" | "group",
+      storyType: (["solo", "duo", "group", "brand"].includes(String(t.story_type ?? "")) ? t.story_type : "solo") as "solo" | "duo" | "group" | "brand",
       defaultRole: t.default_role ?? "",
       roleChipsInput: (t.role_chips ?? []).join(", "),
     });
@@ -1419,14 +1419,14 @@ function CreatorDashboard() {
                 <div className={styles.fieldRow}>
                   <span className={styles.label}>Story type</span>
                   <div className={styles.pills}>
-                    {(["solo", "duo", "group"] as const).map(t => (
+                    {(["solo", "duo", "group", "brand"] as const).map(t => (
                       <button
                         key={t}
                         type="button"
                         className={`${styles.pill} ${form.storyType === t ? styles.pillActive : ""}`}
                         onClick={() => setForm(f => ({ ...f, storyType: t }))}
                       >
-                        {t === "solo" ? "Solo" : t === "duo" ? "Duo (co-star)" : "Group"}
+                        {t === "solo" ? "Solo" : t === "duo" ? "Duo (co-star)" : t === "group" ? "Group" : "Brand Ad"}
                       </button>
                     ))}
                   </div>

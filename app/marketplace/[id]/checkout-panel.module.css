@@ -512,6 +512,7 @@
 .roleChipActive { background: rgba(109,40,217,0.2) !important; border-color: rgba(196,181,253,0.5) !important; color: #c4b5fd !important; }
 .roleDefault { font-size: 0.75rem; color: rgba(255,255,255,0.28); margin: 0; font-style: italic; }
 .optionalTag { font-weight: 400; font-size: 0.78em; color: rgba(255,255,255,0.35); }
+.requiredTag { font-weight: 400; font-size: 0.78em; color: rgba(196,181,253,0.7); }
 
 /* ---- Co-star consent ---- */
 .consentRow {
@@ -525,6 +526,7 @@
 .consentText { font-size: 0.78rem; color: rgba(255,255,255,0.45); line-height: 1.4; }
 
 /* ---- Brand placement ---- */
+.brandPlacementRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .placementRow { display: flex; flex-direction: column; gap: 6px; }
 .placementOption {
   display: flex;

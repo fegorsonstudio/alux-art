@@ -118,6 +118,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       scenes: typeof template.scenes === 'string' ? JSON.parse(template.scenes) : (template.scenes ?? []),
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
+      requiresBrand: template.story_type === 'brand' || template.story_type === 'group_brand',
       createdAt: template.created_at,
       updatedAt: template.updated_at,
     },

@@ -1419,10 +1419,16 @@ export async function startGenerationWorker(
     Array.isArray(shoot.scenes) ? shoot.scenes : [];
   const costarRefRows = rawRefs.filter(r => r.purpose === "costar");
   const groupPhotoRefRow = rawRefs.find(r => r.purpose === "group_photo");
-  const storyAssets = (isStoryShoot || costarRefRows.length > 0 || groupPhotoRefRow) ? {
+  const brandRefRows = rawRefs.filter(r => r.purpose === "brand");
+  const storyAssets = (isStoryShoot || costarRefRows.length > 0 || groupPhotoRefRow || brandRefRows.length > 0) ? {
     costarRefs: costarRefRows.map(r => ({ storagePath: r.storage_path, storageBucket: r.storage_bucket, name: r.name })),
     groupPhotoRef: groupPhotoRefRow ? { storagePath: groupPhotoRefRow.storage_path, storageBucket: groupPhotoRefRow.storage_bucket } : undefined,
-    brandRefs: [] as Array<{ storagePath: string; storageBucket: string; placement?: string; name?: string }>,
+    brandRefs: brandRefRows.map(r => ({
+      storagePath: r.storage_path,
+      storageBucket: r.storage_bucket,
+      placement: (r.note ?? "everywhere") as "everywhere" | "background" | "subtle",
+      name: r.name ?? undefined,
+    })),
   } : null;
 
 

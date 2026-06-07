@@ -63,15 +63,6 @@ interface TemplateDetail {
   userRating: number | null;
   coverUrl: string | null;
   images: TemplateImage[];
-  // Story fields
-  isStory?: boolean;
-  storyType?: string;
-  defaultRole?: string;
-  roleChips?: string[];
-  requiresCostar?: boolean;
-  requiresGroup?: boolean;
-  requiresBrand?: boolean;
-  scenes?: Array<{ slot: number; title: string; description: string; environment?: string; wardrobe?: string; coCharacter?: string }>;
   creator: {
     id: string;
     displayName: string;
@@ -83,6 +74,15 @@ interface TemplateDetail {
     theme?: string;
     fontFamily?: string;
   } | null;
+  // Story fields
+  isStory?: boolean;
+  storyType?: string | null;
+  requiresCostar?: boolean;
+  requiresGroup?: boolean;
+  requiresBrand?: boolean;
+  defaultRole?: string | null;
+  roleChips?: string[];
+  scenes?: Array<{ slot: number; title: string; description: string; environment: string; wardrobe: string; coCharacter?: string }>;
 }
 
 interface CouponResult {
@@ -348,80 +348,47 @@ export default function TemplatePage() {
       </header>
 
       <div className={styles.layout}>
-        {/* Gallery / Scene Timeline */}
+        {/* Gallery */}
         <div className={styles.galleryCol}>
-          {template.isStory ? (
-            /* ---- Scene Timeline (story templates) ---- */
-            <div>
-              <div className={styles.sceneTimeline}>
-                {(Array.isArray(template.scenes) && template.scenes.length > 0 ? template.scenes : allImages.map((_, i) => ({ slot: i + 1, title: `Scene ${i + 1}`, description: "", environment: "", wardrobe: "", coCharacter: "" }))).map((scene, i) => {
-                  const isActive = (i + 1) <= selectedPkg;
-                  const isLocked = !isActive;
-                  const coverImg = allImages[i];
-                  return (
-                    <div
-                      key={scene.slot}
-                      className={`${styles.sceneCard} ${isActive ? styles.sceneCardActive : styles.sceneCardLocked}`}
-                      onClick={() => { if (isActive && coverImg?.url) { setGalleryIdx(i); setLightboxOpen(true); } }}
-                      title={isLocked ? "Included in larger packages" : scene.title || `Scene ${i + 1}`}
-                    >
-                      {coverImg?.url
-                        ? <ImagePreview src={coverImg.url} alt={scene.title || `Scene ${i + 1}`} className={styles.sceneThumb} preferredWidth={110} />
-                        : <div className={styles.sceneThumbPlaceholder} />
-                      }
-                      {isLocked && <div className={styles.sceneLockOverlay}>&#128274;</div>}
-                      <div className={styles.sceneInfo}>
-                        <span className={styles.sceneIndex}>Scene {i + 1}</span>
-                        {scene.title && <span className={styles.sceneLabel}>{scene.title}</span>}
-                        {scene.description && isActive && <span className={styles.sceneDesc}>{scene.description}</span>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            /* ---- Regular Gallery (non-story templates) ---- */
-            <div className={styles.mainImgWrap}
-              onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
-              onTouchEnd={e => {
-                if (touchStartX === null) return;
-                const delta = touchStartX - e.changedTouches[0].clientX;
-                if (delta > 50) setGalleryIdx(i => Math.min(allImages.length - 1, i + 1));
-                else if (delta < -50) setGalleryIdx(i => Math.max(0, i - 1));
-                setTouchStartX(null);
-              }}
+          <div className={styles.mainImgWrap}
+            onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
+            onTouchEnd={e => {
+              if (touchStartX === null) return;
+              const delta = touchStartX - e.changedTouches[0].clientX;
+              if (delta > 50) setGalleryIdx(i => Math.min(allImages.length - 1, i + 1));
+              else if (delta < -50) setGalleryIdx(i => Math.max(0, i - 1));
+              setTouchStartX(null);
+            }}
+          >
+            <div
+              className={`${styles.mainImg} ${styles.mainImgClickable}`}
+              onClick={() => setLightboxOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => e.key === "Enter" && setLightboxOpen(true)}
+              aria-label="Expand image"
             >
-              <div
-                className={`${styles.mainImg} ${styles.mainImgClickable}`}
-                onClick={() => setLightboxOpen(true)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => e.key === "Enter" && setLightboxOpen(true)}
-                aria-label="Expand image"
-              >
-                {allImages[galleryIdx]?.url
-                  ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
-                  : <div className={styles.imgPlaceholder}>No image</div>
-                }
-                <div className={styles.expandHint}>Tap to expand</div>
-              </div>
-              {allImages.length > 1 && (
-                <>
-                  {galleryIdx > 0 && (
-                    <button type="button" className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
-                      onClick={() => setGalleryIdx(i => i - 1)} aria-label="Previous image">&#8249;</button>
-                  )}
-                  {galleryIdx < allImages.length - 1 && (
-                    <button type="button" className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
-                      onClick={() => setGalleryIdx(i => i + 1)} aria-label="Next image">&#8250;</button>
-                  )}
-                  <span className={styles.galleryCounter}>{galleryIdx + 1} / {allImages.length}</span>
-                </>
-              )}
+              {allImages[galleryIdx]?.url
+                ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
+                : <div className={styles.imgPlaceholder}>No image</div>
+              }
+              <div className={styles.expandHint}>Tap to expand</div>
             </div>
-          )}
-          {!template.isStory && allImages.length > 1 && (
+            {allImages.length > 1 && (
+              <>
+                {galleryIdx > 0 && (
+                  <button type="button" className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
+                    onClick={() => setGalleryIdx(i => i - 1)} aria-label="Previous image">&#8249;</button>
+                )}
+                {galleryIdx < allImages.length - 1 && (
+                  <button type="button" className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
+                    onClick={() => setGalleryIdx(i => i + 1)} aria-label="Next image">&#8250;</button>
+                )}
+                <span className={styles.galleryCounter}>{galleryIdx + 1} / {allImages.length}</span>
+              </>
+            )}
+          </div>
+          {allImages.length > 1 && (
             <div className={styles.thumbTrack}>
               {allImages.map((img, i) => (
                 <button
@@ -457,22 +424,6 @@ export default function TemplatePage() {
           </div>
           <h1 className={styles.title}>{template.title}</h1>
 
-          {/* Story type chip row */}
-          {template.isStory && (
-            <div className={styles.storyTypeRow}>
-              <span className={styles.storyTypeChip}>📖</span>
-              <span className={styles.storyTypeChip}>
-                {template.storyType === "solo" ? "Solo Story"
-                  : template.storyType === "duo" ? "Duo Story"
-                  : template.storyType === "group" ? "Group Story"
-                  : template.storyType === "brand" ? "Brand Story"
-                  : template.storyType === "group_brand" ? "Group + Brand"
-                  : "Story"}
-              </span>
-              <span className={styles.storyTypeChip}>{(Array.isArray(template.scenes) && template.scenes.length > 0 ? template.scenes.length : template.packageSize)} scenes</span>
-            </div>
-          )}
-
           <StarWidget
             avg={avgRating}
             count={ratingCount}
@@ -501,7 +452,7 @@ export default function TemplatePage() {
           <div className={styles.purchaseBox}>
             {pkgOptions.length > 0 && (
               <div className={styles.pkgRow}>
-                <span className={styles.pkgLabel}>{template.isStory ? "Scenes" : "Images"}</span>
+                <span className={styles.pkgLabel}>Images</span>
                 <div className={styles.pkgPills}>
                   {pkgOptions.map(o => (
                     <button
@@ -510,9 +461,7 @@ export default function TemplatePage() {
                       className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
                       onClick={() => setSelectedPkg(o.n)}
                     >
-                      {template.isStory
-                        ? `${o.n} ${o.n === 1 ? "scene" : "scenes"}`
-                        : `${o.n} ${o.n === 1 ? "image" : "images"}`}
+                      {o.n} {o.n === 1 ? "image" : "images"}
                       <span className={styles.pkgPillPrice}>{formatPrice(o.price)}</span>
                     </button>
                   ))}
@@ -559,7 +508,7 @@ export default function TemplatePage() {
               type="button"
               className={styles.buyBtn}
               onClick={purchase}
-            >{template.isStory ? "Cast Yourself in This Story →" : "Book This Look"}</button>
+            >Book This Look</button>
           </div>
 
           <div className={styles.metaGrid}>

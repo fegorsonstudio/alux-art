@@ -306,6 +306,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       storage_path: storyAssets.groupPhotoRef.storagePath,
       created_at: now,
     }] : []),
+    // Story: brand / logo assets
+    ...(storyAssets?.brandRefs ?? []).map((ref, i) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "brand", tag: null, custom_name: null, note: ref.placement ?? "everywhere",
+      name: ref.name ?? `brand-${i + 1}`, type: "image/jpeg", size: 1,
+      storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
+      created_at: now,
+    })),
   ];
 
   if (allRefs.length > 0) {
