@@ -635,3 +635,117 @@
   .lightboxImg { max-height: 80vh; }
   .lightboxArrowLeft, .lightboxArrowRight { min-width: 44px; min-height: 44px; padding: 10px; }
 }
+
+/* ---- Story type chip row ---- */
+.storyTypeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.storyTypeChip {
+  background: rgba(255, 190, 80, 0.1);
+  border: 1px solid rgba(255, 190, 80, 0.3);
+  border-radius: 16px;
+  color: #b06800;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  letter-spacing: 0.02em;
+}
+.pageDark .storyTypeChip {
+  background: rgba(255, 190, 80, 0.08);
+  border-color: rgba(255, 190, 80, 0.2);
+  color: #ffd080;
+}
+
+/* ---- Scene Timeline ---- */
+.sceneTimeline {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+  margin-bottom: 16px;
+}
+.sceneTimeline::-webkit-scrollbar { height: 4px; }
+.sceneTimeline::-webkit-scrollbar-track { background: transparent; }
+.sceneTimeline::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+.sceneCard {
+  flex-shrink: 0;
+  width: 110px;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s, transform 0.15s;
+  position: relative;
+}
+.sceneCard:hover { transform: translateY(-2px); }
+
+.sceneCardActive { border-color: rgba(109, 40, 217, 0.5); }
+.sceneCardActive:hover { border-color: rgba(196, 181, 253, 0.7); }
+
+.sceneCardLocked { opacity: 0.45; cursor: default; }
+.sceneCardLocked:hover { transform: none; }
+
+.sceneThumb {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  display: block;
+  background: rgba(255,255,255,0.06);
+}
+.sceneThumbPlaceholder {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: rgba(255,255,255,0.05);
+}
+
+.sceneLockOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  font-size: 1.2rem;
+}
+
+.sceneInfo {
+  padding: 6px 6px 8px;
+  background: rgba(0,0,0,0.3);
+}
+.sceneIndex {
+  font-size: 0.58rem;
+  color: rgba(255,255,255,0.38);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: block;
+}
+.sceneLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sceneDesc {
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.42);
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  line-height: 1.35;
+}
+
