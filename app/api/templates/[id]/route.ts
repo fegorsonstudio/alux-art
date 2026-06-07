@@ -76,10 +76,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.storyType === null) updates.story_type = null;
   if (typeof body.defaultRole === "string") updates.default_role = body.defaultRole.trim().slice(0, 100) || null;
   if (Array.isArray(body.roleChips)) updates.role_chips = (body.roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6);
-  if (Array.isArray(body.scenes)) updates.scenes = body.scenes;
+  const scenesArray = Array.isArray(body.scenes) ? (body.scenes as unknown[]) : null;
 
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)} WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
+    UPDATE templates SET ${sql(updates)}${scenesArray !== null ? sql`, scenes = ${sql.json(scenesArray)}` : sql``}
+    WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 
   if (!template) return NextResponse.json({ error: "Update failed" }, { status: 500 });

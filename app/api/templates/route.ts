@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       ${typeof coverStoragePath === "string" && coverStoragePath ? coverStoragePath : null},
       'template-images',
       ${safeIsStory}, ${safeStoryType}, ${safeDefaultRole},
-      ${safeRoleChips as string[]}, ${JSON.stringify(safeScenes)}::jsonb,
+      ${safeRoleChips as string[]}, ${sql.json(safeScenes)},
       NOW(), NOW()
     )
     RETURNING *

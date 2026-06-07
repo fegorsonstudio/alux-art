@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
            t.price_ngn, t.shoot_mode, t.aspect_ratio, t.package_size, t.purchase_count,
            t.cover_storage_path, t.cover_bucket, t.created_at,
            t.avg_rating, t.rating_count, t.is_story, t.story_type,
-           CASE WHEN jsonb_typeof(t.scenes) = 'array' THEN jsonb_array_length(t.scenes) ELSE 0 END AS scene_count,
+           CASE
+             WHEN jsonb_typeof(t.scenes) = 'array' THEN jsonb_array_length(t.scenes)
+             WHEN jsonb_typeof(t.scenes) = 'string' THEN jsonb_array_length((t.scenes #>> '{}')::jsonb)
+             ELSE 0
+           END AS scene_count,
            t.price_1_ngn, t.price_5_ngn,
            c.id AS c_id, c.display_name AS c_display_name,
            c.avatar_storage_path AS c_avatar_path, c.avatar_bucket AS c_avatar_bucket
