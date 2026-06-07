@@ -77,7 +77,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (typeof body.defaultRole === "string") updates.default_role = body.defaultRole.trim().slice(0, 100) || null;
   if (Array.isArray(body.roleChips)) updates.role_chips = (body.roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6);
   const scenesArray = Array.isArray(body.scenes) ? body.scenes : null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scenesClause = scenesArray !== null ? sql`, scenes = ${sql.json(scenesArray as any)}` : sql``;
 
   const [template] = await sql`
