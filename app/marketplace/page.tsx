@@ -66,7 +66,12 @@ export default function MarketplacePage() {
   const load = useCallback(async (cat: string, q: string, cursor?: string) => {
     if (!cursor) setLoading(true); else setLoadingMore(true);
     const p = new URLSearchParams({ limit: "24" });
-    if (cat !== "all") p.set("category", cat);
+    if (cat === "story") {
+      p.set("isStory", "true");
+    } else {
+      p.set("isStory", "false");
+      if (cat !== "all") p.set("category", cat);
+    }
     if (q) p.set("q", q);
     if (cursor) p.set("cursor", cursor);
     const res = await fetch(`/api/marketplace?${p}`);
