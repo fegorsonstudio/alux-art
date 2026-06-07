@@ -109,6 +109,7 @@ export default function StoriesPage() {
           <p className={styles.emptyHint}>Check back soon — creators are building them now.</p>
         </div>
       ) : (
+        <div className={styles.section}>
         <div className={styles.grid}>
           {stories.map(s => (
             <StoryCard
@@ -125,6 +126,7 @@ export default function StoriesPage() {
               formatPrice={formatPrice}
             />
           ))}
+        </div>
         </div>
       )}
 
