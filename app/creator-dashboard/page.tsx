@@ -1442,7 +1442,7 @@ function CreatorDashboard() {
                     value={form.defaultRole}
                     onChange={e => setForm(f => ({ ...f, defaultRole: e.target.value }))}
                   />
-                  <p className={styles.fieldHint}>Pre-fills the "I'm the ___" prompt for buyers. Leave blank to let them write freely.</p>
+                  <p className={styles.fieldHint}>Pre-fills the &quot;I&apos;m the ___&quot; prompt for buyers. Leave blank to let them write freely.</p>
                 </div>
 
                 <div className={styles.fieldRow}>
