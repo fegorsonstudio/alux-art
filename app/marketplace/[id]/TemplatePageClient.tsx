@@ -354,7 +354,7 @@ export default function TemplatePage() {
             /* ---- Scene Timeline (story templates) ---- */
             <div>
               <div className={styles.sceneTimeline}>
-                {(template.scenes && template.scenes.length > 0 ? template.scenes : allImages.map((_, i) => ({ slot: i + 1, title: `Scene ${i + 1}`, description: "", environment: "", wardrobe: "", coCharacter: "" }))).map((scene, i) => {
+                {(Array.isArray(template.scenes) && template.scenes.length > 0 ? template.scenes : allImages.map((_, i) => ({ slot: i + 1, title: `Scene ${i + 1}`, description: "", environment: "", wardrobe: "", coCharacter: "" }))).map((scene, i) => {
                   const isActive = (i + 1) <= selectedPkg;
                   const isLocked = !isActive;
                   const coverImg = allImages[i];
@@ -469,7 +469,7 @@ export default function TemplatePage() {
                   : template.storyType === "group_brand" ? "Group + Brand"
                   : "Story"}
               </span>
-              <span className={styles.storyTypeChip}>{(template.scenes && template.scenes.length > 0 ? template.scenes.length : template.packageSize)} scenes</span>
+              <span className={styles.storyTypeChip}>{(Array.isArray(template.scenes) && template.scenes.length > 0 ? template.scenes.length : template.packageSize)} scenes</span>
             </div>
           )}
 

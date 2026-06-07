@@ -12,6 +12,7 @@ export async function GET() {
     SELECT id, name, storage_path, storage_bucket, created_at
     FROM shoot_references
     WHERE user_id = ${user.id} AND purpose = 'identity'
+      AND storage_path LIKE ${user.id + "/%"}
     ORDER BY created_at DESC LIMIT 60
   `;
 
