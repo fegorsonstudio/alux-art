@@ -6,6 +6,7 @@ import { r2ProxyUrl } from "@/lib/r2";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
+const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group"]);
 
 async function getPlatformFee(): Promise<number> {
   const [row] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
@@ -70,6 +71,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     updates.cover_storage_path = body.coverStoragePath;
     updates.cover_bucket = "template-images";
   }
+  if (typeof body.isStory === "boolean") updates.is_story = body.isStory;
+  if (typeof body.storyType === "string" && ALLOWED_STORY_TYPES.has(body.storyType)) updates.story_type = body.storyType;
+  if (body.storyType === null) updates.story_type = null;
+  if (typeof body.defaultRole === "string") updates.default_role = body.defaultRole.trim().slice(0, 100) || null;
+  if (Array.isArray(body.roleChips)) updates.role_chips = (body.roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6);
+  if (Array.isArray(body.scenes)) updates.scenes = body.scenes;
 
   const [template] = await sql`
     UPDATE templates SET ${sql(updates)} WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *

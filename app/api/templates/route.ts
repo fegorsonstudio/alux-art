@@ -5,6 +5,7 @@ import { ASPECTS, packagePrice } from "@/lib/types";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
+const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group"]);
 
 async function getPlatformFee(): Promise<number> {
   const [row] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
@@ -78,12 +79,18 @@ export async function POST(request: NextRequest) {
   }
 
   const pkg = [1, 5, 10].includes(Number(packageSize)) ? Number(packageSize) : 10;
-  const { coverStoragePath } = body;
+  const { coverStoragePath, isStory, storyType, defaultRole, roleChips, scenes } = body;
+  const safeIsStory = isStory === true;
+  const safeStoryType = typeof storyType === "string" && ALLOWED_STORY_TYPES.has(storyType) ? storyType : null;
+  const safeDefaultRole = typeof defaultRole === "string" ? defaultRole.trim().slice(0, 100) || null : null;
+  const safeRoleChips = Array.isArray(roleChips) ? (roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6) : [];
+  const safeScenes = Array.isArray(scenes) ? scenes : [];
 
   const [template] = await sql`
     INSERT INTO templates
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
+       is_story, story_type, default_role, role_chips, scenes,
        created_at, updated_at)
     VALUES (
       ${creator.id},
@@ -96,7 +103,10 @@ export async function POST(request: NextRequest) {
       ${shootMode}, ${aspectRatio}, ${pkg},
       ${(body.status === "published" || body.status === "draft") ? body.status as string : "draft"},
       ${typeof coverStoragePath === "string" && coverStoragePath ? coverStoragePath : null},
-      'template-images', NOW(), NOW()
+      'template-images',
+      ${safeIsStory}, ${safeStoryType}, ${safeDefaultRole},
+      ${safeRoleChips as string[]}, ${JSON.stringify(safeScenes)}::jsonb,
+      NOW(), NOW()
     )
     RETURNING *
   `.catch((err) => { console.error("[templates POST]", err); return [null]; });

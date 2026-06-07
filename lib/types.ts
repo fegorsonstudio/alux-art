@@ -189,6 +189,9 @@ export interface Shoot {
   zipStatus?: "pending" | "ready" | "failed";
   zipUrl?: string;
   images: ShootImage[];
+  // Story fields
+  rolePrompt?: string;
+  storyAssets?: StoryAssets;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
@@ -217,9 +220,29 @@ export interface PackagePricing {
 
 export type TemplateCategory =
   | "portrait" | "editorial" | "corporate" | "glamour" | "wedding"
-  | "maternity" | "fantasy" | "boudoir" | "street" | "other";
+  | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story";
 
-export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] = [
+// Story Photoshoot types
+export type StoryType = "solo" | "duo" | "group" | "brand" | "group_brand";
+
+export interface StoryAssetConfig {
+  requiresCostar: boolean;
+  requiresGroup: boolean;
+  requiresBrand: boolean;
+  defaultRole?: string;
+  roleChips?: string[];
+  sceneLabels?: string[];
+  storyType?: StoryType;
+}
+
+export interface StoryAssets {
+  costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
+  groupPhotoRef?: { storagePath: string; storageBucket: string; name?: string };
+  brandRefs?: Array<{ storagePath: string; storageBucket: string; placement?: "everywhere" | "background" | "subtle"; name?: string }>;
+}
+
+export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string; isStory?: boolean }[] = [
+  { value: "story",     label: "📖 Stories", isStory: true },
   { value: "portrait",  label: "Portrait" },
   { value: "editorial", label: "Editorial" },
   { value: "corporate", label: "Corporate" },
@@ -274,6 +297,15 @@ export interface Template {
   coverBucket?: string;
   coverUrl?: string;
   images?: TemplateImage[];
+  // Story fields
+  isStory?: boolean;
+  storyType?: StoryType;
+  defaultRole?: string;
+  roleChips?: string[];
+  requiresCostar?: boolean;
+  requiresGroup?: boolean;
+  requiresBrand?: boolean;
+  sceneLabels?: string[];
   createdAt: string;
   updatedAt: string;
 }
