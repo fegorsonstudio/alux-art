@@ -15,6 +15,7 @@ interface StoryTemplate {
   priceNgn: number;
   price1Ngn?: number | null;
   packageSize: number;
+  sceneCount?: number;
   creator: { id: string; displayName: string; avatarUrl?: string | null } | null;
   createdAt: string;
 }
@@ -51,6 +52,7 @@ export default function StoriesPage() {
       priceNgn: t.priceNgn,
       price1Ngn: t.price1Ngn ?? null,
       packageSize: t.packageSize ?? 5,
+      sceneCount: t.sceneCount ?? undefined,
       creator: t.creator ?? null,
       createdAt: t.createdAt,
     }));
@@ -122,6 +124,7 @@ export default function StoriesPage() {
               priceNgn={s.priceNgn}
               price1Ngn={s.price1Ngn}
               packageSize={s.packageSize}
+              sceneCount={s.sceneCount}
               creator={s.creator}
               formatPrice={formatPrice}
             />

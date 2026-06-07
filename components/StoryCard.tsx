@@ -13,6 +13,7 @@ interface StoryCardProps {
   priceNgn: number;
   price1Ngn?: number | null;
   packageSize: number;
+  sceneCount?: number;
   creator: { displayName: string; avatarUrl?: string | null } | null;
   formatPrice: (ngn: number) => string;
 }
@@ -24,7 +25,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function StoryCard({
-  id, title, description, storyType, coverUrl, priceNgn, price1Ngn, packageSize, creator, formatPrice,
+  id, title, description, storyType, coverUrl, priceNgn, price1Ngn, packageSize, sceneCount, creator, formatPrice,
 }: StoryCardProps) {
   const typeLabel = storyType ? (TYPE_LABEL[storyType] ?? storyType) : null;
   const fromPrice = price1Ngn ?? priceNgn;
@@ -43,7 +44,7 @@ export default function StoryCard({
           <span className={styles.storyBadge}>Story</span>
           {typeLabel && <span className={styles.typePill}>{typeLabel}</span>}
         </div>
-        <div className={styles.sceneBadge}>{packageSize} scenes</div>
+        <div className={styles.sceneBadge}>{sceneCount ?? packageSize} scenes</div>
       </div>
 
       <div className={styles.info}>

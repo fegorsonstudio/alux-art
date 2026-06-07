@@ -115,7 +115,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       storyType: template.story_type ?? null,
       defaultRole: template.default_role ?? null,
       roleChips: template.role_chips ?? [],
-      scenes: template.scenes ?? [],
+      scenes: typeof template.scenes === 'string' ? JSON.parse(template.scenes) : (template.scenes ?? []),
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
       createdAt: template.created_at,

@@ -469,7 +469,7 @@ export default function TemplatePage() {
                   : template.storyType === "group_brand" ? "Group + Brand"
                   : "Story"}
               </span>
-              <span className={styles.storyTypeChip}>{allImages.length || template.packageSize} scenes</span>
+              <span className={styles.storyTypeChip}>{(template.scenes && template.scenes.length > 0 ? template.scenes.length : template.packageSize)} scenes</span>
             </div>
           )}
 

@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
            t.price_ngn, t.shoot_mode, t.aspect_ratio, t.package_size, t.purchase_count,
            t.cover_storage_path, t.cover_bucket, t.created_at,
            t.avg_rating, t.rating_count, t.is_story, t.story_type,
+           COALESCE(jsonb_array_length(t.scenes), 0) AS scene_count,
+           t.price_1_ngn, t.price_5_ngn,
            c.id AS c_id, c.display_name AS c_display_name,
            c.avatar_storage_path AS c_avatar_path, c.avatar_bucket AS c_avatar_bucket
     FROM templates t
@@ -68,6 +70,9 @@ export async function GET(request: NextRequest) {
       ratingCount: t.rating_count ?? 0,
       isStory: t.is_story ?? false,
       storyType: t.story_type ?? null,
+      sceneCount: t.scene_count ?? 0,
+      price1Ngn: t.price_1_ngn != null ? Number(t.price_1_ngn) : null,
+      price5Ngn: t.price_5_ngn != null ? Number(t.price_5_ngn) : null,
       coverUrl,
       createdAt: t.created_at,
     };
