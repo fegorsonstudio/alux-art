@@ -7,26 +7,17 @@
 
 ---
 
-## Pre-conditions (Admin sets up before handing off to test agent)
+## Pre-conditions
 
-Before the test agent begins, the primary agent or developer must:
+The feature branch is already deployed and running. No setup needed.
 
-1. SSH into VPS and deploy the feature branch on port 3001:
-   ```bash
-   ssh user@178.104.133.89
-   cd /var/www
-   git clone <repo-url> aluxart-story-test || (cd aluxart-story-test && git fetch)
-   cd aluxart-story-test
-   git checkout feature/story-photoshoot
-   git pull origin feature/story-photoshoot
-   cp /var/www/aluxart/.env.local .env.local   # copy env from production app
-   npm install
-   PORT=3001 npm run build && PORT=3001 npm start &
-   ```
-2. Confirm `http://178.104.133.89:3001` returns HTTP 200 before handing off.
-3. Provide the test agent with:
-   - Admin email + password for `aluxartandframes.shop` auth (same Supabase project)
-   - A test creator account email + password (must have `creator_status = approved` in Supabase)
+- App is live at `http://178.104.133.89:3001` (confirmed HTTP 200 on / and /stories)
+- Running as PM2 process `aluxart-story-test` on the VPS
+- Uses the same Supabase project and .env.local as production
+
+You will need:
+- Admin email + password (same login as `aluxartandframes.shop`)
+- A creator account with `creator_status = approved` in Supabase (can use same admin account if it has creator status)
 
 ---
 
