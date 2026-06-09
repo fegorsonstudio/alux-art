@@ -1625,7 +1625,8 @@ function CreatorDashboard() {
                     </div>
                   ))}
                 </div>
-              </div>)}
+                )}
+              </div>
             )}
           </div>
 
