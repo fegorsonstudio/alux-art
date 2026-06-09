@@ -1529,7 +1529,7 @@ function CreatorDashboard() {
                   <p className={styles.fieldHint}>Quick-pick options shown to buyers when selecting their role.</p>
                 </div>
 
-                {form.storyType !== "director" && <div className={styles.fieldRow}>
+                {form.storyType !== "director" && (<div className={styles.fieldRow}>
                   <div className={styles.storySceneHeader}>
                     <span className={styles.label}>Scenes ({storyScenes.length})</span>
                     {storyScenes.length < 10 && (
@@ -1625,7 +1625,7 @@ function CreatorDashboard() {
                     </div>
                   ))}
                 </div>
-              </div>}
+              </div>)}
             )}
           </div>
 
