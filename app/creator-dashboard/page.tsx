@@ -40,6 +40,7 @@ interface TemplateRow {
   default_role?: string | null;
   role_chips?: string[];
   scenes?: StoryScene[];
+  director_prompt?: string | null;
 }
 
 interface ShowcaseIdentityRef {
@@ -135,7 +136,7 @@ const defaultForm = () => ({
   status: "draft",
   coverStoragePath: "",
   isStory: false,
-  storyType: "solo" as "solo" | "duo" | "group" | "brand",
+  storyType: "solo" as "solo" | "duo" | "group" | "brand" | "director",
   defaultRole: "",
   roleChipsInput: "",
 });
@@ -162,6 +163,10 @@ function CreatorDashboard() {
   const pendingTagRef = useRef<string>("inspiration");
   const [replacingId, setReplacingId] = useState<string | null>(null);
   const [storyScenes, setStoryScenes] = useState<StoryScene[]>([defaultScene(1)]);
+  const [directorPromptText, setDirectorPromptText] = useState("");
+  const [parsedDirectorScenes, setParsedDirectorScenes] = useState<StoryScene[]>([]);
+  const [isParsingDirector, setIsParsingDirector] = useState(false);
+  const [directorParseError, setDirectorParseError] = useState("");
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -311,15 +316,20 @@ function CreatorDashboard() {
       status: t.status,
       coverStoragePath: t.cover_storage_path ?? "",
       isStory: t.is_story === true,
-      storyType: (["solo", "duo", "group", "brand"].includes(String(t.story_type ?? "")) ? t.story_type : "solo") as "solo" | "duo" | "group" | "brand",
+      storyType: (["solo", "duo", "group", "brand", "director"].includes(String(t.story_type ?? "")) ? t.story_type : "solo") as "solo" | "duo" | "group" | "brand" | "director",
       defaultRole: t.default_role ?? "",
       roleChipsInput: (t.role_chips ?? []).join(", "),
     });
     if (Array.isArray(t.scenes) && t.scenes.length > 0) {
       setStoryScenes(t.scenes.map((s, i) => ({ ...defaultScene(i + 1), ...s })));
+      if (t.story_type === "director") {
+        setParsedDirectorScenes(t.scenes.map((s, i) => ({ ...defaultScene(i + 1), ...s })));
+      }
     } else {
       setStoryScenes([defaultScene(1)]);
     }
+    setDirectorPromptText(t.director_prompt ?? "");
+    setDirectorParseError("");
     setCoverPreview(t.cover_url ?? "");
     // Use already-loaded template_images (signed URLs included from dashboard API)
     const imgs = t.template_images ?? [];
@@ -603,6 +613,31 @@ function CreatorDashboard() {
     setSampleImages(prev => prev.filter(s => s.localId !== item.localId));
   };
 
+  const parseDirectorPrompt = async () => {
+    if (!directorPromptText.trim()) {
+      setDirectorParseError("Paste your Gemini output before parsing.");
+      return;
+    }
+    setIsParsingDirector(true);
+    setDirectorParseError("");
+    try {
+      const res = await fetch("/api/templates/parse-director", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ directorPrompt: directorPromptText }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setDirectorParseError(d.error ?? "Parse failed"); return; }
+      const scenes: StoryScene[] = (d.scenes as StoryScene[]).map((s, i) => ({ ...defaultScene(i + 1), ...s }));
+      setParsedDirectorScenes(scenes);
+      setStoryScenes(scenes);
+    } catch {
+      setDirectorParseError("Network error. Try again.");
+    } finally {
+      setIsParsingDirector(false);
+    }
+  };
+
   const saveTemplate = async () => {
     setFormError("");
     if (!form.title.trim()) { setFormError("Title is required"); return; }
@@ -641,7 +676,8 @@ function CreatorDashboard() {
       storyType: form.isStory ? form.storyType : null,
       defaultRole: form.isStory ? form.defaultRole.trim() || null : null,
       roleChips: form.isStory ? form.roleChipsInput.split(",").map(c => c.trim()).filter(Boolean).slice(0, 6) : [],
-      scenes: form.isStory ? storyScenes : [],
+      scenes: form.isStory ? (form.storyType === "director" ? parsedDirectorScenes : storyScenes) : [],
+      directorPrompt: form.isStory && form.storyType === "director" ? directorPromptText.trim() || null : null,
     };
 
     let templateId: string;
@@ -1419,18 +1455,54 @@ function CreatorDashboard() {
                 <div className={styles.fieldRow}>
                   <span className={styles.label}>Story type</span>
                   <div className={styles.pills}>
-                    {(["solo", "duo", "group", "brand"] as const).map(t => (
+                    {(["solo", "duo", "group", "brand", "director"] as const).map(t => (
                       <button
                         key={t}
                         type="button"
                         className={`${styles.pill} ${form.storyType === t ? styles.pillActive : ""}`}
                         onClick={() => setForm(f => ({ ...f, storyType: t }))}
                       >
-                        {t === "solo" ? "Solo" : t === "duo" ? "Duo (co-star)" : t === "group" ? "Group" : "Brand Ad"}
+                        {t === "solo" ? "Solo" : t === "duo" ? "Duo (co-star)" : t === "group" ? "Group" : t === "brand" ? "Brand Ad" : "Gemini Director"}
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* Gemini Director — paste + parse */}
+                {form.storyType === "director" && (
+                  <div className={styles.fieldRow}>
+                    <label className={styles.label}>Paste Gemini Director Output</label>
+                    <p className={styles.fieldHint}>Paste the full output from your Gemini Gem — Part 1 (10 shoot prompts), Part 2 (OOTD prompt), and Part 3 (set reference prompt).</p>
+                    <textarea
+                      className={styles.textarea}
+                      rows={10}
+                      placeholder={"Part 1: Creative Direction — Golden Hour Editorial\n...\nPart 2: OOTD/Lay Flat Prompt\n...\nPart 3: Inspiration/Set Reference Prompt\n..."}
+                      value={directorPromptText}
+                      onChange={e => { setDirectorPromptText(e.target.value); setParsedDirectorScenes([]); setDirectorParseError(""); }}
+                    />
+                    <button
+                      type="button"
+                      className={styles.addSceneBtn}
+                      style={{ marginTop: 8 }}
+                      disabled={isParsingDirector || !directorPromptText.trim()}
+                      onClick={parseDirectorPrompt}
+                    >
+                      {isParsingDirector ? "Parsing…" : "Parse & Preview scenes"}
+                    </button>
+                    {directorParseError && <p className={styles.formError}>{directorParseError}</p>}
+                    {parsedDirectorScenes.length > 0 && (
+                      <div style={{ marginTop: 10 }}>
+                        <p className={styles.fieldHint}>{parsedDirectorScenes.length} scenes parsed:</p>
+                        <ol className={styles.directorSceneList}>
+                          {parsedDirectorScenes.map(s => (
+                            <li key={s.slot}><strong>{s.slot}.</strong> {s.title}</li>
+                          ))}
+                        </ol>
+                        <p className={styles.fieldHint} style={{ marginTop: 4 }}>Upload the OOTD ghost mannequin image as an <strong>[OUTFIT]</strong> tagged reference, and the set/moodboard as a <strong>[BACKGROUND]</strong> tagged reference using the images section above.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className={styles.fieldRow}>
                   <label className={styles.label}>Default role</label>
@@ -1457,7 +1529,7 @@ function CreatorDashboard() {
                   <p className={styles.fieldHint}>Quick-pick options shown to buyers when selecting their role.</p>
                 </div>
 
-                <div className={styles.fieldRow}>
+                {form.storyType !== "director" && <div className={styles.fieldRow}>
                   <div className={styles.storySceneHeader}>
                     <span className={styles.label}>Scenes ({storyScenes.length})</span>
                     {storyScenes.length < 10 && (
@@ -1553,7 +1625,7 @@ function CreatorDashboard() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>}
             )}
           </div>
 

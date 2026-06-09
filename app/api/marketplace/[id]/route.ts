@@ -119,6 +119,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
       requiresBrand: template.story_type === 'brand' || template.story_type === 'group_brand',
+      isDirectorStory: template.story_type === 'director',
+      directorPrompt: template.director_prompt ?? null,
       createdAt: template.created_at,
       updatedAt: template.updated_at,
     },

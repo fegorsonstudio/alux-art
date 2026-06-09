@@ -80,6 +80,8 @@ interface TemplateDetail {
   requiresCostar?: boolean;
   requiresGroup?: boolean;
   requiresBrand?: boolean;
+  isDirectorStory?: boolean;
+  directorPrompt?: string | null;
   defaultRole?: string | null;
   roleChips?: string[];
   scenes?: Array<{ slot: number; title: string; description: string; environment: string; wardrobe: string; coCharacter?: string }>;

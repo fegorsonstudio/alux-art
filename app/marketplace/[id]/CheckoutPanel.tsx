@@ -32,6 +32,7 @@ interface TemplateDetail {
   requiresCostar?: boolean;
   requiresGroup?: boolean;
   requiresBrand?: boolean;
+  isDirectorStory?: boolean;
   defaultRole?: string | null;
   roleChips?: string[];
 }

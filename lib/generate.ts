@@ -1397,7 +1397,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, t.is_story, t.story_type, t.scenes FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, t.is_story, t.story_type, t.scenes, t.director_prompt FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1415,6 +1415,7 @@ export async function startGenerationWorker(
   // Story fields — derive from shoot_references (no story_assets column)
   const rolePrompt: string | null = typeof shoot.role_prompt === "string" ? shoot.role_prompt.trim() : null;
   const isStoryShoot = shoot.is_story === true;
+  const isDirectorStory = shoot.story_type === "director";
   const templateScenes: Array<{ slot: number; title: string; description: string; environment: string; wardrobe: string; coCharacter?: string }> =
     Array.isArray(shoot.scenes) ? shoot.scenes : [];
   const costarRefRows = rawRefs.filter(r => r.purpose === "costar");
@@ -1593,12 +1594,32 @@ export async function startGenerationWorker(
         (s.wardrobe ? `\n    Wardrobe: ${s.wardrobe}` : "") +
         (s.coCharacter ? `\n    Co-character: ${s.coCharacter}` : "")
       ).join("\n\n");
-      storyContextParts.push(
-        `STORY SCENE STRUCTURE (${scenesForPackage.length} scene${scenesForPackage.length !== 1 ? "s" : ""} for this package):\n` +
-        `Each prompt_index maps to one scene. Scene 1 → prompt_index 1, Scene 2 → prompt_index 2, etc.\n` +
-        `Generate one prompt per scene. Do NOT reuse scenes. Use the scene's exact Environment and Wardrobe as the foundation for that slot's Scene and Important Details sections.\n\n` +
-        sceneList
-      );
+
+      if (isDirectorStory) {
+        // Director mode: the scene descriptions ARE the prompts — planner must preserve them faithfully
+        const directorBrief = typeof shoot.director_prompt === "string" && shoot.director_prompt.trim()
+          ? `CREATIVE BRIEF FROM DIRECTOR:\n${shoot.director_prompt.trim().slice(0, 3000)}\n\n`
+          : "";
+        storyContextParts.push(
+          `${directorBrief}DIRECTOR STORY MODE — FIDELITY REQUIRED:\n` +
+          `These scene descriptions were written by a creative director. Your ONLY job is to:\n` +
+          `1. Reformat each scene's description into the Scene / Subject / Important Details / Use Case / Constraints template.\n` +
+          `2. Inject the buyer's identity into the Subject section.\n` +
+          `3. Apply wardrobe from any [OUTFIT] tagged reference image.\n` +
+          `4. Apply environment/lighting from any [BACKGROUND] tagged reference image.\n` +
+          `DO NOT add creative interpretation. DO NOT change the pose, location, lighting, or styling. Preserve every detail exactly as written.\n\n` +
+          `DIRECTOR SCENES (${scenesForPackage.length} shots):\n` +
+          `Each scene maps to one prompt_index. Scene 1 → prompt_index 1, etc.\n\n` +
+          sceneList
+        );
+      } else {
+        storyContextParts.push(
+          `STORY SCENE STRUCTURE (${scenesForPackage.length} scene${scenesForPackage.length !== 1 ? "s" : ""} for this package):\n` +
+          `Each prompt_index maps to one scene. Scene 1 → prompt_index 1, Scene 2 → prompt_index 2, etc.\n` +
+          `Generate one prompt per scene. Do NOT reuse scenes. Use the scene's exact Environment and Wardrobe as the foundation for that slot's Scene and Important Details sections.\n\n` +
+          sceneList
+        );
+      }
     }
 
     if (rolePrompt) {

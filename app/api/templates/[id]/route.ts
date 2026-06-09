@@ -6,7 +6,7 @@ import { r2ProxyUrl } from "@/lib/r2";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
-const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group", "brand", "group_brand"]);
+const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group", "brand", "group_brand", "director"]);
 
 async function getPlatformFee(): Promise<number> {
   const [row] = await sql`SELECT value FROM app_config WHERE key = 'platform_fee_ngn'`;
@@ -78,6 +78,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (Array.isArray(body.roleChips)) updates.role_chips = (body.roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6);
   const scenesArray = Array.isArray(body.scenes) ? body.scenes : null;
   const scenesClause = scenesArray !== null ? sql`, scenes = ${sql.json(scenesArray as any)}` : sql``;
+  if (typeof body.directorPrompt === "string") updates.director_prompt = body.directorPrompt.trim().slice(0, 20000) || null;
+  if (body.directorPrompt === null) updates.director_prompt = null;
 
   const [template] = await sql`
     UPDATE templates SET ${sql(updates)}${scenesClause}
