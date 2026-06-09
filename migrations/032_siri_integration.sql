@@ -6,7 +6,7 @@
 
 CREATE TABLE IF NOT EXISTS shortcut_tokens (
   id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id      UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id      UUID        NOT NULL,     -- auth.users FK omitted: auth schema not reachable from VPS migration runner
   token_hash   TEXT        NOT NULL UNIQUE,
   label        TEXT        NOT NULL DEFAULT 'My Shortcut',
   last_used_at TIMESTAMPTZ,
