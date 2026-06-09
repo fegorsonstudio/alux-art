@@ -30,3 +30,12 @@ CREATE TABLE IF NOT EXISTS siri_idempotency_keys (
 --   DELETE FROM siri_idempotency_keys WHERE expires_at < now();
 CREATE INDEX IF NOT EXISTS siri_idempotency_keys_expires_idx
   ON siri_idempotency_keys(expires_at);
+
+-- Helper called by the cron cleanup route.
+-- SECURITY DEFINER runs as function owner, bypassing RLS on this table.
+CREATE OR REPLACE FUNCTION cleanup_expired_idempotency_keys()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  DELETE FROM siri_idempotency_keys WHERE expires_at < now();
+END;
+$$;
