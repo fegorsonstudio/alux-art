@@ -1,3 +1,4 @@
+import "server-only";
 import {
   S3Client,
   GetObjectCommand,
@@ -6,6 +7,7 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Readable } from "stream";
 
 export const r2 = new S3Client({
   region: "auto",
@@ -105,7 +107,6 @@ export async function r2StreamUpload(
   contentType?: string,
   contentLength?: number
 ): Promise<void> {
-  const { Readable } = await import("stream");
   const nodeStream = Readable.fromWeb(webStream as import("stream/web").ReadableStream);
   await r2.send(
     new PutObjectCommand({
@@ -130,7 +131,6 @@ export async function r2StreamObject(
   bucket: string,
   path: string
 ): Promise<{ stream: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }> {
-  const { Readable } = await import("stream");
   const res = await r2.send(new GetObjectCommand({ Bucket: bucket, Key: path }));
   const nodeReadable = res.Body as import("stream").Readable;
   const stream = Readable.toWeb(nodeReadable) as ReadableStream<Uint8Array>;
