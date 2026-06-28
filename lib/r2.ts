@@ -96,9 +96,10 @@ export async function r2Upload(
   );
 }
 
-// Pipes a Web ReadableStream (e.g. from fetch().body) directly to R2 without
-// buffering the entire file in memory. Cuts 4K image save time from ~90s to ~15s
-// because we never load 20-50MB into Node.js heap — we stream it straight through.
+// Reads a Web ReadableStream into a Buffer and uploads to R2.
+// Previously used Readable.fromWeb for streaming, but node:stream is stubbed by
+// the Next.js/webpack bundler even with indirect imports, causing runtime errors.
+// On VPS (no Vercel timeout) buffering is safe for 20-50MB images.
 export async function r2StreamUpload(
   bucket: string,
   path: string,
@@ -106,14 +107,19 @@ export async function r2StreamUpload(
   contentType?: string,
   contentLength?: number
 ): Promise<void> {
-  const streamModule = "node:stream";
-  const { Readable } = (await import(streamModule)) as typeof import("stream");
-  const nodeStream = Readable.fromWeb(webStream as import("stream/web").ReadableStream);
+  const chunks: Uint8Array[] = [];
+  const reader = webStream.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) chunks.push(value);
+  }
+  const buffer = Buffer.concat(chunks);
   await r2.send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: path,
-      Body: nodeStream,
+      Body: buffer,
       ContentType: contentType,
       ...(contentLength !== undefined ? { ContentLength: contentLength } : {}),
     })
