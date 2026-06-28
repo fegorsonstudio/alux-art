@@ -7,7 +7,7 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Readable } from "stream";
+const { Readable } = (eval("require")("stream")) as typeof import("stream");
 
 export const r2 = new S3Client({
   region: "auto",
