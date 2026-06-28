@@ -7,7 +7,6 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-const { Readable } = (eval("require")("stream")) as typeof import("stream");
 
 export const r2 = new S3Client({
   region: "auto",
@@ -107,6 +106,8 @@ export async function r2StreamUpload(
   contentType?: string,
   contentLength?: number
 ): Promise<void> {
+  const streamModule = "node:stream";
+  const { Readable } = (await import(streamModule)) as typeof import("stream");
   const nodeStream = Readable.fromWeb(webStream as import("stream/web").ReadableStream);
   await r2.send(
     new PutObjectCommand({
@@ -132,6 +133,8 @@ export async function r2StreamObject(
   path: string
 ): Promise<{ stream: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }> {
   const res = await r2.send(new GetObjectCommand({ Bucket: bucket, Key: path }));
+  const streamModule = "node:stream";
+  const { Readable } = (await import(streamModule)) as typeof import("stream");
   const nodeReadable = res.Body as import("stream").Readable;
   const stream = Readable.toWeb(nodeReadable) as ReadableStream<Uint8Array>;
   return {
