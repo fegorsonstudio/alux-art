@@ -132,23 +132,6 @@ export async function r2Download(bucket: string, path: string): Promise<{ buffer
   return { buffer: Buffer.from(bytes), contentType: res.ContentType ?? "application/octet-stream" };
 }
 
-// Streams an R2 object without buffering the whole file into RAM.
-// Use this for single-file download responses — memory stays near-zero per request.
-export async function r2StreamObject(
-  bucket: string,
-  path: string
-): Promise<{ stream: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }> {
-  const res = await r2.send(new GetObjectCommand({ Bucket: bucket, Key: path }));
-  const streamModule = "node:stream";
-  const { Readable } = (await import(streamModule)) as typeof import("stream");
-  const nodeReadable = res.Body as import("stream").Readable;
-  const stream = Readable.toWeb(nodeReadable) as ReadableStream<Uint8Array>;
-  return {
-    stream,
-    contentType: res.ContentType ?? "application/octet-stream",
-    contentLength: res.ContentLength,
-  };
-}
 
 export async function r2Delete(bucket: string, paths: string[]): Promise<void> {
   if (!paths.length) return;

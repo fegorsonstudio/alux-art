@@ -698,7 +698,9 @@ async function generateImageWithFal(
 
   // Handle both newer and older fal-ai/client versions
   const output = ((response as Record<string, unknown>).data || response) as FalOutput;
-  const url = output.images?.[0]?.url ?? "";
+  // nano-banana-2 returns 2 images: a draft at images[0] and the full 4K at images[last].
+  const images = output.images ?? [];
+  const url = images[images.length - 1]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL");
   return url;
 }

@@ -16,7 +16,7 @@ export async function GET(
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const completedImages = await sql`
-    SELECT slot, download_storage_bucket, download_storage_path FROM shoot_images
+    SELECT slot, download_storage_bucket, download_storage_path, fal_url FROM shoot_images
     WHERE shoot_id = ${id} AND status = 'COMPLETE' AND download_storage_path IS NOT NULL
   `;
 
@@ -32,18 +32,32 @@ export async function GET(
     const bucket = img.download_storage_bucket as string;
     const path = img.download_storage_path as string;
     let buffer: Buffer | undefined;
+
+    // 1. R2 (new files)
     try {
-      ({ buffer } = await r2Download(bucket, path));
-    } catch {
-      // Fall back to Supabase Storage for older files
+      const { buffer: r2Buf } = await r2Download(bucket, path);
+      if (r2Buf.byteLength > 0) buffer = r2Buf;
+    } catch { /* fall through */ }
+
+    // 2. fal_url — original 4K from fal.ai CDN (expires ~24-48h after generation)
+    if (!buffer && img.fal_url) {
+      try {
+        const falRes = await fetch(img.fal_url as string);
+        if (falRes.ok) buffer = Buffer.from(await falRes.arrayBuffer());
+      } catch { /* fall through */ }
+    }
+
+    // 3. Supabase Storage (older/pre-R2 files)
+    if (!buffer) {
       const { data: blob } = await supa.storage.from(bucket).download(path);
       if (blob) buffer = Buffer.from(await blob.arrayBuffer());
     }
+
     if (buffer) {
       const ext = path.endsWith(".png") ? "png" : "jpg";
       zip.file(`portrait-${img.slot}.${ext}`, buffer);
     } else {
-      console.error("[download-zip] not found in R2 or Supabase:", path);
+      console.error("[download-zip] not found in R2, fal.ai, or Supabase:", path);
     }
   }
 
