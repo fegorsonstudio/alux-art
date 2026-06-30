@@ -412,6 +412,16 @@ export default function TemplatePage() {
         <div className={styles.infoCol}>
           <div className={styles.categoryRow}>
             <span className={styles.categoryPill}>{template.category}</span>
+            {template.isStory && (
+              <span className={styles.categoryPill} style={{ background: "rgba(109,40,217,0.25)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.4)" }}>
+                STORY
+              </span>
+            )}
+            {template.storyType && (
+              <span className={styles.categoryPill} style={{ textTransform: "capitalize" }}>
+                {template.storyType === "group_brand" ? "Group + Brand" : template.storyType}
+              </span>
+            )}
             <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel}</button>
             <button type="button" className={styles.shareBtn} onClick={() => setShowQR(true)}>QR Code</button>
             <button type="button" className={styles.shareBtn} onClick={() => {
@@ -447,6 +457,22 @@ export default function TemplatePage() {
 
           {template.description && (
             <p className={styles.description}>{renderMarkdown(template.description)}</p>
+          )}
+
+          {template.requiresCostar && (
+            <p style={{ margin: "12px 0 0", fontSize: "0.82rem", color: "#a78bfa", background: "rgba(109,40,217,0.1)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(109,40,217,0.2)" }}>
+              Duo story — you&apos;ll upload a co-star photo at checkout.
+            </p>
+          )}
+          {template.requiresGroup && (
+            <p style={{ margin: "12px 0 0", fontSize: "0.82rem", color: "#a78bfa", background: "rgba(109,40,217,0.1)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(109,40,217,0.2)" }}>
+              Group story — you&apos;ll upload a group photo at checkout.
+            </p>
+          )}
+          {template.requiresBrand && (
+            <p style={{ margin: "12px 0 0", fontSize: "0.82rem", color: "#a78bfa", background: "rgba(109,40,217,0.1)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(109,40,217,0.2)" }}>
+              Brand story — you&apos;ll upload brand and logo assets at checkout.
+            </p>
           )}
 
           <div className={styles.purchaseBox}>
@@ -526,6 +552,35 @@ export default function TemplatePage() {
           )}
         </div>
       </div>
+
+      {template.isStory && template.scenes && template.scenes.length > 0 && (
+        <div className={styles.sceneTimeline}>
+          <h3 style={{ margin: "0 0 14px", fontSize: "0.9rem", fontWeight: 600, color: "#f5f3ff", letterSpacing: "0.02em" }}>
+            Story Scenes ({template.scenes.length})
+          </h3>
+          {template.scenes.map((scene) => (
+            <div key={scene.slot} className={styles.sceneCard}>
+              <div className={styles.sceneInfo}>
+                <div className={styles.sceneIndex}>Scene {scene.slot}</div>
+                <div className={styles.sceneLabel}>{scene.title}</div>
+                {scene.description && (
+                  <p className={styles.sceneDesc}>{scene.description}</p>
+                )}
+                {scene.environment && (
+                  <p style={{ margin: "4px 0 0", fontSize: "0.62rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.3 }}>
+                    <strong style={{ color: "rgba(255,255,255,0.5)" }}>Location:</strong> {scene.environment}
+                  </p>
+                )}
+                {scene.wardrobe && (
+                  <p style={{ margin: "3px 0 0", fontSize: "0.62rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.3 }}>
+                    <strong style={{ color: "rgba(255,255,255,0.5)" }}>Wardrobe:</strong> {scene.wardrobe}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showQR && (
         <div style={{
