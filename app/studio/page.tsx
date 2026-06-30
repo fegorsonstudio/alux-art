@@ -1215,8 +1215,8 @@ export default function WorkspacePage() {
                           <span className={styles.openGalleryLabel}>Open gallery</span>
                         </span>
                       </button>
-                      {/* Delete controls */}
-                      {!isConfirming && (
+                      {/* Delete controls — Stop only visible to admin while shoot is active */}
+                      {!isConfirming && (!isActive || isAdmin) && (
                         <button
                           className={`${styles.deleteShootBtn} ${isActive ? styles.deleteShootBtnActive : ""}`}
                           title={isActive ? "Stop & delete" : "Delete shoot"}
