@@ -19,6 +19,24 @@ export default function LoginPage() {
     }
     if (params.has("code")) {
       window.location.replace(`/api/auth/callback${location.search}`);
+      return;
+    }
+    // Handle implicit-flow tokens (magic links) delivered in the URL hash
+    const hashParams = new URLSearchParams(location.hash.slice(1));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    if (accessToken && refreshToken) {
+      const next = params.get("next") ?? "/studio";
+      const supabase = createClient();
+      supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ error: sessionError }) => {
+          if (!sessionError) {
+            window.location.replace(next.startsWith("/") ? next : "/studio");
+          } else {
+            setError("Sign in failed: " + sessionError.message);
+          }
+        });
     }
   }, []);
 
