@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://www.google-analytics.com https://api.anthropic.com https://fal.run https://fal.media https://region1.google-analytics.com",
+              "connect-src 'self' https://www.google-analytics.com https://api.anthropic.com https://fal.run https://fal.media https://region1.google-analytics.com https://owdfoxglbxrqhgqbvkon.supabase.co wss://owdfoxglbxrqhgqbvkon.supabase.co",
               "frame-ancestors 'none'",
             ].join("; "),
           },

@@ -40,10 +40,22 @@ test("story template: fill scenes, save, verify data persists", async ({ page })
     "https://aluxartandframes.shop/creator-dashboard"
   );
 
+  // Capture browser console output for debugging
+  page.on("console", msg => console.log(`[browser ${msg.type()}]`, msg.text()));
+  page.on("pageerror", err => console.log("[browser error]", err.message));
+
   await page.goto(magicLink);
   // Wait for redirect from supabase.co to the app
   await page.waitForURL(url => !url.href.includes("supabase.co"), { timeout: 20_000 });
   console.log("Redirected to app. On:", page.url());
+
+  // Wait for login page to fully load and run its useEffect
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForTimeout(1000);
+
+  // Check current hash
+  const hashDebug = await page.evaluate(() => window.location.hash.slice(0, 50));
+  console.log("Current hash (first 50 chars):", hashDebug);
 
   // Login page setSession() fires and redirects away from /login
   await page.waitForURL(
