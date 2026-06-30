@@ -116,8 +116,8 @@ test.describe("Story Template: Mexico vs South Africa — Duo flow", () => {
     await expect(page.locator("text=STORY").first()).toBeVisible({ timeout: 10_000 });
     console.log("STORY badge visible.");
 
-    // Duo badge
-    await expect(page.locator("text=duo, text=Duo").first()).toBeVisible({ timeout: 5_000 });
+    // Duo badge (DOM text is "duo", CSS textTransform makes it look like "Duo" visually)
+    await expect(page.locator("text=/^duo$/i").first()).toBeVisible({ timeout: 5_000 });
     console.log("Duo label visible.");
 
     // Scene timeline section
