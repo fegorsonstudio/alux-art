@@ -447,7 +447,6 @@ EYE & BROW POOL (choose 1 per slot):
 - "subtle crow's feet at the outer corners of the eyes — natural warmth"
 - "slightly parted upper eyelids — focused and fully present"
 - "micro-lift of the inner brow — a trace of soft curiosity"
-- "faint crinkle between the eyebrows — deep, inward thought"
 - "a fractional squint — natural reaction to studio light, eyes alive and intense"
 - "sharp glint of focus in the pupils — deliberate connection with the lens"
 
