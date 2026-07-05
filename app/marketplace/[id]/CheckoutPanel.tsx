@@ -153,7 +153,6 @@ export default function CheckoutPanel({
       .then(d => {
         if (d.refs?.length) {
           setSavedRefs(d.refs);
-          setSelectedSaved(new Set((d.refs as SavedIdentityRef[]).map(r => r.id)));
         }
       });
 
