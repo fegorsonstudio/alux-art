@@ -104,7 +104,6 @@ export const REFERENCE_TAGS: ReferenceTag[] = [
 ];
 
 export const FAL_MODELS = [
-  "google/nano-banana-2-lite/edit",
   "fal-ai/nano-banana-2/edit",
   "fal-ai/flux/dev",
   "fal-ai/flux-pro/v1.1",

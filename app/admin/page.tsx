@@ -704,11 +704,11 @@ export default function AdminPage() {
                 <button key={m} type="button"
                   className={`${styles.modelPill} ${modelConfig.generation_model === m ? styles.modelPillActive : ""}`}
                   onClick={() => saveModelConfig({ generation_model: m })} disabled={modelSaving}>
-                  {m === "nano-banana" ? "Nano Banana 2 Lite" : "SeedDream 4"}
+                  {m === "nano-banana" ? "Flux Kontext" : "SeedDream 4"}
                 </button>
               ))}
             </div>
-            <div className={styles.modelHint}>{modelConfig.generation_model === "nano-banana" ? "google/nano-banana-2-lite/edit — strong identity lock." : "fal-ai/bytedance/seedream/v4/edit — multi-image editing."}</div>
+            <div className={styles.modelHint}>{modelConfig.generation_model === "nano-banana" ? "fal-ai/nano-banana-2/edit — strong identity lock." : "fal-ai/bytedance/seedream/v4/edit — multi-image editing."}</div>
           </div>
           <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Base-lock Feature</div>

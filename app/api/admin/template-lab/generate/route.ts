@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   let falUrl: string;
   try {
-    const response = await fal.subscribe("google/nano-banana-2-lite/edit", {
+    const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
       input: {
         prompt: slotImg.prompt as string,
         num_images: 1,
