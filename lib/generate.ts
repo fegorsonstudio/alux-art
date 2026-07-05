@@ -688,7 +688,8 @@ async function generateImageWithFal(
     return `https://image.pollinations.ai/prompt/${encoded}?width=${w}&height=${h}&nologo=1&seed=${Date.now()}`;
   }
 
-  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
+  // nano-banana-2-lite does not accept the `resolution` param the full model had
+  const response = await fal.subscribe("google/nano-banana-2-lite/edit", {
     input: {
       prompt,
       num_images: 1,
@@ -698,13 +699,12 @@ async function generateImageWithFal(
       safety_tolerance: "6",
       image_urls: imageUrls.slice(0, 9),
       limit_generations: false,
-      ...(resolution ? { resolution: resolution as unknown as "4K" } : {}),
     },
   });
 
   // Handle both newer and older fal-ai/client versions
   const output = ((response as Record<string, unknown>).data || response) as FalOutput;
-  // nano-banana-2 returns 2 images: a draft at images[0] and the full 4K at images[last].
+  // Take the last image — the full model returned draft+final; lite returns one, so this works for both.
   const images = output.images ?? [];
   const url = images[images.length - 1]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL");
@@ -1925,7 +1925,7 @@ export async function startGenerationWorker(
         status = 'COMPLETE',
         stage = ${`Completed slot ${slot}`},
         provider = ${isTestMode ? "pollinations" : "vercel-fal"},
-        configured_model = ${isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "fal-ai/nano-banana-2/edit")},
+        configured_model = ${isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "google/nano-banana-2-lite/edit")},
         preview_storage_bucket = ${isTestMode ? "test" : "generated-4k"},
         preview_storage_path = ${storagePath},
         download_storage_bucket = ${isTestMode ? "test" : "generated-4k"},

@@ -253,7 +253,8 @@ export async function generateBaseWithFal(
   }
 
   // Cast through unknown to satisfy strict fal.ai SDK input type — same pattern used in generate.ts
-  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
+  // nano-banana-2-lite does not accept the `resolution` param the full model had
+  const response = await fal.subscribe("google/nano-banana-2-lite/edit", {
     input: {
       prompt,
       num_images: 1,
@@ -261,7 +262,6 @@ export async function generateBaseWithFal(
       output_format: "png" as const,
       safety_tolerance: "6",
       image_urls: refImageUrls.slice(0, 4),
-      resolution: "4K",
       limit_generations: false,
       ...(seed !== undefined ? { seed } : {}),
     },
