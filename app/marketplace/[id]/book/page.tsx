@@ -344,6 +344,10 @@ export default function BookPage() {
     });
     if (res.status === 401) { router.push(`/login?next=/marketplace/${id}/book?pkg=${selectedPkg}`); return; }
     const data = await res.json();
+    if (data.bypass && data.callbackUrl) {
+      router.push(data.callbackUrl);
+      return;
+    }
     if (data.authorizationUrl) {
       Analytics.paymentInitiated(id as string, template?.title ?? "", pkgPrice ?? 0);
       window.location.href = data.authorizationUrl;
