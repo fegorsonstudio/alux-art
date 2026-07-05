@@ -391,7 +391,7 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 
 [OUTFIT] CONSISTENCY LOCK: If Group C contains an asset tagged [OUTFIT], that exact outfit MUST be worn by the subject in ALL 9 portrait prompts without exception. Extract the specific garment, fabric, color, cut, silhouette, and surface details from the [OUTFIT] reference image and replicate them precisely in every portrait prompt. Shot-to-shot variation must come only from pose, camera angle, expression, and composition — NOT from changing the outfit. Do not invent or substitute any alternative garments.
 
-[BACKGROUND] CONSISTENCY LOCK: If Group C contains an asset tagged [BACKGROUND], extract the specific environment type, location, and visual characteristics from that reference and use it as the primary backdrop setting across all portrait prompts. Variation between shots may come from framing, distance, and angle — but the environment type must remain consistent with the [BACKGROUND] reference.
+[BACKGROUND] CONSISTENCY LOCK — ABSOLUTE RULE: If Group C contains an asset tagged [BACKGROUND], that reference IS the environment for ALL portrait prompts without exception. Extract its concrete visual characteristics (surface material, color palette, floor, texture, depth) and write that exact environment into the Environment section of EVERY portrait prompt. You are FORBIDDEN from inventing any alternative setting — no libraries, courtrooms, offices, chambers, gradient studio walls, or any other location — regardless of what the shoot category, composition principles, or atmospheric mandates suggest. The composition aesthetic principles and atmospheric elements must be expressed WITHIN the locked environment (through framing, camera distance, light direction, and light quality), never by changing the environment itself. Variation between shots comes only from framing, distance, and angle.
 
 3. Critical Exclusions Registry
 - No Aesthetic Bleeding: Do NOT transfer models, skin tones, faces, or hairstyles from Group B or Group C onto the target subject.
@@ -1762,26 +1762,46 @@ export async function startGenerationWorker(
   } catch { /* non-fatal — table may not exist yet */ }
 
   // Build imageUrls for fal.ai — base-locked shoots use base + scene refs; standard shoots use identity + inspiration
-  let imageUrls: string[];
+  // Each entry carries a role label so we can append an authoritative reference map to
+  // every slot prompt — without it the model has no idea what images 4+ are for.
+  let imageEntries: Array<{ url: string; label: string }>;
   if (hasBase && characterBaseUrl) {
     const backgroundUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "BACKGROUND")?.url ?? "";
     const lightingUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "LIGHTING")?.url ?? "";
     const colorGradeUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "COLOR_GRADE")?.url ?? "";
-    imageUrls = [characterBaseUrl, backgroundUrl, lightingUrl, colorGradeUrl].filter(Boolean).slice(0, 4);
+    imageEntries = [
+      { url: characterBaseUrl, label: "LOCKED CHARACTER BASE — exact identity and wardrobe anchor" },
+      { url: backgroundUrl, label: "BACKGROUND reference — the environment must replicate this backdrop exactly" },
+      { url: lightingUrl, label: "LIGHTING reference — match this lighting setup" },
+      { url: colorGradeUrl, label: "COLOR GRADE reference — match this film/edit style" },
+    ].filter((e) => e.url).slice(0, 4);
   } else {
     // Identity images come first so the model treats them as the primary subject reference.
-    // Include key visual-override tagged refs (OUTFIT, HAIRSTYLE) so the model sees
-    // those images directly, not just as text descriptions. Limit inspiration to 1 to
-    // avoid diluting the identity signal with other people's faces.
+    // Include all tagged refs so the model sees those images directly, not just as text
+    // descriptions. Limit inspiration to 1 to avoid diluting the identity signal.
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
-    const taggedVisualUrls = refs.filter((r) => r.purpose === "tagged" && r.url).map((r) => r.url);
+    const taggedRefEntries = refs
+      .filter((r) => r.purpose === "tagged" && r.url)
+      .map((r) => {
+        const name = r.customName || r.tag || "REFERENCE";
+        const directive =
+          r.tag === "BACKGROUND"
+            ? "BACKGROUND reference — the environment/backdrop in the output MUST replicate this image exactly (surface, color, floor, texture). Override any conflicting environment description"
+            : r.tag === "LIGHTING"
+              ? "LIGHTING reference — match this lighting setup"
+              : r.tag === "COLOR_GRADE"
+                ? "COLOR GRADE reference — match this film/edit style"
+                : `${name} reference — whenever the prompt describes this item, replicate its exact design, fabric, color, and construction from this image`;
+        return { url: r.url, label: directive };
+      });
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
-    imageUrls = [
-      ...identityUrls.slice(0, 6),     // up to 6 identity images — more inputs = stronger face lock
-      ...taggedVisualUrls,              // all tagged refs (OUTFIT, HAIRSTYLE, WIG, GOWN, etc.)
-      ...inspirationUrls.slice(0, 1),  // max 1 inspiration (mood/style context)
+    imageEntries = [
+      ...identityUrls.slice(0, 6).map((u) => ({ url: u, label: "SUBJECT IDENTITY — the exact person to depict" })),
+      ...taggedRefEntries,
+      ...inspirationUrls.slice(0, 1).map((u) => ({ url: u, label: "INSPIRATION — mood and style context only; do not copy the person, outfit, or background from it unless no dedicated reference exists" })),
     ];
   }
+  let imageUrls: string[] = imageEntries.map((e) => e.url);
 
   const identityUrls = refs
     .filter((r) => r.purpose === "identity")
@@ -1799,6 +1819,21 @@ export async function startGenerationWorker(
   if (reachableImageUrls.length === 0 && imageUrls.length > 0) {
     throw new Error("Identity images are not accessible in storage. Please re-upload your identity photos and start a new shoot.");
   }
+  if (reachableImageUrls.length < imageUrls.length) {
+    const reachableSet = new Set(reachableImageUrls);
+    const dropped = imageEntries.filter((e) => !reachableSet.has(e.url)).map((e) => e.label.split(" — ")[0]);
+    console.warn(`[generate] DROPPED unreachable references: ${dropped.join(", ")}`);
+  }
+
+  // Authoritative reference map appended to every slot prompt — tells the image model
+  // exactly what each attached image is for, in the order fal.ai receives them.
+  // Without this, images beyond the identity range are anonymous and the model guesses.
+  const reachableSet = new Set(reachableImageUrls);
+  const mappedEntries = imageEntries.filter((e) => reachableSet.has(e.url)).slice(0, 9); // nano-banana receives at most 9
+  const referenceMapText = mappedEntries.length > 0
+    ? " REFERENCE IMAGE MAP — the attached images in order: " +
+      mappedEntries.map((e, i) => `IMAGE ${i + 1}: ${e.label}.`).join(" ")
+    : "";
 
   let failedCount = 0;
 
@@ -1834,8 +1869,8 @@ export async function startGenerationWorker(
         slotPrompt = "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
       }
 
-      // Append positive anatomical constraints to every fal call
-      slotPrompt = `${slotPrompt} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
+      // Append the reference image map + positive anatomical constraints to every fal call
+      slotPrompt = `${slotPrompt}${referenceMapText} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
@@ -2014,8 +2049,15 @@ export async function startGenerationWorker(
 
     // Delete inspiration + tagged reference files from storage on completion.
     // Identity images are intentionally kept — they power the identity library for future shoots.
+    // CRITICAL: marketplace bookings copy template_images rows into shoot_references pointing
+    // at the template's OWN files — deleting those destroys the template for all future buyers.
+    // Only delete files that are not referenced by any template.
     try {
-      const cleanupRefs = await sql`SELECT storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId} AND purpose = ANY(${['inspiration', 'tagged']})`;
+      const cleanupRefs = await sql`
+        SELECT storage_bucket, storage_path FROM shoot_references
+        WHERE shoot_id = ${shootId} AND purpose = ANY(${['inspiration', 'tagged']})
+          AND storage_path NOT IN (SELECT storage_path FROM template_images WHERE storage_path IS NOT NULL)
+      `;
 
       if (cleanupRefs.length > 0) {
         const byBucket = new Map<string, string[]>();

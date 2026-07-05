@@ -1342,8 +1342,13 @@ export default function WorkspacePage() {
                       aria-label={img.status === "COMPLETE" ? `Download image ${img.slot}` : undefined}
                     >
                       {(img.previewUrl || img.preview_url) ? (
+                        // Request a resized webp from the media proxy — the raw files are
+                        // 4K PNGs (~20MB each) and loading them directly stalls the gallery.
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={img.previewUrl || img.preview_url as string} alt={`Slot ${img.slot}`} />
+                        <img
+                          src={`${img.previewUrl || img.preview_url}${String(img.previewUrl || img.preview_url).includes("?") ? "&" : "?"}width=800&quality=75&format=webp`}
+                          alt={`Slot ${img.slot}`}
+                        />
                       ) : (img.status === "GENERATING" || img.status === "UPSCALING") ? (
                         <span className={styles.slotSpinner} />
                       ) : null}
