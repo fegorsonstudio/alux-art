@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (templateImages.length > 0) {
-      const refs = templateImages.map((img: { purpose: string; tag: string | null; storage_bucket: string; storage_path: string }, i: number) => ({
+      const refs = templateImages.map((img, i: number) => ({
         id: crypto.randomUUID(),
         shoot_id: shootId,
         user_id,
