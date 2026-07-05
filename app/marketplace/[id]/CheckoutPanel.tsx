@@ -437,6 +437,10 @@ export default function CheckoutPanel({
     }
 
     const data = await res.json();
+    if (data.bypass && data.callbackUrl) {
+      window.location.href = data.callbackUrl;
+      return;
+    }
     if (data.authorizationUrl) {
       window.location.href = data.authorizationUrl;
     } else {

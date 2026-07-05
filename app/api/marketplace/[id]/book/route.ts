@@ -127,7 +127,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
-  const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"]);
+  const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE"]);
   type TemplateImgMeta = { storage_path: string; storage_bucket?: string | null; tag?: string | null; purpose?: string; note?: string | null; custom_name?: string | null };
 
   const templateImgList = await sql`
