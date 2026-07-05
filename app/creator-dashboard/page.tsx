@@ -13,7 +13,7 @@ import CollageEditor, { type CollageImage } from "./CollageEditor";
 import { Analytics } from "@/lib/analytics";
 import TemplateShareCard from "@/components/TemplateShareCard";
 
-const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY"] as const;
+const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE"] as const;
 type TemplateTag = typeof TEMPLATE_TAGS[number];
 
 interface TemplateRow {

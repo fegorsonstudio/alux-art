@@ -220,7 +220,8 @@ export interface PackagePricing {
 
 export type TemplateCategory =
   | "portrait" | "editorial" | "corporate" | "glamour" | "wedding"
-  | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story";
+  | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story"
+  | "call_to_bar";
 
 // Story Photoshoot types
 export type StoryType = "solo" | "duo" | "group" | "brand" | "group_brand";
@@ -242,17 +243,18 @@ export interface StoryAssets {
 }
 
 export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string; isStory?: boolean }[] = [
-  { value: "story",     label: "📖 Stories", isStory: true },
-  { value: "portrait",  label: "Portrait" },
-  { value: "editorial", label: "Editorial" },
-  { value: "corporate", label: "Corporate" },
-  { value: "glamour",   label: "Glamour" },
-  { value: "wedding",   label: "Wedding" },
-  { value: "maternity", label: "Maternity" },
-  { value: "fantasy",   label: "Fantasy" },
-  { value: "boudoir",   label: "Boudoir" },
-  { value: "street",    label: "Street" },
-  { value: "other",     label: "Other" },
+  { value: "story",       label: "📖 Stories", isStory: true },
+  { value: "portrait",    label: "Portrait" },
+  { value: "editorial",   label: "Editorial" },
+  { value: "corporate",   label: "Corporate" },
+  { value: "glamour",     label: "Glamour" },
+  { value: "wedding",     label: "Wedding" },
+  { value: "maternity",   label: "Maternity" },
+  { value: "fantasy",     label: "Fantasy" },
+  { value: "boudoir",     label: "Boudoir" },
+  { value: "street",      label: "Street" },
+  { value: "call_to_bar", label: "⚖️ Call to Bar" },
+  { value: "other",       label: "Other" },
 ];
 
 export type TemplateStatus = "draft" | "published" | "suspended";

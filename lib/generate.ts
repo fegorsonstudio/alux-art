@@ -519,6 +519,7 @@ async function buildShootBrief(
     quote?: { text: string; attribution: string } | null;
     storyContext?: string;
     storyImageUrls?: Array<{ url: string; label: string }>;
+    category?: string;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -637,6 +638,12 @@ Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : "
 
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.`,
   });
+
+  if (shoot.category === "call_to_bar") {
+    const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
+    const isFemale = refs.some((r) => r.tag === "COLLAR_FEMALE");
+    parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale) });
+  }
 
   const geminiModel = genai.getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -832,6 +839,7 @@ async function buildShootBriefClaude(
     quote?: { text: string; attribution: string } | null;
     storyContext?: string;
     storyImageUrls?: Array<{ url: string; label: string }>;
+    category?: string;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -923,6 +931,12 @@ ${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `
 Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
 
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.` });
+
+  if (shoot.category === "call_to_bar") {
+    const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
+    const isFemale = refs.some((r) => r.tag === "COLLAR_FEMALE");
+    content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale) });
+  }
 
   const claudeResult = await Promise.race([
     anthropic.messages.create({
@@ -1398,7 +1412,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, t.is_story, t.story_type, t.scenes FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1760,14 +1774,12 @@ export async function startGenerationWorker(
     // those images directly, not just as text descriptions. Limit inspiration to 1 to
     // avoid diluting the identity signal with other people's faces.
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
-    const outfitUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "OUTFIT")?.url ?? "";
-    const hairstyleUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "HAIRSTYLE")?.url ?? "";
-    const taggedVisualUrls = [outfitUrl, hairstyleUrl].filter(Boolean);
+    const taggedVisualUrls = refs.filter((r) => r.purpose === "tagged" && r.url).map((r) => r.url);
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
     imageUrls = [
       ...identityUrls.slice(0, 6),     // up to 6 identity images — more inputs = stronger face lock
-      ...taggedVisualUrls,               // OUTFIT + HAIRSTYLE refs if present
-      ...inspirationUrls.slice(0, 1),   // max 1 inspiration (mood/style context)
+      ...taggedVisualUrls,              // all tagged refs (OUTFIT, HAIRSTYLE, WIG, GOWN, etc.)
+      ...inspirationUrls.slice(0, 1),  // max 1 inspiration (mood/style context)
     ];
   }
 

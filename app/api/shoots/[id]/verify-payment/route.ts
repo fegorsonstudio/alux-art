@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site-url";
+import { verifyPayment } from "@/lib/payment-gateway";
+import type { PaymentProvider } from "@/lib/payment-types";
 
 export async function POST(
   request: NextRequest,
@@ -12,33 +15,48 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [shoot] = await sql`SELECT id, status, user_id FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
-  if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const isAdmin = isAdminEmail(user.email);
 
-  if (shoot.status !== "PENDING_PAYMENT") {
-    return NextResponse.json({ error: "This shoot is not awaiting payment." }, { status: 409 });
+  const [shoot] = await sql`
+    SELECT id, status, user_id FROM shoots
+    WHERE id = ${id}
+  `;
+  if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (shoot.user_id !== user.id && !isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Check payments table first (direct studio flow), then template_purchases (marketplace flow)
+  if (shoot.status !== "PENDING_PAYMENT") {
+    return NextResponse.json({ ok: true, status: shoot.status, alreadyPaid: true });
+  }
+
+  // ── Locate the payment record — check payments table first (studio flow),
+  //    then template_purchases (marketplace flow). Read provider from the DB
+  //    so we call the correct gateway rather than hardcoding Paystack.
+  let provider: PaymentProvider = "paystack";
   let providerReference: string | null = null;
 
   const [directPayment] = await sql`
-    SELECT provider_reference FROM payments
-    WHERE shoot_id = ${id} AND provider = 'paystack'
+    SELECT provider, provider_reference FROM payments
+    WHERE shoot_id = ${id}
     ORDER BY created_at DESC LIMIT 1
   `;
   if (directPayment?.provider_reference) {
+    provider = (directPayment.provider as PaymentProvider) ?? "paystack";
     providerReference = directPayment.provider_reference as string;
   }
 
   if (!providerReference) {
+    // Marketplace flow — read from template_purchases
     const [purchase] = await sql`
-      SELECT paystack_reference FROM template_purchases
+      SELECT payment_provider, provider_reference, paystack_reference
+      FROM template_purchases
       WHERE shoot_id = ${id}
       ORDER BY created_at DESC LIMIT 1
     `;
-    if (purchase?.paystack_reference) {
-      providerReference = purchase.paystack_reference as string;
+    if (purchase) {
+      provider = (purchase.payment_provider as PaymentProvider) ?? "paystack";
+      providerReference = (purchase.provider_reference ?? purchase.paystack_reference) as string | null;
     }
   }
 
@@ -48,52 +66,56 @@ export async function POST(
     }, { status: 404 });
   }
 
-  // Verify with Paystack
-  let paystackData: Record<string, unknown>;
+  // ── Verify with the correct gateway ─────────────────────────────────────
+  let verified: Awaited<ReturnType<typeof verifyPayment>>;
   try {
-    const res = await fetch(
-      `https://api.paystack.co/transaction/verify/${providerReference}`,
-      { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
-    );
-    paystackData = await res.json();
-  } catch {
-    return NextResponse.json({ error: "Could not reach Paystack. Try again." }, { status: 502 });
+    verified = await verifyPayment(provider, providerReference);
+  } catch (err) {
+    console.error("[verify-payment] gateway call failed:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({
+      error: "Could not reach payment gateway — try again shortly.",
+    }, { status: 502 });
   }
 
-  const data = paystackData.data as Record<string, unknown> | null;
-  if (!paystackData.status || data?.status !== "success") {
+  if (!verified.success) {
     return NextResponse.json({
       error: "Payment not confirmed yet. If you were charged, wait a minute and try again, or contact support.",
+      provider: verified.provider,
     }, { status: 402 });
   }
 
   const now = new Date().toISOString();
 
-  // Activate the shoot
-  const updated = await sql`
+  // Optimistic lock: only transition if still PENDING_PAYMENT to prevent double-activation
+  const [queued] = await sql`
     UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
     WHERE id = ${id} AND status = 'PENDING_PAYMENT'
     RETURNING id
   `;
-  if (!updated.length) {
-    return NextResponse.json({ error: "Shoot already activated." }, { status: 409 });
+
+  if (!queued) {
+    return NextResponse.json({ ok: true, status: "already_activated" });
   }
 
-  // Mark payment records as success
+  // Update both payment record types that may reference this shoot
   await sql`
-    UPDATE payments SET status = 'success', paid_at = ${now}
+    UPDATE payments
+    SET status = 'success', paid_at = ${now}
     WHERE shoot_id = ${id} AND provider_reference = ${providerReference}
   `;
   await sql`
-    UPDATE template_purchases SET status = 'success'
-    WHERE shoot_id = ${id} AND paystack_reference = ${providerReference} AND status != 'success'
+    UPDATE template_purchases
+    SET status = 'success'
+    WHERE shoot_id = ${id}
+      AND (provider_reference = ${providerReference} OR paystack_reference = ${providerReference})
+      AND status != 'success'
   `;
 
-  // Start generation
+  // Fire generation worker
   fetch(`${SITE_URL}/api/shoots/${id}/start`, {
     method: "POST",
     headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
   }).catch(() => {});
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, provider: verified.provider });
 }

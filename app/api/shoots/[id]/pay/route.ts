@@ -4,6 +4,8 @@ import { normalizePackageSize } from "@/lib/types";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site-url";
+import { initializePayment } from "@/lib/payment-gateway";
+import type { InitPaymentParams } from "@/lib/payment-types";
 
 const PRICE_KEYS = [
   "price_1_ngn", "price_5_ngn", "price_10_ngn",
@@ -47,7 +49,7 @@ export async function POST(
     return NextResponse.json({ bypass: true });
   }
 
-  // Read explicit package prices from app_config
+  // Read prices from app_config
   const rows = await sql`SELECT key, value FROM app_config WHERE key = ANY(${PRICE_KEYS})`;
   const map = Object.fromEntries(rows.map((r) => [r.key as string, r.value as string]));
 
@@ -61,49 +63,54 @@ export async function POST(
     return v > 0 ? v : (defaults[pkg] ?? defaults[10]);
   };
 
-  const price = Math.round(getPrice(packageSize, shoot.currency as string) * 100);
+  // price is already in the shoot's currency (whole naira or whole dollars).
+  // The gateway abstraction layer handles the ×100 conversion internally.
+  const price = getPrice(packageSize, shoot.currency as string);
 
-  let paystackData: Record<string, unknown>;
+  const callbackUrl = `${SITE_URL}/studio?shoot_id=${id}&payment=complete`;
+
+  const gatewayParams: InitPaymentParams = {
+    email: user.email!,
+    amountNgn: price,
+    currency: shoot.currency as "NGN" | "USD",
+    metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
+    callbackUrl,
+  };
+
+  // ── Dual-gateway failover ─────────────────────────────────────────────────
+  let paymentResult: Awaited<ReturnType<typeof initializePayment>>;
+  let paystackError: unknown = null;
+  let flutterwaveError: unknown = null;
+
   try {
-    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: user.email,
-        amount: price,
-        currency: shoot.currency,
-        metadata: { shoot_id: id, user_id: user.id, package_size: packageSize },
-        callback_url: `${SITE_URL}/`,
-      }),
-    });
-    paystackData = await paystackRes.json();
+    paymentResult = await initializePayment("paystack", gatewayParams);
   } catch (err) {
-    console.error("[pay] Paystack fetch failed:", err);
-    return NextResponse.json({ error: `Paystack unreachable: ${String(err)}` }, { status: 502 });
+    paystackError = err;
+    console.warn(`[pay] Paystack failed for shoot ${id}:`, err instanceof Error ? err.message : String(err));
+
+    try {
+      paymentResult = await initializePayment("flutterwave", gatewayParams);
+    } catch (err2) {
+      flutterwaveError = err2;
+      console.error(`[pay][both-gateways-failed] shoot=${id} paystack=${paystackError instanceof Error ? paystackError.message : String(paystackError)} flutterwave=${err2 instanceof Error ? err2.message : String(err2)}`);
+      return NextResponse.json(
+        { error: "Payment processing is temporarily unavailable. Please try again in a few minutes." },
+        { status: 503 }
+      );
+    }
   }
 
-
-  if (!paystackData.status) {
-    return NextResponse.json({ error: `Paystack error: ${paystackData.message ?? "unknown"}` }, { status: 500 });
-  }
-
-  const pData = paystackData.data as Record<string, unknown> | null;
-  if (!pData?.authorization_url) {
-    console.error("[pay] Missing authorization_url in Paystack response:", JSON.stringify(paystackData).slice(0, 500));
-    return NextResponse.json({ error: "Paystack did not return a payment URL. Check server logs." }, { status: 500 });
-  }
-
+  // Record the payment with the winning provider before redirecting the user.
+  // On failure here the user can retry — the shoot stays PENDING_PAYMENT.
   try {
     await sql`
       INSERT INTO payments (id, shoot_id, user_id, status, amount_ngn, provider, provider_reference, created_at)
       VALUES (
         ${crypto.randomUUID()}, ${id}, ${user.id}, 'pending',
-        ${Math.round(price / 100)}, 'paystack',
-        ${pData.reference as string}, NOW()
+        ${Math.round(price)}, ${paymentResult!.provider},
+        ${paymentResult!.reference}, NOW()
       )
+      ON CONFLICT (provider_reference) DO NOTHING
     `;
   } catch (err) {
     console.error("[pay] payments INSERT failed:", err instanceof Error ? err.message : String(err));
@@ -111,7 +118,8 @@ export async function POST(
   }
 
   return NextResponse.json({
-    authorization_url: pData.authorization_url as string,
-    reference: pData.reference as string,
+    authorization_url: paymentResult!.authorizationUrl,
+    reference: paymentResult!.reference,
+    provider: paymentResult!.provider,
   });
 }

@@ -4,6 +4,8 @@ import sql from "@/lib/db";
 import { packagePrice } from "@/lib/types";
 import { SITE_URL } from "@/lib/site-url";
 import { isAdminEmail } from "@/lib/auth";
+import { initializePayment } from "@/lib/payment-gateway";
+import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 
 interface RefInput {
   name?: string;
@@ -32,7 +34,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     couponCode?: string;
     packageSize?: number;
     currency?: string;
-    // Story fields
     rolePrompt?: string;
     storyAssets?: {
       costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
@@ -54,25 +55,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // Validate and sanitise role prompt (Story-only field)
   const rawRolePrompt = typeof body.rolePrompt === "string" ? body.rolePrompt.trim().slice(0, 100) : null;
   const rolePrompt = rawRolePrompt || null;
 
-  // Validate story assets
   const storyAssets = body.storyAssets ?? null;
   const VALID_BRAND_PLACEMENTS = new Set(["everywhere", "background", "subtle"]);
   if (storyAssets) {
-    // Co-star refs
     for (const ref of storyAssets.costarRefs ?? []) {
       if (!ref.storagePath.startsWith(`${user.id}/`)) {
         return NextResponse.json({ error: "Invalid co-star image reference" }, { status: 400 });
       }
     }
-    // Group photo
     if (storyAssets.groupPhotoRef && !storyAssets.groupPhotoRef.storagePath.startsWith(`${user.id}/`)) {
       return NextResponse.json({ error: "Invalid group photo reference" }, { status: 400 });
     }
-    // Brand refs
     for (const ref of storyAssets.brandRefs ?? []) {
       if (!ref.storagePath.startsWith(`${user.id}/`)) {
         return NextResponse.json({ error: "Invalid brand image reference" }, { status: 400 });
@@ -102,6 +98,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const payCurrency: "NGN" | "USD" = body.currency === "USD" ? "USD" : "NGN";
 
+  // Exchange rate — used to convert NGN prices to USD amounts for the gateway.
+  // Safe fallback of 1600 prevents catastrophic overcharge if FX API is unavailable.
   let usdToNgn = 1600;
   if (payCurrency === "USD") {
     try {
@@ -115,7 +113,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const [template] = await sql`
     SELECT t.*, c.id AS cr_id, c.display_name AS cr_display_name,
-           c.paystack_subaccount_code AS cr_subaccount
+           c.paystack_subaccount_code AS cr_subaccount_paystack,
+           c.flutterwave_subaccount_id AS cr_subaccount_flw
     FROM templates t
     LEFT JOIN creators c ON c.id = t.creator_id
     WHERE t.id = ${templateId} AND t.status = 'published'
@@ -124,7 +123,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
   const isAdmin = isAdminEmail(user.email);
 
-  if (!template.cr_subaccount && !isAdmin) {
+  if (!template.cr_subaccount_paystack && !template.cr_subaccount_flw && !isAdmin) {
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
@@ -197,7 +196,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       SELECT id, discount_type, discount_value, max_uses, use_count, expires_at, is_active
       FROM coupons WHERE code = ${body.couponCode.trim().toUpperCase()}
     `;
-
     if (!c || !c.is_active) {
       return NextResponse.json({ error: "Invalid or inactive coupon code" }, { status: 422 });
     }
@@ -207,7 +205,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (c.max_uses !== null && (c.use_count as number) >= (c.max_uses as number)) {
       return NextResponse.json({ error: "This coupon has reached its usage limit" }, { status: 422 });
     }
-
     if (c.discount_type === "percent") {
       couponDiscountNgn = Math.floor(platformFeeNgn * (c.discount_value as number) / 100);
     } else {
@@ -216,16 +213,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     couponId = c.id as string;
   }
 
-  const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
   const amountNgn = buyerAmountNgn - couponDiscountNgn;
-  // Paystack fee ≈ 1.5% of transaction (bearer_type "account" = main account pays fee).
-  // Cap creator split to ensure the platform retains enough to cover the Paystack fee.
-  const estimatedPaystackFeeNgn = Math.min(Math.ceil(amountNgn * 0.015), 2000);
-  const minPlatformNgn = estimatedPaystackFeeNgn + 50;
-  const safeCreatorPayout = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - minPlatformNgn));
+  const creatorPayoutNgn = buyerAmountNgn - platformFeeNgn;
+  // Cap creator payout so the platform retains enough to cover gateway fees
+  const estimatedGatewayFeeNgn = Math.min(Math.ceil(amountNgn * 0.015), 2000);
+  const minPlatformNgn = estimatedGatewayFeeNgn + 50;
+  const safeCreatorPayoutNgn = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - minPlatformNgn));
+
+  // Convert to the payment currency for the gateway abstraction layer.
+  // Gateways receive values already in the correct currency (no FX inside gateways).
+  const amountForGateway = payCurrency === "USD"
+    ? parseFloat((amountNgn / usdToNgn).toFixed(2))
+    : amountNgn;
+  const creatorPayoutForGateway = safeCreatorPayoutNgn > 0
+    ? (payCurrency === "USD"
+        ? parseFloat((safeCreatorPayoutNgn / usdToNgn).toFixed(2))
+        : safeCreatorPayoutNgn)
+    : 0;
+
   const now = new Date();
   const shootId = crypto.randomUUID();
 
+  // ── Create all DB records BEFORE calling any gateway ─────────────────────
+  // This allows us to retry with Flutterwave on Paystack failure without
+  // losing the shoot. Only roll back if BOTH gateways fail.
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
@@ -289,30 +300,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
       created_at: now,
     })),
-    // Story: co-star photos
     ...(storyAssets?.costarRefs ?? []).map((ref, i) => ({
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
       purpose: "costar", tag: null, custom_name: null, note: null,
       name: ref.name ?? `costar-${i + 1}`, type: "image/jpeg", size: 1,
-      storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
-      created_at: now,
+      storage_bucket: ref.storageBucket, storage_path: ref.storagePath, created_at: now,
     })),
-    // Story: group photo
     ...(storyAssets?.groupPhotoRef ? [{
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
       purpose: "group_photo", tag: null, custom_name: null, note: null,
       name: storyAssets.groupPhotoRef.name ?? "group-photo", type: "image/jpeg", size: 1,
       storage_bucket: storyAssets.groupPhotoRef.storageBucket,
-      storage_path: storyAssets.groupPhotoRef.storagePath,
-      created_at: now,
+      storage_path: storyAssets.groupPhotoRef.storagePath, created_at: now,
     }] : []),
-    // Story: brand / logo assets
     ...(storyAssets?.brandRefs ?? []).map((ref, i) => ({
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
       purpose: "brand", tag: null, custom_name: null, note: ref.placement ?? "everywhere",
       name: ref.name ?? `brand-${i + 1}`, type: "image/jpeg", size: 1,
-      storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
-      created_at: now,
+      storage_bucket: ref.storageBucket, storage_path: ref.storagePath, created_at: now,
     })),
   ];
 
@@ -325,15 +330,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
+  // Admin bypass — queue immediately, no payment
   if (isAdmin) {
     await sql`UPDATE shoots SET status = 'QUEUED', updated_at = NOW() WHERE id = ${shootId} AND status = 'PENDING_PAYMENT'`;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-      ?? `${request.headers.get("x-forwarded-proto") ?? "https"}://${request.headers.get("host") ?? ""}`;
+    const siteUrl = SITE_URL;
     fetch(`${siteUrl}/api/shoots/${shootId}/start`, {
       method: "POST",
-      headers: process.env.INTERNAL_API_SECRET
-        ? { "x-internal-secret": process.env.INTERNAL_API_SECRET }
-        : {},
+      headers: process.env.INTERNAL_API_SECRET ? { "x-internal-secret": process.env.INTERNAL_API_SECRET } : {},
       cache: "no-store",
     }).catch(console.error);
     return NextResponse.json({
@@ -347,57 +350,76 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   await sql`
     INSERT INTO template_purchases
       (id, template_id, shoot_id, user_id, amount_ngn, platform_fee_ngn, creator_payout_ngn,
-       coupon_id, coupon_discount_ngn, currency, amount_usd, status, created_at)
+       coupon_id, coupon_discount_ngn, currency, amount_usd,
+       payment_provider, status, created_at)
     VALUES (
       ${purchaseId}, ${templateId}, ${shootId}, ${user.id}, ${amountNgn}, ${platformFeeNgn},
       ${creatorPayoutNgn}, ${couponId}, ${couponDiscountNgn}, ${payCurrency},
       ${payCurrency === "USD" ? parseFloat((amountNgn / usdToNgn).toFixed(2)) : null},
-      'pending', ${now}
+      'paystack', 'pending', ${now}
     )
   `;
 
-  const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      "Content-Type": "application/json",
+  // ── Dual-gateway failover ─────────────────────────────────────────────────
+  const gatewayParams: InitPaymentParams = {
+    email: user.email!,
+    amountNgn: amountForGateway,
+    currency: payCurrency,
+    metadata: {
+      type: "template_purchase",
+      template_id: templateId,
+      purchase_id: purchaseId,
+      shoot_id: shootId,
+      user_id: user.id,
+      coupon_id: couponId,
     },
-    body: JSON.stringify({
-      email: user.email,
-      amount: payCurrency === "USD"
-        ? Math.ceil((amountNgn / usdToNgn) * 100)
-        : amountNgn * 100,
-      currency: payCurrency,
-      callback_url: `${SITE_URL}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
-      metadata: {
-        type: "template_purchase",
-        template_id: templateId,
-        purchase_id: purchaseId,
-        shoot_id: shootId,
-        user_id: user.id,
-        coupon_id: couponId,
-      },
-      split: safeCreatorPayout > 0 ? {
-        type: "flat",
-        bearer_type: "account",
-        subaccounts: [{ subaccount: template.cr_subaccount, share: safeCreatorPayout * 100 }],
-      } : undefined,
-    }),
-  });
+    callbackUrl: `${SITE_URL}/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
+    creatorSubaccount:
+      creatorPayoutForGateway > 0 && (template.cr_subaccount_paystack || template.cr_subaccount_flw)
+        ? {
+            paystackCode: template.cr_subaccount_paystack ?? undefined,
+            flutterwaveId: template.cr_subaccount_flw ?? undefined,
+            payoutNgn: creatorPayoutForGateway,
+          }
+        : undefined,
+  };
 
-  const paystackData = await paystackRes.json();
-  if (!paystackData.status) {
-    await sql`DELETE FROM template_purchases WHERE id = ${purchaseId}`;
-    await sql`DELETE FROM shoot_references WHERE shoot_id = ${shootId}`;
-    await sql`DELETE FROM shoot_images WHERE shoot_id = ${shootId}`;
-    await sql`DELETE FROM shoots WHERE id = ${shootId}`;
-    return NextResponse.json({ error: "Payment initialization failed" }, { status: 502 });
+  let paymentResult: InitPaymentResult | null = null;
+  let paystackError: unknown = null;
+
+  try {
+    paymentResult = await initializePayment("paystack", gatewayParams);
+  } catch (err) {
+    paystackError = err;
+    console.warn(`[book] Paystack failed for shoot ${shootId}:`, err instanceof Error ? err.message : String(err));
+
+    try {
+      paymentResult = await initializePayment("flutterwave", gatewayParams);
+      // Update payment_provider since Flutterwave won the failover
+      await sql`UPDATE template_purchases SET payment_provider = 'flutterwave' WHERE id = ${purchaseId}`;
+    } catch (err2) {
+      console.error(
+        `[book][both-gateways-failed] shoot=${shootId} paystack=${paystackError instanceof Error ? paystackError.message : String(paystackError)} flutterwave=${err2 instanceof Error ? err2.message : String(err2)}`
+      );
+      // Both gateways failed — roll back all DB records so the user can retry cleanly
+      await sql`DELETE FROM template_purchases WHERE id = ${purchaseId}`;
+      await sql`DELETE FROM shoot_references WHERE shoot_id = ${shootId}`;
+      await sql`DELETE FROM shoot_images WHERE shoot_id = ${shootId}`;
+      await sql`DELETE FROM shoots WHERE id = ${shootId}`;
+      return NextResponse.json(
+        { error: "Payment processing is temporarily unavailable. Please try again in a few minutes." },
+        { status: 503 }
+      );
+    }
   }
 
+  // Store the winning gateway's reference
   await sql`
-    UPDATE template_purchases SET paystack_reference = ${paystackData.data.reference}
+    UPDATE template_purchases
+    SET paystack_reference = ${paymentResult.reference},
+        provider_reference  = ${paymentResult.reference}
     WHERE id = ${purchaseId}
   `;
 
-  return NextResponse.json({ authorizationUrl: paystackData.data.authorization_url, shootId });
+  return NextResponse.json({ authorizationUrl: paymentResult.authorizationUrl, shootId });
 }

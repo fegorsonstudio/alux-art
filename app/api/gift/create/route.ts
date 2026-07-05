@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { packagePrice } from "@/lib/types";
 import { SITE_URL } from "@/lib/site-url";
+import { initializePayment } from "@/lib/payment-gateway";
+import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -29,14 +31,15 @@ export async function POST(request: NextRequest) {
   const [template] = await sql`
     SELECT t.id, t.title, t.price_ngn, t.price_5_ngn, t.price_1_ngn,
            t.shoot_mode, t.aspect_ratio, t.package_size,
-           c.paystack_subaccount_code AS cr_subaccount
+           c.paystack_subaccount_code AS cr_subaccount_paystack,
+           c.flutterwave_subaccount_id AS cr_subaccount_flw
     FROM templates t
     LEFT JOIN creators c ON c.id = t.creator_id
     WHERE t.id = ${templateId} AND t.status = 'published'
   `;
 
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
-  if (!template.cr_subaccount) {
+  if (!template.cr_subaccount_paystack && !template.cr_subaccount_flw) {
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
@@ -72,20 +75,30 @@ export async function POST(request: NextRequest) {
   }
 
   const creatorPayoutNgn = amountNgn - platformFeeNgn;
-  const estimatedPaystackFeeNgn = Math.min(Math.ceil(amountNgn * 0.015), 2000);
-  const minPlatformNgn = estimatedPaystackFeeNgn + 50;
-  const safeCreatorPayout = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - minPlatformNgn));
+  const estimatedGatewayFeeNgn = Math.min(Math.ceil(amountNgn * 0.015), 2000);
+  const minPlatformNgn = estimatedGatewayFeeNgn + 50;
+  const safeCreatorPayoutNgn = Math.max(0, Math.min(creatorPayoutNgn, amountNgn - minPlatformNgn));
 
-  let payAmountNgn = amountNgn;
-  let usdToNgn = 1;
-
+  // Safe fallback of 1600 — never 1, which would charge $15,000 instead of ~$10
+  // if the exchange rate API is unreachable.
+  let usdToNgn = 1600;
   if (currency === "USD") {
     try {
       const fxRes = await fetch(`${SITE_URL}/api/fx-rate`, { cache: "no-store" });
       const fxData = await fxRes.json();
-      if (fxData.rate && fxData.rate > 0) usdToNgn = fxData.rate;
-    } catch { /* fall back to NGN */ }
+      if (fxData.rate && fxData.rate > 100) usdToNgn = fxData.rate;
+    } catch { /* keep safe fallback */ }
   }
+
+  // Convert to gateway currency units — gateways receive the final currency value
+  const amountForGateway = currency === "USD"
+    ? parseFloat((amountNgn / usdToNgn).toFixed(2))
+    : amountNgn;
+  const creatorPayoutForGateway = safeCreatorPayoutNgn > 0
+    ? (currency === "USD"
+        ? parseFloat((safeCreatorPayoutNgn / usdToNgn).toFixed(2))
+        : safeCreatorPayoutNgn)
+    : 0;
 
   const now = new Date();
   const giftId = crypto.randomUUID();
@@ -93,57 +106,73 @@ export async function POST(request: NextRequest) {
   await sql`
     INSERT INTO gift_links
       (id, template_id, sender_user_id, sender_name, custom_message,
-       package_size, currency, payment_status, created_at, expires_at)
+       package_size, currency, payment_status, payment_provider, created_at, expires_at)
     VALUES (
       ${giftId}, ${templateId}, ${user.id}, ${senderName}, ${customMessage ?? null},
-      ${giftPackageSize}, ${currency}, 'pending', ${now},
+      ${giftPackageSize}, ${currency}, 'pending', 'paystack', ${now},
       ${new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)}
     )
   `;
 
-  const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      "Content-Type": "application/json",
+  const gatewayParams: InitPaymentParams = {
+    email: user.email!,
+    amountNgn: amountForGateway,
+    currency: currency as "NGN" | "USD",
+    metadata: {
+      type: "gift_purchase",
+      gift_id: giftId,
+      template_id: templateId,
+      user_id: user.id,
+      sender_name: senderName,
+      imageCount: giftPackageSize,
+      custom_fields: [
+        { display_name: "Package Size", variable_name: "package_size", value: String(giftPackageSize) },
+        { display_name: "Image Count", variable_name: "image_count", value: String(giftPackageSize) },
+      ],
     },
-    body: JSON.stringify({
-      email: user.email,
-      amount: currency === "USD"
-        ? Math.ceil((payAmountNgn / usdToNgn) * 100)
-        : payAmountNgn * 100,
-      currency,
-      callback_url: `${SITE_URL}/gift/success?gift_id=${giftId}`,
-      metadata: {
-        type: "gift_purchase",
-        gift_id: giftId,
-        template_id: templateId,
-        user_id: user.id,
-        sender_name: senderName,
-        imageCount: giftPackageSize,
-        custom_fields: [
-          { display_name: "Package Size", variable_name: "package_size", value: String(giftPackageSize) },
-          { display_name: "Image Count", variable_name: "image_count", value: String(giftPackageSize) },
-        ],
-      },
-      split: safeCreatorPayout > 0 ? {
-        type: "flat",
-        bearer_type: "account",
-        subaccounts: [{ subaccount: template.cr_subaccount, share: safeCreatorPayout * 100 }],
-      } : undefined,
-    }),
-  });
+    callbackUrl: `${SITE_URL}/gift/success?gift_id=${giftId}`,
+    creatorSubaccount:
+      creatorPayoutForGateway > 0 && (template.cr_subaccount_paystack || template.cr_subaccount_flw)
+        ? {
+            paystackCode: template.cr_subaccount_paystack ?? undefined,
+            flutterwaveId: template.cr_subaccount_flw ?? undefined,
+            payoutNgn: creatorPayoutForGateway,
+          }
+        : undefined,
+  };
 
-  const paystackData = await paystackRes.json();
-  if (!paystackData.status) {
-    await sql`DELETE FROM gift_links WHERE id = ${giftId}`;
-    return NextResponse.json({ error: "Payment initialization failed" }, { status: 502 });
+  // ── Dual-gateway failover ─────────────────────────────────────────────────
+  let paymentResult: InitPaymentResult | null = null;
+  let paystackError: unknown = null;
+
+  try {
+    paymentResult = await initializePayment("paystack", gatewayParams);
+  } catch (err) {
+    paystackError = err;
+    console.warn(`[gift] Paystack failed for gift ${giftId}:`, err instanceof Error ? err.message : String(err));
+
+    try {
+      paymentResult = await initializePayment("flutterwave", gatewayParams);
+      await sql`UPDATE gift_links SET payment_provider = 'flutterwave' WHERE id = ${giftId}`;
+    } catch (err2) {
+      console.error(
+        `[gift][both-gateways-failed] gift=${giftId} paystack=${paystackError instanceof Error ? paystackError.message : String(paystackError)} flutterwave=${err2 instanceof Error ? err2.message : String(err2)}`
+      );
+      await sql`DELETE FROM gift_links WHERE id = ${giftId}`;
+      return NextResponse.json(
+        { error: "Payment processing is temporarily unavailable. Please try again in a few minutes." },
+        { status: 503 }
+      );
+    }
   }
 
+  // Store the winning reference in both the legacy column and the new generic one
   await sql`
-    UPDATE gift_links SET paystack_reference = ${paystackData.data.reference}
+    UPDATE gift_links
+    SET paystack_reference = ${paymentResult.reference},
+        provider_reference  = ${paymentResult.reference}
     WHERE id = ${giftId}
   `;
 
-  return NextResponse.json({ authorizationUrl: paystackData.data.authorization_url, giftId });
+  return NextResponse.json({ authorizationUrl: paymentResult.authorizationUrl, giftId });
 }
