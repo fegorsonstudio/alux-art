@@ -44,6 +44,14 @@ export default function TemplateLabPage() {
   const [selectedShootId, setSelectedShootId] = useState<string | null>(null);
   const [templateId, setTemplateId] = useState("");
   const [genStates, setGenStates] = useState<Record<string, SlotGenState>>({});
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+
+  const copyPrompt = (id: string, prompt: string) => {
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopiedPromptId(id);
+      setTimeout(() => setCopiedPromptId(prev => prev === id ? null : prev), 1500);
+    });
+  };
 
   useEffect(() => {
     fetch("/api/admin/template-lab/shoots")
@@ -160,8 +168,21 @@ export default function TemplateLabPage() {
                     <div key={slot.id} className={labStyles.slotCard}>
                       <div className={labStyles.slotHeader}>
                         <span className={labStyles.slotNum}>Slot {slot.slot}</span>
-                        <span className={`${labStyles.slotBadge} ${isDone ? labStyles.slotBadgeDone : ""}`}>
-                          {isDone ? "Generated" : "Prompt Only"}
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          {slot.prompt && (
+                            <button
+                              type="button"
+                              title="Copy full prompt"
+                              aria-label={`Copy prompt for slot ${slot.slot}`}
+                              onClick={() => copyPrompt(slot.id, slot.prompt!)}
+                              style={{ background: "none", border: "1px solid rgba(127,127,127,0.35)", borderRadius: 5, padding: "1px 7px", cursor: "pointer", fontSize: "0.72rem", color: "inherit" }}
+                            >
+                              {copiedPromptId === slot.id ? "Copied!" : "📋 Copy"}
+                            </button>
+                          )}
+                          <span className={`${labStyles.slotBadge} ${isDone ? labStyles.slotBadgeDone : ""}`}>
+                            {isDone ? "Generated" : "Prompt Only"}
+                          </span>
                         </span>
                       </div>
 

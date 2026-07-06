@@ -102,6 +102,7 @@ export default function WorkspacePage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedShootId, setCopiedShootId] = useState<string | null>(null);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null);
   const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState("");
@@ -1400,6 +1401,20 @@ export default function WorkspacePage() {
                     {isAdmin && !!((img as Record<string, unknown>).prompt) && (
                       <details className={styles.slotErrorDetails}>
                         <summary>Prompt</summary>
+                        <button
+                          type="button"
+                          title="Copy full prompt"
+                          aria-label={`Copy prompt for slot ${img.slot}`}
+                          onClick={() => {
+                            navigator.clipboard.writeText(String((img as Record<string, unknown>).prompt)).then(() => {
+                              setCopiedPromptId(img.id);
+                              setTimeout(() => setCopiedPromptId(prev => prev === img.id ? null : prev), 1500);
+                            });
+                          }}
+                          style={{ background: "none", border: "1px solid rgba(127,127,127,0.35)", borderRadius: 5, padding: "1px 7px", cursor: "pointer", fontSize: "0.72rem", color: "inherit", margin: "4px 0" }}
+                        >
+                          {copiedPromptId === img.id ? "Copied!" : "📋 Copy prompt"}
+                        </button>
                         <p className={styles.slotError} style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "11px" }}>{String((img as Record<string, unknown>).prompt)}</p>
                       </details>
                     )}

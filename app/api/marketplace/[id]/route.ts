@@ -33,8 +33,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     SELECT id, storage_path, storage_bucket, display_order, purpose, tag,
            custom_name, note, note_hidden, created_at
     FROM template_images WHERE template_id = ${id}
+      AND purpose != 'generated'
     ORDER BY display_order ASC
   `;
+  // purpose='generated' rows come from the admin Template Lab — internal experiments
+  // that must never change what buyers see on a published template.
 
   const images = rawImages.map((img) => {
     const signedUrl = img.storage_path

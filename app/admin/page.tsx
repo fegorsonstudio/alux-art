@@ -386,6 +386,7 @@ export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [err, setErr] = useState("");
 
+  const [copiedSlotPrompt, setCopiedSlotPrompt] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     vision_model: "gemini", generation_model: "nano-banana",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
@@ -881,6 +882,23 @@ export default function AdminPage() {
                                 <span className={styles[STATUS_CLASS[slot.status] ?? "badge"] ?? styles.badge} style={{ fontSize: "0.68rem", padding: "1px 6px" }}>
                                   {STATUS_LABELS[slot.status] ?? slot.status}
                                 </span>
+                                {slot.prompt && (
+                                  <button
+                                    type="button"
+                                    title="Copy full prompt"
+                                    aria-label={`Copy prompt for slot ${slot.slot}`}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(slot.prompt!).then(() => {
+                                        const key = `${debug.shoot_id}-${slot.slot}`;
+                                        setCopiedSlotPrompt(key);
+                                        setTimeout(() => setCopiedSlotPrompt(prev => prev === key ? null : prev), 1500);
+                                      });
+                                    }}
+                                    style={{ marginLeft: "auto", background: "none", border: "1px solid rgba(127,127,127,0.35)", borderRadius: 5, padding: "1px 7px", cursor: "pointer", fontSize: "0.68rem", color: "inherit" }}
+                                  >
+                                    {copiedSlotPrompt === `${debug.shoot_id}-${slot.slot}` ? "Copied!" : "📋 Copy"}
+                                  </button>
+                                )}
                               </div>
                               {slot.prompt ? (
                                 <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "monospace", fontSize: "0.72rem", lineHeight: 1.5, color: "#334", margin: 0 }}>

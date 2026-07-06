@@ -312,6 +312,18 @@ function CreatorDashboard() {
   }, [creator]);
 
   const openEdit = async (t: TemplateRow) => {
+    // Always hydrate the editor from a fresh server read. The templates list may be
+    // stale (a dashboard tab left open across saves elsewhere), and Save overwrites
+    // the template with whatever was hydrated — stale data here silently wipes
+    // scenes/background options/settings on the next save.
+    try {
+      const res = await fetch(`/api/templates/${t.id}`);
+      if (res.ok) {
+        const d = await res.json();
+        if (d.template) t = { ...t, ...d.template, cover_url: t.cover_url };
+      }
+    } catch { /* fall back to the list row */ }
+
     setShowcaseTemplateId(null);
     setPanel(t.id);
     setFormError("");
@@ -1198,7 +1210,9 @@ function CreatorDashboard() {
             <label className={styles.field}>
               <span className={styles.label}>Category</span>
               <select className={styles.input} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                {TEMPLATE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                {/* "story" is a marketplace browse tab, not a savable category (the API rejects
+                    it); story templates use the "This template is a Story" checkbox instead. */}
+                {TEMPLATE_CATEGORIES.filter(c => !c.isStory).map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </label>
           </div>
