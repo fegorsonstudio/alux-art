@@ -10,6 +10,8 @@ export interface CallToBarState {
   wearGown: boolean;
   wearWig: boolean;
   wigContext: "worn" | "none" | "held" | "background";
+  /** Dramatic editorial lighting for this slot (2 of 10, 1 of 5) instead of the soft studio look. */
+  dramaticLighting: boolean;
 }
 
 /**
@@ -18,29 +20,31 @@ export interface CallToBarState {
  */
 export function getCallToBarState(slotIndex: number, totalSlots: number): CallToBarState {
   if (totalSlots === 1) {
-    return { wearGown: true, wearWig: true, wigContext: "worn" };
+    return { wearGown: true, wearWig: true, wigContext: "worn", dramaticLighting: false };
   }
 
   if (totalSlots === 5) {
     const states: CallToBarState[] = [
-      { wearGown: true,  wearWig: true,  wigContext: "worn" },   // Slot 1: Ceremonial
-      { wearGown: true,  wearWig: false, wigContext: "none" },   // Slot 2: Modern Gown
-      { wearGown: false, wearWig: false, wigContext: "none" },   // Slot 3: Corporate Standing
-      { wearGown: false, wearWig: false, wigContext: "none" },   // Slot 4: Corporate Seated
-      { wearGown: false, wearWig: false, wigContext: "held" },   // Slot 5: Wig in hand
+      { wearGown: true,  wearWig: true,  wigContext: "worn", dramaticLighting: false },   // Slot 1: Ceremonial
+      { wearGown: true,  wearWig: false, wigContext: "none", dramaticLighting: false },   // Slot 2: Modern Gown
+      { wearGown: false, wearWig: false, wigContext: "none", dramaticLighting: false },   // Slot 3: Corporate Standing
+      { wearGown: false, wearWig: false, wigContext: "none", dramaticLighting: false },   // Slot 4: Corporate Seated
+      { wearGown: false, wearWig: false, wigContext: "held", dramaticLighting: true },    // Slot 5: Wig in hand — editorial closer
     ];
-    return states[slotIndex] ?? { wearGown: false, wearWig: false, wigContext: "none" };
+    return states[slotIndex] ?? { wearGown: false, wearWig: false, wigContext: "none", dramaticLighting: false };
   }
 
   if (totalSlots === 10) {
-    if (slotIndex === 0 || slotIndex === 1) return { wearGown: true,  wearWig: true,  wigContext: "worn" };
-    if (slotIndex === 2)                    return { wearGown: true,  wearWig: false, wigContext: "none" };
-    if (slotIndex >= 3 && slotIndex <= 6)   return { wearGown: false, wearWig: false, wigContext: "none" };
-    if (slotIndex === 7 || slotIndex === 8) return { wearGown: false, wearWig: false, wigContext: "held" };
-    return { wearGown: false, wearWig: false, wigContext: "background" };
+    if (slotIndex === 0)                    return { wearGown: true,  wearWig: true,  wigContext: "worn", dramaticLighting: false };
+    if (slotIndex === 1)                    return { wearGown: true,  wearWig: true,  wigContext: "worn", dramaticLighting: true };  // dramatic ceremonial hero
+    if (slotIndex === 2)                    return { wearGown: true,  wearWig: false, wigContext: "none", dramaticLighting: false };
+    if (slotIndex >= 3 && slotIndex <= 6)   return { wearGown: false, wearWig: false, wigContext: "none", dramaticLighting: false };
+    if (slotIndex === 7)                    return { wearGown: false, wearWig: false, wigContext: "held", dramaticLighting: false };
+    if (slotIndex === 8)                    return { wearGown: false, wearWig: false, wigContext: "held", dramaticLighting: true };  // dramatic editorial closer
+    return { wearGown: false, wearWig: false, wigContext: "background", dramaticLighting: false };
   }
 
-  // Proportional fallback for dynamic package sizes
+  // Proportional fallback for dynamic package sizes — last slot gets the dramatic treatment
   const gownCount = Math.max(1, Math.round(totalSlots * 0.3));
   const wearGown = slotIndex < gownCount;
   const wearWig = slotIndex === 0;
@@ -48,6 +52,7 @@ export function getCallToBarState(slotIndex: number, totalSlots: number): CallTo
     wearGown,
     wearWig,
     wigContext: wearWig ? "worn" : slotIndex === totalSlots - 1 ? "held" : "none",
+    dramaticLighting: slotIndex === totalSlots - 1,
   };
 }
 
@@ -107,6 +112,11 @@ HAIR LAYERING PROTECTION (MALE):
     }
   }
 
+  // ── Dramatic editorial lighting override ──────────────────────────────────
+  if (state.dramaticLighting) {
+    out += `LIGHTING (THIS SLOT — DRAMATIC EDITORIAL): hard directional key light from a steep angle, deep sculpted chiaroscuro shadows, high-contrast falloff, moody low-key exposure, a crisp rim light carving the silhouette out of the darkness. Cinematic magazine-cover mood. The environment remains the locked backdrop — only the light direction, quality, and contrast change.\n`;
+  }
+
   return out.trim();
 }
 
@@ -140,15 +150,16 @@ export function buildCallToBarBriefSection(packageSize: number, isFemale: boolea
       ? "Wig as BG prop"
       : "Wig OFF";
     const gownLabel = state.wearGown ? "Gown ON" : "Gown OFF";
-    lines.push(`SLOT ${slotNum} [${gownLabel} | ${wigLabel} | Collar ON]`);
+    const lightLabel = state.dramaticLighting ? " | DRAMATIC LIGHT" : "";
+    lines.push(`SLOT ${slotNum} [${gownLabel} | ${wigLabel} | Collar ON${lightLabel}]`);
     lines.push(buildCallToBarPromptDirectives(state, i, packageSize, isFemale));
     lines.push("");
   }
 
   lines.push(
     "UNIVERSAL STUDIO AESTHETIC:",
-    "- Backgrounds: deep charcoal gray, chocolate brown, deep navy, or warm library wood.",
-    "- Lighting: soft warm key light, crisp white rim light separating dark gown/suit from dark background, balanced fill.",
+    "- Backgrounds: follow the [BACKGROUND] reference / PER-SLOT BACKGROUND ALLOCATION when present; otherwise deep charcoal gray, chocolate brown, deep navy, or warm library wood.",
+    "- Lighting: soft warm key light, crisp white rim light separating dark gown/suit from dark background, balanced fill — EXCEPT slots marked DRAMATIC LIGHT, which follow their own lighting directive.",
     "- Camera: Hasselblad medium-format editorial feel. Realistic skin texture — no plasticky AI smoothing.",
     "- Fabric: realistic fine-knit wool suits, linen bib tabs, synthetic ribbed wig curls — all physically accurate.",
     "- Output: 4K, documentary photograph quality, natural asymmetry, subtle film grain.",
