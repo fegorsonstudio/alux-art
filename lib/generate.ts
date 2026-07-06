@@ -23,6 +23,15 @@ const MOCK_FAL_PLACEHOLDER_IMAGE_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 // Appended to every fal.ai prompt as positive anatomical facts
 const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. Natural lips with a subtle micro-expression — fractionally parted or carrying a micro-asymmetric curve; no smile, no visible teeth, no open mouth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
 
+// Telephoto enhancement — medium/portrait/fashion framings render flat without
+// explicit long-lens language. Appended after the brief's own camera text so the
+// later, more specific statement wins. Quote/graphic card slots are excluded.
+const TELEPHOTO_TRIGGERS = /medium shot|mid-shot|portrait|waist-up|half-body|fashion/i;
+const TELEPHOTO_ENHANCEMENT =
+  " Lens rendering: shot on a 200mm telephoto lens, f/2.8 aperture. " +
+  "Shallow depth of field, creamy background bokeh, melted background details. " +
+  "Intense lens compression, crisp subject separation from the background.";
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -393,6 +402,8 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 [OUTFIT] CONSISTENCY LOCK: If Group C contains an asset tagged [OUTFIT], that exact outfit MUST be worn by the subject in ALL 9 portrait prompts without exception. Extract the specific garment, fabric, color, cut, silhouette, and surface details from the [OUTFIT] reference image and replicate them precisely in every portrait prompt. Shot-to-shot variation must come only from pose, camera angle, expression, and composition — NOT from changing the outfit. Do not invent or substitute any alternative garments.
 
 [BACKGROUND] CONSISTENCY LOCK — ABSOLUTE RULE: If Group C contains an asset tagged [BACKGROUND], that reference IS the environment for ALL portrait prompts without exception. Extract its concrete visual characteristics (surface material, color palette, floor, texture, depth) and write that exact environment into the Environment section of EVERY portrait prompt. You are FORBIDDEN from inventing any alternative setting — no libraries, courtrooms, offices, chambers, gradient studio walls, or any other location — regardless of what the shoot category, composition principles, or atmospheric mandates suggest. The composition aesthetic principles and atmospheric elements must be expressed WITHIN the locked environment (through framing, camera distance, light direction, and light quality), never by changing the environment itself. Variation between shots comes only from framing, distance, and angle. EXCEPTION: If the user content contains a "PER-SLOT BACKGROUND ALLOCATION" section, that section supersedes this rule — apply the lock per slot group exactly as instructed there, never globally.
+
+PERSPECTIVE MATCH: Analyze the [BACKGROUND] reference's camera geometry — camera height, tilt, horizon/floor line, and apparent focal length — and write every prompt's camera setup to be geometrically consistent with it. The subject must appear genuinely photographed standing INSIDE that space: feet grounded on the reference's floor plane, vanishing lines agreeing, lighting direction plausible for the space, and no camera angle that the reference's perspective could not produce. A subject that looks pasted onto the backdrop is a failure.
 
 3. Critical Exclusions Registry
 - No Aesthetic Bleeding: Do NOT transfer models, skin tones, faces, or hairstyles from Group B or Group C onto the target subject.
@@ -1822,7 +1833,7 @@ export async function startGenerationWorker(
     const colorGradeUrl = refs.find((r) => r.purpose === "tagged" && r.tag === "COLOR_GRADE")?.url ?? "";
     imageEntries = [
       { url: characterBaseUrl, label: "LOCKED CHARACTER BASE — exact identity and wardrobe anchor" },
-      { url: backgroundUrl, label: "BACKGROUND reference — the environment must replicate this backdrop exactly" },
+      { url: backgroundUrl, label: "BACKGROUND reference — the environment must replicate this backdrop exactly; match its perspective, camera height, and floor line" },
       { url: lightingUrl, label: "LIGHTING reference — match this lighting setup" },
       { url: colorGradeUrl, label: "COLOR GRADE reference — match this film/edit style" },
     ].filter((e) => e.url).slice(0, 4);
@@ -1837,7 +1848,7 @@ export async function startGenerationWorker(
         const name = r.customName || r.tag || "REFERENCE";
         const directive =
           r.tag === "BACKGROUND"
-            ? "BACKGROUND reference — the environment/backdrop in the output MUST replicate this image exactly (surface, color, floor, texture). Override any conflicting environment description"
+            ? "BACKGROUND reference — the environment/backdrop in the output MUST replicate this image exactly (surface, color, floor, texture); match its perspective, camera height, and floor line exactly so the subject appears photographed within this space. Override any conflicting environment description"
             : r.tag === "LIGHTING"
               ? "LIGHTING reference — match this lighting setup"
               : r.tag === "COLOR_GRADE"
@@ -1867,7 +1878,7 @@ export async function startGenerationWorker(
       if (signed?.url) {
         bgEntryByOptionId.set(alloc.id, {
           url: signed.url,
-          label: `BACKGROUND "${alloc.name}" — THE environment for THIS image; replicate it exactly (surface, color, floor, texture, depth)`,
+          label: `BACKGROUND "${alloc.name}" — THE environment for THIS image; replicate it exactly (surface, color, floor, texture, depth) and match its perspective, camera height, and floor line so the subject appears genuinely photographed within this space`,
         });
       }
     }
@@ -1973,8 +1984,16 @@ export async function startGenerationWorker(
         ? ` ENVIRONMENT LOCK FOR THIS IMAGE: ${slotBgAlloc.description}.`
         : "";
 
+      // Telephoto injection for portrait-type slots (never the quote/graphic card).
+      // The /200mm/ guard keeps this idempotent across slot retries.
+      const isQuoteSlot = hasQuote && slot === total;
+      const telephotoText =
+        !isQuoteSlot && TELEPHOTO_TRIGGERS.test(slotPrompt) && !/200mm/i.test(slotPrompt)
+          ? TELEPHOTO_ENHANCEMENT
+          : "";
+
       // Append the reference image map + positive anatomical constraints to every fal call
-      slotPrompt = `${slotPrompt}${textBgLock}${slotReferenceMap.text} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
+      slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 

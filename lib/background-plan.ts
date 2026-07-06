@@ -151,7 +151,9 @@ export function buildBackgroundBriefSection(plan: BackgroundPlan, packageSize: n
       lines.push(`${range} — BACKGROUND "${alloc.name}" [PHOTO REFERENCE]:`);
       lines.push(
         `The environment for these slots MUST replicate the attached reference image labeled BACKGROUND "${alloc.name}" exactly ` +
-        "(surface material, color palette, floor, texture, depth). Do not invent alternatives for these slots."
+        "(surface material, color palette, floor, texture, depth). Do not invent alternatives for these slots. " +
+        "Match the reference's perspective exactly: same camera height, same angle, same horizon/floor line — " +
+        "the subject must look genuinely photographed within this space, not pasted onto it."
       );
     } else {
       lines.push(`${range} — BACKGROUND "${alloc.name}" [TEXT DESCRIPTION]:`);
