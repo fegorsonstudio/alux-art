@@ -116,6 +116,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       defaultRole: template.default_role ?? null,
       roleChips: template.role_chips ?? [],
       scenes: typeof template.scenes === 'string' ? JSON.parse(template.scenes) : (template.scenes ?? []),
+      backgroundOptions: (Array.isArray(template.background_options) ? template.background_options : []).map((o: { id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string }) => ({
+        id: o.id,
+        name: o.name,
+        kind: o.kind,
+        description: o.kind === "text" ? o.description : undefined,
+        imagePath: o.imagePath ?? null,
+        imageUrl: o.kind === "photo" && o.imagePath
+          ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
+          : null,
+      })),
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
       requiresBrand: template.story_type === 'brand' || template.story_type === 'group_brand',

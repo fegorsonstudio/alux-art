@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
 import { r2ProxyUrl } from "@/lib/r2";
+import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -79,8 +80,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const scenesArray = Array.isArray(body.scenes) ? body.scenes : null;
   const scenesClause = scenesArray !== null ? sql`, scenes = ${sql.json(scenesArray as any)}` : sql``;
 
+  // Background options — gate by the effective category (incoming or current row's)
+  let bgClause = sql``;
+  if (body.backgroundOptions !== undefined) {
+    const [currentRow] = await sql`SELECT category FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
+    const effectiveCategory = (typeof body.category === "string" && ALLOWED_CATEGORIES.has(body.category))
+      ? body.category
+      : (currentRow?.category as string | undefined);
+    const bgOpts = categoryAllowsBackgroundOptions(effectiveCategory)
+      ? sanitizeBackgroundOptions(body.backgroundOptions, user.id)
+      : null;
+    bgClause = sql`, background_options = ${bgOpts ? sql.json(bgOpts as any) : null}`;
+  }
+
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)}${scenesClause}
+    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}
     WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 

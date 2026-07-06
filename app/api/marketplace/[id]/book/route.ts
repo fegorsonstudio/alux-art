@@ -6,6 +6,7 @@ import { SITE_URL } from "@/lib/site-url";
 import { isAdminEmail } from "@/lib/auth";
 import { initializePayment } from "@/lib/payment-gateway";
 import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
+import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-plan";
 
 interface RefInput {
   name?: string;
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     packageSize?: number;
     currency?: string;
     rolePrompt?: string;
+    backgroundAllocations?: Array<{ optionId: string; count: number }>;
     storyAssets?: {
       costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
       groupPhotoRef?: { storagePath: string; storageBucket: string; name?: string };
@@ -149,10 +151,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
+  // ── Background allocation ───────────────────────────────────────────────
+  // Options only exist on templates whose category allows them (write-time gate),
+  // and the resolved snapshot comes from the server-side template row.
+  const templateBgOptions: BackgroundOption[] = Array.isArray(template.background_options)
+    ? template.background_options
+    : [];
+  const { plan: backgroundPlan, error: bgError } =
+    resolveBackgroundPlan(templateBgOptions, body.backgroundAllocations, buyerPackageSize);
+  if (bgError) return NextResponse.json({ error: bgError }, { status: 400 });
+  const bgOptionPaths = new Set(
+    backgroundPlan ? templateBgOptions.map((o) => o.imagePath).filter(Boolean) as string[] : []
+  );
+
   const seenTaggedPaths = new Set<string>();
   const deduplicatedTaggedRefs = taggedRefs.filter((ref) => {
     if (seenTaggedPaths.has(ref.storagePath)) return false;
     seenTaggedPaths.add(ref.storagePath);
+    // Background-option images travel via the plan, not as tagged refs (old clients may still send them)
+    if (bgOptionPaths.has(ref.storagePath)) return false;
     return true;
   });
 
@@ -240,12 +257,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
       'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
-      '', ${shotType}, ${rolePrompt}, ${templateId}, ${now}, ${now}
+      '', ${shotType}, ${rolePrompt}, ${templateId},
+      ${backgroundPlan ? sql.json(backgroundPlan as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${now}, ${now}
     )
     RETURNING id
   `.catch((err) => { console.error("[book] shoot insert failed:", err); return [null]; });
@@ -319,6 +338,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       name: ref.name ?? `brand-${i + 1}`, type: "image/jpeg", size: 1,
       storage_bucket: ref.storageBucket, storage_path: ref.storagePath, created_at: now,
     })),
+    // Photo background options — note carries the option id for generation-time lookup
+    ...(backgroundPlan
+      ? backgroundPlan.allocations
+          .filter((a) => a.kind === "photo" && a.imagePath)
+          .map((a, i) => ({
+            id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+            purpose: "background_option", tag: "BACKGROUND", custom_name: a.name, note: a.id,
+            name: `background-${i + 1}`, type: "image/jpeg", size: 1,
+            storage_bucket: a.imageBucket ?? "template-images", storage_path: a.imagePath!,
+            created_at: now,
+          }))
+      : []),
   ];
 
   if (allRefs.length > 0) {

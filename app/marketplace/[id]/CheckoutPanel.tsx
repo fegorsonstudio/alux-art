@@ -34,6 +34,14 @@ interface TemplateDetail {
   requiresBrand?: boolean;
   defaultRole?: string | null;
   roleChips?: string[];
+  backgroundOptions?: Array<{
+    id: string;
+    name: string;
+    kind: "photo" | "text";
+    description?: string;
+    imagePath?: string | null;
+    imageUrl?: string | null;
+  }>;
 }
 
 interface CouponResult {
@@ -108,6 +116,11 @@ export default function CheckoutPanel({
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(initialPkg);
   const [shotType, setShotType] = useState<"headshot" | "close_up" | "medium" | "full_body">("close_up");
 
+  // Buyer background allocation — active when the template offers 2+ options
+  const bgOptions = template.backgroundOptions ?? [];
+  const bgActive = bgOptions.length >= 2;
+  const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
+
   const [savedRefs, setSavedRefs] = useState<SavedIdentityRef[]>([]);
   const [selectedSaved, setSelectedSaved] = useState<Set<string>>(new Set());
   const [newUploads, setNewUploads] = useState<NewIdentityUpload[]>([]);
@@ -156,7 +169,13 @@ export default function CheckoutPanel({
         }
       });
 
-    const tagged = (template.images ?? []).filter(img => img.purpose === "tagged" && img.tag);
+    // Background-option images travel via the background plan, not as tagged refs
+    const bgOptionPaths = new Set(
+      (template.backgroundOptions ?? []).length >= 2
+        ? (template.backgroundOptions ?? []).filter(o => o.imagePath).map(o => o.imagePath as string)
+        : []
+    );
+    const tagged = (template.images ?? []).filter(img => img.purpose === "tagged" && img.tag && !bgOptionPaths.has(img.storagePath));
     setTaggedRefs(tagged.map(img => ({
       id: img.id,
       tag: img.tag!,
@@ -169,6 +188,13 @@ export default function CheckoutPanel({
       noteHidden: img.noteHidden ?? false,
     })));
   }, [template]);
+
+  // Default allocation: everything on the first background option
+  useEffect(() => {
+    if (!bgActive) return;
+    setBgAlloc({ [bgOptions[0].id]: selectedPkg });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bgActive, selectedPkg, template]);
 
   // ── Identity uploads ──────────────────────────────────────────────────────
 
@@ -387,10 +413,13 @@ export default function CheckoutPanel({
 
   const anyUploading = newUploads.some(u => u.uploading) || poseUploads.some(u => u.uploading)
     || costarUploads.some(u => u.uploading) || !!groupPhotoUpload?.uploading || brandUploads.some(u => u.uploading);
+  const bgAllocTotal = Object.values(bgAlloc).reduce((a, b) => a + b, 0);
+  const bgValid = !bgActive || bgAllocTotal === selectedPkg;
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
     && !buying
+    && bgValid
     && (!template.requiresCostar || (costarUploads.some(u => u.storagePath) && costarConsent))
     && (!template.requiresGroup || !!groupPhotoUpload?.storagePath)
     && (!template.requiresBrand || brandUploads.some(u => u.storagePath));
@@ -427,6 +456,9 @@ export default function CheckoutPanel({
         currency,
         rolePrompt: template.isStory && rolePrompt.trim() ? rolePrompt.trim() : undefined,
         storyAssets,
+        backgroundAllocations: bgActive
+          ? Object.entries(bgAlloc).filter(([, c]) => c > 0).map(([optionId, count]) => ({ optionId, count }))
+          : undefined,
       }),
     });
 
@@ -510,6 +542,72 @@ export default function CheckoutPanel({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Buyer background allocation */}
+          {bgActive && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>Backgrounds</span>
+              {selectedPkg === 1 ? (
+                <div className={styles.shotTypeRow}>
+                  {bgOptions.map(o => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      className={`${styles.pkgPill} ${(bgAlloc[o.id] ?? 0) > 0 ? styles.pkgPillActive : ""}`}
+                      title={o.kind === "text" ? o.description : undefined}
+                      onClick={() => setBgAlloc({ [o.id]: 1 })}
+                    >
+                      {o.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {bgOptions.map(o => {
+                    const count = bgAlloc[o.id] ?? 0;
+                    return (
+                      <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
+                        {o.imageUrl ? (
+                          <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={80} />
+                        ) : (
+                          <span
+                            title={o.description}
+                            style={{ width: 44, height: 55, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.6rem", letterSpacing: "0.04em", flexShrink: 0 }}
+                          >
+                            TEXT
+                          </span>
+                        )}
+                        <span style={{ flex: 1, fontSize: "0.85rem" }}>{o.name}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <button
+                            type="button"
+                            className={styles.pkgPill}
+                            disabled={count <= 0}
+                            onClick={() => setBgAlloc(prev => ({ ...prev, [o.id]: Math.max(0, (prev[o.id] ?? 0) - 1) }))}
+                          >−</button>
+                          <span style={{ minWidth: 20, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{count}</span>
+                          <button
+                            type="button"
+                            className={styles.pkgPill}
+                            disabled={bgAllocTotal >= selectedPkg}
+                            onClick={() => setBgAlloc(prev => ({ ...prev, [o.id]: (prev[o.id] ?? 0) + 1 }))}
+                          >+</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p
+                    className={styles.sectionHint}
+                    style={bgAllocTotal !== selectedPkg ? { color: "#e5484d" } : undefined}
+                  >
+                    {bgAllocTotal === selectedPkg
+                      ? `All ${selectedPkg} images allocated`
+                      : `${bgAllocTotal} of ${selectedPkg} images allocated — allocate all ${selectedPkg} to continue`}
+                  </p>
+                </>
+              )}
             </div>
           )}
 

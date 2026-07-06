@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
+import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -85,12 +86,15 @@ export async function POST(request: NextRequest) {
   const safeDefaultRole = typeof defaultRole === "string" ? defaultRole.trim().slice(0, 100) || null : null;
   const safeRoleChips = Array.isArray(roleChips) ? (roleChips as unknown[]).filter(c => typeof c === "string").slice(0, 6) : [];
   const safeScenes = Array.isArray(scenes) ? scenes : [];
+  const safeBackgroundOptions = categoryAllowsBackgroundOptions(category)
+    ? sanitizeBackgroundOptions(body.backgroundOptions, user.id)
+    : null;
 
   const [template] = await sql`
     INSERT INTO templates
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
-       is_story, story_type, default_role, role_chips, scenes,
+       is_story, story_type, default_role, role_chips, scenes, background_options,
        created_at, updated_at)
     VALUES (
       ${creator.id},
@@ -106,6 +110,7 @@ export async function POST(request: NextRequest) {
       'template-images',
       ${safeIsStory}, ${safeStoryType}, ${safeDefaultRole},
       ${safeRoleChips as string[]}, ${sql.json(safeScenes)},
+      ${safeBackgroundOptions ? sql.json(safeBackgroundOptions as unknown as Parameters<typeof sql.json>[0]) : null},
       NOW(), NOW()
     )
     RETURNING *

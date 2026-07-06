@@ -7,6 +7,7 @@ import { normalizePackageSize, type AspectRatio } from "./types";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
+import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -391,7 +392,7 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 
 [OUTFIT] CONSISTENCY LOCK: If Group C contains an asset tagged [OUTFIT], that exact outfit MUST be worn by the subject in ALL 9 portrait prompts without exception. Extract the specific garment, fabric, color, cut, silhouette, and surface details from the [OUTFIT] reference image and replicate them precisely in every portrait prompt. Shot-to-shot variation must come only from pose, camera angle, expression, and composition — NOT from changing the outfit. Do not invent or substitute any alternative garments.
 
-[BACKGROUND] CONSISTENCY LOCK — ABSOLUTE RULE: If Group C contains an asset tagged [BACKGROUND], that reference IS the environment for ALL portrait prompts without exception. Extract its concrete visual characteristics (surface material, color palette, floor, texture, depth) and write that exact environment into the Environment section of EVERY portrait prompt. You are FORBIDDEN from inventing any alternative setting — no libraries, courtrooms, offices, chambers, gradient studio walls, or any other location — regardless of what the shoot category, composition principles, or atmospheric mandates suggest. The composition aesthetic principles and atmospheric elements must be expressed WITHIN the locked environment (through framing, camera distance, light direction, and light quality), never by changing the environment itself. Variation between shots comes only from framing, distance, and angle.
+[BACKGROUND] CONSISTENCY LOCK — ABSOLUTE RULE: If Group C contains an asset tagged [BACKGROUND], that reference IS the environment for ALL portrait prompts without exception. Extract its concrete visual characteristics (surface material, color palette, floor, texture, depth) and write that exact environment into the Environment section of EVERY portrait prompt. You are FORBIDDEN from inventing any alternative setting — no libraries, courtrooms, offices, chambers, gradient studio walls, or any other location — regardless of what the shoot category, composition principles, or atmospheric mandates suggest. The composition aesthetic principles and atmospheric elements must be expressed WITHIN the locked environment (through framing, camera distance, light direction, and light quality), never by changing the environment itself. Variation between shots comes only from framing, distance, and angle. EXCEPTION: If the user content contains a "PER-SLOT BACKGROUND ALLOCATION" section, that section supersedes this rule — apply the lock per slot group exactly as instructed there, never globally.
 
 3. Critical Exclusions Registry
 - No Aesthetic Bleeding: Do NOT transfer models, skin tones, faces, or hairstyles from Group B or Group C onto the target subject.
@@ -1412,7 +1413,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1426,6 +1427,14 @@ export async function startGenerationWorker(
   const rawBrief = shoot.shoot_brief;
   let shootBrief: string =
     typeof rawBrief === "string" ? rawBrief : "";
+
+  // Buyer background allocation (call_to_bar marketplace bookings)
+  const backgroundPlan: BackgroundPlan | null =
+    shoot.background_plan &&
+    Array.isArray((shoot.background_plan as BackgroundPlan).allocations) &&
+    (shoot.background_plan as BackgroundPlan).allocations.length > 0
+      ? (shoot.background_plan as BackgroundPlan)
+      : null;
 
   // Story fields — derive from shoot_references (no story_assets column)
   const rolePrompt: string | null = typeof shoot.role_prompt === "string" ? shoot.role_prompt.trim() : null;
@@ -1662,6 +1671,25 @@ export async function startGenerationWorker(
       }
     }
 
+    // Buyer background allocation — per-slot environment lock + photo refs for the brief model
+    if (backgroundPlan) {
+      storyContextParts.push(buildBackgroundBriefSection(backgroundPlan, normalizePackageSize(shoot.package_size)));
+      const bgOptionRefRows = rawRefs.filter((r) => r.purpose === "background_option");
+      for (const alloc of backgroundPlan.allocations) {
+        if (alloc.kind !== "photo") continue;
+        const row = bgOptionRefRows.find((r) => r.note === alloc.id)
+          ?? bgOptionRefRows.find((r) => r.storage_path === alloc.imagePath);
+        if (!row) continue;
+        const url = await r2SignedDownloadUrl(row.storage_bucket, row.storage_path, REFERENCE_SIGNED_URL_TTL_SECONDS).catch(() => "");
+        if (url) {
+          storyImageUrls.push({
+            url,
+            label: `BACKGROUND "${alloc.name}" — environment reference for its assigned slots (see PER-SLOT BACKGROUND ALLOCATION)`,
+          });
+        }
+      }
+    }
+
     const storyContext = storyContextParts.length > 0
       ? `\n\nSTORY CONTEXT:\n${storyContextParts.join("\n\n")}`
       : "";
@@ -1795,13 +1823,34 @@ export async function startGenerationWorker(
         return { url: r.url, label: directive };
       });
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
+    // With a background plan, cap identity at 4 so the per-slot background image
+    // survives nano-banana's 9-image cap alongside the wardrobe refs.
     imageEntries = [
-      ...identityUrls.slice(0, 6).map((u) => ({ url: u, label: "SUBJECT IDENTITY — the exact person to depict" })),
+      ...identityUrls.slice(0, backgroundPlan ? 4 : 6).map((u) => ({ url: u, label: "SUBJECT IDENTITY — the exact person to depict" })),
       ...taggedRefEntries,
       ...inspirationUrls.slice(0, 1).map((u) => ({ url: u, label: "INSPIRATION — mood and style context only; do not copy the person, outfit, or background from it unless no dedicated reference exists" })),
     ];
   }
   let imageUrls: string[] = imageEntries.map((e) => e.url);
+
+  // Per-option background images (purpose 'background_option', matched by optionId in note).
+  // These are appended per slot — each slot only sees ITS background, never the others.
+  // Note: base-locked shoots keep single-background behavior; the plan applies to the standard branch only.
+  const bgEntryByOptionId = new Map<string, { url: string; label: string }>();
+  if (backgroundPlan && !(hasBase && characterBaseUrl)) {
+    for (const alloc of backgroundPlan.allocations) {
+      if (alloc.kind !== "photo") continue;
+      const signed = refs.find((r) => r.purpose === "background_option" && (r.note === alloc.id || r.customName === alloc.name));
+      if (signed?.url) {
+        bgEntryByOptionId.set(alloc.id, {
+          url: signed.url,
+          label: `BACKGROUND "${alloc.name}" — THE environment for THIS image; replicate it exactly (surface, color, floor, texture, depth)`,
+        });
+      }
+    }
+  }
+  const bgUrls = Array.from(bgEntryByOptionId.values()).map((e) => e.url);
+  imageUrls = [...imageUrls, ...bgUrls];
 
   const identityUrls = refs
     .filter((r) => r.purpose === "identity")
@@ -1829,11 +1878,19 @@ export async function startGenerationWorker(
   // exactly what each attached image is for, in the order fal.ai receives them.
   // Without this, images beyond the identity range are anonymous and the model guesses.
   const reachableSet = new Set(reachableImageUrls);
-  const mappedEntries = imageEntries.filter((e) => reachableSet.has(e.url)).slice(0, 9); // nano-banana receives at most 9
-  const referenceMapText = mappedEntries.length > 0
-    ? " REFERENCE IMAGE MAP — the attached images in order: " +
-      mappedEntries.map((e, i) => `IMAGE ${i + 1}: ${e.label}.`).join(" ")
-    : "";
+  const buildReferenceMap = (entries: Array<{ url: string; label: string }>) => {
+    const mapped = entries.filter((e) => reachableSet.has(e.url)).slice(0, 9); // nano-banana receives at most 9
+    return {
+      urls: mapped.map((e) => e.url),
+      text: mapped.length > 0
+        ? " REFERENCE IMAGE MAP — the attached images in order: " +
+          mapped.map((e, i) => `IMAGE ${i + 1}: ${e.label}.`).join(" ")
+        : "",
+    };
+  };
+  // Shared list for shoots without a background plan (identical for every slot)
+  const sharedReferenceMap = buildReferenceMap(imageEntries);
+  const identityEntryCount = imageEntries.filter((e) => e.label.startsWith("SUBJECT IDENTITY") || e.label.startsWith("LOCKED CHARACTER BASE")).length;
 
   let failedCount = 0;
 
@@ -1851,6 +1908,24 @@ export async function startGenerationWorker(
 
     let slotPrompt = ""; // hoisted so catch block can log it for learning
     try {
+      // Per-slot image list: with a background plan, insert THIS slot's background
+      // image right after the identity block; other slots' backgrounds are excluded.
+      let slotReferenceMap = sharedReferenceMap;
+      let slotBgAlloc: ReturnType<typeof getBackgroundForSlot> = null;
+      if (backgroundPlan && bgEntryByOptionId.size > 0) {
+        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
+        const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
+        if (bgEntry) {
+          slotReferenceMap = buildReferenceMap([
+            ...imageEntries.slice(0, identityEntryCount),
+            bgEntry,
+            ...imageEntries.slice(identityEntryCount),
+          ]);
+        }
+      } else if (backgroundPlan) {
+        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
+      }
+
       const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];
       if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
         // Locked-base: assemble final prompt from scene fields + base anchor opener
@@ -1869,8 +1944,14 @@ export async function startGenerationWorker(
         slotPrompt = "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
       }
 
+      // Text-kind background: belt-and-braces environment lock appended to the prompt
+      // (the brief model already received the per-slot matrix; this guards against drift)
+      const textBgLock = slotBgAlloc && slotBgAlloc.kind === "text" && slotBgAlloc.description
+        ? ` ENVIRONMENT LOCK FOR THIS IMAGE: ${slotBgAlloc.description}.`
+        : "";
+
       // Append the reference image map + positive anatomical constraints to every fal call
-      slotPrompt = `${slotPrompt}${referenceMapText} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
+      slotPrompt = `${slotPrompt}${textBgLock}${slotReferenceMap.text} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
@@ -1894,7 +1975,8 @@ export async function startGenerationWorker(
         slot,
         identityUrls: identityUrls.length,
         inspirationUrls: inspirationUrls.length,
-        imageUrls: reachableImageUrls.length,
+        imageUrls: slotReferenceMap.urls.length,
+        background: slotBgAlloc ? `${slotBgAlloc.name} (${slotBgAlloc.kind})` : "none",
       });
 
       try {
@@ -1909,7 +1991,7 @@ export async function startGenerationWorker(
           taggedRefs: refs
             .filter((r) => r.purpose === "tagged")
             .map((r) => ({ tag: r.tag ?? r.customName, url: r.url })),
-          imageUrls: reachableImageUrls,
+          imageUrls: slotReferenceMap.urls,
           identityProfile: typeof identityProfile === "string" ? identityProfile : "",
           shootBrief: typeof shootBrief === "string" ? shootBrief : "",
           quoteText: shoot.quote?.text,
@@ -1919,7 +2001,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, reachableImageUrls, aspectRatio, resolution, dbForbiddenWords, generationModel);
+      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, aspectRatio, resolution, dbForbiddenWords, generationModel);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }

@@ -83,6 +83,7 @@ interface TemplateDetail {
   defaultRole?: string | null;
   roleChips?: string[];
   scenes?: Array<{ slot: number; title: string; description: string; environment: string; wardrobe: string; coCharacter?: string }>;
+  backgroundOptions?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string | null; imageUrl?: string | null }>;
 }
 
 interface CouponResult {

@@ -40,6 +40,7 @@ interface TemplateRow {
   default_role?: string | null;
   role_chips?: string[];
   scenes?: StoryScene[];
+  background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
 }
 
 interface ShowcaseIdentityRef {
@@ -121,6 +122,22 @@ const defaultScene = (slot: number): StoryScene => ({
   slot, title: "", description: "", environment: "", wardrobe: "", coCharacter: "",
 });
 
+// Buyer background options (call_to_bar templates)
+interface BackgroundOptionDraft {
+  id: string;               // uuid; existing option id when fromDb
+  name: string;
+  kind: "photo" | "text";
+  description: string;
+  imagePath: string;        // storage path once uploaded
+  preview: string;          // object URL or signed URL
+  uploading: boolean;
+  fromDb?: boolean;
+  error?: string;
+}
+
+const BACKGROUND_OPTION_CATEGORIES = new Set(["call_to_bar"]);
+const MAX_BG_OPTIONS = 6;
+
 const defaultForm = () => ({
   title: "",
   description: "",
@@ -162,6 +179,7 @@ function CreatorDashboard() {
   const pendingTagRef = useRef<string>("inspiration");
   const [replacingId, setReplacingId] = useState<string | null>(null);
   const [storyScenes, setStoryScenes] = useState<StoryScene[]>([defaultScene(1)]);
+  const [backgroundOptions, setBackgroundOptions] = useState<BackgroundOptionDraft[]>([]);
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -320,11 +338,25 @@ function CreatorDashboard() {
     } else {
       setStoryScenes([defaultScene(1)]);
     }
+    // Hydrate background options; join previews from template_images by storage_path
+    const bgImgs = t.template_images ?? [];
+    setBackgroundOptions((Array.isArray(t.background_options) ? t.background_options : []).map((o) => ({
+      id: o.id,
+      name: o.name ?? "",
+      kind: o.kind === "text" ? "text" as const : "photo" as const,
+      description: o.description ?? "",
+      imagePath: o.imagePath ?? "",
+      preview: o.imagePath ? (bgImgs.find(img => img.storage_path === o.imagePath)?.signed_url ?? "") : "",
+      uploading: false,
+      fromDb: true,
+    })));
     setCoverPreview(t.cover_url ?? "");
     // Use already-loaded template_images (signed URLs included from dashboard API)
+    // Background-option photos are managed in the options editor — keep them out of the workflow list
+    const bgOptionPaths = new Set((Array.isArray(t.background_options) ? t.background_options : []).map(o => o.imagePath).filter(Boolean));
     const imgs = t.template_images ?? [];
     const existingImages: UploadedImage[] = imgs
-      .filter(img => img.storage_path && (img.purpose === "inspiration" || img.purpose === "tagged"))
+      .filter(img => img.storage_path && (img.purpose === "inspiration" || img.purpose === "tagged") && !bgOptionPaths.has(img.storage_path))
       .map(img => ({
         localId: img.id,
         preview: img.signed_url ?? "",
@@ -375,6 +407,7 @@ function CreatorDashboard() {
     });
     setImages([]);
     setCoverPreview("");
+    setBackgroundOptions([]);
   };
 
   const openShowcase = async (templateId: string) => {
@@ -592,6 +625,22 @@ function CreatorDashboard() {
     newItems.forEach((item, idx) => uploadSampleFile(toAdd[idx], item.localId));
   };
 
+  const uploadBackgroundOptionFile = async (file: File, optionId: string) => {
+    setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: true, error: undefined } : o));
+    const f = await resizeIfNeeded(file);
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    fd.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, error: errBody?.error ?? "Upload failed" } : o));
+      return;
+    }
+    const { storagePath } = await res.json();
+    setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) } : o));
+  };
+
   const removeSampleImage = async (item: SampleImageItem, templateId: string | null) => {
     if (item.fromDb && templateId && templateId !== "create") {
       await fetch(`/api/templates/${templateId}/images`, {
@@ -621,6 +670,17 @@ function CreatorDashboard() {
     if (images.some(i => i.uploading)) { setFormError("Please wait for all images to finish uploading"); return; }
     if (sampleImages.some(s => s.uploading)) { setFormError("Please wait for all sample images to finish uploading"); return; }
 
+    // Background option validation (call_to_bar only)
+    const bgOptionsActive = BACKGROUND_OPTION_CATEGORIES.has(form.category);
+    if (bgOptionsActive) {
+      if (backgroundOptions.some(o => o.uploading)) { setFormError("Please wait for background photos to finish uploading"); return; }
+      for (const o of backgroundOptions) {
+        if (!o.name.trim()) { setFormError("Every background option needs a name"); return; }
+        if (o.kind === "photo" && !o.imagePath) { setFormError(`Background option "${o.name}" needs a photo`); return; }
+        if (o.kind === "text" && !o.description.trim()) { setFormError(`Background option "${o.name}" needs a description`); return; }
+      }
+    }
+
     setSaving(true);
     // First gallery image is automatically the marketplace card thumbnail.
     const coverFromGallery = sampleImages[0]?.storagePath;
@@ -642,6 +702,15 @@ function CreatorDashboard() {
       defaultRole: form.isStory ? form.defaultRole.trim() || null : null,
       roleChips: form.isStory ? form.roleChipsInput.split(",").map(c => c.trim()).filter(Boolean).slice(0, 6) : [],
       scenes: form.isStory ? storyScenes : [],
+      backgroundOptions: bgOptionsActive
+        ? backgroundOptions.map(o => ({
+            id: o.id,
+            name: o.name.trim(),
+            kind: o.kind,
+            description: o.kind === "text" ? o.description.trim() : undefined,
+            imagePath: o.kind === "photo" ? o.imagePath : undefined,
+          }))
+        : [],
     };
 
     let templateId: string;
@@ -698,6 +767,30 @@ function CreatorDashboard() {
       }
     }
 
+    // Save template_images rows for NEW photo background options (fromDb ones already have rows)
+    if (bgOptionsActive) {
+      const newBgPhotoOptions = backgroundOptions.filter(o => o.kind === "photo" && o.imagePath && !o.fromDb);
+      for (const o of newBgPhotoOptions) {
+        const bgRes = await fetch(`/api/templates/${templateId}/images`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storagePath: o.imagePath,
+            displayOrder: 0,
+            purpose: "tagged",
+            tag: "BACKGROUND",
+            customName: o.name.trim(),
+          }),
+        });
+        if (!bgRes.ok) {
+          const errData = await bgRes.json().catch(() => ({}));
+          setFormError(errData.error ?? "Failed to save background option image — please try again");
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     // Save new sample images (existing fromDb ones are already in DB; deletions are done in real-time)
     const existingSampleCount = sampleImages.filter(s => s.fromDb).length;
     const newSamples = sampleImages.filter(s => s.storagePath && !s.fromDb);
@@ -722,6 +815,7 @@ function CreatorDashboard() {
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
+    setBackgroundOptions([]);
     loadDashboard();
   };
 
@@ -1013,7 +1107,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); }}>
             + New Template
           </button>
         )}
@@ -1556,6 +1650,100 @@ function CreatorDashboard() {
               </div>
             )}
           </div>
+
+          {/* Buyer background options (call_to_bar) */}
+          {BACKGROUND_OPTION_CATEGORIES.has(form.category) && (
+            <div className={styles.field}>
+              <div className={styles.storySceneHeader}>
+                <span className={styles.label}>Buyer background options ({backgroundOptions.length}/{MAX_BG_OPTIONS})</span>
+                {backgroundOptions.length < MAX_BG_OPTIONS && (
+                  <button
+                    type="button"
+                    className={styles.addSceneBtn}
+                    onClick={() => setBackgroundOptions(prev => [...prev, {
+                      id: crypto.randomUUID(), name: "", kind: "photo", description: "",
+                      imagePath: "", preview: "", uploading: false,
+                    }])}
+                  >
+                    + Add option
+                  </button>
+                )}
+              </div>
+              <p className={styles.fieldHint}>
+                Add at least 2 options to let buyers split their package across backgrounds
+                (e.g. 5 images on Studio Canvas, 5 in a Law Library). A photo option is replicated
+                exactly; a text option is built by the AI from your description.
+              </p>
+
+              {backgroundOptions.map((opt, idx) => (
+                <div key={opt.id} className={styles.sceneCard}>
+                  <div className={styles.sceneCardHeader}>
+                    <span className={styles.sceneNum}>Background {idx + 1}</span>
+                    <div className={styles.sceneActions}>
+                      <button
+                        type="button"
+                        className={styles.sceneRemove}
+                        onClick={() => setBackgroundOptions(prev => prev.filter(o => o.id !== opt.id))}
+                      >✕</button>
+                    </div>
+                  </div>
+                  <div className={styles.sceneFields}>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder='Option name shown to buyers (e.g. "Studio Canvas", "Law Library")'
+                      maxLength={40}
+                      value={opt.name}
+                      onChange={e => setBackgroundOptions(prev => prev.map(o => o.id === opt.id ? { ...o, name: e.target.value } : o))}
+                    />
+                    <div className={styles.pills}>
+                      <button
+                        type="button"
+                        className={`${styles.pill} ${opt.kind === "photo" ? styles.pillActive : ""}`}
+                        onClick={() => setBackgroundOptions(prev => prev.map(o => o.id === opt.id ? { ...o, kind: "photo" } : o))}
+                      >
+                        Photo reference
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.pill} ${opt.kind === "text" ? styles.pillActive : ""}`}
+                        onClick={() => setBackgroundOptions(prev => prev.map(o => o.id === opt.id ? { ...o, kind: "text" } : o))}
+                      >
+                        Text description
+                      </button>
+                    </div>
+                    {opt.kind === "photo" ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {opt.preview && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={opt.preview} alt={opt.name || "background"} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 6 }} />
+                        )}
+                        <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                          {opt.uploading ? "Uploading..." : opt.imagePath ? "Replace photo" : "Upload photo"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadBackgroundOptionFile(f, opt.id); e.target.value = ""; }}
+                          />
+                        </label>
+                        {opt.error && <span style={{ color: "#e5484d", fontSize: "0.78rem" }}>{opt.error}</span>}
+                      </div>
+                    ) : (
+                      <textarea
+                        className={styles.textarea}
+                        placeholder='Describe the environment (e.g. "a stately law library with mahogany shelves, leather-bound volumes, warm brass lamps")'
+                        rows={2}
+                        maxLength={300}
+                        value={opt.description}
+                        onChange={e => setBackgroundOptions(prev => prev.map(o => o.id === opt.id ? { ...o, description: e.target.value } : o))}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className={styles.formActions}>
             <div className={styles.pills}>
