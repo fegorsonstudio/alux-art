@@ -695,7 +695,7 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
-            <div className={styles.modelHint}>{modelConfig.vision_model === "gemini" ? "Gemini 2.5 Flash analyzes identity images and builds shoot briefs." : "Claude Sonnet (identity) + Claude Opus (brief) handles vision tasks."}</div>
+            <div className={styles.modelHint}>{modelConfig.vision_model === "gemini" ? "Gemini 2.5 Flash analyzes identity images and builds shoot briefs." : "Claude Sonnet (identity) + Claude Opus (brief); falls back to Gemini 2.5 Flash automatically if Claude fails — shoots are never blocked."}</div>
           </div>
           <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Image Generation</div>

@@ -1565,12 +1565,19 @@ export async function startGenerationWorker(
       .filter(Boolean);
     if (identityUrls.length === 0) throw new Error("No identity images found");
 
-    identityProfile = await withRetry(
-      () => visionModel === "claude"
-        ? analyzeIdentityImagesClaude(identityUrls)
-        : analyzeIdentityImages(identityUrls),
-      2
-    );
+    // Claude-first with silent Gemini fallback: a dead Anthropic key (no credits,
+    // rate limit, outage) must never fail or delay the shoot. Claude gets 1 retry
+    // so failover is fast; Gemini keeps its usual 2.
+    if (visionModel === "claude") {
+      try {
+        identityProfile = await withRetry(() => analyzeIdentityImagesClaude(identityUrls), 1);
+      } catch (err) {
+        console.warn("[generate] Claude identity analysis failed — falling back to Gemini:", err instanceof Error ? err.message : String(err));
+        identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls), 2);
+      }
+    } else {
+      identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls), 2);
+    }
 
     await sql`UPDATE shoots SET identity_profile = ${identityProfile}, updated_at = ${ts()} WHERE id = ${shootId}`;
   }
@@ -1694,12 +1701,28 @@ export async function startGenerationWorker(
       ? `\n\nSTORY CONTEXT:\n${storyContextParts.join("\n\n")}`
       : "";
 
-    // No retry — brief timeout (220s) + fal slot (50s) must fit Vercel's 300s limit.
-    // Retrying a timed-out Claude call would double the budget and kill the function.
+    // Claude-first with silent Gemini fallback (we run on the VPS under PM2 — no
+    // serverless time limit, so a fallback after a Claude timeout is safe).
+    // Any Claude failure — API error, no credits, timeout, or invalid JSON — quietly
+    // reroutes the brief to Gemini so the shoot proceeds without interruption.
     const shootForBrief = { ...shoot, storyContext, storyImageUrls } as never;
-    shootBrief = await (visionModel === "claude"
-      ? buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief)
-      : buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief));
+    const buildGeminiBrief = () =>
+      buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief);
+    let briefServedBy: "claude" | "gemini" | "gemini-fallback" = "gemini";
+    if (visionModel === "claude") {
+      try {
+        shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief);
+        JSON.parse(shootBrief); // invalid/truncated JSON counts as failure → fall back
+        briefServedBy = "claude";
+      } catch (err) {
+        console.warn("[generate] Claude brief failed — falling back to Gemini:", err instanceof Error ? err.message : String(err));
+        shootBrief = await buildGeminiBrief();
+        briefServedBy = "gemini-fallback";
+      }
+    } else {
+      shootBrief = await buildGeminiBrief();
+    }
+    console.log(`[generate] brief served by: ${briefServedBy}`);
 
     // Validate before storing — truncation at max_tokens produces broken JSON
     try {
