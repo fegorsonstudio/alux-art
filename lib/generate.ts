@@ -8,6 +8,7 @@ import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
+import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -1424,7 +1425,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1445,6 +1446,14 @@ export async function startGenerationWorker(
     Array.isArray((shoot.background_plan as BackgroundPlan).allocations) &&
     (shoot.background_plan as BackgroundPlan).allocations.length > 0
       ? (shoot.background_plan as BackgroundPlan)
+      : null;
+
+  // Buyer choice-group selections (pick-one styling options)
+  const choiceSelections: ChoiceSelections | null =
+    shoot.choice_selections &&
+    Array.isArray((shoot.choice_selections as ChoiceSelections).selections) &&
+    (shoot.choice_selections as ChoiceSelections).selections.length > 0
+      ? (shoot.choice_selections as ChoiceSelections)
       : null;
 
   // Story fields — derive from shoot_references (no story_assets column)
@@ -1687,6 +1696,11 @@ export async function startGenerationWorker(
           storyContextParts.push(`GROUP G — Brand Assets: ${valid.length} brand/logo/product image(s). Integrate these brand elements into the scenes — placement preference: ${placements}. The brand should appear naturally within the environment, on screens, banners, clothing, or as subtle environmental elements.`);
         }
       }
+    }
+
+    // Buyer style selections (choice groups) — locked for all images
+    if (choiceSelections) {
+      storyContextParts.push(buildChoiceBriefSection(choiceSelections));
     }
 
     // Buyer background allocation — per-slot environment lock + photo refs for the brief model

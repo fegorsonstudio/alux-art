@@ -41,6 +41,7 @@ interface TemplateRow {
   role_chips?: string[];
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
+  option_groups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
 }
 
 interface ShowcaseIdentityRef {
@@ -135,8 +136,40 @@ interface BackgroundOptionDraft {
   error?: string;
 }
 
-const BACKGROUND_OPTION_CATEGORIES = new Set(["call_to_bar"]);
 const MAX_BG_OPTIONS = 6;
+
+// Buyer choice groups — pick-one-per-group styling options (all categories)
+type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade";
+const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> = {
+  outfit:      { tag: "OUTFIT",      label: "Outfit" },
+  hairstyle:   { tag: "HAIRSTYLE",   label: "Hairstyle" },
+  makeup:      { tag: "MAKEUP",      label: "Makeup" },
+  nails:       { tag: "NAIL_DESIGN", label: "Nails" },
+  shoes:       { tag: "ACCESSORY",   label: "Shoes" },
+  accessory:   { tag: "ACCESSORY",   label: "Accessory" },
+  color_grade: { tag: "COLOR_GRADE", label: "Color grade" },
+};
+const MAX_CHOICE_GROUPS = 6;
+const MAX_GROUP_OPTIONS = 6;
+
+interface ChoiceOptionDraft {
+  id: string;
+  name: string;
+  kind: "photo" | "text";
+  description: string;
+  imagePath: string;
+  preview: string;
+  uploading: boolean;
+  fromDb?: boolean;
+  error?: string;
+}
+
+interface ChoiceGroupDraft {
+  id: string;
+  type: ChoiceGroupType;
+  label: string;
+  options: ChoiceOptionDraft[];
+}
 
 const defaultForm = () => ({
   title: "",
@@ -180,6 +213,7 @@ function CreatorDashboard() {
   const [replacingId, setReplacingId] = useState<string | null>(null);
   const [storyScenes, setStoryScenes] = useState<StoryScene[]>([defaultScene(1)]);
   const [backgroundOptions, setBackgroundOptions] = useState<BackgroundOptionDraft[]>([]);
+  const [choiceGroups, setChoiceGroups] = useState<ChoiceGroupDraft[]>([]);
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -362,10 +396,30 @@ function CreatorDashboard() {
       uploading: false,
       fromDb: true,
     })));
+    // Hydrate choice groups the same way
+    setChoiceGroups((Array.isArray(t.option_groups) ? t.option_groups : []).map((g) => ({
+      id: g.id,
+      type: (g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType,
+      label: g.label ?? GROUP_TYPE_META[(g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType].label,
+      options: (g.options ?? []).map((o) => ({
+        id: o.id,
+        name: o.name ?? "",
+        kind: o.kind === "text" ? "text" as const : "photo" as const,
+        description: o.description ?? "",
+        imagePath: o.imagePath ?? "",
+        preview: o.imagePath ? (bgImgs.find(img => img.storage_path === o.imagePath)?.signed_url ?? "") : "",
+        uploading: false,
+        fromDb: true,
+      })),
+    })));
     setCoverPreview(t.cover_url ?? "");
     // Use already-loaded template_images (signed URLs included from dashboard API)
-    // Background-option photos are managed in the options editor — keep them out of the workflow list
-    const bgOptionPaths = new Set((Array.isArray(t.background_options) ? t.background_options : []).map(o => o.imagePath).filter(Boolean));
+    // Background-option and choice-group photos are managed in their own editors —
+    // keep them out of the generic workflow list
+    const bgOptionPaths = new Set([
+      ...(Array.isArray(t.background_options) ? t.background_options : []).map(o => o.imagePath).filter(Boolean),
+      ...(Array.isArray(t.option_groups) ? t.option_groups : []).flatMap(g => (g.options ?? []).map(o => o.imagePath)).filter(Boolean),
+    ]);
     const imgs = t.template_images ?? [];
     const existingImages: UploadedImage[] = imgs
       .filter(img => img.storage_path && (img.purpose === "inspiration" || img.purpose === "tagged") && !bgOptionPaths.has(img.storage_path))
@@ -419,7 +473,7 @@ function CreatorDashboard() {
     });
     setImages([]);
     setCoverPreview("");
-    setBackgroundOptions([]);
+    setBackgroundOptions([]); setChoiceGroups([]);
   };
 
   const openShowcase = async (templateId: string) => {
@@ -653,6 +707,26 @@ function CreatorDashboard() {
     setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) } : o));
   };
 
+  const uploadChoiceOptionFile = async (file: File, groupId: string, optionId: string) => {
+    const setOpt = (patch: Partial<ChoiceOptionDraft>) =>
+      setChoiceGroups(prev => prev.map(g => g.id === groupId
+        ? { ...g, options: g.options.map(o => o.id === optionId ? { ...o, ...patch } : o) }
+        : g));
+    setOpt({ uploading: true, error: undefined });
+    const f = await resizeIfNeeded(file);
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    fd.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      setOpt({ uploading: false, error: errBody?.error ?? "Upload failed" });
+      return;
+    }
+    const { storagePath } = await res.json();
+    setOpt({ uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) });
+  };
+
   const removeSampleImage = async (item: SampleImageItem, templateId: string | null) => {
     if (item.fromDb && templateId && templateId !== "create") {
       await fetch(`/api/templates/${templateId}/images`, {
@@ -683,13 +757,24 @@ function CreatorDashboard() {
     if (sampleImages.some(s => s.uploading)) { setFormError("Please wait for all sample images to finish uploading"); return; }
 
     // Background option validation (call_to_bar only)
-    const bgOptionsActive = BACKGROUND_OPTION_CATEGORIES.has(form.category);
+    const bgOptionsActive = true; // background options are available for all categories
     if (bgOptionsActive) {
       if (backgroundOptions.some(o => o.uploading)) { setFormError("Please wait for background photos to finish uploading"); return; }
       for (const o of backgroundOptions) {
         if (!o.name.trim()) { setFormError("Every background option needs a name"); return; }
         if (o.kind === "photo" && !o.imagePath) { setFormError(`Background option "${o.name}" needs a photo`); return; }
         if (o.kind === "text" && !o.description.trim()) { setFormError(`Background option "${o.name}" needs a description`); return; }
+      }
+    }
+
+    // Choice group validation
+    if (choiceGroups.some(g => g.options.some(o => o.uploading))) { setFormError("Please wait for choice option photos to finish uploading"); return; }
+    for (const g of choiceGroups) {
+      if (g.options.length === 0) { setFormError(`The "${g.label}" group needs at least one option (or remove the group)`); return; }
+      for (const o of g.options) {
+        if (!o.name.trim()) { setFormError(`Every option in "${g.label}" needs a name`); return; }
+        if (o.kind === "photo" && !o.imagePath) { setFormError(`"${o.name}" in "${g.label}" needs a photo`); return; }
+        if (o.kind === "text" && !o.description.trim()) { setFormError(`"${o.name}" in "${g.label}" needs a description`); return; }
       }
     }
 
@@ -723,6 +808,18 @@ function CreatorDashboard() {
             imagePath: o.kind === "photo" ? o.imagePath : undefined,
           }))
         : [],
+      optionGroups: choiceGroups.map(g => ({
+        id: g.id,
+        type: g.type,
+        label: g.label.trim() || GROUP_TYPE_META[g.type].label,
+        options: g.options.map(o => ({
+          id: o.id,
+          name: o.name.trim(),
+          kind: o.kind,
+          description: o.description.trim() || undefined,
+          imagePath: o.kind === "photo" ? o.imagePath : undefined,
+        })),
+      })),
     };
 
     let templateId: string;
@@ -803,6 +900,30 @@ function CreatorDashboard() {
       }
     }
 
+    // Save template_images rows for NEW choice-group photo options
+    for (const g of choiceGroups) {
+      for (const o of g.options.filter(o => o.kind === "photo" && o.imagePath && !o.fromDb)) {
+        const optRes = await fetch(`/api/templates/${templateId}/images`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storagePath: o.imagePath,
+            displayOrder: 0,
+            purpose: "tagged",
+            tag: GROUP_TYPE_META[g.type].tag,
+            customName: o.name.trim(),
+            note: o.description.trim() || undefined,
+          }),
+        });
+        if (!optRes.ok) {
+          const errData = await optRes.json().catch(() => ({}));
+          setFormError(errData.error ?? `Failed to save "${o.name}" image — please try again`);
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     // Save new sample images (existing fromDb ones are already in DB; deletions are done in real-time)
     const existingSampleCount = sampleImages.filter(s => s.fromDb).length;
     const newSamples = sampleImages.filter(s => s.storagePath && !s.fromDb);
@@ -827,7 +948,7 @@ function CreatorDashboard() {
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
-    setBackgroundOptions([]);
+    setBackgroundOptions([]); setChoiceGroups([]);
     loadDashboard();
   };
 
@@ -1119,7 +1240,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); }}>
             + New Template
           </button>
         )}
@@ -1665,8 +1786,8 @@ function CreatorDashboard() {
             )}
           </div>
 
-          {/* Buyer background options (call_to_bar) */}
-          {BACKGROUND_OPTION_CATEGORIES.has(form.category) && (
+          {/* Buyer background options (all categories) */}
+          {true && (
             <div className={styles.field}>
               <div className={styles.storySceneHeader}>
                 <span className={styles.label}>Buyer background options ({backgroundOptions.length}/{MAX_BG_OPTIONS})</span>
@@ -1758,6 +1879,153 @@ function CreatorDashboard() {
               ))}
             </div>
           )}
+
+          {/* Buyer choice groups — pick-one styling options (all categories) */}
+          <div className={styles.field}>
+            <div className={styles.storySceneHeader}>
+              <span className={styles.label}>Buyer choice groups ({choiceGroups.length}/{MAX_CHOICE_GROUPS})</span>
+              {choiceGroups.length < MAX_CHOICE_GROUPS && (
+                <button
+                  type="button"
+                  className={styles.addSceneBtn}
+                  onClick={() => setChoiceGroups(prev => [...prev, {
+                    id: crypto.randomUUID(), type: "outfit", label: "Outfit", options: [],
+                  }])}
+                >
+                  + Add group
+                </button>
+              )}
+            </div>
+            <p className={styles.fieldHint}>
+              Offer multiple outfits, hairstyles, makeup looks, etc. on one template. The buyer picks
+              ONE option per group and it is used consistently across their whole shoot. Groups with a
+              single option apply automatically without showing a picker.
+            </p>
+
+            {choiceGroups.map((group, gIdx) => (
+              <div key={group.id} className={styles.sceneCard}>
+                <div className={styles.sceneCardHeader}>
+                  <span className={styles.sceneNum}>Group {gIdx + 1} — {group.label}</span>
+                  <div className={styles.sceneActions}>
+                    <button
+                      type="button"
+                      className={styles.sceneRemove}
+                      onClick={() => setChoiceGroups(prev => prev.filter(g => g.id !== group.id))}
+                    >✕</button>
+                  </div>
+                </div>
+                <div className={styles.sceneFields}>
+                  <div className={styles.pills}>
+                    {(Object.keys(GROUP_TYPE_META) as ChoiceGroupType[]).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`${styles.pill} ${group.type === t ? styles.pillActive : ""}`}
+                        onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                          ? { ...g, type: t, label: (!g.label || g.label === GROUP_TYPE_META[g.type].label) ? GROUP_TYPE_META[t].label : g.label }
+                          : g))}
+                      >
+                        {GROUP_TYPE_META[t].label}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="Group label shown to buyers (e.g. Outfit, Shoes, Film Look)"
+                    maxLength={40}
+                    value={group.label}
+                    onChange={e => setChoiceGroups(prev => prev.map(g => g.id === group.id ? { ...g, label: e.target.value } : g))}
+                  />
+
+                  {group.options.map(opt => (
+                    <div key={opt.id} style={{ border: "1px solid rgba(127,127,127,0.25)", borderRadius: 8, padding: "8px 10px", display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder='Option name (e.g. "Emerald Gown")'
+                          maxLength={40}
+                          value={opt.name}
+                          onChange={e => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                            ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, name: e.target.value } : o) }
+                            : g))}
+                        />
+                        <button
+                          type="button"
+                          className={styles.sceneRemove}
+                          onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                            ? { ...g, options: g.options.filter(o => o.id !== opt.id) }
+                            : g))}
+                        >✕</button>
+                      </div>
+                      <div className={styles.pills}>
+                        <button
+                          type="button"
+                          className={`${styles.pill} ${opt.kind === "photo" ? styles.pillActive : ""}`}
+                          onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                            ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, kind: "photo" } : o) }
+                            : g))}
+                        >
+                          Photo reference
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.pill} ${opt.kind === "text" ? styles.pillActive : ""}`}
+                          onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                            ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, kind: "text" } : o) }
+                            : g))}
+                        >
+                          Text description
+                        </button>
+                      </div>
+                      {opt.kind === "photo" ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          {opt.preview && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={opt.preview} alt={opt.name || "option"} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 6 }} />
+                          )}
+                          <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                            {opt.uploading ? "Uploading..." : opt.imagePath ? "Replace photo" : "Upload photo"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: "none" }}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) uploadChoiceOptionFile(f, group.id, opt.id); e.target.value = ""; }}
+                            />
+                          </label>
+                          {opt.error && <span style={{ color: "#e5484d", fontSize: "0.78rem" }}>{opt.error}</span>}
+                        </div>
+                      ) : (
+                        <textarea
+                          className={styles.textarea}
+                          placeholder='Describe this option (e.g. "sleek low bun with a deep side part")'
+                          rows={2}
+                          maxLength={300}
+                          value={opt.description}
+                          onChange={e => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                            ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, description: e.target.value } : o) }
+                            : g))}
+                        />
+                      )}
+                    </div>
+                  ))}
+
+                  {group.options.length < MAX_GROUP_OPTIONS && (
+                    <button
+                      type="button"
+                      className={styles.addSceneBtn}
+                      onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                        ? { ...g, options: [...g.options, { id: crypto.randomUUID(), name: "", kind: "photo", description: "", imagePath: "", preview: "", uploading: false }] }
+                        : g))}
+                    >
+                      + Add option
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
 
           <div className={styles.formActions}>
             <div className={styles.pills}>

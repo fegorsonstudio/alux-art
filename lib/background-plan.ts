@@ -27,8 +27,8 @@ export interface BackgroundPlan {
 }
 
 // ── Category gate ────────────────────────────────────────────────────────────
-// Set to null to enable background options for every template category.
-export const BACKGROUND_OPTIONS_CATEGORIES: Set<string> | null = new Set(["call_to_bar"]);
+// null = background options are available for every template category.
+export const BACKGROUND_OPTIONS_CATEGORIES: Set<string> | null = null;
 
 export function categoryAllowsBackgroundOptions(category: string | null | undefined): boolean {
   return !BACKGROUND_OPTIONS_CATEGORIES || BACKGROUND_OPTIONS_CATEGORIES.has(category ?? "");

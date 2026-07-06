@@ -42,6 +42,19 @@ interface TemplateDetail {
     imagePath?: string | null;
     imageUrl?: string | null;
   }>;
+  optionGroups?: Array<{
+    id: string;
+    type: string;
+    label: string;
+    options: Array<{
+      id: string;
+      name: string;
+      kind: "photo" | "text";
+      description?: string;
+      imagePath?: string | null;
+      imageUrl?: string | null;
+    }>;
+  }>;
 }
 
 interface CouponResult {
@@ -121,6 +134,11 @@ export default function CheckoutPanel({
   const bgActive = bgOptions.length >= 2;
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
 
+  // Buyer choice groups — pick one option per group; only groups with 2+ options show a picker
+  const choiceGroups = template.optionGroups ?? [];
+  const pickableGroups = choiceGroups.filter(g => (g.options?.length ?? 0) >= 2);
+  const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
+
   const [savedRefs, setSavedRefs] = useState<SavedIdentityRef[]>([]);
   const [selectedSaved, setSelectedSaved] = useState<Set<string>>(new Set());
   const [newUploads, setNewUploads] = useState<NewIdentityUpload[]>([]);
@@ -169,12 +187,14 @@ export default function CheckoutPanel({
         }
       });
 
-    // Background-option images travel via the background plan, not as tagged refs
-    const bgOptionPaths = new Set(
-      (template.backgroundOptions ?? []).length >= 2
+    // Background-option and choice-group images travel via their selections,
+    // not as tagged refs — exclude them from the customizable reference list.
+    const bgOptionPaths = new Set([
+      ...((template.backgroundOptions ?? []).length >= 2
         ? (template.backgroundOptions ?? []).filter(o => o.imagePath).map(o => o.imagePath as string)
-        : []
-    );
+        : []),
+      ...(template.optionGroups ?? []).flatMap(g => (g.options ?? []).filter(o => o.imagePath).map(o => o.imagePath as string)),
+    ]);
     const tagged = (template.images ?? []).filter(img => img.purpose === "tagged" && img.tag && !bgOptionPaths.has(img.storagePath));
     setTaggedRefs(tagged.map(img => ({
       id: img.id,
@@ -195,6 +215,13 @@ export default function CheckoutPanel({
     setBgAlloc({ [bgOptions[0].id]: selectedPkg });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bgActive, selectedPkg, template]);
+
+  // Default group picks: first option of each pickable group
+  useEffect(() => {
+    if (pickableGroups.length === 0) return;
+    setGroupPicks(Object.fromEntries(pickableGroups.map(g => [g.id, g.options[0].id])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template]);
 
   // ── Identity uploads ──────────────────────────────────────────────────────
 
@@ -459,6 +486,9 @@ export default function CheckoutPanel({
         backgroundAllocations: bgActive
           ? Object.entries(bgAlloc).filter(([, c]) => c > 0).map(([optionId, count]) => ({ optionId, count }))
           : undefined,
+        choiceSelections: pickableGroups.length > 0
+          ? Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId }))
+          : undefined,
       }),
     });
 
@@ -610,6 +640,42 @@ export default function CheckoutPanel({
               )}
             </div>
           )}
+
+          {/* Buyer choice groups — pick one option per group, used for the whole shoot */}
+          {pickableGroups.map(group => (
+            <div key={group.id} className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>{group.label}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {group.options.map(o => {
+                  const picked = groupPicks[group.id] === o.id;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      title={o.kind === "text" ? o.description : o.name}
+                      onClick={() => setGroupPicks(prev => ({ ...prev, [group.id]: o.id }))}
+                      style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                        background: "none", cursor: "pointer", padding: 4,
+                        border: picked ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                        borderRadius: 8, minWidth: 64,
+                      }}
+                    >
+                      {o.imageUrl ? (
+                        <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={80} />
+                      ) : (
+                        <span style={{ width: 44, height: 55, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.6rem", letterSpacing: "0.04em" }}>
+                          TEXT
+                        </span>
+                      )}
+                      <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
+                      {picked && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           <div className={styles.divider} />
 

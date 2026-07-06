@@ -129,6 +129,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
           : null,
       })),
+      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string }> }) => ({
+        id: g.id,
+        type: g.type,
+        label: g.label,
+        options: (g.options ?? []).map((o) => ({
+          id: o.id,
+          name: o.name,
+          kind: o.kind,
+          description: o.description,
+          imagePath: o.imagePath ?? null,
+          imageUrl: o.kind === "photo" && o.imagePath
+            ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
+            : null,
+        })),
+      })),
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
       requiresBrand: template.story_type === 'brand' || template.story_type === 'group_brand',

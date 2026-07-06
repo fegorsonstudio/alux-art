@@ -20,7 +20,7 @@ export async function GET() {
     SELECT id, creator_id, title, description, status, shoot_mode, aspect_ratio,
            price_1_ngn, price_5_ngn, price_ngn, purchase_count, avg_rating, rating_count,
            cover_storage_path, cover_bucket, package_size, tags,
-           is_story, story_type, default_role, role_chips, scenes, background_options,
+           is_story, story_type, default_role, role_chips, scenes, background_options, option_groups,
            created_at, updated_at
     FROM templates WHERE creator_id = ${creator.id} ORDER BY created_at DESC
   `;

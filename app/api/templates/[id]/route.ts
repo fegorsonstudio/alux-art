@@ -4,6 +4,7 @@ import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
 import { r2ProxyUrl } from "@/lib/r2";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
+import { sanitizeOptionGroups } from "@/lib/choice-groups";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -93,8 +94,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     bgClause = sql`, background_options = ${bgOpts ? sql.json(bgOpts as any) : null}`;
   }
 
+  // Choice groups (outfits/hairstyles/etc.) — no category gate
+  let groupsClause = sql``;
+  if (body.optionGroups !== undefined) {
+    const groups = sanitizeOptionGroups(body.optionGroups, user.id);
+    groupsClause = sql`, option_groups = ${groups ? sql.json(groups as any) : null}`;
+  }
+
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}
+    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}
     WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 

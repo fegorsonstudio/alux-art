@@ -7,6 +7,7 @@ import { isAdminEmail } from "@/lib/auth";
 import { initializePayment } from "@/lib/payment-gateway";
 import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-plan";
+import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 
 interface RefInput {
   name?: string;
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     currency?: string;
     rolePrompt?: string;
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
+    choiceSelections?: Array<{ groupId: string; optionId: string }>;
     storyAssets?: {
       costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
       groupPhotoRef?: { storagePath: string; storageBucket: string; name?: string };
@@ -164,12 +166,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     backgroundPlan ? templateBgOptions.map((o) => o.imagePath).filter(Boolean) as string[] : []
   );
 
+  // ── Buyer choice groups (pick-one styling options) ─────────────────────────
+  const templateGroups: ChoiceGroup[] = Array.isArray(template.option_groups)
+    ? template.option_groups
+    : [];
+  const { selections: choiceSelections, error: choiceError } =
+    resolveChoiceSelections(templateGroups, body.choiceSelections);
+  if (choiceError) return NextResponse.json({ error: choiceError }, { status: 400 });
+  // Exclude ALL group option images (chosen ones re-enter as dedicated refs below)
+  // and the template's legacy single tagged image for any tag a group now covers.
+  const groupOptionPaths = new Set(
+    templateGroups.flatMap((g) => g.options.map((o) => o.imagePath)).filter(Boolean) as string[]
+  );
+  const groupCoveredTags = new Set(
+    choiceSelections ? choiceSelections.selections.map((s) => s.tag) : []
+  );
+
   const seenTaggedPaths = new Set<string>();
   const deduplicatedTaggedRefs = taggedRefs.filter((ref) => {
     if (seenTaggedPaths.has(ref.storagePath)) return false;
     seenTaggedPaths.add(ref.storagePath);
     // Background-option images travel via the plan, not as tagged refs (old clients may still send them)
     if (bgOptionPaths.has(ref.storagePath)) return false;
+    if (groupOptionPaths.has(ref.storagePath)) return false;
+    // A choice group supersedes the template's legacy single reference of that tag —
+    // but only when the ref is a template image (buyer-uploaded replacements still win).
+    if (groupCoveredTags.has(ref.tag) && templateImagePaths.has(ref.storagePath)) return false;
     return true;
   });
 
@@ -257,13 +279,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
       'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
       '', ${shotType}, ${rolePrompt}, ${templateId},
       ${backgroundPlan ? sql.json(backgroundPlan as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${choiceSelections ? sql.json(choiceSelections as unknown as Parameters<typeof sql.json>[0]) : null},
       ${now}, ${now}
     )
     RETURNING id
@@ -347,6 +370,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             purpose: "background_option", tag: "BACKGROUND", custom_name: a.name, note: a.id,
             name: `background-${i + 1}`, type: "image/jpeg", size: 1,
             storage_bucket: a.imageBucket ?? "template-images", storage_path: a.imagePath!,
+            created_at: now,
+          }))
+      : []),
+    // Chosen choice-group photo options become ordinary tagged refs — the existing
+    // per-tag consistency locks (OUTFIT, HAIRSTYLE, ...) handle the rest downstream.
+    // A buyer's own uploaded replacement of the same tag wins over the group pick.
+    ...(choiceSelections
+      ? choiceSelections.selections
+          .filter((s) => s.kind === "photo" && s.imagePath)
+          // Single-instance tags defer to a buyer's own uploaded replacement;
+          // ACCESSORY refs can coexist (e.g. chosen shoes + buyer's own jewelry).
+          .filter((s) => s.tag === "ACCESSORY" || !deduplicatedTaggedRefs.some((r) => r.tag === s.tag))
+          .map((s, i) => ({
+            id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+            purpose: "tagged", tag: s.tag, custom_name: s.name,
+            note: s.description ?? null,
+            name: `choice-${i + 1}`, type: "image/jpeg", size: 1,
+            storage_bucket: s.imageBucket ?? "template-images", storage_path: s.imagePath!,
             created_at: now,
           }))
       : []),
