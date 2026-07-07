@@ -150,6 +150,8 @@ export default function CheckoutPanel({
   const [selectedSaved, setSelectedSaved] = useState<Set<string>>(new Set());
   const [newUploads, setNewUploads] = useState<NewIdentityUpload[]>([]);
   const [clearing, setClearing] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const loginUrl = `/login?next=/marketplace/${templateId}`;
 
   const [poseUploads, setPoseUploads] = useState<PoseUpload[]>([]);
   const [taggedRefs, setTaggedRefs] = useState<TaggedRefState[]>([]);
@@ -187,12 +189,17 @@ export default function CheckoutPanel({
   // Load saved identity refs + init tagged refs from template
   useEffect(() => {
     fetch("/api/user/identity-refs")
-      .then(r => r.ok ? r.json() : { refs: [] })
+      .then(r => {
+        if (r.status === 401) { setNeedsLogin(true); return { refs: [] }; }
+        setNeedsLogin(false);
+        return r.ok ? r.json() : { refs: [] };
+      })
       .then(d => {
         if (d.refs?.length) {
           setSavedRefs(d.refs);
         }
-      });
+      })
+      .catch(() => {});
 
     // Background-option and choice-group images travel via their selections,
     // not as tagged refs — exclude them from the customizable reference list.
@@ -272,7 +279,9 @@ export default function CheckoutPanel({
     form.append("bucket", "identity-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
+      if (res.status === 401) setNeedsLogin(true);
+      const msg = res.status === 401 ? "Sign in first" : "Upload failed";
+      setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: msg } : u));
       return;
     }
     const { storagePath } = await res.json();
@@ -580,6 +589,18 @@ export default function CheckoutPanel({
 
         {/* Scrollable body */}
         <div className={styles.body}>
+          {needsLogin && (
+            <a
+              href={loginUrl}
+              style={{
+                display: "block", margin: "0 0 14px", padding: "14px 16px", borderRadius: 12,
+                background: "#2f8e9a", color: "#ffffff", textDecoration: "none", fontWeight: 700,
+                textAlign: "center", boxShadow: "0 2px 10px rgba(47,142,154,0.28)",
+              }}
+            >
+              Please sign in to book & upload your photos →
+            </a>
+          )}
           {/* Package picker */}
           {pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
