@@ -75,6 +75,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const seenImagePaths = new Set<string>();
   const deduplicatedImages = images.filter((img) => {
+    // The flag-scene plate travels via the `flagShot` field below, not as an editable reference.
+    if (img.tag === "FLAG_SCENE") return false;
     if (img.purpose === "tagged") {
       if (seenImagePaths.has(img.storagePath as string)) return false;
       seenImagePaths.add(img.storagePath as string);

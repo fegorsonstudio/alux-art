@@ -49,7 +49,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   };
 
   const identityRefs: RefInput[] = body.identityRefs ?? [];
-  const taggedRefs: TaggedRefInput[] = body.taggedRefs ?? [];
+  // FLAG_SCENE is attached server-side from the template's flag_shot config — never accept it
+  // from the client (older builds surfaced the plate as an editable reference).
+  const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => r.tag !== "FLAG_SCENE");
 
   if (!Array.isArray(identityRefs) || identityRefs.length === 0) {
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
