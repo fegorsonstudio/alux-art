@@ -2210,13 +2210,17 @@ export async function startGenerationWorker(
   if (done && !hasFailures) {
     // Delete inspiration + tagged reference files from storage on completion.
     // Identity images are intentionally kept — they power the identity library for future shoots.
-    // CRITICAL: marketplace bookings copy template_images rows into shoot_references pointing
-    // at the template's OWN files — deleting those destroys the template for all future buyers.
-    // Only delete files that are not referenced by any template.
+    // CRITICAL: template-owned assets live in the `template-images` bucket — template tagged
+    // refs, background options AND choice-group options (outfit/hairstyle/shoes/etc.). NEVER
+    // delete anything from that bucket: marketplace bookings copy those paths into
+    // shoot_references, and deleting them destroys the option for all future buyers (this is
+    // exactly how an outfit image went missing before). The template_images NOT IN clause is
+    // kept as a second guard for legacy paths.
     try {
       const cleanupRefs = await sql`
         SELECT storage_bucket, storage_path FROM shoot_references
         WHERE shoot_id = ${shootId} AND purpose = ANY(${['inspiration', 'tagged']})
+          AND storage_bucket != 'template-images'
           AND storage_path NOT IN (SELECT storage_path FROM template_images WHERE storage_path IS NOT NULL)
       `;
 
