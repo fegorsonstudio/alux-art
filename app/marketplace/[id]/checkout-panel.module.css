@@ -496,8 +496,17 @@
 }
 .roleInput::placeholder { color: rgba(255,255,255,0.25); }
 
+/* ---- Flag-shot scene preview (full width, above the text field) ---- */
+.flagScenePreview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+}
+
 /* ---- Flag-shot text field (must be clearly visible on the light panel) ---- */
-.flagField { margin-top: 12px; }
+.flagField { margin-top: 2px; }
 .flagFieldLabel {
   display: block;
   font-size: 0.72rem;

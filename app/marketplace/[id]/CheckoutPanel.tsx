@@ -777,11 +777,11 @@ export default function CheckoutPanel({
               </label>
 
               {flagShotOn && (
-                <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                   {template.flagShot?.imageUrl && (
-                    <ImagePreview src={template.flagShot.imageUrl} alt="Flag scene" className={styles.savedImg} preferredWidth={80} />
+                    <ImagePreview src={template.flagShot.imageUrl} alt="Flag scene" className={styles.flagScenePreview} preferredWidth={420} />
                   )}
-                  <div style={{ flex: 1 }} className={styles.flagField}>
+                  <div className={styles.flagField}>
                     <label className={styles.flagFieldLabel}>✍️ Type your flag text here</label>
                     <input
                       type="text"
