@@ -18,6 +18,11 @@ fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" }
 const IDENTITY_ANALYSIS_TIMEOUT_MS = 45_000;
 const SHOOT_BRIEF_TIMEOUT_MS = 270_000;
 const REFERENCE_SIGNED_URL_TTL_SECONDS = 48 * 60 * 60;
+// fal-ai/nano-banana-2/edit accepts up to 14 reference images per request.
+// Reference-heavy shoots (Call to Bar: identity + wig + gown + collar + outfit +
+// hairstyle + nails + shoes + bands + background) can exceed 9, so we send up to 14
+// as actual image inputs rather than dropping the extras to text only.
+const NANO_BANANA_MAX_IMAGES = 14;
 const USE_MOCK_FAL = process.env.MOCK_URL_SKIPPED_FOR_CREDIT_PROTECTION === "1";
 const MOCK_FAL_PLACEHOLDER_IMAGE_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
 
@@ -709,7 +714,7 @@ async function generateImageWithFal(
       aspect_ratio: aspectRatio as unknown as "4:5",
       output_format: "png",
       safety_tolerance: "6",
-      image_urls: imageUrls.slice(0, 9),
+      image_urls: imageUrls.slice(0, NANO_BANANA_MAX_IMAGES),
       limit_generations: false,
       ...(resolution ? { resolution: resolution as unknown as "4K" } : {}),
     },
@@ -1927,7 +1932,7 @@ export async function startGenerationWorker(
   // Without this, images beyond the identity range are anonymous and the model guesses.
   const reachableSet = new Set(reachableImageUrls);
   const buildReferenceMap = (entries: Array<{ url: string; label: string }>) => {
-    const mapped = entries.filter((e) => reachableSet.has(e.url)).slice(0, 9); // nano-banana receives at most 9
+    const mapped = entries.filter((e) => reachableSet.has(e.url)).slice(0, NANO_BANANA_MAX_IMAGES);
     return {
       urls: mapped.map((e) => e.url),
       text: mapped.length > 0
