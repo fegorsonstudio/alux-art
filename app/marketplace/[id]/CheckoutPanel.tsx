@@ -781,17 +781,18 @@ export default function CheckoutPanel({
                   {template.flagShot?.imageUrl && (
                     <ImagePreview src={template.flagShot.imageUrl} alt="Flag scene" className={styles.savedImg} preferredWidth={80} />
                   )}
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1 }} className={styles.flagField}>
+                    <label className={styles.flagFieldLabel}>✍️ Type your flag text here</label>
                     <input
                       type="text"
-                      className={styles.roleInput}
-                      placeholder='e.g. "CALLED TO BAR 2026"'
+                      className={styles.flagInput}
+                      placeholder='e.g. CALLED TO BAR 2026'
                       value={flagText}
                       maxLength={FLAG_TEXT_MAX}
                       onChange={e => setFlagText(e.target.value)}
                     />
-                    <p className={styles.sectionHint} style={{ marginTop: 4 }}>
-                      What should the flag say? Keep it short — a name, title, or year reads best.
+                    <p className={styles.sectionHint} style={{ marginTop: 6 }}>
+                      This exact text is printed on the flag. Keep it short — a name, title, or year reads best.
                       Long text, phone numbers, and links often render with mistakes. {flagText.length}/{FLAG_TEXT_MAX}
                     </p>
                     {flagShotOn && flagText.trim().length === 0 && (
