@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  // Build output dir. Defaults to ".next" (runtime). Override with NEXT_DIST_DIR to
+  // build into a scratch dir for zero-downtime atomic-swap deploys.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   outputFileTracingRoot: path.join(__dirname),
   allowedDevOrigins: ["172.20.10.2"],
   poweredByHeader: false,
