@@ -85,6 +85,7 @@ interface TemplateDetail {
   scenes?: Array<{ slot: number; title: string; description: string; environment: string; wardrobe: string; coCharacter?: string }>;
   backgroundOptions?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string | null; imageUrl?: string | null }>;
   optionGroups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string | null; imageUrl?: string | null }> }>;
+  flagShot?: { enabled: boolean; imageUrl?: string | null } | null;
 }
 
 interface CouponResult {

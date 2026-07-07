@@ -8,6 +8,7 @@ import { initializePayment } from "@/lib/payment-gateway";
 import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-plan";
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
+import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 
 interface RefInput {
   name?: string;
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     rolePrompt?: string;
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
     choiceSelections?: Array<{ groupId: string; optionId: string }>;
+    flagShot?: { enabled?: boolean; text?: string };
     storyAssets?: {
       costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
       groupPhotoRef?: { storagePath: string; storageBucket: string; name?: string };
@@ -195,6 +197,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return true;
   });
 
+  // ── Viral flag shot ─────────────────────────────────────────────────────────
+  // Only honoured when the template has it configured with a plate. It replaces the
+  // package's last slot; the plate is attached below as a FLAG_SCENE reference.
+  const templateFlagShot = (template.flag_shot ?? null) as FlagShotConfig | null;
+  let flagShot: { enabled: true; text: string } | null = null;
+  if (body.flagShot?.enabled && templateFlagShot?.enabled && templateFlagShot.imagePath) {
+    const flagText = sanitizeFlagText(body.flagShot.text);
+    if (flagText.length > 0) {
+      flagShot = { enabled: true, text: flagText };
+    }
+  }
+
   const configRows = await sql`SELECT key, value FROM app_config WHERE key IN ('platform_fee_ngn', 'test_price_per_image_ngn')`;
   const configMap = new Map(configRows.map(r => [r.key as string, r.value as string]));
   let basePlatformFeeNgn = parseInt(configMap.get('platform_fee_ngn') ?? "15000", 10);
@@ -282,7 +296,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
@@ -290,6 +304,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       '', ${shotType}, ${rolePrompt}, ${templateId},
       ${backgroundPlan ? sql.json(backgroundPlan as unknown as Parameters<typeof sql.json>[0]) : null},
       ${choiceSelections ? sql.json(choiceSelections as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${now}, ${now}
     )
     RETURNING id
@@ -394,6 +409,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             created_at: now,
           }))
       : []),
+    // Flag-shot plate — the empty-flag scene the model composites the subject onto.
+    // Only attached when the buyer opted in and the template has a configured plate.
+    ...(flagShot && templateFlagShot?.imagePath ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "FLAG_SCENE", custom_name: "Flag scene", note: null,
+      name: "flag-scene", type: "image/jpeg", size: 1,
+      storage_bucket: templateFlagShot.imageBucket ?? "template-images",
+      storage_path: templateFlagShot.imagePath, created_at: now,
+    }] : []),
   ];
 
   if (allRefs.length > 0) {

@@ -5,6 +5,7 @@ import { ASPECTS, packagePrice } from "@/lib/types";
 import { r2ProxyUrl } from "@/lib/r2";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
+import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -101,8 +102,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     groupsClause = sql`, option_groups = ${groups ? sql.json(groups as any) : null}`;
   }
 
+  // Flag shot (Call to Bar only)
+  let flagClause = sql``;
+  if (body.flagShot !== undefined) {
+    const [currentRow] = await sql`SELECT category FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
+    const effectiveCategory = (typeof body.category === "string" && ALLOWED_CATEGORIES.has(body.category))
+      ? body.category
+      : (currentRow?.category as string | undefined);
+    const flag = effectiveCategory === "call_to_bar" ? sanitizeFlagShotConfig(body.flagShot, user.id) : null;
+    flagClause = sql`, flag_shot = ${flag ? sql.json(flag as any) : null}`;
+  }
+
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}
+    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}${flagClause}
     WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 
