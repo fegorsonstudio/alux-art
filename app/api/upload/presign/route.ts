@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "filename required" }, { status: 400 });
   if (typeof contentType !== "string" || !contentType.startsWith("image/"))
     return NextResponse.json({ error: "contentType must be image/*" }, { status: 400 });
+  // SVGs can carry executable script (stored XSS via the media proxy). Raster only.
+  if (contentType === "image/svg+xml" || (typeof filename === "string" && /\.svg$/i.test(filename)))
+    return NextResponse.json({ error: "SVG images are not allowed" }, { status: 400 });
   if (typeof size !== "number" || size <= 0 || size > MAX_SIZE)
     return NextResponse.json({ error: "size must be 1–20MB" }, { status: 400 });
   if (typeof bucket !== "string" || !ALLOWED_BUCKETS.has(bucket))

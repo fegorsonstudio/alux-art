@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid bucket" }, { status: 400 });
   if (!file.type.startsWith("image/"))
     return NextResponse.json({ error: "file must be an image" }, { status: 400 });
+  // SVGs can carry executable script; served inline from the media proxy that would be
+  // stored XSS. Raster formats only.
+  if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name))
+    return NextResponse.json({ error: "SVG images are not allowed" }, { status: 400 });
   if (file.size > MAX_SIZE)
     return NextResponse.json({ error: "file too large (max 20MB)" }, { status: 400 });
 

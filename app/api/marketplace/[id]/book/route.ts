@@ -199,10 +199,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const configMap = new Map(configRows.map(r => [r.key as string, r.value as string]));
   let basePlatformFeeNgn = parseInt(configMap.get('platform_fee_ngn') ?? "15000", 10);
 
+  // Test pricing overrides every template's price. Requires BOTH the config row AND the
+  // ENABLE_TEST_PRICING env flag — a stray DB row alone can never zero out live prices.
   const testPriceRaw = configMap.get('test_price_per_image_ngn');
-  if (testPriceRaw) {
+  if (testPriceRaw && process.env.ENABLE_TEST_PRICING === "true") {
     const testPriceNgn = parseInt(testPriceRaw, 10);
     if (testPriceNgn > 0) {
+      console.warn(`[book] TEST PRICING ACTIVE — template ${templateId} priced at ₦${testPriceNgn}/image`);
       template.price_1_ngn = testPriceNgn;
       template.price_5_ngn = testPriceNgn * 5;
       template.price_ngn = testPriceNgn * 10;

@@ -70,9 +70,13 @@ export async function GET(req: NextRequest) {
         headers: { "Content-Type": processed.contentType, "Cache-Control": cacheControl },
       });
     }
-    return new NextResponse(raw, {
-      headers: { "Content-Type": contentType, "Cache-Control": cacheControl },
-    });
+    // Never serve SVG (or any non-raster) inline — an embedded <script> would run in
+    // our origin (stored XSS). Force a download with a neutral type. Uploads block SVG
+    // now; this covers any file that predates that block.
+    const safeType = /svg|xml|html/i.test(contentType) ? "application/octet-stream" : contentType;
+    const extraHeaders: Record<string, string> = { "Content-Type": safeType, "Cache-Control": cacheControl };
+    if (safeType === "application/octet-stream") extraHeaders["Content-Disposition"] = "attachment";
+    return new NextResponse(raw, { headers: extraHeaders });
   } catch {
     // fall through to Supabase for older files
   }

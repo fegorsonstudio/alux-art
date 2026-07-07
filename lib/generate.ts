@@ -2173,6 +2173,9 @@ export async function startGenerationWorker(
   const totalComplete = Number(completedResult.count) ?? 0;
   const remaining = Number(workableResult.count) ?? 0;
   const done = remaining === 0;
+  // A finished shoot that didn't produce every image gets a one-time free
+  // regeneration instead of a refund (see /api/shoots/[id]/regenerate).
+  const hasFailures = done && totalComplete < total;
 
   await sql`UPDATE shoots SET
     status = ${done ? "COMPLETE" : "PROCESSING"},
@@ -2182,9 +2185,22 @@ export async function startGenerationWorker(
     updated_at = ${ts()}
     WHERE id = ${shootId}`;
 
+  // Grant the complimentary regeneration only when currently 'none' — so a
+  // previously-consumed regeneration is never re-granted (prevents infinite free retries).
+  if (hasFailures) {
+    await sql`UPDATE shoots SET regeneration_status = 'eligible', updated_at = ${ts()}
+      WHERE id = ${shootId} AND regeneration_status = 'none'`;
+    logEvent('regeneration_offered', { completed: totalComplete, total });
+  }
+
   if (done) {
     logEvent('complete', { progress: 100, stage: "Complete" });
+  }
 
+  // Only clean up reference files on a FULLY successful shoot. If any slot failed,
+  // the buyer may use their free regeneration, which re-runs generation and needs
+  // these exact references — deleting them would break the retry.
+  if (done && !hasFailures) {
     // Delete inspiration + tagged reference files from storage on completion.
     // Identity images are intentionally kept — they power the identity library for future shoots.
     // CRITICAL: marketplace bookings copy template_images rows into shoot_references pointing

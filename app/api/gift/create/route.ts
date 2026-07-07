@@ -47,10 +47,12 @@ export async function POST(request: NextRequest) {
   const configMap = new Map(configRows.map(r => [r.key as string, r.value as string]));
   let basePlatformFeeNgn = parseInt(configMap.get("platform_fee_ngn") ?? "15000", 10);
 
+  // Gated behind ENABLE_TEST_PRICING so a stray config row can't zero out live prices.
   const testPriceRaw = configMap.get("test_price_per_image_ngn");
-  if (testPriceRaw) {
+  if (testPriceRaw && process.env.ENABLE_TEST_PRICING === "true") {
     const tp = parseInt(testPriceRaw, 10);
     if (tp > 0) {
+      console.warn(`[gift] TEST PRICING ACTIVE — priced at ₦${tp}/image`);
       template.price_1_ngn = tp;
       template.price_5_ngn = tp * 5;
       template.price_ngn = tp * 10;

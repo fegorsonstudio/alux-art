@@ -728,24 +728,21 @@ export default function WorkspacePage() {
     }
   };
 
-  const requestRefund = async (shoot: Shoot) => {
+  const requestRegeneration = async (shoot: Shoot) => {
     setRefundState("loading");
     setRefundError("");
     try {
-      const res = await fetch(`/api/shoots/${shoot.id}/refund`, { method: "POST" });
+      const res = await fetch(`/api/shoots/${shoot.id}/regenerate`, { method: "POST" });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (res.status === 404 && typeof body.error === "string" && body.error.toLowerCase().includes("payment")) {
-          setRefundError("No payment was recorded for this shoot. If you were charged, please visit /support with your shoot ID.");
-        } else {
-          setRefundError(body.error ?? "Refund request failed. Please contact support.");
-        }
+        setRefundError(body.error ?? "Could not start regeneration. Please contact support with your shoot ID.");
         setRefundState("error");
         return;
       }
-      setRefundState("done");
-      setCurrentShoot(prev => prev ? { ...prev, status: "REFUNDED" as Shoot["status"] } : prev);
-      setShoots(prev => prev.map(s => s.id === shoot.id ? { ...s, status: "REFUNDED" as Shoot["status"] } : s));
+      // Regeneration queued — mark consumed locally and reflect the shoot going back to work.
+      setRefundState("idle");
+      setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"], regeneration_status: "completed" } as Shoot : prev);
+      setShoots(prev => prev.map(s => s.id === shoot.id ? ({ ...s, status: "QUEUED" as Shoot["status"], regeneration_status: "completed" } as Shoot) : s));
     } catch {
       setRefundError("Network error. Please try again.");
       setRefundState("error");
@@ -1428,38 +1425,44 @@ export default function WorkspacePage() {
                 </button>
               )}
 
-              {/* Refund banner — shown when shoot is fully failed */}
+              {/* Free-regeneration banner — shown when a finished shoot has failed images.
+                  Instead of refunding, the buyer gets one complimentary regeneration of the
+                  whole shoot at no cost. */}
               {(() => {
-                const fullyFailed =
-                  currentShoot.status === "FAILED" ||
-                  (galleryImages.length > 0 && galleryImages.every(img => img.status === "FAILED"));
-                if (currentShoot.status === "REFUNDED") {
+                const regenStatus = String((currentShoot as unknown as Record<string, unknown>).regeneration_status ?? "none");
+                const hasFailed = galleryImages.some(img => img.status === "FAILED");
+                if (regenStatus === "eligible" && hasFailed) {
                   return (
-                    <div className={styles.refundBanner} data-state="done">
-                      <p className={styles.refundMsg}>Refund processed. Funds will return to your account within 5–10 business days.</p>
+                    <div className={styles.refundBanner} data-state={refundState}>
+                      <p className={styles.refundMsg}>
+                        Some images in this shoot didn&apos;t come through. You can regenerate the whole
+                        shoot once for free — no extra charge.
+                      </p>
+                      {refundState === "error" && <p className={styles.refundError}>{refundError}</p>}
+                      <button
+                        className={styles.refundBtn}
+                        onClick={() => requestRegeneration(currentShoot)}
+                        disabled={refundState === "loading"}
+                      >
+                        {refundState === "loading" ? "Starting regeneration…" : "Regenerate for free"}
+                      </button>
                     </div>
                   );
                 }
-                if (!fullyFailed) return null;
-                return (
-                  <div className={styles.refundBanner} data-state={refundState}>
-                    <p className={styles.refundMsg}>
-                      {refundState === "done"
-                        ? "Refund processed. Funds will return to your account within 5–10 business days."
-                        : "This shoot failed completely. If you paid for it, you can request a full refund below."}
-                    </p>
-                    {refundState === "error" && <p className={styles.refundError}>{refundError}</p>}
-                    {refundState !== "done" && (
-                      <button
-                        className={styles.refundBtn}
-                        onClick={() => requestRefund(currentShoot)}
-                        disabled={refundState === "loading"}
-                      >
-                        {refundState === "loading" ? "Processing refund…" : "Request Refund"}
-                      </button>
-                    )}
-                  </div>
-                );
+                if (regenStatus === "completed") {
+                  const stillFailing = galleryImages.some(img => img.status === "FAILED");
+                  if (stillFailing) {
+                    return (
+                      <div className={styles.refundBanner}>
+                        <p className={styles.refundMsg}>
+                          Your complimentary regeneration has been used. If images are still missing,
+                          please contact support with your shoot ID and we&apos;ll make it right.
+                        </p>
+                      </div>
+                    );
+                  }
+                }
+                return null;
               })()}
               {(() => {
                 const purchases = (currentShoot as unknown as Record<string, unknown>).template_purchases as Array<Record<string, unknown>> | undefined;
