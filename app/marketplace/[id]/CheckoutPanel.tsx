@@ -223,6 +223,38 @@ export default function CheckoutPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template]);
 
+  // Background allocation stays fully placed (sums to the package size) at all times.
+  // Clicking + on a background pulls one image from whichever OTHER background currently
+  // has the most — so "click + five times on the one I like" just moves them all there,
+  // without the buyer having to first click − on the default background.
+  const addImageToBg = (optionId: string) => {
+    setBgAlloc(prev => {
+      const cur = prev[optionId] ?? 0;
+      if (cur >= selectedPkg) return prev; // already holds every image
+      const total = Object.values(prev).reduce((a, b) => a + b, 0);
+      const next = { ...prev, [optionId]: cur + 1 };
+      if (total >= selectedPkg) {
+        // Pull one from the largest other background
+        let donor: string | null = null;
+        let max = 0;
+        for (const [id, c] of Object.entries(prev)) {
+          if (id === optionId) continue;
+          if ((c ?? 0) > max) { max = c ?? 0; donor = id; }
+        }
+        if (!donor) return prev;
+        next[donor] = (next[donor] ?? 0) - 1;
+      }
+      return next;
+    });
+  };
+  const removeImageFromBg = (optionId: string) => {
+    setBgAlloc(prev => {
+      const cur = prev[optionId] ?? 0;
+      if (cur <= 0) return prev;
+      return { ...prev, [optionId]: cur - 1 };
+    });
+  };
+
   // ── Identity uploads ──────────────────────────────────────────────────────
 
   const uploadIdentityFile = async (file: File, localId: string) => {
@@ -600,8 +632,9 @@ export default function CheckoutPanel({
                 <>
                   <span className={styles.pkgLabel}>How many images on each background?</span>
                   <p className={styles.sectionHint}>
-                    Your package has {selectedPkg} images. Use the <strong>−</strong> and <strong>+</strong> buttons to
-                    choose how many of them are shot on each background. The numbers must add up to {selectedPkg}.
+                    Your package has {selectedPkg} images. Tap <strong>+</strong> on a background to shoot more of
+                    your images there, or <strong>−</strong> for fewer. Want them all on one backdrop? Just tap its{" "}
+                    <strong>+</strong> {selectedPkg} times.
                   </p>
                   {/* Prominent running total */}
                   <div
@@ -643,15 +676,15 @@ export default function CheckoutPanel({
                             aria-label={`One fewer image on ${o.name}`}
                             className={styles.pkgPill}
                             disabled={count <= 0}
-                            onClick={() => setBgAlloc(prev => ({ ...prev, [o.id]: Math.max(0, (prev[o.id] ?? 0) - 1) }))}
+                            onClick={() => removeImageFromBg(o.id)}
                           >−</button>
                           <span style={{ minWidth: 20, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{count}</span>
                           <button
                             type="button"
                             aria-label={`One more image on ${o.name}`}
                             className={styles.pkgPill}
-                            disabled={bgAllocTotal >= selectedPkg}
-                            onClick={() => setBgAlloc(prev => ({ ...prev, [o.id]: (prev[o.id] ?? 0) + 1 }))}
+                            disabled={count >= selectedPkg}
+                            onClick={() => addImageToBg(o.id)}
                           >+</button>
                         </div>
                       </div>
