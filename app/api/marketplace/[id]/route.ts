@@ -144,6 +144,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             : null,
         })),
       })),
+      flagShot: (template.flag_shot && (template.flag_shot as { enabled?: boolean }).enabled)
+        ? {
+            enabled: true,
+            imageUrl: (template.flag_shot as { imagePath?: string; imageBucket?: string }).imagePath
+              ? r2ProxyUrl((template.flag_shot as { imageBucket?: string }).imageBucket ?? "template-images", (template.flag_shot as { imagePath: string }).imagePath)
+              : null,
+          }
+        : null,
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
       requiresBrand: template.story_type === 'brand' || template.story_type === 'group_brand',

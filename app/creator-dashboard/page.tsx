@@ -42,6 +42,7 @@ interface TemplateRow {
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
   option_groups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
+  flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
 }
 
 interface ShowcaseIdentityRef {
@@ -214,6 +215,12 @@ function CreatorDashboard() {
   const [storyScenes, setStoryScenes] = useState<StoryScene[]>([defaultScene(1)]);
   const [backgroundOptions, setBackgroundOptions] = useState<BackgroundOptionDraft[]>([]);
   const [choiceGroups, setChoiceGroups] = useState<ChoiceGroupDraft[]>([]);
+  // Flag shot (Call to Bar)
+  const [flagShotEnabled, setFlagShotEnabled] = useState(false);
+  const [flagShotImagePath, setFlagShotImagePath] = useState("");
+  const [flagShotPreview, setFlagShotPreview] = useState("");
+  const [flagShotUploading, setFlagShotUploading] = useState(false);
+  const [flagShotIsNew, setFlagShotIsNew] = useState(false);
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -396,6 +403,12 @@ function CreatorDashboard() {
       uploading: false,
       fromDb: true,
     })));
+    // Hydrate flag shot
+    const fs = t.flag_shot ?? null;
+    setFlagShotEnabled(!!fs?.enabled);
+    setFlagShotImagePath(fs?.imagePath ?? "");
+    setFlagShotIsNew(false);
+    setFlagShotPreview(fs?.imagePath ? (bgImgs.find(img => img.storage_path === fs.imagePath)?.signed_url ?? "") : "");
     // Hydrate choice groups the same way
     setChoiceGroups((Array.isArray(t.option_groups) ? t.option_groups : []).map((g) => ({
       id: g.id,
@@ -419,6 +432,7 @@ function CreatorDashboard() {
     const bgOptionPaths = new Set([
       ...(Array.isArray(t.background_options) ? t.background_options : []).map(o => o.imagePath).filter(Boolean),
       ...(Array.isArray(t.option_groups) ? t.option_groups : []).flatMap(g => (g.options ?? []).map(o => o.imagePath)).filter(Boolean),
+      ...(t.flag_shot?.imagePath ? [t.flag_shot.imagePath] : []),
     ]);
     const imgs = t.template_images ?? [];
     const existingImages: UploadedImage[] = imgs
@@ -473,7 +487,7 @@ function CreatorDashboard() {
     });
     setImages([]);
     setCoverPreview("");
-    setBackgroundOptions([]); setChoiceGroups([]);
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false);
   };
 
   const openShowcase = async (templateId: string) => {
@@ -727,6 +741,21 @@ function CreatorDashboard() {
     setOpt({ uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) });
   };
 
+  const uploadFlagShotFile = async (file: File) => {
+    setFlagShotUploading(true);
+    const f = await resizeIfNeeded(file);
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    fd.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+    if (!res.ok) { setFlagShotUploading(false); setFormError("Flag image upload failed"); return; }
+    const { storagePath } = await res.json();
+    setFlagShotImagePath(storagePath);
+    setFlagShotPreview(URL.createObjectURL(file));
+    setFlagShotIsNew(true);
+    setFlagShotUploading(false);
+  };
+
   const removeSampleImage = async (item: SampleImageItem, templateId: string | null) => {
     if (item.fromDb && templateId && templateId !== "create") {
       await fetch(`/api/templates/${templateId}/images`, {
@@ -820,6 +849,10 @@ function CreatorDashboard() {
           imagePath: o.kind === "photo" ? o.imagePath : undefined,
         })),
       })),
+      // Flag shot (Call to Bar only). Send null to clear when disabled or missing a plate.
+      flagShot: form.category === "call_to_bar" && flagShotEnabled && flagShotImagePath
+        ? { enabled: true, imagePath: flagShotImagePath }
+        : null,
     };
 
     let templateId: string;
@@ -924,6 +957,28 @@ function CreatorDashboard() {
       }
     }
 
+    // Save the flag-shot plate as a FLAG_SCENE tagged image (only when it's a new upload)
+    if (form.category === "call_to_bar" && flagShotEnabled && flagShotImagePath && flagShotIsNew) {
+      const flagRes = await fetch(`/api/templates/${templateId}/images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storagePath: flagShotImagePath,
+          displayOrder: 0,
+          purpose: "tagged",
+          tag: "FLAG_SCENE",
+          customName: "Flag scene",
+        }),
+      });
+      if (!flagRes.ok) {
+        const errData = await flagRes.json().catch(() => ({}));
+        setFormError(errData.error ?? "Failed to save flag scene image — please try again");
+        setSaving(false);
+        return;
+      }
+      setFlagShotIsNew(false);
+    }
+
     // Save new sample images (existing fromDb ones are already in DB; deletions are done in real-time)
     const existingSampleCount = sampleImages.filter(s => s.fromDb).length;
     const newSamples = sampleImages.filter(s => s.storagePath && !s.fromDb);
@@ -948,7 +1003,7 @@ function CreatorDashboard() {
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
-    setBackgroundOptions([]); setChoiceGroups([]);
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false);
     loadDashboard();
   };
 
@@ -1240,7 +1295,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); }}>
             + New Template
           </button>
         )}
@@ -2026,6 +2081,57 @@ function CreatorDashboard() {
               </div>
             ))}
           </div>
+
+          {/* Viral skyscraper flag shot — Call to Bar only */}
+          {form.category === "call_to_bar" && (
+            <div className={styles.field}>
+              <div className={styles.storySceneHeader}>
+                <span className={styles.label}>Viral skyscraper flag shot</span>
+                <button
+                  type="button"
+                  className={`${styles.pill} ${flagShotEnabled ? styles.pillActive : ""}`}
+                  onClick={() => setFlagShotEnabled(v => !v)}
+                >
+                  {flagShotEnabled ? "Enabled" : "Enable"}
+                </button>
+              </div>
+              <p className={styles.fieldHint}>
+                Offers buyers the viral rooftop-antenna flag shot. It replaces the LAST image in
+                their package (a 10-image shoot becomes 9 portraits + 1 flag shot). The buyer types
+                their own short flag text at checkout. Upload one clean empty-flag plate here — a
+                photo of the mast, black flag, and skyline with NO people. The model composites the
+                buyer in full wig and gown onto it and renders their text on the flag.
+              </p>
+
+              {flagShotEnabled && (
+                <div className={styles.sceneCard}>
+                  <div className={styles.sceneFields}>
+                    <span className={styles.fieldHint}>Empty-flag plate (mast + black flag + skyline, no people)</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {flagShotPreview && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={flagShotPreview} alt="flag scene" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 6 }} />
+                      )}
+                      <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                        {flagShotUploading ? "Uploading..." : flagShotImagePath ? "Replace plate" : "Upload plate"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) uploadFlagShotFile(f); e.target.value = ""; }}
+                        />
+                      </label>
+                    </div>
+                    {!flagShotImagePath && (
+                      <span style={{ color: "#e5849d", fontSize: "0.78rem" }}>
+                        The flag shot stays off until you upload a plate.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.formActions}>
             <div className={styles.pills}>

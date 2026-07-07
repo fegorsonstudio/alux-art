@@ -6,6 +6,8 @@
  * as a text block so Gemini/Claude receives the full matrix before generating prompts.
  */
 
+import { getFlagSlotIndex, buildFlagShotDirective } from "@/lib/flag-shot";
+
 export interface CallToBarState {
   wearGown: boolean;
   wearWig: boolean;
@@ -135,7 +137,14 @@ HAIR LAYERING PROTECTION (MALE):
  * into the shoot brief builder prompt. The brief builder produces ALL slot prompts in
  * a single model call, so we must supply the entire matrix up front.
  */
-export function buildCallToBarBriefSection(packageSize: number, isFemale: boolean, hasOutfitRef = false): string {
+export function buildCallToBarBriefSection(
+  packageSize: number,
+  isFemale: boolean,
+  hasOutfitRef = false,
+  flagShot: { text: string } | null = null,
+): string {
+  // The flag shot, when present, replaces the LAST slot's normal wardrobe entry.
+  const flagSlotIndex = flagShot ? getFlagSlotIndex(packageSize) : -1;
   const lines: string[] = [
     "═══════════════════════════════════════════════════════",
     "CATEGORY: CALL TO BAR (NIGERIAN LEGAL PORTRAIT STUDIO)",
@@ -150,8 +159,15 @@ export function buildCallToBarBriefSection(packageSize: number, isFemale: boolea
   ];
 
   for (let i = 0; i < packageSize; i++) {
-    const state = getCallToBarState(i, packageSize);
     const slotNum = i + 1;
+    // Flag slot — replace the normal wardrobe entry with the flag-shot directive.
+    if (i === flagSlotIndex && flagShot) {
+      lines.push(`SLOT ${slotNum} [VIRAL SKYSCRAPER FLAG SHOT — full regalia, rooftop scene]`);
+      lines.push(buildFlagShotDirective(flagShot.text));
+      lines.push("");
+      continue;
+    }
+    const state = getCallToBarState(i, packageSize);
     const wigLabel = state.wearWig
       ? "Wig ON"
       : state.wigContext === "held"

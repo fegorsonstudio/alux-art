@@ -55,6 +55,7 @@ interface TemplateDetail {
       imageUrl?: string | null;
     }>;
   }>;
+  flagShot?: { enabled: boolean; imageUrl?: string | null } | null;
 }
 
 interface CouponResult {
@@ -128,6 +129,12 @@ export default function CheckoutPanel({
 }: Props) {
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(initialPkg);
   const [shotType, setShotType] = useState<"headshot" | "close_up" | "medium" | "full_body">("close_up");
+
+  // Viral flag shot — offered when the template enables it. Replaces the last image in the package.
+  const flagShotAvailable = !!template.flagShot?.enabled;
+  const [flagShotOn, setFlagShotOn] = useState(false);
+  const [flagText, setFlagText] = useState("");
+  const FLAG_TEXT_MAX = 60;
 
   // Buyer background allocation — active when the template offers 2+ options
   const bgOptions = template.backgroundOptions ?? [];
@@ -474,11 +481,13 @@ export default function CheckoutPanel({
     || costarUploads.some(u => u.uploading) || !!groupPhotoUpload?.uploading || brandUploads.some(u => u.uploading);
   const bgAllocTotal = Object.values(bgAlloc).reduce((a, b) => a + b, 0);
   const bgValid = !bgActive || bgAllocTotal === selectedPkg;
+  const flagValid = !flagShotOn || flagText.trim().length > 0;
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
     && !buying
     && bgValid
+    && flagValid
     && (!template.requiresCostar || (costarUploads.some(u => u.storagePath) && costarConsent))
     && (!template.requiresGroup || !!groupPhotoUpload?.storagePath)
     && (!template.requiresBrand || brandUploads.some(u => u.storagePath));
@@ -520,6 +529,9 @@ export default function CheckoutPanel({
           : undefined,
         choiceSelections: pickableGroups.length > 0
           ? Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId }))
+          : undefined,
+        flagShot: flagShotAvailable && flagShotOn
+          ? { enabled: true, text: flagText.trim() }
           : undefined,
       }),
     });
@@ -744,6 +756,52 @@ export default function CheckoutPanel({
               </div>
             </div>
           ))}
+
+          {/* Viral skyscraper flag shot */}
+          {flagShotAvailable && (
+            <div className={styles.pkgRow}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={flagShotOn}
+                  onChange={e => setFlagShotOn(e.target.checked)}
+                  style={{ marginTop: 3 }}
+                />
+                <span>
+                  <span className={styles.pkgLabel}>Add the viral skyscraper flag shot</span>
+                  <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
+                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You appear in full
+                    wig and gown on a rooftop antenna holding a black flag with your own text.
+                  </span>
+                </span>
+              </label>
+
+              {flagShotOn && (
+                <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  {template.flagShot?.imageUrl && (
+                    <ImagePreview src={template.flagShot.imageUrl} alt="Flag scene" className={styles.savedImg} preferredWidth={80} />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="text"
+                      className={styles.roleInput}
+                      placeholder='e.g. "CALLED TO BAR 2026"'
+                      value={flagText}
+                      maxLength={FLAG_TEXT_MAX}
+                      onChange={e => setFlagText(e.target.value)}
+                    />
+                    <p className={styles.sectionHint} style={{ marginTop: 4 }}>
+                      What should the flag say? Keep it short — a name, title, or year reads best.
+                      Long text, phone numbers, and links often render with mistakes. {flagText.length}/{FLAG_TEXT_MAX}
+                    </p>
+                    {flagShotOn && flagText.trim().length === 0 && (
+                      <p className={styles.identityWarn}>Type your flag text to continue.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.divider} />
 

@@ -1,0 +1,71 @@
+// Viral "flag shot" add-on (Empire State antenna-flag trend) for Call to Bar.
+//
+// The buyer, in full wig + gown, appears solo on a rooftop antenna mast holding a
+// large black flag that carries their own short text. The creator uploads a clean
+// empty-flag base plate once (mast + flag + skyline, no people); it's attached to the
+// shoot as a FLAG_SCENE reference and the model composites the subject + renders the
+// text on the flag. The flag shot REPLACES the last image of the package.
+
+export interface FlagShotConfig {
+  enabled: boolean;
+  imagePath?: string;   // storage path of the empty-flag plate (also a FLAG_SCENE template_images row)
+  imageBucket?: string; // defaults to "template-images"
+}
+
+export interface FlagShotSelection {
+  enabled: boolean;
+  text: string;
+}
+
+export const FLAG_TEXT_MAXLEN = 60;
+
+// ── Creator config sanitizer (templates POST/PATCH) ──────────────────────────
+export function sanitizeFlagShotConfig(raw: unknown, userId: string): FlagShotConfig | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  if (o.enabled !== true) return null;
+  const imagePath = typeof o.imagePath === "string" ? o.imagePath : "";
+  if (!imagePath || !imagePath.startsWith(`${userId}/`)) return null; // must have a plate under the creator's folder
+  return {
+    enabled: true,
+    imagePath,
+    imageBucket: typeof o.imageBucket === "string" && o.imageBucket ? o.imageBucket : "template-images",
+  };
+}
+
+// ── Buyer text sanitizer (book route) ────────────────────────────────────────
+export function sanitizeFlagText(raw: unknown): string {
+  return typeof raw === "string" ? raw.trim().slice(0, FLAG_TEXT_MAXLEN) : "";
+}
+
+// ── Slot placement ───────────────────────────────────────────────────────────
+// The flag shot replaces the LAST image of the package (0-based index).
+export function getFlagSlotIndex(packageSize: number): number {
+  return Math.max(0, packageSize - 1);
+}
+
+// ── Per-slot brief directive ─────────────────────────────────────────────────
+export function buildFlagShotDirective(text: string): string {
+  const safe = text.replace(/"/g, "'").slice(0, FLAG_TEXT_MAXLEN);
+  return [
+    "═══════════════════════════════════════════════════════",
+    "THIS SLOT — VIRAL SKYSCRAPER FLAG SHOT (replaces the usual studio portrait)",
+    "═══════════════════════════════════════════════════════",
+    "Recreate the viral rooftop-flag scene. The subject — in FULL Call to Bar regalia " +
+      "(white barrister wig worn on the head + black barrister gown + white collar/bib) — stands " +
+      "solo and composed on a slim rooftop antenna / communications mast at extreme skyscraper " +
+      "height, with a hazy city skyline stretching far below and behind.",
+    "Match the attached [FLAG_SCENE] reference image EXACTLY for the mast structure, the flag's " +
+      "shape and size, the aerial skyline, the haze and the daylight. The environment is this " +
+      "rooftop scene — NOT a studio backdrop.",
+    "One hand grips the mast for balance; the other holds a large black flag that billows and " +
+      "ripples in the wind.",
+    `Render this EXACT text on the black flag in clean, bold white lettering, laid out so it ` +
+      `follows the flag's folds, curve and perspective — printed on the cloth, not pasted flat on ` +
+      `top. Spell it exactly and keep it legible: "${safe}".`,
+    "Cinematic wide/medium-wide shot, realistic wind motion in the gown and flag, natural " +
+      "atmospheric haze, documentary photograph quality. Identity locked from the identity " +
+      "references — same face, skin tone and build.",
+    "═══════════════════════════════════════════════════════",
+  ].join("\n");
+}

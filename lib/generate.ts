@@ -538,6 +538,7 @@ async function buildShootBrief(
     storyContext?: string;
     storyImageUrls?: Array<{ url: string; label: string }>;
     category?: string;
+    flag_shot?: { enabled: boolean; text: string } | null;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -661,7 +662,8 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
     const isFemale = refs.some((r) => r.tag === "COLLAR_FEMALE");
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
-    parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef) });
+    const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
+    parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
   }
 
   const geminiModel = genai.getGenerativeModel({
@@ -859,6 +861,7 @@ async function buildShootBriefClaude(
     storyContext?: string;
     storyImageUrls?: Array<{ url: string; label: string }>;
     category?: string;
+    flag_shot?: { enabled: boolean; text: string } | null;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -955,7 +958,8 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
     const isFemale = refs.some((r) => r.tag === "COLLAR_FEMALE");
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
-    content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef) });
+    const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
+    content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
   }
 
   const claudeResult = await Promise.race([
@@ -1432,7 +1436,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1864,7 +1868,8 @@ export async function startGenerationWorker(
     // descriptions. Limit inspiration to 1 to avoid diluting the identity signal.
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
     const taggedRefEntries = refs
-      .filter((r) => r.purpose === "tagged" && r.url)
+      // FLAG_SCENE is attached to the flag slot only (below), never the shared per-slot list.
+      .filter((r) => r.purpose === "tagged" && r.url && r.tag !== "FLAG_SCENE")
       .map((r) => {
         const name = r.customName || r.tag || "REFERENCE";
         const directive =
@@ -1887,6 +1892,19 @@ export async function startGenerationWorker(
     ];
   }
   let imageUrls: string[] = imageEntries.map((e) => e.url);
+
+  // ── Viral flag shot ─────────────────────────────────────────────────────────
+  // When active, the LAST slot is the rooftop flag shot: it gets the FLAG_SCENE plate
+  // (never the studio background) and its own directive from the brief. The plate is
+  // kept out of every other slot's reference list.
+  const flagShotState = shoot.flag_shot as { enabled?: boolean; text?: string } | null;
+  const flagSceneRef = refs.find((r) => r.purpose === "tagged" && r.tag === "FLAG_SCENE" && r.url);
+  const flagShotActive = !!(flagShotState?.enabled && flagShotState.text && flagSceneRef);
+  const flagSlotNumber = flagShotActive ? total : -1; // 1-based slot number of the flag shot
+  const flagSceneEntry = flagSceneRef
+    ? { url: flagSceneRef.url, label: "FLAG SCENE — the rooftop antenna mast, black flag and skyline plate; replicate this environment exactly and place the subject into it (do not use a studio backdrop for this image)" }
+    : null;
+  if (flagShotActive && flagSceneEntry) imageUrls = [...imageUrls, flagSceneEntry.url];
 
   // Per-option background images (purpose 'background_option', matched by optionId in note).
   // These are appended per slot — each slot only sees ITS background, never the others.
@@ -1967,7 +1985,14 @@ export async function startGenerationWorker(
       // image right after the identity block; other slots' backgrounds are excluded.
       let slotReferenceMap = sharedReferenceMap;
       let slotBgAlloc: ReturnType<typeof getBackgroundForSlot> = null;
-      if (backgroundPlan && bgEntryByOptionId.size > 0) {
+      if (flagShotActive && flagSceneEntry && slot === flagSlotNumber) {
+        // Flag slot: swap the studio background for the FLAG_SCENE plate. No bg allocation.
+        slotReferenceMap = buildReferenceMap([
+          ...imageEntries.slice(0, identityEntryCount),
+          flagSceneEntry,
+          ...imageEntries.slice(identityEntryCount),
+        ]);
+      } else if (backgroundPlan && bgEntryByOptionId.size > 0) {
         slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
         const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
         if (bgEntry) {

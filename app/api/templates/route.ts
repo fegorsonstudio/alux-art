@@ -4,6 +4,7 @@ import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
+import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -91,12 +92,16 @@ export async function POST(request: NextRequest) {
     ? sanitizeBackgroundOptions(body.backgroundOptions, user.id)
     : null;
   const safeOptionGroups = sanitizeOptionGroups(body.optionGroups, user.id);
+  // Flag shot is a Call to Bar feature only (for now).
+  const safeFlagShot = category === "call_to_bar"
+    ? sanitizeFlagShotConfig(body.flagShot, user.id)
+    : null;
 
   const [template] = await sql`
     INSERT INTO templates
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
-       is_story, story_type, default_role, role_chips, scenes, background_options, option_groups,
+       is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot,
        created_at, updated_at)
     VALUES (
       ${creator.id},
@@ -114,6 +119,7 @@ export async function POST(request: NextRequest) {
       ${safeRoleChips as string[]}, ${sql.json(safeScenes)},
       ${safeBackgroundOptions ? sql.json(safeBackgroundOptions as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeOptionGroups ? sql.json(safeOptionGroups as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${safeFlagShot ? sql.json(safeFlagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       NOW(), NOW()
     )
     RETURNING *
