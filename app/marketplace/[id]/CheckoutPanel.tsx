@@ -578,23 +578,45 @@ export default function CheckoutPanel({
           {/* Buyer background allocation */}
           {bgActive && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>Backgrounds</span>
               {selectedPkg === 1 ? (
-                <div className={styles.shotTypeRow}>
-                  {bgOptions.map(o => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      className={`${styles.pkgPill} ${(bgAlloc[o.id] ?? 0) > 0 ? styles.pkgPillActive : ""}`}
-                      title={o.kind === "text" ? o.description : undefined}
-                      onClick={() => setBgAlloc({ [o.id]: 1 })}
-                    >
-                      {o.name}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <span className={styles.pkgLabel}>Choose your background</span>
+                  <p className={styles.sectionHint}>Your image will be shot on the background you pick.</p>
+                  <div className={styles.shotTypeRow}>
+                    {bgOptions.map(o => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        className={`${styles.pkgPill} ${(bgAlloc[o.id] ?? 0) > 0 ? styles.pkgPillActive : ""}`}
+                        title={o.kind === "text" ? o.description : undefined}
+                        onClick={() => setBgAlloc({ [o.id]: 1 })}
+                      >
+                        {o.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <>
+                  <span className={styles.pkgLabel}>How many images on each background?</span>
+                  <p className={styles.sectionHint}>
+                    Your package has {selectedPkg} images. Use the <strong>−</strong> and <strong>+</strong> buttons to
+                    choose how many of them are shot on each background. The numbers must add up to {selectedPkg}.
+                  </p>
+                  {/* Prominent running total */}
+                  <div
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "8px 12px", borderRadius: 8, marginBottom: 8,
+                      background: bgAllocTotal === selectedPkg ? "rgba(23,119,103,0.12)" : "rgba(229,72,77,0.10)",
+                      fontSize: "0.85rem", fontWeight: 600,
+                    }}
+                  >
+                    <span>{bgAllocTotal === selectedPkg ? "All images placed" : "Images left to place"}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                      {bgAllocTotal === selectedPkg ? `${selectedPkg} / ${selectedPkg}` : `${selectedPkg - bgAllocTotal} left`}
+                    </span>
+                  </div>
                   {bgOptions.map(o => {
                     const count = bgAlloc[o.id] ?? 0;
                     return (
@@ -609,10 +631,16 @@ export default function CheckoutPanel({
                             TEXT
                           </span>
                         )}
-                        <span style={{ flex: 1, fontSize: "0.85rem" }}>{o.name}</span>
+                        <span style={{ flex: 1, fontSize: "0.85rem" }}>
+                          {o.name}
+                          <span style={{ display: "block", fontSize: "0.72rem", opacity: 0.7 }}>
+                            {count === 0 ? "not used" : count === 1 ? "1 image" : `${count} images`}
+                          </span>
+                        </span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <button
                             type="button"
+                            aria-label={`One fewer image on ${o.name}`}
                             className={styles.pkgPill}
                             disabled={count <= 0}
                             onClick={() => setBgAlloc(prev => ({ ...prev, [o.id]: Math.max(0, (prev[o.id] ?? 0) - 1) }))}
@@ -620,6 +648,7 @@ export default function CheckoutPanel({
                           <span style={{ minWidth: 20, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{count}</span>
                           <button
                             type="button"
+                            aria-label={`One more image on ${o.name}`}
                             className={styles.pkgPill}
                             disabled={bgAllocTotal >= selectedPkg}
                             onClick={() => setBgAlloc(prev => ({ ...prev, [o.id]: (prev[o.id] ?? 0) + 1 }))}
@@ -628,23 +657,29 @@ export default function CheckoutPanel({
                       </div>
                     );
                   })}
-                  <p
-                    className={styles.sectionHint}
-                    style={bgAllocTotal !== selectedPkg ? { color: "#e5484d" } : undefined}
-                  >
-                    {bgAllocTotal === selectedPkg
-                      ? `All ${selectedPkg} images allocated`
-                      : `${bgAllocTotal} of ${selectedPkg} images allocated — allocate all ${selectedPkg} to continue`}
-                  </p>
+                  {bgAllocTotal !== selectedPkg && (
+                    <p className={styles.sectionHint} style={{ color: "#e5484d" }}>
+                      Place all {selectedPkg} images across your backgrounds to continue.
+                    </p>
+                  )}
                 </>
               )}
             </div>
           )}
 
           {/* Buyer choice groups — pick one option per group, used for the whole shoot */}
+          {pickableGroups.length > 0 && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>Your styling</span>
+              <p className={styles.sectionHint}>
+                Pick one option in each section below. Whatever you choose — outfit, hairstyle, shoes, and the
+                rest — is worn in <strong>every image</strong> of your shoot, so all your photos match.
+              </p>
+            </div>
+          )}
           {pickableGroups.map(group => (
             <div key={group.id} className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>{group.label}</span>
+              <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· choose one</span></span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {group.options.map(o => {
                   const picked = groupPicks[group.id] === o.id;
