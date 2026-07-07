@@ -63,7 +63,8 @@ export function buildCallToBarPromptDirectives(
   state: CallToBarState,
   _slotIndex: number,
   _totalSlots: number,
-  isFemale: boolean
+  isFemale: boolean,
+  hasOutfitRef = false
 ): string {
   let out = "";
 
@@ -74,9 +75,18 @@ export function buildCallToBarPromptDirectives(
     out += `COLLAR (MALE): Clean stiff white wing collar with a pleated white legal bib (tabs) secured by a visible gold metallic stud. Reference [COLLAR_MALE] for exact detail.\n`;
   }
 
+  // ── Outfit under the gown ─────────────────────────────────────────────────
+  // When the buyer chose an outfit, it OVERRIDES the default black suit. The
+  // [OUTFIT] reference is authoritative for colour, cut and fabric.
+  const underGown = hasOutfitRef
+    ? "the buyer's chosen outfit from the [OUTFIT] reference (match its exact colour, cut and fabric — it may be white or any colour; do NOT default to black)"
+    : "a clean black suit jacket";
+
   // ── Gown ──────────────────────────────────────────────────────────────────
   if (state.wearGown) {
-    out += `GOWN: ON — heavy premium pleated black barrister's robe draped over shoulders, open at front, revealing the white collar and a clean black suit jacket underneath. Reference [GOWN] for fabric texture.\n`;
+    out += `GOWN: ON — heavy premium pleated black barrister's robe draped over shoulders, open at front, revealing the white collar and ${underGown} underneath. Reference [GOWN] for fabric texture.\n`;
+  } else if (hasOutfitRef) {
+    out += `GOWN: OFF — the subject wears the exact outfit shown in the [OUTFIT] reference (the buyer's chosen outfit — replicate its colour, cut, silhouette and fabric precisely; it may be white or any colour). White collar fully exposed over it. Do NOT substitute a default black suit.\n`;
   } else {
     out += `GOWN: OFF — sharp custom-tailored plain black suit jacket (male) or clean black suit jacket/dress (female). White collar fully exposed. Absolute restriction: no pin-stripes, patterns, or waistcoats.\n`;
   }
@@ -106,7 +116,7 @@ HAIR LAYERING PROTECTION (MALE):
 
     // Alternative wig placement
     if (state.wigContext === "held") {
-      out += `WIG PLACEMENT — HELD: Subject holds the white barrister wig [WIG] elegantly in their hands, white synthetic curls and ribbing resting against the black suit in a polished editorial post-ceremony pose.\n`;
+      out += `WIG PLACEMENT — HELD: Subject holds the white barrister wig [WIG] elegantly in their hands, white synthetic curls and ribbing resting against the subject's outfit in a polished editorial post-ceremony pose.\n`;
     } else if (state.wigContext === "background") {
       out += `WIG PLACEMENT — BACKGROUND: White barrister wig [WIG] sits as a prop on top of a stack of vintage leather-bound legal books or on a polished dark mahogany desk in the shallow-depth-of-field background.\n`;
     }
@@ -125,7 +135,7 @@ HAIR LAYERING PROTECTION (MALE):
  * into the shoot brief builder prompt. The brief builder produces ALL slot prompts in
  * a single model call, so we must supply the entire matrix up front.
  */
-export function buildCallToBarBriefSection(packageSize: number, isFemale: boolean): string {
+export function buildCallToBarBriefSection(packageSize: number, isFemale: boolean, hasOutfitRef = false): string {
   const lines: string[] = [
     "═══════════════════════════════════════════════════════",
     "CATEGORY: CALL TO BAR (NIGERIAN LEGAL PORTRAIT STUDIO)",
@@ -152,14 +162,14 @@ export function buildCallToBarBriefSection(packageSize: number, isFemale: boolea
     const gownLabel = state.wearGown ? "Gown ON" : "Gown OFF";
     const lightLabel = state.dramaticLighting ? " | DRAMATIC LIGHT" : "";
     lines.push(`SLOT ${slotNum} [${gownLabel} | ${wigLabel} | Collar ON${lightLabel}]`);
-    lines.push(buildCallToBarPromptDirectives(state, i, packageSize, isFemale));
+    lines.push(buildCallToBarPromptDirectives(state, i, packageSize, isFemale, hasOutfitRef));
     lines.push("");
   }
 
   lines.push(
     "UNIVERSAL STUDIO AESTHETIC:",
     "- Backgrounds: follow the [BACKGROUND] reference / PER-SLOT BACKGROUND ALLOCATION when present; otherwise deep charcoal gray, chocolate brown, deep navy, or warm library wood.",
-    "- Lighting: soft warm key light, crisp white rim light separating dark gown/suit from dark background, balanced fill — EXCEPT slots marked DRAMATIC LIGHT, which follow their own lighting directive.",
+    "- Lighting: soft warm key light, crisp white rim light separating the subject from the background, balanced fill — EXCEPT slots marked DRAMATIC LIGHT, which follow their own lighting directive.",
     "- Camera: Hasselblad medium-format editorial feel. Realistic skin texture — no plasticky AI smoothing.",
     "- Fabric: realistic fine-knit wool suits, linen bib tabs, synthetic ribbed wig curls — all physically accurate.",
     "- Output: 4K, documentary photograph quality, natural asymmetry, subtle film grain.",

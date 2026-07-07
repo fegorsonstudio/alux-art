@@ -660,7 +660,8 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
   if (shoot.category === "call_to_bar") {
     const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
     const isFemale = refs.some((r) => r.tag === "COLLAR_FEMALE");
-    parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale) });
+    const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
+    parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef) });
   }
 
   const geminiModel = genai.getGenerativeModel({
@@ -953,7 +954,8 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
   if (shoot.category === "call_to_bar") {
     const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
     const isFemale = refs.some((r) => r.tag === "COLLAR_FEMALE");
-    content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale) });
+    const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
+    content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef) });
   }
 
   const claudeResult = await Promise.race([
