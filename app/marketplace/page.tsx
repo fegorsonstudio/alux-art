@@ -40,7 +40,13 @@ function StarDisplay({ rating, count }: { rating: number | null; count: number }
 export default function MarketplacePage() {
   const [templates, setTemplates] = useState<TemplateCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState("all");
+  // Deep-link support: /marketplace?category=call_to_bar lands pre-filtered (used for
+  // ManyChat / social campaigns that send people straight to one category).
+  const [category, setCategory] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    const c = new URLSearchParams(window.location.search).get("category");
+    return c && c.trim() ? c : "all";
+  });
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [nextCursor, setNextCursor] = useState<string | null>(null);
