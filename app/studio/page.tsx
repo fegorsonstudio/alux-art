@@ -641,72 +641,34 @@ export default function WorkspacePage() {
     }
   };
 
-  const downloadImage = async (shoot: Shoot, img: ShootImage) => {
-    setStatus({ type: "loading", message: "Preparing download…" });
+  const downloadImage = (shoot: Shoot, img: ShootImage) => {
     const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
-
-    try {
-      // Stream through server — no CORS issues, no signed URL expiry, works on all devices.
-      const res = await fetch(`/api/shoots/${shoot.id}/images/${img.id}?download=1`);
-      if (!res.ok) { setStatus({ type: "error", message: "Download failed — please try again." }); return; }
-      const blob = await res.blob();
-
-      // iOS/Android: try native share sheet ("Save to Photos / Files")
-      let shared = false;
-      if (typeof navigator !== "undefined" && "share" in navigator) {
-        try {
-          const testFile = new File([new Uint8Array(1)], filename, { type: blob.type || "image/png" });
-          if (typeof navigator.canShare === "function" && navigator.canShare({ files: [testFile] })) {
-            const file = new File([blob], filename, { type: blob.type || "image/png" });
-            await navigator.share({ files: [file], title: "Your Alux Art portrait" });
-            shared = true;
-          }
-        } catch (shareErr) {
-          if ((shareErr as Error).name === "AbortError") { setStatus({ type: "ok", message: "" }); return; }
-          // Share failed — fall through to anchor download
-        }
-      }
-
-      if (!shared) {
-        // Anchor download — triggers browser save dialog / gallery save on desktop and mobile
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
-
-      setStatus({ type: "ok", message: "" });
-    } catch {
-      setStatus({ type: "error", message: "Download failed — please try again." });
-    }
+    // Navigate straight to the server endpoint, which responds with
+    // Content-Disposition: attachment. Doing this synchronously inside the tap
+    // preserves the user gesture — an `await fetch()` first would break iOS
+    // Safari's user-activation rule and the download would silently do nothing.
+    const a = document.createElement("a");
+    a.href = `/api/shoots/${shoot.id}/images/${img.id}?download=1`;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setStatus({ type: "ok", message: "Download started — check your Files / Downloads." });
   };
 
-  const downloadZip = async (shoot: Shoot) => {
-    setStatus({ type: "loading", message: "Preparing ZIP..." });
-    try {
-      const res = await fetch(`/api/shoots/${shoot.id}/download-zip`);
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: "ZIP failed" }));
-        setStatus({ type: "error", message: error ?? "ZIP failed" });
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `aluxart-portraits-${shoot.id.slice(0, 8)}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setStatus({ type: "ok", message: "ZIP downloaded!" });
-    } catch {
-      setStatus({ type: "error", message: "ZIP download failed — please try again." });
-    }
+  const downloadZip = (shoot: Shoot) => {
+    // Same reasoning as downloadImage: navigate straight to the endpoint (which
+    // streams the zip with Content-Disposition: attachment) synchronously in the
+    // tap so mobile Safari doesn't block it. The server builds the zip on request.
+    const a = document.createElement("a");
+    a.href = `/api/shoots/${shoot.id}/download-zip`;
+    a.download = `aluxart-portraits-${shoot.id.slice(0, 8)}.zip`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setStatus({ type: "ok", message: "Preparing your ZIP — it will download shortly." });
   };
 
   const handleVerifyPayment = async (shootId: string) => {
