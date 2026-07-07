@@ -54,9 +54,27 @@ interface AdminData {
     queueDepth: number;
     todayShoots: number;
   };
-  revenue: { today: number; month: number; total: number; totalSales: number };
+  revenue: {
+    today: number; month: number; total: number; totalSales: number;
+    directToday?: number; directMonth?: number; directTotal?: number; directCount?: number;
+    combinedToday?: number; combinedMonth?: number; combinedTotal?: number;
+  };
   marketplace: { totalCreators: number; publishedTemplates: number };
+  funnel?: {
+    checkoutsStarted: number; paid: number; abandonedAtPayment: number;
+    shootsCompleted: number; shootsFailed: number; regenEligible: number;
+  };
+  topTemplates?: Array<{ id: string; title: string; category: string; sales: number }>;
 }
+
+type AdminTab = "overview" | "shoots" | "people" | "marketplace" | "settings";
+const ADMIN_TABS: Array<{ id: AdminTab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "shoots", label: "Shoots" },
+  { id: "people", label: "People" },
+  { id: "marketplace", label: "Marketplace" },
+  { id: "settings", label: "Settings" },
+];
 
 interface ShootDebug {
   shoot_id: string;
@@ -424,6 +442,7 @@ export default function AdminPage() {
   const [adminCreators, setAdminCreators] = useState<AdminCreator[]>([]);
   const [shootFilter, setShootFilter] = useState("ALL");
   const [userSearch, setUserSearch] = useState("");
+  const [tab, setTab] = useState<AdminTab>("overview");
 
   useEffect(() => {
     fetch("/api/admin/overview")
@@ -606,7 +625,7 @@ export default function AdminPage() {
   if (err) return <div className={styles.loading}>{err}</div>;
   if (!data) return <div className={styles.loading}>Loading dashboard…</div>;
 
-  const { metrics, revenue, marketplace } = data;
+  const { metrics, revenue, marketplace, funnel, topTemplates } = data;
 
   return (
     <div className={styles.page}>
@@ -615,6 +634,25 @@ export default function AdminPage() {
         <h1 className={styles.title}>Admin Dashboard</h1>
       </header>
 
+      {/* ---- Tab navigation ---- */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "0 0 20px" }}>
+        {ADMIN_TABS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem",
+              border: tab === t.id ? "2px solid #2f8e9a" : "1px solid rgba(127,127,127,0.3)",
+              background: tab === t.id ? "rgba(47,142,154,0.12)" : "transparent", color: "inherit",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "overview" && (<>
       {/* ---- Metrics ---- */}
       <div className={styles.metricsGrid}>
         <div className={styles.metric}>
@@ -681,6 +719,81 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* ---- Combined revenue (marketplace + direct studio) ---- */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Total Revenue (all sources)</h2>
+        <div className={styles.revenueGrid}>
+          <div className={styles.revenueItem}>
+            <span className={styles.revenueVal}>₦{(revenue.combinedToday ?? revenue.today).toLocaleString()}</span>
+            <span className={styles.revenueLabel}>Today</span>
+          </div>
+          <div className={styles.revenueItem}>
+            <span className={styles.revenueVal}>₦{(revenue.combinedMonth ?? revenue.month).toLocaleString()}</span>
+            <span className={styles.revenueLabel}>This Month</span>
+          </div>
+          <div className={styles.revenueItem}>
+            <span className={styles.revenueVal}>₦{(revenue.combinedTotal ?? revenue.total).toLocaleString()}</span>
+            <span className={styles.revenueLabel}>All Time</span>
+          </div>
+        </div>
+        <p style={{ fontSize: "0.76rem", color: "#7aafb4", margin: "12px 0 0" }}>
+          Marketplace sales ₦{revenue.total.toLocaleString()} ({revenue.totalSales}) + Direct studio shoots ₦{(revenue.directTotal ?? 0).toLocaleString()} ({revenue.directCount ?? 0}). Naira-denominated payments.
+        </p>
+      </div>
+
+      {/* ---- Conversion funnel ---- */}
+      {funnel && (
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>Where buyers stop (conversion funnel)</h2>
+          <div style={{ display: "grid", gap: 8 }}>
+            {[
+              { label: "Started checkout", value: funnel.checkoutsStarted, tone: "#2f8e9a" },
+              { label: "Paid", value: funnel.paid, tone: "#177767" },
+              { label: "Abandoned at payment", value: funnel.abandonedAtPayment, tone: "#b94a4a" },
+              { label: "Shoots completed", value: funnel.shootsCompleted, tone: "#177767" },
+              { label: "Shoots failed", value: funnel.shootsFailed, tone: "#b94a4a" },
+              { label: "Awaiting free regeneration", value: funnel.regenEligible, tone: "#8a6000" },
+            ].map(row => {
+              const denom = Math.max(1, funnel.checkoutsStarted);
+              const pct = Math.min(100, Math.round((row.value / denom) * 100));
+              return (
+                <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ flex: "0 0 160px", fontSize: "0.82rem" }}>{row.label}</span>
+                  <div style={{ flex: 1, height: 18, borderRadius: 4, background: "rgba(127,127,127,0.12)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: row.tone, opacity: 0.7 }} />
+                  </div>
+                  <span style={{ flex: "0 0 44px", textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{row.value}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: "0.76rem", color: "#7aafb4", margin: "12px 0 0" }}>
+            &quot;Abandoned at payment&quot; = buyers who reached checkout but never paid — your biggest recoverable drop-off.
+          </p>
+        </div>
+      )}
+
+      {/* ---- Best-selling templates ---- */}
+      {topTemplates && topTemplates.length > 0 && (
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>Best-selling templates</h2>
+          <table className={styles.table}>
+            <thead><tr><th>Template</th><th>Category</th><th>Sales</th></tr></thead>
+            <tbody>
+              {topTemplates.map(t => (
+                <tr key={t.id}>
+                  <td>{t.title}</td>
+                  <td className={styles.mono}>{t.category}</td>
+                  <td style={{ fontWeight: 600 }}>{t.sales.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      </>)}
+
+      {tab === "settings" && (<>
       {/* ---- AI Model Config ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>AI Model Config</h2>
@@ -779,6 +892,9 @@ export default function AdminPage() {
         {modelMsg && <span className={styles.saveMsg}>{modelMsg}</span>}
       </div>
 
+      </>)}
+
+      {tab === "shoots" && (<>
       {/* ---- Shoots by date ---- */}
       <div className={styles.card}>
         <div className={styles.shootsHeader}>
@@ -920,6 +1036,9 @@ export default function AdminPage() {
         ))}
       </div>
 
+      </>)}
+
+      {tab === "people" && (<>
       {/* ---- Users ---- */}
       <div className={styles.card}>
         <div className={styles.shootsHeader}>
@@ -948,6 +1067,9 @@ export default function AdminPage() {
         </table>
       </div>
 
+      </>)}
+
+      {tab === "marketplace" && (<>
       {/* ---- Coupons ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Coupon Codes</h2>
@@ -987,6 +1109,9 @@ export default function AdminPage() {
         </table>
       </div>
 
+      </>)}
+
+      {tab === "settings" && (<>
       {/* ---- Error log ---- */}
       <ErrorsPanel />
 
@@ -1037,6 +1162,9 @@ export default function AdminPage() {
         </div>
       </div>
 
+      </>)}
+
+      {tab === "people" && (<>
       {/* ---- Pending Creator Applications ---- */}
       {(() => {
         const pending = adminCreators.filter(c => c.status === "pending");
@@ -1101,6 +1229,7 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+      </>)}
     </div>
   );
 }

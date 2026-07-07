@@ -72,6 +72,49 @@ export async function GET() {
 
   const [{ total_users }] = await sql`SELECT COUNT(*)::int AS total_users FROM profiles`;
 
+  // ── Direct studio revenue (payments table) — separate from marketplace sales ──
+  // Guarded: any schema difference degrades to 0 rather than breaking the endpoint.
+  let directTotal = 0, directToday = 0, directMonth = 0, directCount = 0;
+  try {
+    const directRows = await sql`SELECT amount_ngn, created_at FROM payments WHERE status = 'success'`;
+    directCount = directRows.length;
+    directTotal = directRows.reduce((s, p) => s + (Number(p.amount_ngn) || 0), 0);
+    directMonth = directRows.filter((p) => new Date(p.created_at as string) >= monthStart).reduce((s, p) => s + (Number(p.amount_ngn) || 0), 0);
+    directToday = directRows.filter((p) => new Date(p.created_at as string) >= todayStart).reduce((s, p) => s + (Number(p.amount_ngn) || 0), 0);
+  } catch { /* payments table shape differs — leave at 0 */ }
+
+  // ── Conversion funnel — where buyers stop ────────────────────────────────────
+  const funnel = { checkoutsStarted: 0, paid: 0, abandonedAtPayment: 0, shootsCompleted: 0, shootsFailed: 0, regenEligible: 0 };
+  try {
+    const [[{ started }], [{ paid }], [{ regen }]] = await Promise.all([
+      sql`SELECT COUNT(*)::int AS started FROM template_purchases`,
+      sql`SELECT COUNT(*)::int AS paid FROM template_purchases WHERE status = 'success'`,
+      sql`SELECT COUNT(*)::int AS regen FROM shoots WHERE regeneration_status = 'eligible'`,
+    ]);
+    funnel.checkoutsStarted = started ?? 0;
+    funnel.paid = paid ?? 0;
+    funnel.abandonedAtPayment = Math.max(0, (started ?? 0) - (paid ?? 0));
+    funnel.shootsCompleted = completed_shoots ?? 0;
+    funnel.shootsFailed = failed_shoots ?? 0;
+    funnel.regenEligible = regen ?? 0;
+  } catch { /* leave funnel at zeros */ }
+
+  // ── Best-selling templates ───────────────────────────────────────────────────
+  let topTemplates: Array<{ id: string; title: string; category: string; sales: number }> = [];
+  try {
+    const rows = await sql`
+      SELECT id, title, category, purchase_count
+      FROM templates WHERE status = 'published'
+      ORDER BY purchase_count DESC NULLS LAST LIMIT 8
+    `;
+    topTemplates = rows.map((t) => ({
+      id: t.id as string,
+      title: t.title as string,
+      category: (t.category as string) ?? "other",
+      sales: Number(t.purchase_count) || 0,
+    }));
+  } catch { /* leave empty */ }
+
   return NextResponse.json({
     users: profiles,
     shoots,
@@ -84,14 +127,26 @@ export async function GET() {
       todayShoots: today_shoots ?? 0,
     },
     revenue: {
+      // Marketplace (template sales) — unchanged keys for backward compatibility
       today: revenueToday,
       month: revenueMonth,
       total: revenueAll,
       totalSales: totalTemplateSales,
+      // Direct studio shoots (payments table)
+      directToday,
+      directMonth,
+      directTotal,
+      directCount,
+      // Combined
+      combinedToday: revenueToday + directToday,
+      combinedMonth: revenueMonth + directMonth,
+      combinedTotal: revenueAll + directTotal,
     },
     marketplace: {
       totalCreators,
       publishedTemplates,
     },
+    funnel,
+    topTemplates,
   });
 }
