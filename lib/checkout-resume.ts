@@ -9,6 +9,31 @@ const DB_NAME = "aluxart_checkout";
 const STORE = "pending";
 const TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
+// ── Resume marker ────────────────────────────────────────────────────────────
+// Set before sign-in so we can bring the buyer back to their checkout. Written to
+// BOTH localStorage and a first-party cookie: iOS Safari can wipe localStorage
+// across the cross-site OAuth round-trip, but a SameSite=Lax cookie survives it.
+const MARKER = "aluxart_resume_tid";
+
+export function setResumeMarker(templateId: string): void {
+  try { localStorage.setItem(MARKER, templateId); } catch { /* ignore */ }
+  try { document.cookie = `${MARKER}=${encodeURIComponent(templateId)}; path=/; max-age=1800; SameSite=Lax`; } catch { /* ignore */ }
+}
+
+export function getResumeMarker(): string | null {
+  try { const v = localStorage.getItem(MARKER); if (v) return v; } catch { /* ignore */ }
+  if (typeof document !== "undefined") {
+    const m = document.cookie.match(/(?:^|;\s*)aluxart_resume_tid=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+  }
+  return null;
+}
+
+export function clearResumeMarker(): void {
+  try { localStorage.removeItem(MARKER); } catch { /* ignore */ }
+  try { document.cookie = `${MARKER}=; path=/; max-age=0; SameSite=Lax`; } catch { /* ignore */ }
+}
+
 export interface PendingConfig {
   selectedPkg: 1 | 5 | 10;
   shotType: string;

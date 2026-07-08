@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
-import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout } from "@/lib/checkout-resume";
+import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResumeMarker } from "@/lib/checkout-resume";
 
 interface TemplateImage {
   id: string;
@@ -162,9 +162,10 @@ export default function CheckoutPanel({
   const [resuming, setResuming] = useState(false);
   const [defaultsReady, setDefaultsReady] = useState(false);
   const didRestore = useRef(false);
-  // Return to this template after Google sign-in. Resume is driven by the localStorage
-  // flag + IndexedDB stash (set in goSignIn), so it survives even if `next` is dropped.
-  const loginUrl = `/login?next=${encodeURIComponent(`/marketplace/${templateId}`)}`;
+  // Return to this template in resume mode after Google sign-in. Belt-and-suspenders:
+  // ?resume=1 rides the OAuth `next` (works when next survives), and a cookie+localStorage
+  // marker (set in goSignIn) covers the case where next is dropped to the home page.
+  const loginUrl = `/login?next=${encodeURIComponent(`/marketplace/${templateId}?resume=1`)}`;
   const signedOut = !loggedIn || needsLogin;
 
   const [poseUploads, setPoseUploads] = useState<PoseUpload[]>([]);
@@ -563,8 +564,9 @@ export default function CheckoutPanel({
       .filter(u => u.file)
       .map(u => ({ name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }));
     await savePendingCheckout(templateId, config, files);
-    // Flag drives the post-login redirect back here even if OAuth `next` is dropped.
-    try { localStorage.setItem("aluxart_resume_tid", templateId); } catch { /* ignore */ }
+    // Marker (cookie + localStorage) drives the post-login redirect back here even if the
+    // OAuth `next` is dropped to the home page.
+    setResumeMarker(templateId);
     window.location.href = loginUrl;
   };
 

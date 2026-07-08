@@ -10,6 +10,7 @@ import styles from "./template.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import CheckoutPanel from "./CheckoutPanel";
 import TemplateShareCard from "@/components/TemplateShareCard";
+import { getResumeMarker, clearResumeMarker } from "@/lib/checkout-resume";
 
 function renderMarkdown(text: string) {
   // Split into lines, handle > blockquotes, then bold **...**
@@ -195,10 +196,9 @@ export default function TemplatePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const hasQuery = new URLSearchParams(window.location.search).get("resume") === "1";
-    let flagMatches = false;
-    try { flagMatches = localStorage.getItem("aluxart_resume_tid") === id; } catch { /* ignore */ }
-    if (hasQuery || flagMatches) {
-      try { localStorage.removeItem("aluxart_resume_tid"); } catch { /* ignore */ }
+    const markerMatches = getResumeMarker() === id;
+    if (hasQuery || markerMatches) {
+      clearResumeMarker();
       setResumeMode(true);
       setCheckoutOpen(true);
     }
