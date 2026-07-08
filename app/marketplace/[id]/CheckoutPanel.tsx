@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
+import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout } from "@/lib/checkout-resume";
 
 interface TemplateImage {
   id: string;
@@ -113,6 +114,8 @@ interface Props {
   formatPrice: (ngn: number) => string;
   couponCode: string;
   couponResult: CouponResult | null;
+  loggedIn: boolean;
+  resume?: boolean;
   onClose: () => void;
 }
 
@@ -125,6 +128,8 @@ export default function CheckoutPanel({
   formatPrice,
   couponCode,
   couponResult,
+  loggedIn,
+  resume,
   onClose,
 }: Props) {
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(initialPkg);
@@ -151,7 +156,12 @@ export default function CheckoutPanel({
   const [newUploads, setNewUploads] = useState<NewIdentityUpload[]>([]);
   const [clearing, setClearing] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
-  const loginUrl = `/login?next=/marketplace/${templateId}`;
+  const [resuming, setResuming] = useState(false);
+  const [defaultsReady, setDefaultsReady] = useState(false);
+  const didRestore = useRef(false);
+  // Return to this same checkout, in resume mode, after Google sign-in.
+  const loginUrl = `/login?next=${encodeURIComponent(`/marketplace/${templateId}?resume=1`)}`;
+  const signedOut = !loggedIn || needsLogin;
 
   const [poseUploads, setPoseUploads] = useState<PoseUpload[]>([]);
   const [taggedRefs, setTaggedRefs] = useState<TaggedRefState[]>([]);
@@ -223,19 +233,56 @@ export default function CheckoutPanel({
     })));
   }, [template]);
 
-  // Default allocation: everything on the first background option
+  // Default allocation: everything on the first background option.
+  // Held until a resume restore (if any) resolves, and skipped when we restored a saved config.
   useEffect(() => {
+    if (!defaultsReady || didRestore.current) return;
     if (!bgActive) return;
     setBgAlloc({ [bgOptions[0].id]: selectedPkg });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgActive, selectedPkg, template]);
+  }, [bgActive, selectedPkg, template, defaultsReady]);
 
   // Default group picks: first option of each pickable group
   useEffect(() => {
+    if (!defaultsReady || didRestore.current) return;
     if (pickableGroups.length === 0) return;
     setGroupPicks(Object.fromEntries(pickableGroups.map(g => [g.id, g.options[0].id])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template]);
+  }, [template, defaultsReady]);
+
+  // Resume an in-progress checkout after Google sign-in: restore choices + re-upload
+  // the photos the buyer had picked, then continue straight to payment.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!loggedIn || !resume) { setDefaultsReady(true); return; }
+      const pending = await loadPendingCheckout(templateId);
+      if (cancelled) return;
+      if (!pending) { setDefaultsReady(true); return; }
+      didRestore.current = true;
+      const c = pending.config;
+      if ([1, 5, 10].includes(c.selectedPkg)) setSelectedPkg(c.selectedPkg);
+      if (c.shotType) setShotType(c.shotType as typeof shotType);
+      setFlagShotOn(!!c.flagShotOn);
+      setFlagText(c.flagText ?? "");
+      if (c.groupPicks) setGroupPicks(c.groupPicks);
+      if (c.bgAlloc) setBgAlloc(c.bgAlloc);
+      setRolePrompt(c.rolePrompt ?? "");
+      if (c.brandPlacement) setBrandPlacement(c.brandPlacement as typeof brandPlacement);
+      if (pending.files?.length) {
+        const items: NewIdentityUpload[] = pending.files.map(f => {
+          const file = new File([f.blob], f.name, { type: f.type || "image/jpeg" });
+          return { localId: crypto.randomUUID(), file, preview: URL.createObjectURL(f.blob), storagePath: "", storageBucket: "identity-images", uploading: true };
+        });
+        setNewUploads(prev => [...prev, ...items]);
+        items.forEach(u => uploadIdentityFile(u.file, u.localId));
+      }
+      await clearPendingCheckout(templateId);
+      setDefaultsReady(true);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedIn, resume, templateId]);
 
   // Background allocation stays fully placed (sums to the package size) at all times.
   // Clicking + on a background pulls one image from whichever OTHER background currently
@@ -299,7 +346,9 @@ export default function CheckoutPanel({
       uploading: false,
     }));
     setNewUploads(prev => [...prev, ...items]);
-    items.forEach(u => uploadIdentityFile(u.file, u.localId));
+    // Signed out: keep the photos staged locally (no upload yet). They're preserved
+    // across sign-in and uploaded automatically on return. Signed in: upload now.
+    if (!signedOut) items.forEach(u => uploadIdentityFile(u.file, u.localId));
   };
 
   const clearIdentityImages = async () => {
@@ -501,6 +550,18 @@ export default function CheckoutPanel({
     && (!template.requiresGroup || !!groupPhotoUpload?.storagePath)
     && (!template.requiresBrand || brandUploads.some(u => u.storagePath));
 
+  // Signed-out buyer: stash their config + picked photos, then go to Google sign-in.
+  // They return to this same checkout (resume mode) with everything restored.
+  const goSignIn = async () => {
+    setResuming(true);
+    const config = { selectedPkg, shotType, flagShotOn, flagText, groupPicks, bgAlloc, rolePrompt, brandPlacement };
+    const files = newUploads
+      .filter(u => u.file)
+      .map(u => ({ name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }));
+    await savePendingCheckout(templateId, config, files);
+    window.location.href = loginUrl;
+  };
+
   const book = async () => {
     if (!canPay) return;
     setBuying(true);
@@ -546,7 +607,8 @@ export default function CheckoutPanel({
     });
 
     if (res.status === 401) {
-      window.location.href = `/login?next=/marketplace/${templateId}`;
+      // Session expired at the last step — preserve everything and route through sign-in.
+      await goSignIn();
       return;
     }
 
@@ -589,17 +651,19 @@ export default function CheckoutPanel({
 
         {/* Scrollable body */}
         <div className={styles.body}>
-          {needsLogin && (
-            <a
-              href={loginUrl}
+          {signedOut && (
+            <button
+              type="button"
+              onClick={goSignIn}
+              disabled={resuming}
               style={{
-                display: "block", margin: "0 0 14px", padding: "14px 16px", borderRadius: 12,
-                background: "#2f8e9a", color: "#ffffff", textDecoration: "none", fontWeight: 700,
-                textAlign: "center", boxShadow: "0 2px 10px rgba(47,142,154,0.28)",
+                display: "block", width: "100%", margin: "0 0 14px", padding: "14px 16px", borderRadius: 12,
+                background: "#2f8e9a", color: "#ffffff", border: "none", fontWeight: 700, fontSize: "0.9rem",
+                textAlign: "center", cursor: "pointer", boxShadow: "0 2px 10px rgba(47,142,154,0.28)",
               }}
             >
-              Please sign in to book & upload your photos →
-            </a>
+              Set up your shoot below — you&apos;ll sign in with Google before you pay. Your choices are saved.
+            </button>
           )}
           {/* Package picker */}
           {pkgOptions.length > 1 && (
@@ -889,8 +953,13 @@ export default function CheckoutPanel({
               </div>
             )}
 
-            {allIdentityRefs.length === 0 && (
+            {allIdentityRefs.length === 0 && !(signedOut && newUploads.length > 0) && (
               <p className={styles.identityWarn}>Select or upload at least 1 photo to continue.</p>
+            )}
+            {signedOut && newUploads.length > 0 && (
+              <p className={styles.sectionHint} style={{ color: "#2f8e9a", fontWeight: 600 }}>
+                {newUploads.length} photo{newUploads.length > 1 ? "s" : ""} ready — sign in below to upload &amp; continue.
+              </p>
             )}
           </div>
 
@@ -1180,9 +1249,15 @@ export default function CheckoutPanel({
             )}
           </div>
           {error && <p className={styles.bookError}>{error}</p>}
-          <button type="button" className={styles.payBtn} onClick={book} disabled={!canPay}>
-            {buying ? "Redirecting to payment..." : "Pay & Generate"}
-          </button>
+          {signedOut ? (
+            <button type="button" className={styles.payBtn} onClick={goSignIn} disabled={resuming}>
+              {resuming ? "Taking you to sign in…" : "Sign in with Google to continue →"}
+            </button>
+          ) : (
+            <button type="button" className={styles.payBtn} onClick={book} disabled={!canPay}>
+              {buying ? "Redirecting to payment..." : "Pay & Generate"}
+            </button>
+          )}
         </div>
 
         {/* Hidden file inputs */}

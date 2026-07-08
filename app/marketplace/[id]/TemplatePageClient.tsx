@@ -145,6 +145,7 @@ export default function TemplatePage() {
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [resumeMode, setResumeMode] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
@@ -183,6 +184,16 @@ export default function TemplatePage() {
       if (r.ok) r.json().then(d => { if (d.user?.name) setUserName(d.user.name); });
     });
   }, [id]);
+
+  // Returning from Google sign-in mid-checkout: reopen the panel in resume mode so it
+  // restores the buyer's saved choices + photos and carries on to payment.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("resume") === "1") {
+      setResumeMode(true);
+      setCheckoutOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!storFont.googleUrl) return;
@@ -264,10 +275,8 @@ export default function TemplatePage() {
   };
 
   const purchase = () => {
-    if (!isLoggedIn) {
-      window.location.href = `/login?next=/marketplace/${id}`;
-      return;
-    }
+    // Open checkout even when signed out — the buyer configures freely, then signs in
+    // with Google at the pay step (their choices + photos are preserved across sign-in).
     setCheckoutOpen(true);
   };
 
@@ -764,6 +773,8 @@ export default function TemplatePage() {
           formatPrice={formatPrice}
           couponCode={couponCode}
           couponResult={couponResult}
+          loggedIn={isLoggedIn === true}
+          resume={resumeMode}
           onClose={() => setCheckoutOpen(false)}
         />
       )}
