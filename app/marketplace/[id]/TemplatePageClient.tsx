@@ -179,10 +179,14 @@ export default function TemplatePage() {
       })
       .finally(() => setLoading(false));
     fetch("/api/user/creator-status").then(r => r.ok ? r.json() : { isCreator: false }).then(d => setIsCreator(d.isCreator));
-    fetch("/api/me").then(r => {
-      setIsLoggedIn(r.ok);
-      if (r.ok) r.json().then(d => { if (d.user?.name) setUserName(d.user.name); });
-    });
+    // /api/me returns 200 with {user:null} when signed out — check the user field, not r.ok.
+    fetch("/api/me")
+      .then(r => r.json())
+      .then(d => {
+        setIsLoggedIn(!!d.user);
+        if (d.user?.name) setUserName(d.user.name);
+      })
+      .catch(() => setIsLoggedIn(false));
   }, [id]);
 
   // Returning from Google sign-in mid-checkout: reopen the panel in resume mode so it
