@@ -41,6 +41,7 @@ export interface PendingConfig {
   flagText: string;
   groupPicks: Record<string, string>;
   bgAlloc: Record<string, number>;
+  bgSplitMode?: boolean;
   rolePrompt: string;
   brandPlacement: string;
 }

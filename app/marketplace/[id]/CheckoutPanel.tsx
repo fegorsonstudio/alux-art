@@ -148,6 +148,8 @@ export default function CheckoutPanel({
   const bgTarget = Math.max(0, selectedPkg - (flagShotAvailable && flagShotOn ? 1 : 0));
   const bgActive = bgOptions.length >= 2 && bgTarget >= 1;
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
+  // Default UX: one backdrop for the whole shoot. Buyers opt into splitting across backdrops.
+  const [bgSplitMode, setBgSplitMode] = useState(false);
 
   // Buyer choice groups — pick one option per group; only groups with 2+ options show a picker
   const choiceGroups = template.optionGroups ?? [];
@@ -241,11 +243,20 @@ export default function CheckoutPanel({
   // Default allocation: everything on the first background option.
   // Held until a resume restore (if any) resolves, and skipped when we restored a saved config.
   useEffect(() => {
-    if (!defaultsReady || didRestore.current) return;
+    if (!defaultsReady) return;
     if (!bgActive) return;
-    setBgAlloc({ [bgOptions[0].id]: bgTarget });
+    // In single-backdrop mode, keep ALL images on the currently chosen backdrop (or the
+    // first) and follow bgTarget as it changes (flag toggle / package change). This also
+    // runs after a resume restore to reconcile the restored selection with bgTarget.
+    if (!bgSplitMode) {
+      setBgAlloc(prev => {
+        const selectedId = Object.keys(prev).find(id => (prev[id] ?? 0) > 0) ?? bgOptions[0]?.id;
+        if (!selectedId) return prev;
+        return { [selectedId]: bgTarget };
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgActive, selectedPkg, template, defaultsReady, bgTarget]);
+  }, [bgActive, selectedPkg, template, defaultsReady, bgTarget, bgSplitMode]);
 
   // Default group picks: first option of each pickable group
   useEffect(() => {
@@ -271,6 +282,7 @@ export default function CheckoutPanel({
       setFlagShotOn(!!c.flagShotOn);
       setFlagText(c.flagText ?? "");
       if (c.groupPicks) setGroupPicks(c.groupPicks);
+      if (typeof c.bgSplitMode === "boolean") setBgSplitMode(c.bgSplitMode);
       if (c.bgAlloc) setBgAlloc(c.bgAlloc);
       setRolePrompt(c.rolePrompt ?? "");
       if (c.brandPlacement) setBrandPlacement(c.brandPlacement as typeof brandPlacement);
@@ -559,7 +571,7 @@ export default function CheckoutPanel({
   // They return to this same checkout (resume mode) with everything restored.
   const goSignIn = async () => {
     setResuming(true);
-    const config = { selectedPkg, shotType, flagShotOn, flagText, groupPicks, bgAlloc, rolePrompt, brandPlacement };
+    const config = { selectedPkg, shotType, flagShotOn, flagText, groupPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement };
     const files = newUploads
       .filter(u => u.file)
       .map(u => ({ name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }));
@@ -712,36 +724,64 @@ export default function CheckoutPanel({
             </div>
           )}
 
-          {/* Buyer background allocation */}
+          {/* Buyer backdrop — one backdrop for the whole shoot by default; splitting is optional */}
           {bgActive && (
             <div className={styles.pkgRow}>
-              {selectedPkg === 1 ? (
+              {!bgSplitMode ? (
                 <>
-                  <span className={styles.pkgLabel}>Choose your background</span>
-                  <p className={styles.sectionHint}>Your image will be shot on the background you pick.</p>
-                  <div className={styles.shotTypeRow}>
-                    {bgOptions.map(o => (
-                      <button
-                        key={o.id}
-                        type="button"
-                        className={`${styles.pkgPill} ${(bgAlloc[o.id] ?? 0) > 0 ? styles.pkgPillActive : ""}`}
-                        title={o.kind === "text" ? o.description : undefined}
-                        onClick={() => setBgAlloc({ [o.id]: 1 })}
-                      >
-                        {o.name}
-                      </button>
-                    ))}
+                  <span className={styles.pkgLabel}>Choose your backdrop</span>
+                  <p className={styles.sectionHint}>
+                    {bgTarget === 1
+                      ? "Your image will be shot on the backdrop you pick."
+                      : "Pick one backdrop for your whole shoot. Tap another to switch."}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {bgOptions.map(o => {
+                      const picked = (bgAlloc[o.id] ?? 0) > 0;
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          title={o.kind === "text" ? o.description : o.name}
+                          onClick={() => setBgAlloc({ [o.id]: bgTarget })}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                            background: "none", cursor: "pointer", padding: 4,
+                            border: picked ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                            borderRadius: 8, minWidth: 64,
+                          }}
+                        >
+                          {o.imageUrl ? (
+                            <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={80} />
+                          ) : (
+                            <span style={{ width: 44, height: 55, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.6rem", letterSpacing: "0.04em" }}>
+                              TEXT
+                            </span>
+                          )}
+                          <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
+                          {picked && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
+                        </button>
+                      );
+                    })}
                   </div>
+                  {bgTarget >= 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setBgSplitMode(true)}
+                      style={{ marginTop: 10, background: "none", border: "none", padding: 0, color: "#2f8e9a", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
+                    >
+                      Use different backdrops for different shots
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
-                  <span className={styles.pkgLabel}>How many images on each background?</span>
+                  <span className={styles.pkgLabel}>How many images on each backdrop?</span>
                   <p className={styles.sectionHint}>
                     {flagShotAvailable && flagShotOn
-                      ? <>Place your <strong>{bgTarget}</strong> studio images across the backgrounds (the flag shot is your {selectedPkg}{selectedPkg === 10 ? "th" : "th"} image and uses its own rooftop scene). </>
+                      ? <>Place your <strong>{bgTarget}</strong> studio images across the backdrops (the flag shot is your {selectedPkg}th image and uses its own rooftop scene). </>
                       : <>Your package has {selectedPkg} images. </>}
-                    Tap <strong>+</strong> on a background to shoot more of your images there, or <strong>−</strong> for
-                    fewer. Want them all on one backdrop? Just tap its <strong>+</strong> {bgTarget} times.
+                    Tap <strong>+</strong> on a backdrop for more images there, or <strong>−</strong> for fewer.
                   </p>
                   {/* Prominent running total */}
                   <div
@@ -799,9 +839,16 @@ export default function CheckoutPanel({
                   })}
                   {bgAllocTotal !== bgTarget && (
                     <p className={styles.sectionHint} style={{ color: "#e5484d" }}>
-                      Place all {bgTarget} images across your backgrounds to continue.
+                      Place all {bgTarget} images across your backdrops to continue.
                     </p>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setBgSplitMode(false)}
+                    style={{ marginTop: 6, background: "none", border: "none", padding: 0, color: "#2f8e9a", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    ← Use one backdrop for the whole shoot
+                  </button>
                 </>
               )}
             </div>
