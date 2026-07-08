@@ -141,9 +141,12 @@ export default function CheckoutPanel({
   const [flagText, setFlagText] = useState("");
   const FLAG_TEXT_MAX = 60;
 
-  // Buyer background allocation — active when the template offers 2+ options
+  // Buyer background allocation — active when the template offers 2+ options.
+  // The flag shot takes 1 image (the rooftop scene, no studio backdrop), so only
+  // the remaining images are distributed across the studio backgrounds.
   const bgOptions = template.backgroundOptions ?? [];
-  const bgActive = bgOptions.length >= 2;
+  const bgTarget = Math.max(0, selectedPkg - (flagShotAvailable && flagShotOn ? 1 : 0));
+  const bgActive = bgOptions.length >= 2 && bgTarget >= 1;
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
 
   // Buyer choice groups — pick one option per group; only groups with 2+ options show a picker
@@ -239,9 +242,9 @@ export default function CheckoutPanel({
   useEffect(() => {
     if (!defaultsReady || didRestore.current) return;
     if (!bgActive) return;
-    setBgAlloc({ [bgOptions[0].id]: selectedPkg });
+    setBgAlloc({ [bgOptions[0].id]: bgTarget });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgActive, selectedPkg, template, defaultsReady]);
+  }, [bgActive, selectedPkg, template, defaultsReady, bgTarget]);
 
   // Default group picks: first option of each pickable group
   useEffect(() => {
@@ -292,10 +295,10 @@ export default function CheckoutPanel({
   const addImageToBg = (optionId: string) => {
     setBgAlloc(prev => {
       const cur = prev[optionId] ?? 0;
-      if (cur >= selectedPkg) return prev; // already holds every image
+      if (cur >= bgTarget) return prev; // already holds every image
       const total = Object.values(prev).reduce((a, b) => a + b, 0);
       const next = { ...prev, [optionId]: cur + 1 };
-      if (total >= selectedPkg) {
+      if (total >= bgTarget) {
         // Pull one from the largest other background
         let donor: string | null = null;
         let max = 0;
@@ -539,7 +542,7 @@ export default function CheckoutPanel({
   const anyUploading = newUploads.some(u => u.uploading) || poseUploads.some(u => u.uploading)
     || costarUploads.some(u => u.uploading) || !!groupPhotoUpload?.uploading || brandUploads.some(u => u.uploading);
   const bgAllocTotal = Object.values(bgAlloc).reduce((a, b) => a + b, 0);
-  const bgValid = !bgActive || bgAllocTotal === selectedPkg;
+  const bgValid = !bgActive || bgAllocTotal === bgTarget;
   const flagValid = !flagShotOn || flagText.trim().length > 0;
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
@@ -732,22 +735,24 @@ export default function CheckoutPanel({
                 <>
                   <span className={styles.pkgLabel}>How many images on each background?</span>
                   <p className={styles.sectionHint}>
-                    Your package has {selectedPkg} images. Tap <strong>+</strong> on a background to shoot more of
-                    your images there, or <strong>−</strong> for fewer. Want them all on one backdrop? Just tap its{" "}
-                    <strong>+</strong> {selectedPkg} times.
+                    {flagShotAvailable && flagShotOn
+                      ? <>Place your <strong>{bgTarget}</strong> studio images across the backgrounds (the flag shot is your {selectedPkg}{selectedPkg === 10 ? "th" : "th"} image and uses its own rooftop scene). </>
+                      : <>Your package has {selectedPkg} images. </>}
+                    Tap <strong>+</strong> on a background to shoot more of your images there, or <strong>−</strong> for
+                    fewer. Want them all on one backdrop? Just tap its <strong>+</strong> {bgTarget} times.
                   </p>
                   {/* Prominent running total */}
                   <div
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "8px 12px", borderRadius: 8, marginBottom: 8,
-                      background: bgAllocTotal === selectedPkg ? "rgba(23,119,103,0.12)" : "rgba(229,72,77,0.10)",
+                      background: bgAllocTotal === bgTarget ? "rgba(23,119,103,0.12)" : "rgba(229,72,77,0.10)",
                       fontSize: "0.85rem", fontWeight: 600,
                     }}
                   >
-                    <span>{bgAllocTotal === selectedPkg ? "All images placed" : "Images left to place"}</span>
+                    <span>{bgAllocTotal === bgTarget ? "All images placed" : "Images left to place"}</span>
                     <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                      {bgAllocTotal === selectedPkg ? `${selectedPkg} / ${selectedPkg}` : `${selectedPkg - bgAllocTotal} left`}
+                      {bgAllocTotal === bgTarget ? `${bgTarget} / ${bgTarget}` : `${bgTarget - bgAllocTotal} left`}
                     </span>
                   </div>
                   {bgOptions.map(o => {
@@ -783,16 +788,16 @@ export default function CheckoutPanel({
                             type="button"
                             aria-label={`One more image on ${o.name}`}
                             className={styles.pkgPill}
-                            disabled={count >= selectedPkg}
+                            disabled={count >= bgTarget}
                             onClick={() => addImageToBg(o.id)}
                           >+</button>
                         </div>
                       </div>
                     );
                   })}
-                  {bgAllocTotal !== selectedPkg && (
+                  {bgAllocTotal !== bgTarget && (
                     <p className={styles.sectionHint} style={{ color: "#e5484d" }}>
-                      Place all {selectedPkg} images across your backgrounds to continue.
+                      Place all {bgTarget} images across your backgrounds to continue.
                     </p>
                   )}
                 </>

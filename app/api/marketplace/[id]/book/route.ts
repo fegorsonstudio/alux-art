@@ -157,6 +157,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
+  // ── Viral flag shot ─────────────────────────────────────────────────────────
+  // Resolved before the background plan because it consumes one image slot that uses
+  // the rooftop scene (no studio backdrop), so backgrounds only cover the rest.
+  const templateFlagShot = (template.flag_shot ?? null) as FlagShotConfig | null;
+  let flagShot: { enabled: true; text: string } | null = null;
+  if (body.flagShot?.enabled && templateFlagShot?.enabled && templateFlagShot.imagePath) {
+    const flagText = sanitizeFlagText(body.flagShot.text);
+    if (flagText.length > 0) {
+      flagShot = { enabled: true, text: flagText };
+    }
+  }
+  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0);
+
   // ── Background allocation ───────────────────────────────────────────────
   // Options only exist on templates whose category allows them (write-time gate),
   // and the resolved snapshot comes from the server-side template row.
@@ -164,7 +177,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ? template.background_options
     : [];
   const { plan: backgroundPlan, error: bgError } =
-    resolveBackgroundPlan(templateBgOptions, body.backgroundAllocations, buyerPackageSize);
+    resolveBackgroundPlan(templateBgOptions, body.backgroundAllocations, bgSlotCount);
   if (bgError) return NextResponse.json({ error: bgError }, { status: 400 });
   const bgOptionPaths = new Set(
     backgroundPlan ? templateBgOptions.map((o) => o.imagePath).filter(Boolean) as string[] : []
@@ -198,18 +211,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (groupCoveredTags.has(ref.tag) && templateImagePaths.has(ref.storagePath)) return false;
     return true;
   });
-
-  // ── Viral flag shot ─────────────────────────────────────────────────────────
-  // Only honoured when the template has it configured with a plate. It replaces the
-  // package's last slot; the plate is attached below as a FLAG_SCENE reference.
-  const templateFlagShot = (template.flag_shot ?? null) as FlagShotConfig | null;
-  let flagShot: { enabled: true; text: string } | null = null;
-  if (body.flagShot?.enabled && templateFlagShot?.enabled && templateFlagShot.imagePath) {
-    const flagText = sanitizeFlagText(body.flagShot.text);
-    if (flagText.length > 0) {
-      flagShot = { enabled: true, text: flagText };
-    }
-  }
 
   const configRows = await sql`SELECT key, value FROM app_config WHERE key IN ('platform_fee_ngn', 'test_price_per_image_ngn')`;
   const configMap = new Map(configRows.map(r => [r.key as string, r.value as string]));
