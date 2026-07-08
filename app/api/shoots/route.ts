@@ -105,13 +105,17 @@ export async function POST(request: NextRequest) {
     packageSize: rawPackageSize = 10,
     adminBypass = false,
     characterBaseId = null,
+    groupPicture = false,
   } = body;
 
   if (!Array.isArray(identityImages) || !Array.isArray(inspirationImages) || !Array.isArray(taggedReferences)) {
     return NextResponse.json({ error: "Invalid reference image metadata" }, { status: 400 });
   }
-  if (identityImages.length < 3) {
-    return NextResponse.json({ error: "At least 3 identity photos required" }, { status: 400 });
+  if (identityImages.length < 1) {
+    return NextResponse.json({ error: "At least 1 identity photo required" }, { status: 400 });
+  }
+  if (identityImages.length > 6) {
+    return NextResponse.json({ error: "Up to 6 identity photos" }, { status: 400 });
   }
   if (inspirationImages.length < 1) {
     return NextResponse.json({ error: "At least 1 inspiration photo required" }, { status: 400 });
@@ -173,12 +177,12 @@ export async function POST(request: NextRequest) {
     INSERT INTO shoots (
       id, user_id, owner_email, mode, aspect_ratio, currency, package_size,
       status, progress, quote, character_base_id, base_lock_status,
-      identity_profile, created_at, updated_at
+      identity_profile, group_identity, created_at, updated_at
     ) VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ""}, ${mode}, ${aspectRatio},
       ${currency}, ${packageSize}, ${initialStatus}, 0, ${JSON.stringify(quote)},
       ${resolvedBaseId}, ${resolvedBaseId ? "USER_APPROVED" : null},
-      ${baseIdentityProfile ?? ""}, ${now}, ${now}
+      ${baseIdentityProfile ?? ""}, ${groupPicture === true}, ${now}, ${now}
     ) RETURNING *
   `;
 

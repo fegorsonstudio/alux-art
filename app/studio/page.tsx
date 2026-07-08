@@ -8,6 +8,8 @@ import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packageP
 import styles from "../workspace.module.css";
 
 interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; note?: string; }
+const MIN_IDENTITY = 1;
+const MAX_IDENTITY = 6;
 interface CharacterBaseItem { id: string; user_label?: string | null; base_url?: string | null; attempt_number: number; created_at: string; }
 const DEFAULT_PACKAGES: PackagePricing[] = Object.values(SHOOT_PACKAGES).map((pkg) => ({
   imageCount: pkg.imageCount,
@@ -79,6 +81,8 @@ export default function WorkspacePage() {
   const [packageSize, setPackageSize] = useState<ShootPackageSize>(10);
   const [resolution, setResolution] = useState("4K");
   const [quote, setQuote] = useState({ text: "", attribution: "" });
+  // Group picture: the identity photo(s) contain more than one person (e.g. a couple).
+  const [groupPicture, setGroupPicture] = useState(false);
 
   // Shoots
   const [shoots, setShoots] = useState<Shoot[]>([]);
@@ -403,20 +407,26 @@ export default function WorkspacePage() {
   }, [user]);
 
   const handleIdentityFiles = async (files: FileList) => {
+    const room = MAX_IDENTITY - identityImages.length;
+    if (room <= 0) { setUploadIssue(`You can use up to ${MAX_IDENTITY} identity photos.`); return; }
+    const toUpload = Array.from(files).slice(0, room);
+    if (files.length > toUpload.length) setUploadIssue(`Only ${MAX_IDENTITY} identity photos allowed — extra files were skipped.`);
     setUploading("identity");
-    const results = await Promise.all(Array.from(files).map(f => uploadFile(f, "identity-images", saveToLibrary)));
+    const results = await Promise.all(toUpload.map(f => uploadFile(f, "identity-images", saveToLibrary)));
     const ok = results.filter((r): r is UploadedRef => r !== null);
     if (ok.length) {
-      setIdentityImages(prev => [...prev, ...ok]);
+      setIdentityImages(prev => [...prev, ...ok].slice(0, MAX_IDENTITY));
       if (saveToLibrary) setLibraryImages(prev => [...prev, ...ok.filter(o => !prev.some(p => p.id === o.id))]);
     }
     setUploading(null);
   };
 
   const handleAddFromLibrary = (img: UploadedRef) => {
-    setIdentityImages(prev =>
-      prev.some(i => i.id === img.id) ? prev.filter(i => i.id !== img.id) : [...prev, img]
-    );
+    setIdentityImages(prev => {
+      if (prev.some(i => i.id === img.id)) return prev.filter(i => i.id !== img.id);
+      if (prev.length >= MAX_IDENTITY) { setUploadIssue(`You can use up to ${MAX_IDENTITY} identity photos.`); return prev; }
+      return [...prev, img];
+    });
   };
 
   const handleClearLibrary = async () => {
@@ -607,6 +617,7 @@ export default function WorkspacePage() {
           })),
           quote, adminBypass,
           characterBaseId: selectedBase?.id ?? null,
+          groupPicture,
         }),
       });
       const data = await res.json();
@@ -724,7 +735,7 @@ export default function WorkspacePage() {
     window.location.href = `/creator-dashboard?edit=${d.templateId}`;
   };
   const isAdmin = user?.role === "admin";
-  const canCreate = identityImages.length >= 3 && inspirationImages.length >= 1;
+  const canCreate = identityImages.length >= MIN_IDENTITY && identityImages.length <= MAX_IDENTITY && inspirationImages.length >= 1;
   const activePackage = packages.find((pkg) => pkg.imageCount === packageSize) ?? DEFAULT_PACKAGES.find((pkg) => pkg.imageCount === packageSize)!;
   const activePrice = currency === "USD" ? activePackage.usd : activePackage.ngn;
   const price = currency === "USD" ? `$${activePrice}` : `NGN ${activePrice.toLocaleString()}`;
@@ -813,7 +824,7 @@ export default function WorkspacePage() {
           {/* Identity photos */}
           <div className={styles.panel}>
             <div className={styles.panelTitleRow}>
-              <p className={styles.panelTitle}>Identity Photos (min. 3)</p>
+              <p className={styles.panelTitle}>Identity Photos (1–6)</p>
               {libraryImages.length > 0 && (
                 <button className={styles.clearLibBtn} onClick={handleClearLibrary}>Clear library</button>
               )}
@@ -869,7 +880,7 @@ export default function WorkspacePage() {
               ) : (
                 <p>{uploading === "identity" ? "Processing..." : "Click to add identity photos"}</p>
               )}
-              <p className={styles.uploadCount}>{identityImages.length}/3 minimum</p>
+              <p className={styles.uploadCount}>{identityImages.length}/{MAX_IDENTITY}</p>
             </div>
 
             {/* Save to library toggle */}
@@ -877,6 +888,17 @@ export default function WorkspacePage() {
               <input type="checkbox" checked={saveToLibrary} onChange={e => setSaveToLibrary(e.target.checked)} />
               <span>Save to my identity library</span>
             </label>
+
+            {/* Group picture toggle — identity photo(s) contain more than one person */}
+            <label className={styles.saveToggle}>
+              <input type="checkbox" checked={groupPicture} onChange={e => setGroupPicture(e.target.checked)} />
+              <span>This is a group photo (more than one person)</span>
+            </label>
+            {groupPicture && (
+              <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
+                We&apos;ll preserve everyone&apos;s face and show all of you together in each image. One clear photo of the group is enough.
+              </p>
+            )}
             {uploadIssue && <p className={styles.uploadIssue}>{uploadIssue}</p>}
           </div>
 
@@ -1093,7 +1115,7 @@ export default function WorkspacePage() {
           <div className={styles.ctaSection}>
             {!canCreate && (
               <p className={styles.validationNote}>
-                {identityImages.length < 3 ? `Add ${3 - identityImages.length} more identity photo${3 - identityImages.length !== 1 ? "s" : ""}` : "Add at least 1 inspiration photo"}
+                {identityImages.length < MIN_IDENTITY ? "Add at least 1 identity photo" : "Add at least 1 inspiration photo"}
               </p>
             )}
             <button className={styles.payBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(false)}>

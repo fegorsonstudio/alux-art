@@ -278,7 +278,21 @@ async function signRefs(
 
 const IDENTITY_PROFILE_FIELDS = ["Face:", "Skin:", "Eyes:", "Hair:", "Build:", "Distinctive:"];
 
-async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
+// Group picture mode: the identity photo(s) contain more than one person. This block is
+// injected into the brief-builder input to override the default single-subject mandatory
+// prefix so every generated prompt keeps ALL people together with each face preserved.
+const GROUP_IDENTITY_DIRECTIVE = (identityRange: string) => `═══════════════════════════════════════════════════════
+GROUP IDENTITY MODE — MULTIPLE SUBJECTS (OVERRIDES THE SINGLE-SUBJECT PREFIX)
+═══════════════════════════════════════════════════════
+This shoot has MORE THAN ONE subject: every person shown in GROUP A (${identityRange}).
+For EVERY prompt you generate:
+- Open by referencing ${identityRange} as THE SUBJECTS (plural). Do NOT write "the subject" as a single person, and do NOT emit the line "Do not use the face or body of any person from any other reference image" — that restriction is for single-subject shoots only.
+- Preserve EACH person's exact face, skin tone, eye spacing, nose, jawline and build from ${identityRange}, following their Person 1 / Person 2 / ... profiles.
+- Include ALL of these people TOGETHER in every image, posed naturally as a couple/group. Never drop, isolate, swap, or duplicate anyone, and never invent extra people.
+- Vary pose, framing, wardrobe, lighting and setting across images, but the same real people stay together throughout.
+═══════════════════════════════════════════════════════`;
+
+async function analyzeIdentityImages(imageUrls: string[], groupMode = false): Promise<string> {
   const allParts = await Promise.all(
     imageUrls.filter(Boolean).slice(0, 4).map(toGeminiImagePart)
   );
@@ -293,7 +307,30 @@ async function analyzeIdentityImages(imageUrls: string[]): Promise<string> {
     generationConfig: { maxOutputTokens: 1024 },
   });
 
-  const basePrompt = `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
+  const basePrompt = groupMode
+    ? `These reference photos show MORE THAN ONE person (e.g. a couple or group). For EACH person visible, extract a precise identity profile for AI image generation.
+
+Describe the people left-to-right as they appear. Return ONLY this format, repeating the block for every person (Person 1, Person 2, ...). ALL 6 fields are MANDATORY for EVERY person:
+IDENTITY PROFILE:
+Person 1:
+Face: [facial structure — shape, proportions, bone structure]
+Skin: [exact tone — depth and undertone, e.g. deep ebony with cool undertones, rich dark brown with warm undertones]
+Eyes: [color, shape, spacing]
+Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
+Build: [body type, height impression, proportions]
+Distinctive: [any notable stable features]
+Person 2:
+Face: [...]
+Skin: [...]
+Eyes: [...]
+Hair: [...]
+Build: [...]
+Distinctive: [...]
+
+Include EVERY person shown — do not merge, blend, or skip anyone. Keep each person's features distinct.
+CRITICAL: Skin tone accuracy is essential for identity preservation. Dark skin must be described with precise depth and undertone. Never default to generic or lighter descriptors.
+Clinical and precise. No subjective judgments. Stable biometric features only.`
+    : `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
 Return ONLY this format — ALL 6 fields are MANDATORY. Do not stop until all 6 are written:
 IDENTITY PROFILE:
@@ -539,6 +576,7 @@ async function buildShootBrief(
     storyImageUrls?: Array<{ url: string; label: string }>;
     category?: string;
     flag_shot?: { enabled: boolean; text: string } | null;
+    group_identity?: boolean;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -554,11 +592,14 @@ async function buildShootBrief(
   const portraitCount = hasQuote ? packageSize - 1 : packageSize;
 
   // Group A: locked base or identity images
+  const groupMode = shoot.group_identity === true && !characterBaseUrl;
   const groupAUrls = characterBaseUrl ? [characterBaseUrl] : identityRefs.map((r) => r.url);
   const groupACount = groupAUrls.length;
   const identityRange = groupACount === 1 ? "IMAGE 1" : `IMAGES 1 through ${groupACount}`;
   const groupALabel = characterBaseUrl
     ? `GROUP A — Identity (Subject): Locked character base image (IMAGE 1). Use IMAGE 1 for exact facial identity, body structure, and locked wardrobe.`
+    : groupMode
+    ? `GROUP A — Identity (Subjects): ${identityRange} show MORE THAN ONE person (e.g. a couple/group). Preserve EACH person's exact face, skin tone, and body build from ${identityRange}. Every generated image MUST include ALL of these people together, arranged naturally in the scene — never drop, isolate, or replace anyone, and never invent additional people.\n\nIdentity Profiles (one per person):\n${identityProfile}`
     : `GROUP A — Identity (Subject): ${groupACount} identity reference photo(s) (${identityRange}). Use ${identityRange} for facial features, skin tone, and body build only. When writing the mandatory prompt prefix, reference ${identityRange} as the identity source.\n\nIdentity Profile:\n${identityProfile}`;
 
   const poseRefsForBrief = refs.filter((r) => r.purpose === "pose" && r.url);
@@ -657,6 +698,10 @@ Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : "
 
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.`,
   });
+
+  if (groupMode) {
+    parts.push({ text: GROUP_IDENTITY_DIRECTIVE(identityRange) });
+  }
 
   if (shoot.category === "call_to_bar") {
     const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
@@ -806,7 +851,7 @@ async function generateImageWithSeedream(
 }
 
 // Claude-based identity analysis (alternative to Gemini)
-async function analyzeIdentityImagesClaude(imageUrls: string[]): Promise<string> {
+async function analyzeIdentityImagesClaude(imageUrls: string[], groupMode = false): Promise<string> {
   const imageBlocks = imageUrls
     .filter(Boolean)
     .slice(0, 4)
@@ -815,7 +860,29 @@ async function analyzeIdentityImagesClaude(imageUrls: string[]): Promise<string>
       source: { type: "url" as const, url },
     }));
 
-  const promptText = `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
+  const promptText = groupMode
+    ? `These reference photos show MORE THAN ONE person (e.g. a couple or group). For EACH person visible, extract a precise identity profile for AI image generation.
+
+Describe the people left-to-right. Return ONLY this format, repeating the block for every person (Person 1, Person 2, ...). ALL 6 fields are required for EVERY person:
+IDENTITY PROFILE:
+Person 1:
+Face: [facial structure — shape, proportions, bone structure]
+Skin: [tone with specific depth and undertone]
+Eyes: [color, shape, spacing]
+Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
+Build: [body type, height impression, proportions]
+Distinctive: [any notable stable features]
+Person 2:
+Face: [...]
+Skin: [...]
+Eyes: [...]
+Hair: [...]
+Build: [...]
+Distinctive: [...]
+
+Include EVERY person shown — do not merge, blend, or skip anyone. Keep each person distinct.
+Clinical and precise. No subjective judgments. Stable biometric features only.`
+    : `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
 Return ONLY this format — ALL 6 fields are required:
 IDENTITY PROFILE:
@@ -862,6 +929,7 @@ async function buildShootBriefClaude(
     storyImageUrls?: Array<{ url: string; label: string }>;
     category?: string;
     flag_shot?: { enabled: boolean; text: string } | null;
+    group_identity?: boolean;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -877,11 +945,14 @@ async function buildShootBriefClaude(
   const hasQuote = !!shoot.quote?.text && packageSize === 10;
   const portraitCount = hasQuote ? packageSize - 1 : packageSize;
 
+  const groupMode = shoot.group_identity === true && !characterBaseUrl;
   const groupAUrls = characterBaseUrl ? [characterBaseUrl] : identityRefs.map((r) => r.url);
   const groupACount = groupAUrls.length;
   const identityRange = groupACount === 1 ? "IMAGE 1" : `IMAGES 1 through ${groupACount}`;
   const groupALabel = characterBaseUrl
     ? `GROUP A — Identity (Subject): Locked character base image (IMAGE 1). Use IMAGE 1 for exact facial identity, body structure, and locked wardrobe.`
+    : groupMode
+    ? `GROUP A — Identity (Subjects): ${identityRange} show MORE THAN ONE person (e.g. a couple/group). Preserve EACH person's exact face, skin tone, and body build from ${identityRange}. Every generated image MUST include ALL of these people together, arranged naturally in the scene — never drop, isolate, or replace anyone, and never invent additional people.\n\nIdentity Profiles (one per person):\n${identityProfile}`
     : `GROUP A — Identity (Subject): ${groupACount} identity reference photo(s) (${identityRange}). Use ${identityRange} for facial features, skin tone, and body build only. When writing the mandatory prompt prefix, reference ${identityRange} as the identity source.\n\nIdentity Profile:\n${identityProfile}`;
 
   type ClaudePart =
@@ -953,6 +1024,10 @@ ${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `
 Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
 
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.` });
+
+  if (groupMode) {
+    content.push({ type: "text", text: GROUP_IDENTITY_DIRECTIVE(identityRange) });
+  }
 
   if (shoot.category === "call_to_bar") {
     const { buildCallToBarBriefSection } = await import("@/lib/call-to-bar");
@@ -1436,7 +1511,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1596,18 +1671,21 @@ export async function startGenerationWorker(
       .filter(Boolean);
     if (identityUrls.length === 0) throw new Error("No identity images found");
 
+    // Group picture: the identity photo(s) contain more than one person — analyze each.
+    const groupMode = shoot.group_identity === true;
+
     // Claude-first with silent Gemini fallback: a dead Anthropic key (no credits,
     // rate limit, outage) must never fail or delay the shoot. Claude gets 1 retry
     // so failover is fast; Gemini keeps its usual 2.
     if (visionModel === "claude") {
       try {
-        identityProfile = await withRetry(() => analyzeIdentityImagesClaude(identityUrls), 1);
+        identityProfile = await withRetry(() => analyzeIdentityImagesClaude(identityUrls, groupMode), 1);
       } catch (err) {
         console.warn("[generate] Claude identity analysis failed — falling back to Gemini:", err instanceof Error ? err.message : String(err));
-        identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls), 2);
+        identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls, groupMode), 2);
       }
     } else {
-      identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls), 2);
+      identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls, groupMode), 2);
     }
 
     await sql`UPDATE shoots SET identity_profile = ${identityProfile}, updated_at = ${ts()} WHERE id = ${shootId}`;
