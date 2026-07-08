@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import ResumeRedirect from "./ResumeRedirect";
 
 const GA_ID = "G-QQP2424C0W";
 
@@ -30,7 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={outfit.variable}><main>{children}</main></body>
+      <body className={outfit.variable}><ResumeRedirect /><main>{children}</main></body>
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
       <Script id="ga-init" strategy="afterInteractive">{`
         window.dataLayer = window.dataLayer || [];

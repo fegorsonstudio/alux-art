@@ -159,8 +159,9 @@ export default function CheckoutPanel({
   const [resuming, setResuming] = useState(false);
   const [defaultsReady, setDefaultsReady] = useState(false);
   const didRestore = useRef(false);
-  // Return to this same checkout, in resume mode, after Google sign-in.
-  const loginUrl = `/login?next=${encodeURIComponent(`/marketplace/${templateId}?resume=1`)}`;
+  // Return to this template after Google sign-in. Resume is driven by the localStorage
+  // flag + IndexedDB stash (set in goSignIn), so it survives even if `next` is dropped.
+  const loginUrl = `/login?next=${encodeURIComponent(`/marketplace/${templateId}`)}`;
   const signedOut = !loggedIn || needsLogin;
 
   const [poseUploads, setPoseUploads] = useState<PoseUpload[]>([]);
@@ -559,6 +560,8 @@ export default function CheckoutPanel({
       .filter(u => u.file)
       .map(u => ({ name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }));
     await savePendingCheckout(templateId, config, files);
+    // Flag drives the post-login redirect back here even if OAuth `next` is dropped.
+    try { localStorage.setItem("aluxart_resume_tid", templateId); } catch { /* ignore */ }
     window.location.href = loginUrl;
   };
 

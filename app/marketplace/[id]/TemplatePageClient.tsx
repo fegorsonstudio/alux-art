@@ -186,14 +186,19 @@ export default function TemplatePage() {
   }, [id]);
 
   // Returning from Google sign-in mid-checkout: reopen the panel in resume mode so it
-  // restores the buyer's saved choices + photos and carries on to payment.
+  // restores the buyer's saved choices + photos and carries on to payment. Triggered by
+  // ?resume=1 (OAuth next worked) OR the localStorage flag (next was dropped to home).
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (new URLSearchParams(window.location.search).get("resume") === "1") {
+    const hasQuery = new URLSearchParams(window.location.search).get("resume") === "1";
+    let flagMatches = false;
+    try { flagMatches = localStorage.getItem("aluxart_resume_tid") === id; } catch { /* ignore */ }
+    if (hasQuery || flagMatches) {
+      try { localStorage.removeItem("aluxart_resume_tid"); } catch { /* ignore */ }
       setResumeMode(true);
       setCheckoutOpen(true);
     }
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     if (!storFont.googleUrl) return;
