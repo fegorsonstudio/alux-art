@@ -75,8 +75,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const seenImagePaths = new Set<string>();
   const deduplicatedImages = images.filter((img) => {
-    // The flag-scene plate travels via the `flagShot` field below, not as an editable reference.
-    if (img.tag === "FLAG_SCENE") return false;
+    // Slot plates travel via dedicated fields (flagShot/trendSlots), never as editable references.
+    if (img.tag === "FLAG_SCENE" || img.tag === "MUGSHOT_BOARD" || img.tag === "BOWL_PROP") return false;
     if (img.purpose === "tagged") {
       if (seenImagePaths.has(img.storagePath as string)) return false;
       seenImagePaths.add(img.storagePath as string);
@@ -154,6 +154,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               : null,
           }
         : null,
+      trendSlots: (() => {
+        const ts = template.trend_slots as { mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null; bowl?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null } | null;
+        if (!ts) return null;
+        const part = (p?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null) =>
+          p?.enabled && p.imagePath
+            ? { enabled: true, imageUrl: r2ProxyUrl(p.imageBucket ?? "template-images", p.imagePath) }
+            : null;
+        const mugshot = part(ts.mugshot);
+        const bowl = part(ts.bowl);
+        return mugshot || bowl ? { mugshot, bowl } : null;
+      })(),
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',
       requiresBrand: template.story_type === 'brand' || template.story_type === 'group_brand',

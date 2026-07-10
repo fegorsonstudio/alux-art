@@ -221,7 +221,7 @@ export interface PackagePricing {
 export type TemplateCategory =
   | "portrait" | "editorial" | "corporate" | "glamour" | "wedding"
   | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story"
-  | "call_to_bar";
+  | "call_to_bar" | "trending";
 
 // Story Photoshoot types
 export type StoryType = "solo" | "duo" | "group" | "brand" | "group_brand";
@@ -254,6 +254,7 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string; isSt
   { value: "boudoir",     label: "Boudoir" },
   { value: "street",      label: "Street" },
   { value: "call_to_bar", label: "⚖️ Call to Bar" },
+  { value: "trending",    label: "🔥 Trending" },
   { value: "other",       label: "Other" },
 ];
 

@@ -43,6 +43,10 @@ interface TemplateRow {
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
   option_groups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
   flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
+  trend_slots?: {
+    mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
+    bowl?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
+  } | null;
 }
 
 interface ShowcaseIdentityRef {
@@ -139,8 +143,9 @@ interface BackgroundOptionDraft {
 
 const MAX_BG_OPTIONS = 6;
 
-// Buyer choice groups — pick-one-per-group styling options (all categories)
-type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade";
+// Buyer choice groups — pick-one-per-group styling options (all categories).
+// Props are multi-select: buyers pick as many as they want (or none).
+type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props";
 const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> = {
   outfit:      { tag: "OUTFIT",      label: "Outfit" },
   hairstyle:   { tag: "HAIRSTYLE",   label: "Hairstyle" },
@@ -149,6 +154,7 @@ const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> =
   shoes:       { tag: "ACCESSORY",   label: "Shoes" },
   accessory:   { tag: "ACCESSORY",   label: "Accessory" },
   color_grade: { tag: "COLOR_GRADE", label: "Color grade" },
+  props:       { tag: "ACCESSORY",   label: "Props" },
 };
 const MAX_CHOICE_GROUPS = 6;
 const MAX_GROUP_OPTIONS = 6;
@@ -221,6 +227,17 @@ function CreatorDashboard() {
   const [flagShotPreview, setFlagShotPreview] = useState("");
   const [flagShotUploading, setFlagShotUploading] = useState(false);
   const [flagShotIsNew, setFlagShotIsNew] = useState(false);
+
+  // Trend slots (Trending category): mugshot board + business bowl plates.
+  // One state record per slot, same lifecycle as the flag shot.
+  interface TrendSlotDraft { enabled: boolean; imagePath: string; preview: string; uploading: boolean; isNew: boolean }
+  const emptyTrendSlot = (): TrendSlotDraft => ({ enabled: false, imagePath: "", preview: "", uploading: false, isNew: false });
+  const [trendMugshot, setTrendMugshot] = useState<TrendSlotDraft>(emptyTrendSlot());
+  const [trendBowl, setTrendBowl] = useState<TrendSlotDraft>(emptyTrendSlot());
+
+  // Asset library picker (reuse photos from previous templates)
+  const [libraryPicker, setLibraryPicker] = useState<{ target: "group" | "background"; groupId?: string } | null>(null);
+  const [libraryFilter, setLibraryFilter] = useState<string>("all");
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -409,6 +426,16 @@ function CreatorDashboard() {
     setFlagShotImagePath(fs?.imagePath ?? "");
     setFlagShotIsNew(false);
     setFlagShotPreview(fs?.imagePath ? (bgImgs.find(img => img.storage_path === fs.imagePath)?.signed_url ?? "") : "");
+    // Hydrate trend slots
+    const hydrateTrend = (p?: { enabled?: boolean; imagePath?: string } | null) => ({
+      enabled: !!p?.enabled,
+      imagePath: p?.imagePath ?? "",
+      preview: p?.imagePath ? (bgImgs.find(img => img.storage_path === p.imagePath)?.signed_url ?? "") : "",
+      uploading: false,
+      isNew: false,
+    });
+    setTrendMugshot(hydrateTrend(t.trend_slots?.mugshot));
+    setTrendBowl(hydrateTrend(t.trend_slots?.bowl));
     // Hydrate choice groups the same way
     setChoiceGroups((Array.isArray(t.option_groups) ? t.option_groups : []).map((g) => ({
       id: g.id,
@@ -433,6 +460,8 @@ function CreatorDashboard() {
       ...(Array.isArray(t.background_options) ? t.background_options : []).map(o => o.imagePath).filter(Boolean),
       ...(Array.isArray(t.option_groups) ? t.option_groups : []).flatMap(g => (g.options ?? []).map(o => o.imagePath)).filter(Boolean),
       ...(t.flag_shot?.imagePath ? [t.flag_shot.imagePath] : []),
+      ...(t.trend_slots?.mugshot?.imagePath ? [t.trend_slots.mugshot.imagePath] : []),
+      ...(t.trend_slots?.bowl?.imagePath ? [t.trend_slots.bowl.imagePath] : []),
     ]);
     const imgs = t.template_images ?? [];
     const existingImages: UploadedImage[] = imgs
@@ -487,7 +516,7 @@ function CreatorDashboard() {
     });
     setImages([]);
     setCoverPreview("");
-    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false);
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot());
   };
 
   const openShowcase = async (templateId: string) => {
@@ -756,6 +785,59 @@ function CreatorDashboard() {
     setFlagShotUploading(false);
   };
 
+  const uploadTrendPlateFile = async (file: File, which: "mugshot" | "bowl") => {
+    const set = which === "mugshot" ? setTrendMugshot : setTrendBowl;
+    set(s => ({ ...s, uploading: true }));
+    const f = await resizeIfNeeded(file);
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    fd.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+    if (!res.ok) { set(s => ({ ...s, uploading: false })); setFormError("Plate image upload failed"); return; }
+    const { storagePath } = await res.json();
+    set(s => ({ ...s, imagePath: storagePath, preview: URL.createObjectURL(file), isNew: true, uploading: false }));
+  };
+
+  // ── Asset library — every photo option used on any of this creator's templates ──
+  interface LibraryAsset { imagePath: string; name: string; type: string; preview: string; sourceTitle: string; description?: string }
+  const libraryAssets: LibraryAsset[] = (() => {
+    const seen = new Set<string>();
+    const out: LibraryAsset[] = [];
+    for (const t of templates) {
+      const imgs = t.template_images ?? [];
+      const thumb = (p?: string) => (p ? imgs.find(i => i.storage_path === p)?.signed_url ?? "" : "");
+      for (const g of (Array.isArray(t.option_groups) ? t.option_groups : [])) {
+        for (const o of (g.options ?? [])) {
+          if (o.kind !== "photo" || !o.imagePath || seen.has(o.imagePath)) continue;
+          seen.add(o.imagePath);
+          out.push({ imagePath: o.imagePath, name: o.name, type: g.type in GROUP_TYPE_META ? g.type : "accessory", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
+        }
+      }
+      for (const o of (Array.isArray(t.background_options) ? t.background_options : [])) {
+        if (o.kind !== "photo" || !o.imagePath || seen.has(o.imagePath)) continue;
+        seen.add(o.imagePath);
+        out.push({ imagePath: o.imagePath, name: o.name, type: "background", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
+      }
+    }
+    return out.filter(a => a.preview);
+  })();
+
+  const addLibraryAsset = (asset: LibraryAsset) => {
+    if (!libraryPicker) return;
+    if (libraryPicker.target === "background") {
+      setBackgroundOptions(prev => {
+        if (prev.length >= MAX_BG_OPTIONS || prev.some(o => o.imagePath === asset.imagePath)) return prev;
+        return [...prev, { id: crypto.randomUUID(), name: asset.name, kind: "photo" as const, description: asset.description ?? "", imagePath: asset.imagePath, preview: asset.preview, uploading: false }];
+      });
+    } else if (libraryPicker.groupId) {
+      setChoiceGroups(prev => prev.map(g => {
+        if (g.id !== libraryPicker.groupId) return g;
+        if (g.options.length >= MAX_GROUP_OPTIONS || g.options.some(o => o.imagePath === asset.imagePath)) return g;
+        return { ...g, options: [...g.options, { id: crypto.randomUUID(), name: asset.name, kind: "photo" as const, description: asset.description ?? "", imagePath: asset.imagePath, preview: asset.preview, uploading: false }] };
+      }));
+    }
+  };
+
   const removeSampleImage = async (item: SampleImageItem, templateId: string | null) => {
     if (item.fromDb && templateId && templateId !== "create") {
       await fetch(`/api/templates/${templateId}/images`, {
@@ -852,6 +934,13 @@ function CreatorDashboard() {
       // Flag shot (Call to Bar only). Send null to clear when disabled or missing a plate.
       flagShot: form.category === "call_to_bar" && flagShotEnabled && flagShotImagePath
         ? { enabled: true, imagePath: flagShotImagePath }
+        : null,
+      // Trend slots (Trending category only). Null clears when disabled/missing plates.
+      trendSlots: form.category === "trending" && ((trendMugshot.enabled && trendMugshot.imagePath) || (trendBowl.enabled && trendBowl.imagePath))
+        ? {
+            mugshot: trendMugshot.enabled && trendMugshot.imagePath ? { enabled: true, imagePath: trendMugshot.imagePath } : null,
+            bowl: trendBowl.enabled && trendBowl.imagePath ? { enabled: true, imagePath: trendBowl.imagePath } : null,
+          }
         : null,
     };
 
@@ -979,6 +1068,35 @@ function CreatorDashboard() {
       setFlagShotIsNew(false);
     }
 
+    // Save trend-slot plates as tagged images (only when newly uploaded)
+    if (form.category === "trending") {
+      const plates: Array<{ draft: TrendSlotDraft; set: typeof setTrendMugshot; tag: string; label: string }> = [
+        { draft: trendMugshot, set: setTrendMugshot, tag: "MUGSHOT_BOARD", label: "Mugshot board" },
+        { draft: trendBowl, set: setTrendBowl, tag: "BOWL_PROP", label: "Business bowl" },
+      ];
+      for (const p of plates) {
+        if (!(p.draft.enabled && p.draft.imagePath && p.draft.isNew)) continue;
+        const res = await fetch(`/api/templates/${templateId}/images`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storagePath: p.draft.imagePath,
+            displayOrder: 0,
+            purpose: "tagged",
+            tag: p.tag,
+            customName: p.label,
+          }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          setFormError(errData.error ?? `Failed to save ${p.label} image — please try again`);
+          setSaving(false);
+          return;
+        }
+        p.set(s => ({ ...s, isNew: false }));
+      }
+    }
+
     // Save new sample images (existing fromDb ones are already in DB; deletions are done in real-time)
     const existingSampleCount = sampleImages.filter(s => s.fromDb).length;
     const newSamples = sampleImages.filter(s => s.storagePath && !s.fromDb);
@@ -1003,7 +1121,7 @@ function CreatorDashboard() {
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
-    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false);
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot());
     loadDashboard();
   };
 
@@ -1295,7 +1413,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); }}>
             + New Template
           </button>
         )}
@@ -1846,18 +1964,29 @@ function CreatorDashboard() {
             <div className={styles.field}>
               <div className={styles.storySceneHeader}>
                 <span className={styles.label}>Buyer background options ({backgroundOptions.length}/{MAX_BG_OPTIONS})</span>
-                {backgroundOptions.length < MAX_BG_OPTIONS && (
-                  <button
-                    type="button"
-                    className={styles.addSceneBtn}
-                    onClick={() => setBackgroundOptions(prev => [...prev, {
-                      id: crypto.randomUUID(), name: "", kind: "photo", description: "",
-                      imagePath: "", preview: "", uploading: false,
-                    }])}
-                  >
-                    + Add option
-                  </button>
-                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  {backgroundOptions.length < MAX_BG_OPTIONS && libraryAssets.length > 0 && (
+                    <button
+                      type="button"
+                      className={styles.addSceneBtn}
+                      onClick={() => { setLibraryFilter("background"); setLibraryPicker({ target: "background" }); }}
+                    >
+                      📚 Add from library
+                    </button>
+                  )}
+                  {backgroundOptions.length < MAX_BG_OPTIONS && (
+                    <button
+                      type="button"
+                      className={styles.addSceneBtn}
+                      onClick={() => setBackgroundOptions(prev => [...prev, {
+                        id: crypto.randomUUID(), name: "", kind: "photo", description: "",
+                        imagePath: "", preview: "", uploading: false,
+                      }])}
+                    >
+                      + Add option
+                    </button>
+                  )}
+                </div>
               </div>
               <p className={styles.fieldHint}>
                 Add at least 2 options to let buyers split their package across backgrounds
@@ -2067,15 +2196,26 @@ function CreatorDashboard() {
                   ))}
 
                   {group.options.length < MAX_GROUP_OPTIONS && (
-                    <button
-                      type="button"
-                      className={styles.addSceneBtn}
-                      onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
-                        ? { ...g, options: [...g.options, { id: crypto.randomUUID(), name: "", kind: "photo", description: "", imagePath: "", preview: "", uploading: false }] }
-                        : g))}
-                    >
-                      + Add option
-                    </button>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {libraryAssets.length > 0 && (
+                        <button
+                          type="button"
+                          className={styles.addSceneBtn}
+                          onClick={() => { setLibraryFilter(group.type in GROUP_TYPE_META ? group.type : "all"); setLibraryPicker({ target: "group", groupId: group.id }); }}
+                        >
+                          📚 Add from library
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.addSceneBtn}
+                        onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                          ? { ...g, options: [...g.options, { id: crypto.randomUUID(), name: "", kind: "photo", description: "", imagePath: "", preview: "", uploading: false }] }
+                          : g))}
+                      >
+                        + Add option
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -2130,6 +2270,121 @@ function CreatorDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Asset library picker overlay */}
+          {libraryPicker && (
+            <div
+              style={{
+                position: "fixed", inset: 0, zIndex: 300, background: "rgba(10,16,20,0.55)",
+                display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+              }}
+              onClick={() => setLibraryPicker(null)}
+            >
+              <div
+                style={{
+                  background: "var(--panel-bg, #101820)", color: "inherit", borderRadius: 14,
+                  maxWidth: 720, width: "100%", maxHeight: "80vh", overflowY: "auto",
+                  padding: 18, border: "1px solid rgba(127,127,127,0.3)",
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span className={styles.label}>Asset library — reuse from your templates</span>
+                  <button type="button" className={styles.sceneRemove} onClick={() => setLibraryPicker(null)}>✕</button>
+                </div>
+                <div className={styles.pills} style={{ marginBottom: 12, flexWrap: "wrap" }}>
+                  {["all", ...Array.from(new Set(libraryAssets.map(a => a.type)))].map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`${styles.pill} ${libraryFilter === t ? styles.pillActive : ""}`}
+                      onClick={() => setLibraryFilter(t)}
+                    >
+                      {t === "all" ? "All" : t === "background" ? "Background" : (GROUP_TYPE_META[t as ChoiceGroupType]?.label ?? t)}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
+                  {libraryAssets
+                    .filter(a => libraryFilter === "all" || a.type === libraryFilter)
+                    .map(a => (
+                      <button
+                        key={a.imagePath}
+                        type="button"
+                        title={`${a.name} — from "${a.sourceTitle}"`}
+                        onClick={() => { addLibraryAsset(a); setLibraryPicker(null); }}
+                        style={{
+                          display: "flex", flexDirection: "column", gap: 4, background: "none",
+                          border: "1px solid rgba(127,127,127,0.3)", borderRadius: 8, padding: 6, cursor: "pointer",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={a.preview} alt={a.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
+                        <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                        <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.sourceTitle}</span>
+                      </button>
+                    ))}
+                  {libraryAssets.filter(a => libraryFilter === "all" || a.type === libraryFilter).length === 0 && (
+                    <p className={styles.fieldHint}>No saved assets of this type yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Trend slots — Trending category only */}
+          {form.category === "trending" && (
+            <div className={styles.field}>
+              <span className={styles.label}>Trend slots</span>
+              <p className={styles.fieldHint}>
+                Optional viral shots buyers can add at checkout. Each enabled slot replaces the LAST
+                image(s) of their package. Upload one clean plate per slot (no people in it).
+              </p>
+
+              {([
+                { key: "mugshot" as const, draft: trendMugshot, set: setTrendMugshot, title: "Mugshot shot", hint: "Buyer holds the forensics board in front of the height chart; their NAME / OFFENSE / DATE are written on the board in red handwriting. Upload the clean board + height-chart plate." },
+                { key: "bowl" as const, draft: trendBowl, set: setTrendBowl, title: "Business-on-my-head shot", hint: "Buyer uploads their product (piled comically high in the bowl) or logo (branded on the bowl) and carries it on their head. Upload the clean empty bowl plate." },
+              ]).map(slot => (
+                <div key={slot.key} className={styles.sceneCard}>
+                  <div className={styles.sceneCardHeader}>
+                    <span className={styles.sceneNum}>{slot.title}</span>
+                    <button
+                      type="button"
+                      className={`${styles.pill} ${slot.draft.enabled ? styles.pillActive : ""}`}
+                      onClick={() => slot.set(s => ({ ...s, enabled: !s.enabled }))}
+                    >
+                      {slot.draft.enabled ? "Enabled" : "Enable"}
+                    </button>
+                  </div>
+                  {slot.draft.enabled && (
+                    <div className={styles.sceneFields}>
+                      <span className={styles.fieldHint}>{slot.hint}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {slot.draft.preview && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={slot.draft.preview} alt={slot.title} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 6 }} />
+                        )}
+                        <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                          {slot.draft.uploading ? "Uploading..." : slot.draft.imagePath ? "Replace plate" : "Upload plate"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadTrendPlateFile(f, slot.key); e.target.value = ""; }}
+                          />
+                        </label>
+                      </div>
+                      {!slot.draft.imagePath && (
+                        <span style={{ color: "#e5849d", fontSize: "0.78rem" }}>
+                          This slot stays off until you upload its plate.
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 

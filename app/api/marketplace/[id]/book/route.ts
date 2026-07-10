@@ -9,6 +9,7 @@ import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-plan";
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
+import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
 
 interface RefInput {
   name?: string;
@@ -41,6 +42,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
     choiceSelections?: Array<{ groupId: string; optionId: string }>;
     flagShot?: { enabled?: boolean; text?: string };
+    trendSlots?: {
+      mugshot?: { enabled?: boolean; name?: string; offense?: string; date?: string };
+      bowl?: { enabled?: boolean; mode?: string };
+    };
+    bowlContentRef?: { storagePath?: string; storageBucket?: string };
     storyAssets?: {
       costarRefs?: Array<{ storagePath: string; storageBucket: string; name?: string }>;
       groupPhotoRef?: { storagePath: string; storageBucket: string; name?: string };
@@ -49,9 +55,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   };
 
   const identityRefs: RefInput[] = body.identityRefs ?? [];
-  // FLAG_SCENE is attached server-side from the template's flag_shot config — never accept it
-  // from the client (older builds surfaced the plate as an editable reference).
-  const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => r.tag !== "FLAG_SCENE");
+  // Slot plates (FLAG_SCENE, MUGSHOT_BOARD, BOWL_PROP) are attached server-side from the
+  // template config — never accept them from the client.
+  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT"]);
+  const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => !SERVER_ONLY_TAGS.has(r.tag));
 
   if (!Array.isArray(identityRefs) || identityRefs.length === 0) {
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
@@ -168,7 +175,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       flagShot = { enabled: true, text: flagText };
     }
   }
-  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0);
+
+  // ── Trend slots (Trending category) ─────────────────────────────────────────
+  // Mugshot is background-exempt (the height chart IS its background); bowl keeps
+  // the buyer's chosen backdrop. The bowl needs the buyer's product/logo upload.
+  const templateTrendSlots = (template.trend_slots ?? null) as TrendSlotsConfig | null;
+  let trendMugshot = templateTrendSlots?.mugshot?.enabled && templateTrendSlots.mugshot.imagePath
+    ? sanitizeMugshotSelection(body.trendSlots?.mugshot)
+    : null;
+  if (trendMugshot && !trendMugshot.date) {
+    trendMugshot = { ...trendMugshot, date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) };
+  }
+  const bowlRef = body.bowlContentRef;
+  const bowlRefValid = !!(bowlRef && typeof bowlRef.storagePath === "string" && bowlRef.storagePath.startsWith(`${user.id}/`));
+  const trendBowl = templateTrendSlots?.bowl?.enabled && templateTrendSlots.bowl.imagePath && bowlRefValid
+    ? sanitizeBowlSelection(body.trendSlots?.bowl)
+    : null;
+  const trendSelection: TrendSlotsSelection | null = (trendMugshot || trendBowl)
+    ? { mugshot: trendMugshot, bowl: trendBowl }
+    : null;
+
+  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0);
 
   // ── Background allocation ───────────────────────────────────────────────
   // Options only exist on templates whose category allows them (write-time gate),
@@ -299,7 +326,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
@@ -308,6 +335,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${backgroundPlan ? sql.json(backgroundPlan as unknown as Parameters<typeof sql.json>[0]) : null},
       ${choiceSelections ? sql.json(choiceSelections as unknown as Parameters<typeof sql.json>[0]) : null},
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
       ${now}, ${now}
     )
     RETURNING id
@@ -420,6 +448,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       name: "flag-scene", type: "image/jpeg", size: 1,
       storage_bucket: templateFlagShot.imageBucket ?? "template-images",
       storage_path: templateFlagShot.imagePath, created_at: now,
+    }] : []),
+    // Trend-slot plates + the buyer's bowl content (product/logo upload)
+    ...(trendMugshot && templateTrendSlots?.mugshot?.imagePath ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "MUGSHOT_BOARD", custom_name: "Mugshot board", note: null,
+      name: "mugshot-board", type: "image/jpeg", size: 1,
+      storage_bucket: templateTrendSlots.mugshot.imageBucket ?? "template-images",
+      storage_path: templateTrendSlots.mugshot.imagePath, created_at: now,
+    }] : []),
+    ...(trendBowl && templateTrendSlots?.bowl?.imagePath ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "BOWL_PROP", custom_name: "Business bowl", note: null,
+      name: "bowl-prop", type: "image/jpeg", size: 1,
+      storage_bucket: templateTrendSlots.bowl.imageBucket ?? "template-images",
+      storage_path: templateTrendSlots.bowl.imagePath, created_at: now,
+    }] : []),
+    ...(trendBowl && bowlRefValid ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "BOWL_CONTENT",
+      custom_name: trendBowl.mode === "logo" ? "Business logo" : "Business product", note: null,
+      name: "bowl-content", type: "image/jpeg", size: 1,
+      storage_bucket: bowlRef!.storageBucket ?? "identity-images",
+      storage_path: bowlRef!.storagePath!, created_at: now,
     }] : []),
   ];
 

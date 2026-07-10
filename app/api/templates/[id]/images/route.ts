@@ -4,7 +4,26 @@ import sql from "@/lib/db";
 import { r2Delete } from "@/lib/r2";
 
 const ALLOWED_PURPOSES = new Set(["inspiration", "tagged", "sample"]);
-const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "FLAG_SCENE"]);
+const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP"]);
+
+// Assets can be reused across templates (asset library): the same storage_path may back
+// options on several templates. Only delete the R2 object when NOTHING else references it —
+// another template_images row, or any template's option_groups/background_options/
+// flag_shot/trend_slots JSONB.
+async function isStoragePathShared(storagePath: string, excludeImageId?: string): Promise<boolean> {
+  const [row] = await sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM template_images
+        WHERE storage_path = ${storagePath}
+        ${excludeImageId ? sql`AND id != ${excludeImageId}` : sql``}) AS img_refs,
+      (SELECT COUNT(*)::int FROM templates
+        WHERE option_groups::text LIKE ${"%" + storagePath + "%"}
+           OR background_options::text LIKE ${"%" + storagePath + "%"}
+           OR flag_shot::text LIKE ${"%" + storagePath + "%"}
+           OR trend_slots::text LIKE ${"%" + storagePath + "%"}) AS jsonb_refs
+  `.catch(() => [{ img_refs: 1, jsonb_refs: 1 }]); // on error, assume shared (never delete blindly)
+  return ((row?.img_refs as number) ?? 1) > 0 || ((row?.jsonb_refs as number) ?? 1) > 0;
+}
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -104,7 +123,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (customName !== undefined) updates.custom_name = (typeof customName === "string" && customName.trim()) ? customName.trim() : null;
   if (noteHidden !== undefined) updates.note_hidden = noteHidden === true;
   if (storagePath !== undefined) {
-    if (img.storage_path) await r2Delete("template-images", [img.storage_path as string]).catch(() => {});
+    if (img.storage_path && !(await isStoragePathShared(img.storage_path as string, imageId))) {
+      await r2Delete("template-images", [img.storage_path as string]).catch(() => {});
+    }
     updates.storage_path = storagePath;
   }
 
@@ -145,10 +166,16 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     `;
 
     if (allRefs.length > 0) {
-      const paths = allRefs.map((r) => r.storage_path as string).filter(Boolean);
-      if (paths.length > 0) await r2Delete("template-images", paths).catch(() => {});
+      // Delete DB rows first so the shared-check sees the post-delete state,
+      // then only remove R2 objects nothing else references.
       const ids = allRefs.map((r) => r.id as string);
       await sql`DELETE FROM template_images WHERE id = ANY(${ids})`;
+      const paths = allRefs.map((r) => r.storage_path as string).filter(Boolean);
+      const deletable: string[] = [];
+      for (const p of paths) {
+        if (!(await isStoragePathShared(p))) deletable.push(p);
+      }
+      if (deletable.length > 0) await r2Delete("template-images", deletable).catch(() => {});
     }
     return NextResponse.json({ ok: true, deleted: allRefs.length });
   }
@@ -161,8 +188,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const [tmpl] = await sql`SELECT id FROM templates WHERE id = ${img.template_id} AND creator_id = ${creator.id}`;
   if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await r2Delete("template-images", [img.storage_path as string]).catch(() => {});
   await sql`DELETE FROM template_images WHERE id = ${body.imageId}`;
+  if (img.storage_path && !(await isStoragePathShared(img.storage_path as string))) {
+    await r2Delete("template-images", [img.storage_path as string]).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }

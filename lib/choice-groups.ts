@@ -11,7 +11,7 @@
 // package, choice groups are single-pick.
 
 export type ChoiceGroupType =
-  | "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade";
+  | "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props";
 
 export interface ChoiceOption {
   id: string;
@@ -43,7 +43,9 @@ export interface ChoiceSelections {
 
 // Group type → reference tag + default label. Shoes map to ACCESSORY with a
 // name prefix so multiple accessory-tag groups stay distinguishable downstream.
-export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: string; namePrefix?: string }> = {
+// Props are multi-select: buyers can pick ANY number (including none) — they ride
+// the ACCESSORY tag, the only tag whose refs coexist in the generation pipeline.
+export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: string; namePrefix?: string; multiSelect?: boolean }> = {
   outfit:      { tag: "OUTFIT",      defaultLabel: "Outfit" },
   hairstyle:   { tag: "HAIRSTYLE",   defaultLabel: "Hairstyle" },
   makeup:      { tag: "MAKEUP",      defaultLabel: "Makeup" },
@@ -51,6 +53,7 @@ export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: s
   shoes:       { tag: "ACCESSORY",   defaultLabel: "Shoes", namePrefix: "Shoes — " },
   accessory:   { tag: "ACCESSORY",   defaultLabel: "Accessory" },
   color_grade: { tag: "COLOR_GRADE", defaultLabel: "Color grade" },
+  props:       { tag: "ACCESSORY",   defaultLabel: "Props", namePrefix: "Prop — ", multiSelect: true },
 };
 
 export const MAX_CHOICE_GROUPS = 6;
@@ -115,42 +118,64 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
 }
 
 // ── Buyer pick resolver (book route) ─────────────────────────────────────────
-// One selection per group. A group the buyer didn't touch (or old clients that
-// send nothing) defaults to its first option. Groups with a single option
-// resolve silently.
+// Single-select groups: one selection per group; untouched groups default to
+// their first option (old clients that send nothing resolve silently).
+// Multi-select groups (props): ALL picks for the group are kept; untouched
+// multi-select groups resolve to NOTHING (props are opt-in extras).
 export function resolveChoiceSelections(
   groups: ChoiceGroup[],
   buyerPicks: Array<{ groupId: string; optionId: string }> | undefined
 ): { selections: ChoiceSelections | null; error?: string } {
   if (!Array.isArray(groups) || groups.length === 0) return { selections: null };
 
-  const pickByGroup = new Map<string, string>();
+  const picksByGroup = new Map<string, string[]>();
   for (const p of buyerPicks ?? []) {
     if (!p || typeof p.groupId !== "string" || typeof p.optionId !== "string") {
       return { selections: null, error: "Invalid style selection" };
     }
-    pickByGroup.set(p.groupId, p.optionId);
+    const list = picksByGroup.get(p.groupId) ?? [];
+    if (!list.includes(p.optionId)) list.push(p.optionId);
+    picksByGroup.set(p.groupId, list);
   }
 
   const selections: ChoiceSelection[] = [];
   for (const group of groups) {
     if (!group.options.length) continue;
-    const pickedId = pickByGroup.get(group.id);
-    let option = group.options[0];
-    if (pickedId !== undefined) {
-      const found = group.options.find((o) => o.id === pickedId);
-      if (!found) return { selections: null, error: `Unknown option for ${group.label}` };
-      option = found;
-    }
     const meta = GROUP_TYPES[group.type];
-    selections.push({
-      ...option,
-      groupId: group.id,
-      groupType: group.type,
-      tag: meta.tag,
-      label: group.label,
-      name: meta.namePrefix ? `${meta.namePrefix}${option.name}` : option.name,
-    });
+    const picked = picksByGroup.get(group.id);
+
+    let chosen: ChoiceOption[];
+    if (meta.multiSelect) {
+      // Opt-in: nothing picked → nothing selected for this group.
+      if (!picked || picked.length === 0) continue;
+      chosen = [];
+      for (const id of picked) {
+        const found = group.options.find((o) => o.id === id);
+        if (!found) return { selections: null, error: `Unknown option for ${group.label}` };
+        chosen.push(found);
+      }
+    } else {
+      // Single-select: last pick wins (legacy behavior), default to first option.
+      let option = group.options[0];
+      if (picked && picked.length > 0) {
+        const pickedId = picked[picked.length - 1];
+        const found = group.options.find((o) => o.id === pickedId);
+        if (!found) return { selections: null, error: `Unknown option for ${group.label}` };
+        option = found;
+      }
+      chosen = [option];
+    }
+
+    for (const option of chosen) {
+      selections.push({
+        ...option,
+        groupId: group.id,
+        groupType: group.type,
+        tag: meta.tag,
+        label: group.label,
+        name: meta.namePrefix ? `${meta.namePrefix}${option.name}` : option.name,
+      });
+    }
   }
 
   return selections.length > 0 ? { selections: { version: 1, selections } } : { selections: null };
@@ -168,7 +193,14 @@ export function buildChoiceBriefSection(choices: ChoiceSelections): string {
   );
   lines.push("");
   for (const sel of choices.selections) {
-    if (sel.kind === "photo") {
+    if (sel.groupType === "props" && sel.kind === "photo") {
+      lines.push(
+        `${sel.tag} — "${sel.name}" [PROP PHOTO REFERENCE]: include this exact prop naturally in the ` +
+        `scene with the subject in every image (held, worn, or placed believably), replicating its ` +
+        `design, colors, and materials from the attached reference image labeled ${sel.tag} "${sel.name}".` +
+        (sel.description ? ` Creator note: ${sel.description}.` : "")
+      );
+    } else if (sel.kind === "photo") {
       lines.push(
         `${sel.tag} — "${sel.name}" [PHOTO REFERENCE]: replicate the attached reference image ` +
         `labeled ${sel.tag} "${sel.name}" exactly in every image.` +

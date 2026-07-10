@@ -40,10 +40,18 @@ export interface PendingConfig {
   flagShotOn: boolean;
   flagText: string;
   groupPicks: Record<string, string>;
+  multiPicks?: Record<string, string[]>;
   bgAlloc: Record<string, number>;
   bgSplitMode?: boolean;
   rolePrompt: string;
   brandPlacement: string;
+  // Trend slots (Trending category)
+  mugshotOn?: boolean;
+  mugshotName?: string;
+  mugshotOffense?: string;
+  mugshotDate?: string;
+  bowlOn?: boolean;
+  bowlMode?: "product" | "logo";
 }
 
 export interface PendingFile {
@@ -56,6 +64,7 @@ interface PendingRecord {
   templateId: string;
   config: PendingConfig;
   files: PendingFile[];
+  bowlFile?: PendingFile | null;
   savedAt: number;
 }
 
@@ -75,13 +84,14 @@ function openDb(): Promise<IDBDatabase> {
 export async function savePendingCheckout(
   templateId: string,
   config: PendingConfig,
-  files: PendingFile[]
+  files: PendingFile[],
+  bowlFile?: PendingFile | null
 ): Promise<void> {
   try {
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
-      tx.objectStore(STORE).put({ templateId, config, files, savedAt: Date.now() } as PendingRecord);
+      tx.objectStore(STORE).put({ templateId, config, files, bowlFile: bowlFile ?? null, savedAt: Date.now() } as PendingRecord);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -91,7 +101,7 @@ export async function savePendingCheckout(
 
 export async function loadPendingCheckout(
   templateId: string
-): Promise<{ config: PendingConfig; files: PendingFile[] } | null> {
+): Promise<{ config: PendingConfig; files: PendingFile[]; bowlFile?: PendingFile | null } | null> {
   try {
     const db = await openDb();
     const rec = await new Promise<PendingRecord | undefined>((resolve, reject) => {
@@ -106,7 +116,7 @@ export async function loadPendingCheckout(
       await clearPendingCheckout(templateId);
       return null;
     }
-    return { config: rec.config, files: rec.files };
+    return { config: rec.config, files: rec.files, bowlFile: rec.bowlFile ?? null };
   } catch {
     return null;
   }

@@ -57,6 +57,10 @@ interface TemplateDetail {
     }>;
   }>;
   flagShot?: { enabled: boolean; imageUrl?: string | null } | null;
+  trendSlots?: {
+    mugshot?: { enabled: boolean; imageUrl?: string | null } | null;
+    bowl?: { enabled: boolean; imageUrl?: string | null } | null;
+  } | null;
 }
 
 interface CouponResult {
@@ -141,20 +145,38 @@ export default function CheckoutPanel({
   const [flagText, setFlagText] = useState("");
   const FLAG_TEXT_MAX = 60;
 
+  // Trend slots (Trending category) — optional viral shots, each replaces one image.
+  const mugshotAvailable = !!template.trendSlots?.mugshot?.enabled;
+  const bowlAvailable = !!template.trendSlots?.bowl?.enabled;
+  const [mugshotOn, setMugshotOn] = useState(false);
+  const [mugshotName, setMugshotName] = useState("");
+  const [mugshotOffense, setMugshotOffense] = useState("");
+  const [mugshotDate, setMugshotDate] = useState(() =>
+    new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  );
+  const [bowlOn, setBowlOn] = useState(false);
+  const [bowlMode, setBowlMode] = useState<"product" | "logo">("product");
+  const [bowlUpload, setBowlUpload] = useState<NewIdentityUpload | null>(null);
+
   // Buyer background allocation — active when the template offers 2+ options.
-  // The flag shot takes 1 image (the rooftop scene, no studio backdrop), so only
-  // the remaining images are distributed across the studio backgrounds.
+  // Background-exempt custom slots (flag rooftop, mugshot height-chart) take images out
+  // of the studio-backdrop distribution; the bowl slot keeps the chosen backdrop.
   const bgOptions = template.backgroundOptions ?? [];
-  const bgTarget = Math.max(0, selectedPkg - (flagShotAvailable && flagShotOn ? 1 : 0));
+  const bgExemptCount = (flagShotAvailable && flagShotOn ? 1 : 0) + (mugshotAvailable && mugshotOn ? 1 : 0);
+  const bgTarget = Math.max(0, selectedPkg - bgExemptCount);
   const bgActive = bgOptions.length >= 2 && bgTarget >= 1;
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
   // Default UX: one backdrop for the whole shoot. Buyers opt into splitting across backdrops.
   const [bgSplitMode, setBgSplitMode] = useState(false);
 
-  // Buyer choice groups — pick one option per group; only groups with 2+ options show a picker
+  // Buyer choice groups. Single-select groups: pick one, shown at 2+ options.
+  // Multi-select groups (props): pick any number, shown from 1 option.
+  const MULTI_SELECT_TYPES = new Set(["props"]);
   const choiceGroups = template.optionGroups ?? [];
-  const pickableGroups = choiceGroups.filter(g => (g.options?.length ?? 0) >= 2);
+  const pickableGroups = choiceGroups.filter(g => !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
+  const multiGroups = choiceGroups.filter(g => MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
+  const [multiPicks, setMultiPicks] = useState<Record<string, string[]>>({});
 
   const [savedRefs, setSavedRefs] = useState<SavedIdentityRef[]>([]);
   const [selectedSaved, setSelectedSaved] = useState<Set<string>>(new Set());
@@ -282,10 +304,18 @@ export default function CheckoutPanel({
       setFlagShotOn(!!c.flagShotOn);
       setFlagText(c.flagText ?? "");
       if (c.groupPicks) setGroupPicks(c.groupPicks);
+      if (c.multiPicks) setMultiPicks(c.multiPicks);
       if (typeof c.bgSplitMode === "boolean") setBgSplitMode(c.bgSplitMode);
       if (c.bgAlloc) setBgAlloc(c.bgAlloc);
       setRolePrompt(c.rolePrompt ?? "");
       if (c.brandPlacement) setBrandPlacement(c.brandPlacement as typeof brandPlacement);
+      // Trend slots
+      setMugshotOn(!!c.mugshotOn);
+      if (c.mugshotName) setMugshotName(c.mugshotName);
+      if (c.mugshotOffense) setMugshotOffense(c.mugshotOffense);
+      if (c.mugshotDate) setMugshotDate(c.mugshotDate);
+      setBowlOn(!!c.bowlOn);
+      if (c.bowlMode === "product" || c.bowlMode === "logo") setBowlMode(c.bowlMode);
       if (pending.files?.length) {
         const items: NewIdentityUpload[] = pending.files.map(f => {
           const file = new File([f.blob], f.name, { type: f.type || "image/jpeg" });
@@ -293,6 +323,13 @@ export default function CheckoutPanel({
         });
         setNewUploads(prev => [...prev, ...items]);
         items.forEach(u => uploadIdentityFile(u.file, u.localId));
+      }
+      if (pending.bowlFile) {
+        const bf = pending.bowlFile;
+        const file = new File([bf.blob], bf.name, { type: bf.type || "image/jpeg" });
+        const item: NewIdentityUpload = { localId: crypto.randomUUID(), file, preview: URL.createObjectURL(bf.blob), storagePath: "", storageBucket: "identity-images", uploading: true };
+        setBowlUpload(item);
+        uploadBowlFile(file, item.localId);
       }
       await clearPendingCheckout(templateId);
       setDefaultsReady(true);
@@ -487,6 +524,34 @@ export default function CheckoutPanel({
     uploadGroupPhotoFile(file, item.localId);
   };
 
+  // ── Trend slot: bowl content (product photo or logo) ─────────────────────────
+  const uploadBowlFile = async (file: File, localId: string) => {
+    setBowlUpload(prev => prev && prev.localId === localId ? { ...prev, uploading: true } : prev);
+    const f = await resizeIfNeeded(file);
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
+    if (!res.ok) {
+      if (res.status === 401) setNeedsLogin(true);
+      setBowlUpload(prev => prev && prev.localId === localId ? { ...prev, uploading: false, error: res.status === 401 ? "Sign in first" : "Upload failed" } : prev);
+      return;
+    }
+    const { storagePath } = await res.json();
+    setBowlUpload(prev => prev && prev.localId === localId ? { ...prev, uploading: false, storagePath, storageBucket: "identity-images" } : prev);
+  };
+
+  const setBowlFile = (file: File) => {
+    const item: NewIdentityUpload = {
+      localId: crypto.randomUUID(), file,
+      preview: URL.createObjectURL(file),
+      storagePath: "", storageBucket: "identity-images", uploading: false,
+    };
+    setBowlUpload(item);
+    // Signed out: stage locally (preserved across sign-in). Signed in: upload now.
+    if (!signedOut) uploadBowlFile(file, item.localId);
+  };
+
   // ── Story: brand / logo upload ────────────────────────────────────────────
 
   const uploadBrandFile = async (file: File, localId: string) => {
@@ -557,12 +622,17 @@ export default function CheckoutPanel({
   const bgAllocTotal = Object.values(bgAlloc).reduce((a, b) => a + b, 0);
   const bgValid = !bgActive || bgAllocTotal === bgTarget;
   const flagValid = !flagShotOn || flagText.trim().length > 0;
+  const mugshotValid = !mugshotOn || (mugshotName.trim().length > 0 && mugshotOffense.trim().length > 0);
+  const bowlValid = !bowlOn || (signedOut ? !!bowlUpload : !!bowlUpload?.storagePath);
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
     && !buying
     && bgValid
     && flagValid
+    && mugshotValid
+    && bowlValid
+    && !bowlUpload?.uploading
     && (!template.requiresCostar || (costarUploads.some(u => u.storagePath) && costarConsent))
     && (!template.requiresGroup || !!groupPhotoUpload?.storagePath)
     && (!template.requiresBrand || brandUploads.some(u => u.storagePath));
@@ -571,11 +641,17 @@ export default function CheckoutPanel({
   // They return to this same checkout (resume mode) with everything restored.
   const goSignIn = async () => {
     setResuming(true);
-    const config = { selectedPkg, shotType, flagShotOn, flagText, groupPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement };
+    const config = {
+      selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
+      mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
+    };
     const files = newUploads
       .filter(u => u.file)
       .map(u => ({ name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }));
-    await savePendingCheckout(templateId, config, files);
+    const bowlFile = bowlUpload?.file
+      ? { name: bowlUpload.file.name, type: bowlUpload.file.type || "image/jpeg", blob: bowlUpload.file as Blob }
+      : null;
+    await savePendingCheckout(templateId, config, files, bowlFile);
     // Marker (cookie + localStorage) drives the post-login redirect back here even if the
     // OAuth `next` is dropped to the home page.
     setResumeMarker(templateId);
@@ -617,11 +693,27 @@ export default function CheckoutPanel({
         backgroundAllocations: bgActive
           ? Object.entries(bgAlloc).filter(([, c]) => c > 0).map(([optionId, count]) => ({ optionId, count }))
           : undefined,
-        choiceSelections: pickableGroups.length > 0
-          ? Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId }))
+        choiceSelections: (pickableGroups.length > 0 || multiGroups.length > 0)
+          ? [
+              ...Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId })),
+              ...Object.entries(multiPicks).flatMap(([groupId, ids]) => ids.map(optionId => ({ groupId, optionId }))),
+            ]
           : undefined,
         flagShot: flagShotAvailable && flagShotOn
           ? { enabled: true, text: flagText.trim() }
+          : undefined,
+        trendSlots: (mugshotAvailable && mugshotOn) || (bowlAvailable && bowlOn)
+          ? {
+              mugshot: mugshotAvailable && mugshotOn
+                ? { enabled: true, name: mugshotName.trim(), offense: mugshotOffense.trim(), date: mugshotDate.trim() }
+                : undefined,
+              bowl: bowlAvailable && bowlOn
+                ? { enabled: true, mode: bowlMode }
+                : undefined,
+            }
+          : undefined,
+        bowlContentRef: bowlAvailable && bowlOn && bowlUpload?.storagePath
+          ? { storagePath: bowlUpload.storagePath, storageBucket: bowlUpload.storageBucket }
           : undefined,
       }),
     });
@@ -899,6 +991,51 @@ export default function CheckoutPanel({
             </div>
           ))}
 
+          {/* Multi-select groups (props) — pick as many as you want */}
+          {multiGroups.map(group => {
+            const picked = multiPicks[group.id] ?? [];
+            return (
+              <div key={group.id} className={styles.pkgRow}>
+                <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· choose any</span></span>
+                <p className={styles.sectionHint}>
+                  Pick as many {group.label.toLowerCase()} as you want — they&apos;ll appear in your photos. Or pick none.
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  {group.options.map(o => {
+                    const isOn = picked.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        title={o.kind === "text" ? o.description : o.name}
+                        onClick={() => setMultiPicks(prev => {
+                          const cur = prev[group.id] ?? [];
+                          return { ...prev, [group.id]: isOn ? cur.filter(id => id !== o.id) : [...cur, o.id] };
+                        })}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                          background: "none", cursor: "pointer", padding: 4,
+                          border: isOn ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                          borderRadius: 8, minWidth: 64,
+                        }}
+                      >
+                        {o.imageUrl ? (
+                          <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={80} />
+                        ) : (
+                          <span style={{ width: 44, height: 55, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.6rem", letterSpacing: "0.04em" }}>
+                            TEXT
+                          </span>
+                        )}
+                        <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
+                        {isOn && <span style={{ fontSize: "0.65rem" }}>✓ added</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
           {/* Viral skyscraper flag shot */}
           {flagShotAvailable && (
             <div className={styles.pkgRow}>
@@ -941,6 +1078,110 @@ export default function CheckoutPanel({
                       <p className={styles.identityWarn}>Type your flag text to continue.</p>
                     )}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Trend slot: viral mugshot */}
+          {mugshotAvailable && (
+            <div className={styles.pkgRow}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={mugshotOn} onChange={e => setMugshotOn(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>
+                  <span className={styles.pkgLabel}>Add the viral mugshot</span>
+                  <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
+                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You pose like a mugshot
+                    holding the board — your name, &quot;offense&quot; and date are handwritten on it in red.
+                  </span>
+                </span>
+              </label>
+              {mugshotOn && (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {template.trendSlots?.mugshot?.imageUrl && (
+                    <ImagePreview src={template.trendSlots.mugshot.imageUrl} alt="Mugshot board" className={styles.flagScenePreview} preferredWidth={420} />
+                  )}
+                  <div className={styles.flagField}>
+                    <label className={styles.flagFieldLabel}>✍️ Your name (on the board)</label>
+                    <input type="text" className={styles.flagInput} placeholder="e.g. Barr. Amaka O." value={mugshotName} maxLength={30} onChange={e => setMugshotName(e.target.value)} />
+                  </div>
+                  <div className={styles.flagField}>
+                    <label className={styles.flagFieldLabel}>🚨 The &quot;offense&quot;</label>
+                    <input type="text" className={styles.flagInput} placeholder='e.g. "Passing the Bar too easily"' value={mugshotOffense} maxLength={100} onChange={e => setMugshotOffense(e.target.value)} />
+                    <p className={styles.sectionHint} style={{ marginTop: 4 }}>
+                      Make it fun — a birthday, a launch, an achievement. {mugshotOffense.length}/100
+                    </p>
+                  </div>
+                  <div className={styles.flagField}>
+                    <label className={styles.flagFieldLabel}>📅 Date (tap to change)</label>
+                    <input type="text" className={styles.flagInput} value={mugshotDate} maxLength={20} onChange={e => setMugshotDate(e.target.value)} />
+                  </div>
+                  {mugshotOn && (!mugshotName.trim() || !mugshotOffense.trim()) && (
+                    <p className={styles.identityWarn}>Fill in your name and the offense to continue.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Trend slot: business on my head (bowl) */}
+          {bowlAvailable && (
+            <div className={styles.pkgRow}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={bowlOn} onChange={e => setBowlOn(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>
+                  <span className={styles.pkgLabel}>Add the &quot;business on my head&quot; shot</span>
+                  <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
+                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You carry the classic
+                    enamel bowl on your head — loaded with your product, or branded with your logo.
+                  </span>
+                </span>
+              </label>
+              {bowlOn && (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {template.trendSlots?.bowl?.imageUrl && (
+                    <ImagePreview src={template.trendSlots.bowl.imageUrl} alt="Bowl" className={styles.flagScenePreview} preferredWidth={420} />
+                  )}
+                  <div className={styles.shotTypeRow}>
+                    {([["product", "My product — piled in the bowl"], ["logo", "My logo — printed on the bowl"]] as const).map(([m, label]) => (
+                      <button
+                        key={m}
+                        type="button"
+                        className={`${styles.pkgPill} ${bowlMode === m ? styles.pkgPillActive : ""}`}
+                        onClick={() => setBowlMode(m)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={styles.sectionHint}>
+                    {bowlMode === "product"
+                      ? "Upload ONE clear photo of what you sell (on a plain background works best). We pile it comically high in the bowl."
+                      : "Upload your logo (a clean, high-quality image). We print it on the side of the bowl."}
+                  </p>
+                  {bowlUpload ? (
+                    <div className={styles.uploadGrid}>
+                      <div className={styles.uploadItem}>
+                        <ImagePreview src={bowlUpload.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                        {bowlUpload.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                        {bowlUpload.error && <div className={styles.uploadError}>{bowlUpload.error}</div>}
+                        <button type="button" className={styles.removeBtn} onClick={() => setBowlUpload(null)}>✕</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className={styles.uploadBtn} style={{ cursor: "pointer", alignSelf: "flex-start" }}>
+                      + Upload {bowlMode === "product" ? "product photo" : "logo"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) setBowlFile(f); e.target.value = ""; }}
+                      />
+                    </label>
+                  )}
+                  {bowlOn && !bowlUpload && (
+                    <p className={styles.identityWarn}>Upload your {bowlMode === "product" ? "product photo" : "logo"} to continue.</p>
+                  )}
                 </div>
               )}
             </div>

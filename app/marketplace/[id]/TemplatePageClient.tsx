@@ -87,6 +87,10 @@ interface TemplateDetail {
   backgroundOptions?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string | null; imageUrl?: string | null }>;
   optionGroups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string | null; imageUrl?: string | null }> }>;
   flagShot?: { enabled: boolean; imageUrl?: string | null } | null;
+  trendSlots?: {
+    mugshot?: { enabled: boolean; imageUrl?: string | null } | null;
+    bowl?: { enabled: boolean; imageUrl?: string | null } | null;
+  } | null;
 }
 
 interface CouponResult {

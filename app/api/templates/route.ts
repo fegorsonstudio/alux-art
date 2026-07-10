@@ -5,8 +5,9 @@ import { ASPECTS, packagePrice } from "@/lib/types";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
 import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
+import { sanitizeTrendSlotsConfig } from "@/lib/trend-slots";
 
-const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
+const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "trending", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
 const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group", "brand", "group_brand"]);
 
@@ -96,12 +97,16 @@ export async function POST(request: NextRequest) {
   const safeFlagShot = category === "call_to_bar"
     ? sanitizeFlagShotConfig(body.flagShot, user.id)
     : null;
+  // Trend slots (mugshot + bowl) are a Trending-category feature.
+  const safeTrendSlots = category === "trending"
+    ? sanitizeTrendSlotsConfig(body.trendSlots, user.id)
+    : null;
 
   const [template] = await sql`
     INSERT INTO templates
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
-       is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot,
+       is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot, trend_slots,
        created_at, updated_at)
     VALUES (
       ${creator.id},
@@ -120,6 +125,7 @@ export async function POST(request: NextRequest) {
       ${safeBackgroundOptions ? sql.json(safeBackgroundOptions as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeOptionGroups ? sql.json(safeOptionGroups as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeFlagShot ? sql.json(safeFlagShot as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${safeTrendSlots ? sql.json(safeTrendSlots as unknown as Parameters<typeof sql.json>[0]) : null},
       NOW(), NOW()
     )
     RETURNING *

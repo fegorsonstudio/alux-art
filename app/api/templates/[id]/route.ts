@@ -6,8 +6,9 @@ import { r2ProxyUrl } from "@/lib/r2";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
 import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
+import { sanitizeTrendSlotsConfig } from "@/lib/trend-slots";
 
-const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "other"]);
+const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "trending", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
 const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group", "brand", "group_brand"]);
 
@@ -113,8 +114,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     flagClause = sql`, flag_shot = ${flag ? sql.json(flag as any) : null}`;
   }
 
+  // Trend slots (Trending category only)
+  let trendClause = sql``;
+  if (body.trendSlots !== undefined) {
+    const [currentRow] = await sql`SELECT category FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
+    const effectiveCategory = (typeof body.category === "string" && ALLOWED_CATEGORIES.has(body.category))
+      ? body.category
+      : (currentRow?.category as string | undefined);
+    const trend = effectiveCategory === "trending" ? sanitizeTrendSlotsConfig(body.trendSlots, user.id) : null;
+    trendClause = sql`, trend_slots = ${trend ? sql.json(trend as any) : null}`;
+  }
+
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}${flagClause}
+    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}${flagClause}${trendClause}
     WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 
