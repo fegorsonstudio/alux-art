@@ -57,7 +57,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const identityRefs: RefInput[] = body.identityRefs ?? [];
   // Slot plates (FLAG_SCENE, MUGSHOT_BOARD, BOWL_PROP) are attached server-side from the
   // template config — never accept them from the client.
-  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT"]);
+  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK"]);
   const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => !SERVER_ONLY_TAGS.has(r.tag));
 
   if (!Array.isArray(identityRefs) || identityRefs.length === 0) {
@@ -191,13 +191,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const trendBowl = templateTrendSlots?.bowl?.enabled && templateTrendSlots.bowl.imagePath && bowlRefValid
     ? sanitizeBowlSelection(body.trendSlots?.bowl)
     : null;
-  const trendSelection: TrendSlotsSelection | null = (trendMugshot || trendBowl)
-    ? { mugshot: trendMugshot, bowl: trendBowl }
+  // Viral chair pose: NOT buyer-optional — every booking of a template with the
+  // plate configured gets it automatically.
+  const trendViral = templateTrendSlots?.viral?.enabled && templateTrendSlots.viral.imagePath
+    ? { enabled: true as const }
+    : null;
+  const trendSelection: TrendSlotsSelection | null = (trendMugshot || trendBowl || trendViral)
+    ? { mugshot: trendMugshot, bowl: trendBowl, viral: trendViral }
     : null;
 
-  // Custom slots (flag, mugshot, bowl) sit outside the backdrop distribution — the
-  // buyer only places their normal portraits across backdrops.
-  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0);
+  // Custom slots (flag, mugshot, bowl, viral) sit outside the backdrop distribution —
+  // the buyer only places their normal portraits across backdrops.
+  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0) - (trendViral ? 1 : 0);
 
   // ── Background allocation ───────────────────────────────────────────────
   // Options only exist on templates whose category allows them (write-time gate),
@@ -465,6 +470,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       name: "bowl-prop", type: "image/jpeg", size: 1,
       storage_bucket: templateTrendSlots.bowl.imageBucket ?? "template-images",
       storage_path: templateTrendSlots.bowl.imagePath, created_at: now,
+    }] : []),
+    ...(trendViral && templateTrendSlots?.viral?.imagePath ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "VIRAL_LOOK", custom_name: "Viral chair pose", note: null,
+      name: "viral-look", type: "image/jpeg", size: 1,
+      storage_bucket: templateTrendSlots.viral.imageBucket ?? "template-images",
+      storage_path: templateTrendSlots.viral.imagePath, created_at: now,
     }] : []),
     ...(trendBowl && bowlRefValid ? [{
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,

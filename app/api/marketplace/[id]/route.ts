@@ -76,7 +76,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const seenImagePaths = new Set<string>();
   const deduplicatedImages = images.filter((img) => {
     // Slot plates travel via dedicated fields (flagShot/trendSlots), never as editable references.
-    if (img.tag === "FLAG_SCENE" || img.tag === "MUGSHOT_BOARD" || img.tag === "BOWL_PROP") return false;
+    if (img.tag === "FLAG_SCENE" || img.tag === "MUGSHOT_BOARD" || img.tag === "BOWL_PROP" || img.tag === "VIRAL_LOOK") return false;
     if (img.purpose === "tagged") {
       if (seenImagePaths.has(img.storagePath as string)) return false;
       seenImagePaths.add(img.storagePath as string);
@@ -155,7 +155,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           }
         : null,
       trendSlots: (() => {
-        const ts = template.trend_slots as { mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null; bowl?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null } | null;
+        const ts = template.trend_slots as { mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null; bowl?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null; viral?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null } | null;
         if (!ts) return null;
         const part = (p?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null) =>
           p?.enabled && p.imagePath
@@ -163,7 +163,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             : null;
         const mugshot = part(ts.mugshot);
         const bowl = part(ts.bowl);
-        return mugshot || bowl ? { mugshot, bowl } : null;
+        const viral = part(ts.viral);
+        return mugshot || bowl || viral ? { mugshot, bowl, viral } : null;
       })(),
       requiresCostar: template.story_type === 'duo',
       requiresGroup: template.story_type === 'group',

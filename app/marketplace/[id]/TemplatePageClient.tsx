@@ -90,6 +90,7 @@ interface TemplateDetail {
   trendSlots?: {
     mugshot?: { enabled: boolean; imageUrl?: string | null } | null;
     bowl?: { enabled: boolean; imageUrl?: string | null } | null;
+    viral?: { enabled: boolean; imageUrl?: string | null } | null;
   } | null;
 }
 

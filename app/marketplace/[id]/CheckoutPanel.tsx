@@ -60,6 +60,7 @@ interface TemplateDetail {
   trendSlots?: {
     mugshot?: { enabled: boolean; imageUrl?: string | null } | null;
     bowl?: { enabled: boolean; imageUrl?: string | null } | null;
+    viral?: { enabled: boolean; imageUrl?: string | null } | null;
   } | null;
 }
 
@@ -148,6 +149,8 @@ export default function CheckoutPanel({
   // Trend slots (Trending category) — optional viral shots, each replaces one image.
   const mugshotAvailable = !!template.trendSlots?.mugshot?.enabled;
   const bowlAvailable = !!template.trendSlots?.bowl?.enabled;
+  // Viral chair pose: NOT optional — every booking of this template includes it.
+  const viralIncluded = !!template.trendSlots?.viral?.enabled;
   const [mugshotOn, setMugshotOn] = useState(false);
   const [mugshotName, setMugshotName] = useState("");
   const [mugshotOffense, setMugshotOffense] = useState("");
@@ -164,7 +167,8 @@ export default function CheckoutPanel({
   const bgOptions = template.backgroundOptions ?? [];
   const bgExemptCount = (flagShotAvailable && flagShotOn ? 1 : 0)
     + (mugshotAvailable && mugshotOn ? 1 : 0)
-    + (bowlAvailable && bowlOn ? 1 : 0);
+    + (bowlAvailable && bowlOn ? 1 : 0)
+    + (viralIncluded ? 1 : 0);
   const bgTarget = Math.max(0, selectedPkg - bgExemptCount);
   const bgActive = bgOptions.length >= 2 && bgTarget >= 1;
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
@@ -1083,6 +1087,21 @@ export default function CheckoutPanel({
                     )}
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Trend slot: viral chair pose — always included, informational only */}
+          {viralIncluded && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>🔥 The viral chair pose — included</span>
+              <p className={styles.sectionHint}>
+                One of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"} automatically recreates
+                the viral seated pose everyone is sharing — tan suit, coat draped over the shoulders,
+                legs crossed. Same iconic look whether you&apos;re a man or a woman.
+              </p>
+              {template.trendSlots?.viral?.imageUrl && (
+                <ImagePreview src={template.trendSlots.viral.imageUrl} alt="The viral chair pose" className={styles.flagScenePreview} preferredWidth={420} />
               )}
             </div>
           )}

@@ -4,7 +4,7 @@ import sql from "@/lib/db";
 import { r2Delete } from "@/lib/r2";
 
 const ALLOWED_PURPOSES = new Set(["inspiration", "tagged", "sample"]);
-const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP"]);
+const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "VIRAL_LOOK"]);
 
 // Assets can be reused across templates (asset library): the same storage_path may back
 // options on several templates. Only delete the R2 object when NOTHING else references it —

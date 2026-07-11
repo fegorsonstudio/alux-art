@@ -46,6 +46,7 @@ interface TemplateRow {
   trend_slots?: {
     mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
     bowl?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
+    viral?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   } | null;
 }
 
@@ -234,6 +235,7 @@ function CreatorDashboard() {
   const emptyTrendSlot = (): TrendSlotDraft => ({ enabled: false, imagePath: "", preview: "", uploading: false, isNew: false });
   const [trendMugshot, setTrendMugshot] = useState<TrendSlotDraft>(emptyTrendSlot());
   const [trendBowl, setTrendBowl] = useState<TrendSlotDraft>(emptyTrendSlot());
+  const [trendViral, setTrendViral] = useState<TrendSlotDraft>(emptyTrendSlot());
 
   // Asset library picker (reuse photos from previous templates)
   const [libraryPicker, setLibraryPicker] = useState<{ target: "group" | "background"; groupId?: string } | null>(null);
@@ -436,6 +438,7 @@ function CreatorDashboard() {
     });
     setTrendMugshot(hydrateTrend(t.trend_slots?.mugshot));
     setTrendBowl(hydrateTrend(t.trend_slots?.bowl));
+    setTrendViral(hydrateTrend(t.trend_slots?.viral));
     // Hydrate choice groups the same way
     setChoiceGroups((Array.isArray(t.option_groups) ? t.option_groups : []).map((g) => ({
       id: g.id,
@@ -462,6 +465,7 @@ function CreatorDashboard() {
       ...(t.flag_shot?.imagePath ? [t.flag_shot.imagePath] : []),
       ...(t.trend_slots?.mugshot?.imagePath ? [t.trend_slots.mugshot.imagePath] : []),
       ...(t.trend_slots?.bowl?.imagePath ? [t.trend_slots.bowl.imagePath] : []),
+      ...(t.trend_slots?.viral?.imagePath ? [t.trend_slots.viral.imagePath] : []),
     ]);
     const imgs = t.template_images ?? [];
     const existingImages: UploadedImage[] = imgs
@@ -516,7 +520,7 @@ function CreatorDashboard() {
     });
     setImages([]);
     setCoverPreview("");
-    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot());
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot());
   };
 
   const openShowcase = async (templateId: string) => {
@@ -785,8 +789,8 @@ function CreatorDashboard() {
     setFlagShotUploading(false);
   };
 
-  const uploadTrendPlateFile = async (file: File, which: "mugshot" | "bowl") => {
-    const set = which === "mugshot" ? setTrendMugshot : setTrendBowl;
+  const uploadTrendPlateFile = async (file: File, which: "mugshot" | "bowl" | "viral") => {
+    const set = which === "mugshot" ? setTrendMugshot : which === "bowl" ? setTrendBowl : setTrendViral;
     set(s => ({ ...s, uploading: true }));
     const f = await resizeIfNeeded(file);
     const fd = new FormData();
@@ -936,10 +940,11 @@ function CreatorDashboard() {
         ? { enabled: true, imagePath: flagShotImagePath }
         : null,
       // Trend slots (Trending category only). Null clears when disabled/missing plates.
-      trendSlots: form.category === "trending" && ((trendMugshot.enabled && trendMugshot.imagePath) || (trendBowl.enabled && trendBowl.imagePath))
+      trendSlots: form.category === "trending" && ((trendMugshot.enabled && trendMugshot.imagePath) || (trendBowl.enabled && trendBowl.imagePath) || (trendViral.enabled && trendViral.imagePath))
         ? {
             mugshot: trendMugshot.enabled && trendMugshot.imagePath ? { enabled: true, imagePath: trendMugshot.imagePath } : null,
             bowl: trendBowl.enabled && trendBowl.imagePath ? { enabled: true, imagePath: trendBowl.imagePath } : null,
+            viral: trendViral.enabled && trendViral.imagePath ? { enabled: true, imagePath: trendViral.imagePath } : null,
           }
         : null,
     };
@@ -1073,6 +1078,7 @@ function CreatorDashboard() {
       const plates: Array<{ draft: TrendSlotDraft; set: typeof setTrendMugshot; tag: string; label: string }> = [
         { draft: trendMugshot, set: setTrendMugshot, tag: "MUGSHOT_BOARD", label: "Mugshot board" },
         { draft: trendBowl, set: setTrendBowl, tag: "BOWL_PROP", label: "Business bowl" },
+        { draft: trendViral, set: setTrendViral, tag: "VIRAL_LOOK", label: "Viral chair pose" },
       ];
       for (const p of plates) {
         if (!(p.draft.enabled && p.draft.imagePath && p.draft.isNew)) continue;
@@ -1121,7 +1127,7 @@ function CreatorDashboard() {
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
-    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot());
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot());
     loadDashboard();
   };
 
@@ -1413,7 +1419,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); }}>
             + New Template
           </button>
         )}
@@ -2346,6 +2352,7 @@ function CreatorDashboard() {
               {([
                 { key: "mugshot" as const, draft: trendMugshot, set: setTrendMugshot, title: "Mugshot shot", hint: "Buyer holds the forensics board in front of the height chart; their NAME / OFFENSE / DATE are written on the board in red handwriting. Upload the clean board + height-chart plate." },
                 { key: "bowl" as const, draft: trendBowl, set: setTrendBowl, title: "Business-on-my-head shot", hint: "Buyer uploads their product (piled comically high in the bowl) or logo (branded on the bowl) and carries it on their head. Upload the clean empty bowl plate." },
+                { key: "viral" as const, draft: trendViral, set: setTrendViral, title: "Viral chair pose (always included)", hint: "EVERY buyer automatically gets one image recreating the viral seated chair pose exactly — tan suit, coat draped over shoulders, crossed legs. Upload the original viral photo as the reference." },
               ]).map(slot => (
                 <div key={slot.key} className={styles.sceneCard}>
                   <div className={styles.sceneCardHeader}>

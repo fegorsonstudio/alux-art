@@ -1957,7 +1957,7 @@ export async function startGenerationWorker(
     // Include all tagged refs so the model sees those images directly, not just as text
     // descriptions. Limit inspiration to 1 to avoid diluting the identity signal.
     const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
-    const SLOT_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT"]);
+    const SLOT_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK"]);
     const taggedRefEntries = refs
       // Slot plates are attached to THEIR slot only (below), never the shared per-slot list.
       .filter((r) => r.purpose === "tagged" && r.url && !SLOT_ONLY_TAGS.has(r.tag ?? ""))
@@ -2004,15 +2004,18 @@ export async function startGenerationWorker(
   const mugshotBoardRef = refs.find((r) => r.purpose === "tagged" && r.tag === "MUGSHOT_BOARD" && r.url);
   const bowlPropRef = refs.find((r) => r.purpose === "tagged" && r.tag === "BOWL_PROP" && r.url);
   const bowlContentRef = refs.find((r) => r.purpose === "tagged" && r.tag === "BOWL_CONTENT" && r.url);
+  const viralLookRef = refs.find((r) => r.purpose === "tagged" && r.tag === "VIRAL_LOOK" && r.url);
   const mugshotActive = !!(trendSel?.mugshot?.enabled && mugshotBoardRef);
   const bowlActive = !!(trendSel?.bowl?.enabled && bowlPropRef && bowlContentRef);
-  const { mugshotSlot: mugshotSlotNumber, bowlSlot: bowlSlotNumber } = (() => {
-    if (!mugshotActive && !bowlActive) return { mugshotSlot: -1, bowlSlot: -1 };
+  const viralActive = !!(trendSel?.viral?.enabled && viralLookRef);
+  const { mugshotSlot: mugshotSlotNumber, bowlSlot: bowlSlotNumber, viralSlot: viralSlotNumber } = (() => {
+    if (!mugshotActive && !bowlActive && !viralActive) return { mugshotSlot: -1, bowlSlot: -1, viralSlot: -1 };
     let next = total;
-    let bowlSlot = -1, mugshotSlot = -1;
+    let bowlSlot = -1, mugshotSlot = -1, viralSlot = -1;
     if (bowlActive) { bowlSlot = next; next -= 1; }
-    if (mugshotActive) { mugshotSlot = next; }
-    return { mugshotSlot, bowlSlot };
+    if (mugshotActive) { mugshotSlot = next; next -= 1; }
+    if (viralActive) { viralSlot = next; }
+    return { mugshotSlot, bowlSlot, viralSlot };
   })();
   const mugshotEntry = mugshotBoardRef
     ? { url: mugshotBoardRef.url, label: "MUGSHOT BOARD plate — the forensics board and height-measurement chart; replicate the board design and chart exactly, subject holds the board in front of the chart (no studio backdrop for this image)" }
@@ -2025,8 +2028,12 @@ export async function startGenerationWorker(
         ? "BOWL CONTENT (logo) — brand the bowl's outer side with exactly this logo"
         : "BOWL CONTENT (product) — fill the bowl with exactly this product, comically oversized" }
     : null;
+  const viralEntry = viralLookRef
+    ? { url: viralLookRef.url, label: "VIRAL LOOK — the original viral post; recreate this EXACT pose, seated composition, outfit style, coat drape, and backdrop mood with the subject from the identity references" }
+    : null;
   if (mugshotActive && mugshotEntry) imageUrls = [...imageUrls, mugshotEntry.url];
   if (bowlActive && bowlPropEntry && bowlContentEntry) imageUrls = [...imageUrls, bowlPropEntry.url, bowlContentEntry.url];
+  if (viralActive && viralEntry) imageUrls = [...imageUrls, viralEntry.url];
 
   // Per-option background images (purpose 'background_option', matched by optionId in note).
   // These are appended per slot — each slot only sees ITS background, never the others.
@@ -2107,44 +2114,46 @@ export async function startGenerationWorker(
       // image right after the identity block; other slots' backgrounds are excluded.
       let slotReferenceMap = sharedReferenceMap;
       let slotBgAlloc: ReturnType<typeof getBackgroundForSlot> = null;
-      const isBowlSlot = bowlActive && bowlPropEntry && bowlContentEntry && slot === bowlSlotNumber;
+      const identityOnlyEntries = imageEntries.slice(0, identityEntryCount);
       if (flagShotActive && flagSceneEntry && slot === flagSlotNumber) {
-        // Flag slot: swap the studio background for the FLAG_SCENE plate. No bg allocation.
+        // Flag slot: swap the studio background for the FLAG_SCENE plate. Keeps the full
+        // wardrobe refs (regalia) — this composite is proven to work with them.
         slotReferenceMap = buildReferenceMap([
-          ...imageEntries.slice(0, identityEntryCount),
+          ...identityOnlyEntries,
           flagSceneEntry,
           ...imageEntries.slice(identityEntryCount),
         ]);
+      } else if (viralActive && viralEntry && slot === viralSlotNumber) {
+        // Viral chair-pose slot: identity + the viral reference ONLY. Pose and outfit come
+        // from the reference; the buyer's own styling refs would fight it.
+        slotReferenceMap = buildReferenceMap([...identityOnlyEntries, viralEntry]);
       } else if (mugshotActive && mugshotEntry && slot === mugshotSlotNumber) {
-        // Mugshot slot: the board+chart plate replaces the studio background. No bg allocation.
+        // Mugshot slot: identity + board plate ONLY. A minimal list keeps the model's
+        // attention on the board text and chart; wardrobe is described in the prompt.
+        slotReferenceMap = buildReferenceMap([...identityOnlyEntries, mugshotEntry]);
+      } else if (bowlActive && bowlPropEntry && bowlContentEntry && slot === bowlSlotNumber) {
+        // Bowl slot: identity + ITS backdrop + bowl + content ONLY. With the full shared
+        // list (14 images) the buyer's logo was ignored — a focused list keeps it seen.
+        if (backgroundPlan) slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
+        const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
         slotReferenceMap = buildReferenceMap([
-          ...imageEntries.slice(0, identityEntryCount),
-          mugshotEntry,
-          ...imageEntries.slice(identityEntryCount),
+          ...identityOnlyEntries,
+          ...(bgEntry ? [bgEntry] : []),
+          bowlPropEntry,
+          bowlContentEntry,
         ]);
       } else if (backgroundPlan && bgEntryByOptionId.size > 0) {
         slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
         const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
-        const bowlExtras = isBowlSlot ? [bowlPropEntry!, bowlContentEntry!] : [];
-        if (bgEntry || bowlExtras.length) {
+        if (bgEntry) {
           slotReferenceMap = buildReferenceMap([
-            ...imageEntries.slice(0, identityEntryCount),
-            ...(bgEntry ? [bgEntry] : []),
-            ...bowlExtras,
+            ...identityOnlyEntries,
+            bgEntry,
             ...imageEntries.slice(identityEntryCount),
           ]);
         }
-      } else {
-        if (backgroundPlan) slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
-        if (isBowlSlot) {
-          // Bowl slot without a background plan: add the bowl prop + content on top.
-          slotReferenceMap = buildReferenceMap([
-            ...imageEntries.slice(0, identityEntryCount),
-            bowlPropEntry!,
-            bowlContentEntry!,
-            ...imageEntries.slice(identityEntryCount),
-          ]);
-        }
+      } else if (backgroundPlan) {
+        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
       }
 
       const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];

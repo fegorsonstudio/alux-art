@@ -25,6 +25,10 @@ export interface TrendSlotPlate {
 export interface TrendSlotsConfig {
   mugshot?: TrendSlotPlate | null;
   bowl?: TrendSlotPlate | null;
+  // Viral chair pose — NOT buyer-optional: when configured, EVERY booking of the
+  // template gets one slot recreating the original viral post exactly (the plate
+  // is the viral reference photo itself).
+  viral?: TrendSlotPlate | null;
 }
 
 export interface MugshotSelection {
@@ -42,6 +46,7 @@ export interface BowlSelection {
 export interface TrendSlotsSelection {
   mugshot?: MugshotSelection | null;
   bowl?: BowlSelection | null;
+  viral?: { enabled: boolean } | null;
 }
 
 export const MUGSHOT_NAME_MAXLEN = 30;
@@ -68,8 +73,9 @@ export function sanitizeTrendSlotsConfig(raw: unknown, userId: string): TrendSlo
 
   const mugshot = plate(o.mugshot);
   const bowl = plate(o.bowl);
-  if (!mugshot && !bowl) return null;
-  return { mugshot, bowl };
+  const viral = plate(o.viral);
+  if (!mugshot && !bowl && !viral) return null;
+  return { mugshot, bowl, viral };
 }
 
 // ── Buyer text sanitizers (book route) ───────────────────────────────────────
@@ -96,27 +102,36 @@ export function sanitizeBowlSelection(raw: unknown): BowlSelection | null {
 }
 
 // ── Slot placement ───────────────────────────────────────────────────────────
-// Enabled custom slots occupy the END of the package: bowl takes the last slot,
-// mugshot the one before it (or the last if bowl is off). Returns 1-based slot
-// numbers, or null when disabled.
+// Enabled custom slots occupy the END of the package (keeping the background
+// plan's contiguous slot mapping intact for the normal portraits): bowl last,
+// mugshot before it, viral before that. Returns 1-based slot numbers.
 export function getTrendSlotNumbers(
   packageSize: number,
-  sel: { mugshotOn: boolean; bowlOn: boolean }
-): { mugshotSlot: number | null; bowlSlot: number | null } {
+  sel: { mugshotOn: boolean; bowlOn: boolean; viralOn?: boolean }
+): { mugshotSlot: number | null; bowlSlot: number | null; viralSlot: number | null } {
   let next = packageSize;
   let bowlSlot: number | null = null;
   let mugshotSlot: number | null = null;
+  let viralSlot: number | null = null;
   if (sel.bowlOn) { bowlSlot = next; next -= 1; }
-  if (sel.mugshotOn) { mugshotSlot = next; }
-  return { mugshotSlot, bowlSlot };
+  if (sel.mugshotOn) { mugshotSlot = next; next -= 1; }
+  if (sel.viralOn) { viralSlot = next; }
+  return { mugshotSlot, bowlSlot, viralSlot };
 }
 
 // ── Combined brief section (both slots, with their slot numbers) ─────────────
 export function buildTrendSlotsBriefSection(packageSize: number, sel: TrendSlotsSelection): string {
   const mugshotOn = !!sel.mugshot?.enabled;
   const bowlOn = !!sel.bowl?.enabled;
-  const { mugshotSlot, bowlSlot } = getTrendSlotNumbers(packageSize, { mugshotOn, bowlOn });
+  const viralOn = !!sel.viral?.enabled;
+  const { mugshotSlot, bowlSlot, viralSlot } = getTrendSlotNumbers(packageSize, { mugshotOn, bowlOn, viralOn });
   const parts: string[] = [];
+  if (viralOn && viralSlot) {
+    parts.push(
+      `SLOT ${viralSlot} OVERRIDE — the following replaces the normal portrait directive for slot ${viralSlot}:\n` +
+      buildViralLookDirective()
+    );
+  }
   if (mugshotOn && sel.mugshot && mugshotSlot) {
     parts.push(
       `SLOT ${mugshotSlot} OVERRIDE — the following replaces the normal portrait directive for slot ${mugshotSlot}:\n` +
@@ -130,6 +145,36 @@ export function buildTrendSlotsBriefSection(packageSize: number, sel: TrendSlots
     );
   }
   return parts.join("\n\n");
+}
+
+// The signature viral chair pose — the post everyone is recreating. EVERY booking
+// of a template with this slot configured gets this exact composition, male or
+// female, overriding the buyer's own outfit/shoe picks FOR THIS SLOT ONLY.
+export function buildViralLookDirective(): string {
+  return [
+    "═══════════════════════════════════════════════════════",
+    "THIS SLOT — THE VIRAL CHAIR POSE (replaces the usual portrait)",
+    "═══════════════════════════════════════════════════════",
+    "Recreate the attached [VIRAL_LOOK] reference image EXACTLY — pose, outfit style, colors, " +
+      "framing, backdrop mood. This recreates a specific viral post; faithfulness to the " +
+      "reference is the entire point of this image.",
+    "POSE: the subject sits on a wooden chair/stool against a warm brown studio backdrop, " +
+      "body angled with confident poise, leaning back slightly, ONE LEG CROSSED HIGH over the " +
+      "other with the raised foot pointing toward the camera. One hand rests relaxed; the gaze " +
+      "is straight into the lens over the glasses — composed, powerful, unbothered.",
+    "OUTFIT (this slot IGNORES the buyer's outfit and shoe selections — the viral look IS the " +
+      "outfit): a light tan/beige tailored waistcoat with matching wide-leg tan trousers over a " +
+      "crisp white shirt with a dark chocolate-brown tie. THE SIGNATURE DETAIL: a chocolate-brown " +
+      "longline overcoat DRAPED OVER THE SHOULDERS LIKE A CAPE — arms NOT through the sleeves. " +
+      "Dark rectangular glasses worn; statement gold/pearl earrings (female) or a subtle watch " +
+      "(male); female: sleek pulled-back low bun + pale yellow pointed heels; male: neat natural " +
+      "hair + polished dark loafers. Same pose, same drape, same tan-suit styling for EVERY " +
+      "buyer, man or woman.",
+    "Warm, softly directional studio lighting matching the reference. Identity locked from the " +
+      "identity references — same face, skin tone and build. Realistic fabric folds in the " +
+      "draped coat, editorial lens feel.",
+    "═══════════════════════════════════════════════════════",
+  ].join("\n");
 }
 
 // ── Per-slot brief directives ────────────────────────────────────────────────
