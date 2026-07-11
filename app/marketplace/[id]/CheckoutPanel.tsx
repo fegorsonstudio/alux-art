@@ -159,10 +159,12 @@ export default function CheckoutPanel({
   const [bowlUpload, setBowlUpload] = useState<NewIdentityUpload | null>(null);
 
   // Buyer background allocation — active when the template offers 2+ options.
-  // Background-exempt custom slots (flag rooftop, mugshot height-chart) take images out
-  // of the studio-backdrop distribution; the bowl slot keeps the chosen backdrop.
+  // Custom slots (flag, mugshot, bowl) don't take part in the backdrop distribution:
+  // buyers only place their NORMAL portraits across backdrops.
   const bgOptions = template.backgroundOptions ?? [];
-  const bgExemptCount = (flagShotAvailable && flagShotOn ? 1 : 0) + (mugshotAvailable && mugshotOn ? 1 : 0);
+  const bgExemptCount = (flagShotAvailable && flagShotOn ? 1 : 0)
+    + (mugshotAvailable && mugshotOn ? 1 : 0)
+    + (bowlAvailable && bowlOn ? 1 : 0);
   const bgTarget = Math.max(0, selectedPkg - bgExemptCount);
   const bgActive = bgOptions.length >= 2 && bgTarget >= 1;
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
@@ -280,13 +282,8 @@ export default function CheckoutPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bgActive, selectedPkg, template, defaultsReady, bgTarget, bgSplitMode]);
 
-  // Default group picks: first option of each pickable group
-  useEffect(() => {
-    if (!defaultsReady || didRestore.current) return;
-    if (pickableGroups.length === 0) return;
-    setGroupPicks(Object.fromEntries(pickableGroups.map(g => [g.id, g.options[0].id])));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template, defaultsReady]);
+  // No default group picks — every group is opt-in so buyers only get what fits
+  // them (e.g. a man skips Hair/Nails on a unisex template).
 
   // Resume an in-progress checkout after Google sign-in: restore choices + re-upload
   // the photos the buyer had picked, then continue straight to payment.
@@ -870,8 +867,8 @@ export default function CheckoutPanel({
                 <>
                   <span className={styles.pkgLabel}>How many images on each backdrop?</span>
                   <p className={styles.sectionHint}>
-                    {flagShotAvailable && flagShotOn
-                      ? <>Place your <strong>{bgTarget}</strong> studio images across the backdrops (the flag shot is your {selectedPkg}th image and uses its own rooftop scene). </>
+                    {bgExemptCount > 0
+                      ? <>Place your <strong>{bgTarget}</strong> studio images across the backdrops (your {bgExemptCount} special shot{bgExemptCount > 1 ? "s use" : " uses"} their own scene{bgExemptCount > 1 ? "s" : ""}). </>
                       : <>Your package has {selectedPkg} images. </>}
                     Tap <strong>+</strong> on a backdrop for more images there, or <strong>−</strong> for fewer.
                   </p>
@@ -946,19 +943,19 @@ export default function CheckoutPanel({
             </div>
           )}
 
-          {/* Buyer choice groups — pick one option per group, used for the whole shoot */}
+          {/* Buyer choice groups — optional, pick what fits you; used for the whole shoot */}
           {pickableGroups.length > 0 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>Your styling</span>
               <p className={styles.sectionHint}>
-                Pick one option in each section below. Whatever you choose — outfit, hairstyle, shoes, and the
-                rest — is worn in <strong>every image</strong> of your shoot, so all your photos match.
+                Pick only what fits you — skip anything you don&apos;t need (tap again to unselect).
+                Whatever you choose is worn in <strong>every image</strong> of your shoot, so all your photos match.
               </p>
             </div>
           )}
           {pickableGroups.map(group => (
             <div key={group.id} className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· choose one</span></span>
+              <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· optional — pick one or skip</span></span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {group.options.map(o => {
                   const picked = groupPicks[group.id] === o.id;
@@ -967,7 +964,14 @@ export default function CheckoutPanel({
                       key={o.id}
                       type="button"
                       title={o.kind === "text" ? o.description : o.name}
-                      onClick={() => setGroupPicks(prev => ({ ...prev, [group.id]: o.id }))}
+                      onClick={() => setGroupPicks(prev => {
+                        if (prev[group.id] === o.id) {
+                          const next = { ...prev };
+                          delete next[group.id];
+                          return next;
+                        }
+                        return { ...prev, [group.id]: o.id };
+                      })}
                       style={{
                         display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                         background: "none", cursor: "pointer", padding: 4,

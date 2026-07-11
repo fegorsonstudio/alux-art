@@ -195,7 +195,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ? { mugshot: trendMugshot, bowl: trendBowl }
     : null;
 
-  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0);
+  // Custom slots (flag, mugshot, bowl) sit outside the backdrop distribution — the
+  // buyer only places their normal portraits across backdrops.
+  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0);
 
   // ── Background allocation ───────────────────────────────────────────────
   // Options only exist on templates whose category allows them (write-time gate),

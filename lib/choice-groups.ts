@@ -118,10 +118,10 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
 }
 
 // ── Buyer pick resolver (book route) ─────────────────────────────────────────
-// Single-select groups: one selection per group; untouched groups default to
-// their first option (old clients that send nothing resolve silently).
-// Multi-select groups (props): ALL picks for the group are kept; untouched
-// multi-select groups resolve to NOTHING (props are opt-in extras).
+// ALL groups are opt-in: an untouched group resolves to NOTHING (no forced
+// defaults — a man can skip Hair/Nails on a unisex template). Exceptions:
+// a group with exactly ONE option is a creator-forced constant and applies
+// automatically. Multi-select groups (props) keep every pick.
 export function resolveChoiceSelections(
   groups: ChoiceGroup[],
   buyerPicks: Array<{ groupId: string; optionId: string }> | undefined
@@ -154,16 +154,19 @@ export function resolveChoiceSelections(
         if (!found) return { selections: null, error: `Unknown option for ${group.label}` };
         chosen.push(found);
       }
+    } else if (group.options.length === 1 && (!picked || picked.length === 0)) {
+      // A single-option group is a creator-forced constant — applies automatically.
+      chosen = [group.options[0]];
+    } else if (picked && picked.length > 0) {
+      // Single-select: last pick wins.
+      const pickedId = picked[picked.length - 1];
+      const found = group.options.find((o) => o.id === pickedId);
+      if (!found) return { selections: null, error: `Unknown option for ${group.label}` };
+      chosen = [found];
     } else {
-      // Single-select: last pick wins (legacy behavior), default to first option.
-      let option = group.options[0];
-      if (picked && picked.length > 0) {
-        const pickedId = picked[picked.length - 1];
-        const found = group.options.find((o) => o.id === pickedId);
-        if (!found) return { selections: null, error: `Unknown option for ${group.label}` };
-        option = found;
-      }
-      chosen = [option];
+      // Opt-in: the buyer skipped this group (e.g. a man skipping Hair/Nails on a
+      // unisex template) — nothing is selected, no forced default.
+      continue;
     }
 
     for (const option of chosen) {
