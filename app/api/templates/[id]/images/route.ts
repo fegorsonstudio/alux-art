@@ -56,7 +56,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     WHERE template_id = ${id}
       ${isSample ? sql`AND purpose = 'sample'` : sql`AND purpose != 'sample'`}
   `;
-  const maxAllowed = isSample ? 10 : 20;
+  // Workflow cap sized for a fully loaded template: 6 choice groups × 6 options (36)
+  // + 6 backgrounds + slot plates + inspiration/tagged references.
+  const maxAllowed = isSample ? 10 : 60;
   if ((count as number) >= maxAllowed) {
     return NextResponse.json({ error: `Maximum ${maxAllowed} ${isSample ? "sample" : "workflow"} images per template` }, { status: 400 });
   }
