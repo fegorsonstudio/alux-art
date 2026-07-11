@@ -62,6 +62,7 @@ interface TemplateDetail {
     bowl?: { enabled: boolean; imageUrl?: string | null } | null;
     viral?: { enabled: boolean; imageUrl?: string | null } | null;
   } | null;
+  poseOptions?: Array<{ id: string; name: string; description?: string; imageUrl: string }>;
 }
 
 interface CouponResult {
@@ -183,6 +184,12 @@ export default function CheckoutPanel({
   const multiGroups = choiceGroups.filter(g => MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
   const [multiPicks, setMultiPicks] = useState<Record<string, string[]>>({});
+
+  // Signature poses (creator-uploaded pose mimicry) — buyer picks any number;
+  // selections ride the shoot exactly like a buyer's own pose upload (Group D
+  // in the generation pipeline extracts and cycles poses across slots).
+  const poseOptions = template.poseOptions ?? [];
+  const [selectedPoses, setSelectedPoses] = useState<string[]>([]);
 
   const [savedRefs, setSavedRefs] = useState<SavedIdentityRef[]>([]);
   const [selectedSaved, setSelectedSaved] = useState<Set<string>>(new Set());
@@ -306,6 +313,7 @@ export default function CheckoutPanel({
       setFlagText(c.flagText ?? "");
       if (c.groupPicks) setGroupPicks(c.groupPicks);
       if (c.multiPicks) setMultiPicks(c.multiPicks);
+      if (c.selectedPoses) setSelectedPoses(c.selectedPoses);
       if (typeof c.bgSplitMode === "boolean") setBgSplitMode(c.bgSplitMode);
       if (c.bgAlloc) setBgAlloc(c.bgAlloc);
       setRolePrompt(c.rolePrompt ?? "");
@@ -643,7 +651,7 @@ export default function CheckoutPanel({
   const goSignIn = async () => {
     setResuming(true);
     const config = {
-      selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
+      selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, selectedPoses, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
     };
     const files = newUploads
@@ -685,6 +693,7 @@ export default function CheckoutPanel({
           name: u.file.name, type: u.file.type, size: u.file.size,
           storageBucket: u.storageBucket, storagePath: u.storagePath,
         })),
+        poseSelections: selectedPoses.length > 0 ? selectedPoses : undefined,
         shotType: selectedPkg === 1 ? shotType : undefined,
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: selectedPkg,
@@ -1043,6 +1052,40 @@ export default function CheckoutPanel({
               </div>
             );
           })}
+
+          {/* Signature poses — buyer picks which poses to recreate */}
+          {poseOptions.length > 0 && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>Signature poses <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· choose any</span></span>
+              <p className={styles.sectionHint}>
+                Pick any poses you want your portraits to recreate exactly — your face, wardrobe, and
+                background stay yours. Skip this if you&apos;d rather we choose natural poses for you.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {poseOptions.map(p => {
+                  const isOn = selectedPoses.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      title={p.description || p.name}
+                      onClick={() => setSelectedPoses(prev => isOn ? prev.filter(id => id !== p.id) : [...prev, p.id])}
+                      style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                        background: "none", cursor: "pointer", padding: 4,
+                        border: isOn ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                        borderRadius: 8, minWidth: 64,
+                      }}
+                    >
+                      <ImagePreview src={p.imageUrl} alt={p.name} className={styles.savedImg} preferredWidth={80} />
+                      <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{p.name}</span>
+                      {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Viral skyscraper flag shot */}
           {flagShotAvailable && (

@@ -7,6 +7,7 @@ import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/li
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
 import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeTrendSlotsConfig } from "@/lib/trend-slots";
+import { sanitizePoseOptions } from "@/lib/pose-options";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "trending", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -125,8 +126,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     trendClause = sql`, trend_slots = ${trend ? sql.json(trend as any) : null}`;
   }
 
+  // Pose options (buyer-selectable signature poses) — works on any category.
+  let poseClause = sql``;
+  if (body.poseOptions !== undefined) {
+    const poses = sanitizePoseOptions(body.poseOptions, user.id);
+    poseClause = sql`, pose_options = ${poses ? sql.json(poses as any) : null}`;
+  }
+
   const [template] = await sql`
-    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}${flagClause}${trendClause}
+    UPDATE templates SET ${sql(updates)}${scenesClause}${bgClause}${groupsClause}${flagClause}${trendClause}${poseClause}
     WHERE id = ${id} AND creator_id = ${creator.id} RETURNING *
   `.catch(() => [null]);
 

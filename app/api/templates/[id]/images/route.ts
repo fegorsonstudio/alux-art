@@ -20,9 +20,11 @@ async function isStoragePathShared(storagePath: string, excludeImageId?: string)
         WHERE option_groups::text LIKE ${"%" + storagePath + "%"}
            OR background_options::text LIKE ${"%" + storagePath + "%"}
            OR flag_shot::text LIKE ${"%" + storagePath + "%"}
-           OR trend_slots::text LIKE ${"%" + storagePath + "%"}) AS jsonb_refs
-  `.catch(() => [{ img_refs: 1, jsonb_refs: 1 }]); // on error, assume shared (never delete blindly)
-  return ((row?.img_refs as number) ?? 1) > 0 || ((row?.jsonb_refs as number) ?? 1) > 0;
+           OR trend_slots::text LIKE ${"%" + storagePath + "%"}
+           OR pose_options::text LIKE ${"%" + storagePath + "%"}) AS jsonb_refs,
+      (SELECT COUNT(*)::int FROM shared_setups WHERE storage_path = ${storagePath}) AS shared_refs
+  `.catch(() => [{ img_refs: 1, jsonb_refs: 1, shared_refs: 1 }]); // on error, assume shared (never delete blindly)
+  return ((row?.img_refs as number) ?? 1) > 0 || ((row?.jsonb_refs as number) ?? 1) > 0 || ((row?.shared_refs as number) ?? 1) > 0;
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

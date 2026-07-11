@@ -143,6 +143,20 @@ export async function r2Delete(bucket: string, paths: string[]): Promise<void> {
   );
 }
 
+// Copies an object within (or across) buckets by downloading then re-uploading.
+// Used for "import" flows where a resource must land under a NEW owner's own
+// storage prefix — never point two owners' records at the same object, so
+// deleting one owner's copy never breaks the other's.
+export async function r2Copy(
+  fromBucket: string,
+  fromPath: string,
+  toBucket: string,
+  toPath: string
+): Promise<void> {
+  const { buffer, contentType } = await r2Download(fromBucket, fromPath);
+  await r2Upload(toBucket, toPath, buffer, contentType);
+}
+
 export async function r2Exists(bucket: string, path: string): Promise<boolean> {
   try {
     await r2.send(new HeadObjectCommand({ Bucket: bucket, Key: path }));

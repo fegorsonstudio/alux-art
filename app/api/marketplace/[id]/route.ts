@@ -146,6 +146,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             : null,
         })),
       })),
+      poseOptions: (Array.isArray(template.pose_options) ? template.pose_options : []).map((p: { id: string; name: string; description?: string; imagePath: string; imageBucket?: string }) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        imageUrl: r2ProxyUrl(p.imageBucket ?? "template-images", p.imagePath),
+      })),
       flagShot: (template.flag_shot && (template.flag_shot as { enabled?: boolean }).enabled)
         ? {
             enabled: true,

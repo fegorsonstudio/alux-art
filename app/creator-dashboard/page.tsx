@@ -48,6 +48,7 @@ interface TemplateRow {
     bowl?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
     viral?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   } | null;
+  pose_options?: Array<{ id: string; name: string; description?: string; imagePath: string; imageBucket?: string }> | null;
 }
 
 interface ShowcaseIdentityRef {
@@ -78,6 +79,12 @@ interface ShowcaseShoot {
 
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
 interface Creator { id: string; display_name: string; username?: string | null; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
+
+// Client-side proxy URL builder — mirrors lib/r2.ts's r2ProxyUrl exactly, but
+// that file is `import "server-only"` so it can't be imported here directly.
+function mediaUrl(bucket: string, path: string): string {
+  return `/api/media?b=${encodeURIComponent(bucket)}&p=${encodeURIComponent(path)}`;
+}
 
 const SHOWCASE_PACKAGES = [
   { count: 1, label: "1 image", price: 1000 },
@@ -237,9 +244,21 @@ function CreatorDashboard() {
   const [trendBowl, setTrendBowl] = useState<TrendSlotDraft>(emptyTrendSlot());
   const [trendViral, setTrendViral] = useState<TrendSlotDraft>(emptyTrendSlot());
 
-  // Asset library picker (reuse photos from previous templates)
-  const [libraryPicker, setLibraryPicker] = useState<{ target: "group" | "background"; groupId?: string } | null>(null);
+  // Signature poses (pose-mimic templates, any category): buyer picks which
+  // ones they want at checkout; selections ride the shoot as ordinary
+  // purpose='pose' references, same pipeline as a buyer's own pose uploads.
+  interface PoseOptionDraft { id: string; name: string; description: string; imagePath: string; preview: string; uploading: boolean; fromDb?: boolean }
+  const [poseOptions, setPoseOptions] = useState<PoseOptionDraft[]>([]);
+
+  // Asset library picker (reuse photos from previous templates, or import
+  // from the cross-creator community library for custom-slot plates)
+  type LibraryTarget = "group" | "background" | "pose" | "trend-mugshot" | "trend-bowl" | "trend-viral" | "flag";
+  const [libraryPicker, setLibraryPicker] = useState<{ target: LibraryTarget; groupId?: string } | null>(null);
   const [libraryFilter, setLibraryFilter] = useState<string>("all");
+  const [libraryTab, setLibraryTab] = useState<"mine" | "community">("mine");
+  const [communitySetups, setCommunitySetups] = useState<Array<{ id: string; kind: string; name: string; imageUrl: string; creatorName: string; isMine: boolean }>>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityImporting, setCommunityImporting] = useState<string | null>(null);
 
   // ── Showcase generation state ───────────────────────────────────────────────
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
@@ -439,6 +458,16 @@ function CreatorDashboard() {
     setTrendMugshot(hydrateTrend(t.trend_slots?.mugshot));
     setTrendBowl(hydrateTrend(t.trend_slots?.bowl));
     setTrendViral(hydrateTrend(t.trend_slots?.viral));
+    // Hydrate signature poses
+    setPoseOptions((Array.isArray(t.pose_options) ? t.pose_options : []).map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description ?? "",
+      imagePath: p.imagePath,
+      preview: mediaUrl(p.imageBucket ?? "template-images", p.imagePath),
+      uploading: false,
+      fromDb: true,
+    })));
     // Hydrate choice groups the same way
     setChoiceGroups((Array.isArray(t.option_groups) ? t.option_groups : []).map((g) => ({
       id: g.id,
@@ -520,7 +549,7 @@ function CreatorDashboard() {
     });
     setImages([]);
     setCoverPreview("");
-    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot());
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); setPoseOptions([]);
   };
 
   const openShowcase = async (templateId: string) => {
@@ -802,8 +831,25 @@ function CreatorDashboard() {
     set(s => ({ ...s, imagePath: storagePath, preview: URL.createObjectURL(file), isNew: true, uploading: false }));
   };
 
+  const uploadPoseOptionFile = async (file: File, poseId: string) => {
+    setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, uploading: true } : p));
+    const f = await resizeIfNeeded(file);
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    fd.append("bucket", "template-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+    if (!res.ok) {
+      setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, uploading: false } : p));
+      setFormError("Pose image upload failed");
+      return;
+    }
+    const { storagePath } = await res.json();
+    setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, imagePath: storagePath, preview: URL.createObjectURL(file), uploading: false, fromDb: false } : p));
+  };
+
   // ── Asset library — every photo option used on any of this creator's templates ──
-  interface LibraryAsset { imagePath: string; name: string; type: string; preview: string; sourceTitle: string; description?: string }
+  interface LibraryAsset { imagePath: string; imageBucket: string; name: string; type: string; preview: string; sourceTitle: string; description?: string }
+  const MAX_POSE_OPTIONS = 6;
   const libraryAssets: LibraryAsset[] = (() => {
     const seen = new Set<string>();
     const out: LibraryAsset[] = [];
@@ -814,13 +860,29 @@ function CreatorDashboard() {
         for (const o of (g.options ?? [])) {
           if (o.kind !== "photo" || !o.imagePath || seen.has(o.imagePath)) continue;
           seen.add(o.imagePath);
-          out.push({ imagePath: o.imagePath, name: o.name, type: g.type in GROUP_TYPE_META ? g.type : "accessory", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
+          out.push({ imagePath: o.imagePath, imageBucket: o.imageBucket ?? "template-images", name: o.name, type: g.type in GROUP_TYPE_META ? g.type : "accessory", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
         }
       }
       for (const o of (Array.isArray(t.background_options) ? t.background_options : [])) {
         if (o.kind !== "photo" || !o.imagePath || seen.has(o.imagePath)) continue;
         seen.add(o.imagePath);
-        out.push({ imagePath: o.imagePath, name: o.name, type: "background", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
+        out.push({ imagePath: o.imagePath, imageBucket: o.imageBucket ?? "template-images", name: o.name, type: "background", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
+      }
+      // Custom-slot plates and signature poses don't need a template_images row —
+      // template-images is a public bucket, so the proxy URL renders directly.
+      const plate = (p: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null | undefined, type: string, label: string) => {
+        if (!p?.enabled || !p.imagePath || seen.has(p.imagePath)) return;
+        seen.add(p.imagePath);
+        out.push({ imagePath: p.imagePath, imageBucket: p.imageBucket ?? "template-images", name: label, type, preview: mediaUrl(p.imageBucket ?? "template-images", p.imagePath), sourceTitle: t.title });
+      };
+      plate(t.flag_shot, "flag_plate", "Flag scene");
+      plate(t.trend_slots?.mugshot, "mugshot_plate", "Mugshot board");
+      plate(t.trend_slots?.bowl, "bowl_plate", "Business bowl");
+      plate(t.trend_slots?.viral, "viral_plate", "Viral pose");
+      for (const p of (Array.isArray(t.pose_options) ? t.pose_options : [])) {
+        if (!p.imagePath || seen.has(p.imagePath)) continue;
+        seen.add(p.imagePath);
+        out.push({ imagePath: p.imagePath, imageBucket: p.imageBucket ?? "template-images", name: p.name, type: "pose", preview: mediaUrl(p.imageBucket ?? "template-images", p.imagePath), sourceTitle: t.title, description: p.description });
       }
     }
     return out.filter(a => a.preview);
@@ -833,13 +895,67 @@ function CreatorDashboard() {
         if (prev.length >= MAX_BG_OPTIONS || prev.some(o => o.imagePath === asset.imagePath)) return prev;
         return [...prev, { id: crypto.randomUUID(), name: asset.name, kind: "photo" as const, description: asset.description ?? "", imagePath: asset.imagePath, preview: asset.preview, uploading: false }];
       });
-    } else if (libraryPicker.groupId) {
+    } else if (libraryPicker.target === "group" && libraryPicker.groupId) {
       setChoiceGroups(prev => prev.map(g => {
         if (g.id !== libraryPicker.groupId) return g;
         if (g.options.length >= MAX_GROUP_OPTIONS || g.options.some(o => o.imagePath === asset.imagePath)) return g;
         return { ...g, options: [...g.options, { id: crypto.randomUUID(), name: asset.name, kind: "photo" as const, description: asset.description ?? "", imagePath: asset.imagePath, preview: asset.preview, uploading: false }] };
       }));
+    } else if (libraryPicker.target === "pose") {
+      setPoseOptions(prev => {
+        if (prev.length >= MAX_POSE_OPTIONS || prev.some(o => o.imagePath === asset.imagePath)) return prev;
+        return [...prev, { id: crypto.randomUUID(), name: asset.name, description: asset.description ?? "", imagePath: asset.imagePath, preview: asset.preview, uploading: false }];
+      });
+    } else if (libraryPicker.target === "flag") {
+      setFlagShotImagePath(asset.imagePath); setFlagShotPreview(asset.preview); setFlagShotIsNew(false); setFlagShotEnabled(true);
+    } else if (libraryPicker.target === "trend-mugshot") {
+      setTrendMugshot(s => ({ ...s, imagePath: asset.imagePath, preview: asset.preview, isNew: false, enabled: true }));
+    } else if (libraryPicker.target === "trend-bowl") {
+      setTrendBowl(s => ({ ...s, imagePath: asset.imagePath, preview: asset.preview, isNew: false, enabled: true }));
+    } else if (libraryPicker.target === "trend-viral") {
+      setTrendViral(s => ({ ...s, imagePath: asset.imagePath, preview: asset.preview, isNew: false, enabled: true }));
     }
+  };
+
+  // ── Community library (cross-creator setup sharing) ──────────────────────────
+  const fetchCommunitySetups = async () => {
+    setCommunityLoading(true);
+    const res = await fetch("/api/creator-dashboard/shared-setups");
+    if (res.ok) {
+      const { setups } = await res.json();
+      setCommunitySetups(setups);
+    }
+    setCommunityLoading(false);
+  };
+
+  const importCommunitySetup = async (setup: { id: string; name: string }) => {
+    setCommunityImporting(setup.id);
+    const res = await fetch("/api/creator-dashboard/shared-setups/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: setup.id }),
+    });
+    setCommunityImporting(null);
+    if (!res.ok) { setFormError("Failed to import community setup"); return; }
+    const { storagePath, storageBucket, name } = await res.json();
+    addLibraryAsset({ imagePath: storagePath, imageBucket: storageBucket, name: name || setup.name, type: "", preview: mediaUrl(storageBucket, storagePath), sourceTitle: "" });
+    setLibraryPicker(null);
+  };
+
+  const SLOT_KIND_BY_TARGET: Record<string, "flag" | "mugshot" | "bowl" | "viral"> = {
+    flag: "flag", "trend-mugshot": "mugshot", "trend-bowl": "bowl", "trend-viral": "viral",
+  };
+
+  const publishSlotToCommunity = async (target: "flag" | "trend-mugshot" | "trend-bowl" | "trend-viral", imagePath: string, defaultName: string) => {
+    const name = window.prompt("Name this setup for the community library:", defaultName);
+    if (!name || !name.trim()) return;
+    const res = await fetch("/api/creator-dashboard/shared-setups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: SLOT_KIND_BY_TARGET[target], name: name.trim(), storagePath: imagePath, storageBucket: "template-images" }),
+    });
+    if (!res.ok) { setFormError("Failed to publish to community"); return; }
+    window.alert("Published! Other creators can now find this in the Community tab.");
   };
 
   const removeSampleImage = async (item: SampleImageItem, templateId: string | null) => {
@@ -946,6 +1062,10 @@ function CreatorDashboard() {
             bowl: trendBowl.enabled && trendBowl.imagePath ? { enabled: true, imagePath: trendBowl.imagePath } : null,
             viral: trendViral.enabled && trendViral.imagePath ? { enabled: true, imagePath: trendViral.imagePath } : null,
           }
+        : null,
+      // Signature poses — buyer-selectable pose mimicry, works on any category.
+      poseOptions: poseOptions.length > 0
+        ? poseOptions.map(p => ({ id: p.id, name: p.name.trim(), description: p.description.trim() || undefined, imagePath: p.imagePath }))
         : null,
     };
 
@@ -1127,7 +1247,7 @@ function CreatorDashboard() {
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
-    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot());
+    setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); setPoseOptions([]);
     loadDashboard();
   };
 
@@ -1419,7 +1539,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); setPoseOptions([]); }}>
             + New Template
           </button>
         )}
@@ -2253,7 +2373,7 @@ function CreatorDashboard() {
                 <div className={styles.sceneCard}>
                   <div className={styles.sceneFields}>
                     <span className={styles.fieldHint}>Empty-flag plate (mast + black flag + skyline, no people)</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                       {flagShotPreview && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={flagShotPreview} alt="flag scene" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 6 }} />
@@ -2267,6 +2387,19 @@ function CreatorDashboard() {
                           onChange={e => { const f = e.target.files?.[0]; if (f) uploadFlagShotFile(f); e.target.value = ""; }}
                         />
                       </label>
+                      {libraryAssets.length > 0 && (
+                        <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryFilter("flag_plate"); setLibraryTab("mine"); setLibraryPicker({ target: "flag" }); }}>
+                          📚 Add from library
+                        </button>
+                      )}
+                      <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryTab("community"); fetchCommunitySetups(); setLibraryPicker({ target: "flag" }); }}>
+                        🌐 Community
+                      </button>
+                      {flagShotImagePath && (
+                        <button type="button" className={styles.addSceneBtn} onClick={() => publishSlotToCommunity("flag", flagShotImagePath, "Flag scene")}>
+                          Share to community
+                        </button>
+                      )}
                     </div>
                     {!flagShotImagePath && (
                       <span style={{ color: "#e5849d", fontSize: "0.78rem" }}>
@@ -2297,45 +2430,91 @@ function CreatorDashboard() {
                 onClick={e => e.stopPropagation()}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <span className={styles.label}>Asset library — reuse from your templates</span>
+                  <span className={styles.label}>Asset library</span>
                   <button type="button" className={styles.sceneRemove} onClick={() => setLibraryPicker(null)}>✕</button>
                 </div>
-                <div className={styles.pills} style={{ marginBottom: 12, flexWrap: "wrap" }}>
-                  {["all", ...Array.from(new Set(libraryAssets.map(a => a.type)))].map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      className={`${styles.pill} ${libraryFilter === t ? styles.pillActive : ""}`}
-                      onClick={() => setLibraryFilter(t)}
-                    >
-                      {t === "all" ? "All" : t === "background" ? "Background" : (GROUP_TYPE_META[t as ChoiceGroupType]?.label ?? t)}
-                    </button>
-                  ))}
+                <div className={styles.pills} style={{ marginBottom: 12 }}>
+                  <button type="button" className={`${styles.pill} ${libraryTab === "mine" ? styles.pillActive : ""}`} onClick={() => setLibraryTab("mine")}>My library</button>
+                  <button type="button" className={`${styles.pill} ${libraryTab === "community" ? styles.pillActive : ""}`} onClick={() => { setLibraryTab("community"); if (communitySetups.length === 0) fetchCommunitySetups(); }}>🌐 Community</button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
-                  {libraryAssets
-                    .filter(a => libraryFilter === "all" || a.type === libraryFilter)
-                    .map(a => (
-                      <button
-                        key={a.imagePath}
-                        type="button"
-                        title={`${a.name} — from "${a.sourceTitle}"`}
-                        onClick={() => { addLibraryAsset(a); setLibraryPicker(null); }}
-                        style={{
-                          display: "flex", flexDirection: "column", gap: 4, background: "none",
-                          border: "1px solid rgba(127,127,127,0.3)", borderRadius: 8, padding: 6, cursor: "pointer",
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={a.preview} alt={a.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
-                        <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
-                        <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.sourceTitle}</span>
-                      </button>
-                    ))}
-                  {libraryAssets.filter(a => libraryFilter === "all" || a.type === libraryFilter).length === 0 && (
-                    <p className={styles.fieldHint}>No saved assets of this type yet.</p>
-                  )}
-                </div>
+
+                {libraryTab === "mine" ? (
+                  <>
+                    <div className={styles.pills} style={{ marginBottom: 12, flexWrap: "wrap" }}>
+                      {["all", ...Array.from(new Set(libraryAssets.map(a => a.type)))].map(t => (
+                        <button
+                          key={t}
+                          type="button"
+                          className={`${styles.pill} ${libraryFilter === t ? styles.pillActive : ""}`}
+                          onClick={() => setLibraryFilter(t)}
+                        >
+                          {t === "all" ? "All" : t === "background" ? "Background" : t === "pose" ? "Poses" : t.endsWith("_plate") ? t.replace("_plate", "").replace(/^\w/, c => c.toUpperCase()) : (GROUP_TYPE_META[t as ChoiceGroupType]?.label ?? t)}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
+                      {libraryAssets
+                        .filter(a => libraryFilter === "all" || a.type === libraryFilter)
+                        .map(a => (
+                          <button
+                            key={a.imagePath}
+                            type="button"
+                            title={`${a.name} — from "${a.sourceTitle}"`}
+                            onClick={() => { addLibraryAsset(a); setLibraryPicker(null); }}
+                            style={{
+                              display: "flex", flexDirection: "column", gap: 4, background: "none",
+                              border: "1px solid rgba(127,127,127,0.3)", borderRadius: 8, padding: 6, cursor: "pointer",
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={a.preview} alt={a.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
+                            <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                            <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.sourceTitle}</span>
+                          </button>
+                        ))}
+                      {libraryAssets.filter(a => libraryFilter === "all" || a.type === libraryFilter).length === 0 && (
+                        <p className={styles.fieldHint}>No saved assets of this type yet.</p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.fieldHint} style={{ marginBottom: 10 }}>
+                      Setups other creators have shared. Importing copies the file into your own library — deleting
+                      the original elsewhere never breaks your template.
+                    </p>
+                    {communityLoading ? (
+                      <p className={styles.fieldHint}>Loading…</p>
+                    ) : (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
+                        {communitySetups
+                          .filter(s => !SLOT_KIND_BY_TARGET[libraryPicker.target] || s.kind === SLOT_KIND_BY_TARGET[libraryPicker.target])
+                          .map(s => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              title={`${s.name} — by ${s.creatorName}`}
+                              disabled={communityImporting === s.id}
+                              onClick={() => importCommunitySetup(s)}
+                              style={{
+                                display: "flex", flexDirection: "column", gap: 4, background: "none",
+                                border: "1px solid rgba(127,127,127,0.3)", borderRadius: 8, padding: 6,
+                                cursor: communityImporting === s.id ? "wait" : "pointer",
+                              }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={s.imageUrl} alt={s.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
+                              <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{communityImporting === s.id ? "Importing…" : s.name}</span>
+                              <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>by {s.creatorName}</span>
+                            </button>
+                          ))}
+                        {communitySetups.filter(s => !SLOT_KIND_BY_TARGET[libraryPicker.target] || s.kind === SLOT_KIND_BY_TARGET[libraryPicker.target]).length === 0 && (
+                          <p className={styles.fieldHint}>Nothing shared for this slot type yet.</p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -2350,9 +2529,9 @@ function CreatorDashboard() {
               </p>
 
               {([
-                { key: "mugshot" as const, draft: trendMugshot, set: setTrendMugshot, title: "Mugshot shot", hint: "Buyer holds the forensics board in front of the height chart; their NAME / OFFENSE / DATE are written on the board in red handwriting. Upload the clean board + height-chart plate." },
-                { key: "bowl" as const, draft: trendBowl, set: setTrendBowl, title: "Business-on-my-head shot", hint: "Buyer uploads their product (piled comically high in the bowl) or logo (branded on the bowl) and carries it on their head. Upload the clean empty bowl plate." },
-                { key: "viral" as const, draft: trendViral, set: setTrendViral, title: "Viral chair pose (always included)", hint: "EVERY buyer automatically gets one image recreating the viral seated chair pose exactly — tan suit, coat draped over shoulders, crossed legs. Upload the original viral photo as the reference." },
+                { key: "mugshot" as const, draft: trendMugshot, set: setTrendMugshot, libTarget: "trend-mugshot" as const, title: "Mugshot shot", hint: "Buyer holds the forensics board in front of the height chart; their NAME / OFFENSE / DATE are written on the board in red handwriting. Upload the clean board + height-chart plate." },
+                { key: "bowl" as const, draft: trendBowl, set: setTrendBowl, libTarget: "trend-bowl" as const, title: "Business-on-my-head shot", hint: "Buyer uploads their product (piled comically high in the bowl) or logo (branded on the bowl) and carries it on their head. Upload the clean empty bowl plate." },
+                { key: "viral" as const, draft: trendViral, set: setTrendViral, libTarget: "trend-viral" as const, title: "Viral chair pose (always included)", hint: "EVERY buyer automatically gets one image recreating the viral seated chair pose exactly — tan suit, coat draped over shoulders, crossed legs. Upload the original viral photo as the reference." },
               ]).map(slot => (
                 <div key={slot.key} className={styles.sceneCard}>
                   <div className={styles.sceneCardHeader}>
@@ -2368,7 +2547,7 @@ function CreatorDashboard() {
                   {slot.draft.enabled && (
                     <div className={styles.sceneFields}>
                       <span className={styles.fieldHint}>{slot.hint}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                         {slot.draft.preview && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={slot.draft.preview} alt={slot.title} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 6 }} />
@@ -2382,6 +2561,19 @@ function CreatorDashboard() {
                             onChange={e => { const f = e.target.files?.[0]; if (f) uploadTrendPlateFile(f, slot.key); e.target.value = ""; }}
                           />
                         </label>
+                        {libraryAssets.length > 0 && (
+                          <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryFilter(slot.key === "mugshot" ? "mugshot_plate" : slot.key === "bowl" ? "bowl_plate" : "viral_plate"); setLibraryTab("mine"); setLibraryPicker({ target: slot.libTarget }); }}>
+                            📚 Add from library
+                          </button>
+                        )}
+                        <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryTab("community"); fetchCommunitySetups(); setLibraryPicker({ target: slot.libTarget }); }}>
+                          🌐 Community
+                        </button>
+                        {slot.draft.imagePath && (
+                          <button type="button" className={styles.addSceneBtn} onClick={() => publishSlotToCommunity(slot.libTarget, slot.draft.imagePath, slot.title)}>
+                            Share to community
+                          </button>
+                        )}
                       </div>
                       {!slot.draft.imagePath && (
                         <span style={{ color: "#e5849d", fontSize: "0.78rem" }}>
@@ -2394,6 +2586,72 @@ function CreatorDashboard() {
               ))}
             </div>
           )}
+
+          {/* Signature poses — any category */}
+          <div className={styles.field}>
+            <span className={styles.label}>Signature poses ({poseOptions.length}/{MAX_POSE_OPTIONS})</span>
+            <p className={styles.fieldHint}>
+              Upload named pose/mannerism references (e.g. someone&apos;s signature poses). Buyers pick any of
+              these at checkout and their portraits recreate the exact pose, expression, and body language —
+              wardrobe, background, and identity stay theirs.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {poseOptions.map(p => (
+                <div key={p.id} className={styles.sceneCard}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+                    {p.preview && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.preview} alt={p.name} style={{ width: 70, height: 88, objectFit: "cover", borderRadius: 6 }} />
+                    )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 180 }}>
+                      <input
+                        className={styles.input}
+                        placeholder="Pose name, e.g. Power stance"
+                        value={p.name}
+                        maxLength={40}
+                        onChange={e => setPoseOptions(prev => prev.map(x => x.id === p.id ? { ...x, name: e.target.value } : x))}
+                      />
+                      <input
+                        className={styles.input}
+                        placeholder="Optional note for this pose"
+                        value={p.description}
+                        maxLength={200}
+                        onChange={e => setPoseOptions(prev => prev.map(x => x.id === p.id ? { ...x, description: e.target.value } : x))}
+                      />
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                          {p.uploading ? "Uploading..." : p.imagePath ? "Replace photo" : "Upload photo"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadPoseOptionFile(f, p.id); e.target.value = ""; }}
+                          />
+                        </label>
+                        <button type="button" className={styles.sceneRemove} onClick={() => setPoseOptions(prev => prev.filter(x => x.id !== p.id))}>Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {poseOptions.length < MAX_POSE_OPTIONS && (
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                {libraryAssets.some(a => a.type === "pose") && (
+                  <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryFilter("pose"); setLibraryTab("mine"); setLibraryPicker({ target: "pose" }); }}>
+                    📚 Add from library
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.addSceneBtn}
+                  onClick={() => setPoseOptions(prev => [...prev, { id: crypto.randomUUID(), name: "", description: "", imagePath: "", preview: "", uploading: false }])}
+                >
+                  + Add pose
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className={styles.formActions}>
             <div className={styles.pills}>

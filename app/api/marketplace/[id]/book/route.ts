@@ -10,6 +10,7 @@ import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-p
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
+import { resolvePoseSelections, type PoseOption } from "@/lib/pose-options";
 
 interface RefInput {
   name?: string;
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     identityRefs?: RefInput[];
     taggedRefs?: TaggedRefInput[];
     poseRefs?: RefInput[];
+    poseSelections?: string[];
     shotType?: string;
     couponCode?: string;
     packageSize?: number;
@@ -175,6 +177,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       flagShot = { enabled: true, text: flagText };
     }
   }
+
+  // ── Signature poses (creator-uploaded pose mimicry) ─────────────────────────
+  // Buyer-picked poses become ordinary purpose='pose' shoot_references, merged
+  // below with any pose photos the buyer uploaded themselves — both flow through
+  // the SAME existing Group D pose-extraction pipeline in lib/generate.ts.
+  const templatePoseOptions = (Array.isArray(template.pose_options) ? template.pose_options : []) as PoseOption[];
+  const selectedPoseOptions = resolvePoseSelections(templatePoseOptions, body.poseSelections);
 
   // ── Trend slots (Trending category) ─────────────────────────────────────────
   // Mugshot is background-exempt (the height chart IS its background); bowl keeps
@@ -396,6 +405,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       purpose: "pose", tag: null, custom_name: null, note: null,
       name: ref.name ?? `pose-${i + 1}`, type: ref.type ?? "image/jpeg",
       size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
+      created_at: now,
+    })),
+    // Creator-provided signature poses the buyer selected — same purpose='pose'
+    // pipeline as a buyer's own upload above, just sourced from the template.
+    ...selectedPoseOptions.map((p) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "pose", tag: null, custom_name: p.name, note: p.description ?? null,
+      name: p.name, type: "image/jpeg", size: 1,
+      storage_bucket: p.imageBucket ?? "template-images", storage_path: p.imagePath,
       created_at: now,
     })),
     ...(storyAssets?.costarRefs ?? []).map((ref, i) => ({

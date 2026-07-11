@@ -6,6 +6,7 @@ import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/li
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
 import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeTrendSlotsConfig } from "@/lib/trend-slots";
+import { sanitizePoseOptions } from "@/lib/pose-options";
 
 const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "trending", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
@@ -101,12 +102,14 @@ export async function POST(request: NextRequest) {
   const safeTrendSlots = category === "trending"
     ? sanitizeTrendSlotsConfig(body.trendSlots, user.id)
     : null;
+  // Pose options (buyer-selectable signature poses) work on any category.
+  const safePoseOptions = sanitizePoseOptions(body.poseOptions, user.id);
 
   const [template] = await sql`
     INSERT INTO templates
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
-       is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot, trend_slots,
+       is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot, trend_slots, pose_options,
        created_at, updated_at)
     VALUES (
       ${creator.id},
@@ -126,6 +129,7 @@ export async function POST(request: NextRequest) {
       ${safeOptionGroups ? sql.json(safeOptionGroups as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeFlagShot ? sql.json(safeFlagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeTrendSlots ? sql.json(safeTrendSlots as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${safePoseOptions ? sql.json(safePoseOptions as unknown as Parameters<typeof sql.json>[0]) : null},
       NOW(), NOW()
     )
     RETURNING *

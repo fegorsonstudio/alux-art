@@ -92,6 +92,7 @@ interface TemplateDetail {
     bowl?: { enabled: boolean; imageUrl?: string | null } | null;
     viral?: { enabled: boolean; imageUrl?: string | null } | null;
   } | null;
+  poseOptions?: Array<{ id: string; name: string; description?: string; imageUrl: string }>;
 }
 
 interface CouponResult {
