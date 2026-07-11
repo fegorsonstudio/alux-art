@@ -462,6 +462,11 @@ Dynamically select one of the world's top 4 medium-format camera systems (Hassel
 6. Atmospheric Elements Integration
 Every prompt must incorporate organic atmospheric elements: volumetric dust motes, morning mist, wind-blown elements, humid air quality, micro light leaks, or organic lens flares.
 
+In shoots of 5+ images, AT LEAST ONE portrait slot (two in a 10-image shoot) must feature a PRONOUNCED editorial smoke/haze atmosphere — not a subtle afterthought but the defining mood of the frame: visible studio haze drifting through the scene, light beams cutting through smoke behind or beside the subject, dramatic rim light glowing through the haze. Write it prominently in the Environment section ("thick cinematic studio haze fills the space, a hard beam of light slicing through it from camera-left...") while keeping the slot's assigned backdrop recognizable. Choose the moodiest slots for this treatment. Custom slots (flag, mugshot, bowl, viral pose) are excluded — apply it to normal portrait slots only.
+
+6b. FACE VISIBILITY RULE — ABSOLUTE, EVERY PORTRAIT PROMPT
+The subject's face must be FULLY VISIBLE and UNOBSTRUCTED in every image. NEVER write a pose where a hand, arm, fingers, prop, or fabric crosses, touches, or partially covers ANY part of the face: no hands on cheeks, no fingers near the mouth or eyes, no chin resting on knuckles that overlap the jawline, no arms crossed in front of the face, no props held between the face and the camera. Hands belong at the sides, in pockets, on hips, adjusting a cuff or lapel, or holding props at chest height or LOWER — always below the chin line. The subject's likeness is the entire product; any occlusion of the face breaks it. When describing hands in the Subject section, explicitly place them away from the face.
+
 7. Self-Containment Mandate
 Every single prompt must be fully self-contained. Never reference other prompts. Fully articulate all details in every prompt, even if repeated. Do NOT include any internal reasoning phrases such as "as seen in identity photo X", "from reference image Y", "per Group C", or any other meta-references to the input assets. The output prompt text is sent directly to an image generator that has no context about the input groups — describe everything explicitly in photographic language.
 
