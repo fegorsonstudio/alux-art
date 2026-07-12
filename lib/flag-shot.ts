@@ -58,6 +58,16 @@ export function buildFlagShotDirective(text: string, barristerRegalia = true): s
       "(do NOT switch to legal/barrister attire) — stands solo and composed on a slim rooftop " +
       "antenna / communications mast at extreme skyscraper height, with a hazy city skyline " +
       "stretching far below and behind.";
+  const lookLockClause = barristerRegalia
+    ? "Hair and grooming match the rest of the shoot exactly."
+    : "OUTFIT/HAIRSTYLE/ACCESSORY CONSISTENCY LOCK — ABSOLUTE RULE: every garment, the exact " +
+      "hairstyle, and every accessory (cap, bag, jewelry, etc.) MUST render identically to how " +
+      "they appear in this shoot's other slots — same [OUTFIT] reference, same [HAIRSTYLE] " +
+      "reference, same accessories. Do not substitute, simplify, or omit any of them for this " +
+      "slot. If a worn accessory (e.g. a cap or hat) would physically conflict with holding the " +
+      "flag or gripping the mast, it may be removed for this slot ONLY — but the subject's exact " +
+      "locked hairstyle must still be rendered underneath it in full, faithful detail, never a " +
+      "generic or lower-quality substitute.";
   return [
     "═══════════════════════════════════════════════════════",
     "THIS SLOT — VIRAL SKYSCRAPER FLAG SHOT (replaces the usual studio portrait)",
@@ -73,7 +83,7 @@ export function buildFlagShotDirective(text: string, barristerRegalia = true): s
       `top. Spell it exactly and keep it legible: "${safe}".`,
     "Cinematic wide/medium-wide shot, realistic wind motion in the gown and flag, natural " +
       "atmospheric haze, documentary photograph quality. Identity locked from the identity " +
-      "references — same face, skin tone and build.",
+      "references — same face, skin tone and build. " + lookLockClause,
     "═══════════════════════════════════════════════════════",
   ].join("\n");
 }

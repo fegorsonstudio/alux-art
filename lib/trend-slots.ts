@@ -207,6 +207,12 @@ export function buildMugshotDirective(name: string, offense: string, date: strin
       "front lighting like a booking photo. Identity locked from the identity references — " +
       "same face, skin tone and build. This slot IGNORES the studio backdrop selection; " +
       "the height chart is the only background.",
+    "OUTFIT/HAIRSTYLE/ACCESSORY CONSISTENCY LOCK — ABSOLUTE RULE: every garment, the exact " +
+      "hairstyle, and every accessory (cap, bag, jewelry, etc.) MUST render identically to how " +
+      "they appear in this shoot's other slots — same [OUTFIT] reference, same [HAIRSTYLE] " +
+      "reference, same accessories. Do not substitute, simplify, or omit any of them unless " +
+      "physically impossible while holding the board (in which case keep the exact locked " +
+      "hairstyle rendered in full, faithful detail).",
     "═══════════════════════════════════════════════════════",
   ].join("\n");
 }
@@ -242,6 +248,14 @@ export function buildBowlDirective(mode: "product" | "logo"): string {
   shared.push(
     "Identity locked from the identity references — same face, skin tone and build. " +
       "The concept: this person proudly carries their business on their head.",
+    "OUTFIT/HAIRSTYLE/ACCESSORY CONSISTENCY LOCK — ABSOLUTE RULE: every garment, the exact " +
+      "hairstyle, and every accessory (cap, bag, jewelry, etc.) MUST render identically to how " +
+      "they appear in this shoot's other slots — same [OUTFIT] reference, same [HAIRSTYLE] " +
+      "reference, same accessories. Do not substitute, simplify, or omit any of them for this " +
+      "slot. If a worn accessory (e.g. a cap or hat) would physically conflict with the bowl " +
+      "balanced on the head, it may be removed for this slot ONLY — but the subject's exact " +
+      "locked hairstyle must still be rendered underneath it in full, faithful detail, never a " +
+      "generic or lower-quality substitute.",
     "═══════════════════════════════════════════════════════",
   );
   return shared.join("\n");
