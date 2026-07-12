@@ -720,6 +720,15 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
     const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
     parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
+  } else if (shoot.flag_shot?.enabled && shoot.flag_shot.text) {
+    // Non-Call-to-Bar categories don't run the wardrobe matrix — inject the flag
+    // slot standalone, generic outfit (no barrister regalia).
+    const { getFlagSlotIndex, buildFlagShotDirective } = await import("@/lib/flag-shot");
+    const flagSlotNumber = getFlagSlotIndex(packageSize) + 1;
+    parts.push({
+      text: `SLOT ${flagSlotNumber} OVERRIDE — the following replaces the normal portrait directive for slot ${flagSlotNumber}:\n` +
+        buildFlagShotDirective(shoot.flag_shot.text, false),
+    });
   }
 
   const geminiModel = genai.getGenerativeModel({
@@ -1052,6 +1061,14 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
     const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
     content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
+  } else if (shoot.flag_shot?.enabled && shoot.flag_shot.text) {
+    const { getFlagSlotIndex, buildFlagShotDirective } = await import("@/lib/flag-shot");
+    const flagSlotNumber = getFlagSlotIndex(packageSize) + 1;
+    content.push({
+      type: "text",
+      text: `SLOT ${flagSlotNumber} OVERRIDE — the following replaces the normal portrait directive for slot ${flagSlotNumber}:\n` +
+        buildFlagShotDirective(shoot.flag_shot.text, false),
+    });
   }
 
   const claudeResult = await Promise.race([

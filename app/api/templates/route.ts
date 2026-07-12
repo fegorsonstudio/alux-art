@@ -94,8 +94,9 @@ export async function POST(request: NextRequest) {
     ? sanitizeBackgroundOptions(body.backgroundOptions, user.id)
     : null;
   const safeOptionGroups = sanitizeOptionGroups(body.optionGroups, user.id);
-  // Flag shot is a Call to Bar feature only (for now).
-  const safeFlagShot = category === "call_to_bar"
+  // Flag shot originated as a Call to Bar feature; Trending templates can also
+  // offer it (generic outfit instead of barrister regalia — see lib/flag-shot.ts).
+  const safeFlagShot = category === "call_to_bar" || category === "trending"
     ? sanitizeFlagShotConfig(body.flagShot, user.id)
     : null;
   // Trend slots (mugshot + bowl) are a Trending-category feature.

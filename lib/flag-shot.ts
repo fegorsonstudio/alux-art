@@ -45,16 +45,24 @@ export function getFlagSlotIndex(packageSize: number): number {
 }
 
 // ── Per-slot brief directive ─────────────────────────────────────────────────
-export function buildFlagShotDirective(text: string): string {
+// barristerRegalia: true for Call to Bar (wig + gown, the original design); false
+// for any other category — the subject keeps whatever outfit is already locked in
+// for the rest of the shoot instead of the legal regalia.
+export function buildFlagShotDirective(text: string, barristerRegalia = true): string {
   const safe = text.replace(/"/g, "'").slice(0, FLAG_TEXT_MAXLEN);
+  const subjectClause = barristerRegalia
+    ? "The subject — in FULL Call to Bar regalia (white barrister wig worn on the head + black barrister gown + white collar/bib) — stands " +
+      "solo and composed on a slim rooftop antenna / communications mast at extreme skyscraper " +
+      "height, with a hazy city skyline stretching far below and behind."
+    : "The subject — wearing the exact same outfit already locked in for the rest of this shoot " +
+      "(do NOT switch to legal/barrister attire) — stands solo and composed on a slim rooftop " +
+      "antenna / communications mast at extreme skyscraper height, with a hazy city skyline " +
+      "stretching far below and behind.";
   return [
     "═══════════════════════════════════════════════════════",
     "THIS SLOT — VIRAL SKYSCRAPER FLAG SHOT (replaces the usual studio portrait)",
     "═══════════════════════════════════════════════════════",
-    "Recreate the viral rooftop-flag scene. The subject — in FULL Call to Bar regalia " +
-      "(white barrister wig worn on the head + black barrister gown + white collar/bib) — stands " +
-      "solo and composed on a slim rooftop antenna / communications mast at extreme skyscraper " +
-      "height, with a hazy city skyline stretching far below and behind.",
+    "Recreate the viral rooftop-flag scene. " + subjectClause,
     "Match the attached [FLAG_SCENE] reference image EXACTLY for the mast structure, the flag's " +
       "shape and size, the aerial skyline, the haze and the daylight. The environment is this " +
       "rooftop scene — NOT a studio backdrop.",

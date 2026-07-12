@@ -104,14 +104,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     groupsClause = sql`, option_groups = ${groups ? sql.json(groups as any) : null}`;
   }
 
-  // Flag shot (Call to Bar only)
+  // Flag shot (Call to Bar, or Trending with a generic non-regalia outfit)
   let flagClause = sql``;
   if (body.flagShot !== undefined) {
     const [currentRow] = await sql`SELECT category FROM templates WHERE id = ${id} AND creator_id = ${creator.id}`;
     const effectiveCategory = (typeof body.category === "string" && ALLOWED_CATEGORIES.has(body.category))
       ? body.category
       : (currentRow?.category as string | undefined);
-    const flag = effectiveCategory === "call_to_bar" ? sanitizeFlagShotConfig(body.flagShot, user.id) : null;
+    const flag = (effectiveCategory === "call_to_bar" || effectiveCategory === "trending")
+      ? sanitizeFlagShotConfig(body.flagShot, user.id)
+      : null;
     flagClause = sql`, flag_shot = ${flag ? sql.json(flag as any) : null}`;
   }
 
