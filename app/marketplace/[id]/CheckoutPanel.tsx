@@ -21,6 +21,7 @@ interface TemplateImage {
 interface TemplateDetail {
   id: string;
   title: string;
+  category?: string;
   priceNgn: number;
   price1Ngn?: number | null;
   price5Ngn?: number | null;
@@ -1074,8 +1075,11 @@ export default function CheckoutPanel({
                 <span>
                   <span className={styles.pkgLabel}>Add the viral skyscraper flag shot</span>
                   <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
-                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You appear in full
-                    wig and gown on a rooftop antenna holding a black flag with your own text.
+                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You appear{" "}
+                    {template.category === "call_to_bar"
+                      ? "in full wig and gown "
+                      : "in your shoot's outfit "}
+                    on a rooftop antenna holding a black flag with your own text.
                   </span>
                 </span>
               </label>
