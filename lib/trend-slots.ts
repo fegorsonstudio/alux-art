@@ -104,27 +104,33 @@ export function sanitizeBowlSelection(raw: unknown): BowlSelection | null {
 // ── Slot placement ───────────────────────────────────────────────────────────
 // Enabled custom slots occupy the END of the package (keeping the background
 // plan's contiguous slot mapping intact for the normal portraits): bowl last,
-// mugshot before it, viral before that. Returns 1-based slot numbers.
+// mugshot before it, flag before that, viral before that. Returns 1-based slot
+// numbers. flagOn is accepted here (rather than only in lib/flag-shot.ts) so a
+// Trending template with BOTH a flag slot and a bowl/mugshot slot enabled gets
+// distinct slot numbers instead of every "last slot" mechanism independently
+// claiming the same final slot.
 export function getTrendSlotNumbers(
   packageSize: number,
-  sel: { mugshotOn: boolean; bowlOn: boolean; viralOn?: boolean }
-): { mugshotSlot: number | null; bowlSlot: number | null; viralSlot: number | null } {
+  sel: { mugshotOn: boolean; bowlOn: boolean; viralOn?: boolean; flagOn?: boolean }
+): { mugshotSlot: number | null; bowlSlot: number | null; viralSlot: number | null; flagSlot: number | null } {
   let next = packageSize;
   let bowlSlot: number | null = null;
   let mugshotSlot: number | null = null;
+  let flagSlot: number | null = null;
   let viralSlot: number | null = null;
   if (sel.bowlOn) { bowlSlot = next; next -= 1; }
   if (sel.mugshotOn) { mugshotSlot = next; next -= 1; }
+  if (sel.flagOn) { flagSlot = next; next -= 1; }
   if (sel.viralOn) { viralSlot = next; }
-  return { mugshotSlot, bowlSlot, viralSlot };
+  return { mugshotSlot, bowlSlot, viralSlot, flagSlot };
 }
 
 // ── Combined brief section (both slots, with their slot numbers) ─────────────
-export function buildTrendSlotsBriefSection(packageSize: number, sel: TrendSlotsSelection): string {
+export function buildTrendSlotsBriefSection(packageSize: number, sel: TrendSlotsSelection, flagOn = false): string {
   const mugshotOn = !!sel.mugshot?.enabled;
   const bowlOn = !!sel.bowl?.enabled;
   const viralOn = !!sel.viral?.enabled;
-  const { mugshotSlot, bowlSlot, viralSlot } = getTrendSlotNumbers(packageSize, { mugshotOn, bowlOn, viralOn });
+  const { mugshotSlot, bowlSlot, viralSlot } = getTrendSlotNumbers(packageSize, { mugshotOn, bowlOn, viralOn, flagOn });
   const parts: string[] = [];
   if (viralOn && viralSlot) {
     parts.push(

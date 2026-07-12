@@ -709,9 +709,10 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     parts.push({ text: GROUP_IDENTITY_DIRECTIVE(identityRange) });
   }
 
+  const nonCallToBarFlagActive = shoot.category !== "call_to_bar" && !!(shoot.flag_shot?.enabled && shoot.flag_shot.text);
   if (shoot.trend_slots && (shoot.trend_slots.mugshot?.enabled || shoot.trend_slots.bowl?.enabled)) {
     const { buildTrendSlotsBriefSection } = await import("@/lib/trend-slots");
-    parts.push({ text: buildTrendSlotsBriefSection(packageSize, shoot.trend_slots) });
+    parts.push({ text: buildTrendSlotsBriefSection(packageSize, shoot.trend_slots, nonCallToBarFlagActive) });
   }
 
   if (shoot.category === "call_to_bar") {
@@ -720,15 +721,25 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
     const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
     parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
-  } else if (shoot.flag_shot?.enabled && shoot.flag_shot.text) {
+  } else if (nonCallToBarFlagActive && shoot.flag_shot) {
     // Non-Call-to-Bar categories don't run the wardrobe matrix — inject the flag
-    // slot standalone, generic outfit (no barrister regalia).
-    const { getFlagSlotIndex, buildFlagShotDirective } = await import("@/lib/flag-shot");
-    const flagSlotNumber = getFlagSlotIndex(packageSize) + 1;
-    parts.push({
-      text: `SLOT ${flagSlotNumber} OVERRIDE — the following replaces the normal portrait directive for slot ${flagSlotNumber}:\n` +
-        buildFlagShotDirective(shoot.flag_shot.text, false),
+    // slot standalone, generic outfit (no barrister regalia). Shares the same
+    // slot-placement countdown as trend slots so a Trending template with BOTH
+    // a flag and a bowl/mugshot slot gets distinct slot numbers, not a collision.
+    const { getTrendSlotNumbers } = await import("@/lib/trend-slots");
+    const { buildFlagShotDirective } = await import("@/lib/flag-shot");
+    const { flagSlot } = getTrendSlotNumbers(packageSize, {
+      mugshotOn: !!shoot.trend_slots?.mugshot?.enabled,
+      bowlOn: !!shoot.trend_slots?.bowl?.enabled,
+      viralOn: !!shoot.trend_slots?.viral?.enabled,
+      flagOn: true,
     });
+    if (flagSlot) {
+      parts.push({
+        text: `SLOT ${flagSlot} OVERRIDE — the following replaces the normal portrait directive for slot ${flagSlot}:\n` +
+          buildFlagShotDirective(shoot.flag_shot.text, false),
+      });
+    }
   }
 
   const geminiModel = genai.getGenerativeModel({
@@ -1050,9 +1061,10 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     content.push({ type: "text", text: GROUP_IDENTITY_DIRECTIVE(identityRange) });
   }
 
+  const nonCallToBarFlagActiveC = shoot.category !== "call_to_bar" && !!(shoot.flag_shot?.enabled && shoot.flag_shot.text);
   if (shoot.trend_slots && (shoot.trend_slots.mugshot?.enabled || shoot.trend_slots.bowl?.enabled)) {
     const { buildTrendSlotsBriefSection } = await import("@/lib/trend-slots");
-    content.push({ type: "text", text: buildTrendSlotsBriefSection(packageSize, shoot.trend_slots) });
+    content.push({ type: "text", text: buildTrendSlotsBriefSection(packageSize, shoot.trend_slots, nonCallToBarFlagActiveC) });
   }
 
   if (shoot.category === "call_to_bar") {
@@ -1061,14 +1073,22 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
     const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
     content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
-  } else if (shoot.flag_shot?.enabled && shoot.flag_shot.text) {
-    const { getFlagSlotIndex, buildFlagShotDirective } = await import("@/lib/flag-shot");
-    const flagSlotNumber = getFlagSlotIndex(packageSize) + 1;
-    content.push({
-      type: "text",
-      text: `SLOT ${flagSlotNumber} OVERRIDE — the following replaces the normal portrait directive for slot ${flagSlotNumber}:\n` +
-        buildFlagShotDirective(shoot.flag_shot.text, false),
+  } else if (nonCallToBarFlagActiveC && shoot.flag_shot) {
+    const { getTrendSlotNumbers } = await import("@/lib/trend-slots");
+    const { buildFlagShotDirective } = await import("@/lib/flag-shot");
+    const { flagSlot } = getTrendSlotNumbers(packageSize, {
+      mugshotOn: !!shoot.trend_slots?.mugshot?.enabled,
+      bowlOn: !!shoot.trend_slots?.bowl?.enabled,
+      viralOn: !!shoot.trend_slots?.viral?.enabled,
+      flagOn: true,
     });
+    if (flagSlot) {
+      content.push({
+        type: "text",
+        text: `SLOT ${flagSlot} OVERRIDE — the following replaces the normal portrait directive for slot ${flagSlot}:\n` +
+          buildFlagShotDirective(shoot.flag_shot.text, false),
+      });
+    }
   }
 
   const claudeResult = await Promise.race([
@@ -2007,13 +2027,14 @@ export async function startGenerationWorker(
   let imageUrls: string[] = imageEntries.map((e) => e.url);
 
   // ── Viral flag shot ─────────────────────────────────────────────────────────
-  // When active, the LAST slot is the rooftop flag shot: it gets the FLAG_SCENE plate
-  // (never the studio background) and its own directive from the brief. The plate is
-  // kept out of every other slot's reference list.
+  // When active, a reserved end-of-package slot is the rooftop flag shot: it gets
+  // the FLAG_SCENE plate (never the studio background) and its own directive from
+  // the brief. The plate is kept out of every other slot's reference list. Slot
+  // number is resolved below, jointly with mugshot/bowl/viral, so a Trending
+  // template with the flag AND a trend slot enabled doesn't collide on "last slot".
   const flagShotState = shoot.flag_shot as { enabled?: boolean; text?: string } | null;
   const flagSceneRef = refs.find((r) => r.purpose === "tagged" && r.tag === "FLAG_SCENE" && r.url);
   const flagShotActive = !!(flagShotState?.enabled && flagShotState.text && flagSceneRef);
-  const flagSlotNumber = flagShotActive ? total : -1; // 1-based slot number of the flag shot
   const flagSceneEntry = flagSceneRef
     ? { url: flagSceneRef.url, label: "FLAG SCENE — the rooftop antenna mast, black flag and skyline plate; replicate this environment exactly and place the subject into it (do not use a studio backdrop for this image)" }
     : null;
@@ -2030,14 +2051,15 @@ export async function startGenerationWorker(
   const mugshotActive = !!(trendSel?.mugshot?.enabled && mugshotBoardRef);
   const bowlActive = !!(trendSel?.bowl?.enabled && bowlPropRef && bowlContentRef);
   const viralActive = !!(trendSel?.viral?.enabled && viralLookRef);
-  const { mugshotSlot: mugshotSlotNumber, bowlSlot: bowlSlotNumber, viralSlot: viralSlotNumber } = (() => {
-    if (!mugshotActive && !bowlActive && !viralActive) return { mugshotSlot: -1, bowlSlot: -1, viralSlot: -1 };
+  const { mugshotSlot: mugshotSlotNumber, bowlSlot: bowlSlotNumber, viralSlot: viralSlotNumber, flagSlot: flagSlotNumber } = (() => {
+    if (!mugshotActive && !bowlActive && !viralActive && !flagShotActive) return { mugshotSlot: -1, bowlSlot: -1, viralSlot: -1, flagSlot: -1 };
     let next = total;
-    let bowlSlot = -1, mugshotSlot = -1, viralSlot = -1;
+    let bowlSlot = -1, mugshotSlot = -1, viralSlot = -1, flagSlot = -1;
     if (bowlActive) { bowlSlot = next; next -= 1; }
     if (mugshotActive) { mugshotSlot = next; next -= 1; }
+    if (flagShotActive) { flagSlot = next; next -= 1; }
     if (viralActive) { viralSlot = next; }
-    return { mugshotSlot, bowlSlot, viralSlot };
+    return { mugshotSlot, bowlSlot, viralSlot, flagSlot };
   })();
   const mugshotEntry = mugshotBoardRef
     ? { url: mugshotBoardRef.url, label: "MUGSHOT BOARD plate — the forensics board and height-measurement chart; replicate the board design and chart exactly, subject holds the board in front of the chart (no studio backdrop for this image)" }
