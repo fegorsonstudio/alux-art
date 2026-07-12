@@ -153,7 +153,11 @@ export default function TemplatePage() {
   const [isCreator, setIsCreator] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [resumeMode, setResumeMode] = useState(false);
-  const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(10);
+  // Default to the cheapest package so the marketplace card shows the lowest
+  // price first (e.g. ₦3,500) instead of the 10-image price — buyers can still
+  // switch to a bigger package themselves. Falls back gracefully in the price
+  // lookup below if a template has no 1-image price configured.
+  const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(1);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
   const [showQR, setShowQR] = useState(false);

@@ -115,7 +115,7 @@ export default function BookPage() {
 
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(() => {
     const p = Number(searchParams.get("pkg"));
-    return ([1, 5, 10].includes(p) ? p : 10) as 1 | 5 | 10;
+    return ([1, 5, 10].includes(p) ? p : 1) as 1 | 5 | 10;
   });
   const [buying, setBuying] = useState(false);
   const [clearing, setClearing] = useState(false);
