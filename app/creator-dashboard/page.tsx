@@ -1050,8 +1050,8 @@ function CreatorDashboard() {
           imagePath: o.kind === "photo" ? o.imagePath : undefined,
         })),
       })),
-      // Flag shot (Call to Bar only). Send null to clear when disabled or missing a plate.
-      flagShot: form.category === "call_to_bar" && flagShotEnabled && flagShotImagePath
+      // Flag shot (Call to Bar or Trending). Send null to clear when disabled or missing a plate.
+      flagShot: (form.category === "call_to_bar" || form.category === "trending") && flagShotEnabled && flagShotImagePath
         ? { enabled: true, imagePath: flagShotImagePath }
         : null,
       // Trend slots (Trending category only). Null clears when disabled/missing plates.
@@ -1171,7 +1171,7 @@ function CreatorDashboard() {
     }
 
     // Save the flag-shot plate as a FLAG_SCENE tagged image (only when it's a new upload)
-    if (form.category === "call_to_bar" && flagShotEnabled && flagShotImagePath && flagShotIsNew) {
+    if ((form.category === "call_to_bar" || form.category === "trending") && flagShotEnabled && flagShotImagePath && flagShotIsNew) {
       const flagRes = await fetch(`/api/templates/${templateId}/images`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2347,8 +2347,8 @@ function CreatorDashboard() {
             ))}
           </div>
 
-          {/* Viral skyscraper flag shot — Call to Bar only */}
-          {form.category === "call_to_bar" && (
+          {/* Viral skyscraper flag shot — Call to Bar or Trending */}
+          {(form.category === "call_to_bar" || form.category === "trending") && (
             <div className={styles.field}>
               <div className={styles.storySceneHeader}>
                 <span className={styles.label}>Viral skyscraper flag shot</span>
@@ -2364,8 +2364,10 @@ function CreatorDashboard() {
                 Offers buyers the viral rooftop-antenna flag shot. It replaces the LAST image in
                 their package (a 10-image shoot becomes 9 portraits + 1 flag shot). The buyer types
                 their own short flag text at checkout. Upload one clean empty-flag plate here — a
-                photo of the mast, black flag, and skyline with NO people. The model composites the
-                buyer in full wig and gown onto it and renders their text on the flag.
+                photo of the mast, black flag, and skyline with NO people.{" "}
+                {form.category === "call_to_bar"
+                  ? "The model composites the buyer in full wig and gown onto it and renders their text on the flag."
+                  : "The model composites the buyer in their shoot's regular outfit (no wig/gown) onto it and renders their text on the flag."}
               </p>
 
               {flagShotEnabled && (
