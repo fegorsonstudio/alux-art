@@ -244,9 +244,8 @@ function CreatorDashboard() {
   const [trendBowl, setTrendBowl] = useState<TrendSlotDraft>(emptyTrendSlot());
   const [trendViral, setTrendViral] = useState<TrendSlotDraft>(emptyTrendSlot());
 
-  // Signature poses (pose-mimic templates, any category): buyer picks which
-  // ones they want at checkout; selections ride the shoot as ordinary
-  // purpose='pose' references, same pipeline as a buyer's own pose uploads.
+  // Signature poses (pose-mimic templates, any category): a variety pool the
+  // planner randomly draws from (no repeats per shoot) — buyers never pick.
   interface PoseOptionDraft { id: string; name: string; description: string; imagePath: string; preview: string; uploading: boolean; fromDb?: boolean }
   const [poseOptions, setPoseOptions] = useState<PoseOptionDraft[]>([]);
 
@@ -849,7 +848,7 @@ function CreatorDashboard() {
 
   // ── Asset library — every photo option used on any of this creator's templates ──
   interface LibraryAsset { imagePath: string; imageBucket: string; name: string; type: string; preview: string; sourceTitle: string; description?: string }
-  const MAX_POSE_OPTIONS = 6;
+  const MAX_POSE_OPTIONS = 30;
   const libraryAssets: LibraryAsset[] = (() => {
     const seen = new Set<string>();
     const out: LibraryAsset[] = [];
@@ -1063,7 +1062,7 @@ function CreatorDashboard() {
             viral: trendViral.enabled && trendViral.imagePath ? { enabled: true, imagePath: trendViral.imagePath } : null,
           }
         : null,
-      // Signature poses — buyer-selectable pose mimicry, works on any category.
+      // Signature poses — planner draws randomly from this pool, works on any category.
       poseOptions: poseOptions.length > 0
         ? poseOptions.map(p => ({ id: p.id, name: p.name.trim(), description: p.description.trim() || undefined, imagePath: p.imagePath }))
         : null,
@@ -2591,9 +2590,9 @@ function CreatorDashboard() {
           <div className={styles.field}>
             <span className={styles.label}>Signature poses ({poseOptions.length}/{MAX_POSE_OPTIONS})</span>
             <p className={styles.fieldHint}>
-              Upload named pose/mannerism references (e.g. someone&apos;s signature poses). Buyers pick any of
-              these at checkout and their portraits recreate the exact pose, expression, and body language —
-              wardrobe, background, and identity stay theirs.
+              Upload named pose/mannerism references (e.g. someone&apos;s signature poses) — build a big
+              variety pool. Every shoot automatically gets a random, non-repeating mix from this pool, one
+              distinct pose per portrait. Buyers never pick — wardrobe, background, and identity stay theirs.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {poseOptions.map(p => (

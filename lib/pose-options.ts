@@ -1,16 +1,18 @@
-// Buyer-selected pose/mannerism mimicry.
+// Planner-randomized pose/mannerism mimicry.
 //
 // A template creator uploads named "signature pose" reference photos (e.g. a
-// specific person's poses and mannerisms). At checkout, the buyer picks any
-// number of the offered poses (up to MAX_SELECTED_POSES). Selected pose photos
-// ride the shoot as ordinary purpose='pose' shoot_references — this reuses the
-// EXISTING Group D pose-extraction pipeline in lib/generate.ts verbatim (the
-// same mechanism that already lets a buyer upload their own pose references),
-// so no changes to generation are needed. Group D scans every purpose='pose'
-// image, extracts the distinct pose/expression, and assigns extracted poses to
-// portrait slots in order, cycling if fewer poses than slots — it explicitly
-// overrides normal pose-harvesting for those slots while leaving wardrobe,
-// background, and identity untouched.
+// specific person's poses and mannerisms) — a variety pool, not a fixed set.
+// At booking time the SERVER randomly picks one DISTINCT pose per portrait
+// slot (no repeats within a shoot, as long as the pool is at least as large
+// as the slot count) — the buyer never sees or chooses poses. Selected pose
+// photos ride the shoot as ordinary purpose='pose' shoot_references — this
+// reuses the EXISTING Group D pose-extraction pipeline in lib/generate.ts
+// verbatim (the same mechanism that already lets a buyer upload their own
+// pose references), so no changes to generation are needed. Group D scans
+// every purpose='pose' image, extracts the distinct pose/expression, and
+// assigns extracted poses to portrait slots in order — feeding it N distinct
+// randomly-chosen poses for N portrait slots means every slot gets its own
+// pose with no cycling/repetition.
 //
 // Unlike background/choice options, pose options are photo-only (a pose is a
 // physical reference, not something you can describe your way around) and are
@@ -24,8 +26,9 @@ export interface PoseOption {
   imageBucket?: string;        // defaults to "template-images"
 }
 
-export const MAX_POSE_OPTIONS = 6;
-export const MAX_SELECTED_POSES = 6;
+// A creator's signature-pose library can be large — it's a variety pool the
+// planner draws from, not a per-buyer checklist.
+export const MAX_POSE_OPTIONS = 30;
 
 // ── Server-side sanitizer (templates POST/PATCH) ─────────────────────────────
 // Returns null for "no options" (stored as SQL NULL). Drops invalid items.
@@ -52,23 +55,18 @@ export function sanitizePoseOptions(raw: unknown, userId: string): PoseOption[] 
   return out.length > 0 ? out : null;
 }
 
-// ── Buyer selection resolver (book route) ────────────────────────────────────
-// Buyer sends an array of picked option ids; resolves against the template's
-// configured pose options. Unknown ids are dropped rather than erroring (a
-// stale client after a creator edit shouldn't hard-fail checkout). No forced
-// defaults — an untouched/empty selection means no creator poses are used.
-export function resolvePoseSelections(
-  options: PoseOption[],
-  pickedIds: string[] | undefined
-): PoseOption[] {
-  if (!Array.isArray(options) || options.length === 0 || !Array.isArray(pickedIds)) return [];
-  const byId = new Map(options.map((o) => [o.id, o]));
-  const out: PoseOption[] = [];
-  const seen = new Set<string>();
-  for (const id of pickedIds.slice(0, MAX_SELECTED_POSES)) {
-    if (typeof id !== "string" || seen.has(id)) continue;
-    const found = byId.get(id);
-    if (found) { out.push(found); seen.add(id); }
+// ── Random no-repeat picker (book route) ─────────────────────────────────────
+// Picks up to `count` DISTINCT poses at random (Fisher-Yates partial shuffle).
+// Call with count = the shoot's portrait-slot count so every slot can get a
+// unique pose; if the pool is smaller than the slot count, Group D's existing
+// cycling behavior takes over for the leftover slots (unavoidable — there's
+// nothing left to pick that hasn't already been used).
+export function pickRandomPoseOptions(options: PoseOption[], count: number): PoseOption[] {
+  if (!Array.isArray(options) || options.length === 0 || count <= 0) return [];
+  const pool = [...options];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  return out;
+  return pool.slice(0, Math.min(count, pool.length));
 }

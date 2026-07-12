@@ -10,7 +10,7 @@ import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-p
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
-import { resolvePoseSelections, type PoseOption } from "@/lib/pose-options";
+import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
 
 interface RefInput {
   name?: string;
@@ -35,7 +35,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     identityRefs?: RefInput[];
     taggedRefs?: TaggedRefInput[];
     poseRefs?: RefInput[];
-    poseSelections?: string[];
     shotType?: string;
     couponCode?: string;
     packageSize?: number;
@@ -178,12 +177,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // ── Signature poses (creator-uploaded pose mimicry) ─────────────────────────
-  // Buyer-picked poses become ordinary purpose='pose' shoot_references, merged
-  // below with any pose photos the buyer uploaded themselves — both flow through
-  // the SAME existing Group D pose-extraction pipeline in lib/generate.ts.
   const templatePoseOptions = (Array.isArray(template.pose_options) ? template.pose_options : []) as PoseOption[];
-  const selectedPoseOptions = resolvePoseSelections(templatePoseOptions, body.poseSelections);
 
   // ── Trend slots (Trending category) ─────────────────────────────────────────
   // Mugshot is background-exempt (the height chart IS its background); bowl keeps
@@ -212,6 +206,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Custom slots (flag, mugshot, bowl, viral) sit outside the backdrop distribution —
   // the buyer only places their normal portraits across backdrops.
   const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0) - (trendViral ? 1 : 0);
+
+  // ── Signature poses (creator-uploaded pose mimicry) ─────────────────────────
+  // Not buyer-chosen — the planner randomly picks one DISTINCT pose per normal
+  // portrait slot (bgSlotCount), so no pose repeats within a shoot as long as
+  // the creator's pool is at least that large. Selected poses become ordinary
+  // purpose='pose' shoot_references, merged below with anything the buyer
+  // separately uploaded — both flow through the same Group D pipeline.
+  const selectedPoseOptions = pickRandomPoseOptions(templatePoseOptions, bgSlotCount);
 
   // ── Background allocation ───────────────────────────────────────────────
   // Options only exist on templates whose category allows them (write-time gate),
