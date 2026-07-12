@@ -701,6 +701,7 @@ async function buildShootBrief(
 ${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `\n- Attribution: "${shoot.quote!.attribution}"` : ""}` : ""}
 
 Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
+${!hasQuote ? "\nThis shoot has NO quote card. Section IV's \"10th prompt is a graphic quote card\" example does not apply here — ignore it entirely. Every prompt_index from 1 through " + packageSize + ", including the last one, is a normal photographic portrait prompt (is_quote_card: false), honoring any SLOT N OVERRIDE given above for that index. Never emit svg_layout_instructions or a graphic/typography composite for this shoot." : ""}
 
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.`,
   });
@@ -1054,6 +1055,7 @@ async function buildShootBriefClaude(
 ${hasQuote ? `- Quote Text: "${shoot.quote!.text}"${shoot.quote!.attribution ? `\n- Attribution: "${shoot.quote!.attribution}"` : ""}` : ""}
 
 Generate exactly ${portraitCount} portrait prompt${portraitCount !== 1 ? "s" : ""}${hasQuote ? " + 1 quote card prompt (prompt_index: 10, is_quote_card: true)" : ""}.
+${!hasQuote ? "\nThis shoot has NO quote card. Section IV's \"10th prompt is a graphic quote card\" example does not apply here — ignore it entirely. Every prompt_index from 1 through " + packageSize + ", including the last one, is a normal photographic portrait prompt (is_quote_card: false), honoring any SLOT N OVERRIDE given above for that index. Never emit svg_layout_instructions or a graphic/typography composite for this shoot." : ""}
 
 Output ONLY valid JSON matching the output structure in your instructions. No markdown fences, no pre-text, no post-text.` });
 
