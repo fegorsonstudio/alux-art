@@ -348,7 +348,9 @@ select.input { appearance: none; cursor: pointer; }
 .coverUpload:hover { border-color: rgba(67, 159, 169, 0.55); background: rgba(67, 159, 169, 0.08); }
 .coverPreview { width: 100%; height: 100%; object-fit: cover; display: block; }
 .coverPlaceholder { color: #7aafb4; font-size: 0.82rem; }
-.hidden { display: none; }
+/* display:none can silently block the native file picker on iOS/mobile Safari
+   when the input is opened via ref.click() — keep it in the layout tree instead. */
+.hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .collageCoverBtn {
   margin-top: 8px;

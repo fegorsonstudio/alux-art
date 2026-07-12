@@ -601,7 +601,9 @@
 .clearRefsBtn:hover:not(:disabled) { color: #8b2c24; }
 .clearRefsBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.hidden { display: none; }
+/* display:none can silently block the native file picker on iOS/mobile Safari
+   when the input is opened via ref.click() — keep it in the layout tree instead. */
+.hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* ---- Responsive ---- */
 @media (max-width: 680px) {

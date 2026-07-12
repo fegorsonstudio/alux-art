@@ -155,7 +155,9 @@
 .avatarPreview:hover { border-color: #2f8e9a; background: rgba(67, 159, 169, 0.1); }
 .avatarImg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatarPlaceholder { font-size: 0.72rem; color: #7aafb4; text-align: center; padding: 8px; }
-.hidden { display: none; }
+/* display:none can silently block the native file picker on iOS/mobile Safari
+   when the input is opened via ref.click() — keep it in the layout tree instead. */
+.hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* ---- Fields ---- */
 .field { display: flex; flex-direction: column; gap: 6px; }
