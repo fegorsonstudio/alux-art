@@ -829,6 +829,12 @@ export default function WorkspacePage() {
                 <button className={styles.clearLibBtn} onClick={handleClearLibrary}>Clear library</button>
               )}
             </div>
+            <p className={styles.helperText}>
+              For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
+              at least one photo where you're genuinely smiling (teeth showing) so we can create natural smiling
+              shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
+              how you look from behind.
+            </p>
 
             {/* Saved library */}
             {libraryImages.length > 0 && (

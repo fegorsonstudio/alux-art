@@ -29,6 +29,20 @@ const MOCK_FAL_PLACEHOLDER_IMAGE_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 // Appended to every fal.ai prompt as positive anatomical facts
 const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. Natural lips with a subtle micro-expression — fractionally parted or carrying a micro-asymmetric curve; no smile, no visible teeth, no open mouth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
 
+// Variant for designated smile slots — the smiling identity reference is attached,
+// so real teeth are copied instead of invented.
+const GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. A genuine warm smile with naturally rendered visible teeth taken directly from the smiling identity reference — same tooth shape, spacing, and color; never invented, idealized, or veneer-perfect teeth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
+
+// Variant for back-view slots — the face is not visible, so eye/lip requirements
+// would fight the pose; the back-view identity reference anchors the figure instead.
+const GLOBAL_ANATOMICAL_CONSTRAINTS_BACK = "Exactly two hands with five natural fingers each when hands are visible. The subject is photographed from behind — the back of the head, shoulders, waist, hips, and overall figure match the back-view identity reference exactly; never an imagined or idealized body shape. Skin tone and build consistent with the identity references. Natural posture and realistic fabric drape.";
+
+// Per-slot identity routing triggers — detect what a slot's prompt asks for so the
+// matching identity references are attached (planner indices take priority; these
+// are the fallback when a brief omits identity_image_indices).
+const SMILE_TRIGGERS = /\bsmil|laugh|grinn|visible teeth/i;
+const BACK_TRIGGERS = /back view|from behind|back turned|turned away|back of the (?:head|body)|facing away|rear view|back-view/i;
+
 // Telephoto enhancement — medium/portrait/fashion framings render flat without
 // explicit long-lens language. Appended after the brief's own camera text so the
 // later, more specific statement wins. Quote/graphic card slots are excluded.
@@ -238,6 +252,7 @@ type SignedRef = {
   note?: string | null;
   name: string;
   url: string;
+  storagePath: string;
 };
 
 type SlotRow = {
@@ -271,6 +286,7 @@ async function signRefs(
         note: ref.note,
         name: ref.name,
         url,
+        storagePath: ref.storage_path,
       };
     })
   );
@@ -370,6 +386,84 @@ Clinical and precise. No subjective judgments. Stable biometric features only.`;
   return text;
 }
 
+// ── Identity attribute classification ────────────────────────────────────────
+// Each identity image is classified by framing / view / expression so the planner
+// can select WHICH identity photos support each prompt (smiling slots get real-teeth
+// references, back-pose slots get the back-view reference, close-ups get portraits).
+export type IdentityAttrs = {
+  framing: "full-body" | "medium" | "close-up";
+  view: "front" | "back";
+  expression: "smiling-teeth" | "neutral";
+};
+
+const DEFAULT_IDENTITY_ATTRS: IdentityAttrs = { framing: "medium", view: "front", expression: "neutral" };
+
+const VALID_FRAMINGS = new Set(["full-body", "medium", "close-up"]);
+
+async function classifyIdentityAttributes(
+  identityRefs: Array<{ url: string; storagePath: string }>
+): Promise<Record<string, IdentityAttrs>> {
+  const usable = identityRefs.filter((r) => r.url && r.storagePath);
+  if (usable.length === 0) return {};
+  // Failure mode = everything neutral/front/medium, which reproduces today's
+  // behavior exactly — classification can never make output worse.
+  const fallback: Record<string, IdentityAttrs> = Object.fromEntries(
+    usable.map((r) => [r.storagePath, { ...DEFAULT_IDENTITY_ATTRS }])
+  );
+  try {
+    const allParts = await Promise.all(usable.map((r) => toGeminiImagePart(r.url)));
+    const imageParts = allParts.filter((p): p is GeminiImagePart => p !== null);
+    // If any image failed to load, index alignment between the model's answer and
+    // our list would break — bail to the safe default instead of mis-labeling.
+    if (imageParts.length !== usable.length) return fallback;
+
+    const model = genai.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { maxOutputTokens: 512 },
+    });
+    const prompt = `Classify each attached photo of a person. For EVERY image, in order, return exactly one line:
+IMAGE <n>: framing=<full-body|medium|close-up>, view=<front|back>, expression=<smiling-teeth|neutral>
+
+Definitions:
+- framing: full-body = head to toe visible; medium = roughly waist-up; close-up = head and shoulders only.
+- view: back = the person is photographed from behind (back of head/body toward the camera); otherwise front.
+- expression: smiling-teeth = genuine smile with teeth clearly visible; otherwise neutral.
+
+Return ONLY the lines, one per image, nothing else.`;
+
+    const result = await Promise.race([
+      model.generateContent([...imageParts, prompt]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Identity attribute classification timeout")), IDENTITY_ANALYSIS_TIMEOUT_MS)
+      ),
+    ]);
+    const text = result.response.text();
+    const out: Record<string, IdentityAttrs> = { ...fallback };
+    for (const m of text.matchAll(/IMAGE\s+(\d+)\s*:\s*framing=([\w-]+)\s*,\s*view=(\w+)\s*,\s*expression=([\w-]+)/gi)) {
+      const ref = usable[Number(m[1]) - 1];
+      if (!ref) continue;
+      const framing = m[2].toLowerCase();
+      out[ref.storagePath] = {
+        framing: (VALID_FRAMINGS.has(framing) ? framing : "medium") as IdentityAttrs["framing"],
+        view: m[3].toLowerCase() === "back" ? "back" : "front",
+        expression: m[4].toLowerCase() === "smiling-teeth" ? "smiling-teeth" : "neutral",
+      };
+    }
+    return out;
+  } catch (err) {
+    console.warn("[generate] identity attribute classification failed — defaulting all to neutral/front/medium:", err instanceof Error ? err.message : String(err));
+    return fallback;
+  }
+}
+
+// Catalog handed to the brief planner: one line per GROUP A image plus the
+// 1-based indices of smiling and back-view references.
+export type IdentityCatalog = {
+  lines: string[];
+  smilingIndices: number[];
+  backIndices: number[];
+};
+
 type SceneSlotPrompt = {
   background: string;
   lighting: string;
@@ -392,9 +486,50 @@ type NewPromptObject = {
   is_quote_card?: boolean;
   fully_consolidated_prompt?: string;
   svg_layout_instructions?: string;
+  identity_image_indices?: number[];
 };
 
-const SHOOT_BRIEF_SYSTEM_INSTRUCTION = `SYSTEM INSTRUCTION: Photo Shoot Prompt Engineer (Art Director Vision Model)
+// The system instruction is a function because two blocks are conditional on the
+// identity image catalog: the smile rule (a hard ban unless a genuine smiling-teeth
+// reference exists) and the back-pose gate (back poses only with a back-view ref).
+function buildShootBriefSystemInstruction(catalog?: IdentityCatalog | null): string {
+  const hasCatalog = !!catalog && catalog.lines.length > 0;
+  const hasSmiling = !!catalog && catalog.smilingIndices.length > 0;
+  const hasBack = !!catalog && catalog.backIndices.length > 0;
+
+  const catalogBlock = hasCatalog
+    ? `\nIdentity Image Catalog — the framing, view, and expression of each GROUP A image (use this to select identity_image_indices per prompt):\n${catalog.lines.join("\n")}\n`
+    : "";
+
+  const identitySelectionRule = hasCatalog
+    ? `\nPER-PROMPT IDENTITY SELECTION — MANDATORY: every portrait prompt object in the output JSON must include an "identity_image_indices" array listing the GROUP A image numbers (from the Identity Image Catalog) that best support THAT prompt. Selection rules:
+- Close-up/beauty prompts → prefer close-up and medium references.
+- Waist-up/medium prompts → prefer medium and full-body references.
+- Full-body prompts → MUST include the full-body reference if one exists.
+- Back-view/turned-away prompts → MUST include the back-view reference plus exactly one front full-body reference (for build and skin-tone consistency).
+- Smiling prompts → ONLY the smiling-teeth references (never a neutral reference).
+- All non-smiling prompts → ONLY neutral references (never a smiling-teeth reference).
+Select 2-4 indices per prompt when enough references exist. Never select an empty list.\n`
+    : "";
+
+  const dentitionRule = hasSmiling
+    ? `1. Smile Allocation Rule — ABSOLUTE RULE
+The subject's GENUINE smile is available: identity ${catalog!.smilingIndices.length === 1 ? `IMAGE ${catalog!.smilingIndices[0]} shows` : `IMAGES ${catalog!.smilingIndices.join(", ")} show`} the subject genuinely smiling with visible teeth. You MUST designate 2-3 portrait slots (in a 10-image shoot; exactly 1 slot in shoots of 5 or fewer images) as genuine-smile slots: their prompts MUST contain the exact phrase "smiling with visible teeth", describe a warm genuine smile, and their identity_image_indices MUST list ONLY the smiling-teeth reference(s). Custom slots (flag shot, mugshot, bowl, viral pose, quote card) are NEVER smile slots — choose normal portrait slots.
+ALL OTHER SLOTS: no smiling, no laughing, no visible teeth, no open mouth. Their identity_image_indices must list ONLY neutral references. For these slots the target is ALIVE lips: lips fractionally parted (natural breathing stance), subtle asymmetric lip curve, soft tension in the lower lip, relaxed jawline — natural, unlocked, human lip micro-states are mandatory.`
+    : `1. The Dentition Safeguard — ABSOLUTE RULE
+NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. These are unconditionally prohibited regardless of what the identity photos show. Do not add smiles or laughter even if identity photos show them.
+
+HOWEVER — "closed lips" is no longer the target. The target is ALIVE lips. The following subtle mouth states are not only permitted but required: lips fractionally parted (natural breathing stance), subtle asymmetric lip curve, soft tension in the lower lip, relaxed jawline. The distinction is: NO SMILING / NO TEETH / NO OPEN MOUTH — but natural, unlocked, human lip micro-states are mandatory.`;
+
+  const backPoseGate = hasBack
+    ? `1b. Back-View Poses — AVAILABLE: identity ${catalog!.backIndices.length === 1 ? `IMAGE ${catalog!.backIndices[0]} shows` : `IMAGES ${catalog!.backIndices.join(", ")} show`} the subject from behind. Back-view or turned-away poses are permitted; when you write one, its identity_image_indices MUST include the back-view reference plus one front full-body reference, and the prompt must describe the back/figure exactly as shown in the back-view reference — never an imagined or idealized body shape.`
+    : `1b. Back-View Poses — FORBIDDEN: no identity reference shows the subject from behind, so NEVER write a pose where the subject's back is the primary view (fully turned away from camera). The generator must never guess how the subject looks from behind. Over-the-shoulder glances where the face and figure remain front-referenced are fine.`;
+
+  const cohesiveAnatomicalClause = hasSmiling
+    ? `(designated smile slots: a genuine smile with naturally rendered visible teeth taken directly from the smiling identity reference; all other slots: fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)`
+    : `(fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)`;
+
+  return `SYSTEM INSTRUCTION: Photo Shoot Prompt Engineer (Art Director Vision Model)
 
 You are an expert, world-class Art Director and Prompt Engineer for professional high-end fashion and lifestyle photoshoots. Your mission is to analyze incoming image assets and design exactly 9 highly detailed, diverse, and technically flawless photoshoot prompts and 1 specialized quote graphic portrait prompt (utilizing an SVG-based overlay workflow).
 
@@ -410,6 +545,7 @@ Framing Type Alignment: Analyze the framing of the Group A images carefully to a
 - Portrait-only references must only be used for tight close-ups and beauty portraits.
 - Medium/half-body references must only be used for waist/hip-up or medium prompts.
 - Smiling references with visible teeth must be used only for prompts that explicitly involve smiling or laughing.
+${catalogBlock}${identitySelectionRule}
 Validation: If there is a critical gap (e.g., you need to generate a full-body shot but only have a headshot, or a requested asset is completely missing), set the upload_error_warning key at the root of the JSON with a description of what is missing. Do not generate empty or fallback placeholders.
 
 GROUP B — Inspiration (Aesthetic & Pose):
@@ -433,10 +569,9 @@ To lock in the image generator's behavioral constraints and protect the subject'
 
 III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 
-1. The Dentition Safeguard — ABSOLUTE RULE
-NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. These are unconditionally prohibited regardless of what the identity photos show. Do not add smiles or laughter even if identity photos show them.
+${dentitionRule}
 
-HOWEVER — "closed lips" is no longer the target. The target is ALIVE lips. The following subtle mouth states are not only permitted but required: lips fractionally parted (natural breathing stance), subtle asymmetric lip curve, soft tension in the lower lip, relaxed jawline. The distinction is: NO SMILING / NO TEETH / NO OPEN MOUTH — but natural, unlocked, human lip micro-states are mandatory.
+${backPoseGate}
 
 2. Styling, Hairstyles, and Overrides
 By default, preserve the hair shown in Group A identity images. However, if Group C contains an image tagged [HAIRSTYLE], you MUST override all hair descriptions from Group A and Group B with the EXACT hairstyle visible in the [HAIRSTYLE] reference image. This override is absolute — even if the [HAIRSTYLE] image shows a shaved head, bald head, very short crop, or any other style that differs dramatically from Group A, you must describe that exact style in every portrait prompt. Never fall back to Group A hair when a [HAIRSTYLE] tag is present.
@@ -455,7 +590,7 @@ PERSPECTIVE MATCH: Analyze the [BACKGROUND] reference's camera geometry — came
 - No Background Spills: Do NOT mix background environment elements of Group C into the Group B background setting.
 
 4. Cohesive Portfolio Rule
-Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Every portrait prompt must state anatomical facts positively: exactly two hands with five natural fingers each, natural eyes with catchlights, and natural lips with a subtle micro-expression (fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth). State these as descriptive facts in the prompt body, not as negative constraints.
+Maintain absolute visual and stylistic cohesion in color grading, mood, atmosphere, and environments across the series. Every portrait prompt must state anatomical facts positively: exactly two hands with five natural fingers each, natural eyes with catchlights, and natural lips with a subtle micro-expression ${cohesiveAnatomicalClause}. State these as descriptive facts in the prompt body, not as negative constraints.
 
 5. Camera & Lens Consistency
 Dynamically select one of the world's top 4 medium-format camera systems (Hasselblad, Phase One, Fujifilm GFX, or Leica S) and keep it identical across all 9 portrait prompts. Vary focal lengths per shot type.
@@ -553,13 +688,13 @@ Output ONLY a valid JSON object. No markdown code fences, no pre-text, no post-t
 
 IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolidated fields — no intermediate breakdown fields (no separate background, lighting, pose, shot_type, outfit_look, reference_registry, prefix, etc.). This keeps the JSON compact and within token limits.
 
-{
+${hasCatalog ? `Every portrait prompt object MUST include "identity_image_indices" (the GROUP A image numbers selected per the PER-PROMPT IDENTITY SELECTION rule). The quote card prompt may omit it.\n\n` : ""}{
   "upload_error_warning": null,
   "prompts": [
     {
       "prompt_index": 1,
-      "is_quote_card": false,
-      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — micro-expression from the three pools: one eye/brow phrase, one mouth/jaw phrase, one global impression phrase; catchlight phrase if eyes are visible; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, natural lips with subtle micro-expression (fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)."
+      "is_quote_card": false,${hasCatalog ? `\n      "identity_image_indices": [1, 2],` : ""}
+      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — micro-expression from the three pools: one eye/brow phrase, one mouth/jaw phrase, one global impression phrase; catchlight phrase if eyes are visible; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, natural lips with subtle micro-expression ${cohesiveAnatomicalClause}."
     },
     {
       "prompt_index": 10,
@@ -569,6 +704,7 @@ IMPORTANT: Do all creative reasoning internally. Output ONLY the final consolida
     }
   ]
 }`;
+}
 
 
 async function buildShootBrief(
@@ -589,7 +725,8 @@ async function buildShootBrief(
   refs: SignedRef[],
   characterBaseUrl?: string,
   forbiddenExamples?: string[],
-  dbForbiddenWords?: Array<{ word: string; replacement: string }>
+  dbForbiddenWords?: Array<{ word: string; replacement: string }>,
+  identityCatalog?: IdentityCatalog | null
 ): Promise<string> {
   const packageSize = normalizePackageSize(shoot.package_size);
   const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
@@ -746,7 +883,7 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
 
   const geminiModel = genai.getGenerativeModel({
     model: "gemini-2.5-flash",
-    systemInstruction: SHOOT_BRIEF_SYSTEM_INSTRUCTION,
+    systemInstruction: buildShootBriefSystemInstruction(identityCatalog),
     generationConfig: {
       maxOutputTokens: 16384,
       responseMimeType: "application/json",
@@ -969,7 +1106,8 @@ async function buildShootBriefClaude(
   refs: SignedRef[],
   characterBaseUrl?: string,
   forbiddenExamples?: string[],
-  dbForbiddenWords?: Array<{ word: string; replacement: string }>
+  dbForbiddenWords?: Array<{ word: string; replacement: string }>,
+  identityCatalog?: IdentityCatalog | null
 ): Promise<string> {
   const packageSize = normalizePackageSize(shoot.package_size);
   const identityRefs = refs.filter((r) => r.purpose === "identity" && r.url);
@@ -1098,7 +1236,7 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     anthropic.messages.create({
       model: "claude-opus-4-7",
       max_tokens: 16384,
-      system: SHOOT_BRIEF_SYSTEM_INSTRUCTION,
+      system: buildShootBriefSystemInstruction(identityCatalog),
       messages: [{ role: "user", content }],
     }),
     new Promise<never>((_, reject) =>
@@ -1568,7 +1706,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -1748,6 +1886,43 @@ export async function startGenerationWorker(
     await sql`UPDATE shoots SET identity_profile = ${identityProfile}, updated_at = ${ts()} WHERE id = ${shootId}`;
   }
 
+  // --- Step 1b: Identity attribute classification (framing / view / expression) ---
+  // Powers per-slot identity routing: smiling slots get only real-teeth references,
+  // back-pose slots get the back-view reference, close-ups get portrait references.
+  // Cached on the shoot row so retries skip the vision call. Skipped for group
+  // shoots and locked-base shoots (single anchor image, no routing to do).
+  let identityAttributes: Record<string, IdentityAttrs> = {};
+  const identityRefsOrdered = refs.filter((r) => r.purpose === "identity" && r.url);
+  if (!hasBase && shoot.group_identity !== true && identityRefsOrdered.length > 0) {
+    const cached = shoot.identity_attributes;
+    if (cached && typeof cached === "object" && !Array.isArray(cached) && Object.keys(cached).length > 0) {
+      identityAttributes = cached as Record<string, IdentityAttrs>;
+    } else {
+      identityAttributes = await classifyIdentityAttributes(
+        identityRefsOrdered.map((r) => ({ url: r.url, storagePath: r.storagePath }))
+      );
+      if (Object.keys(identityAttributes).length > 0) {
+        await sql`UPDATE shoots SET identity_attributes = ${JSON.stringify(identityAttributes)}::jsonb, updated_at = ${ts()} WHERE id = ${shootId}`;
+        console.log("[generate] identity attributes classified:", identityAttributes);
+      }
+    }
+  }
+
+  // Catalog handed to the brief planner — same GROUP A order the planner sees.
+  const identityCatalog: IdentityCatalog | null = (() => {
+    if (Object.keys(identityAttributes).length === 0) return null;
+    const lines: string[] = [];
+    const smilingIndices: number[] = [];
+    const backIndices: number[] = [];
+    identityRefsOrdered.forEach((r, i) => {
+      const a = identityAttributes[r.storagePath] ?? DEFAULT_IDENTITY_ATTRS;
+      lines.push(`IMAGE ${i + 1}: framing=${a.framing}, view=${a.view}, expression=${a.expression}`);
+      if (a.expression === "smiling-teeth") smilingIndices.push(i + 1);
+      if (a.view === "back") backIndices.push(i + 1);
+    });
+    return { lines, smilingIndices, backIndices };
+  })();
+
   // --- Step 2: Shoot brief ---
   if (!shootBrief) {
 
@@ -1878,11 +2053,11 @@ export async function startGenerationWorker(
     // reroutes the brief to Gemini so the shoot proceeds without interruption.
     const shootForBrief = { ...shoot, storyContext, storyImageUrls } as never;
     const buildGeminiBrief = () =>
-      buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief);
+      buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
     let briefServedBy: "claude" | "gemini" | "gemini-fallback" = "gemini";
     if (visionModel === "claude") {
       try {
-        shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief);
+        shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
         JSON.parse(shootBrief); // invalid/truncated JSON counts as failure → fall back
         briefServedBy = "claude";
       } catch (err) {
@@ -1948,6 +2123,8 @@ export async function startGenerationWorker(
 
   let prompts: Record<string, string | SceneSlotPrompt> = {};
   const svgLayoutMap: Record<string, string> = {};
+  // Planner-selected identity image numbers (1-based GROUP A indices) per slot.
+  const slotIdentityIndices: Record<string, number[]> = {};
   try {
     const parsed = JSON.parse(shootBriefClean);
     const rawPrompts = parsed.prompts;
@@ -1957,6 +2134,10 @@ export async function startGenerationWorker(
         const key = String(p.prompt_index);
         if (p.fully_consolidated_prompt) prompts[key] = p.fully_consolidated_prompt;
         if (p.svg_layout_instructions) svgLayoutMap[key] = p.svg_layout_instructions;
+        if (Array.isArray(p.identity_image_indices)) {
+          const valid = p.identity_image_indices.filter((n) => Number.isInteger(n) && n >= 1);
+          if (valid.length > 0) slotIdentityIndices[key] = valid;
+        }
       }
     } else if (rawPrompts && typeof rawPrompts === "object") {
       // Legacy dict format
@@ -1983,6 +2164,23 @@ export async function startGenerationWorker(
     dbForbiddenWords = await sql`SELECT word, replacement FROM forbidden_words`;
   } catch { /* non-fatal — table may not exist yet */ }
 
+  // All identity refs with their classified attributes — per-slot routing selects
+  // from this pool, so uploads beyond the shared-list cap still reach the slots
+  // that need them (e.g. the back-view photo for a back-pose slot).
+  const identityLabelFor = (a: IdentityAttrs): string =>
+    a.view === "back"
+      ? "SUBJECT IDENTITY (BACK VIEW) — the subject photographed from behind; replicate this exact back of head, figure, and body shape"
+      : a.expression === "smiling-teeth"
+        ? "SUBJECT IDENTITY (GENUINE SMILE) — the exact person to depict; copy the real smile and exact teeth from this photo"
+        : "SUBJECT IDENTITY — the exact person to depict";
+  const allIdentityEntries = identityRefsOrdered.map((r, i) => {
+    const attrs = identityAttributes[r.storagePath] ?? DEFAULT_IDENTITY_ATTRS;
+    return { url: r.url, index: i + 1, attrs, label: identityLabelFor(attrs) };
+  });
+  const identityRoutingActive =
+    !hasBase && shoot.group_identity !== true &&
+    Object.keys(identityAttributes).length > 0 && allIdentityEntries.length > 0;
+
   // Build imageUrls for fal.ai — base-locked shoots use base + scene refs; standard shoots use identity + inspiration
   // Each entry carries a role label so we can append an authoritative reference map to
   // every slot prompt — without it the model has no idea what images 4+ are for.
@@ -2001,7 +2199,6 @@ export async function startGenerationWorker(
     // Identity images come first so the model treats them as the primary subject reference.
     // Include all tagged refs so the model sees those images directly, not just as text
     // descriptions. Limit inspiration to 1 to avoid diluting the identity signal.
-    const identityUrls = refs.filter((r) => r.purpose === "identity").map((r) => r.url).filter(Boolean);
     const SLOT_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK"]);
     const taggedRefEntries = refs
       // Slot plates are attached to THEIR slot only (below), never the shared per-slot list.
@@ -2022,12 +2219,20 @@ export async function startGenerationWorker(
     // With a background plan, cap identity at 4 so the per-slot background image
     // survives nano-banana's 9-image cap alongside the wardrobe refs.
     imageEntries = [
-      ...identityUrls.slice(0, backgroundPlan ? 4 : 6).map((u) => ({ url: u, label: "SUBJECT IDENTITY — the exact person to depict" })),
+      ...allIdentityEntries.slice(0, backgroundPlan ? 4 : 6).map(({ url, label }) => ({ url, label })),
       ...taggedRefEntries,
       ...inspirationUrls.slice(0, 1).map((u) => ({ url: u, label: "INSPIRATION — mood and style context only; do not copy the person, outfit, or background from it unless no dedicated reference exists" })),
     ];
   }
   let imageUrls: string[] = imageEntries.map((e) => e.url);
+  // Per-slot routing may select identity images beyond the shared-list cap —
+  // include them in the reachability check so buildReferenceMap keeps them.
+  if (identityRoutingActive) {
+    const known = new Set(imageUrls);
+    for (const e of allIdentityEntries) {
+      if (!known.has(e.url)) { imageUrls.push(e.url); known.add(e.url); }
+    }
+  }
 
   // ── Viral flag shot ─────────────────────────────────────────────────────────
   // When active, a reserved end-of-package slot is the rooftop flag shot: it gets
@@ -2157,52 +2362,8 @@ export async function startGenerationWorker(
 
     let slotPrompt = ""; // hoisted so catch block can log it for learning
     try {
-      // Per-slot image list: with a background plan, insert THIS slot's background
-      // image right after the identity block; other slots' backgrounds are excluded.
-      let slotReferenceMap = sharedReferenceMap;
-      let slotBgAlloc: ReturnType<typeof getBackgroundForSlot> = null;
-      const identityOnlyEntries = imageEntries.slice(0, identityEntryCount);
-      if (flagShotActive && flagSceneEntry && slot === flagSlotNumber) {
-        // Flag slot: swap the studio background for the FLAG_SCENE plate. Keeps the full
-        // wardrobe refs (regalia) — this composite is proven to work with them.
-        slotReferenceMap = buildReferenceMap([
-          ...identityOnlyEntries,
-          flagSceneEntry,
-          ...imageEntries.slice(identityEntryCount),
-        ]);
-      } else if (viralActive && viralEntry && slot === viralSlotNumber) {
-        // Viral chair-pose slot: identity + the viral reference ONLY. Pose and outfit come
-        // from the reference; the buyer's own styling refs would fight it.
-        slotReferenceMap = buildReferenceMap([...identityOnlyEntries, viralEntry]);
-      } else if (mugshotActive && mugshotEntry && slot === mugshotSlotNumber) {
-        // Mugshot slot: identity + board plate ONLY. A minimal list keeps the model's
-        // attention on the board text and chart; wardrobe is described in the prompt.
-        slotReferenceMap = buildReferenceMap([...identityOnlyEntries, mugshotEntry]);
-      } else if (bowlActive && bowlPropEntry && bowlContentEntry && slot === bowlSlotNumber) {
-        // Bowl slot: identity + ITS backdrop + bowl + content ONLY. With the full shared
-        // list (14 images) the buyer's logo was ignored — a focused list keeps it seen.
-        if (backgroundPlan) slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
-        const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
-        slotReferenceMap = buildReferenceMap([
-          ...identityOnlyEntries,
-          ...(bgEntry ? [bgEntry] : []),
-          bowlPropEntry,
-          bowlContentEntry,
-        ]);
-      } else if (backgroundPlan && bgEntryByOptionId.size > 0) {
-        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
-        const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
-        if (bgEntry) {
-          slotReferenceMap = buildReferenceMap([
-            ...identityOnlyEntries,
-            bgEntry,
-            ...imageEntries.slice(identityEntryCount),
-          ]);
-        }
-      } else if (backgroundPlan) {
-        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
-      }
-
+      // Prompt text first — per-slot identity routing reads it to detect what the
+      // slot asks for (smile / back view) before the reference list is assembled.
       const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];
       if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
         // Locked-base: assemble final prompt from scene fields + base anchor opener
@@ -2221,6 +2382,106 @@ export async function startGenerationWorker(
         slotPrompt = "Scene: Studio portrait with clean background. Subject: Person preserving identity exactly. Important Details: Natural wardrobe, editorial lens feel. Use Case: fashion portrait. Constraints: Preserve exact identity. No alterations to facial structure.";
       }
 
+      const isQuoteSlot = hasQuote && slot === total;
+      const isCustomSlot =
+        (flagShotActive && slot === flagSlotNumber) ||
+        (viralActive && slot === viralSlotNumber) ||
+        (mugshotActive && slot === mugshotSlotNumber) ||
+        (bowlActive && slot === bowlSlotNumber);
+
+      // ── Per-slot identity selection ─────────────────────────────────────────
+      // Smiling slots get only real-teeth references, back-pose slots get the
+      // back-view reference, everything else gets neutral front references.
+      // Planner-selected identity_image_indices take priority; prompt-text
+      // heuristics are the fallback; the full pool is the final safety net.
+      const wantsSmile = identityRoutingActive && !isCustomSlot && !isQuoteSlot && SMILE_TRIGGERS.test(slotPrompt);
+      const wantsBack = identityRoutingActive && !isCustomSlot && !isQuoteSlot && BACK_TRIGGERS.test(slotPrompt);
+      const identityOnlyEntries = imageEntries.slice(0, identityEntryCount);
+      let slotIdentityEntries = identityOnlyEntries;
+      if (identityRoutingActive) {
+        const pool = allIdentityEntries;
+        let chosen: typeof pool = [];
+        if (isCustomSlot || isQuoteSlot) {
+          // Custom slots are directive-locked (deadpan mugshot, flag composite,
+          // etc.) — always neutral front references.
+          chosen = pool.filter((e) => e.attrs.expression === "neutral" && e.attrs.view === "front");
+        } else {
+          const planned = slotIdentityIndices[String(slot)];
+          if (planned?.length) chosen = planned.map((n) => pool[n - 1]).filter(Boolean);
+          if (chosen.length === 0 && wantsBack) {
+            const backs = pool.filter((e) => e.attrs.view === "back");
+            const frontFull = pool.filter((e) => e.attrs.view === "front" && e.attrs.framing === "full-body");
+            chosen = [...backs, ...frontFull.slice(0, 1)];
+          }
+          if (chosen.length === 0) {
+            chosen = pool.filter((e) => e.attrs.view === "front" &&
+              (wantsSmile ? e.attrs.expression === "smiling-teeth" : e.attrs.expression === "neutral"));
+          }
+        }
+        if (chosen.length === 0) chosen = pool; // never send zero identity images
+        chosen = chosen.slice(0, 4);
+        console.log(`[generate] slot ${slot} identity routing: images [${chosen.map((e) => e.index).join(", ")}]${wantsSmile ? " (smile)" : ""}${wantsBack ? " (back)" : ""}${slotIdentityIndices[String(slot)]?.length ? " (planner)" : ""}`);
+        slotIdentityEntries = chosen.map(({ url, label }) => ({ url, label }));
+      }
+
+      // Per-slot image list: with a background plan, insert THIS slot's background
+      // image right after the identity block; other slots' backgrounds are excluded.
+      let slotReferenceMap = identityRoutingActive
+        ? buildReferenceMap([...slotIdentityEntries, ...imageEntries.slice(identityEntryCount)])
+        : sharedReferenceMap;
+      let slotBgAlloc: ReturnType<typeof getBackgroundForSlot> = null;
+      if (flagShotActive && flagSceneEntry && slot === flagSlotNumber) {
+        // Flag slot: swap the studio background for the FLAG_SCENE plate. Keeps the full
+        // wardrobe refs (regalia) — this composite is proven to work with them.
+        slotReferenceMap = buildReferenceMap([
+          ...slotIdentityEntries,
+          flagSceneEntry,
+          ...imageEntries.slice(identityEntryCount),
+        ]);
+      } else if (viralActive && viralEntry && slot === viralSlotNumber) {
+        // Viral chair-pose slot: identity + the viral reference ONLY. Pose and outfit come
+        // from the reference; the buyer's own styling refs would fight it.
+        slotReferenceMap = buildReferenceMap([...slotIdentityEntries, viralEntry]);
+      } else if (mugshotActive && mugshotEntry && slot === mugshotSlotNumber) {
+        // Mugshot slot: identity + board plate ONLY. A minimal list keeps the model's
+        // attention on the board text and chart; wardrobe is described in the prompt.
+        slotReferenceMap = buildReferenceMap([...slotIdentityEntries, mugshotEntry]);
+      } else if (bowlActive && bowlPropEntry && bowlContentEntry && slot === bowlSlotNumber) {
+        // Bowl slot: identity + ITS backdrop + bowl + content ONLY. With the full shared
+        // list (14 images) the buyer's logo was ignored — a focused list keeps it seen.
+        if (backgroundPlan) slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
+        const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
+        slotReferenceMap = buildReferenceMap([
+          ...slotIdentityEntries,
+          ...(bgEntry ? [bgEntry] : []),
+          bowlPropEntry,
+          bowlContentEntry,
+        ]);
+      } else if (backgroundPlan && bgEntryByOptionId.size > 0) {
+        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
+        const bgEntry = slotBgAlloc ? bgEntryByOptionId.get(slotBgAlloc.id) : undefined;
+        if (bgEntry) {
+          slotReferenceMap = buildReferenceMap([
+            ...slotIdentityEntries,
+            bgEntry,
+            ...imageEntries.slice(identityEntryCount),
+          ]);
+        }
+      } else if (backgroundPlan) {
+        slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
+      }
+
+      // The brief's mandatory prefix states the identity range for ALL identity
+      // images ("IMAGES 1 through N"); with routing, this slot may attach fewer —
+      // rewrite the range so the prompt matches the attached reference count.
+      if (identityRoutingActive && !isQuoteSlot) {
+        const k = slotIdentityEntries.length;
+        if (k > 0) {
+          const newRange = k === 1 ? "IMAGE 1" : `IMAGES 1 through ${k}`;
+          slotPrompt = slotPrompt.replace(/IMAGES 1 through \d+/g, newRange);
+        }
+      }
+
       // Text-kind background: belt-and-braces environment lock appended to the prompt
       // (the brief model already received the per-slot matrix; this guards against drift)
       const textBgLock = slotBgAlloc && slotBgAlloc.kind === "text" && slotBgAlloc.description
@@ -2229,14 +2490,19 @@ export async function startGenerationWorker(
 
       // Telephoto injection for portrait-type slots (never the quote/graphic card).
       // The /200mm/ guard keeps this idempotent across slot retries.
-      const isQuoteSlot = hasQuote && slot === total;
       const telephotoText =
         !isQuoteSlot && TELEPHOTO_TRIGGERS.test(slotPrompt) && !/200mm/i.test(slotPrompt)
           ? TELEPHOTO_ENHANCEMENT
           : "";
 
-      // Append the reference image map + positive anatomical constraints to every fal call
-      slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text} ${GLOBAL_ANATOMICAL_CONSTRAINTS}`.trim();
+      // Append the reference image map + positive anatomical constraints to every fal call.
+      // Smile slots get the real-teeth variant; back-view slots drop face requirements.
+      const slotAnatomicalConstraints = wantsBack
+        ? GLOBAL_ANATOMICAL_CONSTRAINTS_BACK
+        : wantsSmile
+          ? GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE
+          : GLOBAL_ANATOMICAL_CONSTRAINTS;
+      slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text} ${slotAnatomicalConstraints}`.trim();
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 

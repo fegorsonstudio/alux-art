@@ -1237,6 +1237,12 @@ export default function CheckoutPanel({
           <div>
             <p className={styles.sectionTitle}>Your identity photos</p>
             <p className={styles.sectionHint}>Select saved photos or upload new ones. At least 1 required.</p>
+            <p className={styles.sectionHint}>
+              For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
+              at least one photo where you're genuinely smiling (teeth showing) so we can create natural smiling
+              shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
+              how you look from behind.
+            </p>
 
             {savedRefs.length > 0 && (
               <>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { r2Download, r2SignedDownloadUrl } from "@/lib/r2";
+import { r2Download, r2Exists, r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
 
@@ -34,11 +34,25 @@ export async function GET(
   const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
   if (isDownload) {
+    // 1. R2 (new files saved by r2StreamUpload): redirect to a signed URL so the
+    // browser downloads straight from R2 — resumable (Accept-Ranges), correct
+    // Content-Length, zero server memory, and immune to app restarts. Proxying
+    // ~18MB files through Node produced truncated files on flaky connections
+    // and 502s during restarts, which browsers saved as kilobyte "images".
+    if (await r2Exists(storageBucket, storagePath)) {
+      const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null);
+      if (signedUrl) {
+        sql`INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW())`.catch(() => {});
+        return NextResponse.redirect(signedUrl, 302);
+      }
+    }
+
     let body: ReadableStream<Uint8Array> | ArrayBuffer | undefined;
     let contentType = "image/png";
     let contentLength: number | undefined;
 
-    // 1. R2 (new files saved by r2StreamUpload)
+    // 1b. R2 buffered fallback — only reached if the HEAD check or signing failed
+    // transiently even though the object may exist.
     try {
       const { buffer, contentType: ct } = await r2Download(storageBucket, storagePath);
       if (buffer.byteLength > 0) {
