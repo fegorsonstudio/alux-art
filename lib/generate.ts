@@ -493,6 +493,23 @@ type NewPromptObject = {
   identity_image_indices?: number[];
 };
 
+// Final user-content reminder for identity routing. The system instruction is
+// long, and Gemini in particular skips the identity_image_indices / smile
+// allocation requirements when they only appear there — a closing user-content
+// directive is weighted much more heavily and makes compliance reliable.
+function buildIdentityRoutingReminder(catalog: IdentityCatalog, packageSize: number): string {
+  const smileCount = packageSize >= 10 ? "exactly 2 or 3" : packageSize >= 5 ? "exactly 1" : "0 (single-image shoots stay neutral)";
+  const smileBlock = catalog.smilingIndices.length > 0
+    ? `\n2. SMILE ALLOCATION (do not skip): identity ${catalog.smilingIndices.length === 1 ? `IMAGE ${catalog.smilingIndices[0]} shows` : `IMAGES ${catalog.smilingIndices.join(", ")} show`} a genuine smile with visible teeth. Designate ${smileCount} normal portrait slot(s) as genuine-smile slots: their prompt text MUST contain the exact phrase "smiling with visible teeth" and their identity_image_indices MUST list ONLY the smiling image number(s). Never a custom slot (flag/mugshot/bowl/viral/quote card). Every other slot: no smile, and identity_image_indices lists ONLY neutral image numbers.`
+    : "";
+  return `═══════════════════════════════════════════════════════
+FINAL COMPLIANCE CHECK — IDENTITY IMAGE ROUTING (MANDATORY)
+═══════════════════════════════════════════════════════
+1. EVERY portrait prompt object in the output JSON MUST include "identity_image_indices": an array of the GROUP A image numbers best matching that prompt's framing and expression, per the Identity Image Catalog:
+${catalog.lines.join("\n")}${smileBlock}
+Before returning the JSON, verify every portrait prompt object has identity_image_indices. Output that misses this field is invalid.`;
+}
+
 // The system instruction is a function because two blocks are conditional on the
 // identity image catalog: the smile rule (a hard ban unless a genuine smiling-teeth
 // reference exists) and the back-pose gate (back poses only with a back-view ref).
@@ -885,6 +902,10 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     }
   }
 
+  if (identityCatalog && identityCatalog.lines.length > 0) {
+    parts.push({ text: buildIdentityRoutingReminder(identityCatalog, packageSize) });
+  }
+
   const geminiModel = genai.getGenerativeModel({
     model: "gemini-2.5-flash",
     systemInstruction: buildShootBriefSystemInstruction(identityCatalog),
@@ -1234,6 +1255,10 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
           buildFlagShotDirective(shoot.flag_shot.text, false),
       });
     }
+  }
+
+  if (identityCatalog && identityCatalog.lines.length > 0) {
+    content.push({ type: "text", text: buildIdentityRoutingReminder(identityCatalog, packageSize) });
   }
 
   const claudeResult = await Promise.race([
