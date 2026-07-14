@@ -831,7 +831,7 @@ export default function WorkspacePage() {
             </div>
             <p className={styles.helperText}>
               For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
-              at least one photo where you're genuinely smiling (teeth showing) so we can create natural smiling
+              at least one photo where you&apos;re genuinely smiling (teeth showing) so we can create natural smiling
               shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
               how you look from behind.
             </p>
