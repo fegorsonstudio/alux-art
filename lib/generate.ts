@@ -2399,7 +2399,12 @@ export async function startGenerationWorker(
       // Planner-selected identity_image_indices take priority; prompt-text
       // heuristics are the fallback; the full pool is the final safety net.
       const wantsSmile = identityRoutingActive && !isCustomSlot && !isQuoteSlot && SMILE_TRIGGERS.test(slotPrompt);
-      const wantsBack = identityRoutingActive && !isCustomSlot && !isQuoteSlot && BACK_TRIGGERS.test(slotPrompt);
+      // A slot only counts as a back-view slot when a back-view reference exists —
+      // pose language like "back turn" or "glance back" appears in templates whose
+      // buyers uploaded no back photo, and without a reference the pose stays
+      // front-anchored (the planner's back-pose gate forbids true back views).
+      const hasBackRef = allIdentityEntries.some((e) => e.attrs.view === "back");
+      const wantsBack = identityRoutingActive && hasBackRef && !isCustomSlot && !isQuoteSlot && BACK_TRIGGERS.test(slotPrompt);
       const identityOnlyEntries = imageEntries.slice(0, identityEntryCount);
       let slotIdentityEntries = identityOnlyEntries;
       if (identityRoutingActive) {
