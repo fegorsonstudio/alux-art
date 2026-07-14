@@ -40,11 +40,12 @@ const GLOBAL_ANATOMICAL_CONSTRAINTS_BACK = "Exactly two hands with five natural 
 // Per-slot identity routing triggers — detect what a slot's prompt asks for so the
 // matching identity references are attached (planner indices take priority; these
 // are the fallback when a brief omits identity_image_indices).
-// Positive-only phrasing: neutral prompts legitimately contain negated smile
-// language ("no smile, no teeth", "not a smile"), so a bare /smil/ match would
-// wrongly flag them. The planner is required to write "smiling with visible
-// teeth" in designated smile slots, making that phrase the reliable signal.
-const SMILE_TRIGGERS = /smiling with visible teeth|genuine(?:ly)? smil|warm smile|beaming|laughing|grinning/i;
+// Only the mandated marker phrase counts. Neutral prompts legitimately contain
+// negated smile language ("no smile, no teeth") and can echo rule text like
+// "genuine smile" from the system instruction, so any broader match wrongly
+// flags them. The planner is REQUIRED to write this exact phrase in designated
+// smile slots, making it the one reliable signal.
+const SMILE_TRIGGERS = /smiling with visible teeth/i;
 const BACK_TRIGGERS = /back view|from behind|back turned|turned away|back of the (?:head|body)|facing away|rear view|back-view/i;
 
 // Telephoto enhancement — medium/portrait/fashion framings render flat without
@@ -546,8 +547,11 @@ HOWEVER — "closed lips" is no longer the target. The target is ALIVE lips. The
     ? `1b. Back-View Poses — AVAILABLE: identity ${catalog!.backIndices.length === 1 ? `IMAGE ${catalog!.backIndices[0]} shows` : `IMAGES ${catalog!.backIndices.join(", ")} show`} the subject from behind. Back-view or turned-away poses are permitted; when you write one, its identity_image_indices MUST include the back-view reference plus one front full-body reference, and the prompt must describe the back/figure exactly as shown in the back-view reference — never an imagined or idealized body shape.`
     : `1b. Back-View Poses — FORBIDDEN: no identity reference shows the subject from behind, so NEVER write a pose where the subject's back is the primary view (fully turned away from camera). The generator must never guess how the subject looks from behind. Over-the-shoulder glances where the face and figure remain front-referenced are fine.`;
 
+  // Instructive wording only — the planner copies anatomical-facts text into
+  // prompts verbatim, so this must never combine both slot types in one clause
+  // (a combined clause bled smile language into every neutral prompt).
   const cohesiveAnatomicalClause = hasSmiling
-    ? `(designated smile slots: a genuine smile with naturally rendered visible teeth taken directly from the smiling identity reference; all other slots: fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)`
+    ? `(fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth). EXCEPTION — in the designated smile slots ONLY, write instead: a genuine warm smile, smiling with visible teeth, faithfully copied from the smiling identity reference. Never put the no-smile clause and the smile clause in the same prompt`
     : `(fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)`;
 
   return `SYSTEM INSTRUCTION: Photo Shoot Prompt Engineer (Art Director Vision Model)
@@ -715,7 +719,7 @@ ${hasCatalog ? `Every portrait prompt object MUST include "identity_image_indice
     {
       "prompt_index": 1,
       "is_quote_card": false,${hasCatalog ? `\n      "identity_image_indices": [1, 2],` : ""}
-      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — micro-expression from the three pools: one eye/brow phrase, one mouth/jaw phrase, one global impression phrase; catchlight phrase if eyes are visible; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, natural lips with subtle micro-expression ${cohesiveAnatomicalClause}."
+      "fully_consolidated_prompt": "Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph. Identity: [exact face description — skin tone, eye shape and color, nose, lips, jawline, hairline, body build drawn from identity profile]. Environment: [lighting setup — direction, quality, color temperature; background/environment — specific location, texture, depth; time of day/atmospheric details]. Subject: [pose — body position, arms, hands explicitly described; expression — micro-expression from the three pools: one eye/brow phrase, one mouth/jaw phrase, one global impression phrase; catchlight phrase if eyes are visible; camera angle — eye-level/high/low; framing — headshot/medium/full body; lens — focal length, depth of field]. Styling: [outfit — specific garments, fabric, color, cut from OUTFIT reference or inspiration; hair; grooming; accessories; color grade/film look]. Anatomical facts: exactly two hands with five natural fingers each, natural eyes with catchlights, natural lips with subtle micro-expression (fractionally parted or micro-asymmetric curve — no smile, no teeth, no open mouth)."
     },
     {
       "prompt_index": 10,
