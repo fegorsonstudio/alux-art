@@ -40,7 +40,11 @@ const GLOBAL_ANATOMICAL_CONSTRAINTS_BACK = "Exactly two hands with five natural 
 // Per-slot identity routing triggers — detect what a slot's prompt asks for so the
 // matching identity references are attached (planner indices take priority; these
 // are the fallback when a brief omits identity_image_indices).
-const SMILE_TRIGGERS = /\bsmil|laugh|grinn|visible teeth/i;
+// Positive-only phrasing: neutral prompts legitimately contain negated smile
+// language ("no smile, no teeth", "not a smile"), so a bare /smil/ match would
+// wrongly flag them. The planner is required to write "smiling with visible
+// teeth" in designated smile slots, making that phrase the reliable signal.
+const SMILE_TRIGGERS = /smiling with visible teeth|genuine(?:ly)? smil|warm smile|beaming|laughing|grinning/i;
 const BACK_TRIGGERS = /back view|from behind|back turned|turned away|back of the (?:head|body)|facing away|rear view|back-view/i;
 
 // Telephoto enhancement — medium/portrait/fashion framings render flat without
