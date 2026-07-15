@@ -1784,7 +1784,9 @@ export async function startGenerationWorker(
 
   const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
-  const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
+  // ORDER BY keeps photo→slot mapping stable across worker invocations and retries
+  // (photo_upgrade maps source photo i → slot i; unordered reads made that random).
+  const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId} ORDER BY created_at ASC, id ASC` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
 
   const total = normalizePackageSize(shoot.package_size);
