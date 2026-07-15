@@ -153,7 +153,7 @@ const MAX_BG_OPTIONS = 6;
 
 // Buyer choice groups — pick-one-per-group styling options (all categories).
 // Props are multi-select: buyers pick as many as they want (or none).
-type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props";
+type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs";
 const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> = {
   outfit:      { tag: "OUTFIT",      label: "Outfit" },
   hairstyle:   { tag: "HAIRSTYLE",   label: "Hairstyle" },
@@ -163,6 +163,7 @@ const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> =
   accessory:   { tag: "ACCESSORY",   label: "Accessory" },
   color_grade: { tag: "COLOR_GRADE", label: "Color grade" },
   props:       { tag: "ACCESSORY",   label: "Props" },
+  scrubs:      { tag: "SCRUBS",      label: "Scrubs color" },
 };
 const MAX_CHOICE_GROUPS = 6;
 const MAX_GROUP_OPTIONS = 6;

@@ -11,6 +11,7 @@ import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
 import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
+import { sanitizeInductionSelection, type InductionSelection } from "@/lib/nursing-induction";
 
 interface RefInput {
   name?: string;
@@ -41,7 +42,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     currency?: string;
     rolePrompt?: string;
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
-    choiceSelections?: Array<{ groupId: string; optionId: string }>;
+    choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string }>;
+    induction?: { name?: string; titles?: string[]; year?: number };
     flagShot?: { enabled?: boolean; text?: string };
     trendSlots?: {
       mugshot?: { enabled?: boolean; name?: string; offense?: string; date?: string };
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
-  const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE"]);
+  const VALID_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "SASH", "SCRUBS", "SUIT"]);
   type TemplateImgMeta = { storage_path: string; storage_bucket?: string | null; tag?: string | null; purpose?: string; note?: string | null; custom_name?: string | null };
 
   const templateImgList = await sql`
@@ -202,6 +204,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const trendSelection: TrendSlotsSelection | null = (trendMugshot || trendBowl || trendViral)
     ? { mugshot: trendMugshot, bowl: trendBowl, viral: trendViral }
     : null;
+
+  // ── Induction personalization (nursing_induction category) ─────────────────
+  // Name + credential titles + class year, rendered as embroidered sash/scrubs
+  // text by the generation directives. Name is required — the sash is the
+  // template's centerpiece and blank sashes read as broken output.
+  let induction: InductionSelection | null = null;
+  if (template.category === "nursing_induction") {
+    induction = sanitizeInductionSelection(body.induction);
+    if (!induction) {
+      return NextResponse.json({ error: "Please enter the name for your sash" }, { status: 400 });
+    }
+  }
 
   // Custom slots (flag, mugshot, bowl, viral) sit outside the backdrop distribution —
   // the buyer only places their normal portraits across backdrops.
@@ -344,7 +358,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, induction, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
@@ -354,6 +368,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${choiceSelections ? sql.json(choiceSelections as unknown as Parameters<typeof sql.json>[0]) : null},
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${induction ? sql.json(induction as unknown as Parameters<typeof sql.json>[0]) : null},
       ${now}, ${now}
     )
     RETURNING id

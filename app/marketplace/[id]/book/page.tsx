@@ -25,6 +25,7 @@ interface TemplateImage {
 interface TemplateDetail {
   id: string;
   title: string;
+  category?: string;
   priceNgn: number;
   price1Ngn?: number | null;
   price5Ngn?: number | null;
@@ -133,6 +134,13 @@ export default function BookPage() {
     ]).then(([templateData, idData]) => {
       if (templateData.template) {
         const t: TemplateDetail = templateData.template;
+        // Nursing induction needs the full checkout (sash personalization, scrubs
+        // color, recolor chips) — this legacy page doesn't render those, so a
+        // booking here would be rejected for the missing sash name. Redirect.
+        if (t.category === "nursing_induction") {
+          router.replace(`/marketplace/${t.id}`);
+          return;
+        }
         setTemplate(t);
         Analytics.bookingStarted(t.id, t.title, t.priceNgn);
         // Initialize tagged refs from template images

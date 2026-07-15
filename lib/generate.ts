@@ -745,6 +745,7 @@ async function buildShootBrief(
     flag_shot?: { enabled: boolean; text: string } | null;
     group_identity?: boolean;
     trend_slots?: import("./trend-slots").TrendSlotsSelection | null;
+    induction?: import("./nursing-induction").InductionSelection | null;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -885,6 +886,14 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
     const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
     parts.push({ text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
+  } else if (shoot.category === "nursing_induction" && shoot.induction) {
+    // Nursing induction: the matrix handles the flag slot internally (like the
+    // call-to-bar matrix), so the standalone flag block below must not also fire.
+    const { buildNursingInductionBriefSection } = await import("@/lib/nursing-induction");
+    const hasScrubsRef = refs.some((r) => r.tag === "SCRUBS");
+    const hasSuitRef = refs.some((r) => r.tag === "SUIT");
+    const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
+    parts.push({ text: buildNursingInductionBriefSection(packageSize, shoot.induction, hasScrubsRef, hasSuitRef, flagShot) });
   } else if (nonCallToBarFlagActive && shoot.flag_shot) {
     // Non-Call-to-Bar categories don't run the wardrobe matrix — inject the flag
     // slot standalone, generic outfit (no barrister regalia). Shares the same
@@ -1130,6 +1139,7 @@ async function buildShootBriefClaude(
     flag_shot?: { enabled: boolean; text: string } | null;
     group_identity?: boolean;
     trend_slots?: import("./trend-slots").TrendSlotsSelection | null;
+    induction?: import("./nursing-induction").InductionSelection | null;
   },
   identityProfile: string,
   refs: SignedRef[],
@@ -1243,6 +1253,14 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
     const hasOutfitRef = refs.some((r) => r.tag === "OUTFIT");
     const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
     content.push({ type: "text", text: buildCallToBarBriefSection(packageSize, isFemale, hasOutfitRef, flagShot) });
+  } else if (shoot.category === "nursing_induction" && shoot.induction) {
+    // The nursing matrix handles the flag slot internally — the standalone flag
+    // block below must not also fire.
+    const { buildNursingInductionBriefSection } = await import("@/lib/nursing-induction");
+    const hasScrubsRef = refs.some((r) => r.tag === "SCRUBS");
+    const hasSuitRef = refs.some((r) => r.tag === "SUIT");
+    const flagShot = shoot.flag_shot?.enabled && shoot.flag_shot.text ? { text: shoot.flag_shot.text } : null;
+    content.push({ type: "text", text: buildNursingInductionBriefSection(packageSize, shoot.induction, hasScrubsRef, hasSuitRef, flagShot) });
   } else if (nonCallToBarFlagActiveC && shoot.flag_shot) {
     const { getTrendSlotNumbers } = await import("@/lib/trend-slots");
     const { buildFlagShotDirective } = await import("@/lib/flag-shot");
@@ -1739,7 +1757,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
@@ -2238,6 +2256,9 @@ export async function startGenerationWorker(
       .filter((r) => r.purpose === "tagged" && r.url && !SLOT_ONLY_TAGS.has(r.tag ?? ""))
       .map((r) => {
         const name = r.customName || r.tag || "REFERENCE";
+        // Garment references are ghost-mannequin product shots — the guard stops
+        // the model copying the mannequin's hollow form instead of the buyer's body.
+        const mannequinGuard = " (this is a ghost-mannequin product shot: extract ONLY the garment — color, cut, fabric, trim — and fit it naturally to the subject's actual body shape and proportions from the identity references; never reproduce the mannequin's hollow form, stance, or proportions)";
         const directive =
           r.tag === "BACKGROUND"
             ? "BACKGROUND reference — the environment/backdrop in the output MUST replicate this image exactly (surface, color, floor, texture); match its perspective, camera height, and floor line exactly so the subject appears photographed within this space. Override any conflicting environment description"
@@ -2245,7 +2266,15 @@ export async function startGenerationWorker(
               ? "LIGHTING reference — match this lighting setup"
               : r.tag === "COLOR_GRADE"
                 ? "COLOR GRADE reference — match this film/edit style"
-                : `${name} reference — whenever the prompt describes this item, replicate its exact design, fabric, color, and construction from this image`;
+                : r.tag === "SASH"
+                  ? "SASH reference — the personalized induction sash; replicate its fabric, emblem, trim, and fringe exactly, and render the embroidered text lines specified in the prompt on its front panel in realistic stitched gold thread"
+                  : r.tag === "SCRUBS"
+                    ? `SCRUBS reference — the scrubs set for scrub slots; replicate its exact colorway, trim, and pocket layout${mannequinGuard}`
+                    : r.tag === "SUIT"
+                      ? `SUIT reference — the corporate look for suit slots; replicate its exact color, cut, and fabric${mannequinGuard}`
+                      : r.tag === "OUTFIT"
+                        ? `${name} reference — whenever the prompt describes this garment, replicate its exact design, fabric, color, and construction from this image${mannequinGuard}`
+                        : `${name} reference — whenever the prompt describes this item, replicate its exact design, fabric, color, and construction from this image`;
         return { url: r.url, label: directive };
       });
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);

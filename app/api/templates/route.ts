@@ -8,7 +8,7 @@ import { sanitizeFlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeTrendSlotsConfig } from "@/lib/trend-slots";
 import { sanitizePoseOptions } from "@/lib/pose-options";
 
-const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "trending", "other"]);
+const ALLOWED_CATEGORIES = new Set(["portrait", "editorial", "corporate", "glamour", "wedding", "maternity", "fantasy", "boudoir", "street", "call_to_bar", "nursing_induction", "trending", "other"]);
 const ALLOWED_MODES = new Set(["fast", "advanced"]);
 const ALLOWED_STORY_TYPES = new Set(["solo", "duo", "group", "brand", "group_brand"]);
 

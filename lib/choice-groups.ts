@@ -11,7 +11,7 @@
 // package, choice groups are single-pick.
 
 export type ChoiceGroupType =
-  | "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props";
+  | "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs";
 
 export interface ChoiceOption {
   id: string;
@@ -21,6 +21,15 @@ export interface ChoiceOption {
   imagePath?: string;          // required for photo
   imageBucket?: string;        // defaults to "template-images"
 }
+
+// Optional garment recolor for single-select outfit/scrubs picks: the buyer keeps
+// the garment's cut/fabric but ticks a different fabric color. Fixed palette so
+// the value is safe to inject into prompts.
+export const RECOLOR_GROUP_TYPES = new Set<ChoiceGroupType>(["outfit", "scrubs"]);
+export const RECOLOR_PALETTE = [
+  "Maroon", "Teal", "Navy", "Emerald", "Burgundy", "Light Grey",
+  "Black", "White", "Gold", "Pink",
+] as const;
 
 export interface ChoiceGroup {
   id: string;
@@ -34,6 +43,7 @@ export interface ChoiceSelection extends ChoiceOption {
   groupType: ChoiceGroupType;
   tag: string;                 // the reference tag this selection fills
   label: string;               // group label
+  colorOverride?: string;      // RECOLOR_PALETTE value — outfit/scrubs picks only
 }
 
 export interface ChoiceSelections {
@@ -54,6 +64,7 @@ export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: s
   accessory:   { tag: "ACCESSORY",   defaultLabel: "Accessory" },
   color_grade: { tag: "COLOR_GRADE", defaultLabel: "Color grade" },
   props:       { tag: "ACCESSORY",   defaultLabel: "Props", namePrefix: "Prop — ", multiSelect: true },
+  scrubs:      { tag: "SCRUBS",      defaultLabel: "Scrubs color" },
 };
 
 export const MAX_CHOICE_GROUPS = 6;
@@ -124,11 +135,13 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
 // automatically. Multi-select groups (props) keep every pick.
 export function resolveChoiceSelections(
   groups: ChoiceGroup[],
-  buyerPicks: Array<{ groupId: string; optionId: string }> | undefined
+  buyerPicks: Array<{ groupId: string; optionId: string; colorOverride?: string }> | undefined
 ): { selections: ChoiceSelections | null; error?: string } {
   if (!Array.isArray(groups) || groups.length === 0) return { selections: null };
 
+  const validColors = new Set<string>(RECOLOR_PALETTE);
   const picksByGroup = new Map<string, string[]>();
+  const colorByGroup = new Map<string, string>();
   for (const p of buyerPicks ?? []) {
     if (!p || typeof p.groupId !== "string" || typeof p.optionId !== "string") {
       return { selections: null, error: "Invalid style selection" };
@@ -136,6 +149,9 @@ export function resolveChoiceSelections(
     const list = picksByGroup.get(p.groupId) ?? [];
     if (!list.includes(p.optionId)) list.push(p.optionId);
     picksByGroup.set(p.groupId, list);
+    if (typeof p.colorOverride === "string" && validColors.has(p.colorOverride)) {
+      colorByGroup.set(p.groupId, p.colorOverride);
+    }
   }
 
   const selections: ChoiceSelection[] = [];
@@ -169,6 +185,11 @@ export function resolveChoiceSelections(
       continue;
     }
 
+    // Recolor override applies only to single-select garment groups.
+    const colorOverride = RECOLOR_GROUP_TYPES.has(group.type) && !meta.multiSelect
+      ? colorByGroup.get(group.id)
+      : undefined;
+
     for (const option of chosen) {
       selections.push({
         ...option,
@@ -177,6 +198,7 @@ export function resolveChoiceSelections(
         tag: meta.tag,
         label: group.label,
         name: meta.namePrefix ? `${meta.namePrefix}${option.name}` : option.name,
+        ...(colorOverride ? { colorOverride } : {}),
       });
     }
   }
@@ -204,10 +226,21 @@ export function buildChoiceBriefSection(choices: ChoiceSelections): string {
         (sel.description ? ` Creator note: ${sel.description}.` : "")
       );
     } else if (sel.kind === "photo") {
+      const recolor = sel.colorOverride
+        ? ` RECOLOR: render this exact garment in ${sel.colorOverride} — same cut, fabric, trim, ` +
+          `and construction as the reference; ONLY the fabric color changes to ${sel.colorOverride}, ` +
+          `identically in every image.`
+        : "";
+      const shapeGuard = (sel.groupType === "outfit" || sel.groupType === "scrubs")
+        ? ` GARMENT FIT: the reference is a ghost-mannequin product shot — extract only the garment ` +
+          `and fit it naturally to the subject's real body shape and proportions from the identity ` +
+          `references, never the mannequin's hollow form.`
+        : "";
       lines.push(
         `${sel.tag} — "${sel.name}" [PHOTO REFERENCE]: replicate the attached reference image ` +
         `labeled ${sel.tag} "${sel.name}" exactly in every image.` +
-        (sel.description ? ` Creator note: ${sel.description}.` : "")
+        (sel.description ? ` Creator note: ${sel.description}.` : "") +
+        recolor + shapeGuard
       );
     } else {
       lines.push(

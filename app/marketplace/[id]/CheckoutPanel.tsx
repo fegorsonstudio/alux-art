@@ -5,6 +5,8 @@ import { resizeIfNeeded } from "@/lib/resize-image";
 import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResumeMarker } from "@/lib/checkout-resume";
+import { NURSING_TITLES, INDUCTION_NAME_MAXLEN, INDUCTION_MAX_TITLES, inductionYearRange } from "@/lib/nursing-induction";
+import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES } from "@/lib/choice-groups";
 
 interface TemplateImage {
   id: string;
@@ -185,6 +187,16 @@ export default function CheckoutPanel({
   const multiGroups = choiceGroups.filter(g => MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
   const [multiPicks, setMultiPicks] = useState<Record<string, string[]>>({});
+  // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
+  const [groupColors, setGroupColors] = useState<Record<string, string>>({});
+
+  // Nursing induction personalization — name (the only typed field), credential
+  // titles (tap-to-toggle, order preserved), and a dynamic CLASS OF year.
+  const inductionActive = template.category === "nursing_induction";
+  const [inductionName, setInductionName] = useState("");
+  const [inductionTitles, setInductionTitles] = useState<string[]>([]);
+  const [inductionYear, setInductionYear] = useState<number>(() => new Date().getFullYear());
+  const inductionYears = inductionYearRange();
 
   // Signature poses (creator-uploaded pose mimicry) — NOT buyer-chosen. The
   // planner randomly picks a distinct pose per portrait slot server-side at
@@ -324,6 +336,10 @@ export default function CheckoutPanel({
       if (c.mugshotDate) setMugshotDate(c.mugshotDate);
       setBowlOn(!!c.bowlOn);
       if (c.bowlMode === "product" || c.bowlMode === "logo") setBowlMode(c.bowlMode);
+      if (c.groupColors) setGroupColors(c.groupColors);
+      if (c.inductionName) setInductionName(c.inductionName);
+      if (Array.isArray(c.inductionTitles)) setInductionTitles(c.inductionTitles);
+      if (typeof c.inductionYear === "number") setInductionYear(c.inductionYear);
       if (pending.files?.length) {
         const items: NewIdentityUpload[] = pending.files.map(f => {
           const file = new File([f.blob], f.name, { type: f.type || "image/jpeg" });
@@ -632,6 +648,7 @@ export default function CheckoutPanel({
   const flagValid = !flagShotOn || flagText.trim().length > 0;
   const mugshotValid = !mugshotOn || (mugshotName.trim().length > 0 && mugshotOffense.trim().length > 0);
   const bowlValid = !bowlOn || (signedOut ? !!bowlUpload : !!bowlUpload?.storagePath);
+  const inductionValid = !inductionActive || inductionName.trim().length > 0;
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
@@ -640,6 +657,7 @@ export default function CheckoutPanel({
     && flagValid
     && mugshotValid
     && bowlValid
+    && inductionValid
     && !bowlUpload?.uploading
     && (!template.requiresCostar || (costarUploads.some(u => u.storagePath) && costarConsent))
     && (!template.requiresGroup || !!groupPhotoUpload?.storagePath)
@@ -652,6 +670,7 @@ export default function CheckoutPanel({
     const config = {
       selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
+      groupColors, inductionName, inductionTitles, inductionYear,
     };
     const files = newUploads
       .filter(u => u.file)
@@ -703,9 +722,12 @@ export default function CheckoutPanel({
           : undefined,
         choiceSelections: (pickableGroups.length > 0 || multiGroups.length > 0)
           ? [
-              ...Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId })),
+              ...Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId, colorOverride: groupColors[groupId] || undefined })),
               ...Object.entries(multiPicks).flatMap(([groupId, ids]) => ids.map(optionId => ({ groupId, optionId }))),
             ]
+          : undefined,
+        induction: inductionActive
+          ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear }
           : undefined,
         flagShot: flagShotAvailable && flagShotOn
           ? { enabled: true, text: flagText.trim() }
@@ -954,6 +976,73 @@ export default function CheckoutPanel({
             </div>
           )}
 
+          {/* Nursing induction — personalized sash (name is the only typing in the flow) */}
+          {inductionActive && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>🎓 Your sash</span>
+              <p className={styles.sectionHint}>
+                Your name, titles, and class year are embroidered on your induction sash in
+                every photo that shows it. Type your name, then just tap to pick the rest.
+              </p>
+              <input
+                type="text"
+                className={styles.flagInput}
+                placeholder="Your name as it should appear, e.g. JANE SMITH"
+                value={inductionName}
+                maxLength={INDUCTION_NAME_MAXLEN}
+                onChange={e => setInductionName(e.target.value)}
+              />
+              {inductionName.trim().length === 0 && (
+                <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Enter the name for your sash to continue.</p>
+              )}
+              <p className={styles.sectionHint} style={{ marginTop: 8 }}>Your titles — tap all that apply (they appear in the order you tap):</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {NURSING_TITLES.map(t => {
+                  const idx = inductionTitles.indexOf(t);
+                  const on = idx >= 0;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setInductionTitles(prev =>
+                        on ? prev.filter(x => x !== t)
+                           : prev.length >= INDUCTION_MAX_TITLES ? prev : [...prev, t]
+                      )}
+                      style={{
+                        padding: "6px 12px", borderRadius: 999, cursor: "pointer", fontSize: "0.78rem",
+                        border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.3)",
+                        background: on ? "rgba(127,127,127,0.12)" : "none", fontWeight: on ? 700 : 400,
+                      }}
+                    >
+                      {on ? `${idx + 1}. ` : ""}{t}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className={styles.sectionHint} style={{ marginTop: 8 }}>Class of:</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {inductionYears.map(y => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setInductionYear(y)}
+                    style={{
+                      padding: "6px 12px", borderRadius: 999, cursor: "pointer", fontSize: "0.78rem",
+                      border: inductionYear === y ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.3)",
+                      background: inductionYear === y ? "rgba(127,127,127,0.12)" : "none", fontWeight: inductionYear === y ? 700 : 400,
+                    }}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+              <p className={styles.sectionHint} style={{ marginTop: 10, fontWeight: 600 }}>
+                Sash preview: CLASS OF {inductionYear} · {(inductionName.trim() || "YOUR NAME").toUpperCase()}
+                {inductionTitles.length > 0 ? ` · ${inductionTitles.map(t => t.replace(/\s*\(.*\)$/, "")).join(", ")}` : ""}
+              </p>
+            </div>
+          )}
+
           {/* Buyer choice groups — optional, pick what fits you; used for the whole shoot */}
           {pickableGroups.length > 0 && (
             <div className={styles.pkgRow}>
@@ -979,6 +1068,8 @@ export default function CheckoutPanel({
                         if (prev[group.id] === o.id) {
                           const next = { ...prev };
                           delete next[group.id];
+                          // Unpicking a garment also drops its recolor choice.
+                          setGroupColors(pc => { const n = { ...pc }; delete n[group.id]; return n; });
                           return next;
                         }
                         return { ...prev, [group.id]: o.id };
@@ -1003,6 +1094,48 @@ export default function CheckoutPanel({
                   );
                 })}
               </div>
+              {/* Optional recolor for garment groups — same cut and fabric, new color */}
+              {RECOLOR_GROUP_TYPES.has(group.type as never) && groupPicks[group.id] && (
+                <div style={{ marginTop: 8 }}>
+                  <p className={styles.sectionHint}>Want it in a different color? Tap one (optional):</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setGroupColors(prev => { const n = { ...prev }; delete n[group.id]; return n; })}
+                      style={{
+                        padding: "5px 11px", borderRadius: 999, cursor: "pointer", fontSize: "0.75rem",
+                        border: !groupColors[group.id] ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.3)",
+                        background: "none", fontWeight: !groupColors[group.id] ? 700 : 400,
+                      }}
+                    >
+                      Keep original
+                    </button>
+                    {RECOLOR_PALETTE.map(color => {
+                      const on = groupColors[group.id] === color;
+                      return (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setGroupColors(prev => ({ ...prev, [group.id]: color }))}
+                          style={{
+                            padding: "5px 11px", borderRadius: 999, cursor: "pointer", fontSize: "0.75rem",
+                            border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.3)",
+                            background: on ? "rgba(127,127,127,0.12)" : "none", fontWeight: on ? 700 : 400,
+                          }}
+                        >
+                          {color}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {group.type === "outfit" && (
+                <p className={styles.sectionHint} style={{ marginTop: 6 }}>
+                  Prefer your own outfit? Open <strong>Advanced options</strong> below and upload it —
+                  your upload replaces the template outfit.
+                </p>
+              )}
             </div>
           ))}
 

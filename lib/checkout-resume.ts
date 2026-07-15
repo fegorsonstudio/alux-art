@@ -52,6 +52,12 @@ export interface PendingConfig {
   mugshotDate?: string;
   bowlOn?: boolean;
   bowlMode?: "product" | "logo";
+  // Garment recolor overrides per choice group
+  groupColors?: Record<string, string>;
+  // Induction personalization (nursing_induction category)
+  inductionName?: string;
+  inductionTitles?: string[];
+  inductionYear?: number;
 }
 
 export interface PendingFile {
