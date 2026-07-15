@@ -34,7 +34,9 @@ export function categoryAllowsBackgroundOptions(category: string | null | undefi
   return !BACKGROUND_OPTIONS_CATEGORIES || BACKGROUND_OPTIONS_CATEGORIES.has(category ?? "");
 }
 
-export const MAX_BACKGROUND_OPTIONS = 6;
+// Raised from 6 → 12 so templates can offer canvas backdrops AND a seamless-paper
+// color range (e.g. Nursing Induction: 3 canvases + 6 seamless colors).
+export const MAX_BACKGROUND_OPTIONS = 12;
 
 // ── Server-side sanitizer (templates POST/PATCH) ─────────────────────────────
 // Returns null for "no options" (stored as SQL NULL). Drops invalid items.

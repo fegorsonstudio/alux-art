@@ -149,7 +149,7 @@ interface BackgroundOptionDraft {
   error?: string;
 }
 
-const MAX_BG_OPTIONS = 6;
+const MAX_BG_OPTIONS = 12;
 
 // Buyer choice groups — pick-one-per-group styling options (all categories).
 // Props are multi-select: buyers pick as many as they want (or none).

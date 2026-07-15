@@ -129,6 +129,43 @@ interface Props {
   onClose: () => void;
 }
 
+// Collapsible checkout section — keeps the booking page clean: closed sections
+// show a one-line summary of what's picked; tap to open and configure.
+function Collapse({ icon, title, status, warn, defaultOpen, children }: {
+  icon?: string;
+  title: string;
+  status?: string;
+  warn?: boolean;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <div style={{ border: "1px solid rgba(127,127,127,0.22)", borderRadius: 12, overflow: "hidden", marginBottom: 10 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+          padding: "12px 14px", background: "rgba(127,127,127,0.07)", cursor: "pointer",
+          border: "none", textAlign: "left", gap: 8, color: "inherit", font: "inherit",
+        }}
+      >
+        <span style={{ fontWeight: 700, fontSize: "0.88rem" }}>{icon ? `${icon} ` : ""}{title}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {status && (
+            <span style={{ fontSize: "0.72rem", fontWeight: warn ? 700 : 500, opacity: warn ? 1 : 0.65, color: warn ? "#c0392b" : undefined, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {status}
+            </span>
+          )}
+          <span style={{ fontSize: "0.75rem", opacity: 0.55 }}>{open ? "▲" : "▼"}</span>
+        </span>
+      </button>
+      {open && <div style={{ padding: "12px 14px 14px" }}>{children}</div>}
+    </div>
+  );
+}
+
 export default function CheckoutPanel({
   templateId,
   template,
@@ -869,6 +906,13 @@ export default function CheckoutPanel({
 
           {/* Buyer backdrop — one backdrop for the whole shoot by default; splitting is optional */}
           {bgActive && (
+            <Collapse
+              icon="🖼"
+              title="Backdrop"
+              status={bgOptions.filter(o => (bgAlloc[o.id] ?? 0) > 0).map(o => o.name).join(", ") || "tap to choose"}
+              warn={!bgValid}
+              defaultOpen={false}
+            >
             <div className={styles.pkgRow}>
               {!bgSplitMode ? (
                 <>
@@ -995,13 +1039,20 @@ export default function CheckoutPanel({
                 </>
               )}
             </div>
+            </Collapse>
           )}
 
           {/* Gear Equalizer — lighting rig, camera look, optional backdrop swap */}
           {photoUpgradeActive && (
             <>
+              <Collapse
+                icon="💡"
+                title="Your lighting rig"
+                status={LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? "pick one — required"}
+                warn={!enhanceLighting}
+                defaultOpen
+              >
               <div className={styles.pkgRow}>
-                <span className={styles.pkgLabel}>💡 Your lighting rig</span>
                 <p className={styles.sectionHint}>
                   Pick the studio lighting your photos deserve — we relight your exact shot.
                 </p>
@@ -1028,8 +1079,15 @@ export default function CheckoutPanel({
                 </div>
                 {!enhanceLighting && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Pick a lighting style to continue.</p>}
               </div>
+              </Collapse>
+              <Collapse
+                icon="📷"
+                title="Your camera"
+                status={CAMERA_PRESETS.find(p => p.id === enhanceCamera)?.name ?? "pick one — required"}
+                warn={!enhanceCamera}
+                defaultOpen
+              >
               <div className={styles.pkgRow}>
-                <span className={styles.pkgLabel}>📷 Your camera</span>
                 <p className={styles.sectionHint}>
                   The rendering quality of legendary gear — applied to your own photo.
                 </p>
@@ -1056,9 +1114,15 @@ export default function CheckoutPanel({
                 </div>
                 {!enhanceCamera && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Pick a camera look to continue.</p>}
               </div>
+              </Collapse>
               {bgOptions.length > 0 && (
+                <Collapse
+                  icon="🖼"
+                  title="Background"
+                  status={enhanceBackdrop === null ? "keeping yours" : (bgOptions.find(o => o.id === enhanceBackdrop)?.name ?? "swap")}
+                  defaultOpen={false}
+                >
                 <div className={styles.pkgRow}>
-                  <span className={styles.pkgLabel}>🖼 Background</span>
                   <p className={styles.sectionHint}>
                     Keep your photo&apos;s own background (we relight it), or swap it for a studio backdrop.
                   </p>
@@ -1097,14 +1161,23 @@ export default function CheckoutPanel({
                     })}
                   </div>
                 </div>
+                </Collapse>
               )}
             </>
           )}
 
           {/* Nursing induction — personalized sash (name is the only typing in the flow) */}
           {inductionActive && (
+            <Collapse
+              icon="🎓"
+              title="Your sash"
+              status={inductionName.trim()
+                ? `${inductionName.trim().toUpperCase()} · ${inductionYear}`
+                : "type your name — required"}
+              warn={!inductionName.trim()}
+              defaultOpen
+            >
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>🎓 Your sash</span>
               <p className={styles.sectionHint}>
                 Your name, titles, and class year are embroidered on your induction sash in
                 every photo that shows it. Type your name, then just tap to pick the rest.
@@ -1166,12 +1239,22 @@ export default function CheckoutPanel({
                 {inductionTitles.length > 0 ? ` · ${inductionTitles.map(t => t.replace(/\s*\(.*\)$/, "")).join(", ")}` : ""}
               </p>
             </div>
+            </Collapse>
           )}
 
           {/* Buyer choice groups — optional, pick what fits you; used for the whole shoot */}
+          {(pickableGroups.length > 0 || multiGroups.length > 0) && (
+            <Collapse
+              icon="👗"
+              title="Your styling"
+              status={(() => {
+                const n = Object.keys(groupPicks).length + Object.values(multiPicks).reduce((a, ids) => a + ids.length, 0);
+                return n > 0 ? `${n} picked` : "optional — tap to browse";
+              })()}
+              defaultOpen={false}
+            >
           {pickableGroups.length > 0 && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>Your styling</span>
               <p className={styles.sectionHint}>
                 Pick only what fits you — skip anything you don&apos;t need (tap again to unselect).
                 Whatever you choose is worn in <strong>every image</strong> of your shoot, so all your photos match.
@@ -1309,6 +1392,9 @@ export default function CheckoutPanel({
             );
           })}
 
+          </Collapse>
+          )}
+
           {/* Signature poses — informational only; the planner picks randomly, no repeats */}
           {(template.poseOptions?.length ?? 0) > 0 && (
             <div className={styles.pkgRow}>
@@ -1320,6 +1406,18 @@ export default function CheckoutPanel({
             </div>
           )}
 
+          {/* Viral add-ons — flag shot / mugshot / bowl, folded into one clean section */}
+          {(flagShotAvailable || mugshotAvailable || bowlAvailable) && (
+            <Collapse
+              icon="🔥"
+              title="Viral add-on shots"
+              status={(() => {
+                const n = (flagShotOn ? 1 : 0) + (mugshotOn ? 1 : 0) + (bowlOn ? 1 : 0);
+                return n > 0 ? `${n} added` : "optional — tap to browse";
+              })()}
+              warn={!flagValid || !mugshotValid || !bowlValid}
+              defaultOpen={false}
+            >
           {/* Viral skyscraper flag shot */}
           {flagShotAvailable && (
             <div className={styles.pkgRow}>
@@ -1488,12 +1586,22 @@ export default function CheckoutPanel({
               )}
             </div>
           )}
+          </Collapse>
+          )}
 
           <div className={styles.divider} />
 
           {/* Identity photos */}
+          <Collapse
+            icon="📷"
+            title={photoUpgradeActive ? "Your photos to upgrade" : "Your identity photos"}
+            status={photoUpgradeActive
+              ? `${allIdentityRefs.length} of ${selectedPkg} selected`
+              : allIdentityRefs.length > 0 ? `${allIdentityRefs.length} selected` : "required"}
+            warn={photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0}
+            defaultOpen
+          >
           <div>
-            <p className={styles.sectionTitle}>{photoUpgradeActive ? "Your photos to upgrade" : "Your identity photos"}</p>
             {photoUpgradeActive ? (
               <>
                 <p className={styles.sectionHint}>
@@ -1582,6 +1690,7 @@ export default function CheckoutPanel({
               </p>
             )}
           </div>
+          </Collapse>
 
           <div className={styles.divider} />
 
