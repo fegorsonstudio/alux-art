@@ -259,8 +259,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const templateBgOptions: BackgroundOption[] = Array.isArray(template.background_options)
     ? template.background_options
     : [];
-  const { plan: backgroundPlan, error: bgError } =
-    resolveBackgroundPlan(templateBgOptions, body.backgroundAllocations, bgSlotCount);
+  // photo_upgrade has no per-slot backdrop distribution — its single optional swap
+  // rides shoots.enhance; a default background plan here would attach a stray
+  // background ref and junk background_plan JSONB.
+  const { plan: backgroundPlan, error: bgError } = template.category === "photo_upgrade"
+    ? { plan: null, error: undefined }
+    : resolveBackgroundPlan(templateBgOptions, body.backgroundAllocations, bgSlotCount);
   if (bgError) return NextResponse.json({ error: bgError }, { status: 400 });
   const bgOptionPaths = new Set(
     backgroundPlan ? templateBgOptions.map((o) => o.imagePath).filter(Boolean) as string[] : []

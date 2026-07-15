@@ -181,44 +181,64 @@ export function buildGearEqualizerPrompt(sel: EnhanceSelection, backdropAttached
   const camera = CAMERA_PRESETS.find((p) => p.id === sel.camera) ?? CAMERA_PRESETS[0];
 
   const parts: string[] = [
-    // 1. Preservation lock — leads the prompt, non-negotiable.
-    "PROFESSIONAL RETOUCH / RELIGHT of the attached photograph (IMAGE 1) — this is an EDIT " +
-      "of that exact photograph, NOT a new image. Preserve pixel-faithfully and without " +
-      "exception: the subject's identity, facial structure, skin tone, expression, gaze, " +
-      "pose, hands and fingers, body proportions, clothing and its exact folds, hair, any " +
-      "other people present, and the exact composition, framing, and crop of IMAGE 1. Do " +
-      "not add, remove, move, resize, or re-imagine ANY person or object.",
+    // 1. The mission — the lighting transformation IS the product. Leading with it
+    //    matters: an over-weighted preservation lock makes the model barely touch
+    //    the image (verified in production — "no lighting improvement" complaints).
+    "STUDIO RELIGHT of the attached photograph (IMAGE 1). Your job: completely re-render " +
+      "the LIGHTING of this exact photograph as described below. The lighting " +
+      "transformation must be CLEARLY VISIBLE and dramatic — a before/after comparison " +
+      "must instantly show a different professional lighting setup. An output that looks " +
+      "like the input with minor cleanup is a FAILED result.",
 
     // 2. Lighting.
-    "LIGHTING UPGRADE — change ONLY the light: " + lighting.directive + " All shadows, " +
-      "highlights, reflections, and catchlights must be physically consistent with this " +
-      "new lighting across the subject and the environment.",
+    "THE NEW LIGHTING: " + lighting.directive + " Rebuild ALL illumination from scratch to " +
+      "match: shadow direction and softness, highlight placement, catchlights in the eyes, " +
+      "light falloff on the background, and color temperature must all follow this setup — " +
+      "replacing the original photo's lighting entirely.",
 
-    // 3. Camera / rendering quality.
+    // 3. Preservation lock — scoped to WHAT is in the frame, not how it is lit.
+    "SUBJECT LOCK — while transforming the light, preserve faithfully: the subject's " +
+      "identity, facial structure, skin tone, expression, gaze, pose, hands and fingers, " +
+      "body proportions, clothing and its folds, hair, any other people present, and the " +
+      "composition/framing/crop of IMAGE 1. Do not add, remove, move, resize, or " +
+      "re-imagine any person or object. This lock applies to CONTENT and GEOMETRY only — " +
+      "illumination, shadows, highlights, color grade, and background rendering MUST " +
+      "change per the lighting directive.",
+
+    // 4. Camera / rendering quality.
     "CAMERA QUALITY UPGRADE — " + camera.directive + " Restore and enhance fine detail the " +
       "original sensor could not capture (skin texture, fabric weave, hair strands, eye " +
       "detail); remove digital noise and compression artifacts; correct white balance and " +
       "exposure. Enhancement must REVEAL what is in the photograph — never alter geometry, " +
       "features, or content.",
 
-    // 4. Background.
+    // 5. Background.
     backdropAttached
-      ? "BACKGROUND SWAP — replace ONLY the environment/background with the attached backdrop " +
-        "reference (IMAGE 2): place the untouched subject into that backdrop with matching " +
-        "perspective, camera height, and floor line, lit consistently with the new lighting. " +
-        "Edge transitions (hair, fabric edges) must be clean and natural. The subject " +
-        "themselves remains exactly as in IMAGE 1."
-      : "BACKGROUND — keep the existing background and environment of IMAGE 1 exactly as it " +
-        "is (same location, same objects, same framing), re-lit consistently with the new " +
-        "lighting described above.",
+      ? "BACKGROUND SWAP — replace ONLY the environment/background with the backdrop shown " +
+        "in the attached reference (IMAGE 2). CRITICAL SCALE RULE: render the backdrop at " +
+        "the scale and depth matching IMAGE 1's framing — in a tight headshot or bust " +
+        "portrait, only a small, softly defocused region of the backdrop wall appears " +
+        "behind the subject, with NO floor line, sweep curve, edge, or seam visible " +
+        "anywhere; in a waist-up shot, slightly more wall with gentle defocus; only a " +
+        "full-body shot may show the wall-to-floor transition, placed at the subject's " +
+        "feet with correct perspective. The backdrop must look like a real studio wall " +
+        "photographed at the subject's actual camera distance and depth of field — never " +
+        "like a full backdrop plate pasted behind them. Light the backdrop consistently " +
+        "with the new lighting (its brightness falls off per the lighting directive). " +
+        "Edge transitions (hair, fabric) must be clean. The subject remains exactly as in " +
+        "IMAGE 1."
+      : "BACKGROUND — keep the existing background and environment of IMAGE 1 (same " +
+        "location, same objects, same framing), but RE-LIGHT it fully and consistently " +
+        "with the new lighting described above — its brightness, shadows, and mood must " +
+        "visibly change to match the new setup.",
 
-    // 5. Weak-source restoration.
+    // 6. Weak-source restoration.
     "SOURCE RESTORATION — if IMAGE 1 is low-resolution, noisy, soft, or poorly compressed, " +
       "faithfully restore it: reconstruct plausible fine detail true to what is visible, " +
       "without changing any shape, proportion, or feature. The result must look like the " +
       "same photograph captured on far better gear — recognizably identical, dramatically " +
-      "better rendered. Realistic skin texture, subtle film grain, physically plausible " +
-      "light. No beautification, no face slimming, no body reshaping.",
+      "better lit and rendered. Realistic skin texture, subtle film grain, physically " +
+      "plausible light. No beautification, no face slimming, no body reshaping.",
   ];
 
   return parts.join(" ");
