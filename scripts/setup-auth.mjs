@@ -7,6 +7,10 @@ const REDIRECT_URLS = Array.from(new Set([
   "http://localhost:3000/api/auth/callback",
   "https://virtual-photo-studio-rho.vercel.app/api/auth/callback",
   "https://aluxartandframes.shop/api/auth/callback",
+  // www is 301'd to the bare domain at nginx, but keep it allowlisted so a
+  // sign-in that somehow starts on www still lands on our callback instead of
+  // Supabase's Site URL fallback (the "sign in twice" bug).
+  "https://www.aluxartandframes.shop/api/auth/callback",
   `${siteOrigin}/api/auth/callback`,
 ]));
 

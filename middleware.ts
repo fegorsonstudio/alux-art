@@ -50,6 +50,23 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Stray OAuth code rescue: when Supabase can't honor our redirect URL (e.g. a
+  // misconfigured allowlist), it falls back to the Site URL root — the code lands
+  // on "/" and sign-in silently dies ("sign in twice" bug). Forward any auth code
+  // on a non-callback page to the real callback so the first click completes.
+  const strayCode = request.nextUrl.searchParams.get("code");
+  if (!user && strayCode && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(strayCode)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/auth/callback";
+    url.search = "";
+    url.searchParams.set("code", strayCode);
+    const dest = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/login"
+      ? "/studio"
+      : request.nextUrl.pathname;
+    url.searchParams.set("next", dest);
+    return NextResponse.redirect(url);
+  }
+
   if (!user && !isAuthPath && !isPublicPath) {
     const url = request.nextUrl.clone();
     const next = request.nextUrl.pathname + request.nextUrl.search;
