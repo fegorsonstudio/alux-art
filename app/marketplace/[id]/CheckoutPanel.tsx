@@ -7,6 +7,7 @@ import ImagePreview from "@/components/ImagePreview";
 import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResumeMarker } from "@/lib/checkout-resume";
 import { NURSING_TITLES, INDUCTION_NAME_MAXLEN, INDUCTION_MAX_TITLES, inductionYearRange } from "@/lib/nursing-induction";
 import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES } from "@/lib/choice-groups";
+import { LIGHTING_PRESETS, CAMERA_PRESETS } from "@/lib/gear-equalizer";
 
 interface TemplateImage {
   id: string;
@@ -174,7 +175,8 @@ export default function CheckoutPanel({
     + (bowlAvailable && bowlOn ? 1 : 0)
     + (viralIncluded ? 1 : 0);
   const bgTarget = Math.max(0, selectedPkg - bgExemptCount);
-  const bgActive = bgOptions.length >= 2 && bgTarget >= 1;
+  // photo_upgrade uses its own single-pick backdrop-swap UI, not the allocation picker.
+  const bgActive = bgOptions.length >= 2 && bgTarget >= 1 && template.category !== "photo_upgrade";
   const [bgAlloc, setBgAlloc] = useState<Record<string, number>>({});
   // Default UX: one backdrop for the whole shoot. Buyers opt into splitting across backdrops.
   const [bgSplitMode, setBgSplitMode] = useState(false);
@@ -197,6 +199,13 @@ export default function CheckoutPanel({
   const [inductionTitles, setInductionTitles] = useState<string[]>([]);
   const [inductionYear, setInductionYear] = useState<number>(() => new Date().getFullYear());
   const inductionYears = inductionYearRange();
+
+  // Gear Equalizer (photo_upgrade) — the buyer's uploads ARE the photos to upgrade;
+  // they tap one lighting rig + one camera look, and optionally swap the background.
+  const photoUpgradeActive = template.category === "photo_upgrade";
+  const [enhanceLighting, setEnhanceLighting] = useState<string | null>(null);
+  const [enhanceCamera, setEnhanceCamera] = useState<string | null>(null);
+  const [enhanceBackdrop, setEnhanceBackdrop] = useState<string | null>(null); // null = keep own background
 
   // Signature poses (creator-uploaded pose mimicry) — NOT buyer-chosen. The
   // planner randomly picks a distinct pose per portrait slot server-side at
@@ -340,6 +349,9 @@ export default function CheckoutPanel({
       if (c.inductionName) setInductionName(c.inductionName);
       if (Array.isArray(c.inductionTitles)) setInductionTitles(c.inductionTitles);
       if (typeof c.inductionYear === "number") setInductionYear(c.inductionYear);
+      if (c.enhanceLighting) setEnhanceLighting(c.enhanceLighting);
+      if (c.enhanceCamera) setEnhanceCamera(c.enhanceCamera);
+      if (c.enhanceBackdrop) setEnhanceBackdrop(c.enhanceBackdrop);
       if (pending.files?.length) {
         const items: NewIdentityUpload[] = pending.files.map(f => {
           const file = new File([f.blob], f.name, { type: f.type || "image/jpeg" });
@@ -649,6 +661,8 @@ export default function CheckoutPanel({
   const mugshotValid = !mugshotOn || (mugshotName.trim().length > 0 && mugshotOffense.trim().length > 0);
   const bowlValid = !bowlOn || (signedOut ? !!bowlUpload : !!bowlUpload?.storagePath);
   const inductionValid = !inductionActive || inductionName.trim().length > 0;
+  const enhanceValid = !photoUpgradeActive
+    || (!!enhanceLighting && !!enhanceCamera && allIdentityRefs.length === selectedPkg);
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
@@ -658,6 +672,7 @@ export default function CheckoutPanel({
     && mugshotValid
     && bowlValid
     && inductionValid
+    && enhanceValid
     && !bowlUpload?.uploading
     && (!template.requiresCostar || (costarUploads.some(u => u.storagePath) && costarConsent))
     && (!template.requiresGroup || !!groupPhotoUpload?.storagePath)
@@ -671,6 +686,9 @@ export default function CheckoutPanel({
       selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
       groupColors, inductionName, inductionTitles, inductionYear,
+      enhanceLighting: enhanceLighting ?? undefined,
+      enhanceCamera: enhanceCamera ?? undefined,
+      enhanceBackdrop: enhanceBackdrop ?? undefined,
     };
     const files = newUploads
       .filter(u => u.file)
@@ -728,6 +746,9 @@ export default function CheckoutPanel({
           : undefined,
         induction: inductionActive
           ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear }
+          : undefined,
+        enhance: photoUpgradeActive && enhanceLighting && enhanceCamera
+          ? { lighting: enhanceLighting, camera: enhanceCamera, backdropOptionId: enhanceBackdrop }
           : undefined,
         flagShot: flagShotAvailable && flagShotOn
           ? { enabled: true, text: flagText.trim() }
@@ -974,6 +995,110 @@ export default function CheckoutPanel({
                 </>
               )}
             </div>
+          )}
+
+          {/* Gear Equalizer — lighting rig, camera look, optional backdrop swap */}
+          {photoUpgradeActive && (
+            <>
+              <div className={styles.pkgRow}>
+                <span className={styles.pkgLabel}>💡 Your lighting rig</span>
+                <p className={styles.sectionHint}>
+                  Pick the studio lighting your photos deserve — we relight your exact shot.
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  {LIGHTING_PRESETS.map(p => {
+                    const on = enhanceLighting === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setEnhanceLighting(on ? null : p.id)}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3,
+                          background: on ? "rgba(127,127,127,0.12)" : "none", cursor: "pointer",
+                          padding: "10px 12px", borderRadius: 10, width: 168, textAlign: "left",
+                          border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>{on ? "✓ " : ""}{p.name}</span>
+                        <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>{p.blurb}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {!enhanceLighting && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Pick a lighting style to continue.</p>}
+              </div>
+              <div className={styles.pkgRow}>
+                <span className={styles.pkgLabel}>📷 Your camera</span>
+                <p className={styles.sectionHint}>
+                  The rendering quality of legendary gear — applied to your own photo.
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  {CAMERA_PRESETS.map(p => {
+                    const on = enhanceCamera === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setEnhanceCamera(on ? null : p.id)}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3,
+                          background: on ? "rgba(127,127,127,0.12)" : "none", cursor: "pointer",
+                          padding: "10px 12px", borderRadius: 10, width: 168, textAlign: "left",
+                          border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>{on ? "✓ " : ""}{p.name}</span>
+                        <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>{p.blurb}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {!enhanceCamera && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Pick a camera look to continue.</p>}
+              </div>
+              {bgOptions.length > 0 && (
+                <div className={styles.pkgRow}>
+                  <span className={styles.pkgLabel}>🖼 Background</span>
+                  <p className={styles.sectionHint}>
+                    Keep your photo&apos;s own background (we relight it), or swap it for a studio backdrop.
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                    <button
+                      type="button"
+                      onClick={() => setEnhanceBackdrop(null)}
+                      style={{
+                        padding: "8px 14px", borderRadius: 999, cursor: "pointer", fontSize: "0.78rem",
+                        border: enhanceBackdrop === null ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.3)",
+                        background: enhanceBackdrop === null ? "rgba(127,127,127,0.12)" : "none",
+                        fontWeight: enhanceBackdrop === null ? 700 : 400,
+                      }}
+                    >
+                      {enhanceBackdrop === null ? "✓ " : ""}Keep my background
+                    </button>
+                    {bgOptions.filter(o => o.imageUrl).map(o => {
+                      const on = enhanceBackdrop === o.id;
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => setEnhanceBackdrop(on ? null : o.id)}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                            background: "none", cursor: "pointer", padding: 4,
+                            border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                            borderRadius: 8, minWidth: 64,
+                          }}
+                        >
+                          <ImagePreview src={o.imageUrl!} alt={o.name} className={styles.savedImg} preferredWidth={80} />
+                          <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
+                          {on && <span style={{ fontSize: "0.65rem" }}>✓ swap to this</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Nursing induction — personalized sash (name is the only typing in the flow) */}
@@ -1368,14 +1493,28 @@ export default function CheckoutPanel({
 
           {/* Identity photos */}
           <div>
-            <p className={styles.sectionTitle}>Your identity photos</p>
-            <p className={styles.sectionHint}>Select saved photos or upload new ones. At least 1 required.</p>
-            <p className={styles.sectionHint}>
-              For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
-              at least one photo where you&apos;re genuinely smiling (teeth showing) so we can create natural smiling
-              shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
-              how you look from behind.
-            </p>
+            <p className={styles.sectionTitle}>{photoUpgradeActive ? "Your photos to upgrade" : "Your identity photos"}</p>
+            {photoUpgradeActive ? (
+              <>
+                <p className={styles.sectionHint}>
+                  Upload exactly {selectedPkg} photo{selectedPkg === 1 ? "" : "s"} for the {selectedPkg}-image package —
+                  each one comes back relit and upgraded. Straight-out-of-camera JPEGs are perfect; any camera, any year.
+                </p>
+                <p className={styles.sectionHint} style={{ fontWeight: 600, ...(allIdentityRefs.length !== selectedPkg ? { color: "#c0392b" } : {}) }}>
+                  {allIdentityRefs.length} of {selectedPkg} selected
+                </p>
+              </>
+            ) : (
+              <>
+                <p className={styles.sectionHint}>Select saved photos or upload new ones. At least 1 required.</p>
+                <p className={styles.sectionHint}>
+                  For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
+                  at least one photo where you&apos;re genuinely smiling (teeth showing) so we can create natural smiling
+                  shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
+                  how you look from behind.
+                </p>
+              </>
+            )}
 
             {savedRefs.length > 0 && (
               <>

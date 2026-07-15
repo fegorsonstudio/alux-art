@@ -3,7 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import sql from "./db";
-import { normalizePackageSize, type AspectRatio } from "./types";
+import { normalizePackageSize, ASPECTS, type AspectRatio } from "./types";
+import { buildGearEqualizerPrompt, buildGearReferenceMapText, type EnhanceSelection } from "./gear-equalizer";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
@@ -56,6 +57,30 @@ const TELEPHOTO_ENHANCEMENT =
   " Lens rendering: shot on a 200mm telephoto lens, f/2.8 aperture. " +
   "Shallow depth of field, creamy background bokeh, melted background details. " +
   "Intense lens compression, crisp subject separation from the background.";
+
+// Gear Equalizer: each uploaded photo keeps its own crop — probe the source's
+// dimensions and pick the closest fal-supported aspect ratio. Conservative: only
+// ratios already proven in production (ASPECTS keys). Null on any failure.
+async function probeNearestAspect(url: string): Promise<AspectRatio | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const meta = await sharp(buf).metadata();
+    if (!meta.width || !meta.height) return null;
+    const ratio = meta.width / meta.height;
+    let best: AspectRatio | null = null;
+    let bestDist = Infinity;
+    for (const key of Object.keys(ASPECTS) as AspectRatio[]) {
+      const [w, h] = key.split(":").map(Number);
+      const dist = Math.abs(ratio - w / h);
+      if (dist < bestDist) { bestDist = dist; best = key; }
+    }
+    return best;
+  } catch {
+    return null;
+  }
+}
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -1757,13 +1782,21 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId}` as unknown as ShootRefRow[];
   const shootImages = await sql`SELECT id, slot, status FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
 
   const total = normalizePackageSize(shoot.package_size);
   const hasQuote = !!(shoot.quote as { text?: string } | null)?.text && total === 10;
+
+  // Gear Equalizer (photo_upgrade): each slot is an EDIT of the buyer's own
+  // uploaded photo — deterministic prompts, no identity analysis, no AI planner.
+  const enhanceSel: EnhanceSelection | null =
+    shoot.category === "photo_upgrade" && shoot.enhance && typeof shoot.enhance === "object"
+      ? (shoot.enhance as EnhanceSelection)
+      : null;
+  const isPhotoUpgrade = !!enhanceSel;
   // postgres returns JSONB columns as JS objects — normalize to string first.
   const rawIdentity = shoot.identity_profile;
   let identityProfile: string =
@@ -1905,8 +1938,9 @@ export async function startGenerationWorker(
   const logEvent = (type: string, payload: Record<string, unknown>) =>
     sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${type}, ${JSON.stringify(payload)}::jsonb, ${ts()})`.catch(() => {});
 
-  // --- Step 1: Identity analysis (skip if base provides it) ---
-  if (!identityProfile && !hasBase) {
+  // --- Step 1: Identity analysis (skip if base provides it; photo-upgrade edits
+  // the buyer's own photo, so there is nothing to analyze) ---
+  if (!identityProfile && !hasBase && !isPhotoUpgrade) {
     await sql`UPDATE shoots SET pipeline_stage = 'Analyzing identity', progress = 10, updated_at = ${ts()} WHERE id = ${shootId}`;
 
     logEvent('stage', { stage: "Analyzing identity", progress: 10 });
@@ -1944,7 +1978,7 @@ export async function startGenerationWorker(
   // shoots and locked-base shoots (single anchor image, no routing to do).
   let identityAttributes: Record<string, IdentityAttrs> = {};
   const identityRefsOrdered = refs.filter((r) => r.purpose === "identity" && r.url);
-  if (!hasBase && shoot.group_identity !== true && identityRefsOrdered.length > 0) {
+  if (!hasBase && !isPhotoUpgrade && shoot.group_identity !== true && identityRefsOrdered.length > 0) {
     const cached = shoot.identity_attributes;
     if (cached && typeof cached === "object" && !Array.isArray(cached) && Object.keys(cached).length > 0) {
       identityAttributes = cached as Record<string, IdentityAttrs>;
@@ -1974,8 +2008,8 @@ export async function startGenerationWorker(
     return { lines, smilingIndices, backIndices };
   })();
 
-  // --- Step 2: Shoot brief ---
-  if (!shootBrief) {
+  // --- Step 2: Shoot brief (photo-upgrade prompts are deterministic — no planner) ---
+  if (!shootBrief && !isPhotoUpgrade) {
 
     await sql`UPDATE shoots SET pipeline_stage = 'Building shoot brief', progress = 20, updated_at = ${ts()} WHERE id = ${shootId}`;
 
@@ -2176,28 +2210,30 @@ export async function startGenerationWorker(
   const svgLayoutMap: Record<string, string> = {};
   // Planner-selected identity image numbers (1-based GROUP A indices) per slot.
   const slotIdentityIndices: Record<string, number[]> = {};
-  try {
-    const parsed = JSON.parse(shootBriefClean);
-    const rawPrompts = parsed.prompts;
-    if (Array.isArray(rawPrompts)) {
-      // New array format from SHOOT_BRIEF_SYSTEM_INSTRUCTION
-      for (const p of rawPrompts as NewPromptObject[]) {
-        const key = String(p.prompt_index);
-        if (p.fully_consolidated_prompt) prompts[key] = p.fully_consolidated_prompt;
-        if (p.svg_layout_instructions) svgLayoutMap[key] = p.svg_layout_instructions;
-        if (Array.isArray(p.identity_image_indices)) {
-          const valid = p.identity_image_indices.filter((n) => Number.isInteger(n) && n >= 1);
-          if (valid.length > 0) slotIdentityIndices[key] = valid;
+  if (!isPhotoUpgrade) {
+    try {
+      const parsed = JSON.parse(shootBriefClean);
+      const rawPrompts = parsed.prompts;
+      if (Array.isArray(rawPrompts)) {
+        // New array format from SHOOT_BRIEF_SYSTEM_INSTRUCTION
+        for (const p of rawPrompts as NewPromptObject[]) {
+          const key = String(p.prompt_index);
+          if (p.fully_consolidated_prompt) prompts[key] = p.fully_consolidated_prompt;
+          if (p.svg_layout_instructions) svgLayoutMap[key] = p.svg_layout_instructions;
+          if (Array.isArray(p.identity_image_indices)) {
+            const valid = p.identity_image_indices.filter((n) => Number.isInteger(n) && n >= 1);
+            if (valid.length > 0) slotIdentityIndices[key] = valid;
+          }
         }
+      } else if (rawPrompts && typeof rawPrompts === "object") {
+        // Legacy dict format
+        prompts = rawPrompts as Record<string, string | SceneSlotPrompt>;
       }
-    } else if (rawPrompts && typeof rawPrompts === "object") {
-      // Legacy dict format
-      prompts = rawPrompts as Record<string, string | SceneSlotPrompt>;
+    } catch (e) {
+      console.error("[generate] JSON parse failed, falling back to regex", e);
+      const match = shootBriefClean.match(/"1"\s*:\s*"([^"]+)"/);
+      if (match) prompts["1"] = match[1];
     }
-  } catch (e) {
-    console.error("[generate] JSON parse failed, falling back to regex", e);
-    const match = shootBriefClean.match(/"1"\s*:\s*"([^"]+)"/);
-    if (match) prompts["1"] = match[1];
   }
 
   // --- Step 3: Process pending slots ---
@@ -2377,6 +2413,20 @@ export async function startGenerationWorker(
     .map((r) => r.url)
     .filter(Boolean);
 
+  // Gear Equalizer: the buyer's uploaded photos ARE the slot sources (photo i →
+  // slot i); the optional swap backdrop rides as a background_option ref. Both
+  // must join the reachability check below.
+  const enhanceSources = isPhotoUpgrade ? identityRefsOrdered : [];
+  const enhanceBackdropRef = isPhotoUpgrade && enhanceSel?.backdropOptionId
+    ? refs.find((r) => r.purpose === "background_option" && r.url && r.note === enhanceSel.backdropOptionId) ?? null
+    : null;
+  if (isPhotoUpgrade) {
+    const known = new Set(imageUrls);
+    for (const u of [...enhanceSources.map((r) => r.url), ...(enhanceBackdropRef ? [enhanceBackdropRef.url] : [])]) {
+      if (!known.has(u)) { imageUrls.push(u); known.add(u); }
+    }
+  }
+
   // Filter imageUrls to only reachable objects — fal.ai returns 422 if any URL it tries
   // to download returns 404 (e.g. identity images uploaded before R2 migration).
   const reachableImageUrls = await filterReachableUrls(imageUrls);
@@ -2427,7 +2477,12 @@ export async function startGenerationWorker(
       // Prompt text first — per-slot identity routing reads it to detect what the
       // slot asks for (smile / back view) before the reference list is assembled.
       const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];
-      if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
+      if (isPhotoUpgrade && enhanceSel) {
+        // Gear Equalizer: fully deterministic edit prompt — the reference map is
+        // baked in here; no telephoto/anatomy/brief text is appended later.
+        const backdropOk = !!enhanceBackdropRef && reachableSet.has(enhanceBackdropRef.url);
+        slotPrompt = buildGearEqualizerPrompt(enhanceSel, backdropOk) + buildGearReferenceMapText(backdropOk);
+      } else if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
         // Locked-base: assemble final prompt from scene fields + base anchor opener
         const scene = rawSlotPrompt as SceneSlotPrompt;
         slotPrompt = [
@@ -2538,6 +2593,17 @@ export async function startGenerationWorker(
         slotBgAlloc = getBackgroundForSlot(backgroundPlan, slot - 1);
       }
 
+      // Gear Equalizer: this slot's reference list is exactly [source photo, backdrop?]
+      // — photo i maps to slot i, nothing else is attached.
+      if (isPhotoUpgrade && enhanceSel) {
+        const source = enhanceSources[slot - 1];
+        if (!source || !reachableSet.has(source.url)) {
+          throw new Error(`Source photo ${slot} is missing or unreachable — please re-upload it and retry`);
+        }
+        const backdropOk = !!enhanceBackdropRef && reachableSet.has(enhanceBackdropRef.url);
+        slotReferenceMap = { urls: [source.url, ...(backdropOk ? [enhanceBackdropRef!.url] : [])], text: "" };
+      }
+
       // The brief's mandatory prefix states the identity range for ALL identity
       // images ("IMAGES 1 through N"); with routing, this slot may attach fewer —
       // rewrite the range so the prompt matches the attached reference count.
@@ -2564,12 +2630,21 @@ export async function startGenerationWorker(
 
       // Append the reference image map + positive anatomical constraints to every fal call.
       // Smile slots get the real-teeth variant; back-view slots drop face requirements.
-      const slotAnatomicalConstraints = wantsBack
-        ? GLOBAL_ANATOMICAL_CONSTRAINTS_BACK
-        : wantsSmile
-          ? GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE
-          : GLOBAL_ANATOMICAL_CONSTRAINTS;
-      slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text} ${slotAnatomicalConstraints}`.trim();
+      // Gear Equalizer prompts are already fully assembled — nothing is appended.
+      if (!isPhotoUpgrade) {
+        const slotAnatomicalConstraints = wantsBack
+          ? GLOBAL_ANATOMICAL_CONSTRAINTS_BACK
+          : wantsSmile
+            ? GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE
+            : GLOBAL_ANATOMICAL_CONSTRAINTS;
+        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text} ${slotAnatomicalConstraints}`.trim();
+      }
+
+      // Gear Equalizer: every photo keeps its own crop — probe the source's real
+      // dimensions and use the nearest supported aspect ratio for this slot only.
+      const slotAspect: AspectRatio = isPhotoUpgrade
+        ? ((await probeNearestAspect(enhanceSources[slot - 1]?.url ?? "")) ?? aspectRatio)
+        : aspectRatio;
 
       const isTestMode = process.env.FAL_TEST_MODE === "1";
 
@@ -2602,7 +2677,7 @@ export async function startGenerationWorker(
           shootId,
           slot,
           mode: shoot.mode,
-          aspectRatio,
+          aspectRatio: slotAspect,
           prompt: slotPrompt,
           identityUrls,
           inspirationUrls,
@@ -2619,7 +2694,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, aspectRatio, resolution, dbForbiddenWords, generationModel);
+      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, generationModel);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }

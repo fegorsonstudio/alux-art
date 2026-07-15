@@ -12,6 +12,7 @@ import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
 import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
 import { sanitizeInductionSelection, type InductionSelection } from "@/lib/nursing-induction";
+import { sanitizeEnhanceSelection, type EnhanceSelection } from "@/lib/gear-equalizer";
 
 interface RefInput {
   name?: string;
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
     choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string }>;
     induction?: { name?: string; titles?: string[]; year?: number };
+    enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null };
     flagShot?: { enabled?: boolean; text?: string };
     trendSlots?: {
       mugshot?: { enabled?: boolean; name?: string; offense?: string; date?: string };
@@ -217,6 +219,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
+  // ── Gear Equalizer (photo_upgrade category) ─────────────────────────────────
+  // The uploaded "identity" photos ARE the source photographs to upgrade — one
+  // photo per package slot, upgraded with the clicked lighting + camera presets.
+  let enhance: EnhanceSelection | null = null;
+  if (template.category === "photo_upgrade") {
+    if (identityRefs.length !== buyerPackageSize) {
+      return NextResponse.json(
+        { error: `Upload exactly ${buyerPackageSize} photo${buyerPackageSize === 1 ? "" : "s"} for the ${buyerPackageSize}-image package (you selected ${identityRefs.length}).` },
+        { status: 400 }
+      );
+    }
+    const backdropIds = new Set(
+      (Array.isArray(template.background_options) ? template.background_options : [])
+        .map((o: { id?: string }) => o.id)
+        .filter(Boolean) as string[]
+    );
+    enhance = sanitizeEnhanceSelection(body.enhance, backdropIds);
+    if (!enhance) {
+      return NextResponse.json({ error: "Pick a lighting style and a camera look for your upgrade" }, { status: 400 });
+    }
+  }
+
   // Custom slots (flag, mugshot, bowl, viral) sit outside the backdrop distribution —
   // the buyer only places their normal portraits across backdrops.
   const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0) - (trendViral ? 1 : 0);
@@ -358,7 +382,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, induction, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, induction, enhance, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
@@ -369,6 +393,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
       ${induction ? sql.json(induction as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : null},
       ${now}, ${now}
     )
     RETURNING id
@@ -461,6 +486,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             purpose: "background_option", tag: "BACKGROUND", custom_name: a.name, note: a.id,
             name: `background-${i + 1}`, type: "image/jpeg", size: 1,
             storage_bucket: a.imageBucket ?? "template-images", storage_path: a.imagePath!,
+            created_at: now,
+          }))
+      : []),
+    // Gear Equalizer backdrop swap — the single chosen backdrop plate rides along
+    // as a background_option ref (note = optionId) for the enhance pipeline.
+    ...(enhance?.backdropOptionId
+      ? templateBgOptions
+          .filter((o) => o.id === enhance!.backdropOptionId && o.kind === "photo" && o.imagePath)
+          .map((o) => ({
+            id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+            purpose: "background_option", tag: "BACKGROUND", custom_name: o.name, note: o.id,
+            name: "enhance-backdrop", type: "image/jpeg", size: 1,
+            storage_bucket: o.imageBucket ?? "template-images", storage_path: o.imagePath!,
             created_at: now,
           }))
       : []),

@@ -134,10 +134,10 @@ export default function BookPage() {
     ]).then(([templateData, idData]) => {
       if (templateData.template) {
         const t: TemplateDetail = templateData.template;
-        // Nursing induction needs the full checkout (sash personalization, scrubs
-        // color, recolor chips) — this legacy page doesn't render those, so a
-        // booking here would be rejected for the missing sash name. Redirect.
-        if (t.category === "nursing_induction") {
+        // Nursing induction and Photo Upgrade need the full checkout (sash
+        // personalization / lighting+camera presets) — this legacy page doesn't
+        // render those, so a booking here would be rejected. Redirect.
+        if (t.category === "nursing_induction" || t.category === "photo_upgrade") {
           router.replace(`/marketplace/${t.id}`);
           return;
         }

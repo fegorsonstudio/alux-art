@@ -58,6 +58,10 @@ export interface PendingConfig {
   inductionName?: string;
   inductionTitles?: string[];
   inductionYear?: number;
+  // Gear Equalizer (photo_upgrade category)
+  enhanceLighting?: string;
+  enhanceCamera?: string;
+  enhanceBackdrop?: string;
 }
 
 export interface PendingFile {
