@@ -141,7 +141,10 @@ function Collapse({ icon, title, status, warn, defaultOpen, children }: {
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
-    <div style={{ border: "1px solid rgba(127,127,127,0.22)", borderRadius: 12, overflow: "hidden", marginBottom: 10 }}>
+    // flexShrink 0 is load-bearing: the mobile bottom sheet is a flex column, and
+    // without it sections compress to fit the sheet and overflow:hidden CLIPS the
+    // content (upload buttons vanished mid-sentence on iPhones).
+    <div style={{ border: "1px solid rgba(127,127,127,0.22)", borderRadius: 12, overflow: "hidden", marginBottom: 10, flexShrink: 0 }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -1599,17 +1602,24 @@ export default function CheckoutPanel({
 
           <div className={styles.divider} />
 
-          {/* Identity photos */}
-          <Collapse
-            icon="📷"
-            title={photoUpgradeActive ? "Your photos to upgrade" : "Your identity photos"}
-            status={photoUpgradeActive
-              ? `${allIdentityRefs.length} of ${selectedPkg} selected`
-              : allIdentityRefs.length > 0 ? `${allIdentityRefs.length} selected` : "required"}
-            warn={photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0}
-            defaultOpen
-          >
-          <div>
+          {/* Identity photos — deliberately NOT collapsible: this is the one step
+              every buyer must complete, so the upload button is always on screen. */}
+          <div style={{ flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+              <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>
+                📷 {photoUpgradeActive ? "Your photos to upgrade" : "Your identity photos"}
+              </span>
+              <span style={{
+                fontSize: "0.72rem",
+                fontWeight: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? 700 : 500,
+                color: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? "#c0392b" : undefined,
+                opacity: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? 1 : 0.65,
+              }}>
+                {photoUpgradeActive
+                  ? `${allIdentityRefs.length} of ${selectedPkg} selected`
+                  : allIdentityRefs.length > 0 ? `${allIdentityRefs.length} selected` : "required"}
+              </span>
+            </div>
             {photoUpgradeActive ? (
               <>
                 <p className={styles.sectionHint}>
@@ -1713,7 +1723,6 @@ export default function CheckoutPanel({
               </p>
             )}
           </div>
-          </Collapse>
 
           <div className={styles.divider} />
 

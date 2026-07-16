@@ -80,6 +80,11 @@
   scrollbar-color: rgba(47, 142, 154, 0.2) transparent;
 }
 
+/* Sections must never compress to fit the sheet: without this, flex shrinks them
+   and any overflow:hidden section CLIPS its content (on phones the identity
+   upload button vanished entirely). Overflow belongs to .body's scroll instead. */
+.body > * { flex-shrink: 0; }
+
 /* ---- Package picker ---- */
 .pkgRow { display: flex; flex-direction: column; gap: 6px; }
 .pkgLabel { font-size: 0.65rem; color: #7aafb4; text-transform: uppercase; letter-spacing: 0.08em; }
