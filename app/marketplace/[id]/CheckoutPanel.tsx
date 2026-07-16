@@ -244,6 +244,9 @@ export default function CheckoutPanel({
   const [enhanceCamera, setEnhanceCamera] = useState<string | null>(null);
   const [enhanceBackdrop, setEnhanceBackdrop] = useState<string | null>(null); // null = keep own background
 
+  // Buyer opt-out of smile slots — the planner keeps every photo closed-lips.
+  const [noSmile, setNoSmile] = useState(false);
+
   // Signature poses (creator-uploaded pose mimicry) — NOT buyer-chosen. The
   // planner randomly picks a distinct pose per portrait slot server-side at
   // booking time (lib/pose-options.ts pickRandomPoseOptions); nothing to
@@ -389,6 +392,7 @@ export default function CheckoutPanel({
       if (c.enhanceLighting) setEnhanceLighting(c.enhanceLighting);
       if (c.enhanceCamera) setEnhanceCamera(c.enhanceCamera);
       if (c.enhanceBackdrop) setEnhanceBackdrop(c.enhanceBackdrop);
+      setNoSmile(!!c.noSmile);
       if (pending.files?.length) {
         const items: NewIdentityUpload[] = pending.files.map(f => {
           const file = new File([f.blob], f.name, { type: f.type || "image/jpeg" });
@@ -726,6 +730,7 @@ export default function CheckoutPanel({
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
       enhanceBackdrop: enhanceBackdrop ?? undefined,
+      noSmile: noSmile || undefined,
     };
     const files = newUploads
       .filter(u => u.file)
@@ -787,6 +792,7 @@ export default function CheckoutPanel({
         enhance: photoUpgradeActive && enhanceLighting && enhanceCamera
           ? { lighting: enhanceLighting, camera: enhanceCamera, backdropOptionId: enhanceBackdrop }
           : undefined,
+        noSmile: noSmile || undefined,
         flagShot: flagShotAvailable && flagShotOn
           ? { enabled: true, text: flagText.trim() }
           : undefined,
@@ -1679,6 +1685,21 @@ export default function CheckoutPanel({
                   </div>
                 ))}
               </div>
+            )}
+
+            {!photoUpgradeActive && (
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, cursor: "pointer", fontSize: "0.85rem", lineHeight: 1.4 }}>
+                <input
+                  type="checkbox"
+                  checked={noSmile}
+                  onChange={e => setNoSmile(e.target.checked)}
+                  style={{ marginTop: 2 }}
+                />
+                <span>
+                  <strong>No smiles</strong> — keep a relaxed, closed-lips expression in every photo
+                  {noSmile && <span style={{ display: "block", opacity: 0.75 }}>No photo will show teeth or a smile, even if your identity photos do.</span>}
+                </span>
+              </label>
             )}
 
             {allIdentityRefs.length === 0 && !(signedOut && newUploads.length > 0) && (

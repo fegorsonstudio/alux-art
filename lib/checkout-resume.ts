@@ -62,6 +62,8 @@ export interface PendingConfig {
   enhanceLighting?: string;
   enhanceCamera?: string;
   enhanceBackdrop?: string;
+  // Buyer opt-out of smile slots
+  noSmile?: boolean;
 }
 
 export interface PendingFile {

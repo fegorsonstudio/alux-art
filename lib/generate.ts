@@ -561,7 +561,7 @@ Select 2-4 indices per prompt when enough references exist. Never select an empt
 
   const dentitionRule = hasSmiling
     ? `1. Smile Allocation Rule — ABSOLUTE RULE
-The subject's GENUINE smile is available: identity ${catalog!.smilingIndices.length === 1 ? `IMAGE ${catalog!.smilingIndices[0]} shows` : `IMAGES ${catalog!.smilingIndices.join(", ")} show`} the subject genuinely smiling with visible teeth. You MUST designate 2-3 portrait slots (in a 10-image shoot; exactly 1 slot in shoots of 5 or fewer images) as genuine-smile slots: their prompts MUST contain the exact phrase "smiling with visible teeth", describe a warm genuine smile, and their identity_image_indices MUST list ONLY the smiling-teeth reference(s). Custom slots (flag shot, mugshot, bowl, viral pose, quote card) are NEVER smile slots — choose normal portrait slots.
+The subject's GENUINE smile is available: identity ${catalog!.smilingIndices.length === 1 ? `IMAGE ${catalog!.smilingIndices[0]} shows` : `IMAGES ${catalog!.smilingIndices.join(", ")} show`} the subject genuinely smiling with visible teeth. You MUST designate 2-3 portrait slots (in a 10-image shoot; exactly 1 slot in a 5-image shoot; NEVER in a single-image shoot — those stay neutral) as genuine-smile slots: their prompts MUST contain the exact phrase "smiling with visible teeth", describe a warm genuine smile, and their identity_image_indices MUST list ONLY the smiling-teeth reference(s). Custom slots (flag shot, mugshot, bowl, viral pose, quote card) are NEVER smile slots — choose normal portrait slots.
 ALL OTHER SLOTS: no smiling, no laughing, no visible teeth, no open mouth. Their identity_image_indices must list ONLY neutral references. For these slots the target is ALIVE lips: lips fractionally parted (natural breathing stance), subtle asymmetric lip curve, soft tension in the lower lip, relaxed jawline — natural, unlocked, human lip micro-states are mandatory.`
     : `1. The Dentition Safeguard — ABSOLUTE RULE
 NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. These are unconditionally prohibited regardless of what the identity photos show. Do not add smiles or laughter even if identity photos show them.
@@ -1782,7 +1782,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   // ORDER BY keeps photo→slot mapping stable across worker invocations and retries
   // (photo_upgrade maps source photo i → slot i; unordered reads made that random).
@@ -1995,6 +1995,13 @@ export async function startGenerationWorker(
     }
   }
 
+  // Buyer opted out of smiles (studio + template checkout checkbox), or the
+  // shoot is single-image (too risky — the model invents teeth when the one
+  // slot is forced to smile). Emptying smilingIndices makes the system
+  // instruction fall back to the hard Dentition Safeguard, drops the smile
+  // allocation reminder, and keeps smiling references out of slot routing.
+  const noSmile = shoot.no_smile === true || normalizePackageSize(shoot.package_size) < 5;
+
   // Catalog handed to the brief planner — same GROUP A order the planner sees.
   const identityCatalog: IdentityCatalog | null = (() => {
     if (Object.keys(identityAttributes).length === 0) return null;
@@ -2004,7 +2011,7 @@ export async function startGenerationWorker(
     identityRefsOrdered.forEach((r, i) => {
       const a = identityAttributes[r.storagePath] ?? DEFAULT_IDENTITY_ATTRS;
       lines.push(`IMAGE ${i + 1}: framing=${a.framing}, view=${a.view}, expression=${a.expression}`);
-      if (a.expression === "smiling-teeth") smilingIndices.push(i + 1);
+      if (a.expression === "smiling-teeth" && !noSmile) smilingIndices.push(i + 1);
       if (a.view === "back") backIndices.push(i + 1);
     });
     return { lines, smilingIndices, backIndices };
@@ -2259,9 +2266,11 @@ export async function startGenerationWorker(
   const identityLabelFor = (a: IdentityAttrs): string =>
     a.view === "back"
       ? "SUBJECT IDENTITY (BACK VIEW) — the subject photographed from behind; replicate this exact back of head, figure, and body shape"
-      : a.expression === "smiling-teeth"
+      : a.expression === "smiling-teeth" && !noSmile
         ? "SUBJECT IDENTITY (GENUINE SMILE) — the exact person to depict; copy the real smile and exact teeth from this photo"
-        : "SUBJECT IDENTITY — the exact person to depict";
+        : a.expression === "smiling-teeth"
+          ? "SUBJECT IDENTITY — the exact person to depict; use face, skin tone, and build only — do NOT copy this photo's smile; render a relaxed closed-lips expression"
+          : "SUBJECT IDENTITY — the exact person to depict";
   const allIdentityEntries = identityRefsOrdered.map((r, i) => {
     const attrs = identityAttributes[r.storagePath] ?? DEFAULT_IDENTITY_ATTRS;
     return { url: r.url, index: i + 1, attrs, label: identityLabelFor(attrs) };

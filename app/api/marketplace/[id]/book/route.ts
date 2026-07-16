@@ -46,6 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string }>;
     induction?: { name?: string; titles?: string[]; year?: number };
     enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null };
+    noSmile?: boolean;
     flagShot?: { enabled?: boolean; text?: string };
     trendSlots?: {
       mugshot?: { enabled?: boolean; name?: string; offense?: string; date?: string };
@@ -386,7 +387,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, induction, enhance, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, induction, enhance, no_smile, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
@@ -398,6 +399,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
       ${induction ? sql.json(induction as unknown as Parameters<typeof sql.json>[0]) : null},
       ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${body.noSmile === true},
       ${now}, ${now}
     )
     RETURNING id

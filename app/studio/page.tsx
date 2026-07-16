@@ -84,6 +84,7 @@ export default function WorkspacePage() {
   const [quote, setQuote] = useState({ text: "", attribution: "" });
   // Group picture: the identity photo(s) contain more than one person (e.g. a couple).
   const [groupPicture, setGroupPicture] = useState(false);
+  const [noSmile, setNoSmile] = useState(false);
 
   // Shoots
   const [shoots, setShoots] = useState<Shoot[]>([]);
@@ -601,6 +602,7 @@ export default function WorkspacePage() {
           quote, adminBypass,
           characterBaseId: selectedBase?.id ?? null,
           groupPicture,
+          noSmile,
         }),
       });
       const data = await res.json();
@@ -886,6 +888,17 @@ export default function WorkspacePage() {
             {groupPicture && (
               <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
                 We&apos;ll preserve everyone&apos;s face and show all of you together in each image. One clear photo of the group is enough.
+              </p>
+            )}
+
+            {/* No-smile toggle — buyer opt-out of smile slots for the whole shoot */}
+            <label className={styles.saveToggle}>
+              <input type="checkbox" checked={noSmile} onChange={e => setNoSmile(e.target.checked)} />
+              <span>No smiles — keep a relaxed, closed-lips expression in every photo</span>
+            </label>
+            {noSmile && (
+              <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
+                No photo in this shoot will show teeth or a smile, even if your identity photos do.
               </p>
             )}
             {uploadIssue && <p className={styles.uploadIssue}>{uploadIssue}</p>}

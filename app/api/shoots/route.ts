@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
     adminBypass = false,
     characterBaseId = null,
     groupPicture = false,
+    noSmile = false,
   } = body;
 
   if (!Array.isArray(identityImages) || !Array.isArray(inspirationImages) || !Array.isArray(taggedReferences)) {
@@ -177,12 +178,12 @@ export async function POST(request: NextRequest) {
     INSERT INTO shoots (
       id, user_id, owner_email, mode, aspect_ratio, currency, package_size,
       status, progress, quote, character_base_id, base_lock_status,
-      identity_profile, group_identity, created_at, updated_at
+      identity_profile, group_identity, no_smile, created_at, updated_at
     ) VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ""}, ${mode}, ${aspectRatio},
       ${currency}, ${packageSize}, ${initialStatus}, 0, ${JSON.stringify(quote)},
       ${resolvedBaseId}, ${resolvedBaseId ? "USER_APPROVED" : null},
-      ${baseIdentityProfile ?? ""}, ${groupPicture === true}, ${now}, ${now}
+      ${baseIdentityProfile ?? ""}, ${groupPicture === true}, ${noSmile === true}, ${now}, ${now}
     ) RETURNING *
   `;
 
