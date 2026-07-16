@@ -18,7 +18,7 @@ async function getFeaturedTemplates(): Promise<FeaturedTemplate[]> {
     const rows = await sql`
       SELECT id, title, cover_storage_path, cover_bucket, category
       FROM templates
-      WHERE status = 'published'
+      WHERE status = 'published' AND is_private = false
       ORDER BY purchase_count DESC
     `;
 

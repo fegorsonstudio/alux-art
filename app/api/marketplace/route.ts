@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     FROM templates t
     LEFT JOIN creators c ON c.id = t.creator_id
     WHERE t.status = 'published'
+      AND t.is_private = false
       AND t.is_story = ${isStoryFilter}
       ${category && category !== "all" ? sql`AND t.category = ${category}` : sql``}
       ${search ? sql`AND t.title ILIKE ${"%" + search + "%"}` : sql``}

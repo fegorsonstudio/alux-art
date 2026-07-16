@@ -72,6 +72,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ([1, 5, 10].includes(Number(body.packageSize))) updates.package_size = Number(body.packageSize);
   if (Array.isArray(body.tags)) updates.tags = (body.tags as unknown[]).filter((t) => typeof t === "string").slice(0, 10);
   if (body.status === "published" || body.status === "draft") updates.status = body.status;
+  if (typeof body.isPrivate === "boolean") updates.is_private = body.isPrivate;
   if (typeof body.coverStoragePath === "string") {
     updates.cover_storage_path = body.coverStoragePath;
     updates.cover_bucket = "template-images";

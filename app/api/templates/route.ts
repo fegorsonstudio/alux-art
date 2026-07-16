@@ -105,13 +105,15 @@ export async function POST(request: NextRequest) {
     : null;
   // Pose options (buyer-selectable signature poses) work on any category.
   const safePoseOptions = sanitizePoseOptions(body.poseOptions, user.id);
+  // Private templates: bookable only through the direct link, never listed.
+  const isPrivate = body.isPrivate === true;
 
   const [template] = await sql`
     INSERT INTO templates
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
        is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot, trend_slots, pose_options,
-       created_at, updated_at)
+       is_private, created_at, updated_at)
     VALUES (
       ${creator.id},
       ${(title as string).trim()},
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
       ${safeFlagShot ? sql.json(safeFlagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeTrendSlots ? sql.json(safeTrendSlots as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safePoseOptions ? sql.json(safePoseOptions as unknown as Parameters<typeof sql.json>[0]) : null},
-      NOW(), NOW()
+      ${isPrivate}, NOW(), NOW()
     )
     RETURNING *
   `.catch((err) => { console.error("[templates POST]", err); return [null]; });

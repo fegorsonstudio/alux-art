@@ -61,7 +61,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const [{ count: templateCount }] = await sql`
     SELECT COUNT(*)::int AS count FROM templates
-    WHERE creator_id = ${template.creator_id} AND status = 'published'
+    WHERE creator_id = ${template.creator_id} AND status = 'published' AND is_private = false
   `;
 
   let userRating: number | null = null;

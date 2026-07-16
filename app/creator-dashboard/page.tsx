@@ -35,6 +35,7 @@ interface TemplateRow {
   cover_url?: string | null;
   template_images: Array<{ id: string; display_order: number; purpose: string; tag?: string; note?: string | null; custom_name?: string | null; note_hidden?: boolean | null; storage_path?: string; storage_bucket?: string; signed_url?: string | null }>;
   created_at: string;
+  is_private?: boolean;
   is_story?: boolean;
   story_type?: string | null;
   default_role?: string | null;
@@ -199,6 +200,7 @@ const defaultForm = () => ({
   aspectRatio: "4:5" as AspectRatio,
   packageSize: 10,
   status: "draft",
+  isPrivate: false,
   coverStoragePath: "",
   isStory: false,
   storyType: "solo" as "solo" | "duo" | "group" | "brand",
@@ -338,6 +340,7 @@ function CreatorDashboard() {
           aspectRatio: (shoot.aspect_ratio as AspectRatio) ?? "4:5",
           packageSize: [1, 5, 10].includes(Number(shoot.package_size)) ? Number(shoot.package_size) as 1 | 5 | 10 : 10,
           status: "draft",
+          isPrivate: false,
           coverStoragePath: "",
           isStory: false,
           storyType: "solo" as const,
@@ -418,6 +421,7 @@ function CreatorDashboard() {
       aspectRatio: t.aspect_ratio as AspectRatio,
       packageSize: t.package_size,
       status: t.status,
+      isPrivate: t.is_private === true,
       coverStoragePath: t.cover_storage_path ?? "",
       isStory: t.is_story === true,
       storyType: (["solo", "duo", "group", "brand"].includes(String(t.story_type ?? "")) ? t.story_type : "solo") as "solo" | "duo" | "group" | "brand",
@@ -541,6 +545,7 @@ function CreatorDashboard() {
       aspectRatio: (linked?.aspect_ratio ?? "4:5") as AspectRatio,
       packageSize: linked?.package_size ?? 10,
       status: "draft",
+      isPrivate: linked?.is_private === true,
       coverStoragePath: "",
       isStory: false,
       storyType: "solo" as const,
@@ -1024,6 +1029,7 @@ function CreatorDashboard() {
       aspectRatio: form.aspectRatio,
       packageSize: form.packageSize,
       status: form.status,
+      isPrivate: form.isPrivate,
       coverStoragePath: form.coverStoragePath || coverFromGallery || undefined,
       isStory: form.isStory,
       storyType: form.isStory ? form.storyType : null,
@@ -1560,6 +1566,11 @@ function CreatorDashboard() {
               <span className={styles.templatePrice}>₦{t.price_ngn.toLocaleString()}</span>
               <span className={styles.templateSales}>{t.purchase_count} sales</span>
               <span className={t.status === "published" ? styles.published : styles.draft}>{t.status}</span>
+              {t.is_private && (
+                <span title="Private — only people with the direct link can book" style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(127,127,127,0.35)", opacity: 0.85 }}>
+                  🔒 private
+                </span>
+              )}
               <div className={styles.templateActions}>
                 {/* Primary row — Edit + Generate Images */}
                 <div className={styles.actPrimary}>
@@ -2654,6 +2665,19 @@ function CreatorDashboard() {
               </div>
             )}
           </div>
+
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "10px 0 4px", cursor: "pointer", fontSize: "0.88rem", lineHeight: 1.45 }}>
+            <input
+              type="checkbox"
+              checked={form.isPrivate}
+              onChange={e => setForm(f => ({ ...f, isPrivate: e.target.checked }))}
+              style={{ marginTop: 2 }}
+            />
+            <span>
+              <strong>🔒 Private template</strong> — won&apos;t appear in the marketplace or on your profile.
+              Only people you send the direct link can see and book it. Perfect for one-off client work.
+            </span>
+          </label>
 
           <div className={styles.formActions}>
             <div className={styles.pills}>

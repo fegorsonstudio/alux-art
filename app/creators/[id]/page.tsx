@@ -11,7 +11,7 @@ export default async function CreatorPage({ params }: Props) {
            MIN(t.price_ngn) AS min_price,
            MAX(t.price_ngn) AS max_price
     FROM creators c
-    LEFT JOIN templates t ON t.creator_id = c.id AND t.status = 'published'
+    LEFT JOIN templates t ON t.creator_id = c.id AND t.status = 'published' AND t.is_private = false
     WHERE (c.id::text = ${id} OR c.username = ${id}) AND c.is_active = true
     GROUP BY c.id, c.display_name, c.bio
   `;

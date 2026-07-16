@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const templates = await sql`
     SELECT id, title, category, price_ngn, purchase_count, cover_storage_path, cover_bucket, created_at
-    FROM templates WHERE creator_id = ${creator.id} AND status = 'published' ORDER BY created_at DESC
+    FROM templates WHERE creator_id = ${creator.id} AND status = 'published' AND is_private = false ORDER BY created_at DESC
   `;
 
   const templatesWithUrls = templates.map((t) => ({
