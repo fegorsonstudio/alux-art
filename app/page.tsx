@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import sql from "@/lib/db";
 import { r2ProxyUrl } from "@/lib/r2";
 import styles from "./landing.module.css";
 import RotatingStyles from "./RotatingStyles";
+import { LOCALE_COOKIE, DEFAULT_LOCALE, isLocale, type Locale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/dictionaries";
 
-export const revalidate = 3600;
+// Reading the locale cookie makes this page per-request (the hourly ISR cache is
+// gone) — the featured-templates query is a single indexed SELECT, fine on the VPS.
 
 interface FeaturedTemplate {
   id: string;
@@ -37,6 +41,12 @@ async function getFeaturedTemplates(): Promise<FeaturedTemplate[]> {
 
 export default async function LandingPage() {
   const templates = await getFeaturedTemplates();
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
+  const locale: Locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  const dict = await getDictionary(locale);
+  const h = dict.home;
+  const c = dict.common;
 
   return (
     <div className={styles.page}>
@@ -44,23 +54,20 @@ export default async function LandingPage() {
       <nav className={styles.nav}>
         <span className={styles.wordmark}>Alux Art</span>
         <div className={styles.navLinks}>
-          <Link href="/marketplace" className={styles.navLink}>Browse looks</Link>
-          <Link href="/login" className={styles.navCta}>Sign in</Link>
+          <Link href="/marketplace" className={styles.navLink}>{c.browseLooks}</Link>
+          <Link href="/login" className={styles.navCta}>{c.signIn}</Link>
         </div>
       </nav>
 
       {/* Hero */}
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>Tired of expensive shoots, the planning, and waiting weeks just to get your photos?</p>
+        <p className={styles.eyebrow}>{h.eyebrow}</p>
         <h1 className={styles.headline}>
-          Ready to see yourself<br />in a whole new light?
+          {h.headline1}<br />{h.headline2}
         </h1>
-        <p className={styles.subline}>
-          Upload 3 selfies. Choose a style. Get 10 editorial portraits in minutes.
-          No photographer. No studio. No prompts.
-        </p>
+        <p className={styles.subline}>{h.subline}</p>
         <div className={styles.heroActions}>
-          <Link href="/marketplace" className={styles.primaryBtn}>Browse styles</Link>
+          <Link href="/marketplace" className={styles.primaryBtn}>{h.browseStyles}</Link>
         </div>
       </section>
 
@@ -68,50 +75,40 @@ export default async function LandingPage() {
       <section className={styles.featuresStrip}>
         <div className={styles.featuresBadge}>
           <span className={styles.featuresBadgeIcon}>4K</span>
-          <span className={styles.featuresBadgeText}>4K resolution portraits</span>
+          <span className={styles.featuresBadgeText}>{h.feat4k}</span>
         </div>
         <div className={styles.featuresBadge}>
           <span className={styles.featuresBadgeIcon}>10</span>
-          <span className={styles.featuresBadgeText}>10 images per shoot</span>
+          <span className={styles.featuresBadgeText}>{h.feat10}</span>
         </div>
         <div className={styles.featuresBadge}>
           <span className={styles.featuresBadgeIcon}>1h</span>
-          <span className={styles.featuresBadgeText}>Ready in about an hour</span>
+          <span className={styles.featuresBadgeText}>{h.feat1h}</span>
         </div>
         <div className={styles.featuresBadge}>
           <span className={styles.featuresBadgeIcon}>AI</span>
-          <span className={styles.featuresBadgeText}>No photographer needed</span>
+          <span className={styles.featuresBadgeText}>{h.featAI}</span>
         </div>
       </section>
 
       {/* How it works */}
       <section className={styles.howSection}>
-        <h2 className={styles.sectionHeading}>How it works</h2>
+        <h2 className={styles.sectionHeading}>{h.howItWorks}</h2>
         <div className={styles.steps}>
           <div className={styles.step}>
             <span className={styles.stepNum}>01</span>
-            <h3 className={styles.stepTitle}>Upload your photos</h3>
-            <p className={styles.stepDesc}>
-              Start with 3 clear selfies — these lock your face, skin tone, and features.
-              Then add pose references for any angles you want: a back shot, a side profile, a full-body look.
-              The AI only knows what you show it, so if you want a pose it has not seen, upload a reference that shows it.
-            </p>
+            <h3 className={styles.stepTitle}>{h.step1Title}</h3>
+            <p className={styles.stepDesc}>{h.step1Desc}</p>
           </div>
           <div className={styles.step}>
             <span className={styles.stepNum}>02</span>
-            <h3 className={styles.stepTitle}>Choose a style</h3>
-            <p className={styles.stepDesc}>
-              Browse our curated collection of editorial styles — from minimal studio looks to bold fashion editorials.
-              Each style controls the wardrobe, lighting, and visual direction of your shoot.
-            </p>
+            <h3 className={styles.stepTitle}>{h.step2Title}</h3>
+            <p className={styles.stepDesc}>{h.step2Desc}</p>
           </div>
           <div className={styles.step}>
             <span className={styles.stepNum}>03</span>
-            <h3 className={styles.stepTitle}>Get your portraits</h3>
-            <p className={styles.stepDesc}>
-              Our AI generates high-resolution portraits in minutes. Download individually or as a full set.
-              Every image keeps your unique look — same face, same skin tone, same you.
-            </p>
+            <h3 className={styles.stepTitle}>{h.step3Title}</h3>
+            <p className={styles.stepDesc}>{h.step3Desc}</p>
           </div>
         </div>
       </section>
@@ -119,36 +116,36 @@ export default async function LandingPage() {
       {/* Creator earning section */}
       <section className={styles.creatorSection}>
         <div className={styles.creatorInner}>
-          <p className={styles.creatorEyebrow}>For photographers &amp; stylists</p>
-          <h2 className={styles.creatorHeading}>Earn every time someone books your style</h2>
-          <p className={styles.creatorSub}>Build a template once. Set your price. Collect earnings on every shoot it powers.</p>
+          <p className={styles.creatorEyebrow}>{h.creatorEyebrow}</p>
+          <h2 className={styles.creatorHeading}>{h.creatorHeading}</h2>
+          <p className={styles.creatorSub}>{h.creatorSub}</p>
           <div className={styles.creatorSteps}>
             <div className={styles.creatorStep}>
               <span className={styles.creatorStepNum}>01</span>
-              <h3 className={styles.creatorStepTitle}>Build a style template</h3>
-              <p className={styles.creatorStepDesc}>Upload outfit references, set the mood, define the visual direction. Your template becomes the blueprint every shoot follows.</p>
+              <h3 className={styles.creatorStepTitle}>{h.cStep1Title}</h3>
+              <p className={styles.creatorStepDesc}>{h.cStep1Desc}</p>
             </div>
             <div className={styles.creatorStep}>
               <span className={styles.creatorStepNum}>02</span>
-              <h3 className={styles.creatorStepTitle}>Set your price</h3>
-              <p className={styles.creatorStepDesc}>You decide what your style is worth. Your payout is transferred directly to your bank account through Paystack after every successful booking.</p>
+              <h3 className={styles.creatorStepTitle}>{h.cStep2Title}</h3>
+              <p className={styles.creatorStepDesc}>{h.cStep2Desc}</p>
             </div>
             <div className={styles.creatorStep}>
               <span className={styles.creatorStepNum}>03</span>
-              <h3 className={styles.creatorStepTitle}>Earn on every booking</h3>
-              <p className={styles.creatorStepDesc}>Customers discover your style in the marketplace and book it. No client management, no scheduling — just passive income from your creative work.</p>
+              <h3 className={styles.creatorStepTitle}>{h.cStep3Title}</h3>
+              <p className={styles.creatorStepDesc}>{h.cStep3Desc}</p>
             </div>
           </div>
-          <Link href="/become-creator" className={styles.creatorCta}>Apply to become a creator →</Link>
+          <Link href="/become-creator" className={styles.creatorCta}>{h.creatorCta}</Link>
         </div>
       </section>
 
       {/* Featured styles */}
       <section className={styles.looksSection}>
-        <h2 className={styles.sectionHeading}>Featured styles</h2>
+        <h2 className={styles.sectionHeading}>{h.featuredStyles}</h2>
         <RotatingStyles templates={templates} />
         <div className={styles.looksFooter}>
-          <Link href="/marketplace" className={styles.ghostBtn}>Browse all styles</Link>
+          <Link href="/marketplace" className={styles.ghostBtn}>{h.browseAllStyles}</Link>
         </div>
       </section>
 
@@ -156,11 +153,11 @@ export default async function LandingPage() {
       <footer className={styles.footer}>
         <span className={styles.footerBrand}>Alux Art</span>
         <div className={styles.footerLinks}>
-          <Link href="/privacy" className={styles.footerLink}>Privacy</Link>
-          <Link href="/terms" className={styles.footerLink}>Terms</Link>
-          <Link href="/support" className={styles.footerLink}>Support</Link>
+          <Link href="/privacy" className={styles.footerLink}>{c.privacy}</Link>
+          <Link href="/terms" className={styles.footerLink}>{c.terms}</Link>
+          <Link href="/support" className={styles.footerLink}>{c.support}</Link>
         </div>
-        <span className={styles.footerNote}>© 2026 Alux Art and Frames</span>
+        <span className={styles.footerNote}>{c.footerNote}</span>
       </footer>
     </div>
   );

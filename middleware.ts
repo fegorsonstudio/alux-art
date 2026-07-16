@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { LOCALE_COOKIE, resolveLocale, isLocale } from "@/lib/i18n";
 
 export async function middleware(request: NextRequest) {
   const isApiPath = request.nextUrl.pathname.startsWith("/api");
@@ -81,6 +82,15 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/studio";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  // First visit with no language cookie: seed it from the browser's language so
+  // server-rendered pages (layout <html lang/dir>, homepage) render translated.
+  if (!isLocale(request.cookies.get(LOCALE_COOKIE)?.value)) {
+    const locale = resolveLocale(undefined, request.headers.get("accept-language"));
+    supabaseResponse.cookies.set(LOCALE_COOKIE, locale, {
+      path: "/", maxAge: 31536000, sameSite: "lax",
+    });
   }
 
   return supabaseResponse;

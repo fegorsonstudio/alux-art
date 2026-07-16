@@ -3,18 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { useT } from "@/lib/useLocale";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const t = useT("login");
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const authError = params.get("error");
     if (authError) {
       setError(authError === "auth_failed"
-        ? "Sign in failed. Check that Google login is enabled and this app URL is allowed in Supabase."
+        ? t("authFailed")
         : authError.replace(/_/g, " "));
     }
     if (params.has("code")) {
@@ -34,7 +36,7 @@ export default function LoginPage() {
           if (!sessionError) {
             window.location.replace(next.startsWith("/") ? next : "/studio");
           } else {
-            setError("Sign in failed: " + sessionError.message);
+            setError(t("signInFailed", { message: sessionError.message }));
           }
         });
     }
@@ -57,16 +59,14 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <Link href="/marketplace" className={styles.backLink}>← Browse looks</Link>
+      <Link href="/marketplace" className={styles.backLink}>{t("back")}</Link>
       <div className={styles.card}>
         <div className={styles.logo}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Alux Art" className={styles.logoImg} />
         </div>
-        <h1 className={styles.headline}>Your AI Photoshoot Studio</h1>
-        <p className={styles.sub}>
-          Upload your photos. We generate a professional shoot, 1 to 10 images, no prompts needed.
-        </p>
+        <h1 className={styles.headline}>{t("headline")}</h1>
+        <p className={styles.sub}>{t("sub")}</p>
         <button
           className={styles.googleBtn}
           onClick={handleGoogleSignIn}
@@ -82,12 +82,10 @@ export default function LoginPage() {
               <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
             </svg>
           )}
-          {loading ? "Signing in..." : "Continue with Google"}
+          {loading ? t("signingIn") : t("continueGoogle")}
         </button>
         {error && <p className={styles.error}>{error}</p>}
-        <p className={styles.fine}>
-          By signing in you agree to our terms of service.
-        </p>
+        <p className={styles.fine}>{t("agree")}</p>
       </div>
     </div>
   );

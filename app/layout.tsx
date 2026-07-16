@@ -1,14 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit } from "next/font/google";
+import { Outfit, Noto_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import Script from "next/script";
+import { cookies } from "next/headers";
 import "./globals.css";
 import ResumeRedirect from "./ResumeRedirect";
+import LanguageSelector from "@/components/LanguageSelector";
+import { LocaleProvider } from "@/lib/useLocale";
+import { LOCALE_COOKIE, DEFAULT_LOCALE, dirFor, isLocale, type Locale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/dictionaries";
 
 const GA_ID = "G-QQP2424C0W";
 
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+  weight: ["400", "600", "800"],
+});
+
+// Script fallbacks so Arabic and Chinese render with proper glyphs (Outfit is
+// Latin-only). They join the font-family chain after Outfit via CSS variables.
+const notoArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  variable: "--font-arabic",
+  display: "swap",
+  weight: ["400", "600", "800"],
+});
+const notoSC = Noto_Sans_SC({
+  subsets: ["latin"],
+  variable: "--font-sc",
   display: "swap",
   weight: ["400", "600", "800"],
 });
@@ -24,14 +44,25 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
+  const locale: Locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  const dict = await getDictionary(locale);
+
   return (
-    <html lang="en">
-      <body className={outfit.variable}><ResumeRedirect /><main>{children}</main></body>
+    <html lang={locale} dir={dirFor(locale)}>
+      <body className={`${outfit.variable} ${notoArabic.variable} ${notoSC.variable}`}>
+        <LocaleProvider initialLocale={locale} initialDict={dict}>
+          <ResumeRedirect />
+          <main>{children}</main>
+          <LanguageSelector />
+        </LocaleProvider>
+      </body>
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
       <Script id="ga-init" strategy="afterInteractive">{`
         window.dataLayer = window.dataLayer || [];

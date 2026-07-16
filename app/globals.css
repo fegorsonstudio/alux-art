@@ -18,3 +18,13 @@ button, a, [role="button"] {
     font-size: 16px !important;
   }
 }
+
+/* Script-aware fonts: Outfit is Latin-only, so Arabic and Chinese swap to Noto
+   (loaded in app/layout.tsx). The !important is deliberate — page CSS modules
+   each declare their own font-family chain, and a whole-script switch must win. */
+html[lang="ar"] body, html[lang="ar"] body * {
+  font-family: var(--font-arabic), var(--font-sans), -apple-system, "Segoe UI", sans-serif !important;
+}
+html[lang="zh"] body, html[lang="zh"] body * {
+  font-family: var(--font-sc), var(--font-sans), -apple-system, "Segoe UI", sans-serif !important;
+}

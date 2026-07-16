@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { TEMPLATE_CATEGORIES } from "@/lib/types";
 import { useCurrency } from "@/lib/useCurrency";
+import { useT } from "@/lib/useLocale";
+import type { AppDictionary } from "@/lib/dictionaries";
 import styles from "./marketplace.module.css";
 import ImagePreview from "@/components/ImagePreview";
 
@@ -55,6 +57,11 @@ export default function MarketplacePage() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [navOpen, setNavOpen] = useState(false);
   const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
+  const t = useT("marketplace");
+  const tc = useT("common");
+  const tCatRaw = useT("categories");
+  // Category values arrive as free strings from the API — fall back to the raw value.
+  const tCat = (value: string) => tCatRaw(value as keyof AppDictionary["categories"]);
 
   useEffect(() => {
     const stored = localStorage.getItem("studio-theme");
@@ -116,33 +123,33 @@ export default function MarketplacePage() {
           {navOpen ? "✕" : "☰"}
         </button>
         <div className={navOpen ? `${styles.navRight} ${styles.navRightOpen}` : styles.navRight}>
-          <Link href="/studio" className={styles.navLink} onClick={() => setNavOpen(false)}>Studio</Link>
+          <Link href="/studio" className={styles.navLink} onClick={() => setNavOpen(false)}>{tc("studio")}</Link>
           {isCreator
-            ? <Link href="/creator-dashboard" className={`${styles.navCta} ${styles.navCtaDash}`} onClick={() => setNavOpen(false)}>Dashboard</Link>
-            : <Link href="/become-creator" className={styles.navCta} onClick={() => setNavOpen(false)}>Become a Creator</Link>
+            ? <Link href="/creator-dashboard" className={`${styles.navCta} ${styles.navCtaDash}`} onClick={() => setNavOpen(false)}>{tc("dashboard")}</Link>
+            : <Link href="/become-creator" className={styles.navCta} onClick={() => setNavOpen(false)}>{tc("becomeCreator")}</Link>
           }
           <button className={styles.currencyToggle} onClick={toggleCurrency} type="button">
             {currency === "NGN" ? "₦ NGN" : "$ USD"}
           </button>
           <button className={styles.themeToggle} onClick={toggleTheme} type="button" aria-pressed={theme === "dark"}>
-            {theme === "dark" ? "Light" : "Dark"}
+            {theme === "dark" ? tc("light") : tc("dark")}
           </button>
         </div>
       </header>
 
       <section className={styles.hero}>
-        <p className={styles.heroEyebrow}>Template Marketplace</p>
-        <h1 className={styles.heroTitle}>Discover your perfect look</h1>
-        <p className={styles.heroSub}>Buy a shoot style from Nigeria&apos;s best photographers. Your photos, their vision.</p>
+        <p className={styles.heroEyebrow}>{t("heroEyebrow")}</p>
+        <h1 className={styles.heroTitle}>{t("heroTitle")}</h1>
+        <p className={styles.heroSub}>{t("heroSub")}</p>
         <div className={styles.searchRow}>
           <input
             className={styles.searchInput}
-            placeholder="Search styles..."
+            placeholder={t("searchPlaceholder")}
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && applySearch()}
           />
-          <button className={styles.searchBtn} onClick={applySearch} type="button">Search</button>
+          <button className={styles.searchBtn} onClick={applySearch} type="button">{t("search")}</button>
         </div>
       </section>
 
@@ -151,57 +158,57 @@ export default function MarketplacePage() {
           type="button"
           className={`${styles.pill} ${category === "all" ? styles.pillActive : ""}`}
           onClick={() => setCategory("all")}
-        >All</button>
+        >{t("all")}</button>
         {/* Stories pill — visually distinct, always first */}
         <button
           type="button"
           className={`${styles.pill} ${styles.pillStory} ${category === "story" ? styles.pillActive : ""}`}
           onClick={() => setCategory("story")}
-        >📖 Stories</button>
+        >{tCat("story")}</button>
         {TEMPLATE_CATEGORIES.filter(c => c.value !== "story").map(c => (
           <button
             key={c.value}
             type="button"
             className={`${styles.pill} ${category === c.value ? styles.pillActive : ""}`}
             onClick={() => setCategory(c.value)}
-          >{c.label}</button>
+          >{tCat(c.value)}</button>
         ))}
       </div>
 
       <section className={styles.section}>
         {loading ? (
-          <div className={styles.empty}>Loading styles...</div>
+          <div className={styles.empty}>{t("loadingStyles")}</div>
         ) : templates.length === 0 ? (
-          <div className={styles.empty}>No styles found. Try a different category or search.</div>
+          <div className={styles.empty}>{t("noStyles")}</div>
         ) : (
           <div className={styles.grid}>
-            {templates.map(t => (
-              <Link key={t.id} href={`/marketplace/${t.id}`} className={`${styles.card} ${t.isStory ? styles.cardStory : ""}`}>
+            {templates.map(tpl => (
+              <Link key={tpl.id} href={`/marketplace/${tpl.id}`} className={`${styles.card} ${tpl.isStory ? styles.cardStory : ""}`}>
                 <div className={styles.cardImg}>
-                  {t.coverUrl
-                    ? <ImagePreview src={t.coverUrl} alt={t.title} className={styles.cardCover} />
-                    : <div className={styles.cardPlaceholder}><span className={styles.placeholderText}>No preview</span></div>
+                  {tpl.coverUrl
+                    ? <ImagePreview src={tpl.coverUrl} alt={tpl.title} className={styles.cardCover} />
+                    : <div className={styles.cardPlaceholder}><span className={styles.placeholderText}>{t("noPreview")}</span></div>
                   }
-                  <span className={styles.categoryBadge}>{t.category}</span>
-                  {t.isStory && <span className={styles.storyBadge}>📖 STORY</span>}
+                  <span className={styles.categoryBadge}>{tCat(tpl.category)}</span>
+                  {tpl.isStory && <span className={styles.storyBadge}>{t("storyBadge")}</span>}
                 </div>
                 <div className={styles.cardBody}>
-                  <h3 className={styles.cardTitle}>{t.title}</h3>
-                  {t.creator && (
+                  <h3 className={styles.cardTitle}>{tpl.title}</h3>
+                  {tpl.creator && (
                     <div className={styles.cardCreator}>
-                      {t.creator.avatarUrl
-                        ? <ImagePreview src={t.creator.avatarUrl} alt={t.creator.displayName} className={styles.creatorAvatar} preferredWidth={80} />
-                        : <div className={styles.creatorAvatarFallback}>{t.creator.displayName[0]}</div>
+                      {tpl.creator.avatarUrl
+                        ? <ImagePreview src={tpl.creator.avatarUrl} alt={tpl.creator.displayName} className={styles.creatorAvatar} preferredWidth={80} />
+                        : <div className={styles.creatorAvatarFallback}>{tpl.creator.displayName[0]}</div>
                       }
-                      <span className={styles.creatorName}>{t.creator.displayName}</span>
+                      <span className={styles.creatorName}>{tpl.creator.displayName}</span>
                     </div>
                   )}
-                  <StarDisplay rating={t.avgRating} count={t.ratingCount} />
+                  <StarDisplay rating={tpl.avgRating} count={tpl.ratingCount} />
                   <div className={styles.cardFooter}>
-                    <span className={styles.price}>{formatPrice(t.priceNgn)}</span>
-                    {t.purchaseCount > 0
-                      ? <span className={styles.salesCount}>{t.purchaseCount} sale{t.purchaseCount !== 1 ? "s" : ""}</span>
-                      : <span className={styles.newBadge}>New</span>
+                    <span className={styles.price}>{formatPrice(tpl.priceNgn)}</span>
+                    {tpl.purchaseCount > 0
+                      ? <span className={styles.salesCount}>{tpl.purchaseCount === 1 ? t("saleOne", { n: 1 }) : t("saleMany", { n: tpl.purchaseCount })}</span>
+                      : <span className={styles.newBadge}>{t("newBadge")}</span>
                     }
                   </div>
                 </div>
@@ -218,7 +225,7 @@ export default function MarketplacePage() {
               onClick={() => load(category, search, nextCursor)}
               disabled={loadingMore}
             >
-              {loadingMore ? "Loading..." : "Load more"}
+              {loadingMore ? tc("loading") : t("loadMore")}
             </button>
           </div>
         )}
@@ -227,10 +234,10 @@ export default function MarketplacePage() {
       <section className={styles.creatorBanner}>
         <div className={styles.bannerInner}>
           <div>
-            <h2 className={styles.bannerTitle}>Are you a photographer?</h2>
-            <p className={styles.bannerSub}>List your shoot styles and earn on every booking.</p>
+            <h2 className={styles.bannerTitle}>{t("photographerTitle")}</h2>
+            <p className={styles.bannerSub}>{t("photographerSub")}</p>
           </div>
-          <Link href="/become-creator" className={styles.bannerBtn}>Become a Creator</Link>
+          <Link href="/become-creator" className={styles.bannerBtn}>{tc("becomeCreator")}</Link>
         </div>
       </section>
     </div>
