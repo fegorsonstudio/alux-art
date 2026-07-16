@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const identityRefs: RefInput[] = body.identityRefs ?? [];
   // Slot plates (FLAG_SCENE, MUGSHOT_BOARD, BOWL_PROP) are attached server-side from the
   // template config — never accept them from the client.
-  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK"]);
+  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK", "CO_STAR"]);
   const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => !SERVER_ONLY_TAGS.has(r.tag));
 
   if (!Array.isArray(identityRefs) || identityRefs.length === 0) {
@@ -157,6 +157,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   ` as TemplateImgMeta[];
 
   const templateImagePaths = new Set(templateImgList.map((img) => img.storage_path));
+  // Creator-attached co-star photos (story templates) — copied into the shoot as
+  // purpose='costar' refs below so generation treats them like duo uploads.
+  const templateCostarImgs = templateImgList
+    .filter((img) => img.purpose === "tagged" && img.tag === "CO_STAR" && img.storage_path)
+    .slice(0, 6);
   const creatorNoteMap = new Map<string, string | null>(
     templateImgList.map((img) => [img.storage_path, img.note ?? null])
   );
@@ -464,12 +469,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       storage_bucket: p.imageBucket ?? "template-images", storage_path: p.imagePath,
       created_at: now,
     })),
-    ...(storyAssets?.costarRefs ?? []).map((ref, i) => ({
-      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
-      purpose: "costar", tag: null, custom_name: null, note: null,
-      name: ref.name ?? `costar-${i + 1}`, type: "image/jpeg", size: 1,
-      storage_bucket: ref.storageBucket, storage_path: ref.storagePath, created_at: now,
-    })),
+    // Co-star references: creator-attached template CO_STAR photos take priority
+    // (the template IS about that person); buyer duo uploads are the fallback.
+    ...(templateCostarImgs.length > 0
+      ? templateCostarImgs.map((img, i) => ({
+          id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+          purpose: "costar", tag: null, custom_name: null, note: null,
+          name: `costar-${i + 1}`, type: "image/jpeg", size: 1,
+          storage_bucket: img.storage_bucket ?? "template-images",
+          storage_path: img.storage_path, created_at: now,
+        }))
+      : (storyAssets?.costarRefs ?? []).map((ref, i) => ({
+          id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+          purpose: "costar", tag: null, custom_name: null, note: null,
+          name: ref.name ?? `costar-${i + 1}`, type: "image/jpeg", size: 1,
+          storage_bucket: ref.storageBucket, storage_path: ref.storagePath, created_at: now,
+        }))),
     ...(storyAssets?.groupPhotoRef ? [{
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
       purpose: "group_photo", tag: null, custom_name: null, note: null,

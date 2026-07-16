@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
@@ -13,8 +13,11 @@ import CollageEditor, { type CollageImage } from "./CollageEditor";
 import { Analytics } from "@/lib/analytics";
 import TemplateShareCard from "@/components/TemplateShareCard";
 
-const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "SASH", "SCRUBS", "SUIT"] as const;
+const TEMPLATE_TAGS = ["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "SASH", "SCRUBS", "SUIT", "CO_STAR"] as const;
 type TemplateTag = typeof TEMPLATE_TAGS[number];
+// Co-star photos per story template: 2-3 are sent to the AI per image (rotated
+// for variety), so a pool beyond 6 adds nothing but upload effort.
+const MAX_COSTAR_IMAGES = 6;
 
 interface TemplateRow {
   id: string;
@@ -81,7 +84,7 @@ interface ShowcaseShoot {
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
 interface Creator { id: string; display_name: string; username?: string | null; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
 
-// Client-side proxy URL builder — mirrors lib/r2.ts's r2ProxyUrl exactly, but
+// Client-side proxy URL builder â€” mirrors lib/r2.ts's r2ProxyUrl exactly, but
 // that file is `import "server-only"` so it can't be imported here directly.
 function mediaUrl(bucket: string, path: string): string {
   return `/api/media?b=${encodeURIComponent(bucket)}&p=${encodeURIComponent(path)}`;
@@ -152,7 +155,7 @@ interface BackgroundOptionDraft {
 
 const MAX_BG_OPTIONS = 12;
 
-// Buyer choice groups — pick-one-per-group styling options (all categories).
+// Buyer choice groups â€” pick-one-per-group styling options (all categories).
 // Props are multi-select: buyers pick as many as they want (or none).
 type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs";
 const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> = {
@@ -230,6 +233,8 @@ function CreatorDashboard() {
   const pendingTagRef = useRef<string>("inspiration");
   const [replacingId, setReplacingId] = useState<string | null>(null);
   const [storyScenes, setStoryScenes] = useState<StoryScene[]>([defaultScene(1)]);
+  // Likeness acknowledgement â€” required whenever CO_STAR images are present.
+  const [costarRightsOk, setCostarRightsOk] = useState(false);
   const [backgroundOptions, setBackgroundOptions] = useState<BackgroundOptionDraft[]>([]);
   const [choiceGroups, setChoiceGroups] = useState<ChoiceGroupDraft[]>([]);
   // Flag shot (Call to Bar)
@@ -248,7 +253,7 @@ function CreatorDashboard() {
   const [trendViral, setTrendViral] = useState<TrendSlotDraft>(emptyTrendSlot());
 
   // Signature poses (pose-mimic templates, any category): a variety pool the
-  // planner randomly draws from (no repeats per shoot) — buyers never pick.
+  // planner randomly draws from (no repeats per shoot) â€” buyers never pick.
   interface PoseOptionDraft { id: string; name: string; description: string; imagePath: string; preview: string; uploading: boolean; fromDb?: boolean }
   const [poseOptions, setPoseOptions] = useState<PoseOptionDraft[]>([]);
 
@@ -262,7 +267,7 @@ function CreatorDashboard() {
   const [communityLoading, setCommunityLoading] = useState(false);
   const [communityImporting, setCommunityImporting] = useState<string | null>(null);
 
-  // ── Showcase generation state ───────────────────────────────────────────────
+  // â”€â”€ Showcase generation state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [showcaseTemplateId, setShowcaseTemplateId] = useState<string | null>(null);
   const [showcaseIdentityRefs, setShowcaseIdentityRefs] = useState<ShowcaseIdentityRef[]>([]);
   const [showcasePackage, setShowcasePackage] = useState(1);
@@ -347,7 +352,7 @@ function CreatorDashboard() {
           defaultRole: "",
           roleChipsInput: "",
         });
-        setImages([]);
+        setImages([]); setCostarRightsOk(false);
         setCoverPreview("");
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -396,7 +401,7 @@ function CreatorDashboard() {
   const openEdit = async (t: TemplateRow) => {
     // Always hydrate the editor from a fresh server read. The templates list may be
     // stale (a dashboard tab left open across saves elsewhere), and Save overwrites
-    // the template with whatever was hydrated — stale data here silently wipes
+    // the template with whatever was hydrated â€” stale data here silently wipes
     // scenes/background options/settings on the next save.
     try {
       const res = await fetch(`/api/templates/${t.id}`);
@@ -490,7 +495,7 @@ function CreatorDashboard() {
     })));
     setCoverPreview(t.cover_url ?? "");
     // Use already-loaded template_images (signed URLs included from dashboard API)
-    // Background-option and choice-group photos are managed in their own editors —
+    // Background-option and choice-group photos are managed in their own editors â€”
     // keep them out of the generic workflow list
     const bgOptionPaths = new Set([
       ...(Array.isArray(t.background_options) ? t.background_options : []).map(o => o.imagePath).filter(Boolean),
@@ -516,6 +521,8 @@ function CreatorDashboard() {
         fromDb: true,
       }));
     setImages(existingImages);
+    // Templates saved with co-star photos were already acknowledged at creation.
+    setCostarRightsOk(existingImages.some(i => i.tag === "CO_STAR"));
     const existingSamples: SampleImageItem[] = imgs
       .filter(img => img.storage_path && img.purpose === "sample")
       .map(img => ({
@@ -552,7 +559,7 @@ function CreatorDashboard() {
       defaultRole: "",
       roleChipsInput: "",
     });
-    setImages([]);
+    setImages([]); setCostarRightsOk(false);
     setCoverPreview("");
     setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); setPoseOptions([]);
   };
@@ -852,7 +859,7 @@ function CreatorDashboard() {
     setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, imagePath: storagePath, preview: URL.createObjectURL(file), uploading: false, fromDb: false } : p));
   };
 
-  // ── Asset library — every photo option used on any of this creator's templates ──
+  // â”€â”€ Asset library â€” every photo option used on any of this creator's templates â”€â”€
   interface LibraryAsset { imagePath: string; imageBucket: string; name: string; type: string; preview: string; sourceTitle: string; description?: string }
   const MAX_POSE_OPTIONS = 30;
   const libraryAssets: LibraryAsset[] = (() => {
@@ -873,7 +880,7 @@ function CreatorDashboard() {
         seen.add(o.imagePath);
         out.push({ imagePath: o.imagePath, imageBucket: o.imageBucket ?? "template-images", name: o.name, type: "background", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
       }
-      // Custom-slot plates and signature poses don't need a template_images row —
+      // Custom-slot plates and signature poses don't need a template_images row â€”
       // template-images is a public bucket, so the proxy URL renders directly.
       const plate = (p: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null | undefined, type: string, label: string) => {
         if (!p?.enabled || !p.imagePath || seen.has(p.imagePath)) return;
@@ -922,7 +929,7 @@ function CreatorDashboard() {
     }
   };
 
-  // ── Community library (cross-creator setup sharing) ──────────────────────────
+  // â”€â”€ Community library (cross-creator setup sharing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchCommunitySetups = async () => {
     setCommunityLoading(true);
     const res = await fetch("/api/creator-dashboard/shared-setups");
@@ -978,19 +985,25 @@ function CreatorDashboard() {
     setFormError("");
     if (!form.title.trim()) { setFormError("Title is required"); return; }
     if (!form.priceNgn || Number(form.priceNgn) <= feeNgn) {
-      setFormError(`10-image price must be more than ₦${feeNgn.toLocaleString()} (the platform fee)`);
+      setFormError(`10-image price must be more than â‚¦${feeNgn.toLocaleString()} (the platform fee)`);
       return;
     }
     if (form.price1Ngn && Number(form.price1Ngn) <= packagePrice(feeNgn, 1)) {
-      setFormError(`1-image price must be more than ₦${packagePrice(feeNgn, 1).toLocaleString()}`);
+      setFormError(`1-image price must be more than â‚¦${packagePrice(feeNgn, 1).toLocaleString()}`);
       return;
     }
     if (form.price5Ngn && Number(form.price5Ngn) <= packagePrice(feeNgn, 5)) {
-      setFormError(`5-image price must be more than ₦${packagePrice(feeNgn, 5).toLocaleString()}`);
+      setFormError(`5-image price must be more than â‚¦${packagePrice(feeNgn, 5).toLocaleString()}`);
       return;
     }
     if (images.some(i => i.uploading)) { setFormError("Please wait for all images to finish uploading"); return; }
     if (sampleImages.some(s => s.uploading)) { setFormError("Please wait for all sample images to finish uploading"); return; }
+
+    // Co-star photos: story templates only, capped pool, likeness acknowledgement
+    const costarCount = images.filter(i => i.tag === "CO_STAR").length;
+    if (costarCount > 0 && !form.isStory) { setFormError("Co-star photos only work on story templates â€” turn on Story mode or remove the CO STAR tag"); return; }
+    if (costarCount > MAX_COSTAR_IMAGES) { setFormError(`Up to ${MAX_COSTAR_IMAGES} co-star photos per template`); return; }
+    if (costarCount > 0 && !costarRightsOk) { setFormError("Please confirm you have the right to use the co-star's likeness (checkbox under the tagged references)"); return; }
 
     // Background option validation (call_to_bar only)
     const bgOptionsActive = true; // background options are available for all categories
@@ -1069,7 +1082,7 @@ function CreatorDashboard() {
             viral: trendViral.enabled && trendViral.imagePath ? { enabled: true, imagePath: trendViral.imagePath } : null,
           }
         : null,
-      // Signature poses — planner draws randomly from this pool, works on any category.
+      // Signature poses â€” planner draws randomly from this pool, works on any category.
       poseOptions: poseOptions.length > 0
         ? poseOptions.map(p => ({ id: p.id, name: p.name.trim(), description: p.description.trim() || undefined, imagePath: p.imagePath }))
         : null,
@@ -1108,7 +1121,7 @@ function CreatorDashboard() {
       });
       if (!imgRes.ok) {
         const errData = await imgRes.json().catch(() => ({}));
-        setFormError(errData.error ?? "Failed to save image — please try again");
+        setFormError(errData.error ?? "Failed to save image â€” please try again");
         setSaving(false);
         return;
       }
@@ -1123,7 +1136,7 @@ function CreatorDashboard() {
       });
       if (!patchRes.ok) {
         const errData = await patchRes.json().catch(() => ({}));
-        setFormError(errData.error ?? "Failed to update image metadata — please try again");
+        setFormError(errData.error ?? "Failed to update image metadata â€” please try again");
         setSaving(false);
         return;
       }
@@ -1146,7 +1159,7 @@ function CreatorDashboard() {
         });
         if (!bgRes.ok) {
           const errData = await bgRes.json().catch(() => ({}));
-          setFormError(errData.error ?? "Failed to save background option image — please try again");
+          setFormError(errData.error ?? "Failed to save background option image â€” please try again");
           setSaving(false);
           return;
         }
@@ -1170,7 +1183,7 @@ function CreatorDashboard() {
         });
         if (!optRes.ok) {
           const errData = await optRes.json().catch(() => ({}));
-          setFormError(errData.error ?? `Failed to save "${o.name}" image — please try again`);
+          setFormError(errData.error ?? `Failed to save "${o.name}" image â€” please try again`);
           setSaving(false);
           return;
         }
@@ -1192,7 +1205,7 @@ function CreatorDashboard() {
       });
       if (!flagRes.ok) {
         const errData = await flagRes.json().catch(() => ({}));
-        setFormError(errData.error ?? "Failed to save flag scene image — please try again");
+        setFormError(errData.error ?? "Failed to save flag scene image â€” please try again");
         setSaving(false);
         return;
       }
@@ -1221,7 +1234,7 @@ function CreatorDashboard() {
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          setFormError(errData.error ?? `Failed to save ${p.label} image — please try again`);
+          setFormError(errData.error ?? `Failed to save ${p.label} image â€” please try again`);
           setSaving(false);
           return;
         }
@@ -1240,7 +1253,7 @@ function CreatorDashboard() {
       });
       if (!sampleRes.ok) {
         const errData = await sampleRes.json().catch(() => ({}));
-        setFormError(errData.error ?? "Failed to save gallery image — please try again");
+        setFormError(errData.error ?? "Failed to save gallery image â€” please try again");
         setSaving(false);
         return;
       }
@@ -1249,7 +1262,7 @@ function CreatorDashboard() {
     setSaving(false);
     setPanel("none");
     setForm(defaultForm());
-    setImages([]);
+    setImages([]); setCostarRightsOk(false);
     setSampleImages([]);
     setCoverPreview("");
     setStoryScenes([defaultScene(1)]);
@@ -1335,18 +1348,18 @@ function CreatorDashboard() {
     return (
       <div className={styles.page}>
         <header className={styles.header}>
-          <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
+          <Link href="/marketplace" className={styles.back}>â† Marketplace</Link>
           <h1 className={styles.title}>Creator Dashboard</h1>
         </header>
         <div className={styles.main}>
           <div style={{ maxWidth: 520, margin: "60px auto", textAlign: "center", padding: "0 24px" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(213, 163, 60, 0.12)", border: "2px solid rgba(213, 163, 60, 0.4)", color: "#8a6000", fontSize: "1.4rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>⏳</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(213, 163, 60, 0.12)", border: "2px solid rgba(213, 163, 60, 0.4)", color: "#8a6000", fontSize: "1.4rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>â³</div>
             <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#263235", margin: "0 0 12px" }}>Application under review</h2>
             <p style={{ fontSize: "0.875rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 24px" }}>
               Your creator application has been received. We review every application carefully and aim to respond within 48 hours. You&apos;ll receive an email once a decision has been made.
             </p>
             <Link href="/marketplace" style={{ display: "inline-block", background: "rgba(67, 159, 169, 0.08)", border: "1px solid rgba(67, 159, 169, 0.24)", borderRadius: 8, color: "#2f8e9a", fontSize: "0.875rem", fontWeight: 600, padding: "10px 20px", textDecoration: "none" }}>
-              Browse the marketplace →
+              Browse the marketplace â†’
             </Link>
           </div>
         </div>
@@ -1358,19 +1371,19 @@ function CreatorDashboard() {
     return (
       <div className={styles.page}>
         <header className={styles.header}>
-          <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
+          <Link href="/marketplace" className={styles.back}>â† Marketplace</Link>
           <h1 className={styles.title}>Creator Dashboard</h1>
         </header>
         <div className={styles.main}>
           <div style={{ maxWidth: 520, margin: "60px auto", textAlign: "center", padding: "0 24px" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(167, 70, 60, 0.08)", border: "2px solid rgba(167, 70, 60, 0.3)", color: "#a7463c", fontSize: "1.2rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>✕</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(167, 70, 60, 0.08)", border: "2px solid rgba(167, 70, 60, 0.3)", color: "#a7463c", fontSize: "1.2rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 700 }}>âœ•</div>
             <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#263235", margin: "0 0 12px" }}>Application not approved</h2>
             <p style={{ fontSize: "0.875rem", color: "#4e7076", lineHeight: 1.6, margin: "0 0 24px" }}>
               Unfortunately your creator application was not approved at this time. If you believe this is a mistake or would like to discuss further, please reach out to us at{" "}
               <a href="mailto:aluxartandframes@gmail.com" style={{ color: "#2f8e9a" }}>aluxartandframes@gmail.com</a>.
             </p>
             <Link href="/marketplace" style={{ display: "inline-block", background: "rgba(67, 159, 169, 0.08)", border: "1px solid rgba(67, 159, 169, 0.24)", borderRadius: 8, color: "#2f8e9a", fontSize: "0.875rem", fontWeight: 600, padding: "10px 20px", textDecoration: "none" }}>
-              Browse the marketplace →
+              Browse the marketplace â†’
             </Link>
           </div>
         </div>
@@ -1381,9 +1394,9 @@ function CreatorDashboard() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/studio" className={styles.back}>← Studio</Link>
+        <Link href="/studio" className={styles.back}>â† Studio</Link>
         <h1 className={styles.title}>Creator Dashboard</h1>
-        <Link href="/marketplace" className={styles.marketplaceLink}>Browse marketplace →</Link>
+        <Link href="/marketplace" className={styles.marketplaceLink}>Browse marketplace â†’</Link>
       </header>
 
       <div className={styles.main}>
@@ -1391,7 +1404,7 @@ function CreatorDashboard() {
       {creator && !creator.paystack_subaccount_code && (
         <div className={styles.banner}>
           Payout setup incomplete.{" "}
-          <Link href="/become-creator" className={styles.bannerLink}>Complete your bank details →</Link>
+          <Link href="/become-creator" className={styles.bannerLink}>Complete your bank details â†’</Link>
         </div>
       )}
 
@@ -1400,7 +1413,7 @@ function CreatorDashboard() {
           <div className={styles.stat}><span className={styles.statVal}>{stats.totalTemplates}</span><span className={styles.statLabel}>Templates</span></div>
           <div className={styles.stat}><span className={styles.statVal}>{stats.publishedTemplates}</span><span className={styles.statLabel}>Published</span></div>
           <div className={styles.stat}><span className={styles.statVal}>{stats.totalSales}</span><span className={styles.statLabel}>Sales</span></div>
-          <div className={styles.stat}><span className={styles.statVal}>₦{stats.totalEarnedNgn.toLocaleString()}</span><span className={styles.statLabel}>Total Earned</span></div>
+          <div className={styles.stat}><span className={styles.statVal}>â‚¦{stats.totalEarnedNgn.toLocaleString()}</span><span className={styles.statLabel}>Total Earned</span></div>
         </div>
       )}
 
@@ -1478,7 +1491,7 @@ function CreatorDashboard() {
       <div className={styles.storefrontSection}>
         <button type="button" className={styles.storefrontToggle} onClick={() => setStorefrontOpen(o => !o)}>
           <span>Storefront Settings</span>
-          <span>{storefrontOpen ? "▲" : "▼"}</span>
+          <span>{storefrontOpen ? "â–²" : "â–¼"}</span>
         </button>
         {storefrontOpen && (
           <div className={styles.storefrontContent}>
@@ -1526,7 +1539,7 @@ function CreatorDashboard() {
                   rel="noopener noreferrer"
                   className={styles.storefrontPreviewLink}
                 >
-                  Preview storefront ↗
+                  Preview storefront â†—
                 </a>
               )}
               <button
@@ -1545,7 +1558,7 @@ function CreatorDashboard() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>
         {panel === "none" && (
-          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); setPoseOptions([]); }}>
+          <button type="button" className={styles.newBtn} onClick={() => { setPanel("create"); setForm(defaultForm()); setImages([]); setCostarRightsOk(false); setSampleImages([]); setCoverPreview(""); setStoryScenes([defaultScene(1)]); setBackgroundOptions([]); setChoiceGroups([]); setFlagShotEnabled(false); setFlagShotImagePath(""); setFlagShotPreview(""); setFlagShotIsNew(false); setTrendMugshot(emptyTrendSlot()); setTrendBowl(emptyTrendSlot()); setTrendViral(emptyTrendSlot()); setPoseOptions([]); }}>
             + New Template
           </button>
         )}
@@ -1560,19 +1573,19 @@ function CreatorDashboard() {
           <div key={t.id} className={`${styles.templateRow} ${panel === t.id ? styles.templateRowActive : ""}`}>
             <div className={styles.templateInfo}>
               <span className={styles.templateTitle}>{t.title}</span>
-              <span className={styles.templateMeta}>{t.category} · {t.shoot_mode} · {t.aspect_ratio} · {t.package_size} images</span>
+              <span className={styles.templateMeta}>{t.category} Â· {t.shoot_mode} Â· {t.aspect_ratio} Â· {t.package_size} images</span>
             </div>
             <div className={styles.templateRight}>
-              <span className={styles.templatePrice}>₦{t.price_ngn.toLocaleString()}</span>
+              <span className={styles.templatePrice}>â‚¦{t.price_ngn.toLocaleString()}</span>
               <span className={styles.templateSales}>{t.purchase_count} sales</span>
               <span className={t.status === "published" ? styles.published : styles.draft}>{t.status}</span>
               {t.is_private && (
-                <span title="Private — only people with the direct link can book" style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(127,127,127,0.35)", opacity: 0.85 }}>
-                  🔒 private
+                <span title="Private â€” only people with the direct link can book" style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(127,127,127,0.35)", opacity: 0.85 }}>
+                  ðŸ”’ private
                 </span>
               )}
               <div className={styles.templateActions}>
-                {/* Primary row — Edit + Generate Images */}
+                {/* Primary row â€” Edit + Generate Images */}
                 <div className={styles.actPrimary}>
                   <button type="button" className={styles.actionBtn} onClick={() => openEdit(t)}>
                     Edit
@@ -1581,7 +1594,7 @@ function CreatorDashboard() {
                     Generate images
                   </button>
                 </div>
-                {/* Secondary row — icon-only on mobile */}
+                {/* Secondary row â€” icon-only on mobile */}
                 <div className={styles.actSecondary}>
                   <button type="button" className={styles.actionBtn} onClick={() => toggleStatus(t)}
                     title={t.status === "published" ? "Unpublish" : "Publish"}>
@@ -1628,7 +1641,7 @@ function CreatorDashboard() {
         <div className={styles.formPanel} ref={formPanelRef}>
           <div className={styles.formPanelHeader}>
             <h3 className={styles.formTitle}>{panel === "create" ? "New Template" : "Edit Template"}</h3>
-            <button type="button" className={styles.closeBtn} onClick={() => setPanel("none")}>✕</button>
+            <button type="button" className={styles.closeBtn} onClick={() => setPanel("none")}>âœ•</button>
           </div>
 
           {formError && <p className={styles.formError}>{formError}</p>}
@@ -1660,31 +1673,31 @@ function CreatorDashboard() {
 
           <div className={styles.formGrid}>
             <label className={styles.field}>
-              <span className={styles.label}>10-image price (₦) *</span>
+              <span className={styles.label}>10-image price (â‚¦) *</span>
               <input className={styles.input} type="number" value={form.priceNgn} onChange={e => setForm(f => ({ ...f, priceNgn: e.target.value }))} placeholder="e.g. 25000" min={1000} />
               {form.priceNgn && Number(form.priceNgn) > feeNgn
-                ? <span className={styles.earnPreview}>You earn ₦{(Number(form.priceNgn) - feeNgn).toLocaleString()} per sale</span>
-                : form.priceNgn && <span className={styles.earnWarn}>Must be more than ₦{feeNgn.toLocaleString()} platform fee</span>
+                ? <span className={styles.earnPreview}>You earn â‚¦{(Number(form.priceNgn) - feeNgn).toLocaleString()} per sale</span>
+                : form.priceNgn && <span className={styles.earnWarn}>Must be more than â‚¦{feeNgn.toLocaleString()} platform fee</span>
               }
             </label>
 
             <label className={styles.field}>
-              <span className={styles.label}>1-image price (₦) <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
+              <span className={styles.label}>1-image price (â‚¦) <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
               <input className={styles.input} type="number" value={form.price1Ngn} onChange={e => setForm(f => ({ ...f, price1Ngn: e.target.value }))} placeholder={`e.g. ${packagePrice(feeNgn, 1) + 500}`} min={1} />
               {form.price1Ngn && Number(form.price1Ngn) > packagePrice(feeNgn, 1)
-                ? <span className={styles.earnPreview}>You earn ₦{(Number(form.price1Ngn) - packagePrice(feeNgn, 1)).toLocaleString()}</span>
-                : form.price1Ngn && <span className={styles.earnWarn}>Must be more than ₦{packagePrice(feeNgn, 1).toLocaleString()}</span>
+                ? <span className={styles.earnPreview}>You earn â‚¦{(Number(form.price1Ngn) - packagePrice(feeNgn, 1)).toLocaleString()}</span>
+                : form.price1Ngn && <span className={styles.earnWarn}>Must be more than â‚¦{packagePrice(feeNgn, 1).toLocaleString()}</span>
               }
             </label>
           </div>
 
           <div className={styles.formGrid}>
             <label className={styles.field}>
-              <span className={styles.label}>5-image price (₦) <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
+              <span className={styles.label}>5-image price (â‚¦) <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
               <input className={styles.input} type="number" value={form.price5Ngn} onChange={e => setForm(f => ({ ...f, price5Ngn: e.target.value }))} placeholder={`e.g. ${packagePrice(feeNgn, 5) + 2500}`} min={1} />
               {form.price5Ngn && Number(form.price5Ngn) > packagePrice(feeNgn, 5)
-                ? <span className={styles.earnPreview}>You earn ₦{(Number(form.price5Ngn) - packagePrice(feeNgn, 5)).toLocaleString()}</span>
-                : form.price5Ngn && <span className={styles.earnWarn}>Must be more than ₦{packagePrice(feeNgn, 5).toLocaleString()}</span>
+                ? <span className={styles.earnPreview}>You earn â‚¦{(Number(form.price5Ngn) - packagePrice(feeNgn, 5)).toLocaleString()}</span>
+                : form.price5Ngn && <span className={styles.earnWarn}>Must be more than â‚¦{packagePrice(feeNgn, 5).toLocaleString()}</span>
               }
             </label>
 
@@ -1717,7 +1730,7 @@ function CreatorDashboard() {
             </label>
           </div>
 
-          {/* Reference images — mode-aware */}
+          {/* Reference images â€” mode-aware */}
           <div className={styles.field}>
             <span className={styles.label}>Reference images ({images.length}/8)</span>
 
@@ -1732,7 +1745,7 @@ function CreatorDashboard() {
                       {img.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                       {img.error && <div className={styles.imgError}>{img.error}</div>}
                       {img.fromDb && <div className={styles.imgDbBadge}>saved</div>}
-                      <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                      <button type="button" className={styles.imgRemove} onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}>âœ•</button>
                     </div>
                   ))}
                   {images.length < 8 && (
@@ -1751,7 +1764,7 @@ function CreatorDashboard() {
                   const insps = images.filter(img => img.purpose === "inspiration");
                   return (
                     <div className={styles.advancedRefSection}>
-                      <span className={styles.advancedRefLabel}>Inspiration <span className={styles.advancedRefNote}>— main look, outfit &amp; mood (required)</span></span>
+                      <span className={styles.advancedRefLabel}>Inspiration <span className={styles.advancedRefNote}>â€” main look, outfit &amp; mood (required)</span></span>
                       <div className={styles.imagesGrid}>
                         {insps.map(img => {
                           const i = images.findIndex(x => x.localId === img.localId);
@@ -1771,7 +1784,7 @@ function CreatorDashboard() {
                                   });
                                 }
                                 setImages(prev => prev.filter((_, j) => j !== i));
-                              }}>✕</button>
+                              }}>âœ•</button>
                             </div>
                           );
                         })}
@@ -1788,11 +1801,11 @@ function CreatorDashboard() {
               </>
             )}
 
-            {/* Tagged references — always visible so creator can edit/delete regardless of shoot mode */}
+            {/* Tagged references â€” always visible so creator can edit/delete regardless of shoot mode */}
             {(form.shootMode === "advanced" || images.some(img => img.purpose === "tagged")) && (
               <div className={styles.advancedRefSection}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>— upload images and tag each one (optional)</span></span>
+                  <span className={styles.advancedRefLabel}>Tagged references <span className={styles.advancedRefNote}>â€” upload images and tag each one (optional)</span></span>
                   {images.some(img => img.purpose === "tagged") && panel !== "create" && (
                     <button
                       type="button"
@@ -1826,17 +1839,29 @@ function CreatorDashboard() {
                       </button>
                       <div className={styles.taggedRefRight}>
                         <div className={styles.tagPills}>
-                          {TEMPLATE_TAGS.map(t => (
+                          {TEMPLATE_TAGS.filter(t => t !== "CO_STAR" || form.isStory).map(t => (
                             <button
                               key={t}
                               type="button"
                               className={`${styles.tagPill} ${img.tag === t ? styles.tagPillActive : ""}`}
-                              onClick={() => setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, tag: t } : x))}
+                              onClick={() => {
+                                if (t === "CO_STAR" && img.tag !== "CO_STAR" &&
+                                    images.filter(x => x.tag === "CO_STAR" && x.localId !== img.localId).length >= MAX_COSTAR_IMAGES) {
+                                  setFormError(`Up to ${MAX_COSTAR_IMAGES} co-star photos per template â€” extra angles beyond that are never sent to the AI.`);
+                                  return;
+                                }
+                                setImages(prev => prev.map(x => x.localId === img.localId ? { ...x, tag: t } : x));
+                              }}
                             >
-                              {t.replace("_", " ")}
+                              {t.replace(/_/g, " ")}
                             </button>
                           ))}
                         </div>
+                        {img.tag === "CO_STAR" && (
+                          <p style={{ fontSize: "0.75rem", opacity: 0.8, margin: "4px 0 0", lineHeight: 1.4 }}>
+                            Co-star photo â€” this person appears beside the buyer in story scenes. Upload up to {MAX_COSTAR_IMAGES} (different angles and expressions give more variety).
+                          </p>
+                        )}
                         <input
                           type="text"
                           className={styles.noteInput}
@@ -1874,7 +1899,7 @@ function CreatorDashboard() {
                           }
                           setImages(prev => prev.filter(x => x.localId !== img.localId));
                         }}
-                      >✕</button>
+                      >âœ•</button>
                     </div>
                     {img.uploading && <div className={styles.taggedRefStatus}>Uploading...</div>}
                     {img.error && <div className={styles.taggedRefError}>{img.error}</div>}
@@ -1889,6 +1914,17 @@ function CreatorDashboard() {
                     + Add reference
                   </button>
                 )}
+                {images.some(img => img.tag === "CO_STAR") && (
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, cursor: "pointer", fontSize: "0.82rem", lineHeight: 1.45 }}>
+                    <input
+                      type="checkbox"
+                      checked={costarRightsOk}
+                      onChange={e => setCostarRightsOk(e.target.checked)}
+                      style={{ marginTop: 2 }}
+                    />
+                    <span>I confirm I have the right to use this co-star&apos;s likeness in generated images sold through this template.</span>
+                  </label>
+                )}
               </div>
             )}
 
@@ -1896,7 +1932,7 @@ function CreatorDashboard() {
             <input type="file" accept="image/*" ref={replaceInputRef} className={styles.hidden} onChange={e => { const f = e.target.files?.[0]; if (f && replacingId) replaceImage(f, replacingId); e.target.value = ""; setReplacingId(null); }} />
           </div>
 
-          {/* Gallery images — public showcase; first image = marketplace card thumbnail */}
+          {/* Gallery images â€” public showcase; first image = marketplace card thumbnail */}
           <div className={styles.field}>
             <span className={styles.label}>Gallery images ({sampleImages.length}/10)</span>
             <p className={styles.fieldHint}>
@@ -1915,7 +1951,7 @@ function CreatorDashboard() {
                     type="button"
                     className={styles.imgRemove}
                     onClick={() => removeSampleImage(item, panel === "create" ? null : panel)}
-                  >✕</button>
+                  >âœ•</button>
                 </div>
               ))}
               {sampleImages.length < 10 && (
@@ -2026,7 +2062,7 @@ function CreatorDashboard() {
                                 [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
                                 return next.map((s, i) => ({ ...s, slot: i + 1 }));
                               })}
-                            >↑</button>
+                            >â†‘</button>
                           )}
                           {idx < storyScenes.length - 1 && (
                             <button
@@ -2038,14 +2074,14 @@ function CreatorDashboard() {
                                 [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
                                 return next.map((s, i) => ({ ...s, slot: i + 1 }));
                               })}
-                            >↓</button>
+                            >â†“</button>
                           )}
                           {storyScenes.length > 1 && (
                             <button
                               type="button"
                               className={styles.sceneRemove}
                               onClick={() => setStoryScenes(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, slot: i + 1 })))}
-                            >✕</button>
+                            >âœ•</button>
                           )}
                         </div>
                       </div>
@@ -2060,7 +2096,7 @@ function CreatorDashboard() {
                         />
                         <textarea
                           className={styles.textarea}
-                          placeholder="Scene description — what happens here?"
+                          placeholder="Scene description â€” what happens here?"
                           rows={2}
                           value={scene.description}
                           onChange={e => setStoryScenes(prev => prev.map((s, i) => i === idx ? { ...s, description: e.target.value } : s))}
@@ -2108,7 +2144,7 @@ function CreatorDashboard() {
                       className={styles.addSceneBtn}
                       onClick={() => { setLibraryFilter("background"); setLibraryPicker({ target: "background" }); }}
                     >
-                      📚 Add from library
+                      ðŸ“š Add from library
                     </button>
                   )}
                   {backgroundOptions.length < MAX_BG_OPTIONS && (
@@ -2140,7 +2176,7 @@ function CreatorDashboard() {
                         type="button"
                         className={styles.sceneRemove}
                         onClick={() => setBackgroundOptions(prev => prev.filter(o => o.id !== opt.id))}
-                      >✕</button>
+                      >âœ•</button>
                     </div>
                   </div>
                   <div className={styles.sceneFields}>
@@ -2201,7 +2237,7 @@ function CreatorDashboard() {
             </div>
           )}
 
-          {/* Buyer choice groups — pick-one styling options (all categories) */}
+          {/* Buyer choice groups â€” pick-one styling options (all categories) */}
           <div className={styles.field}>
             <div className={styles.storySceneHeader}>
               <span className={styles.label}>Buyer choice groups ({choiceGroups.length}/{MAX_CHOICE_GROUPS})</span>
@@ -2226,13 +2262,13 @@ function CreatorDashboard() {
             {choiceGroups.map((group, gIdx) => (
               <div key={group.id} className={styles.sceneCard}>
                 <div className={styles.sceneCardHeader}>
-                  <span className={styles.sceneNum}>Group {gIdx + 1} — {group.label}</span>
+                  <span className={styles.sceneNum}>Group {gIdx + 1} â€” {group.label}</span>
                   <div className={styles.sceneActions}>
                     <button
                       type="button"
                       className={styles.sceneRemove}
                       onClick={() => setChoiceGroups(prev => prev.filter(g => g.id !== group.id))}
-                    >✕</button>
+                    >âœ•</button>
                   </div>
                 </div>
                 <div className={styles.sceneFields}>
@@ -2278,7 +2314,7 @@ function CreatorDashboard() {
                           onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
                             ? { ...g, options: g.options.filter(o => o.id !== opt.id) }
                             : g))}
-                        >✕</button>
+                        >âœ•</button>
                       </div>
                       <div className={styles.pills}>
                         <button
@@ -2340,7 +2376,7 @@ function CreatorDashboard() {
                           className={styles.addSceneBtn}
                           onClick={() => { setLibraryFilter(group.type in GROUP_TYPE_META ? group.type : "all"); setLibraryPicker({ target: "group", groupId: group.id }); }}
                         >
-                          📚 Add from library
+                          ðŸ“š Add from library
                         </button>
                       )}
                       <button
@@ -2359,7 +2395,7 @@ function CreatorDashboard() {
             ))}
           </div>
 
-          {/* Viral skyscraper flag shot — Call to Bar or Trending */}
+          {/* Viral skyscraper flag shot â€” Call to Bar or Trending */}
           {(form.category === "call_to_bar" || form.category === "trending") && (
             <div className={styles.field}>
               <div className={styles.storySceneHeader}>
@@ -2375,7 +2411,7 @@ function CreatorDashboard() {
               <p className={styles.fieldHint}>
                 Offers buyers the viral rooftop-antenna flag shot. It replaces the LAST image in
                 their package (a 10-image shoot becomes 9 portraits + 1 flag shot). The buyer types
-                their own short flag text at checkout. Upload one clean empty-flag plate here — a
+                their own short flag text at checkout. Upload one clean empty-flag plate here â€” a
                 photo of the mast, black flag, and skyline with NO people.{" "}
                 {form.category === "call_to_bar"
                   ? "The model composites the buyer in full wig and gown onto it and renders their text on the flag."
@@ -2402,11 +2438,11 @@ function CreatorDashboard() {
                       </label>
                       {libraryAssets.length > 0 && (
                         <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryFilter("flag_plate"); setLibraryTab("mine"); setLibraryPicker({ target: "flag" }); }}>
-                          📚 Add from library
+                          ðŸ“š Add from library
                         </button>
                       )}
                       <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryTab("community"); fetchCommunitySetups(); setLibraryPicker({ target: "flag" }); }}>
-                        🌐 Community
+                        ðŸŒ Community
                       </button>
                       {flagShotImagePath && (
                         <button type="button" className={styles.addSceneBtn} onClick={() => publishSlotToCommunity("flag", flagShotImagePath, "Flag scene")}>
@@ -2444,11 +2480,11 @@ function CreatorDashboard() {
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <span className={styles.label}>Asset library</span>
-                  <button type="button" className={styles.sceneRemove} onClick={() => setLibraryPicker(null)}>✕</button>
+                  <button type="button" className={styles.sceneRemove} onClick={() => setLibraryPicker(null)}>âœ•</button>
                 </div>
                 <div className={styles.pills} style={{ marginBottom: 12 }}>
                   <button type="button" className={`${styles.pill} ${libraryTab === "mine" ? styles.pillActive : ""}`} onClick={() => setLibraryTab("mine")}>My library</button>
-                  <button type="button" className={`${styles.pill} ${libraryTab === "community" ? styles.pillActive : ""}`} onClick={() => { setLibraryTab("community"); if (communitySetups.length === 0) fetchCommunitySetups(); }}>🌐 Community</button>
+                  <button type="button" className={`${styles.pill} ${libraryTab === "community" ? styles.pillActive : ""}`} onClick={() => { setLibraryTab("community"); if (communitySetups.length === 0) fetchCommunitySetups(); }}>ðŸŒ Community</button>
                 </div>
 
                 {libraryTab === "mine" ? (
@@ -2472,7 +2508,7 @@ function CreatorDashboard() {
                           <button
                             key={a.imagePath}
                             type="button"
-                            title={`${a.name} — from "${a.sourceTitle}"`}
+                            title={`${a.name} â€” from "${a.sourceTitle}"`}
                             onClick={() => { addLibraryAsset(a); setLibraryPicker(null); }}
                             style={{
                               display: "flex", flexDirection: "column", gap: 4, background: "none",
@@ -2493,11 +2529,11 @@ function CreatorDashboard() {
                 ) : (
                   <>
                     <p className={styles.fieldHint} style={{ marginBottom: 10 }}>
-                      Setups other creators have shared. Importing copies the file into your own library — deleting
+                      Setups other creators have shared. Importing copies the file into your own library â€” deleting
                       the original elsewhere never breaks your template.
                     </p>
                     {communityLoading ? (
-                      <p className={styles.fieldHint}>Loading…</p>
+                      <p className={styles.fieldHint}>Loadingâ€¦</p>
                     ) : (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
                         {communitySetups
@@ -2506,7 +2542,7 @@ function CreatorDashboard() {
                             <button
                               key={s.id}
                               type="button"
-                              title={`${s.name} — by ${s.creatorName}`}
+                              title={`${s.name} â€” by ${s.creatorName}`}
                               disabled={communityImporting === s.id}
                               onClick={() => importCommunitySetup(s)}
                               style={{
@@ -2517,7 +2553,7 @@ function CreatorDashboard() {
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={s.imageUrl} alt={s.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
-                              <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{communityImporting === s.id ? "Importing…" : s.name}</span>
+                              <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{communityImporting === s.id ? "Importingâ€¦" : s.name}</span>
                               <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>by {s.creatorName}</span>
                             </button>
                           ))}
@@ -2532,7 +2568,7 @@ function CreatorDashboard() {
             </div>
           )}
 
-          {/* Trend slots — Trending category only */}
+          {/* Trend slots â€” Trending category only */}
           {form.category === "trending" && (
             <div className={styles.field}>
               <span className={styles.label}>Trend slots</span>
@@ -2544,7 +2580,7 @@ function CreatorDashboard() {
               {([
                 { key: "mugshot" as const, draft: trendMugshot, set: setTrendMugshot, libTarget: "trend-mugshot" as const, title: "Mugshot shot", hint: "Buyer holds the forensics board in front of the height chart; their NAME / OFFENSE / DATE are written on the board in red handwriting. Upload the clean board + height-chart plate." },
                 { key: "bowl" as const, draft: trendBowl, set: setTrendBowl, libTarget: "trend-bowl" as const, title: "Business-on-my-head shot", hint: "Buyer uploads their product (piled comically high in the bowl) or logo (branded on the bowl) and carries it on their head. Upload the clean empty bowl plate." },
-                { key: "viral" as const, draft: trendViral, set: setTrendViral, libTarget: "trend-viral" as const, title: "Viral chair pose (always included)", hint: "EVERY buyer automatically gets one image recreating the viral seated chair pose exactly — tan suit, coat draped over shoulders, crossed legs. Upload the original viral photo as the reference." },
+                { key: "viral" as const, draft: trendViral, set: setTrendViral, libTarget: "trend-viral" as const, title: "Viral chair pose (always included)", hint: "EVERY buyer automatically gets one image recreating the viral seated chair pose exactly â€” tan suit, coat draped over shoulders, crossed legs. Upload the original viral photo as the reference." },
               ]).map(slot => (
                 <div key={slot.key} className={styles.sceneCard}>
                   <div className={styles.sceneCardHeader}>
@@ -2576,11 +2612,11 @@ function CreatorDashboard() {
                         </label>
                         {libraryAssets.length > 0 && (
                           <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryFilter(slot.key === "mugshot" ? "mugshot_plate" : slot.key === "bowl" ? "bowl_plate" : "viral_plate"); setLibraryTab("mine"); setLibraryPicker({ target: slot.libTarget }); }}>
-                            📚 Add from library
+                            ðŸ“š Add from library
                           </button>
                         )}
                         <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryTab("community"); fetchCommunitySetups(); setLibraryPicker({ target: slot.libTarget }); }}>
-                          🌐 Community
+                          ðŸŒ Community
                         </button>
                         {slot.draft.imagePath && (
                           <button type="button" className={styles.addSceneBtn} onClick={() => publishSlotToCommunity(slot.libTarget, slot.draft.imagePath, slot.title)}>
@@ -2600,13 +2636,13 @@ function CreatorDashboard() {
             </div>
           )}
 
-          {/* Signature poses — any category */}
+          {/* Signature poses â€” any category */}
           <div className={styles.field}>
             <span className={styles.label}>Signature poses ({poseOptions.length}/{MAX_POSE_OPTIONS})</span>
             <p className={styles.fieldHint}>
-              Upload named pose/mannerism references (e.g. someone&apos;s signature poses) — build a big
+              Upload named pose/mannerism references (e.g. someone&apos;s signature poses) â€” build a big
               variety pool. Every shoot automatically gets a random, non-repeating mix from this pool, one
-              distinct pose per portrait. Buyers never pick — wardrobe, background, and identity stay theirs.
+              distinct pose per portrait. Buyers never pick â€” wardrobe, background, and identity stay theirs.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {poseOptions.map(p => (
@@ -2652,7 +2688,7 @@ function CreatorDashboard() {
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 {libraryAssets.some(a => a.type === "pose") && (
                   <button type="button" className={styles.addSceneBtn} onClick={() => { setLibraryFilter("pose"); setLibraryTab("mine"); setLibraryPicker({ target: "pose" }); }}>
-                    📚 Add from library
+                    ðŸ“š Add from library
                   </button>
                 )}
                 <button
@@ -2674,7 +2710,7 @@ function CreatorDashboard() {
               style={{ marginTop: 2 }}
             />
             <span>
-              <strong>🔒 Private template</strong> — won&apos;t appear in the marketplace or on your profile.
+              <strong>ðŸ”’ Private template</strong> â€” won&apos;t appear in the marketplace or on your profile.
               Only people you send the direct link can see and book it. Perfect for one-off client work.
             </span>
           </label>
@@ -2691,16 +2727,16 @@ function CreatorDashboard() {
         </div>
       )}
 
-      {/* ── Showcase panel ── */}
+      {/* â”€â”€ Showcase panel â”€â”€ */}
       {showcaseTemplateId && (
         <div className={styles.showcasePanel}>
           <div className={styles.formPanelHeader}>
             <h3 className={styles.formTitle}>Generate Showcase Images</h3>
-            <button type="button" className={styles.closeBtn} onClick={() => setShowcaseTemplateId(null)}>✕</button>
+            <button type="button" className={styles.closeBtn} onClick={() => setShowcaseTemplateId(null)}>âœ•</button>
           </div>
 
           <p className={styles.showcaseHint}>
-            Upload photos of your model, pick a package, and pay ₦1,000 per image to generate showcase photos for this template.
+            Upload photos of your model, pick a package, and pay â‚¦1,000 per image to generate showcase photos for this template.
           </p>
 
           {showcaseError && <p className={styles.formError}>{showcaseError}</p>}
@@ -2714,7 +2750,7 @@ function CreatorDashboard() {
                   <ImagePreview src={ref.preview} alt="" className={styles.imgPreview} />
                   {ref.uploading && <div className={styles.imgOverlay}>Uploading...</div>}
                   {ref.error && <div className={styles.imgError}>{ref.error}</div>}
-                  <button type="button" className={styles.imgRemove} onClick={() => setShowcaseIdentityRefs(prev => prev.filter(r => r.localId !== ref.localId))}>✕</button>
+                  <button type="button" className={styles.imgRemove} onClick={() => setShowcaseIdentityRefs(prev => prev.filter(r => r.localId !== ref.localId))}>âœ•</button>
                 </div>
               ))}
               {showcaseIdentityRefs.length < 5 && (
@@ -2732,7 +2768,7 @@ function CreatorDashboard() {
             <div className={styles.pills}>
               {SHOWCASE_PACKAGES.map(pkg => (
                 <button key={pkg.count} type="button" className={`${styles.pill} ${showcasePackage === pkg.count ? styles.pillActive : ""}`} onClick={() => setShowcasePackage(pkg.count)}>
-                  {pkg.label} — ₦{pkg.price.toLocaleString()}
+                  {pkg.label} â€” â‚¦{pkg.price.toLocaleString()}
                 </button>
               ))}
             </div>
@@ -2757,7 +2793,7 @@ function CreatorDashboard() {
           )}
 
           <button type="button" className={styles.saveBtn} onClick={payAndGenerate} disabled={showcasePaying || showcaseIdentityRefs.some(r => r.uploading)}>
-            {showcasePaying ? "Redirecting to payment..." : `Pay ₦${(showcasePackage * 1000).toLocaleString()} & Generate`}
+            {showcasePaying ? "Redirecting to payment..." : `Pay â‚¦${(showcasePackage * 1000).toLocaleString()} & Generate`}
           </button>
 
           <button type="button" className={styles.saveAsTemplateBtn} onClick={saveShowcaseAsTemplate}>

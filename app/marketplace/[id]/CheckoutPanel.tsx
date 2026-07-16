@@ -322,7 +322,9 @@ export default function CheckoutPanel({
         : []),
       ...(template.optionGroups ?? []).flatMap(g => (g.options ?? []).filter(o => o.imagePath).map(o => o.imagePath as string)),
     ]);
-    const tagged = (template.images ?? []).filter(img => img.purpose === "tagged" && img.tag && img.tag !== "FLAG_SCENE" && !bgOptionPaths.has(img.storagePath));
+    // CO_STAR photos are template-locked (the story's second character) — attached
+    // server-side at booking, never shown as a replaceable buyer reference.
+    const tagged = (template.images ?? []).filter(img => img.purpose === "tagged" && img.tag && img.tag !== "FLAG_SCENE" && img.tag !== "CO_STAR" && !bgOptionPaths.has(img.storagePath));
     setTaggedRefs(tagged.map(img => ({
       id: img.id,
       tag: img.tag!,

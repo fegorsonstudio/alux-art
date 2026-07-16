@@ -2083,7 +2083,7 @@ export async function startGenerationWorker(
         const valid = signed.filter(s => s.url);
         storyImageUrls.push(...valid);
         if (valid.length > 0) {
-          storyContextParts.push(`GROUP E — Co-star References: ${valid.length} photo(s) of the person who should appear alongside the subject in duo or group scenes. Preserve their likeness and include them naturally in the scene alongside the main subject.`);
+          storyContextParts.push(`GROUP E — Co-star References: ${valid.length} photo(s) of the person who should appear alongside the subject in duo or group scenes. These same photos are attached to the image generator for every co-star scene as "CO-STAR IDENTITY" references, so every prompt featuring the co-star MUST state that the second person's face, hairline, skin tone, and build are copied exactly from the CO-STAR IDENTITY reference images — never described from imagination. Include the co-star naturally in the scene alongside the main subject.`);
         }
       }
 
@@ -2438,6 +2438,24 @@ export async function startGenerationWorker(
     }
   }
 
+  // Co-star references (creator-attached template CO_STAR photos, or the buyer's
+  // duo uploads — both stored as purpose='costar'). Attached per co-star slot so
+  // the second person's face is COPIED by the image model, never rebuilt from a
+  // text description. Pool of up to 6; 3 rotate into each slot for variety.
+  const costarEntries = refs
+    .filter((r) => r.purpose === "costar" && r.url)
+    .slice(0, 6)
+    .map((r) => ({
+      url: r.url,
+      label: "CO-STAR IDENTITY — the exact second person to depict alongside the subject; copy this person's real face, hairline, skin tone, and build from this photo; never invent, idealize, or alter their face",
+    }));
+  if (costarEntries.length > 0) {
+    const known = new Set(imageUrls);
+    for (const e of costarEntries) {
+      if (!known.has(e.url)) { imageUrls.push(e.url); known.add(e.url); }
+    }
+  }
+
   // Filter imageUrls to only reachable objects — fal.ai returns 422 if any URL it tries
   // to download returns 404 (e.g. identity images uploaded before R2 migration).
   const reachableImageUrls = await filterReachableUrls(imageUrls);
@@ -2557,11 +2575,41 @@ export async function startGenerationWorker(
         slotIdentityEntries = chosen.map(({ url, label }) => ({ url, label }));
       }
 
+      // Co-star slots: duo stories attach the co-star to every normal slot; other
+      // story types only where the scene names a co-character. 3 of the pool
+      // rotate per slot (different angles across the shoot). Custom/quote slots
+      // are directive-locked solo shots and never get the co-star.
+      let slotCostarEntries: typeof costarEntries = [];
+      if (costarEntries.length > 0 && !isCustomSlot && !isQuoteSlot) {
+        const scene = templateScenes.find((s) => s.slot === slot);
+        const sceneWantsCostar = scene?.coCharacter?.trim()
+          ? true
+          : (shoot.story_type === "duo" || templateScenes.length === 0);
+        if (sceneWantsCostar) {
+          const MAX_COSTAR_PER_SLOT = 3;
+          if (costarEntries.length <= MAX_COSTAR_PER_SLOT) {
+            slotCostarEntries = costarEntries;
+          } else {
+            const start = (slot - 1) % costarEntries.length;
+            slotCostarEntries = Array.from(
+              { length: MAX_COSTAR_PER_SLOT },
+              (_, k) => costarEntries[(start + k) % costarEntries.length]
+            );
+          }
+        }
+      }
+
       // Per-slot image list: with a background plan, insert THIS slot's background
       // image right after the identity block; other slots' backgrounds are excluded.
       let slotReferenceMap = identityRoutingActive
-        ? buildReferenceMap([...slotIdentityEntries, ...imageEntries.slice(identityEntryCount)])
-        : sharedReferenceMap;
+        ? buildReferenceMap([...slotIdentityEntries, ...slotCostarEntries, ...imageEntries.slice(identityEntryCount)])
+        : slotCostarEntries.length > 0
+          ? buildReferenceMap([
+              ...imageEntries.slice(0, identityEntryCount),
+              ...slotCostarEntries,
+              ...imageEntries.slice(identityEntryCount),
+            ])
+          : sharedReferenceMap;
       let slotBgAlloc: ReturnType<typeof getBackgroundForSlot> = null;
       if (flagShotActive && flagSceneEntry && slot === flagSlotNumber) {
         // Flag slot: swap the studio background for the FLAG_SCENE plate. Keeps the full
@@ -2596,6 +2644,7 @@ export async function startGenerationWorker(
         if (bgEntry) {
           slotReferenceMap = buildReferenceMap([
             ...slotIdentityEntries,
+            ...slotCostarEntries,
             bgEntry,
             ...imageEntries.slice(identityEntryCount),
           ]);

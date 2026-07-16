@@ -4,7 +4,18 @@ import sql from "@/lib/db";
 import { r2Delete } from "@/lib/r2";
 
 const ALLOWED_PURPOSES = new Set(["inspiration", "tagged", "sample"]);
-const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "VIRAL_LOOK", "SASH", "SCRUBS", "SUIT"]);
+const ALLOWED_TAGS = new Set(["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "BACKGROUND", "LIGHTING", "ACCESSORY", "COLOR_GRADE", "WIG", "GOWN", "COLLAR_MALE", "COLLAR_FEMALE", "FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "VIRAL_LOOK", "SASH", "SCRUBS", "SUIT", "CO_STAR"]);
+// Co-star pool cap: 2-3 are rotated into each slot; more than 6 is dead weight.
+const MAX_COSTAR_IMAGES = 6;
+
+async function costarCount(templateId: string, excludeImageId?: string): Promise<number> {
+  const [row] = await sql`
+    SELECT COUNT(*)::int AS count FROM template_images
+    WHERE template_id = ${templateId} AND tag = 'CO_STAR'
+    ${excludeImageId ? sql`AND id != ${excludeImageId}` : sql``}
+  `;
+  return (row?.count as number) ?? 0;
+}
 
 // Assets can be reused across templates (asset library): the same storage_path may back
 // options on several templates. Only delete the R2 object when NOTHING else references it —
@@ -50,6 +61,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
   if (purpose === "tagged" && (typeof tag !== "string" || !ALLOWED_TAGS.has(tag))) {
     return NextResponse.json({ error: "Invalid tag for tagged image" }, { status: 400 });
+  }
+  if (purpose === "tagged" && tag === "CO_STAR" && (await costarCount(id)) >= MAX_COSTAR_IMAGES) {
+    return NextResponse.json({ error: `Maximum ${MAX_COSTAR_IMAGES} co-star photos per template` }, { status: 400 });
   }
 
   const isSample = purpose === "sample";
@@ -120,6 +134,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const [tmpl] = await sql`SELECT id FROM templates WHERE id = ${img.template_id} AND creator_id = ${creator.id}`;
   if (!tmpl) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (tag === "CO_STAR" && (await costarCount(id, imageId)) >= MAX_COSTAR_IMAGES) {
+    return NextResponse.json({ error: `Maximum ${MAX_COSTAR_IMAGES} co-star photos per template` }, { status: 400 });
+  }
 
   const updates: Record<string, unknown> = {};
   if (tag !== undefined) updates.tag = tag;
