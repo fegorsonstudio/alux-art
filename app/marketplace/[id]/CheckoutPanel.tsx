@@ -8,6 +8,7 @@ import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResu
 import { NURSING_TITLES, INDUCTION_NAME_MAXLEN, INDUCTION_MAX_TITLES, inductionYearRange } from "@/lib/nursing-induction";
 import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES } from "@/lib/choice-groups";
 import { LIGHTING_PRESETS, CAMERA_PRESETS } from "@/lib/gear-equalizer";
+import { useT } from "@/lib/useLocale";
 
 interface TemplateImage {
   id: string;
@@ -243,6 +244,10 @@ export default function CheckoutPanel({
   // Gear Equalizer (photo_upgrade) — the buyer's uploads ARE the photos to upgrade;
   // they tap one lighting rig + one camera look, and optionally swap the background.
   const photoUpgradeActive = template.category === "photo_upgrade";
+  const t = useT("checkout");
+  const tc = useT("common");
+  // Plural-aware "image(s)" word used inside interpolated sentences.
+  const imagesWord = (n: number) => (n === 1 ? t("imageOne") : t("imageMany"));
   const [enhanceLighting, setEnhanceLighting] = useState<string | null>(null);
   const [enhanceCamera, setEnhanceCamera] = useState<string | null>(null);
   const [enhanceBackdrop, setEnhanceBackdrop] = useState<string | null>(null); // null = keep own background
@@ -463,7 +468,7 @@ export default function CheckoutPanel({
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
       if (res.status === 401) setNeedsLogin(true);
-      const msg = res.status === 401 ? "Sign in first" : "Upload failed";
+      const msg = res.status === 401 ? tc("signInFirst") : tc("uploadFailed");
       setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: msg } : u));
       return;
     }
@@ -488,7 +493,7 @@ export default function CheckoutPanel({
   };
 
   const clearIdentityImages = async () => {
-    if (!confirm("Delete all your saved identity images? This cannot be undone.")) return;
+    if (!confirm(tc("confirmDeleteSaved"))) return;
     setClearing(true);
     await fetch("/api/user/identity-refs", { method: "DELETE" });
     setSavedRefs([]);
@@ -506,7 +511,7 @@ export default function CheckoutPanel({
     form.append("bucket", "identity-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
+      setPoseUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: tc("uploadFailed") } : u));
       return;
     }
     const { storagePath } = await res.json();
@@ -561,7 +566,7 @@ export default function CheckoutPanel({
     form.append("bucket", "identity-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setCostarUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
+      setCostarUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: tc("uploadFailed") } : u));
       return;
     }
     const { storagePath } = await res.json();
@@ -589,7 +594,7 @@ export default function CheckoutPanel({
     form.append("bucket", "identity-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setGroupPhotoUpload(prev => prev ? { ...prev, uploading: false, error: "Upload failed" } : prev);
+      setGroupPhotoUpload(prev => prev ? { ...prev, uploading: false, error: tc("uploadFailed") } : prev);
       return;
     }
     const { storagePath } = await res.json();
@@ -616,7 +621,7 @@ export default function CheckoutPanel({
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
       if (res.status === 401) setNeedsLogin(true);
-      setBowlUpload(prev => prev && prev.localId === localId ? { ...prev, uploading: false, error: res.status === 401 ? "Sign in first" : "Upload failed" } : prev);
+      setBowlUpload(prev => prev && prev.localId === localId ? { ...prev, uploading: false, error: res.status === 401 ? tc("signInFirst") : tc("uploadFailed") } : prev);
       return;
     }
     const { storagePath } = await res.json();
@@ -644,7 +649,7 @@ export default function CheckoutPanel({
     form.append("bucket", "identity-images");
     const res = await fetch("/api/upload/file", { method: "POST", body: form });
     if (!res.ok) {
-      setBrandUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: "Upload failed" } : u));
+      setBrandUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: tc("uploadFailed") } : u));
       return;
     }
     const { storagePath } = await res.json();
@@ -831,7 +836,7 @@ export default function CheckoutPanel({
     if (data.authorizationUrl) {
       window.location.href = data.authorizationUrl;
     } else {
-      setError(data.error ?? "Payment initialization failed. Please try again.");
+      setError(data.error ?? t("paymentInitFailed"));
       setBuying(false);
     }
   };
@@ -854,7 +859,7 @@ export default function CheckoutPanel({
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerText}>
-            <p className={styles.headerTitle}>Book this look</p>
+            <p className={styles.headerTitle}>{t("bookThisLook")}</p>
             <p className={styles.headerSub}>{template.title}</p>
           </div>
           <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
@@ -873,13 +878,13 @@ export default function CheckoutPanel({
                 textAlign: "center", cursor: "pointer", boxShadow: "0 2px 10px rgba(47,142,154,0.28)",
               }}
             >
-              Set up your shoot below — you&apos;ll sign in with Google before you pay. Your choices are saved.
+              {t("signedOutSetup")}
             </button>
           )}
           {/* Package picker */}
           {pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>Images</span>
+              <span className={styles.pkgLabel}>{t("images")}</span>
               <div className={styles.pkgPills}>
                 {pkgOptions.map(o => (
                   <button
@@ -888,7 +893,7 @@ export default function CheckoutPanel({
                     className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
                     onClick={() => setSelectedPkg(o.n)}
                   >
-                    {o.n} {o.n === 1 ? "image" : "images"}
+                    {o.n} {imagesWord(o.n)}
                     <span className={styles.pkgPillPrice}>{formatPrice(o.price)}</span>
                   </button>
                 ))}
@@ -899,16 +904,16 @@ export default function CheckoutPanel({
           {/* Shot type (1-image package only) */}
           {selectedPkg === 1 && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>Shot type</span>
+              <span className={styles.pkgLabel}>{t("shotType")}</span>
               <div className={styles.shotTypeRow}>
-                {(["headshot", "close_up", "medium", "full_body"] as const).map(t => (
+                {(["headshot", "close_up", "medium", "full_body"] as const).map(st => (
                   <button
-                    key={t}
+                    key={st}
                     type="button"
-                    className={`${styles.pkgPill} ${shotType === t ? styles.pkgPillActive : ""}`}
-                    onClick={() => setShotType(t)}
+                    className={`${styles.pkgPill} ${shotType === st ? styles.pkgPillActive : ""}`}
+                    onClick={() => setShotType(st)}
                   >
-                    {t === "headshot" ? "Headshot" : t === "close_up" ? "Close-up" : t === "medium" ? "Medium" : "Full body"}
+                    {st === "headshot" ? t("headshot") : st === "close_up" ? t("closeUp") : st === "medium" ? t("medium") : t("fullBody")}
                   </button>
                 ))}
               </div>
@@ -919,19 +924,17 @@ export default function CheckoutPanel({
           {bgActive && (
             <Collapse
               icon="🖼"
-              title="Backdrop"
-              status={bgOptions.filter(o => (bgAlloc[o.id] ?? 0) > 0).map(o => o.name).join(", ") || "tap to choose"}
+              title={t("backdrop")}
+              status={bgOptions.filter(o => (bgAlloc[o.id] ?? 0) > 0).map(o => o.name).join(", ") || t("tapToChoose")}
               warn={!bgValid}
               defaultOpen={false}
             >
             <div className={styles.pkgRow}>
               {!bgSplitMode ? (
                 <>
-                  <span className={styles.pkgLabel}>Choose your backdrop</span>
+                  <span className={styles.pkgLabel}>{t("chooseBackdrop")}</span>
                   <p className={styles.sectionHint}>
-                    {bgTarget === 1
-                      ? "Your image will be shot on the backdrop you pick."
-                      : "Pick one backdrop for your whole shoot. Tap another to switch."}
+                    {bgTarget === 1 ? t("backdropSingle") : t("backdropWhole")}
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                     {bgOptions.map(o => {
@@ -957,7 +960,7 @@ export default function CheckoutPanel({
                             </span>
                           )}
                           <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
-                          {picked && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
+                          {picked && <span style={{ fontSize: "0.65rem" }}>{t("selectedTick")}</span>}
                         </button>
                       );
                     })}
@@ -968,18 +971,18 @@ export default function CheckoutPanel({
                       onClick={() => setBgSplitMode(true)}
                       style={{ marginTop: 10, background: "none", border: "none", padding: 0, color: "#2f8e9a", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
                     >
-                      Use different backdrops for different shots
+                      {t("splitBackdrops")}
                     </button>
                   )}
                 </>
               ) : (
                 <>
-                  <span className={styles.pkgLabel}>How many images on each backdrop?</span>
+                  <span className={styles.pkgLabel}>{t("splitHeading")}</span>
                   <p className={styles.sectionHint}>
                     {bgExemptCount > 0
-                      ? <>Place your <strong>{bgTarget}</strong> studio images across the backdrops (your {bgExemptCount} special shot{bgExemptCount > 1 ? "s use" : " uses"} their own scene{bgExemptCount > 1 ? "s" : ""}). </>
-                      : <>Your package has {selectedPkg} images. </>}
-                    Tap <strong>+</strong> on a backdrop for more images there, or <strong>−</strong> for fewer.
+                      ? t("splitPlace", { n: bgTarget, m: bgExemptCount })
+                      : t("splitPackage", { n: selectedPkg })}{" "}
+                    {t("splitTapHint")}
                   </p>
                   {/* Prominent running total */}
                   <div
@@ -990,9 +993,9 @@ export default function CheckoutPanel({
                       fontSize: "0.85rem", fontWeight: 600,
                     }}
                   >
-                    <span>{bgAllocTotal === bgTarget ? "All images placed" : "Images left to place"}</span>
+                    <span>{bgAllocTotal === bgTarget ? t("allPlaced") : t("leftToPlace")}</span>
                     <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                      {bgAllocTotal === bgTarget ? `${bgTarget} / ${bgTarget}` : `${bgTarget - bgAllocTotal} left`}
+                      {bgAllocTotal === bgTarget ? `${bgTarget} / ${bgTarget}` : t("nLeft", { n: bgTarget - bgAllocTotal })}
                     </span>
                   </div>
                   {bgOptions.map(o => {
@@ -1012,7 +1015,7 @@ export default function CheckoutPanel({
                         <span style={{ flex: 1, fontSize: "0.85rem" }}>
                           {o.name}
                           <span style={{ display: "block", fontSize: "0.72rem", opacity: 0.7 }}>
-                            {count === 0 ? "not used" : count === 1 ? "1 image" : `${count} images`}
+                            {count === 0 ? t("notUsed") : count === 1 ? t("imageCount1") : t("imageCountN", { n: count })}
                           </span>
                         </span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1037,7 +1040,7 @@ export default function CheckoutPanel({
                   })}
                   {bgAllocTotal !== bgTarget && (
                     <p className={styles.sectionHint} style={{ color: "#e5484d" }}>
-                      Place all {bgTarget} images across your backdrops to continue.
+                      {t("placeAll", { n: bgTarget })}
                     </p>
                   )}
                   <button
@@ -1045,7 +1048,7 @@ export default function CheckoutPanel({
                     onClick={() => setBgSplitMode(false)}
                     style={{ marginTop: 6, background: "none", border: "none", padding: 0, color: "#2f8e9a", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
                   >
-                    ← Use one backdrop for the whole shoot
+                    {t("oneBackdrop")}
                   </button>
                 </>
               )}
@@ -1058,15 +1061,13 @@ export default function CheckoutPanel({
             <>
               <Collapse
                 icon="💡"
-                title="Your lighting rig"
-                status={LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? "pick one — required"}
+                title={t("lightingRig")}
+                status={LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? t("pickOneRequired")}
                 warn={!enhanceLighting}
                 defaultOpen
               >
               <div className={styles.pkgRow}>
-                <p className={styles.sectionHint}>
-                  Pick the studio lighting your photos deserve — we relight your exact shot.
-                </p>
+                <p className={styles.sectionHint}>{t("lightingHint")}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {LIGHTING_PRESETS.map(p => {
                     const on = enhanceLighting === p.id;
@@ -1088,20 +1089,18 @@ export default function CheckoutPanel({
                     );
                   })}
                 </div>
-                {!enhanceLighting && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Pick a lighting style to continue.</p>}
+                {!enhanceLighting && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickLighting")}</p>}
               </div>
               </Collapse>
               <Collapse
                 icon="📷"
-                title="Your camera"
-                status={CAMERA_PRESETS.find(p => p.id === enhanceCamera)?.name ?? "pick one — required"}
+                title={t("yourCamera")}
+                status={CAMERA_PRESETS.find(p => p.id === enhanceCamera)?.name ?? t("pickOneRequired")}
                 warn={!enhanceCamera}
                 defaultOpen
               >
               <div className={styles.pkgRow}>
-                <p className={styles.sectionHint}>
-                  The rendering quality of legendary gear — applied to your own photo.
-                </p>
+                <p className={styles.sectionHint}>{t("cameraHint")}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {CAMERA_PRESETS.map(p => {
                     const on = enhanceCamera === p.id;
@@ -1123,20 +1122,18 @@ export default function CheckoutPanel({
                     );
                   })}
                 </div>
-                {!enhanceCamera && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Pick a camera look to continue.</p>}
+                {!enhanceCamera && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickCamera")}</p>}
               </div>
               </Collapse>
               {bgOptions.length > 0 && (
                 <Collapse
                   icon="🖼"
-                  title="Background"
-                  status={enhanceBackdrop === null ? "keeping yours" : (bgOptions.find(o => o.id === enhanceBackdrop)?.name ?? "swap")}
+                  title={t("background")}
+                  status={enhanceBackdrop === null ? t("keepingYours") : (bgOptions.find(o => o.id === enhanceBackdrop)?.name ?? t("swap"))}
                   defaultOpen={false}
                 >
                 <div className={styles.pkgRow}>
-                  <p className={styles.sectionHint}>
-                    Keep your photo&apos;s own background (we relight it), or swap it for a studio backdrop.
-                  </p>
+                  <p className={styles.sectionHint}>{t("backgroundHint")}</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
                     <button
                       type="button"
@@ -1148,7 +1145,7 @@ export default function CheckoutPanel({
                         fontWeight: enhanceBackdrop === null ? 700 : 400,
                       }}
                     >
-                      {enhanceBackdrop === null ? "✓ " : ""}Keep my background
+                      {enhanceBackdrop === null ? "✓ " : ""}{t("keepMyBackground")}
                     </button>
                     {bgOptions.filter(o => o.imageUrl).map(o => {
                       const on = enhanceBackdrop === o.id;
@@ -1166,7 +1163,7 @@ export default function CheckoutPanel({
                         >
                           <ImagePreview src={o.imageUrl!} alt={o.name} className={styles.savedImg} preferredWidth={80} />
                           <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
-                          {on && <span style={{ fontSize: "0.65rem" }}>✓ swap to this</span>}
+                          {on && <span style={{ fontSize: "0.65rem" }}>{t("swapToThis")}</span>}
                         </button>
                       );
                     })}
@@ -1181,41 +1178,38 @@ export default function CheckoutPanel({
           {inductionActive && (
             <Collapse
               icon="🎓"
-              title="Your sash"
+              title={t("yourSash")}
               status={inductionName.trim()
                 ? `${inductionName.trim().toUpperCase()} · ${inductionYear}`
-                : "type your name — required"}
+                : t("typeNameRequired")}
               warn={!inductionName.trim()}
               defaultOpen
             >
             <div className={styles.pkgRow}>
-              <p className={styles.sectionHint}>
-                Your name, titles, and class year are embroidered on your induction sash in
-                every photo that shows it. Type your name, then just tap to pick the rest.
-              </p>
+              <p className={styles.sectionHint}>{t("sashHint")}</p>
               <input
                 type="text"
                 className={styles.flagInput}
-                placeholder="Your name as it should appear, e.g. JANE SMITH"
+                placeholder={t("sashNamePlaceholder")}
                 value={inductionName}
                 maxLength={INDUCTION_NAME_MAXLEN}
                 onChange={e => setInductionName(e.target.value)}
               />
               {inductionName.trim().length === 0 && (
-                <p className={styles.sectionHint} style={{ color: "#c0392b" }}>Enter the name for your sash to continue.</p>
+                <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("sashNameWarn")}</p>
               )}
-              <p className={styles.sectionHint} style={{ marginTop: 8 }}>Your titles — tap all that apply (they appear in the order you tap):</p>
+              <p className={styles.sectionHint} style={{ marginTop: 8 }}>{t("sashTitles")}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {NURSING_TITLES.map(t => {
-                  const idx = inductionTitles.indexOf(t);
+                {NURSING_TITLES.map(title => {
+                  const idx = inductionTitles.indexOf(title);
                   const on = idx >= 0;
                   return (
                     <button
-                      key={t}
+                      key={title}
                       type="button"
                       onClick={() => setInductionTitles(prev =>
-                        on ? prev.filter(x => x !== t)
-                           : prev.length >= INDUCTION_MAX_TITLES ? prev : [...prev, t]
+                        on ? prev.filter(x => x !== title)
+                           : prev.length >= INDUCTION_MAX_TITLES ? prev : [...prev, title]
                       )}
                       style={{
                         padding: "6px 12px", borderRadius: 999, cursor: "pointer", fontSize: "0.78rem",
@@ -1223,12 +1217,12 @@ export default function CheckoutPanel({
                         background: on ? "rgba(127,127,127,0.12)" : "none", fontWeight: on ? 700 : 400,
                       }}
                     >
-                      {on ? `${idx + 1}. ` : ""}{t}
+                      {on ? `${idx + 1}. ` : ""}{title}
                     </button>
                   );
                 })}
               </div>
-              <p className={styles.sectionHint} style={{ marginTop: 8 }}>Class of:</p>
+              <p className={styles.sectionHint} style={{ marginTop: 8 }}>{t("classOf")}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {inductionYears.map(y => (
                   <button
@@ -1246,8 +1240,8 @@ export default function CheckoutPanel({
                 ))}
               </div>
               <p className={styles.sectionHint} style={{ marginTop: 10, fontWeight: 600 }}>
-                Sash preview: CLASS OF {inductionYear} · {(inductionName.trim() || "YOUR NAME").toUpperCase()}
-                {inductionTitles.length > 0 ? ` · ${inductionTitles.map(t => t.replace(/\s*\(.*\)$/, "")).join(", ")}` : ""}
+                {t("sashPreview", { year: inductionYear, name: (inductionName.trim() || "YOUR NAME").toUpperCase() })}
+                {inductionTitles.length > 0 ? ` · ${inductionTitles.map(title => title.replace(/\s*\(.*\)$/, "")).join(", ")}` : ""}
               </p>
             </div>
             </Collapse>
@@ -1257,24 +1251,21 @@ export default function CheckoutPanel({
           {(pickableGroups.length > 0 || multiGroups.length > 0) && (
             <Collapse
               icon="👗"
-              title="Your styling"
+              title={t("yourStyling")}
               status={(() => {
                 const n = Object.keys(groupPicks).length + Object.values(multiPicks).reduce((a, ids) => a + ids.length, 0);
-                return n > 0 ? `${n} picked` : "optional — tap to browse";
+                return n > 0 ? t("nPicked", { n }) : t("optionalTap");
               })()}
               defaultOpen={false}
             >
           {pickableGroups.length > 0 && (
             <div className={styles.pkgRow}>
-              <p className={styles.sectionHint}>
-                Pick only what fits you — skip anything you don&apos;t need (tap again to unselect).
-                Whatever you choose is worn in <strong>every image</strong> of your shoot, so all your photos match.
-              </p>
+              <p className={styles.sectionHint}>{t("stylingHint")}</p>
             </div>
           )}
           {pickableGroups.map(group => (
             <div key={group.id} className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· optional — pick one or skip</span></span>
+              <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>{t("optionalPickOne")}</span></span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {group.options.map(o => {
                   const picked = groupPicks[group.id] === o.id;
@@ -1316,7 +1307,7 @@ export default function CheckoutPanel({
               {/* Optional recolor for garment groups — same cut and fabric, new color */}
               {RECOLOR_GROUP_TYPES.has(group.type as never) && groupPicks[group.id] && (
                 <div style={{ marginTop: 8 }}>
-                  <p className={styles.sectionHint}>Want it in a different color? Tap one (optional):</p>
+                  <p className={styles.sectionHint}>{t("recolorHint")}</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     <button
                       type="button"
@@ -1327,7 +1318,7 @@ export default function CheckoutPanel({
                         background: "none", fontWeight: !groupColors[group.id] ? 700 : 400,
                       }}
                     >
-                      Keep original
+                      {t("keepOriginal")}
                     </button>
                     {RECOLOR_PALETTE.map(color => {
                       const on = groupColors[group.id] === color;
@@ -1350,10 +1341,7 @@ export default function CheckoutPanel({
                 </div>
               )}
               {group.type === "outfit" && (
-                <p className={styles.sectionHint} style={{ marginTop: 6 }}>
-                  Prefer your own outfit? Open <strong>Advanced options</strong> below and upload it —
-                  your upload replaces the template outfit.
-                </p>
+                <p className={styles.sectionHint} style={{ marginTop: 6 }}>{t("ownOutfitHint")}</p>
               )}
             </div>
           ))}
@@ -1363,10 +1351,8 @@ export default function CheckoutPanel({
             const picked = multiPicks[group.id] ?? [];
             return (
               <div key={group.id} className={styles.pkgRow}>
-                <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>· choose any</span></span>
-                <p className={styles.sectionHint}>
-                  Pick as many {group.label.toLowerCase()} as you want — they&apos;ll appear in your photos. Or pick none.
-                </p>
+                <span className={styles.pkgLabel}>{group.label} <span style={{ fontWeight: 400, opacity: 0.6, fontSize: "0.78rem" }}>{t("chooseAny")}</span></span>
+                <p className={styles.sectionHint}>{t("multiHint", { label: group.label.toLowerCase() })}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {group.options.map(o => {
                     const isOn = picked.includes(o.id);
@@ -1394,7 +1380,7 @@ export default function CheckoutPanel({
                           </span>
                         )}
                         <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
-                        {isOn && <span style={{ fontSize: "0.65rem" }}>✓ added</span>}
+                        {isOn && <span style={{ fontSize: "0.65rem" }}>{t("added")}</span>}
                       </button>
                     );
                   })}
@@ -1409,11 +1395,8 @@ export default function CheckoutPanel({
           {/* Signature poses — informational only; the planner picks randomly, no repeats */}
           {(template.poseOptions?.length ?? 0) > 0 && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>🎭 Signature poses included</span>
-              <p className={styles.sectionHint}>
-                Your portraits will feature a random mix of this template&apos;s signature poses —
-                no two images in your shoot repeat the same one.
-              </p>
+              <span className={styles.pkgLabel}>{t("posesIncluded")}</span>
+              <p className={styles.sectionHint}>{t("posesHint")}</p>
             </div>
           )}
 
@@ -1421,10 +1404,10 @@ export default function CheckoutPanel({
           {(flagShotAvailable || mugshotAvailable || bowlAvailable) && (
             <Collapse
               icon="🔥"
-              title="Viral add-on shots"
+              title={t("viralAddons")}
               status={(() => {
                 const n = (flagShotOn ? 1 : 0) + (mugshotOn ? 1 : 0) + (bowlOn ? 1 : 0);
-                return n > 0 ? `${n} added` : "optional — tap to browse";
+                return n > 0 ? t("nAdded", { n }) : t("optionalTap");
               })()}
               warn={!flagValid || !mugshotValid || !bowlValid}
               defaultOpen={false}
@@ -1440,13 +1423,13 @@ export default function CheckoutPanel({
                   style={{ marginTop: 3 }}
                 />
                 <span>
-                  <span className={styles.pkgLabel}>Add the viral skyscraper flag shot</span>
+                  <span className={styles.pkgLabel}>{t("addFlagShot")}</span>
                   <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
-                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You appear{" "}
-                    {template.category === "call_to_bar"
-                      ? "in full wig and gown "
-                      : "in your shoot's outfit "}
-                    on a rooftop antenna holding a black flag with your own text.
+                    {t("flagShotDesc", {
+                      n: selectedPkg,
+                      imagesWord: imagesWord(selectedPkg),
+                      outfit: template.category === "call_to_bar" ? t("flagOutfitBar") : t("flagOutfitShoot"),
+                    })}
                   </span>
                 </span>
               </label>
@@ -1457,21 +1440,20 @@ export default function CheckoutPanel({
                     <ImagePreview src={template.flagShot.imageUrl} alt="Flag scene" className={styles.flagScenePreview} preferredWidth={420} />
                   )}
                   <div className={styles.flagField}>
-                    <label className={styles.flagFieldLabel}>✍️ Type your flag text here</label>
+                    <label className={styles.flagFieldLabel}>{t("flagTextLabel")}</label>
                     <input
                       type="text"
                       className={styles.flagInput}
-                      placeholder='e.g. CALLED TO BAR 2026'
+                      placeholder={t("flagPlaceholder")}
                       value={flagText}
                       maxLength={FLAG_TEXT_MAX}
                       onChange={e => setFlagText(e.target.value)}
                     />
                     <p className={styles.sectionHint} style={{ marginTop: 6 }}>
-                      This exact text is printed on the flag. Keep it short — a name, title, or year reads best.
-                      Long text, phone numbers, and links often render with mistakes. {flagText.length}/{FLAG_TEXT_MAX}
+                      {t("flagHint")} {flagText.length}/{FLAG_TEXT_MAX}
                     </p>
                     {flagShotOn && flagText.trim().length === 0 && (
-                      <p className={styles.identityWarn}>Type your flag text to continue.</p>
+                      <p className={styles.identityWarn}>{t("flagWarn")}</p>
                     )}
                   </div>
                 </div>
@@ -1482,11 +1464,9 @@ export default function CheckoutPanel({
           {/* Trend slot: viral chair pose — always included, informational only */}
           {viralIncluded && (
             <div className={styles.pkgRow}>
-              <span className={styles.pkgLabel}>🔥 The viral chair pose — included</span>
+              <span className={styles.pkgLabel}>{t("viralChairTitle")}</span>
               <p className={styles.sectionHint}>
-                One of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"} automatically recreates
-                the viral seated pose everyone is sharing — tan suit, coat draped over the shoulders,
-                legs crossed. Same iconic look whether you&apos;re a man or a woman.
+                {t("viralChairDesc", { n: selectedPkg, imagesWord: imagesWord(selectedPkg) })}
               </p>
               {template.trendSlots?.viral?.imageUrl && (
                 <ImagePreview src={template.trendSlots.viral.imageUrl} alt="The viral chair pose" className={styles.flagScenePreview} preferredWidth={420} />
@@ -1500,10 +1480,9 @@ export default function CheckoutPanel({
               <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                 <input type="checkbox" checked={mugshotOn} onChange={e => setMugshotOn(e.target.checked)} style={{ marginTop: 3 }} />
                 <span>
-                  <span className={styles.pkgLabel}>Add the viral mugshot</span>
+                  <span className={styles.pkgLabel}>{t("addMugshot")}</span>
                   <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
-                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You pose like a mugshot
-                    holding the board — your name, &quot;offense&quot; and date are handwritten on it in red.
+                    {t("mugshotDesc", { n: selectedPkg, imagesWord: imagesWord(selectedPkg) })}
                   </span>
                 </span>
               </label>
@@ -1513,22 +1492,22 @@ export default function CheckoutPanel({
                     <ImagePreview src={template.trendSlots.mugshot.imageUrl} alt="Mugshot board" className={styles.flagScenePreview} preferredWidth={420} />
                   )}
                   <div className={styles.flagField}>
-                    <label className={styles.flagFieldLabel}>✍️ Your name (on the board)</label>
-                    <input type="text" className={styles.flagInput} placeholder="e.g. Barr. Amaka O." value={mugshotName} maxLength={30} onChange={e => setMugshotName(e.target.value)} />
+                    <label className={styles.flagFieldLabel}>{t("mugshotNameLabel")}</label>
+                    <input type="text" className={styles.flagInput} placeholder={t("mugshotNamePlaceholder")} value={mugshotName} maxLength={30} onChange={e => setMugshotName(e.target.value)} />
                   </div>
                   <div className={styles.flagField}>
-                    <label className={styles.flagFieldLabel}>🚨 The &quot;offense&quot;</label>
-                    <input type="text" className={styles.flagInput} placeholder='e.g. "Passing the Bar too easily"' value={mugshotOffense} maxLength={100} onChange={e => setMugshotOffense(e.target.value)} />
+                    <label className={styles.flagFieldLabel}>{t("offenseLabel")}</label>
+                    <input type="text" className={styles.flagInput} placeholder={t("offensePlaceholder")} value={mugshotOffense} maxLength={100} onChange={e => setMugshotOffense(e.target.value)} />
                     <p className={styles.sectionHint} style={{ marginTop: 4 }}>
-                      Make it fun — a birthday, a launch, an achievement. {mugshotOffense.length}/100
+                      {t("offenseHint")} {mugshotOffense.length}/100
                     </p>
                   </div>
                   <div className={styles.flagField}>
-                    <label className={styles.flagFieldLabel}>📅 Date (tap to change)</label>
+                    <label className={styles.flagFieldLabel}>{t("dateLabel")}</label>
                     <input type="text" className={styles.flagInput} value={mugshotDate} maxLength={20} onChange={e => setMugshotDate(e.target.value)} />
                   </div>
                   {mugshotOn && (!mugshotName.trim() || !mugshotOffense.trim()) && (
-                    <p className={styles.identityWarn}>Fill in your name and the offense to continue.</p>
+                    <p className={styles.identityWarn}>{t("mugshotWarn")}</p>
                   )}
                 </div>
               )}
@@ -1541,10 +1520,9 @@ export default function CheckoutPanel({
               <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                 <input type="checkbox" checked={bowlOn} onChange={e => setBowlOn(e.target.checked)} style={{ marginTop: 3 }} />
                 <span>
-                  <span className={styles.pkgLabel}>Add the &quot;business on my head&quot; shot</span>
+                  <span className={styles.pkgLabel}>{t("addBowl")}</span>
                   <span style={{ display: "block", fontSize: "0.78rem", opacity: 0.7 }}>
-                    Uses 1 of your {selectedPkg} {selectedPkg === 1 ? "image" : "images"}. You carry the classic
-                    enamel bowl on your head — loaded with your product, or branded with your logo.
+                    {t("bowlDesc", { n: selectedPkg, imagesWord: imagesWord(selectedPkg) })}
                   </span>
                 </span>
               </label>
@@ -1554,34 +1532,32 @@ export default function CheckoutPanel({
                     <ImagePreview src={template.trendSlots.bowl.imageUrl} alt="Bowl" className={styles.flagScenePreview} preferredWidth={420} />
                   )}
                   <div className={styles.shotTypeRow}>
-                    {([["product", "My product — piled in the bowl"], ["logo", "My logo — printed on the bowl"]] as const).map(([m, label]) => (
+                    {(["product", "logo"] as const).map(m => (
                       <button
                         key={m}
                         type="button"
                         className={`${styles.pkgPill} ${bowlMode === m ? styles.pkgPillActive : ""}`}
                         onClick={() => setBowlMode(m)}
                       >
-                        {label}
+                        {m === "product" ? t("bowlModeProduct") : t("bowlModeLogo")}
                       </button>
                     ))}
                   </div>
                   <p className={styles.sectionHint}>
-                    {bowlMode === "product"
-                      ? "Upload ONE clear photo of what you sell (on a plain background works best). We pile it comically high in the bowl."
-                      : "Upload your logo (a clean, high-quality image). We print it on the side of the bowl."}
+                    {bowlMode === "product" ? t("bowlHintProduct") : t("bowlHintLogo")}
                   </p>
                   {bowlUpload ? (
                     <div className={styles.uploadGrid}>
                       <div className={styles.uploadItem}>
                         <ImagePreview src={bowlUpload.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
-                        {bowlUpload.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                        {bowlUpload.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                         {bowlUpload.error && <div className={styles.uploadError}>{bowlUpload.error}</div>}
                         <button type="button" className={styles.removeBtn} onClick={() => setBowlUpload(null)}>✕</button>
                       </div>
                     </div>
                   ) : (
                     <label className={styles.uploadBtn} style={{ cursor: "pointer", alignSelf: "flex-start" }}>
-                      + Upload {bowlMode === "product" ? "product photo" : "logo"}
+                      {bowlMode === "product" ? t("uploadProduct") : t("uploadLogo")}
                       <input
                         type="file"
                         accept="image/*"
@@ -1591,7 +1567,7 @@ export default function CheckoutPanel({
                     </label>
                   )}
                   {bowlOn && !bowlUpload && (
-                    <p className={styles.identityWarn}>Upload your {bowlMode === "product" ? "product photo" : "logo"} to continue.</p>
+                    <p className={styles.identityWarn}>{bowlMode === "product" ? t("bowlWarnProduct") : t("bowlWarnLogo")}</p>
                   )}
                 </div>
               )}
@@ -1607,7 +1583,7 @@ export default function CheckoutPanel({
           <div style={{ flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
               <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>
-                📷 {photoUpgradeActive ? "Your photos to upgrade" : "Your identity photos"}
+                📷 {photoUpgradeActive ? t("photosToUpgrade") : t("yourIdentityPhotos")}
               </span>
               <span style={{
                 fontSize: "0.72rem",
@@ -1616,29 +1592,21 @@ export default function CheckoutPanel({
                 opacity: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? 1 : 0.65,
               }}>
                 {photoUpgradeActive
-                  ? `${allIdentityRefs.length} of ${selectedPkg} selected`
-                  : allIdentityRefs.length > 0 ? `${allIdentityRefs.length} selected` : "required"}
+                  ? t("nOfMSelected", { n: allIdentityRefs.length, m: selectedPkg })
+                  : allIdentityRefs.length > 0 ? t("nSelected", { n: allIdentityRefs.length }) : t("required")}
               </span>
             </div>
             {photoUpgradeActive ? (
               <>
-                <p className={styles.sectionHint}>
-                  Upload exactly {selectedPkg} photo{selectedPkg === 1 ? "" : "s"} for the {selectedPkg}-image package —
-                  each one comes back relit and upgraded. Straight-out-of-camera JPEGs are perfect; any camera, any year.
-                </p>
+                <p className={styles.sectionHint}>{t("upgradeHint", { n: selectedPkg })}</p>
                 <p className={styles.sectionHint} style={{ fontWeight: 600, ...(allIdentityRefs.length !== selectedPkg ? { color: "#c0392b" } : {}) }}>
-                  {allIdentityRefs.length} of {selectedPkg} selected
+                  {t("nOfMSelected", { n: allIdentityRefs.length, m: selectedPkg })}
                 </p>
               </>
             ) : (
               <>
-                <p className={styles.sectionHint}>Select saved photos or upload new ones. At least 1 required.</p>
-                <p className={styles.sectionHint}>
-                  For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
-                  at least one photo where you&apos;re genuinely smiling (teeth showing) so we can create natural smiling
-                  shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
-                  how you look from behind.
-                </p>
+                <p className={styles.sectionHint}>{t("identityHint1")}</p>
+                <p className={styles.sectionHint}>{t("identityHint2")}</p>
               </>
             )}
 
@@ -1667,14 +1635,14 @@ export default function CheckoutPanel({
                   onClick={clearIdentityImages}
                   disabled={clearing}
                 >
-                  {clearing ? "Clearing..." : "Clear saved photos"}
+                  {clearing ? t("clearing") : t("clearSaved")}
                 </button>
               </>
             )}
 
             <div className={styles.uploadRow}>
               <button type="button" className={styles.uploadBtn} onClick={() => identityInputRef.current?.click()}>
-                + Upload new
+                {t("uploadNew")}
               </button>
               <input
                 type="file"
@@ -1691,7 +1659,7 @@ export default function CheckoutPanel({
                 {newUploads.map(u => (
                   <div key={u.localId} className={styles.uploadItem}>
                     <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
-                    {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                    {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                     {u.error && <div className={styles.uploadError}>{u.error}</div>}
                     <button type="button" className={styles.removeBtn} onClick={() => setNewUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
                   </div>
@@ -1708,18 +1676,18 @@ export default function CheckoutPanel({
                   style={{ marginTop: 2 }}
                 />
                 <span>
-                  <strong>No smiles</strong> — keep a relaxed, closed-lips expression in every photo
-                  {noSmile && <span style={{ display: "block", opacity: 0.75 }}>No photo will show teeth or a smile, even if your identity photos do.</span>}
+                  <strong>{t("noSmiles")}</strong> {t("noSmilesDesc")}
+                  {noSmile && <span style={{ display: "block", opacity: 0.75 }}>{t("noSmilesNote")}</span>}
                 </span>
               </label>
             )}
 
             {allIdentityRefs.length === 0 && !(signedOut && newUploads.length > 0) && (
-              <p className={styles.identityWarn}>Select or upload at least 1 photo to continue.</p>
+              <p className={styles.identityWarn}>{t("identityWarn")}</p>
             )}
             {signedOut && newUploads.length > 0 && (
               <p className={styles.sectionHint} style={{ color: "#2f8e9a", fontWeight: 600 }}>
-                {newUploads.length} photo{newUploads.length > 1 ? "s" : ""} ready — sign in below to upload &amp; continue.
+                {newUploads.length === 1 ? t("photosReadyOne") : t("photosReadyMany", { n: newUploads.length })}
               </p>
             )}
           </div>
@@ -1729,10 +1697,10 @@ export default function CheckoutPanel({
           {/* Story: role prompt */}
           {template.isStory && (
             <div>
-              <p className={styles.sectionTitle}>What&apos;s your angle? <span className={styles.optionalTag}>(optional)</span></p>
+              <p className={styles.sectionTitle}>{t("yourAngle")} <span className={styles.optionalTag}>{t("optionalParen")}</span></p>
               <p className={styles.sectionHint}>
-                Tell us your role in the story in one short sentence.{" "}
-                {template.defaultRole ? `Default: "${template.defaultRole}"` : ""}
+                {t("angleHint")}{" "}
+                {template.defaultRole ? t("angleDefault", { role: template.defaultRole }) : ""}
               </p>
               {template.roleChips && template.roleChips.length > 0 && (
                 <div className={styles.roleChips}>
@@ -1751,7 +1719,7 @@ export default function CheckoutPanel({
               <input
                 type="text"
                 className={styles.roleInput}
-                placeholder={template.defaultRole ? `e.g. "${template.defaultRole}"` : "e.g. I'm the photographer pitchside"}
+                placeholder={template.defaultRole ? `"${template.defaultRole}"` : t("anglePlaceholder")}
                 value={rolePrompt}
                 maxLength={100}
                 onChange={e => setRolePrompt(e.target.value)}
@@ -1764,14 +1732,14 @@ export default function CheckoutPanel({
           {/* Story: co-star photos */}
           {template.requiresCostar && (
             <div>
-              <p className={styles.sectionTitle}>Your co-star <span className={styles.requiredTag}>(required)</span></p>
-              <p className={styles.sectionHint}>Upload 2–3 clear photos of the person you want to appear with you. At least 1 required.</p>
+              <p className={styles.sectionTitle}>{t("yourCostar")} <span className={styles.requiredTag}>{t("requiredParen")}</span></p>
+              <p className={styles.sectionHint}>{t("costarHint")}</p>
               {costarUploads.length > 0 && (
                 <div className={styles.uploadGrid}>
                   {costarUploads.map(u => (
                     <div key={u.localId} className={styles.uploadItem}>
                       <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
-                      {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                      {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                       {u.error && <div className={styles.uploadError}>{u.error}</div>}
                       <button type="button" className={styles.removeBtn} onClick={() => setCostarUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
                     </div>
@@ -1781,7 +1749,7 @@ export default function CheckoutPanel({
               {costarUploads.length < 5 && (
                 <div className={styles.uploadRow}>
                   <button type="button" className={styles.uploadBtn} onClick={() => costarInputRef.current?.click()}>
-                    + Upload co-star photo
+                    {t("uploadCostar")}
                   </button>
                   <input type="file" accept="image/*" multiple ref={costarInputRef} className={styles.hidden}
                     onChange={e => { if (e.target.files) addCostarFiles(e.target.files); e.target.value = ""; }} />
@@ -1789,10 +1757,10 @@ export default function CheckoutPanel({
               )}
               <label className={styles.consentRow}>
                 <input type="checkbox" checked={costarConsent} onChange={e => setCostarConsent(e.target.checked)} />
-                <span className={styles.consentText}>I have permission to use this person&apos;s photos.</span>
+                <span className={styles.consentText}>{t("costarConsent")}</span>
               </label>
               {!costarUploads.some(u => u.storagePath) && (
-                <p className={styles.identityWarn}>Upload at least 1 co-star photo to continue.</p>
+                <p className={styles.identityWarn}>{t("costarWarn")}</p>
               )}
             </div>
           )}
@@ -1802,13 +1770,13 @@ export default function CheckoutPanel({
           {/* Story: group photo */}
           {template.requiresGroup && (
             <div>
-              <p className={styles.sectionTitle}>Your group photo <span className={styles.requiredTag}>(required)</span></p>
-              <p className={styles.sectionHint}>Upload one photo showing the whole group. We&apos;ll find everyone&apos;s face and place them in every scene.</p>
+              <p className={styles.sectionTitle}>{t("yourGroupPhoto")} <span className={styles.requiredTag}>{t("requiredParen")}</span></p>
+              <p className={styles.sectionHint}>{t("groupHint")}</p>
               {groupPhotoUpload ? (
                 <div className={styles.uploadGrid}>
                   <div className={styles.uploadItem}>
                     <ImagePreview src={groupPhotoUpload.preview} alt="" className={styles.uploadImg} preferredWidth={200} />
-                    {groupPhotoUpload.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                    {groupPhotoUpload.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                     {groupPhotoUpload.error && <div className={styles.uploadError}>{groupPhotoUpload.error}</div>}
                     <button type="button" className={styles.removeBtn} onClick={() => setGroupPhotoUpload(null)}>✕</button>
                   </div>
@@ -1816,14 +1784,14 @@ export default function CheckoutPanel({
               ) : (
                 <div className={styles.uploadRow}>
                   <button type="button" className={styles.uploadBtn} onClick={() => groupPhotoInputRef.current?.click()}>
-                    + Upload group photo
+                    {t("uploadGroup")}
                   </button>
                   <input type="file" accept="image/*" ref={groupPhotoInputRef} className={styles.hidden}
                     onChange={e => { const f = e.target.files?.[0]; if (f) setGroupPhotoFile(f); e.target.value = ""; }} />
                 </div>
               )}
               {!groupPhotoUpload?.storagePath && (
-                <p className={styles.identityWarn}>Upload a group photo to continue.</p>
+                <p className={styles.identityWarn}>{t("groupWarn")}</p>
               )}
             </div>
           )}
@@ -1833,14 +1801,14 @@ export default function CheckoutPanel({
           {/* Story: brand / logo */}
           {template.requiresBrand && (
             <div>
-              <p className={styles.sectionTitle}>Your brand / logo <span className={styles.requiredTag}>(required)</span></p>
-              <p className={styles.sectionHint}>Upload your logo or product image. It will appear on screens, hoardings, and billboards in the scene.</p>
+              <p className={styles.sectionTitle}>{t("yourBrand")} <span className={styles.requiredTag}>{t("requiredParen")}</span></p>
+              <p className={styles.sectionHint}>{t("brandHint")}</p>
               {brandUploads.length > 0 ? (
                 <div className={styles.uploadGrid}>
                   {brandUploads.map(u => (
                     <div key={u.localId} className={styles.uploadItem}>
                       <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={200} />
-                      {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                      {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                       {u.error && <div className={styles.uploadError}>{u.error}</div>}
                       <button type="button" className={styles.removeBtn} onClick={() => setBrandUploads([])}>✕</button>
                     </div>
@@ -1849,14 +1817,14 @@ export default function CheckoutPanel({
               ) : (
                 <div className={styles.uploadRow}>
                   <button type="button" className={styles.uploadBtn} onClick={() => brandInputRef.current?.click()}>
-                    + Upload logo / product image
+                    {t("uploadBrand")}
                   </button>
                   <input type="file" accept="image/*" ref={brandInputRef} className={styles.hidden}
                     onChange={e => { const f = e.target.files?.[0]; if (f) addBrandFile(f); e.target.value = ""; }} />
                 </div>
               )}
               <div className={styles.brandPlacementRow}>
-                <span className={styles.pkgLabel}>Placement:</span>
+                <span className={styles.pkgLabel}>{t("placementLabel")}</span>
                 <div className={styles.pkgPills}>
                   {(["everywhere", "background", "subtle"] as const).map(p => (
                     <button
@@ -1865,13 +1833,13 @@ export default function CheckoutPanel({
                       className={`${styles.pkgPill} ${brandPlacement === p ? styles.pkgPillActive : ""}`}
                       onClick={() => setBrandPlacement(p)}
                     >
-                      {p === "everywhere" ? "Everywhere" : p === "background" ? "Background only" : "Subtle"}
+                      {p === "everywhere" ? t("everywhere") : p === "background" ? t("backgroundOnly") : t("subtle")}
                     </button>
                   ))}
                 </div>
               </div>
               {!brandUploads.some(u => u.storagePath) && (
-                <p className={styles.identityWarn}>Upload your logo to continue.</p>
+                <p className={styles.identityWarn}>{t("brandWarn")}</p>
               )}
             </div>
           )}
@@ -1885,21 +1853,21 @@ export default function CheckoutPanel({
             onClick={() => setAdvancedOpen(v => !v)}
           >
             <span className={`${styles.advancedChevron} ${advancedOpen ? styles.advancedChevronOpen : ""}`}>▼</span>
-            Advanced options (pose direction, reference customisation)
+            {t("advancedOptions")}
           </button>
 
           {advancedOpen && (
             <div className={styles.advancedBody}>
               {/* Pose direction */}
               <div>
-                <p className={styles.sectionTitle}>Pose direction (optional)</p>
-                <p className={styles.sectionHint}>Upload pose reference images. Each can be a single pose or a collage — the AI extracts all visible poses in order.</p>
+                <p className={styles.sectionTitle}>{t("poseDirection")}</p>
+                <p className={styles.sectionHint}>{t("poseHint")}</p>
                 {poseUploads.length > 0 && (
                   <div className={styles.uploadGrid}>
                     {poseUploads.map(u => (
                       <div key={u.localId} className={styles.uploadItem}>
                         <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
-                        {u.uploading && <div className={styles.uploadOverlay}>Uploading...</div>}
+                        {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                         {u.error && <div className={styles.uploadError}>{u.error}</div>}
                         <button type="button" className={styles.removeBtn} onClick={() => setPoseUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
                       </div>
@@ -1908,7 +1876,7 @@ export default function CheckoutPanel({
                 )}
                 {poseUploads.length < 10 && (
                   <button type="button" className={styles.uploadBtn} onClick={() => poseInputRef.current?.click()}>
-                    + Add pose image
+                    {t("addPose")}
                   </button>
                 )}
                 <input
@@ -1923,8 +1891,8 @@ export default function CheckoutPanel({
 
               {/* Reference customisation */}
               <div>
-                <p className={styles.sectionTitle}>Reference images</p>
-                <p className={styles.sectionHint}>Add a note to any creator reference, replace it with your own image, or remove it.</p>
+                <p className={styles.sectionTitle}>{t("referenceImages")}</p>
+                <p className={styles.sectionHint}>{t("refHint")}</p>
 
                 {taggedRefs.length > 0 && (
                   <div className={styles.refList}>
@@ -1938,14 +1906,14 @@ export default function CheckoutPanel({
                           <input
                             type="text"
                             className={styles.refNoteInput}
-                            placeholder="Styling note…"
+                            placeholder={t("stylingNote")}
                             value={ref.note}
                             onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
                           />
                         )}
                         <div className={styles.refActions}>
                           <button type="button" className={styles.refBtn} onClick={() => startReplace(ref.id)}>
-                            {ref.isReplaced ? "Re-upload" : "Replace"}
+                            {ref.isReplaced ? t("reupload") : t("replaceRef")}
                           </button>
                           <button type="button" className={`${styles.refBtn} ${styles.refBtnRemove}`} onClick={() => setTaggedRefs(prev => prev.filter(r => r.id !== ref.id))}>
                             ×
@@ -1959,28 +1927,28 @@ export default function CheckoutPanel({
                 <div className={styles.addRefRow}>
                   {!addingRef && (
                     <button type="button" className={styles.addRefBtn} onClick={() => setAddingRef(true)}>
-                      + Add your own reference
+                      {t("addOwnRef")}
                     </button>
                   )}
                   {addingRef && (
                     <div className={styles.addRefForm}>
                       <select className={styles.addRefSelect} value={addRefTag} onChange={e => setAddRefTag(e.target.value)}>
-                        {["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"].map(t => (
-                          <option key={t} value={t}>{t}</option>
+                        {["OUTFIT", "HAIRSTYLE", "MAKEUP", "NAIL_DESIGN", "ACCESSORY", "BACKGROUND", "LIGHTING", "COLOR_GRADE"].map(tag => (
+                          <option key={tag} value={tag}>{tag}</option>
                         ))}
                       </select>
                       <input
                         type="text"
                         className={styles.addRefNoteInput}
-                        placeholder="Styling note (optional)…"
+                        placeholder={t("stylingNoteOptional")}
                         value={addRefNote}
                         onChange={e => setAddRefNote(e.target.value)}
                       />
                       <button type="button" className={styles.addRefUploadBtn} onClick={() => addRefInputRef.current?.click()}>
-                        Upload image
+                        {t("uploadImage")}
                       </button>
                       <button type="button" className={styles.addRefCancelBtn} onClick={() => { setAddingRef(false); setAddRefNote(""); }}>
-                        Cancel
+                        {t("cancel")}
                       </button>
                       <input
                         type="file"
@@ -2012,11 +1980,11 @@ export default function CheckoutPanel({
           {error && <p className={styles.bookError}>{error}</p>}
           {signedOut ? (
             <button type="button" className={styles.payBtn} onClick={goSignIn} disabled={resuming}>
-              {resuming ? "Taking you to sign in…" : "Sign in with Google to continue →"}
+              {resuming ? t("takingToSignIn") : t("signInContinue")}
             </button>
           ) : (
             <button type="button" className={styles.payBtn} onClick={book} disabled={!canPay}>
-              {buying ? "Redirecting to payment..." : "Pay & Generate"}
+              {buying ? t("redirecting") : t("payGenerate")}
             </button>
           )}
         </div>
