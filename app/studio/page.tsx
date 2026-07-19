@@ -6,7 +6,15 @@ import { createClient } from "@/lib/supabase";
 import type { User, Shoot, ShootImage, AspectRatio, Currency, ShootMode, ReferenceTag, ShootPackageSize, PackagePricing } from "@/lib/types";
 import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packagePrice } from "@/lib/types";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import { useT } from "@/lib/useLocale";
 import styles from "../workspace.module.css";
+
+// Maps a shoot status to its studio-dictionary key (translated at the point of use).
+const STATUS_KEY: Record<string, "statusComplete" | "statusFailed" | "statusAwaitingPayment" | "statusLocking" | "statusReviewNeeded" | "statusRejected" | "statusQueued" | "statusGenerating"> = {
+  QUEUED: "statusQueued", PENDING: "statusQueued", PROCESSING: "statusGenerating", GENERATING: "statusGenerating",
+  COMPLETE: "statusComplete", FAILED: "statusFailed", PENDING_PAYMENT: "statusAwaitingPayment",
+  BASE_LOCKING: "statusLocking", BASE_REVIEW: "statusReviewNeeded", BASE_REJECTED: "statusRejected",
+};
 
 interface UploadedRef { id: string; name: string; type: string; size: number; storageBucket: string; storagePath: string; url: string; tag?: ReferenceTag; customTag?: string; note?: string; }
 const MIN_IDENTITY = 1;
@@ -18,12 +26,6 @@ const DEFAULT_PACKAGES: PackagePricing[] = Object.values(SHOOT_PACKAGES).map((pk
   ngn: packagePrice(15000, pkg.imageCount),
   usd: packagePrice(10, pkg.imageCount),
 }));
-
-const WORKSPACE_STATUS_LABELS: Record<string, string> = {
-  QUEUED: "Queued", PENDING: "Queued", PROCESSING: "Generating", GENERATING: "Generating",
-  COMPLETE: "Complete", FAILED: "Failed", PENDING_PAYMENT: "Awaiting payment",
-  BASE_LOCKING: "Locking", BASE_REVIEW: "Review needed", BASE_REJECTED: "Rejected",
-};
 
 function sanitizeFileName(name: string) {
   return name.replace(/[\\/]/g, "_").replace(/[^\w.\- ]+/g, "_").replace(/\s+/g, "_");
@@ -62,6 +64,8 @@ function getShootPackageSize(shoot: Shoot | null): ShootPackageSize {
 }
 
 export default function WorkspacePage() {
+  const t = useT("studio");
+  const tc = useT("common");
   const [user, setUser] = useState<User | null>(null);
   const [isCreator, setIsCreator] = useState(false);
   const [packages, setPackages] = useState<PackagePricing[]>(DEFAULT_PACKAGES);
@@ -180,7 +184,7 @@ export default function WorkspacePage() {
           }
         }
       } catch {
-        setStatus({ type: "error", message: "Could not load studio. Check your connection and refresh." });
+        setStatus({ type: "error", message: t("msgCouldNotLoad") });
       }
 
       // After auth confirmed, load non-critical data without blocking
@@ -360,7 +364,7 @@ export default function WorkspacePage() {
     setUploadProgress(prev => ({ ...prev, [key]: 0 }));
     const done = () => setUploadProgress(prev => { const n = { ...prev }; delete n[key]; return n; });
     try {
-      if (!user?.id) throw new Error("Sign in again before uploading");
+      if (!user?.id) throw new Error(t("msgSignInAgain"));
 
       // Downscale client-side before upload (shared helper: >2.5MB → max 2560px
       // JPEG). Phone photos drop from 5-12MB to <1MB — mobile uploads become
@@ -382,7 +386,7 @@ export default function WorkspacePage() {
       done();
       return uploadData.image as UploadedRef;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed";
+      const message = error instanceof Error ? error.message : tc("uploadFailed");
       setUploadIssue(`${file.name}: ${message}`);
       setStatus({ type: "error", message });
       done();
@@ -489,17 +493,17 @@ export default function WorkspacePage() {
 
   const handleRecompositeQuote = async () => {
     if (!currentShoot) return;
-    setStatus({ type: "loading", message: "Recompositing quote card..." });
+    setStatus({ type: "loading", message: t("msgRecompositing") });
     try {
       const res = await fetch(`/api/shoots/${currentShoot.id}/recomposite-quote`, { method: "POST" });
       if (res.ok) {
-        setStatus({ type: "ok", message: "Quote card updated! Refresh to see the new version." });
+        setStatus({ type: "ok", message: t("msgQuoteUpdated") });
         // Refresh the shoot to get new signed URL
         const json = await fetch(`/api/shoots/${currentShoot.id}`).then(r => r.json()).catch(() => null);
         if (json?.shoot) setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, ...json.shoot } : s));
       } else {
-        const { error } = await res.json().catch(() => ({ error: "Unknown error" }));
-        setStatus({ type: "error", message: error ?? "Recomposite failed" });
+        const { error } = await res.json().catch(() => ({ error: "" }));
+        setStatus({ type: "error", message: error || t("msgRecompositeFailed") });
       }
     } catch (e) {
       setStatus({ type: "error", message: String(e) });
@@ -513,13 +517,13 @@ export default function WorkspacePage() {
     const data = await res.json();
     if (res.ok) {
       setReviewBaseUrl(null);
-      setStatus({ type: "ok", message: "Base approved — generating your photos now..." });
+      setStatus({ type: "ok", message: t("msgBaseApprovedGenerating") });
       setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"] } : prev);
       setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
       // Re-fetch character bases so it appears in library
       fetch("/api/characters").then(r => r.json()).then(d => setCharacterBases(d.characters ?? [])).catch(() => {});
     } else {
-      setStatus({ type: "error", message: data.error ?? "Approve failed" });
+      setStatus({ type: "error", message: data.error ?? t("msgApproveFailed") });
     }
     setBaseAction("idle");
   };
@@ -578,7 +582,7 @@ export default function WorkspacePage() {
 
   const handleCreateAndPay = async (adminBypass = false) => {
     if (!canCreate || status.type === "loading") return;
-    setStatus({ type: "loading", message: "Creating shoot..." });
+    setStatus({ type: "loading", message: t("msgCreatingShoot") });
     try {
       const res = await fetch("/api/shoots", {
         method: "POST",
@@ -613,7 +617,7 @@ export default function WorkspacePage() {
       setCurrentShoot(shoot);
 
       if (adminBypass) {
-        setStatus({ type: "ok", message: "Your shoot is queued! Generating professional images — check back in about 1 hour." });
+        setStatus({ type: "ok", message: t("msgShootQueued") });
         resumeStartedRef.current.add(shoot.id); // prevent useEffect double-start
         fetch(`/api/shoots/${shoot.id}/start`, {
           method: "POST",
@@ -624,7 +628,7 @@ export default function WorkspacePage() {
       }
 
       // Initiate payment
-      setStatus({ type: "loading", message: "Opening payment..." });
+      setStatus({ type: "loading", message: t("msgOpeningPayment") });
       const payRes = await fetch(`/api/shoots/${shoot.id}/pay`, { method: "POST" });
       const payData = await payRes.json();
       if (!payRes.ok) { setStatus({ type: "error", message: payData.error }); return; }
@@ -650,7 +654,7 @@ export default function WorkspacePage() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setStatus({ type: "ok", message: "Download started — check your Files / Downloads." });
+    setStatus({ type: "ok", message: t("msgDownloadStarted") });
   };
 
   const downloadZip = (shoot: Shoot) => {
@@ -664,7 +668,7 @@ export default function WorkspacePage() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setStatus({ type: "ok", message: "Preparing your ZIP — it will download shortly." });
+    setStatus({ type: "ok", message: t("msgPreparingZip") });
   };
 
   const handleVerifyPayment = async (shootId: string) => {
@@ -673,14 +677,14 @@ export default function WorkspacePage() {
       const res = await fetch(`/api/shoots/${shootId}/verify-payment`, { method: "POST" });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setStatus({ type: "error", message: body.error ?? "Payment check failed. Contact support if you were charged." });
+        setStatus({ type: "error", message: body.error ?? t("msgPaymentCheckFailed") });
         return;
       }
-      setStatus({ type: "ok", message: "Payment confirmed! Your shoot is now queued." });
+      setStatus({ type: "ok", message: t("msgPaymentConfirmed") });
       setShoots(prev => prev.map(s => s.id === shootId ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
       setCurrentShoot(prev => prev?.id === shootId ? { ...prev, status: "QUEUED" as Shoot["status"] } : prev);
     } catch {
-      setStatus({ type: "error", message: "Network error. Please try again." });
+      setStatus({ type: "error", message: tc("networkError") });
     } finally {
       setVerifyingPaymentId(null);
     }
@@ -693,7 +697,7 @@ export default function WorkspacePage() {
       const res = await fetch(`/api/shoots/${shoot.id}/regenerate`, { method: "POST" });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setRefundError(body.error ?? "Could not start regeneration. Please contact support with your shoot ID.");
+        setRefundError(body.error ?? t("msgCouldNotRegen"));
         setRefundState("error");
         return;
       }
@@ -702,7 +706,7 @@ export default function WorkspacePage() {
       setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"], regeneration_status: "completed" } as Shoot : prev);
       setShoots(prev => prev.map(s => s.id === shoot.id ? ({ ...s, status: "QUEUED" as Shoot["status"], regeneration_status: "completed" } as Shoot) : s));
     } catch {
-      setRefundError("Network error. Please try again.");
+      setRefundError(tc("networkError"));
       setRefundState("error");
     }
   };
@@ -716,7 +720,7 @@ export default function WorkspacePage() {
     const res = await fetch(`/api/shoots/${currentShoot.id}/to-template`, { method: "POST" });
     const d = await res.json();
     setToTemplateLoading(false);
-    if (!res.ok) { setToTemplateError(d.error ?? "Failed to create template"); return; }
+    if (!res.ok) { setToTemplateError(d.error ?? t("msgFailedCreateTemplate")); return; }
     window.location.href = `/creator-dashboard?edit=${d.templateId}`;
   };
   const isAdmin = user?.role === "admin";
@@ -747,14 +751,14 @@ export default function WorkspacePage() {
           Alux Art
         </div>
         <div className={styles.navRight}>
-          <Link href="/marketplace" className={styles.adminLink}>Marketplace</Link>
-          <Link href="/support" className={styles.adminLink}>Support</Link>
-          {isAdmin && <a href="/admin" className={styles.adminLink}>Admin</a>}
+          <Link href="/marketplace" className={styles.adminLink}>{t("marketplace")}</Link>
+          <Link href="/support" className={styles.adminLink}>{t("support")}</Link>
+          {isAdmin && <a href="/admin" className={styles.adminLink}>{t("admin")}</a>}
           <span className={styles.navEmail}>{user?.email}</span>
           <button className={styles.themeToggle} onClick={toggleTheme} aria-pressed={theme === "dark"}>
             {theme === "dark" ? "Light" : "Dark"}
           </button>
-          <button className={styles.signOutBtn} onClick={signOut}>Sign out</button>
+          <button className={styles.signOutBtn} onClick={signOut}>{t("signOut")}</button>
         </div>
       </nav>
 
@@ -766,12 +770,12 @@ export default function WorkspacePage() {
           {characterBases.length > 0 && (
             <div className={styles.panel}>
               <div className={styles.panelTitleRow}>
-                <p className={styles.panelTitle}>Saved Characters</p>
+                <p className={styles.panelTitle}>{t("savedCharacters")}</p>
                 {selectedBase && (
-                  <button className={styles.clearLibBtn} onClick={() => setSelectedBase(null)}>Clear</button>
+                  <button className={styles.clearLibBtn} onClick={() => setSelectedBase(null)}>{t("clear")}</button>
                 )}
               </div>
-              <p className={styles.helperText}>Select a saved character to reuse — skips base generation entirely.</p>
+              <p className={styles.helperText}>{t("savedCharHint")}</p>
               <div className={styles.thumbGrid}>
                 {characterBases.map(base => {
                   const isSelected = selectedBase?.id === base.id;
@@ -801,7 +805,7 @@ export default function WorkspacePage() {
                 })}
               </div>
               {selectedBase && (
-                <p className={styles.libLabel}>Using saved character — base generation skipped</p>
+                <p className={styles.libLabel}>{t("usingSavedChar")}</p>
               )}
             </div>
           )}
@@ -809,9 +813,9 @@ export default function WorkspacePage() {
           {/* Identity photos */}
           <div className={styles.panel}>
             <div className={styles.panelTitleRow}>
-              <p className={styles.panelTitle}>Identity Photos (1–6)</p>
+              <p className={styles.panelTitle}>{t("identityPhotos")}</p>
               {libraryImages.length > 0 && (
-                <button className={styles.clearLibBtn} onClick={handleClearLibrary}>Clear library</button>
+                <button className={styles.clearLibBtn} onClick={handleClearLibrary}>{t("clearLibrary")}</button>
               )}
             </div>
             <p className={styles.helperText}>
@@ -824,7 +828,7 @@ export default function WorkspacePage() {
             {/* Saved library */}
             {libraryImages.length > 0 && (
               <div>
-                <p className={styles.libLabel}>Your library - tap to select/deselect</p>
+                <p className={styles.libLabel}>{t("libTapSelect")}</p>
                 <div className={styles.thumbGrid}>
                   {libraryImages.map(img => {
                     const selected = identityImages.some(i => i.id === img.id);
@@ -869,7 +873,7 @@ export default function WorkspacePage() {
                   ))}
                 </div>
               ) : (
-                <p>{uploading === "identity" ? "Processing..." : "Click to add identity photos"}</p>
+                <p>{uploading === "identity" ? t("processing") : t("clickAddIdentity")}</p>
               )}
               <p className={styles.uploadCount}>{identityImages.length}/{MAX_IDENTITY}</p>
             </div>
@@ -877,13 +881,13 @@ export default function WorkspacePage() {
             {/* Save to library toggle */}
             <label className={styles.saveToggle}>
               <input type="checkbox" checked={saveToLibrary} onChange={e => setSaveToLibrary(e.target.checked)} />
-              <span>Save to my identity library</span>
+              <span>{t("saveToLibrary")}</span>
             </label>
 
             {/* Group picture toggle — identity photo(s) contain more than one person */}
             <label className={styles.saveToggle}>
               <input type="checkbox" checked={groupPicture} onChange={e => setGroupPicture(e.target.checked)} />
-              <span>This is a group photo (more than one person)</span>
+              <span>{t("groupPhoto")}</span>
             </label>
             {groupPicture && (
               <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
@@ -894,7 +898,7 @@ export default function WorkspacePage() {
             {/* No-smile toggle — buyer opt-out of smile slots for the whole shoot */}
             <label className={styles.saveToggle}>
               <input type="checkbox" checked={noSmile} onChange={e => setNoSmile(e.target.checked)} />
-              <span>No smiles — keep a relaxed, closed-lips expression in every photo</span>
+              <span>{t("noSmiles")}</span>
             </label>
             {noSmile && (
               <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
@@ -907,15 +911,15 @@ export default function WorkspacePage() {
           {/* Inspiration photos */}
           <div className={styles.panel}>
             <div className={styles.panelTitleRow}>
-              <p className={styles.panelTitle}>Inspiration (min. 1)</p>
+              <p className={styles.panelTitle}>{t("inspiration")}</p>
               {inspirationLibraryImages.length > 0 && (
-                <button className={styles.clearLibBtn} onClick={handleClearInspirationLibrary}>Clear library</button>
+                <button className={styles.clearLibBtn} onClick={handleClearInspirationLibrary}>{t("clearLibrary")}</button>
               )}
             </div>
 
             {inspirationLibraryImages.length > 0 && (
               <div>
-                <p className={styles.libLabel}>Saved inspiration — tap to select/deselect</p>
+                <p className={styles.libLabel}>{t("savedInspiration")}</p>
                 <div className={styles.thumbGrid}>
                   {inspirationLibraryImages.map(img => {
                     const selected = inspirationImages.some(i => i.id === img.id);
@@ -960,19 +964,19 @@ export default function WorkspacePage() {
                     <div className={styles.libEditPanel}>
                       <p className={styles.libEditTitle}>{img.name}</p>
                       <div className={styles.libEditRow}>
-                        <label className={styles.libEditLabel}>Tag</label>
+                        <label className={styles.libEditLabel}>{t("tag")}</label>
                         <select className={styles.libEditSelect} value={editingTag} onChange={e => setEditingTag(e.target.value)}>
-                          <option value="">None</option>
+                          <option value="">{t("none")}</option>
                           {REFERENCE_TAGS.map(t => (
                             <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
                           ))}
                         </select>
                       </div>
                       <div className={styles.libEditRow}>
-                        <label className={styles.libEditLabel}>Note</label>
+                        <label className={styles.libEditLabel}>{t("note")}</label>
                         <textarea className={styles.libEditNote} value={editingNote}
                           onChange={e => setEditingNote(e.target.value)}
-                          placeholder="e.g. summer shoot, street style..." rows={2} />
+                          placeholder={t("notePlaceholder")} rows={2} />
                       </div>
                       <div className={styles.libEditActions}>
                         <button className={styles.libEditSave}
@@ -1003,15 +1007,15 @@ export default function WorkspacePage() {
             <div className={styles.uploadZone} onClick={() => inspirationRef.current?.click()}>
               <input ref={inspirationRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                 onChange={e => e.target.files && handleInspirationFiles(e.target.files)} />
-              <p>{uploading === "inspiration" ? "Uploading..." : "Click to add mood/inspiration photos"}</p>
+              <p>{uploading === "inspiration" ? t("uploading") : t("clickAddInspiration")}</p>
             </div>
           </div>
 
           {/* Tagged References - advanced mode only */}
           {mode === "advanced" && (
             <div className={styles.panel}>
-              <p className={styles.panelTitle}>Tagged References</p>
-              <p className={styles.helperText}>We extract only the tagged element from each image. For best results, use clear, well-lit references.</p>
+              <p className={styles.panelTitle}>{t("taggedReferences")}</p>
+              <p className={styles.helperText}>{t("taggedHint")}</p>
               {taggedRefs.length > 0 && (
                 <div className={styles.taggedList}>
                   {taggedRefs.map(ref => (
@@ -1031,13 +1035,13 @@ export default function WorkspacePage() {
                         </div>
                         <input
                           className={styles.customTagInput}
-                          placeholder="Custom tag..."
+                          placeholder={t("customTagPlaceholder")}
                           value={ref.customTag ?? ""}
                           onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, customTag: e.target.value, tag: undefined } : r))}
                         />
                         <textarea
                           className={styles.refNoteInput}
-                          placeholder="Styling direction (optional)..."
+                          placeholder={t("stylingDirPlaceholder")}
                           rows={2}
                           value={ref.note ?? ""}
                           onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
@@ -1051,7 +1055,7 @@ export default function WorkspacePage() {
               <div className={styles.uploadZone} onClick={() => taggedRef.current?.click()}>
                 <input ref={taggedRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                   onChange={e => e.target.files && handleTaggedFiles(e.target.files)} />
-                <p>{uploading === "tagged" ? "Uploading..." : "Add reference images and tag each one"}</p>
+                <p>{uploading === "tagged" ? t("uploading") : t("addRefTagEach")}</p>
                 <p className={styles.uploadCount}>OUTFIT / HAIRSTYLE / MAKEUP / NAIL / BACKGROUND / LIGHTING / COLOR GRADE</p>
               </div>
             </div>
@@ -1194,7 +1198,7 @@ export default function WorkspacePage() {
                         </div>
                         <span className={styles.shootActions}>
                           <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").replace(/_/g, "").charAt(0).toUpperCase() + (s.status ?? "").replace(/_/g, "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
-                            {WORKSPACE_STATUS_LABELS[s.status ?? ""] ?? s.status}
+                            {STATUS_KEY[s.status ?? ""] ? t(STATUS_KEY[s.status ?? ""]) : s.status}
                           </span>
                           <span className={styles.openGalleryLabel}>Open gallery</span>
                         </span>

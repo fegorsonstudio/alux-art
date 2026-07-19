@@ -12,6 +12,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Fully static public pages (legal). These never depend on auth and never
+  // redirect based on it, so skip the Supabase getUser() round-trip entirely —
+  // it was adding 1.4–3.8s of latency and a Supabase-uptime dependency to pages
+  // that must be instant and reliable. Google's OAuth verification crawler
+  // flagged /privacy as "unresponsive" when that lookup made it intermittently
+  // slow. We still seed the locale cookie so the page renders translated.
+  const staticPublicPath = request.nextUrl.pathname;
+  if (staticPublicPath === "/privacy" || staticPublicPath === "/terms" || staticPublicPath === "/support") {
+    const res = NextResponse.next();
+    if (!isLocale(request.cookies.get(LOCALE_COOKIE)?.value)) {
+      const locale = resolveLocale(undefined, request.headers.get("accept-language"));
+      res.cookies.set(LOCALE_COOKIE, locale, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    }
+    return res;
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
