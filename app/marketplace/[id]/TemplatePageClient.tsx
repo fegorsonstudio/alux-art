@@ -11,6 +11,8 @@ import ImagePreview from "@/components/ImagePreview";
 import CheckoutPanel from "./CheckoutPanel";
 import TemplateShareCard from "@/components/TemplateShareCard";
 import { getResumeMarker, clearResumeMarker } from "@/lib/checkout-resume";
+import { useT } from "@/lib/useLocale";
+import type { AppDictionary } from "@/lib/dictionaries";
 
 function renderMarkdown(text: string) {
   // Split into lines, handle > blockquotes, then bold **...**
@@ -115,6 +117,7 @@ function StarWidget({
 }) {
   const [hover, setHover] = useState(0);
   const display = hover || userRating || 0;
+  const tRating = useT("template");
 
   return (
     <div className={styles.ratingBlock}>
@@ -134,7 +137,7 @@ function StarWidget({
       {avg !== null && count > 0 && (
         <span className={styles.ratingAvg}>{avg.toFixed(1)} ({count})</span>
       )}
-      {userRating && <span className={styles.ratingYours}>Your rating: {userRating}★</span>}
+      {userRating && <span className={styles.ratingYours}>{tRating("yourRating", { n: userRating })}</span>}
     </div>
   );
 }
@@ -142,6 +145,10 @@ function StarWidget({
 export default function TemplatePage() {
   const { id } = useParams<{ id: string }>();
   const { currency, toggle: toggleCurrency, format: formatPrice } = useCurrency();
+  const t = useT("template");
+  const tc = useT("common");
+  const tCatRaw = useT("categories");
+  const tCat = (v: string) => tCatRaw(v as keyof AppDictionary["categories"]);
   const [template, setTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [galleryIdx, setGalleryIdx] = useState(0);
@@ -159,7 +166,7 @@ export default function TemplatePage() {
   // lookup below if a template has no 1-image price configured.
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(1);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [shareLabel, setShareLabel] = useState("Share");
+  const [shareLabel, setShareLabel] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [showGift, setShowGift] = useState(false);
   const [giftBuying, setGiftBuying] = useState(false);
@@ -289,8 +296,8 @@ export default function TemplatePage() {
       try { await navigator.share({ title: template.title, url }); return; } catch {}
     }
     await navigator.clipboard.writeText(url);
-    setShareLabel("Copied!");
-    setTimeout(() => setShareLabel("Share"), 1500);
+    setShareLabel(t("copied"));
+    setTimeout(() => setShareLabel(t("share")), 1500);
   };
 
   const purchase = () => {
@@ -303,7 +310,7 @@ export default function TemplatePage() {
     return (
       <div className={styles.loadingPage}>
         <Link href="/marketplace" className={styles.backLink}>← Marketplace</Link>
-        <div className={styles.loadingText}>Loading...</div>
+        <div className={styles.loadingText}>{tc("loading")}</div>
       </div>
     );
   }
@@ -312,7 +319,7 @@ export default function TemplatePage() {
     return (
       <div className={styles.loadingPage}>
         <Link href="/marketplace" className={styles.backLink}>← Marketplace</Link>
-        <div className={styles.loadingText}>Template not found.</div>
+        <div className={styles.loadingText}>{t("notFound")}</div>
       </div>
     );
   }
@@ -343,7 +350,7 @@ export default function TemplatePage() {
           <div className={styles.lightboxImgWrap} onClick={e => e.stopPropagation()}>
             {allImages[galleryIdx]?.url
               ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.lightboxImg} />
-              : <div className={styles.lightboxPlaceholder}>No image</div>
+              : <div className={styles.lightboxPlaceholder}>{t("noImage")}</div>
             }
             {allImages.length > 1 && (
               <>
@@ -370,10 +377,10 @@ export default function TemplatePage() {
             {currency === "NGN" ? "₦ NGN" : "$ USD"}
           </button>
           {isLoggedIn === false
-            ? <Link href={`/login?next=/marketplace/${id}`} className={styles.backLink}>Sign in →</Link>
+            ? <Link href={`/login?next=/marketplace/${id}`} className={styles.backLink}>{t("signInNav")}</Link>
             : isCreator
-              ? <Link href="/creator-dashboard" className={styles.backLink}>Creator Dashboard →</Link>
-              : <Link href="/become-creator" className={styles.backLink}>Become a Creator</Link>
+              ? <Link href="/creator-dashboard" className={styles.backLink}>{t("creatorDashNav")}</Link>
+              : <Link href="/become-creator" className={styles.backLink}>{tc("becomeCreator")}</Link>
           }
         </div>
       </header>
@@ -401,9 +408,9 @@ export default function TemplatePage() {
             >
               {allImages[galleryIdx]?.url
                 ? <ImagePreview src={allImages[galleryIdx].url!} alt={template.title} className={styles.mainImgEl} />
-                : <div className={styles.imgPlaceholder}>No image</div>
+                : <div className={styles.imgPlaceholder}>{t("noImage")}</div>
               }
-              <div className={styles.expandHint}>Tap to expand</div>
+              <div className={styles.expandHint}>{t("tapToExpand")}</div>
             </div>
             {allImages.length > 1 && (
               <>
@@ -442,26 +449,26 @@ export default function TemplatePage() {
         {/* Info */}
         <div className={styles.infoCol}>
           <div className={styles.categoryRow}>
-            <span className={styles.categoryPill}>{template.category}</span>
+            <span className={styles.categoryPill}>{tCat(template.category)}</span>
             {template.isStory && (
               <span className={styles.categoryPill} style={{ background: "rgba(109,40,217,0.25)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.4)" }}>
-                STORY
+                {t("storyBadge")}
               </span>
             )}
             {template.storyType && (
               <span className={styles.categoryPill} style={{ textTransform: "capitalize" }}>
-                {template.storyType === "group_brand" ? "Group + Brand" : template.storyType}
+                {template.storyType === "group_brand" ? t("groupBrand") : template.storyType}
               </span>
             )}
-            <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel}</button>
-            <button type="button" className={styles.shareBtn} onClick={() => setShowQR(true)}>QR Code</button>
+            <button type="button" className={styles.shareBtn} onClick={share}>{shareLabel ?? t("share")}</button>
+            <button type="button" className={styles.shareBtn} onClick={() => setShowQR(true)}>{t("qrCode")}</button>
             <button type="button" className={styles.shareBtn} onClick={() => {
               if (!isLoggedIn) { window.location.href = `/login?next=/marketplace/${id}`; return; }
               setGiftName(userName);
               setGiftMessage("");
               setGiftError("");
               setShowGift(true);
-            }}>Gift a Friend</button>
+            }}>{t("giftAFriend")}</button>
           </div>
           <h1 className={styles.title}>{template.title}</h1>
 
@@ -480,7 +487,7 @@ export default function TemplatePage() {
               }
               <div className={styles.creatorInfo}>
                 <span className={styles.creatorName}>{template.creator.displayName}</span>
-                <span className={styles.creatorMeta}>{template.creator.templateCount} style{template.creator.templateCount !== 1 ? "s" : ""}</span>
+                <span className={styles.creatorMeta}>{template.creator.templateCount === 1 ? t("styleOne", { n: 1 }) : t("styleMany", { n: template.creator.templateCount })}</span>
               </div>
               <span className={styles.creatorArrow}>→</span>
             </Link>
@@ -492,24 +499,24 @@ export default function TemplatePage() {
 
           {template.requiresCostar && (
             <p style={{ margin: "12px 0 0", fontSize: "0.82rem", color: "#a78bfa", background: "rgba(109,40,217,0.1)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(109,40,217,0.2)" }}>
-              Duo story — you&apos;ll upload a co-star photo at checkout.
+              {t("duoNote")}
             </p>
           )}
           {template.requiresGroup && (
             <p style={{ margin: "12px 0 0", fontSize: "0.82rem", color: "#a78bfa", background: "rgba(109,40,217,0.1)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(109,40,217,0.2)" }}>
-              Group story — you&apos;ll upload a group photo at checkout.
+              {t("groupNote")}
             </p>
           )}
           {template.requiresBrand && (
             <p style={{ margin: "12px 0 0", fontSize: "0.82rem", color: "#a78bfa", background: "rgba(109,40,217,0.1)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(109,40,217,0.2)" }}>
-              Brand story — you&apos;ll upload brand and logo assets at checkout.
+              {t("brandNote")}
             </p>
           )}
 
           <div className={styles.purchaseBox}>
             {pkgOptions.length > 0 && (
               <div className={styles.pkgRow}>
-                <span className={styles.pkgLabel}>Images</span>
+                <span className={styles.pkgLabel}>{t("imagesLabel")}</span>
                 <div className={styles.pkgPills}>
                   {pkgOptions.map(o => (
                     <button
@@ -518,7 +525,7 @@ export default function TemplatePage() {
                       className={`${styles.pkgPill} ${selectedPkg === o.n ? styles.pkgPillActive : ""}`}
                       onClick={() => setSelectedPkg(o.n)}
                     >
-                      {o.n} {o.n === 1 ? "image" : "images"}
+                      {o.n} {o.n === 1 ? t("imageOne") : t("imageMany")}
                       <span className={styles.pkgPillPrice}>{formatPrice(o.price)}</span>
                     </button>
                   ))}
@@ -529,7 +536,7 @@ export default function TemplatePage() {
             <div className={styles.couponRow}>
               <input
                 className={styles.couponInput}
-                placeholder="Coupon code"
+                placeholder={t("couponPlaceholder")}
                 value={couponCode}
                 onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null); }}
               />
@@ -538,12 +545,12 @@ export default function TemplatePage() {
                 className={styles.couponBtn}
                 onClick={validateCoupon}
                 disabled={validating || !couponCode.trim()}
-              >{validating ? "..." : "Apply"}</button>
+              >{validating ? "..." : t("apply")}</button>
             </div>
             {couponResult && (
               <p className={couponResult.valid ? styles.couponSuccess : styles.couponError}>
                 {couponResult.valid
-                  ? `${couponResult.discountDescription} — save ${formatPrice(couponResult.discountNgn ?? 0)}`
+                  ? t("couponSave", { desc: couponResult.discountDescription ?? "", amount: formatPrice(couponResult.discountNgn ?? 0) })
                   : couponResult.message}
               </p>
             )}
@@ -565,14 +572,14 @@ export default function TemplatePage() {
               type="button"
               className={styles.buyBtn}
               onClick={purchase}
-            >Book This Look</button>
+            >{t("bookThisLook")}</button>
           </div>
 
           <div className={styles.metaGrid}>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Style</span><span className={styles.metaVal}>{template.shootMode === "advanced" ? "Full customisation" : "Standard"}</span></div>
-            <div className={styles.metaItem}><span className={styles.metaLabel}>Ratio</span><span className={styles.metaVal}>{template.aspectRatio}</span></div>
+            <div className={styles.metaItem}><span className={styles.metaLabel}>{t("styleLabel")}</span><span className={styles.metaVal}>{template.shootMode === "advanced" ? t("fullCustomisation") : t("standard")}</span></div>
+            <div className={styles.metaItem}><span className={styles.metaLabel}>{t("ratio")}</span><span className={styles.metaVal}>{template.aspectRatio}</span></div>
             {template.purchaseCount > 0 && (
-              <div className={styles.metaItem}><span className={styles.metaLabel}>Sales</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
+              <div className={styles.metaItem}><span className={styles.metaLabel}>{t("sales")}</span><span className={styles.metaVal}>{template.purchaseCount}</span></div>
             )}
           </div>
 
@@ -587,24 +594,24 @@ export default function TemplatePage() {
       {template.isStory && template.scenes && template.scenes.length > 0 && (
         <div className={styles.sceneTimeline}>
           <h3 style={{ margin: "0 0 14px", fontSize: "0.9rem", fontWeight: 600, color: "#f5f3ff", letterSpacing: "0.02em" }}>
-            Story Scenes ({template.scenes.length})
+            {t("storyScenes", { n: template.scenes.length })}
           </h3>
           {template.scenes.map((scene) => (
             <div key={scene.slot} className={styles.sceneCard}>
               <div className={styles.sceneInfo}>
-                <div className={styles.sceneIndex}>Scene {scene.slot}</div>
+                <div className={styles.sceneIndex}>{t("sceneN", { n: scene.slot })}</div>
                 <div className={styles.sceneLabel}>{scene.title}</div>
                 {scene.description && (
                   <p className={styles.sceneDesc}>{scene.description}</p>
                 )}
                 {scene.environment && (
                   <p style={{ margin: "4px 0 0", fontSize: "0.62rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.3 }}>
-                    <strong style={{ color: "rgba(255,255,255,0.5)" }}>Location:</strong> {scene.environment}
+                    <strong style={{ color: "rgba(255,255,255,0.5)" }}>{t("locationLabel")}</strong> {scene.environment}
                   </p>
                 )}
                 {scene.wardrobe && (
                   <p style={{ margin: "3px 0 0", fontSize: "0.62rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.3 }}>
-                    <strong style={{ color: "rgba(255,255,255,0.5)" }}>Wardrobe:</strong> {scene.wardrobe}
+                    <strong style={{ color: "rgba(255,255,255,0.5)" }}>{t("wardrobeLabel")}</strong> {scene.wardrobe}
                   </p>
                 )}
               </div>
@@ -652,10 +659,10 @@ export default function TemplatePage() {
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
               <div>
                 <p style={{ margin: "0 0 4px", fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(196,181,253,0.5)" }}>
-                  Gift this style
+                  {t("giftThisStyle")}
                 </p>
                 <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#f5f3ff" }}>
-                  Gift a Friend
+                  {t("giftAFriend")}
                 </h2>
               </div>
               <button type="button" onClick={() => setShowGift(false)} style={{
@@ -675,7 +682,7 @@ export default function TemplatePage() {
               <div>
                 <p style={{ margin: 0, color: "#f5f3ff", fontSize: "0.88rem", fontWeight: 600 }}>{template.title}</p>
                 <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>
-                  {activePkg?.n ?? selectedPkg} {(activePkg?.n ?? selectedPkg) === 1 ? "image" : "images"} · {template.category}
+                  {activePkg?.n ?? selectedPkg} {(activePkg?.n ?? selectedPkg) === 1 ? t("imageOne") : t("imageMany")} · {tCat(template.category)}
                 </p>
               </div>
               <span style={{ color: "#c4b5fd", fontSize: "1.1rem", fontWeight: 700 }}>
@@ -686,13 +693,13 @@ export default function TemplatePage() {
             {/* Sender name */}
             <label style={{ display: "block", marginBottom: "16px" }}>
               <span style={{ display: "block", marginBottom: "6px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
-                YOUR NAME (required)
+                {t("yourNameRequired")}
               </span>
               <input
                 type="text"
                 value={giftName}
                 onChange={e => setGiftName(e.target.value.slice(0, 80))}
-                placeholder="Your name"
+                placeholder={t("yourNamePlaceholder")}
                 style={{
                   width: "100%", boxSizing: "border-box",
                   background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
@@ -706,12 +713,12 @@ export default function TemplatePage() {
             {/* Custom message */}
             <label style={{ display: "block", marginBottom: "20px" }}>
               <span style={{ display: "block", marginBottom: "6px", fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
-                PERSONAL MESSAGE (optional)
+                {t("personalMessage")}
               </span>
               <textarea
                 value={giftMessage}
                 onChange={e => setGiftMessage(e.target.value.slice(0, 300))}
-                placeholder="Write something special for your friend..."
+                placeholder={t("giftMsgPlaceholder")}
                 rows={3}
                 style={{
                   width: "100%", boxSizing: "border-box", resize: "none",
@@ -734,7 +741,7 @@ export default function TemplatePage() {
               type="button"
               disabled={giftBuying || !giftName.trim()}
               onClick={async () => {
-                if (!giftName.trim()) { setGiftError("Please enter your name."); return; }
+                if (!giftName.trim()) { setGiftError(t("enterYourName")); return; }
                 setGiftBuying(true);
                 setGiftError("");
                 try {
@@ -750,12 +757,12 @@ export default function TemplatePage() {
                     }),
                   });
                   const data = await res.json();
-                  if (!res.ok) { setGiftError(data.error ?? "Failed to create gift. Please try again."); setGiftBuying(false); return; }
+                  if (!res.ok) { setGiftError(data.error ?? t("giftFailed")); setGiftBuying(false); return; }
                   if (data.authorizationUrl) { window.location.href = data.authorizationUrl; return; }
-                  setGiftError("Unexpected response. Please try again.");
+                  setGiftError(t("unexpected"));
                   setGiftBuying(false);
                 } catch {
-                  setGiftError("Network error. Please try again.");
+                  setGiftError(t("networkError"));
                   setGiftBuying(false);
                 }
               }}
@@ -772,11 +779,11 @@ export default function TemplatePage() {
                 transition: "opacity 0.2s",
               }}
             >
-              {giftBuying ? "Redirecting to payment..." : `Pay ${formatPrice(pkgPrice)} — Send Gift`}
+              {giftBuying ? t("redirecting") : t("paySendGift", { price: formatPrice(pkgPrice) })}
             </button>
 
             <p style={{ margin: "12px 0 0", textAlign: "center", fontSize: "0.73rem", color: "rgba(255,255,255,0.25)", lineHeight: 1.5 }}>
-              Your friend will receive a private link valid for 30 days. They&apos;ll upload their photos when they claim it.
+              {t("giftFine")}
             </p>
           </div>
         </div>
