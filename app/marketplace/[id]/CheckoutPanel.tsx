@@ -239,6 +239,10 @@ export default function CheckoutPanel({
   const [inductionName, setInductionName] = useState("");
   const [inductionTitles, setInductionTitles] = useState<string[]>([]);
   const [inductionYear, setInductionYear] = useState<number>(() => new Date().getFullYear());
+  // Graduation cap opt-out — defaults ON to match the template's existing
+  // designed look; buyers who never touch this get identical behavior to
+  // before this control existed.
+  const [inductionCap, setInductionCap] = useState<"grad" | "none">("grad");
   const inductionYears = inductionYearRange();
 
   // Gear Equalizer (photo_upgrade) — the buyer's uploads ARE the photos to upgrade;
@@ -399,6 +403,7 @@ export default function CheckoutPanel({
       if (c.inductionName) setInductionName(c.inductionName);
       if (Array.isArray(c.inductionTitles)) setInductionTitles(c.inductionTitles);
       if (typeof c.inductionYear === "number") setInductionYear(c.inductionYear);
+      if (c.inductionCap === "none" || c.inductionCap === "grad") setInductionCap(c.inductionCap);
       if (c.enhanceLighting) setEnhanceLighting(c.enhanceLighting);
       if (c.enhanceCamera) setEnhanceCamera(c.enhanceCamera);
       if (c.enhanceBackdrop) setEnhanceBackdrop(c.enhanceBackdrop);
@@ -736,7 +741,7 @@ export default function CheckoutPanel({
     const config = {
       selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
-      groupColors, inductionName, inductionTitles, inductionYear,
+      groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
       enhanceBackdrop: enhanceBackdrop ?? undefined,
@@ -797,7 +802,7 @@ export default function CheckoutPanel({
             ]
           : undefined,
         induction: inductionActive
-          ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear }
+          ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear, cap: inductionCap }
           : undefined,
         enhance: photoUpgradeActive && enhanceLighting && enhanceCamera
           ? { lighting: enhanceLighting, camera: enhanceCamera, backdropOptionId: enhanceBackdrop }
@@ -1239,6 +1244,18 @@ export default function CheckoutPanel({
                   </button>
                 ))}
               </div>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, cursor: "pointer", fontSize: "0.85rem", lineHeight: 1.4 }}>
+                <input
+                  type="checkbox"
+                  checked={inductionCap === "grad"}
+                  onChange={e => setInductionCap(e.target.checked ? "grad" : "none")}
+                  style={{ marginTop: 2 }}
+                />
+                <span>
+                  <strong>{t("capToggleLabel")}</strong>
+                  <span style={{ display: "block", opacity: 0.75 }}>{t("capToggleHint")}</span>
+                </span>
+              </label>
               <p className={styles.sectionHint} style={{ marginTop: 10, fontWeight: 600 }}>
                 {t("sashPreview", { year: inductionYear, name: (inductionName.trim() || "YOUR NAME").toUpperCase() })}
                 {inductionTitles.length > 0 ? ` · ${inductionTitles.map(title => title.replace(/\s*\(.*\)$/, "")).join(", ")}` : ""}

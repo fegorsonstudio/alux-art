@@ -130,6 +130,8 @@ const ar: AppDictionary = {
     sashTitles: "ألقابك — اضغط على كل ما ينطبق (تظهر بترتيب ضغطك):",
     classOf: "دفعة:",
     sashPreview: "معاينة الوشاح: CLASS OF {year} · {name}",
+    capToggleLabel: "قبعة التخرج",
+    capToggleHint: "مفعّلة: تظهر صورتك الرئيسية بقبعة التخرج السوداء. معطّلة: تظهر تسريحة شعرك بدلًا منها، ولا قبعة في أي صورة.",
     yourStyling: "تنسيقك",
     nPicked: "اخترت {n}",
     optionalTap: "اختياري — اضغط للتصفح",

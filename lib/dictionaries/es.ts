@@ -130,6 +130,8 @@ const es: AppDictionary = {
     sashTitles: "Tus títulos: toca todos los que apliquen (aparecen en el orden en que los toques):",
     classOf: "Promoción:",
     sashPreview: "Vista previa de la banda: CLASS OF {year} · {name}",
+    capToggleLabel: "Birrete de graduación",
+    capToggleHint: "Activado: tu foto principal muestra el birrete negro. Desactivado: se ve tu peinado en su lugar, sin birrete en ninguna foto.",
     yourStyling: "Tu estilismo",
     nPicked: "{n} elegido(s)",
     optionalTap: "opcional — toca para ver",

@@ -130,6 +130,8 @@ const pcm: AppDictionary = {
     sashTitles: "Your titles — tap all di ones wey concern you (dem go appear as you tap dem):",
     classOf: "Class of:",
     sashPreview: "Sash preview: CLASS OF {year} · {name}",
+    capToggleLabel: "Graduation cap",
+    capToggleHint: "If e on: your hero photo go show black mortarboard cap. If e off: your hairstyle go show instead, no cap for any photo.",
     yourStyling: "Your styling",
     nPicked: "{n} picked",
     optionalTap: "optional — tap make you browse",

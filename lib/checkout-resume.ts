@@ -58,6 +58,7 @@ export interface PendingConfig {
   inductionName?: string;
   inductionTitles?: string[];
   inductionYear?: number;
+  inductionCap?: "grad" | "none";
   // Gear Equalizer (photo_upgrade category)
   enhanceLighting?: string;
   enhanceCamera?: string;

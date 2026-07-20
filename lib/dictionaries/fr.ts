@@ -130,6 +130,8 @@ const fr: AppDictionary = {
     sashTitles: "Vos titres — touchez tous ceux qui s'appliquent (ils apparaissent dans l'ordre choisi) :",
     classOf: "Promotion :",
     sashPreview: "Aperçu de l'écharpe : CLASS OF {year} · {name}",
+    capToggleLabel: "Toque de graduation",
+    capToggleHint: "Activé : votre photo phare montre la toque noire. Désactivé : votre coiffure est visible à la place, aucune toque sur aucune photo.",
     yourStyling: "Votre style",
     nPicked: "{n} choisi(s)",
     optionalTap: "optionnel — touchez pour parcourir",

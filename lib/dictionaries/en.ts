@@ -129,6 +129,8 @@ const en = {
     sashTitles: "Your titles — tap all that apply (they appear in the order you tap):",
     classOf: "Class of:",
     sashPreview: "Sash preview: CLASS OF {year} · {name}",
+    capToggleLabel: "Graduation cap",
+    capToggleHint: "On: your hero photo shows the black mortarboard cap. Off: your hairstyle shows instead, no cap in any photo.",
     yourStyling: "Your styling",
     nPicked: "{n} picked",
     optionalTap: "optional — tap to browse",

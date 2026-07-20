@@ -130,6 +130,8 @@ const zh: AppDictionary = {
     sashTitles: "你的头衔——点按所有适用项（按点按顺序显示）：",
     classOf: "届别：",
     sashPreview: "绶带预览：CLASS OF {year} · {name}",
+    capToggleLabel: "学士帽",
+    capToggleHint: "开启：你的主打照片会戴黑色学士帽。关闭：改为展示你的发型，所有照片都不戴帽子。",
     yourStyling: "你的造型",
     nPicked: "已选 {n} 项",
     optionalTap: "可选 — 点按浏览",

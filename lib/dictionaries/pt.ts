@@ -130,6 +130,8 @@ const pt: AppDictionary = {
     sashTitles: "Seus títulos — toque em todos que se aplicam (aparecem na ordem em que tocar):",
     classOf: "Turma de:",
     sashPreview: "Prévia da faixa: CLASS OF {year} · {name}",
+    capToggleLabel: "Capelo de formatura",
+    capToggleHint: "Ativado: sua foto principal mostra o capelo preto. Desativado: seu penteado aparece em vez disso, sem capelo em nenhuma foto.",
     yourStyling: "Seu styling",
     nPicked: "{n} escolhido(s)",
     optionalTap: "opcional — toque para ver",

@@ -45,6 +45,13 @@ export interface InductionSelection {
   name: string;      // the ONLY typed field in the whole booking
   titles: string[];  // subset of NURSING_TITLES, buyer's tap order preserved
   year: number;      // CLASS OF year
+  // Graduation cap opt-out. Undefined/"grad" = template default (cap appears
+  // in the hero/ceremonial slots the matrix already designs for). "none" =
+  // buyer explicitly turned it off — every slot that would show capMode
+  // "grad" renders no headwear instead. Scrub-cap slots are untouched; this
+  // only controls the graduation mortarboard specifically, matching what was
+  // actually reported as a surprise (a cap nobody asked for, not scrub caps).
+  cap?: "grad" | "none";
 }
 
 // ── Buyer input sanitizer (book route) ────────────────────────────────────────
@@ -71,7 +78,9 @@ export function sanitizeInductionSelection(raw: unknown, now = new Date()): Indu
     ? o.year
     : now.getFullYear();
 
-  return { name, titles, year };
+  const cap = o.cap === "none" ? "none" : "grad"; // unrecognized/missing input defaults to today's existing behavior
+
+  return { name, titles, year, cap };
 }
 
 // Short credential string for prompt text, e.g. "RN, RM, BNSc" (strips the
@@ -320,7 +329,17 @@ export function buildNursingInductionBriefSection(
       lines.push("");
       continue;
     }
-    const state = getNursingInductionState(i, packageSize);
+    const rawState = getNursingInductionState(i, packageSize);
+    // Buyer opt-out: any slot the matrix designed with a graduation cap
+    // instead shows no headwear when the buyer turned it off. Scrub-cap
+    // slots are untouched — that's a uniform detail, not the graduation
+    // mortarboard. Framing (lib/generate.ts Stage 4 routing) is computed
+    // separately from rawState via getNursingInductionFraming and is
+    // unaffected by this override.
+    const state: NursingInductionState =
+      sel.cap === "none" && rawState.capMode === "grad"
+        ? { ...rawState, capMode: "none" }
+        : rawState;
     const sashLabel =
       state.sashMode === "worn" ? "Sash WORN"
       : state.sashMode === "draped" ? "Sash DRAPED on arm"

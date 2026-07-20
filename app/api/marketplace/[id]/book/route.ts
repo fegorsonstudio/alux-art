@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     rolePrompt?: string;
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
     choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string }>;
-    induction?: { name?: string; titles?: string[]; year?: number };
+    induction?: { name?: string; titles?: string[]; year?: number; cap?: "grad" | "none" };
     enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null };
     noSmile?: boolean;
     flagShot?: { enabled?: boolean; text?: string };
