@@ -119,6 +119,12 @@ export interface NursingInductionState {
   sashMode: "worn" | "draped" | "held" | "background" | "none";
   capMode: "grad" | "scrub" | "none";
   outfitMode: "elegant" | "scrubs" | "suit";
+  // The shot framing this slot is composed for — feeds Stage 4 identity-image
+  // routing in generate.ts so it never mixes a close-up into a full-body slot
+  // (or vice versa) and misleads the model on height/proportions. Required
+  // (no default) on the S() builder below so every slot must state it
+  // explicitly rather than silently inheriting a wrong assumption.
+  framing: "full-body" | "medium" | "close-up";
   dramaticLighting: boolean;
   showEmbroideredScrubs: boolean;
 }
@@ -128,48 +134,56 @@ export function getNursingInductionState(slotIndex: number, totalSlots: number):
     sashMode: NursingInductionState["sashMode"],
     capMode: NursingInductionState["capMode"],
     outfitMode: NursingInductionState["outfitMode"],
+    framing: NursingInductionState["framing"],
     dramaticLighting = false,
     showEmbroideredScrubs = false,
-  ): NursingInductionState => ({ sashMode, capMode, outfitMode, dramaticLighting, showEmbroideredScrubs });
+  ): NursingInductionState => ({ sashMode, capMode, outfitMode, framing, dramaticLighting, showEmbroideredScrubs });
 
   if (totalSlots === 1) {
-    return S("worn", "grad", "elegant");
+    return S("worn", "grad", "elegant", "medium");
   }
 
   if (totalSlots === 5) {
     const states: NursingInductionState[] = [
-      S("worn",   "grad",  "elegant"),              // 1 Ceremonial hero — cap + gown + sash
-      S("draped", "none",  "elegant"),              // 2 Sash over forearm, arms crossed
-      S("none",   "none",  "scrubs", false, true),  // 3 Scrubs + chest embroidery
-      S("worn",   "none",  "suit"),                 // 4 Corporate + sash + scroll
-      S("held",   "none",  "elegant", true),        // 5 Editorial closer — dramatic light
+      S("worn",   "grad",  "elegant", "medium"),              // 1 Ceremonial hero — cap + gown + sash
+      S("draped", "none",  "elegant", "medium"),              // 2 Sash over forearm, arms crossed
+      S("none",   "none",  "scrubs", "medium", false, true),  // 3 Scrubs + chest embroidery — needs waist-up to stay legible
+      S("worn",   "none",  "suit", "medium"),                 // 4 Corporate + sash + scroll
+      S("held",   "none",  "elegant", "full-body", true),     // 5 Editorial closer — dramatic light, silhouette carved head to toe
     ];
-    return states[slotIndex] ?? S("none", "none", "elegant");
+    return states[slotIndex] ?? S("none", "none", "elegant", "medium");
   }
 
   if (totalSlots === 10) {
     const states: NursingInductionState[] = [
-      S("worn",    "grad",  "elegant"),              // 1 Ceremonial hero — smiling
-      S("worn",    "none",  "elegant", true),        // 2 Sash worn, full body, dramatic
-      S("draped",  "none",  "elegant"),              // 3 Sash over forearm — the classic
-      S("none",    "none",  "elegant"),              // 4 Stethoscope around neck, stool
-      S("none",    "none",  "scrubs", false, true),  // 5 Scrubs standing + embroidery
-      S("none",    "scrub", "scrubs", false, true),  // 6 Scrubs + scrub cap, chair pose
-      S("worn",    "none",  "suit"),                 // 7 Corporate + sash + scroll
-      S("none",    "none",  "elegant"),              // 8 Playful prop slot
-      S("draped",  "none",  "elegant"),              // 9 Close-up — embroidery legible
-      S("background", "none", "elegant", true),      // 10 Editorial closer — gown behind
+      S("worn",    "grad",  "elegant", "medium"),              // 1 Ceremonial hero — smiling
+      S("worn",    "none",  "elegant", "full-body", true),     // 2 Sash worn, full body, dramatic
+      S("draped",  "none",  "elegant", "medium"),              // 3 Sash over forearm — the classic
+      S("none",    "none",  "elegant", "medium"),              // 4 Stethoscope around neck, stool
+      S("none",    "none",  "scrubs", "medium", false, true),  // 5 Scrubs standing + embroidery
+      S("none",    "scrub", "scrubs", "medium", false, true),  // 6 Scrubs + scrub cap, chair pose
+      S("worn",    "none",  "suit", "medium"),                 // 7 Corporate + sash + scroll
+      S("none",    "none",  "elegant", "medium"),              // 8 Playful prop slot
+      S("draped",  "none",  "elegant", "close-up"),            // 9 Close-up — embroidery legible
+      S("background", "none", "elegant", "full-body", true),   // 10 Editorial closer — gown behind, wide staging
     ];
-    return states[slotIndex] ?? S("none", "none", "elegant");
+    return states[slotIndex] ?? S("none", "none", "elegant", "medium");
   }
 
   // Proportional fallback for other sizes
-  if (slotIndex === 0) return S("worn", "grad", "elegant");
-  if (slotIndex === totalSlots - 1) return S("held", "none", "elegant", true);
+  if (slotIndex === 0) return S("worn", "grad", "elegant", "medium");
+  if (slotIndex === totalSlots - 1) return S("held", "none", "elegant", "full-body", true);
   const third = Math.floor(totalSlots / 3);
-  if (slotIndex <= third) return S("draped", "none", "elegant");
-  if (slotIndex <= third * 2) return S("none", "none", "scrubs", false, true);
-  return S("worn", "none", "suit");
+  if (slotIndex <= third) return S("draped", "none", "elegant", "medium");
+  if (slotIndex <= third * 2) return S("none", "none", "scrubs", "medium", false, true);
+  return S("worn", "none", "suit", "medium");
+}
+
+// Single source of truth for per-slot framing — thin wrapper so callers that
+// only need the framing decision (Stage 4 identity routing in generate.ts)
+// don't need to pull in the full wardrobe state.
+export function getNursingInductionFraming(slotIndex: number, totalSlots: number): NursingInductionState["framing"] {
+  return getNursingInductionState(slotIndex, totalSlots).framing;
 }
 
 // ── Per-slot directive text ───────────────────────────────────────────────────

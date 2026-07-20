@@ -517,6 +517,12 @@ type NewPromptObject = {
   fully_consolidated_prompt?: string;
   svg_layout_instructions?: string;
   identity_image_indices?: number[];
+  // The shot framing THIS prompt renders — same three buckets as the Identity
+  // Image Catalog's per-photo framing, so Stage 4 routing can match them
+  // directly. Code-validated, not blindly trusted: see the Stage 4 selection
+  // block, which cross-checks identity_image_indices against this value and
+  // corrects mismatches rather than assuming planner compliance.
+  framing?: "full-body" | "medium" | "close-up";
 };
 
 // Final user-content reminder for identity routing. The system instruction is
@@ -533,7 +539,8 @@ FINAL COMPLIANCE CHECK — IDENTITY IMAGE ROUTING (MANDATORY)
 ═══════════════════════════════════════════════════════
 1. EVERY portrait prompt object in the output JSON MUST include "identity_image_indices": an array of the GROUP A image numbers best matching that prompt's framing and expression, per the Identity Image Catalog:
 ${catalog.lines.join("\n")}${smileBlock}
-Before returning the JSON, verify every portrait prompt object has identity_image_indices. Output that misses this field is invalid.`;
+3. FRAMING (do not skip): every portrait prompt object MUST also include "framing": "full-body" | "medium" | "close-up" — the shot extent THIS prompt renders, using the Identity Image Catalog's framing vocabulary above. Never omit it.
+Before returning the JSON, verify every portrait prompt object has both identity_image_indices and framing. Output missing either field is invalid.`;
 }
 
 // The system instruction is a function because two blocks are conditional on the
@@ -549,14 +556,17 @@ function buildShootBriefSystemInstruction(catalog?: IdentityCatalog | null): str
     : "";
 
   const identitySelectionRule = hasCatalog
-    ? `\nPER-PROMPT IDENTITY SELECTION — MANDATORY: every portrait prompt object in the output JSON must include an "identity_image_indices" array listing the GROUP A image numbers (from the Identity Image Catalog) that best support THAT prompt. Selection rules:
-- Close-up/beauty prompts → prefer close-up and medium references.
-- Waist-up/medium prompts → prefer medium and full-body references.
-- Full-body prompts → MUST include the full-body reference if one exists.
+    ? `\nPER-PROMPT IDENTITY SELECTION — MANDATORY: every portrait prompt object in the output JSON must include:
+- "identity_image_indices": an array of the GROUP A image numbers (from the Identity Image Catalog) that best support THAT prompt.
+- "framing": exactly one of "full-body" | "medium" | "close-up" — the extent of the subject's body visible in THIS prompt's output image (full-body = head to toe, medium = roughly waist-up, close-up = head and shoulders only). Describes this prompt only, using the same three buckets as the Identity Image Catalog's framing labels — this is independent of any whole-shoot shot-type setting.
+Selection rules:
+- Close-up prompts (framing="close-up") → prefer close-up and medium references. A full-body reference is never appropriate here and will be removed downstream even if selected — do not rely on it for identity in a close-up.
+- Medium prompts (framing="medium") → prefer medium and full-body references; a close-up reference may be added as a secondary facial-detail reference only, never as the sole reference.
+- Full-body prompts (framing="full-body") → MUST include the full-body reference if one exists; a close-up reference may be added as a secondary facial-detail reference only.
 - Back-view/turned-away prompts → MUST include the back-view reference plus exactly one front full-body reference (for build and skin-tone consistency).
 - Smiling prompts → ONLY the smiling-teeth references (never a neutral reference).
 - All non-smiling prompts → ONLY neutral references (never a smiling-teeth reference).
-Select 2-4 indices per prompt when enough references exist. Never select an empty list.\n`
+Select 2-4 indices per prompt when enough references exist. Never select an empty list. Never omit "framing".\n`
     : "";
 
   const dentitionRule = hasSmiling
@@ -2219,6 +2229,11 @@ export async function startGenerationWorker(
   const svgLayoutMap: Record<string, string> = {};
   // Planner-selected identity image numbers (1-based GROUP A indices) per slot.
   const slotIdentityIndices: Record<string, number[]> = {};
+  // Planner-declared per-prompt framing ("full-body"|"medium"|"close-up"), parsed
+  // the same way as slotIdentityIndices. Empty for any run that hits the catch
+  // block below (JSON parse failure) — those runs fall through to framing-blind
+  // routing in Stage 4, same as before this feature existed. No regression.
+  const slotFraming: Record<string, IdentityAttrs["framing"]> = {};
   if (!isPhotoUpgrade) {
     try {
       const parsed = JSON.parse(shootBriefClean);
@@ -2233,6 +2248,9 @@ export async function startGenerationWorker(
             const valid = p.identity_image_indices.filter((n) => Number.isInteger(n) && n >= 1);
             if (valid.length > 0) slotIdentityIndices[key] = valid;
           }
+          if (p.framing && VALID_FRAMINGS.has(p.framing)) {
+            slotFraming[key] = p.framing;
+          }
         }
       } else if (rawPrompts && typeof rawPrompts === "object") {
         // Legacy dict format
@@ -2240,6 +2258,7 @@ export async function startGenerationWorker(
       }
     } catch (e) {
       console.error("[generate] JSON parse failed, falling back to regex", e);
+      console.warn("[generate] framing guard disabled this run (JSON parse failure) — every slot routes framing-blind");
       const match = shootBriefClean.match(/"1"\s*:\s*"([^"]+)"/);
       if (match) prompts["1"] = match[1];
     }
@@ -2278,6 +2297,46 @@ export async function startGenerationWorker(
   const identityRoutingActive =
     !hasBase && shoot.group_identity !== true &&
     Object.keys(identityAttributes).length > 0 && allIdentityEntries.length > 0;
+
+  // Framing-aware fallback ordering for the "never send zero identity images"
+  // safety net (Stage 4). A close-up-wanting slot's fallback deliberately never
+  // includes full-body — that mix is the exact bug this feature fixes — but if
+  // no close-up/medium exists anywhere, the outer caller falls back further to
+  // the unfiltered pool rather than send nothing (see the Stage 4 block below).
+  const orderPoolByFraming = (
+    pool: typeof allIdentityEntries,
+    wanted: IdentityAttrs["framing"] | undefined
+  ): typeof allIdentityEntries => {
+    if (!wanted) return pool;
+    if (wanted === "close-up") {
+      return [
+        ...pool.filter((e) => e.attrs.framing === "close-up"),
+        ...pool.filter((e) => e.attrs.framing === "medium"),
+      ];
+    }
+    if (wanted === "medium") {
+      return [
+        ...pool.filter((e) => e.attrs.framing === "medium"),
+        ...pool.filter((e) => e.attrs.framing === "full-body"),
+        ...pool.filter((e) => e.attrs.framing === "close-up"),
+      ];
+    }
+    // wanted === "full-body"
+    return [
+      ...pool.filter((e) => e.attrs.framing === "full-body"),
+      ...pool.filter((e) => e.attrs.framing === "medium"),
+      ...pool.filter((e) => e.attrs.framing === "close-up"),
+    ];
+  };
+
+  // Label for a close-up demoted to a secondary reference in a full-body/medium
+  // slot — mirrors identityLabelFor's expression fork (a secondary smiling
+  // reference should still say so) without widening identityLabelFor's own
+  // signature or touching its existing callers.
+  const identitySecondaryFaceLabel = (a: IdentityAttrs): string =>
+    a.expression === "smiling-teeth" && !noSmile
+      ? "SUBJECT FACE DETAIL (GENUINE SMILE) — use for facial features and exact smile/teeth only; do NOT use for body proportions, height, or build"
+      : "SUBJECT FACE DETAIL — use for facial features only; do NOT use for body proportions, height, or build";
 
   // Build imageUrls for fal.ai — base-locked shoots use base + scene refs; standard shoots use identity + inspiration
   // Each entry carries a role label so we can append an authoritative reference map to
@@ -2487,6 +2546,16 @@ export async function startGenerationWorker(
   const sharedReferenceMap = buildReferenceMap(imageEntries);
   const identityEntryCount = imageEntries.filter((e) => e.label.startsWith("SUBJECT IDENTITY") || e.label.startsWith("LOCKED CHARACTER BASE")).length;
 
+  // Nursing induction gets a 100%-code-known framing per slot (see
+  // lib/nursing-induction.ts) rather than depending on the planner echoing
+  // "framing" back correctly — same reasoning as its deterministic SASH/CAP/
+  // OUTFIT matrix. Lazy import matches the existing pattern used for
+  // buildNursingInductionBriefSection elsewhere in this file.
+  const isNursingInduction = shoot.category === "nursing_induction" && !!shoot.induction;
+  const getNursingInductionFraming = isNursingInduction
+    ? (await import("@/lib/nursing-induction")).getNursingInductionFraming
+    : null;
+
   let failedCount = 0;
 
   for (const slotImg of pendingSlots) {
@@ -2547,18 +2616,45 @@ export async function startGenerationWorker(
       // front-anchored (the planner's back-pose gate forbids true back views).
       const hasBackRef = allIdentityEntries.some((e) => e.attrs.view === "back");
       const wantsBack = identityRoutingActive && hasBackRef && !isCustomSlot && !isQuoteSlot && BACK_TRIGGERS.test(slotPrompt);
+
+      // Framing this slot needs: nursing_induction's code-known value always
+      // wins (never depends on the planner echoing it back); otherwise use
+      // what the planner declared; otherwise undefined = old framing-blind
+      // behavior (safe no-regression default — e.g. a JSON-parse-failure run,
+      // or any category/slot where neither source has an opinion yet).
+      let wantsFraming: IdentityAttrs["framing"] | undefined;
+      let framingSource: "nursing" | "planner" | "unknown" = "unknown";
+      if (getNursingInductionFraming) {
+        wantsFraming = getNursingInductionFraming(slot - 1, total);
+        framingSource = "nursing";
+      } else if (slotFraming[String(slot)]) {
+        wantsFraming = slotFraming[String(slot)];
+        framingSource = "planner";
+      }
+
       const identityOnlyEntries = imageEntries.slice(0, identityEntryCount);
       let slotIdentityEntries = identityOnlyEntries;
+      const secondaryIdx = new Set<number>(); // entries relabeled face-detail-only, for logging
       if (identityRoutingActive) {
         const pool = allIdentityEntries;
         let chosen: typeof pool = [];
         if (isCustomSlot || isQuoteSlot) {
           // Custom slots are directive-locked (deadpan mugshot, flag composite,
-          // etc.) — always neutral front references.
+          // etc.) — always neutral front references. Framing-blind by design,
+          // matching how wantsSmile/wantsBack are already scoped above.
           chosen = pool.filter((e) => e.attrs.expression === "neutral" && e.attrs.view === "front");
         } else {
           const planned = slotIdentityIndices[String(slot)];
-          if (planned?.length) chosen = planned.map((n) => pool[n - 1]).filter(Boolean);
+          if (planned?.length) {
+            let plannedChosen = planned.map((n) => pool[n - 1]).filter(Boolean);
+            if (wantsFraming === "close-up") {
+              // Cross-validate rather than blindly trust: drop any full-body
+              // pick the planner made by mistake — this is the exact mix the
+              // whole feature exists to prevent.
+              plannedChosen = plannedChosen.filter((e) => e.attrs.framing !== "full-body");
+            }
+            chosen = plannedChosen;
+          }
           if (chosen.length === 0 && wantsBack) {
             const backs = pool.filter((e) => e.attrs.view === "back");
             const frontFull = pool.filter((e) => e.attrs.view === "front" && e.attrs.framing === "full-body");
@@ -2568,11 +2664,75 @@ export async function startGenerationWorker(
             chosen = pool.filter((e) => e.attrs.view === "front" &&
               (wantsSmile ? e.attrs.expression === "smiling-teeth" : e.attrs.expression === "neutral"));
           }
+
+          // Framing sub-filter — applies to whatever `chosen` is at this point,
+          // whether it came from the planner's picks or the heuristics above.
+          if (wantsFraming === "close-up") {
+            chosen = chosen.filter((e) => e.attrs.framing !== "full-body");
+          } else if (wantsFraming === "medium" || wantsFraming === "full-body") {
+            const primaryFramings: IdentityAttrs["framing"][] =
+              wantsFraming === "full-body" ? ["full-body", "medium"] : ["medium", "full-body"];
+            const hasPrimary = chosen.some((e) => primaryFramings.includes(e.attrs.framing));
+            if (!hasPrimary) {
+              // Backfill: whatever we had was close-up-only (or empty) — pull
+              // in the best available primary from the framing-correct pool,
+              // preferring one that already matches view/expression.
+              const backfillPool = pool.filter((e) => primaryFramings.includes(e.attrs.framing) &&
+                e.attrs.view === "front" &&
+                (wantsSmile ? e.attrs.expression === "smiling-teeth" : e.attrs.expression === "neutral"));
+              const primary = backfillPool[0] ?? pool.find((e) => primaryFramings.includes(e.attrs.framing));
+              if (primary) chosen = [primary, ...chosen.filter((e) => e.index !== primary.index)];
+            }
+            // Cap close-ups in a full-body/medium slot to exactly one
+            // secondary reference — but only demote it if a primary is
+            // actually present. If the buyer uploaded nothing but close-ups,
+            // there is no primary to be "secondary" to, and mislabeling the
+            // only reference we have as "not for body proportions" would
+            // actively tell the model to ignore the one thing it has for build.
+            const stillHasPrimary = chosen.some((e) => primaryFramings.includes(e.attrs.framing));
+            if (stillHasPrimary) {
+              let secondaryUsed = false;
+              chosen = chosen.filter((e) => {
+                if (e.attrs.framing !== "close-up") return true;
+                if (secondaryUsed) return false; // drop extra close-ups beyond the one secondary
+                secondaryUsed = true;
+                secondaryIdx.add(e.index);
+                return true;
+              });
+            }
+          }
         }
-        if (chosen.length === 0) chosen = pool; // never send zero identity images
+        if (chosen.length === 0) {
+          // Never send zero identity images. Prefer a framing-priority-ordered
+          // fallback; if even that comes up empty (e.g. a close-up slot where
+          // the buyer uploaded only full-body photos), fall back to the whole
+          // pool as an absolute last resort — a wrong-framing reference beats
+          // no identity reference at all.
+          chosen = orderPoolByFraming(pool, wantsFraming);
+          if (chosen.length === 0) {
+            console.warn(`[generate] slot ${slot}: framing guard produced zero candidates for framing=${wantsFraming} — falling back to unfiltered pool`);
+            chosen = pool;
+          }
+        }
         chosen = chosen.slice(0, 4);
-        console.log(`[generate] slot ${slot} identity routing: images [${chosen.map((e) => e.index).join(", ")}]${wantsSmile ? " (smile)" : ""}${wantsBack ? " (back)" : ""}${slotIdentityIndices[String(slot)]?.length ? " (planner)" : ""}`);
-        slotIdentityEntries = chosen.map(({ url, label }) => ({ url, label }));
+        console.log(
+          `[generate] slot ${slot} identity routing: images [${chosen.map((e) => e.index).join(", ")}]` +
+          `${wantsSmile ? " (smile)" : ""}${wantsBack ? " (back)" : ""}` +
+          `${slotIdentityIndices[String(slot)]?.length ? " (planner-ids)" : ""}` +
+          `${wantsFraming ? ` (framing=${wantsFraming}/${framingSource})` : " (framing=unknown)"}` +
+          `${secondaryIdx.size ? ` (secondary=[${[...secondaryIdx].join(",")}])` : ""}`
+        );
+        logEvent('identity_routing', {
+          slot,
+          chosen: chosen.map((e) => e.index),
+          framing: wantsFraming ?? null,
+          framingSource,
+          secondary: [...secondaryIdx],
+        });
+        slotIdentityEntries = chosen.map((e) => ({
+          url: e.url,
+          label: secondaryIdx.has(e.index) ? identitySecondaryFaceLabel(e.attrs) : e.label,
+        }));
       }
 
       // Co-star slots: duo stories attach the co-star to every normal slot; other
