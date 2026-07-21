@@ -59,6 +59,20 @@
   letter-spacing: 0;
 }
 
+.themeToggle {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(67, 159, 169, 0.24);
+  border-radius: 8px;
+  color: #3f6166;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.themeToggle:hover { border-color: rgba(67, 159, 169, 0.48); color: #245d66; background: #ffffff; }
+
 /* ---- Container ---- */
 .container {
   position: relative;
@@ -301,6 +315,140 @@ select.input { appearance: none; cursor: pointer; }
 .backToMarketplace:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 32px rgba(48, 141, 151, 0.22);
+}
+
+/* ---- Dark theme ---- */
+.page[data-theme="dark"] {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(53, 146, 154, 0.3), transparent 28%),
+    radial-gradient(circle at 86% 6%, rgba(191, 98, 92, 0.2), transparent 28%),
+    radial-gradient(circle at 80% 92%, rgba(79, 134, 184, 0.3), transparent 34%),
+    linear-gradient(135deg, #142629 0%, #102f34 44%, #172b3d 100%);
+  color: #eaf8f6;
+}
+
+.page[data-theme="dark"]::before {
+  background:
+    radial-gradient(80% 18% at 12% 28%, rgba(115, 221, 207, 0.12) 0 42%, transparent 43%),
+    radial-gradient(80% 16% at 88% 42%, rgba(255, 179, 165, 0.1) 0 42%, transparent 43%),
+    radial-gradient(92% 20% at 40% 78%, rgba(141, 204, 249, 0.12) 0 40%, transparent 41%);
+  opacity: 1;
+}
+
+.page[data-theme="dark"] .nav {
+  background: rgba(18, 42, 46, 0.82);
+  border-bottom-color: rgba(115, 221, 207, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+}
+
+.page[data-theme="dark"] .back {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.2);
+  color: #9dece1;
+}
+.page[data-theme="dark"] .back:hover { border-color: rgba(115, 221, 207, 0.45); color: #eefbf9; }
+
+.page[data-theme="dark"] .navBrand { color: #eefbf9; }
+
+.page[data-theme="dark"] .themeToggle {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.2);
+  color: #9dece1;
+}
+.page[data-theme="dark"] .themeToggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(115, 221, 207, 0.45);
+  color: #eefbf9;
+}
+
+.page[data-theme="dark"] .stepDot {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.22);
+  color: #6dd9ce;
+}
+.page[data-theme="dark"] .stepDotActive {
+  background: rgba(115, 221, 207, 0.16);
+  border-color: #6dd9ce;
+  color: #6dd9ce;
+}
+.page[data-theme="dark"] .stepLine { background: rgba(115, 221, 207, 0.18); }
+.page[data-theme="dark"] .stepLabel { color: #567f82; }
+.page[data-theme="dark"] .stepLabelActive { color: #6dd9ce; }
+
+.page[data-theme="dark"] .title { color: #eefbf9; }
+.page[data-theme="dark"] .sub { color: #8ec8c6; }
+
+.page[data-theme="dark"] .error {
+  background: rgba(224, 110, 98, 0.1);
+  border-color: rgba(224, 110, 98, 0.32);
+  color: #f3a49a;
+}
+
+.page[data-theme="dark"] .form {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.14);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+}
+
+.page[data-theme="dark"] .avatarPreview {
+  background: rgba(115, 221, 207, 0.06);
+  border-color: rgba(115, 221, 207, 0.3);
+}
+.page[data-theme="dark"] .avatarPreview:hover {
+  border-color: #6dd9ce;
+  background: rgba(115, 221, 207, 0.1);
+}
+.page[data-theme="dark"] .avatarPlaceholder { color: #7ab8b8; }
+
+.page[data-theme="dark"] .label { color: #8ec8c6; }
+
+.page[data-theme="dark"] .input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(115, 221, 207, 0.2);
+  color: #eaf8f6;
+}
+.page[data-theme="dark"] .input:focus { border-color: rgba(115, 221, 207, 0.55); background: rgba(255, 255, 255, 0.08); }
+.page[data-theme="dark"] .input::placeholder { color: #567f82; }
+
+.page[data-theme="dark"] .payNote {
+  background: rgba(115, 221, 207, 0.06);
+  border-color: rgba(115, 221, 207, 0.18);
+  color: #9dece1;
+}
+.page[data-theme="dark"] .payFootNote { color: #7ab8b8; }
+
+.page[data-theme="dark"] .backBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.2);
+  color: #9dece1;
+}
+.page[data-theme="dark"] .backBtn:hover { border-color: rgba(115, 221, 207, 0.45); color: #eefbf9; }
+
+.page[data-theme="dark"] .submitBtn {
+  background: linear-gradient(135deg, rgba(53, 146, 154, 0.5) 0%, rgba(40, 120, 130, 0.6) 100%);
+  color: #eefbf9;
+  border-color: rgba(115, 221, 207, 0.28);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+}
+
+.page[data-theme="dark"] .successBox {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(115, 221, 207, 0.22);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+}
+.page[data-theme="dark"] .successIcon {
+  background: rgba(115, 221, 207, 0.14);
+  border-color: rgba(115, 221, 207, 0.35);
+  color: #6dd9ce;
+}
+.page[data-theme="dark"] .successTitle { color: #eefbf9; }
+.page[data-theme="dark"] .successBody { color: #8ec8c6; }
+
+.page[data-theme="dark"] .backToMarketplace {
+  background: linear-gradient(135deg, rgba(53, 146, 154, 0.5) 0%, rgba(40, 120, 130, 0.6) 100%);
+  color: #eefbf9;
+  border-color: rgba(115, 221, 207, 0.28);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 600px) {

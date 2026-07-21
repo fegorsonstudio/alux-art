@@ -6,13 +6,29 @@ import { useRouter } from "next/navigation";
 import styles from "./become-creator.module.css";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import ImagePreview from "@/components/ImagePreview";
+import { useT } from "@/lib/useLocale";
 
 interface Bank { name: string; code: string; }
 
 export default function BecomeCreatorPage() {
   const router = useRouter();
+  const tc = useT("common");
   const [step, setStep] = useState(1);
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("studio-theme");
+    if (stored === "dark" || stored === "light") setTheme(stored);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("studio-theme", next);
+      return next;
+    });
+  };
 
   // Step 1 fields
   const [displayName, setDisplayName] = useState("");
@@ -106,10 +122,13 @@ export default function BecomeCreatorPage() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-theme={theme}>
       <header className={styles.nav}>
         <Link href="/marketplace" className={styles.back}>← Marketplace</Link>
         <Link href="/" className={styles.navBrand}>Alux Art</Link>
+        <button className={styles.themeToggle} onClick={toggleTheme} type="button" aria-pressed={theme === "dark"}>
+          {theme === "dark" ? tc("light") : tc("dark")}
+        </button>
       </header>
 
       <div className={styles.container}>
@@ -151,13 +170,13 @@ export default function BecomeCreatorPage() {
             </label>
 
             <label className={styles.field}>
-              <span className={styles.label}>Instagram URL</span>
-              <input className={styles.input} value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourhandle" type="url" />
+              <span className={styles.label}>Instagram URL (optional)</span>
+              <input className={styles.input} value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourhandle" type="text" inputMode="url" />
             </label>
 
             <label className={styles.field}>
-              <span className={styles.label}>Website</span>
-              <input className={styles.input} value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourwebsite.com" type="url" />
+              <span className={styles.label}>Website (optional)</span>
+              <input className={styles.input} value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourwebsite.com" type="text" inputMode="url" />
             </label>
 
             <button type="submit" className={styles.submitBtn} disabled={submitting}>
