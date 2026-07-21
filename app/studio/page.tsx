@@ -271,15 +271,15 @@ export default function WorkspacePage() {
           return { ...prev, images: imgs, shoot_images: imgs, progress: event.progress ?? prev.progress, pipelineStage: nextStage } as unknown as Shoot;
         });
       } else if (event.type === "stage" || event.type === "base_locking") {
-        setCurrentShoot(prev => prev ? { ...prev, pipelineStage: event.stage ?? "Building character base...", progress: event.progress ?? prev.progress } : prev);
+        setCurrentShoot(prev => prev ? { ...prev, pipelineStage: event.stage ?? t("buildingBaseTitle"), progress: event.progress ?? prev.progress } : prev);
       } else if (event.type === "base_review_required") {
         if (event.base_url) setReviewBaseUrl(event.base_url as string);
         setReviewAttemptsRemaining(typeof event.attempts_remaining === "number" ? event.attempts_remaining : 4);
-        setCurrentShoot(prev => prev ? { ...prev, status: "BASE_REVIEW" as Shoot["status"], pipelineStage: "Review required" } : prev);
+        setCurrentShoot(prev => prev ? { ...prev, status: "BASE_REVIEW" as Shoot["status"], pipelineStage: t("statusReviewNeeded") } : prev);
         setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "BASE_REVIEW" as Shoot["status"] } : s));
       } else if (event.type === "base_approved") {
         setReviewBaseUrl(null);
-        setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"], pipelineStage: "Base approved — starting generation" } : prev);
+        setCurrentShoot(prev => prev ? { ...prev, status: "QUEUED" as Shoot["status"], pipelineStage: t("msgBaseApprovedGenerating") } : prev);
         setShoots(prev => prev.map(s => s.id === currentShoot.id ? { ...s, status: "QUEUED" as Shoot["status"] } : s));
       } else if (event.type === "forbidden_detected") {
         const { slot, flaggedWord, replacement } = (event.payload ?? event) as Record<string, unknown>;
@@ -788,7 +788,7 @@ export default function WorkspacePage() {
                         title={base.user_label ?? `Base from ${new Date(base.created_at).toLocaleDateString()}`}>
                         {base.base_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={base.base_url} alt={base.user_label ?? "Character base"} />
+                          <img src={base.base_url} alt={base.user_label ?? t("characterBaseAlt")} />
                         ) : (
                           <span className={styles.baseNoThumb}>?</span>
                         )}
@@ -798,7 +798,7 @@ export default function WorkspacePage() {
                         type="button"
                         className={styles.thumbRemove}
                         onClick={(e) => { e.stopPropagation(); void handleArchiveCharacter(base.id); }}
-                        title="Remove this saved character"
+                        title={t("removeCharacterHint")}
                       >×</button>
                     </div>
                   );
@@ -819,10 +819,7 @@ export default function WorkspacePage() {
               )}
             </div>
             <p className={styles.helperText}>
-              For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up ·
-              at least one photo where you&apos;re genuinely smiling (teeth showing) so we can create natural smiling
-              shots · and if you want back shots, one photo showing your back/figure from behind — we never guess
-              how you look from behind.
+              {t("identityUploadHint")}
             </p>
 
             {/* Saved library */}
@@ -891,7 +888,7 @@ export default function WorkspacePage() {
             </label>
             {groupPicture && (
               <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
-                We&apos;ll preserve everyone&apos;s face and show all of you together in each image. One clear photo of the group is enough.
+                {t("groupPhotoNote")}
               </p>
             )}
 
@@ -902,7 +899,7 @@ export default function WorkspacePage() {
             </label>
             {noSmile && (
               <p className={styles.uploadCount} style={{ opacity: 0.8, lineHeight: 1.4 }}>
-                No photo in this shoot will show teeth or a smile, even if your identity photos do.
+                {t("noSmilesNote")}
               </p>
             )}
             {uploadIssue && <p className={styles.uploadIssue}>{uploadIssue}</p>}
@@ -940,7 +937,7 @@ export default function WorkspacePage() {
                         )}
                         <button type="button" className={styles.libDeleteBtn}
                           onClick={e => { e.stopPropagation(); handleDeleteInspirationLibraryImage(img.id); }}
-                          title="Delete permanently">✕</button>
+                          title={t("deletePermanently")}>✕</button>
                         <button type="button" className={`${styles.libEditBtn} ${isEditing ? styles.libEditBtnActive : ""}`}
                           onClick={e => {
                             e.stopPropagation();
@@ -950,7 +947,7 @@ export default function WorkspacePage() {
                               setEditingTag(img.tag ?? "");
                             }
                           }}
-                          title="Edit tag & note">✎</button>
+                          title={t("editTagNote")}>✎</button>
                       </div>
                     );
                   })}
@@ -1046,7 +1043,7 @@ export default function WorkspacePage() {
                           value={ref.note ?? ""}
                           onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
                         />
-                        <button className={styles.thumbRemove} style={{ position: "static" }} onClick={() => setTaggedRefs(p => p.filter(r => r.id !== ref.id))}>x Remove</button>
+                        <button className={styles.thumbRemove} style={{ position: "static" }} onClick={() => setTaggedRefs(p => p.filter(r => r.id !== ref.id))}>{t("removeReference")}</button>
                       </div>
                     </div>
                   ))}
@@ -1064,7 +1061,7 @@ export default function WorkspacePage() {
           {/* Settings */}
           <div className={styles.panel}>
             <div className={styles.row}>
-              <p className={styles.label}>Mode</p>
+              <p className={styles.label}>{t("mode")}</p>
               <div className={styles.pillGroup}>
                 {(["fast", "advanced"] as ShootMode[]).map(m => (
                   <button key={m} className={`${styles.pill} ${mode === m ? styles.pillActive : ""}`} onClick={() => setMode(m)}>{m}</button>
@@ -1072,7 +1069,7 @@ export default function WorkspacePage() {
               </div>
             </div>
             <div className={styles.row}>
-              <p className={styles.label}>Aspect Ratio</p>
+              <p className={styles.label}>{t("aspectRatio")}</p>
               <div className={styles.pillGroup}>
                 {(Object.keys(ASPECTS) as AspectRatio[]).map(ar => (
                   <button key={ar} className={`${styles.pill} ${aspectRatio === ar ? styles.pillActive : ""}`} onClick={() => setAspectRatio(ar)}>{ASPECTS[ar].label}</button>
@@ -1080,7 +1077,7 @@ export default function WorkspacePage() {
               </div>
             </div>
             <div className={styles.row}>
-              <p className={styles.label}>Currency</p>
+              <p className={styles.label}>{t("currency")}</p>
               <div className={styles.pillGroup}>
                 {(["NGN", "USD"] as Currency[]).map(c => (
                   <button key={c} className={`${styles.pill} ${currency === c ? styles.pillActive : ""}`} onClick={() => setCurrency(c)}>{c}</button>
@@ -1088,7 +1085,7 @@ export default function WorkspacePage() {
               </div>
             </div>
             <div className={styles.row}>
-              <p className={styles.label}>Package</p>
+              <p className={styles.label}>{t("packageLabel")}</p>
               <div className={styles.packageGrid}>
                 {packages.map(pkg => {
                   const selected = packageSize === pkg.imageCount;
@@ -1106,31 +1103,31 @@ export default function WorkspacePage() {
                   );
                 })}
               </div>
-              <p className={styles.pricingNote}>Paid slots stay retryable for 48 hours if a generation fails.</p>
+              <p className={styles.pricingNote}>{t("pricingNote")}</p>
             </div>
           </div>
 
           {/* Quote */}
           <div className={styles.panel}>
-            <p className={styles.panelTitle}>Quote (optional)</p>
-            <textarea className={styles.quoteInput} rows={2} placeholder="Inspirational quote text..." value={quote.text} onChange={e => setQuote(q => ({ ...q, text: e.target.value }))} />
-            <input className={styles.quoteInput} placeholder="- Attribution" value={quote.attribution} onChange={e => setQuote(q => ({ ...q, attribution: e.target.value }))} />
+            <p className={styles.panelTitle}>{t("quoteOptional")}</p>
+            <textarea className={styles.quoteInput} rows={2} placeholder={t("quoteTextPlaceholder")} value={quote.text} onChange={e => setQuote(q => ({ ...q, text: e.target.value }))} />
+            <input className={styles.quoteInput} placeholder={t("quoteAttrPlaceholder")} value={quote.attribution} onChange={e => setQuote(q => ({ ...q, attribution: e.target.value }))} />
           </div>
 
           {/* CTA */}
           <div className={styles.ctaSection}>
             {!canCreate && (
               <p className={styles.validationNote}>
-                {identityImages.length < MIN_IDENTITY ? "Add at least 1 identity photo" : "Add at least 1 inspiration photo"}
+                {identityImages.length < MIN_IDENTITY ? t("addIdentityCta") : t("addInspirationCta")}
               </p>
             )}
             <button className={styles.payBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(false)}>
-              Pay {price} & Generate {packageSize}
+              {t("payAndGenerate", { price, count: packageSize })}
             </button>
             {isAdmin && (
               <div className={styles.adminControls}>
                 <div className={styles.adminControlRow}>
-                  <p className={styles.adminControlLabel}>Resolution</p>
+                  <p className={styles.adminControlLabel}>{t("resolution")}</p>
                   <div className={styles.pillGroup}>
                     {(["", "0.5K", "1K", "2K", "4K"] as const).map((r) => (
                       <button
@@ -1138,13 +1135,13 @@ export default function WorkspacePage() {
                         className={`${styles.pill} ${resolution === r ? styles.pillActive : ""}`}
                         onClick={() => setResolution(r)}
                       >
-                        {r || "Default"}
+                        {r || t("resolutionDefault")}
                       </button>
                     ))}
                   </div>
                 </div>
                 <button className={styles.adminBypassBtn} disabled={!canCreate || status.type === "loading"} onClick={() => handleCreateAndPay(true)}>
-                  Admin: Generate Free
+                  {t("adminGenerateFree")}
                 </button>
               </div>
             )}
@@ -1165,7 +1162,7 @@ export default function WorkspacePage() {
           {/* Shoots list */}
           {shoots.length > 0 && (
             <div className={styles.panel}>
-              <p className={styles.panelTitle}>Your Shoots ({shoots.length})</p>
+              <p className={styles.panelTitle}>{t("yourShoots", { count: shoots.length })}</p>
               <div className={styles.shootsList}>
                 {shoots.map(s => {
                   const isActive = ["PROCESSING","QUEUED","BASE_LOCKING","BASE_REVIEW"].includes(s.status ?? "");
@@ -1190,36 +1187,36 @@ export default function WorkspacePage() {
                           <button
                             type="button"
                             className={styles.copyIdBtn}
-                            title="Copy this ID if you need help from support"
+                            title={t("copyIdHint")}
                             onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(s.id).then(() => { setCopiedShootId(s.id); setTimeout(() => setCopiedShootId(prev => prev === s.id ? null : prev), 1500); }); }}
                           >
-                            {copiedShootId === s.id ? "Copied!" : "Copy support ref"}
+                            {copiedShootId === s.id ? t("copied") : t("copySupportRef")}
                           </button>
                         </div>
                         <span className={styles.shootActions}>
                           <span className={`${styles.statusBadge} ${styles[`status${(s.status ?? "").replace(/_/g, "").charAt(0).toUpperCase() + (s.status ?? "").replace(/_/g, "").slice(1).toLowerCase()}` as keyof typeof styles] ?? ""}`}>
                             {STATUS_KEY[s.status ?? ""] ? t(STATUS_KEY[s.status ?? ""]) : s.status}
                           </span>
-                          <span className={styles.openGalleryLabel}>Open gallery</span>
+                          <span className={styles.openGalleryLabel}>{t("openGallery")}</span>
                         </span>
                       </button>
                       {/* Delete controls — Stop only visible to admin while shoot is active */}
                       {!isConfirming && (!isActive || isAdmin) && (
                         <button
                           className={`${styles.deleteShootBtn} ${isActive ? styles.deleteShootBtnActive : ""}`}
-                          title={isActive ? "Stop & delete" : "Delete shoot"}
+                          title={isActive ? t("stopDelete") : t("deleteShoot")}
                           onClick={() => setConfirmDeleteId(s.id)}
                           disabled={isDeleting}
                         >
-                          {isDeleting ? "…" : isActive ? "Stop" : "✕"}
+                          {isDeleting ? "…" : isActive ? t("stop") : "✕"}
                         </button>
                       )}
                       {isConfirming && (
                         <span className={styles.deleteConfirm}>
                           <button className={styles.deleteConfirmYes} onClick={() => handleDeleteShoot(s.id)} disabled={isDeleting}>
-                            {isDeleting ? "…" : "Delete"}
+                            {isDeleting ? "…" : t("delete")}
                           </button>
-                          <button className={styles.deleteConfirmNo} onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+                          <button className={styles.deleteConfirmNo} onClick={() => setConfirmDeleteId(null)}>{t("cancel")}</button>
                         </span>
                       )}
                       {s.status === "PENDING_PAYMENT" && !isConfirming && (
@@ -1227,9 +1224,9 @@ export default function WorkspacePage() {
                           className={styles.verifyPaymentBtn}
                           onClick={() => handleVerifyPayment(s.id)}
                           disabled={verifyingPaymentId === s.id}
-                          title="Already paid? Click to check and activate your shoot"
+                          title={t("alreadyPaidHint")}
                         >
-                          {verifyingPaymentId === s.id ? "Checking…" : "Already paid?"}
+                          {verifyingPaymentId === s.id ? t("checking") : t("alreadyPaid")}
                         </button>
                       )}
                     </div>
@@ -1243,7 +1240,7 @@ export default function WorkspacePage() {
           {currentShoot && (
             <div className={styles.panel} ref={galleryRef}>
               <div className={styles.galleryHeader}>
-                <p className={styles.panelTitle}>Gallery</p>
+                <p className={styles.panelTitle}>{t("gallery")}</p>
                 <span className={styles.galleryMeta}>{activeStage}</span>
               </div>
 
@@ -1256,8 +1253,8 @@ export default function WorkspacePage() {
                   <div className={styles.processingNotice}>
                     <span className={styles.processingIcon}>⏱</span>
                     <div>
-                      <p className={styles.processingTitle}>Generating your professional images</p>
-                      <p className={styles.processingBody}>High-quality images are heavy files that take time to render. Check back in about <strong>1 hour</strong> — we&apos;ll also send you an email when they&apos;re ready.</p>
+                      <p className={styles.processingTitle}>{t("generatingTitle")}</p>
+                      <p className={styles.processingBody}>{t("generatingBody")}</p>
                     </div>
                   </div>
                 </>
@@ -1268,8 +1265,8 @@ export default function WorkspacePage() {
                 <div className={styles.baseLockingBanner}>
                   <span className={styles.slotSpinner} />
                   <div>
-                    <p className={styles.baseLockingTitle}>Building your character base...</p>
-                    <p className={styles.baseLockingHint}>We&apos;re generating a canonical identity reference. This takes 30–90 seconds.</p>
+                    <p className={styles.baseLockingTitle}>{t("buildingBaseTitle")}</p>
+                    <p className={styles.baseLockingHint}>{t("buildingBaseHint")}</p>
                   </div>
                 </div>
               )}
@@ -1277,31 +1274,31 @@ export default function WorkspacePage() {
               {/* Base review — user approval required */}
               {currentShoot.status === "BASE_REVIEW" && (
                 <div className={styles.baseReviewBanner}>
-                  <p className={styles.baseReviewTitle}>Does this look like you?</p>
-                  <p className={styles.baseReviewHint}>This is your character base — the identity anchor for all your generated photos. Approve if the likeness is accurate, or re-roll to generate a new one.</p>
+                  <p className={styles.baseReviewTitle}>{t("baseReviewTitle")}</p>
+                  <p className={styles.baseReviewHint}>{t("baseReviewHint")}</p>
                   {reviewBaseUrl ? (
                     <div className={styles.baseReviewContent}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={reviewBaseUrl}
-                        alt="Character base preview"
+                        alt={t("characterBasePreviewAlt")}
                         className={styles.baseReviewImg}
                         onClick={() => setBaseFullscreen(true)}
-                        title="Click to view full size"
+                        title={t("clickFullSize")}
                       />
                       <div className={styles.baseReviewActions}>
                         <button className={styles.baseApproveBtn} onClick={handleApproveBase} disabled={baseAction === "loading"}>
-                          {baseAction === "loading" ? "..." : "Looks good — generate my photos"}
+                          {baseAction === "loading" ? "..." : t("looksGood")}
                         </button>
                         <button className={styles.baseRejectBtn} onClick={handleRejectBase} disabled={baseAction === "loading"}>
-                          {baseAction === "loading" ? "..." : `Re-roll${reviewAttemptsRemaining > 0 ? ` (${reviewAttemptsRemaining} left)` : ""}`}
+                          {baseAction === "loading" ? "..." : `${t("reroll")}${reviewAttemptsRemaining > 0 ? ` ${t("attemptsLeft", { count: reviewAttemptsRemaining })}` : ""}`}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className={styles.baseLockingBanner}>
                       <span className={styles.slotSpinner} />
-                      <span>Loading preview...</span>
+                      <span>{t("loadingPreview")}</span>
                     </div>
                   )}
                 </div>
@@ -1310,8 +1307,8 @@ export default function WorkspacePage() {
               {/* Base rejected — terminal */}
               {currentShoot.status === "BASE_REJECTED" && (
                 <div className={styles.baseRejectedBanner}>
-                  <p className={styles.baseRejectedTitle}>All base attempts exhausted</p>
-                  <p className={styles.baseRejectedHint}>Please upload clearer, well-lit front-facing identity photos and start a new shoot, or contact support for a refund.</p>
+                  <p className={styles.baseRejectedTitle}>{t("baseExhaustedTitle")}</p>
+                  <p className={styles.baseRejectedHint}>{t("baseExhaustedHint")}</p>
                 </div>
               )}
 
@@ -1327,7 +1324,7 @@ export default function WorkspacePage() {
                       className={`${styles.slotPreview} ${img.status === "COMPLETE" ? styles.slotPreviewDl : ""}`}
                       onClick={img.status === "COMPLETE" ? () => downloadImage(currentShoot, img) : undefined}
                       role={img.status === "COMPLETE" ? "button" : undefined}
-                      aria-label={img.status === "COMPLETE" ? `Download image ${img.slot}` : undefined}
+                      aria-label={img.status === "COMPLETE" ? t("downloadImageSlot", { slot: String(img.slot) }) : undefined}
                     >
                       {(img.previewUrl || img.preview_url) ? (
                         // Request a resized webp from the media proxy — the raw files are
@@ -1335,7 +1332,7 @@ export default function WorkspacePage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={`${img.previewUrl || img.preview_url}${String(img.previewUrl || img.preview_url).includes("?") ? "&" : "?"}width=800&quality=75&format=webp`}
-                          alt={`Slot ${img.slot}`}
+                          alt={t("slotLabel", { slot: String(img.slot) })}
                         />
                       ) : (img.status === "GENERATING" || img.status === "UPSCALING") ? (
                         <span className={styles.slotSpinner} />
@@ -1348,14 +1345,14 @@ export default function WorkspacePage() {
                     </div>
                     <div className={styles.slotInfo}>
                       <span className={styles.slotNum}>#{img.slot} {img.kind}</span>
-                      <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`} title={providerError || "No provider error was saved for this failed slot"}>
+                      <span className={`${styles.slotStatus} ${img.status === "COMPLETE" ? styles.slotStatusDone : img.status === "FAILED" ? styles.slotStatusFailed : ""}`} title={providerError || t("noProviderError")}>
                         {img.status === "COMPLETE" ? (
                           <div className={styles.downloadActions}>
-                            <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)} title="Download image" aria-label="Download image">
+                            <button className={styles.dlBtn} onClick={() => downloadImage(currentShoot, img)} title={t("downloadImage")} aria-label={t("downloadImage")}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             </button>
                             {img.kind === "quote" && currentShoot.quote?.text && (
-                              <button className={styles.dlBtn} onClick={handleRecompositeQuote} title="Recomposite quote card">
+                              <button className={styles.dlBtn} onClick={handleRecompositeQuote} title={t("recompositeQuote")}>
                                 ✦
                               </button>
                             )}
@@ -1366,31 +1363,31 @@ export default function WorkspacePage() {
                     {img.status === "FAILED" && forbidden ? (
                       <div className={styles.forbiddenBanner}>
                         <p className={styles.forbiddenLabel}>
-                          Content filter: <span className={styles.forbiddenWord}>&ldquo;{forbidden.flaggedWord}&rdquo;</span>
+                          {t("contentFilterLabel")} <span className={styles.forbiddenWord}>&ldquo;{forbidden.flaggedWord}&rdquo;</span>
                           {" → "}<span className={styles.replacementWord}>&ldquo;{forbidden.replacement}&rdquo;</span>
                         </p>
                         {remaining > 0 ? (
                           <p className={styles.countdown}>
-                            Retry in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+                            {t("retryIn", { time: `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` })}
                           </p>
                         ) : (
                           <button className={styles.regenerateBtn} onClick={() => handleRetrySlot(Number(img.slot))}>
-                            Regenerate
+                            {t("regenerate")}
                           </button>
                         )}
                       </div>
                     ) : img.status === "FAILED" && (
                       <details className={styles.slotErrorDetails}>
-                        <summary>Reason</summary>
-                        <p className={styles.slotError}>{providerError || "No provider error was saved for this failed slot. Check the n8n execution and shoot_images rows for this shoot."}</p>
+                        <summary>{t("reason")}</summary>
+                        <p className={styles.slotError}>{providerError || t("noProviderErrorDetail")}</p>
                       </details>
                     )}
                     {isAdmin && !!((img as Record<string, unknown>).prompt) && (
                       <details className={styles.slotErrorDetails}>
-                        <summary>Prompt</summary>
+                        <summary>{t("prompt")}</summary>
                         <button
                           type="button"
-                          title="Copy full prompt"
+                          title={t("copyPrompt")}
                           aria-label={`Copy prompt for slot ${img.slot}`}
                           onClick={() => {
                             navigator.clipboard.writeText(String((img as Record<string, unknown>).prompt)).then(() => {
@@ -1400,7 +1397,7 @@ export default function WorkspacePage() {
                           }}
                           style={{ background: "none", border: "1px solid rgba(127,127,127,0.35)", borderRadius: 5, padding: "1px 7px", cursor: "pointer", fontSize: "0.72rem", color: "inherit", margin: "4px 0" }}
                         >
-                          {copiedPromptId === img.id ? "Copied!" : "📋 Copy prompt"}
+                          {copiedPromptId === img.id ? t("copied") : t("copyPromptBtn")}
                         </button>
                         <p className={styles.slotError} style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "11px" }}>{String((img as Record<string, unknown>).prompt)}</p>
                       </details>
@@ -1411,7 +1408,7 @@ export default function WorkspacePage() {
 
               {galleryImages.some((img) => img.status === "COMPLETE" && (img.download_storage_path || img.preview_storage_path)) && (
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
-                  {currentShoot.status === "COMPLETE" ? `Download All ${getShootPackageSize(currentShoot)} (ZIP)` : "Download Completed Images (ZIP)"}
+                  {currentShoot.status === "COMPLETE" ? t("downloadAllZip", { count: getShootPackageSize(currentShoot) }) : t("downloadCompletedZip")}
                 </button>
               )}
 
@@ -1425,8 +1422,7 @@ export default function WorkspacePage() {
                   return (
                     <div className={styles.refundBanner} data-state={refundState}>
                       <p className={styles.refundMsg}>
-                        Some images in this shoot didn&apos;t come through. You can regenerate the whole
-                        shoot once for free — no extra charge.
+                        {t("regenBannerMsg")}
                       </p>
                       {refundState === "error" && <p className={styles.refundError}>{refundError}</p>}
                       <button
@@ -1434,7 +1430,7 @@ export default function WorkspacePage() {
                         onClick={() => requestRegeneration(currentShoot)}
                         disabled={refundState === "loading"}
                       >
-                        {refundState === "loading" ? "Starting regeneration…" : "Regenerate for free"}
+                        {refundState === "loading" ? t("startingRegen") : t("regenerateFree")}
                       </button>
                     </div>
                   );
@@ -1445,8 +1441,7 @@ export default function WorkspacePage() {
                     return (
                       <div className={styles.refundBanner}>
                         <p className={styles.refundMsg}>
-                          Your complimentary regeneration has been used. If images are still missing,
-                          please contact support with your shoot ID and we&apos;ll make it right.
+                          {t("regenUsedMsg")}
                         </p>
                       </div>
                     );
@@ -1469,7 +1464,7 @@ export default function WorkspacePage() {
                     onClick={turnIntoTemplate}
                     disabled={toTemplateLoading}
                   >
-                    {toTemplateLoading ? "Creating template..." : "Turn into template →"}
+                    {toTemplateLoading ? t("creatingTemplate") : t("turnIntoTemplate")}
                   </button>
                 </>
               )}
@@ -1483,11 +1478,11 @@ export default function WorkspacePage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={reviewBaseUrl}
-            alt="Character base — full size"
+            alt={t("characterBaseFullAlt")}
             className={styles.baseFullscreenImg}
             onClick={(e) => e.stopPropagation()}
           />
-          <button className={styles.baseFullscreenClose} onClick={() => setBaseFullscreen(false)} aria-label="Close">✕</button>
+          <button className={styles.baseFullscreenClose} onClick={() => setBaseFullscreen(false)} aria-label={t("close")}>✕</button>
         </div>
       )}
     </div>
