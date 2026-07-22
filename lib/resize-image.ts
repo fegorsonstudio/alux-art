@@ -1,13 +1,17 @@
-const TWO_HALF_MB = 2.5 * 1024 * 1024;
-// 2560px longest edge is comfortably above what the generation engine consumes
-// (it downsizes inputs internally) while cutting a phone-camera JPEG from
-// 5–12MB to well under 1MB — uploads on mobile data become 10-20x faster and
-// far less likely to drop mid-transfer (the "some uploads failed" complaint).
-const MAX_DIM = 2560;
+const SIX_MB = 6 * 1024 * 1024;
+// The resized file is what fal.ai actually receives for generation — nothing
+// server-side re-processes it afterward — so this is the real ceiling on
+// identity-photo fidelity, not just an upload-speed knob. A typical 12MP
+// phone JPEG is ~2500–4000px long edge and 3–6MB; capping at 3500px/6MB
+// lets the vast majority of uploads pass through completely untouched at
+// native resolution, while still catching the 8-24MP+ outliers (10-20MB
+// HEIC-converted shots) that were timing out or dropping mid-transfer on
+// mobile data.
+const MAX_DIM = 3500;
 
 export async function resizeIfNeeded(file: File): Promise<File> {
   // Small AND already reasonably sized → send as-is (also skips non-decodable edge cases)
-  if (file.size <= TWO_HALF_MB) return file;
+  if (file.size <= SIX_MB) return file;
   return new Promise<File>((resolve) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -24,7 +28,7 @@ export async function resizeIfNeeded(file: File): Promise<File> {
         // Any failure falls back to the original file — never block the upload.
         if (!blob || blob.size >= file.size) { resolve(file); return; }
         resolve(new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }));
-      }, "image/jpeg", 0.88);
+      }, "image/jpeg", 0.92);
     };
     img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
     img.src = objectUrl;

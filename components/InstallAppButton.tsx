@@ -19,6 +19,13 @@ export default function InstallAppButton() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
+  const [autoHidden, setAutoHidden] = useState(false);
+
+  // Show briefly, then get out of the way — it was covering page content.
+  useEffect(() => {
+    const timer = setTimeout(() => setAutoHidden(true), 30_000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const standalone =
@@ -43,8 +50,6 @@ export default function InstallAppButton() {
     };
   }, []);
 
-  if (isStandalone || (!deferredPrompt && !isIOS)) return null;
-
   const handleClick = async () => {
     if (deferredPrompt) {
       await deferredPrompt.prompt();
@@ -54,6 +59,8 @@ export default function InstallAppButton() {
     }
     setShowIOSModal(true);
   };
+
+  if (isStandalone || (!deferredPrompt && !isIOS) || autoHidden) return null;
 
   return (
     <>
