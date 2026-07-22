@@ -692,50 +692,60 @@ function CreatorDashboard() {
   const feeNgn = platformFeeNgn;
 
   const uploadFile = async (file: File, localId: string) => {
-    setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true } : img));
-    const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      const msg = errBody?.error ?? `Upload failed (${res.status})`;
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
-      return;
+    setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true, error: undefined } : img));
+    try {
+      const f = await resizeIfNeeded(file);
+      const form = new FormData();
+      form.append("file", f, f.name);
+      form.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: form });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg = errBody?.error ?? `Upload failed (${res.status})`;
+        setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
+        return;
+      }
+      const { storagePath } = await res.json();
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath } : img));
+    } catch {
+      // Network failure (connection reset, offline, etc.) never reaches res.ok —
+      // without this, "uploading" stays stuck true forever with no feedback.
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed — check your connection and try again" } : img));
     }
-    const { storagePath } = await res.json();
-    setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath } : img));
   };
 
   const replaceImage = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true, error: undefined } : img));
-    const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "template-images");
-    const uploadRes = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!uploadRes.ok) {
-      const errBody = await uploadRes.json().catch(() => ({}));
-      const msg = errBody?.error ?? `Upload failed (${uploadRes.status})`;
-      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
-      return;
-    }
-    const { storagePath } = await uploadRes.json();
-    const target = images.find(i => i.localId === localId);
-    if (target?.fromDb && panel !== "create") {
-      const patchRes = await fetch(`/api/templates/${panel}/images`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId: localId, storagePath }),
-      });
-      if (!patchRes.ok) {
-        setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Replace failed" } : img));
+    try {
+      const f = await resizeIfNeeded(file);
+      const form = new FormData();
+      form.append("file", f, f.name);
+      form.append("bucket", "template-images");
+      const uploadRes = await fetch("/api/upload/file", { method: "POST", body: form });
+      if (!uploadRes.ok) {
+        const errBody = await uploadRes.json().catch(() => ({}));
+        const msg = errBody?.error ?? `Upload failed (${uploadRes.status})`;
+        setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: msg } : img));
         return;
       }
+      const { storagePath } = await uploadRes.json();
+      const target = images.find(i => i.localId === localId);
+      if (target?.fromDb && panel !== "create") {
+        const patchRes = await fetch(`/api/templates/${panel}/images`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageId: localId, storagePath }),
+        });
+        if (!patchRes.ok) {
+          setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Replace failed" } : img));
+          return;
+        }
+      }
+      const newPreview = URL.createObjectURL(file);
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath, preview: newPreview } : img));
+    } catch {
+      setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, error: "Upload failed — check your connection and try again" } : img));
     }
-    const newPreview = URL.createObjectURL(file);
-    setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: false, storagePath, preview: newPreview } : img));
   };
 
   const addImages = (files: FileList) => {
@@ -753,20 +763,24 @@ function CreatorDashboard() {
   };
 
   const uploadSampleFile = async (file: File, localId: string) => {
-    setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: true } : s));
-    const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      const msg = errBody?.error ?? `Upload failed (${res.status})`;
-      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: msg } : s));
-      return;
+    setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: true, error: undefined } : s));
+    try {
+      const f = await resizeIfNeeded(file);
+      const form = new FormData();
+      form.append("file", f, f.name);
+      form.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: form });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg = errBody?.error ?? `Upload failed (${res.status})`;
+        setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: msg } : s));
+        return;
+      }
+      const { storagePath } = await res.json();
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, storagePath } : s));
+    } catch {
+      setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, error: "Upload failed — check your connection and try again" } : s));
     }
-    const { storagePath } = await res.json();
-    setSampleImages(prev => prev.map(s => s.localId === localId ? { ...s, uploading: false, storagePath } : s));
   };
 
   const addSampleFiles = (files: FileList) => {
@@ -783,18 +797,22 @@ function CreatorDashboard() {
 
   const uploadBackgroundOptionFile = async (file: File, optionId: string) => {
     setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: true, error: undefined } : o));
-    const f = await resizeIfNeeded(file);
-    const fd = new FormData();
-    fd.append("file", f, f.name);
-    fd.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, error: errBody?.error ?? "Upload failed" } : o));
-      return;
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, error: errBody?.error ?? "Upload failed" } : o));
+        return;
+      }
+      const { storagePath } = await res.json();
+      setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) } : o));
+    } catch {
+      setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, error: "Upload failed — check your connection and try again" } : o));
     }
-    const { storagePath } = await res.json();
-    setBackgroundOptions(prev => prev.map(o => o.id === optionId ? { ...o, uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) } : o));
   };
 
   const uploadChoiceOptionFile = async (file: File, groupId: string, optionId: string) => {
@@ -803,62 +821,81 @@ function CreatorDashboard() {
         ? { ...g, options: g.options.map(o => o.id === optionId ? { ...o, ...patch } : o) }
         : g));
     setOpt({ uploading: true, error: undefined });
-    const f = await resizeIfNeeded(file);
-    const fd = new FormData();
-    fd.append("file", f, f.name);
-    fd.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      setOpt({ uploading: false, error: errBody?.error ?? "Upload failed" });
-      return;
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        setOpt({ uploading: false, error: errBody?.error ?? "Upload failed" });
+        return;
+      }
+      const { storagePath } = await res.json();
+      setOpt({ uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) });
+    } catch {
+      setOpt({ uploading: false, error: "Upload failed — check your connection and try again" });
     }
-    const { storagePath } = await res.json();
-    setOpt({ uploading: false, imagePath: storagePath, preview: URL.createObjectURL(file) });
   };
 
   const uploadFlagShotFile = async (file: File) => {
     setFlagShotUploading(true);
-    const f = await resizeIfNeeded(file);
-    const fd = new FormData();
-    fd.append("file", f, f.name);
-    fd.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
-    if (!res.ok) { setFlagShotUploading(false); setFormError("Flag image upload failed"); return; }
-    const { storagePath } = await res.json();
-    setFlagShotImagePath(storagePath);
-    setFlagShotPreview(URL.createObjectURL(file));
-    setFlagShotIsNew(true);
-    setFlagShotUploading(false);
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!res.ok) { setFlagShotUploading(false); setFormError("Flag image upload failed"); return; }
+      const { storagePath } = await res.json();
+      setFlagShotImagePath(storagePath);
+      setFlagShotPreview(URL.createObjectURL(file));
+      setFlagShotIsNew(true);
+      setFlagShotUploading(false);
+    } catch {
+      setFlagShotUploading(false);
+      setFormError("Upload failed — check your connection and try again");
+    }
   };
 
   const uploadTrendPlateFile = async (file: File, which: "mugshot" | "bowl" | "viral") => {
     const set = which === "mugshot" ? setTrendMugshot : which === "bowl" ? setTrendBowl : setTrendViral;
     set(s => ({ ...s, uploading: true }));
-    const f = await resizeIfNeeded(file);
-    const fd = new FormData();
-    fd.append("file", f, f.name);
-    fd.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
-    if (!res.ok) { set(s => ({ ...s, uploading: false })); setFormError("Plate image upload failed"); return; }
-    const { storagePath } = await res.json();
-    set(s => ({ ...s, imagePath: storagePath, preview: URL.createObjectURL(file), isNew: true, uploading: false }));
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!res.ok) { set(s => ({ ...s, uploading: false })); setFormError("Plate image upload failed"); return; }
+      const { storagePath } = await res.json();
+      set(s => ({ ...s, imagePath: storagePath, preview: URL.createObjectURL(file), isNew: true, uploading: false }));
+    } catch {
+      set(s => ({ ...s, uploading: false }));
+      setFormError("Upload failed — check your connection and try again");
+    }
   };
 
   const uploadPoseOptionFile = async (file: File, poseId: string) => {
     setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, uploading: true } : p));
-    const f = await resizeIfNeeded(file);
-    const fd = new FormData();
-    fd.append("file", f, f.name);
-    fd.append("bucket", "template-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: fd });
-    if (!res.ok) {
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!res.ok) {
+        setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, uploading: false } : p));
+        setFormError("Pose image upload failed");
+        return;
+      }
+      const { storagePath } = await res.json();
+      setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, imagePath: storagePath, preview: URL.createObjectURL(file), uploading: false, fromDb: false } : p));
+    } catch {
       setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, uploading: false } : p));
-      setFormError("Pose image upload failed");
-      return;
+      setFormError("Upload failed — check your connection and try again");
     }
-    const { storagePath } = await res.json();
-    setPoseOptions(prev => prev.map(p => p.id === poseId ? { ...p, imagePath: storagePath, preview: URL.createObjectURL(file), uploading: false, fromDb: false } : p));
   };
 
   // ── Asset library — every photo option used on any of this creator's templates ──
