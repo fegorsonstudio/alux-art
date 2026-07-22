@@ -292,7 +292,12 @@ export default function WorkspacePage() {
         }
       }
     };
-    es.onerror = () => es.close();
+    // Deliberately NOT closing here: EventSource auto-reconnects after a
+    // dropped connection (mobile network switches, a backgrounded tab, a
+    // brief server hiccup), and the server always replays a fresh snapshot
+    // on reconnect — that's what was silently killing live progress and
+    // forcing a manual refresh to see slots that had already finished.
+    es.onerror = () => {};
     return () => { es.close(); shootIdRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentShoot?.id, currentShoot?.status]);

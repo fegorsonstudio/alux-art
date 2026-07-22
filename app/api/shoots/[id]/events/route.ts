@@ -48,12 +48,21 @@ export async function GET(
       const close = () => {
         if (closed) return;
         closed = true;
+        clearInterval(heartbeat);
         controller.close();
       };
       const enqueue = (payload: unknown) => {
         if (closed) return;
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
+      // A single slow slot can go several minutes between real events. Without
+      // traffic, nginx's proxy_read_timeout (310s) silently kills the
+      // connection — a comment line is invisible to the client's onmessage
+      // but counts as activity, so idle stretches never trip the timeout.
+      const heartbeat = setInterval(() => {
+        if (closed) return;
+        controller.enqueue(encoder.encode(`: keep-alive\n\n`));
+      }, 20_000);
 
       // Send initial snapshot
       const [shootRow] = await sql`SELECT * FROM shoots WHERE id = ${id}`;
