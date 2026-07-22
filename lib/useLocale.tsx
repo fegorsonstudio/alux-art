@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, interpolate, isLocale, dirFor, type Locale } from "@/lib/i18n";
 import { getDictionary, type AppDictionary } from "@/lib/dictionaries";
 import enDict from "@/lib/dictionaries/en";
@@ -28,6 +29,7 @@ export function LocaleProvider({
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
   const [dict, setDict] = useState<AppDictionary>(initialDict);
+  const router = useRouter();
 
   const setLocale = useCallback((l: Locale) => {
     if (!isLocale(l)) return;
@@ -39,7 +41,14 @@ export function LocaleProvider({
       document.documentElement.lang = l;
       document.documentElement.dir = dirFor(l);
     });
-  }, []);
+    // Some pages (e.g. the homepage) read the locale cookie server-side and
+    // render translated text as part of the initial HTML — that's invisible
+    // to this client-side context update. router.refresh() re-runs Server
+    // Components for the current route with the new cookie, without a hard
+    // reload — critical once installed as a PWA, where there's no address
+    // bar left for the user to refresh manually.
+    router.refresh();
+  }, [router]);
 
   // Keep <html lang/dir> in sync on first client render as well.
   useEffect(() => {
