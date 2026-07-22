@@ -20,6 +20,10 @@ const es: AppDictionary = {
     signInFirst: "Inicia sesión primero",
     confirmDeleteSaved: "¿Borrar todas tus fotos de identidad guardadas? No se puede deshacer.",
     networkError: "Error de red. Inténtalo de nuevo.",
+    installApp: "Instalar app",
+    iosInstallTitle: "Instalar Alux Art",
+    iosInstallHint: "Toca el ícono de Compartir en la barra del navegador y luego elige \"Agregar a pantalla de inicio\".",
+    close: "Cerrar",
   },
   home: {
     eyebrow: "¿Cansado de sesiones caras, tanta planificación y semanas de espera para recibir tus fotos?",

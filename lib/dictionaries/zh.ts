@@ -20,6 +20,10 @@ const zh: AppDictionary = {
     signInFirst: "请先登录",
     confirmDeleteSaved: "删除所有已保存的身份照片？此操作无法撤销。",
     networkError: "网络错误，请重试。",
+    installApp: "安装应用",
+    iosInstallTitle: "安装 Alux Art",
+    iosInstallHint: "点击浏览器栏中的分享图标，然后选择「添加到主屏幕」。",
+    close: "关闭",
   },
   home: {
     eyebrow: "厌倦了昂贵的拍摄、繁琐的筹备，以及等上几周才能拿到照片？",

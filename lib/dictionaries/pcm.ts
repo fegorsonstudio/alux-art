@@ -20,6 +20,10 @@ const pcm: AppDictionary = {
     signInFirst: "Sign in first",
     confirmDeleteSaved: "Delete all your saved identity images? You no fit undo am.",
     networkError: "Network wahala. Abeg try again.",
+    installApp: "Install App",
+    iosInstallTitle: "Install Alux Art",
+    iosInstallHint: "Tap the Share icon for your browser bar, then choose \"Add to Home Screen.\"",
+    close: "Close",
   },
   home: {
     eyebrow: "You don tire for expensive shoot, plenty planning, and to dey wait weeks before you see your photos?",

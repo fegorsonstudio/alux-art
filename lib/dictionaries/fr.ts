@@ -20,6 +20,10 @@ const fr: AppDictionary = {
     signInFirst: "Connectez-vous d'abord",
     confirmDeleteSaved: "Supprimer toutes vos photos d'identité enregistrées ? Action irréversible.",
     networkError: "Erreur réseau. Veuillez réessayer.",
+    installApp: "Installer l'application",
+    iosInstallTitle: "Installer Alux Art",
+    iosInstallHint: "Appuyez sur l'icône Partager dans la barre du navigateur, puis choisissez « Sur l'écran d'accueil ».",
+    close: "Fermer",
   },
   home: {
     eyebrow: "Fatigué des séances photo coûteuses, de l'organisation et des semaines d'attente pour recevoir vos photos ?",

@@ -19,6 +19,10 @@ const en = {
     signInFirst: "Sign in first",
     confirmDeleteSaved: "Delete all your saved identity images? This cannot be undone.",
     networkError: "Network error. Please try again.",
+    installApp: "Install App",
+    iosInstallTitle: "Install Alux Art",
+    iosInstallHint: "Tap the Share icon in your browser bar, then choose \"Add to Home Screen.\"",
+    close: "Close",
   },
   home: {
     eyebrow: "Tired of expensive shoots, the planning, and waiting weeks just to get your photos?",

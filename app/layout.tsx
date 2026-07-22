@@ -5,6 +5,8 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import ResumeRedirect from "./ResumeRedirect";
 import LanguageSelector from "@/components/LanguageSelector";
+import InstallAppButton from "@/components/InstallAppButton";
+import PwaRegister from "@/components/PwaRegister";
 import { LocaleProvider } from "@/lib/useLocale";
 import { LOCALE_COOKIE, DEFAULT_LOCALE, dirFor, isLocale, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/dictionaries";
@@ -36,12 +38,24 @@ const notoSC = Noto_Sans_SC({
 export const metadata: Metadata = {
   title: "Alux Art",
   description: "AI-powered autonomous photo studio — 10 professional images, no prompts needed.",
-  icons: { icon: "/logo.png", apple: "/logo.png" },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Alux Art",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#0a0e14",
 };
 
 export default async function RootLayout({
@@ -59,8 +73,10 @@ export default async function RootLayout({
       <body className={`${outfit.variable} ${notoArabic.variable} ${notoSC.variable}`}>
         <LocaleProvider initialLocale={locale} initialDict={dict}>
           <ResumeRedirect />
+          <PwaRegister />
           <main>{children}</main>
           <LanguageSelector />
+          <InstallAppButton />
         </LocaleProvider>
       </body>
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
