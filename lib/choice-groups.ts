@@ -53,15 +53,17 @@ export interface ChoiceSelections {
 
 // Group type → reference tag + default label. Shoes map to ACCESSORY with a
 // name prefix so multiple accessory-tag groups stay distinguishable downstream.
-// Props are multi-select: buyers can pick ANY number (including none) — they ride
-// the ACCESSORY tag, the only tag whose refs coexist in the generation pipeline.
+// Props and accessories are multi-select: buyers can pick ANY number (including
+// none). A fashion look routinely combines several accessories (watch + ring +
+// bracelet). They ride the ACCESSORY tag, the only tag whose refs coexist in the
+// generation pipeline.
 export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: string; namePrefix?: string; multiSelect?: boolean }> = {
   outfit:      { tag: "OUTFIT",      defaultLabel: "Outfit" },
   hairstyle:   { tag: "HAIRSTYLE",   defaultLabel: "Hairstyle" },
   makeup:      { tag: "MAKEUP",      defaultLabel: "Makeup" },
   nails:       { tag: "NAIL_DESIGN", defaultLabel: "Nails" },
   shoes:       { tag: "ACCESSORY",   defaultLabel: "Shoes", namePrefix: "Shoes — " },
-  accessory:   { tag: "ACCESSORY",   defaultLabel: "Accessory" },
+  accessory:   { tag: "ACCESSORY",   defaultLabel: "Accessory", multiSelect: true },
   color_grade: { tag: "COLOR_GRADE", defaultLabel: "Color grade" },
   props:       { tag: "ACCESSORY",   defaultLabel: "Props", namePrefix: "Prop — ", multiSelect: true },
   scrubs:      { tag: "SCRUBS",      defaultLabel: "Scrubs color" },
@@ -218,9 +220,9 @@ export function buildChoiceBriefSection(choices: ChoiceSelections): string {
   );
   lines.push("");
   for (const sel of choices.selections) {
-    if (sel.groupType === "props" && sel.kind === "photo") {
+    if ((sel.groupType === "props" || sel.groupType === "accessory") && sel.kind === "photo") {
       lines.push(
-        `${sel.tag} — "${sel.name}" [PROP PHOTO REFERENCE]: include this exact prop naturally in the ` +
+        `${sel.tag} — "${sel.name}" [PROP PHOTO REFERENCE]: include this exact item naturally in the ` +
         `scene with the subject in every image (held, worn, or placed believably), replicating its ` +
         `design, colors, and materials from the attached reference image labeled ${sel.tag} "${sel.name}".` +
         (sel.description ? ` Creator note: ${sel.description}.` : "")
@@ -234,7 +236,10 @@ export function buildChoiceBriefSection(choices: ChoiceSelections): string {
       const shapeGuard = (sel.groupType === "outfit" || sel.groupType === "scrubs")
         ? ` GARMENT FIT: the reference is a ghost-mannequin product shot — extract only the garment ` +
           `and fit it naturally to the subject's real body shape and proportions from the identity ` +
-          `references, never the mannequin's hollow form.`
+          `references, never the mannequin's hollow form.` +
+          ` EXACT DESIGN: reproduce every design element — prints, patterns, logos, embroidery, seams, ` +
+          `pleats, hemline, neckline, collar, sleeve shape, buttons, zippers, hardware, straps, and trims — ` +
+          `with the exact placement and color of each. Add nothing, remove nothing, restyle nothing.`
         : "";
       lines.push(
         `${sel.tag} — "${sel.name}" [PHOTO REFERENCE]: replicate the attached reference image ` +

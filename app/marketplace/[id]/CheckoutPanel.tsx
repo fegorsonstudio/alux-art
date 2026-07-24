@@ -6,7 +6,7 @@ import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResumeMarker } from "@/lib/checkout-resume";
 import { NURSING_TITLES, INDUCTION_NAME_MAXLEN, INDUCTION_MAX_TITLES, inductionYearRange } from "@/lib/nursing-induction";
-import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES } from "@/lib/choice-groups";
+import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES, GROUP_TYPES } from "@/lib/choice-groups";
 import { LIGHTING_PRESETS, CAMERA_PRESETS } from "@/lib/gear-equalizer";
 import { useT } from "@/lib/useLocale";
 
@@ -223,8 +223,11 @@ export default function CheckoutPanel({
   const [bgSplitMode, setBgSplitMode] = useState(false);
 
   // Buyer choice groups. Single-select groups: pick one, shown at 2+ options.
-  // Multi-select groups (props): pick any number, shown from 1 option.
-  const MULTI_SELECT_TYPES = new Set(["props"]);
+  // Multi-select groups (props, accessories): pick any number, shown from 1 option.
+  // Derived from the shared GROUP_TYPES map so this never drifts from the server flag.
+  const MULTI_SELECT_TYPES = new Set(
+    Object.entries(GROUP_TYPES).filter(([, m]) => m.multiSelect).map(([k]) => k)
+  );
   const choiceGroups = template.optionGroups ?? [];
   const pickableGroups = choiceGroups.filter(g => !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
   const multiGroups = choiceGroups.filter(g => MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);

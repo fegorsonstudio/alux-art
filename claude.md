@@ -93,6 +93,33 @@ Do not rely on natural language assumptions. The prompt must explicitly separate
 
 ---
 
+## Outfit Fidelity Rule — No Hallucination
+
+Whenever an outfit is supplied as an `[OUTFIT]` tagged reference or an outfit choice
+group (both resolve to the `OUTFIT` tag), the generated garment must reproduce the
+reference **element for element**. This applies to every template category, not just
+fashion brands.
+
+Reproduce exactly, with the same placement, size, orientation, and color:
+
+- prints, patterns, graphics, and logos
+- embroidery, beadwork, sequins, appliqué
+- seams, pleats, darts, gathers
+- hemline, neckline, collar, lapels
+- sleeve length and shape, cuffs
+- buttons, zippers, buckles, hardware, straps, belts, pockets, and trims
+
+Do not add, remove, resize, restyle, simplify, recolor, or reinterpret any element,
+and never substitute an alternative garment. If a detail is partially obscured or
+ambiguous in the reference, reproduce the closest faithful match rather than inventing
+a substitute. Shot-to-shot variation comes only from pose, camera angle, expression,
+and composition — never from changing the outfit or any of its details.
+
+The ghost-mannequin guard still applies: extract only the garment and fit it to the
+subject's real body from the identity references, never the mannequin's hollow form.
+
+---
+
 ## Identity Images Are Identity-Only
 
 Identity reference images must be used only for:

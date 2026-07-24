@@ -221,7 +221,8 @@ export interface PackagePricing {
 export type TemplateCategory =
   | "portrait" | "editorial" | "corporate" | "glamour" | "wedding"
   | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story"
-  | "call_to_bar" | "nursing_induction" | "photo_upgrade" | "trending";
+  | "call_to_bar" | "nursing_induction" | "photo_upgrade" | "trending"
+  | "fashion_brand";
 
 // Story Photoshoot types
 export type StoryType = "solo" | "duo" | "group" | "brand" | "group_brand";
@@ -257,6 +258,7 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string; isSt
   { value: "nursing_induction", label: "🩺 Nursing Induction" },
   { value: "photo_upgrade", label: "📸 Photo Upgrade" },
   { value: "trending",    label: "🔥 Trending" },
+  { value: "fashion_brand", label: "👗 Fashion Brand" },
   { value: "other",       label: "Other" },
 ];
 
