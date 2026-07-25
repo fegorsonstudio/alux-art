@@ -21,6 +21,36 @@ Since multiple AI agents operate on this project:
 
 ---
 
+## Anti-Regression Guardrails (apply to EVERY fix, no exceptions)
+
+When the user asks to fix or change something, these rules override the urge to
+improve surrounding code. Follow them exactly.
+
+1. Strict file scoping — modify ONLY the specific files and functions the fix
+   needs. Do not touch adjacent files, shared UI components, or config files
+   unless the user explicitly authorizes it.
+2. Preserve existing APIs — do not alter function signatures, exports, types, or
+   return shapes that other parts of the app rely on. Additive changes are allowed
+   only when the fix genuinely requires them.
+3. Zero unrequested refactoring — do not clean up, reformat, rename, or refactor
+   working code. Fix the isolated problem and nothing else.
+4. Impact assessment before shared changes — if a fix would touch a shared utility,
+   type, or component, STOP first, list what depends on it, warn the user of the
+   possible breakage, and get an explicit OK before proceeding.
+5. Regression check — after the change, run the type check and build (or the
+   project's tests) to prove the rest of the app still works, then report exactly
+   which files changed and confirm what was left untouched.
+
+### How I will operate on every fix (so this does not repeat)
+- Before editing: state the exact file(s) and function(s) I will touch — and touch
+  nothing outside that list.
+- During: make the smallest change that resolves the issue; no drive-by cleanup.
+- If shared/working code is in the path: flag it and wait for approval (rule 4).
+- After: run typecheck + build; report the changed files and what stayed the same;
+  do not deploy working code differently than before unless asked.
+
+---
+
 ## Tech Stack
 
 | Layer      | Technology                         |
