@@ -9,6 +9,7 @@ import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import { MAX_PROMPT_DESCRIPTION } from "@/lib/choice-groups";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
 import { Analytics } from "@/lib/analytics";
 import TemplateShareCard from "@/components/TemplateShareCard";
@@ -2383,8 +2384,8 @@ function CreatorDashboard() {
                           <textarea
                             className={styles.textarea}
                             placeholder={'Lighting prompt — hidden from buyers (e.g. "soft golden-hour window light from camera-left, warm rim light, gentle falloff shadows")'}
-                            rows={2}
-                            maxLength={300}
+                            rows={4}
+                            maxLength={MAX_PROMPT_DESCRIPTION}
                             value={opt.description}
                             onChange={e => setChoiceGroups(prev => prev.map(g => g.id === group.id
                               ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, description: e.target.value } : o) }

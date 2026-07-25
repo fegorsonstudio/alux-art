@@ -77,6 +77,10 @@ export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: s
 
 export const MAX_CHOICE_GROUPS = 6;
 export const MAX_OPTIONS_PER_GROUP = 100;
+// Hidden generation prompt for "prompt"-kind options (lighting recipes) can be long
+// and detailed. Other option descriptions stay short (see MAX_OPTION_DESCRIPTION).
+export const MAX_PROMPT_DESCRIPTION = 2000;
+export const MAX_OPTION_DESCRIPTION = 300;
 
 // ── Server-side sanitizer (templates POST/PATCH) ─────────────────────────────
 export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[] | null {
@@ -118,7 +122,7 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
         // Lighting-style option: a hidden generation prompt (required) plus an
         // optional display-only thumbnail. The thumbnail never becomes a reference
         // (the book route only turns kind === "photo" picks into shoot_references).
-        const description = typeof o.description === "string" ? o.description.trim().slice(0, 300) : "";
+        const description = typeof o.description === "string" ? o.description.trim().slice(0, MAX_PROMPT_DESCRIPTION) : "";
         if (!description) continue;
         const imagePath = typeof o.imagePath === "string" && o.imagePath.startsWith(`${userId}/`)
           ? o.imagePath
