@@ -55,7 +55,7 @@ interface TemplateDetail {
     options: Array<{
       id: string;
       name: string;
-      kind: "photo" | "text";
+      kind: "photo" | "text" | "prompt";
       description?: string;
       imagePath?: string | null;
       imageUrl?: string | null;

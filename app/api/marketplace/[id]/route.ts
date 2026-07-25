@@ -139,9 +139,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           id: o.id,
           name: o.name,
           kind: o.kind,
-          description: o.description,
+          // "prompt" options (lighting) carry a hidden generation prompt in
+          // description — never expose it to the buyer client. Their thumbnail IS shown.
+          description: o.kind === "prompt" ? undefined : o.description,
           imagePath: o.imagePath ?? null,
-          imageUrl: o.kind === "photo" && o.imagePath
+          imageUrl: (o.kind === "photo" || o.kind === "prompt") && o.imagePath
             ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
             : null,
         })),

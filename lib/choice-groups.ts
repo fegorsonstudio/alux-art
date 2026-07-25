@@ -11,14 +11,17 @@
 // package, choice groups are single-pick.
 
 export type ChoiceGroupType =
-  | "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs";
+  | "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs" | "lighting";
 
 export interface ChoiceOption {
   id: string;
   name: string;                // 1-40 chars, e.g. "Emerald Gown"
-  kind: "photo" | "text";
-  description?: string;        // required for text, optional creator note for photo
-  imagePath?: string;          // required for photo
+  // "photo" = image is a generation reference; "text" = description drives the prompt;
+  // "prompt" = a hidden generation prompt (description) + a display-only thumbnail
+  // (imagePath) shown to the buyer but NEVER sent to the image model. Used by lighting.
+  kind: "photo" | "text" | "prompt";
+  description?: string;        // required for text/prompt, optional creator note for photo
+  imagePath?: string;          // required for photo; display-only thumbnail for prompt
   imageBucket?: string;        // defaults to "template-images"
 }
 
@@ -65,12 +68,15 @@ export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: s
   shoes:       { tag: "ACCESSORY",   defaultLabel: "Shoes", namePrefix: "Shoes — " },
   accessory:   { tag: "ACCESSORY",   defaultLabel: "Accessory", multiSelect: true },
   color_grade: { tag: "COLOR_GRADE", defaultLabel: "Color grade" },
+  // Lighting: buyer picks one look by thumbnail; the creator's hidden prompt drives
+  // generation. The thumbnail is display-only (never a reference image).
+  lighting:    { tag: "LIGHTING",    defaultLabel: "Lighting" },
   props:       { tag: "ACCESSORY",   defaultLabel: "Props", namePrefix: "Prop — ", multiSelect: true },
   scrubs:      { tag: "SCRUBS",      defaultLabel: "Scrubs color" },
 };
 
 export const MAX_CHOICE_GROUPS = 6;
-export const MAX_OPTIONS_PER_GROUP = 6;
+export const MAX_OPTIONS_PER_GROUP = 100;
 
 // ── Server-side sanitizer (templates POST/PATCH) ─────────────────────────────
 export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[] | null {
@@ -93,7 +99,7 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
       const o = item as Record<string, unknown>;
       const name = typeof o.name === "string" ? o.name.trim().slice(0, 40) : "";
       if (!name) continue;
-      const kind = o.kind === "photo" || o.kind === "text" ? o.kind : null;
+      const kind = o.kind === "photo" || o.kind === "text" || o.kind === "prompt" ? o.kind : null;
       if (!kind) continue;
       if (kind === "photo") {
         const imagePath = typeof o.imagePath === "string" ? o.imagePath : "";
@@ -107,6 +113,22 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
             : undefined,
           imagePath,
           imageBucket: typeof o.imageBucket === "string" && o.imageBucket ? o.imageBucket : "template-images",
+        });
+      } else if (kind === "prompt") {
+        // Lighting-style option: a hidden generation prompt (required) plus an
+        // optional display-only thumbnail. The thumbnail never becomes a reference
+        // (the book route only turns kind === "photo" picks into shoot_references).
+        const description = typeof o.description === "string" ? o.description.trim().slice(0, 300) : "";
+        if (!description) continue;
+        const imagePath = typeof o.imagePath === "string" && o.imagePath.startsWith(`${userId}/`)
+          ? o.imagePath
+          : undefined;
+        options.push({
+          id: typeof o.id === "string" && o.id ? o.id : crypto.randomUUID(),
+          name,
+          kind,
+          description,
+          ...(imagePath ? { imagePath, imageBucket: typeof o.imageBucket === "string" && o.imageBucket ? o.imageBucket : "template-images" } : {}),
         });
       } else {
         const description = typeof o.description === "string" ? o.description.trim().slice(0, 300) : "";
@@ -246,6 +268,14 @@ export function buildChoiceBriefSection(choices: ChoiceSelections): string {
         `labeled ${sel.tag} "${sel.name}" exactly in every image.` +
         (sel.description ? ` Creator note: ${sel.description}.` : "") +
         recolor + shapeGuard
+      );
+    } else if (sel.kind === "prompt") {
+      // Hidden creator prompt (e.g. a lighting look). Inject as direction only —
+      // the buyer never sees this text, and no thumbnail image is attached.
+      lines.push(
+        `${sel.tag} DIRECTION — "${sel.name}": apply this exactly and consistently across ` +
+        `every image: "${sel.description}". This is a lighting/styling direction only — do not ` +
+        `introduce any objects, text, or props from it.`
       );
     } else {
       lines.push(

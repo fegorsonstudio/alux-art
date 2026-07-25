@@ -640,6 +640,8 @@ If Group C contains an image tagged [NAIL_DESIGN], detail those custom nail char
 
 [OUTFIT] CONSISTENCY LOCK: If Group C contains an asset tagged [OUTFIT], that exact outfit MUST be worn by the subject in ALL 9 portrait prompts without exception. Reproduce EVERY design element of the [OUTFIT] reference exactly — the garment's prints, patterns, graphics, logos, embroidery, beadwork, sequins, appliqué, seams, pleats, darts, gathers, hemline, neckline, collar, lapels, sleeve length and shape, cuffs, buttons, zippers, buckles, hardware, straps, belts, pockets, and every trim — including the exact placement, size, orientation, and color of each element. Describe these specific details in the Important Details section of every portrait prompt. Do NOT add, remove, resize, restyle, simplify, recolor, or reinterpret any element, and do NOT invent or substitute any alternative garment. If a detail is partially obscured or ambiguous in the reference, reproduce the closest faithful match rather than inventing a substitute. Shot-to-shot variation must come only from pose, camera angle, expression, and composition — NEVER from changing the outfit or any of its details.
 
+REFERENCE FIDELITY — NO INVENTED BRANDING: For any tagged product reference ([OUTFIT], [ACCESSORY], and any custom-tagged item such as a watch, ring, bracelet, glasses, bag, or shoes), the attached reference image is the single source of truth for that item. Describe it only by its generic type, color, materials, and visible features. NEVER invent or assert a specific brand, designer, maker, or product/model name (for example, do not write "Patek Philippe", "Rolex", "Cartier", "Gucci", "Nautilus", or any brand label) unless that exact branding is plainly legible in the reference image. If your written description would conflict with the reference image, the image always wins. Inventing a specific product name makes the image model render that invented product instead of the buyer's actual item.
+
 [BACKGROUND] CONSISTENCY LOCK — ABSOLUTE RULE: If Group C contains an asset tagged [BACKGROUND], that reference IS the environment for ALL portrait prompts without exception. Extract its concrete visual characteristics (surface material, color palette, floor, texture, depth) and write that exact environment into the Environment section of EVERY portrait prompt. You are FORBIDDEN from inventing any alternative setting — no libraries, courtrooms, offices, chambers, gradient studio walls, or any other location — regardless of what the shoot category, composition principles, or atmospheric mandates suggest. The composition aesthetic principles and atmospheric elements must be expressed WITHIN the locked environment (through framing, camera distance, light direction, and light quality), never by changing the environment itself. Variation between shots comes only from framing, distance, and angle. EXCEPTION: If the user content contains a "PER-SLOT BACKGROUND ALLOCATION" section, that section supersedes this rule — apply the lock per slot group exactly as instructed there, never globally.
 
 PERSPECTIVE MATCH: Analyze the [BACKGROUND] reference's camera geometry — camera height, tilt, horizon/floor line, and apparent focal length — and write every prompt's camera setup to be geometrically consistent with it. The subject must appear genuinely photographed standing INSIDE that space: feet grounded on the reference's floor plane, vanishing lines agreeing, lighting direction plausible for the space, and no camera angle that the reference's perspective could not produce. A subject that looks pasted onto the backdrop is a failure.
@@ -2380,7 +2382,9 @@ export async function startGenerationWorker(
                       ? `SUIT reference — the corporate look for suit slots; replicate its exact color, cut, and fabric${mannequinGuard}`
                       : r.tag === "OUTFIT"
                         ? `${name} reference — whenever the prompt describes this garment, reproduce EVERY design element from this image exactly: its prints, patterns, graphics, logos, embroidery, beadwork, seams, pleats, hemline, neckline, collar, sleeve shape, buttons, zippers, hardware, straps, and trims, with the exact placement and color of each. Add nothing, remove nothing, restyle nothing${mannequinGuard}`
-                        : `${name} reference — whenever the prompt describes this item, replicate its exact design, fabric, color, and construction from this image`;
+                        : r.tag === "ACCESSORY"
+                          ? `${name} reference — reproduce this EXACT accessory ("${name}") on the subject: its precise shape, design, color, materials, and every detail come from this image. This image is authoritative — do NOT substitute a different brand, model, style, dial, band, frame, lens, or color, even if the written prompt names a specific product.`
+                          : `${name} reference — whenever the prompt describes this item, replicate its exact design, fabric, color, and construction from this image`;
         return { url: r.url, label: directive };
       });
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
@@ -2824,6 +2828,32 @@ export async function startGenerationWorker(
         slotReferenceMap = { urls: [source.url, ...(backdropOk ? [enhanceBackdropRef!.url] : [])], text: "" };
       }
 
+      // ── Regression guard: never send an empty reference map ──────────────────
+      // A per-slot reference map must never be empty when references exist. An
+      // empty map sends zero images to fal, which then invents wardrobe and
+      // accessories from the text prompt alone (wrong watch, AI-looking fabric —
+      // the July 2026 regression). If the per-slot assembly produced nothing,
+      // recover the references. The console.warn records the conditions so the
+      // exact upstream cause is visible in production logs.
+      if (!isPhotoUpgrade && slotReferenceMap.urls.length === 0) {
+        if (sharedReferenceMap.urls.length > 0) {
+          slotReferenceMap = sharedReferenceMap;
+        } else {
+          // Deeper failure (reachability filtered everything): send the intended
+          // reference set unfiltered rather than nothing, so the model still
+          // anchors to the real identity / outfit / accessory images.
+          const recovered = imageEntries.filter((e) => e.url).slice(0, NANO_BANANA_MAX_IMAGES);
+          if (recovered.length > 0) {
+            slotReferenceMap = {
+              urls: recovered.map((e) => e.url),
+              text: " REFERENCE IMAGE MAP — the attached images in order: " +
+                recovered.map((e, i) => `IMAGE ${i + 1}: ${e.label}.`).join(" "),
+            };
+          }
+        }
+        console.warn(`[generate] slot ${slot}: EMPTY reference map recovered -> ${slotReferenceMap.urls.length} refs (routing=${identityRoutingActive}, bgPlan=${!!backgroundPlan}, imageEntries=${imageEntries.length}, shared=${sharedReferenceMap.urls.length})`);
+      }
+
       // The brief's mandatory prefix states the identity range for ALL identity
       // images ("IMAGES 1 through N"); with routing, this slot may attach fewer —
       // rewrite the range so the prompt matches the attached reference count.
@@ -2857,7 +2887,12 @@ export async function startGenerationWorker(
           : wantsSmile
             ? GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE
             : GLOBAL_ANATOMICAL_CONSTRAINTS;
-        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text} ${slotAnatomicalConstraints}`.trim();
+        // Photographic realism cue — keeps fabric/material detail sharp and true to
+        // the reference (quote/graphic-card slots have no subject, so skip them).
+        const slotRealism = isQuoteSlot
+          ? ""
+          : " Photographic realism: realistic fabric texture with visible weave and stitching, sharp material and accessory detail, natural fabric folds, crisp focus on the garment, true-to-life color, editorial lens feel.";
+        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
       }
 
       // Gear Equalizer: every photo keeps its own crop — probe the source's real

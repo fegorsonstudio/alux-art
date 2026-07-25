@@ -45,7 +45,7 @@ interface TemplateRow {
   role_chips?: string[];
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
-  option_groups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
+  option_groups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
   flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   trend_slots?: {
     mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
@@ -157,7 +157,7 @@ const MAX_BG_OPTIONS = 12;
 
 // Buyer choice groups — pick-one-per-group styling options (all categories).
 // Props are multi-select: buyers pick as many as they want (or none).
-type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs";
+type ChoiceGroupType = "outfit" | "hairstyle" | "makeup" | "nails" | "shoes" | "accessory" | "color_grade" | "props" | "scrubs" | "lighting";
 const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> = {
   outfit:      { tag: "OUTFIT",      label: "Outfit" },
   hairstyle:   { tag: "HAIRSTYLE",   label: "Hairstyle" },
@@ -166,16 +166,17 @@ const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> =
   shoes:       { tag: "ACCESSORY",   label: "Shoes" },
   accessory:   { tag: "ACCESSORY",   label: "Accessory" },
   color_grade: { tag: "COLOR_GRADE", label: "Color grade" },
+  lighting:    { tag: "LIGHTING",    label: "Lighting" },
   props:       { tag: "ACCESSORY",   label: "Props" },
   scrubs:      { tag: "SCRUBS",      label: "Scrubs color" },
 };
 const MAX_CHOICE_GROUPS = 6;
-const MAX_GROUP_OPTIONS = 6;
+const MAX_GROUP_OPTIONS = 100;
 
 interface ChoiceOptionDraft {
   id: string;
   name: string;
-  kind: "photo" | "text";
+  kind: "photo" | "text" | "prompt";
   description: string;
   imagePath: string;
   preview: string;
@@ -486,7 +487,7 @@ function CreatorDashboard() {
       options: (g.options ?? []).map((o) => ({
         id: o.id,
         name: o.name ?? "",
-        kind: o.kind === "text" ? "text" as const : "photo" as const,
+        kind: o.kind === "text" ? "text" as const : o.kind === "prompt" ? "prompt" as const : "photo" as const,
         description: o.description ?? "",
         imagePath: o.imagePath ?? "",
         preview: o.imagePath ? (bgImgs.find(img => img.storage_path === o.imagePath)?.signed_url ?? "") : "",
@@ -1101,13 +1102,18 @@ function CreatorDashboard() {
         id: g.id,
         type: g.type,
         label: g.label.trim() || GROUP_TYPE_META[g.type].label,
-        options: g.options.map(o => ({
-          id: o.id,
-          name: o.name.trim(),
-          kind: o.kind,
-          description: o.description.trim() || undefined,
-          imagePath: o.kind === "photo" ? o.imagePath : undefined,
-        })),
+        options: g.options.map(o => {
+          // Lighting options are always "prompt" kind: hidden prompt (description)
+          // + display-only thumbnail (imagePath). Other groups keep photo/text.
+          const kind = g.type === "lighting" ? "prompt" : o.kind;
+          return {
+            id: o.id,
+            name: o.name.trim(),
+            kind,
+            description: o.description.trim() || undefined,
+            imagePath: (kind === "photo" || kind === "prompt") ? o.imagePath : undefined,
+          };
+        }),
       })),
       // Flag shot (Call to Bar or Trending). Send null to clear when disabled or missing a plate.
       flagShot: (form.category === "call_to_bar" || form.category === "trending") && flagShotEnabled && flagShotImagePath
@@ -2356,6 +2362,38 @@ function CreatorDashboard() {
                             : g))}
                         >✕</button>
                       </div>
+                      {group.type === "lighting" ? (
+                        <>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {opt.preview && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={opt.preview} alt={opt.name || "lighting"} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 6 }} />
+                            )}
+                            <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                              {opt.uploading ? "Uploading..." : opt.imagePath ? "Replace thumbnail" : "Upload thumbnail"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: "none" }}
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadChoiceOptionFile(f, group.id, opt.id); e.target.value = ""; }}
+                              />
+                            </label>
+                            {opt.error && <span style={{ color: "#e5484d", fontSize: "0.78rem" }}>{opt.error}</span>}
+                          </div>
+                          <textarea
+                            className={styles.textarea}
+                            placeholder={'Lighting prompt — hidden from buyers (e.g. "soft golden-hour window light from camera-left, warm rim light, gentle falloff shadows")'}
+                            rows={2}
+                            maxLength={300}
+                            value={opt.description}
+                            onChange={e => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                              ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, description: e.target.value } : o) }
+                              : g))}
+                          />
+                          <span style={{ fontSize: "0.72rem", opacity: 0.6 }}>Buyers pick by the thumbnail; they never see this prompt.</span>
+                        </>
+                      ) : (
+                      <>
                       <div className={styles.pills}>
                         <button
                           type="button"
@@ -2404,6 +2442,8 @@ function CreatorDashboard() {
                             ? { ...g, options: g.options.map(o => o.id === opt.id ? { ...o, description: e.target.value } : o) }
                             : g))}
                         />
+                      )}
+                      </>
                       )}
                     </div>
                   ))}
