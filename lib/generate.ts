@@ -511,6 +511,16 @@ const SHOT_TYPE_LABELS: Record<string, string> = {
   full_body: "full body — head to toe, full figure in frame",
 };
 
+// Maps the buyer's whole-shoot shot_type onto the three framing buckets the
+// per-slot crop logic uses. Lets a single-image "medium" shoot enforce a hard
+// waist-up crop even when the planner didn't echo "framing" into the brief JSON.
+const SHOT_TYPE_FRAMING: Record<string, "full-body" | "medium" | "close-up"> = {
+  headshot:  "close-up",
+  close_up:  "close-up",
+  medium:    "medium",
+  full_body: "full-body",
+};
+
 type NewPromptObject = {
   prompt_index: number;
   is_quote_card?: boolean;
@@ -530,9 +540,11 @@ type NewPromptObject = {
 // allocation requirements when they only appear there — a closing user-content
 // directive is weighted much more heavily and makes compliance reliable.
 function buildIdentityRoutingReminder(catalog: IdentityCatalog, packageSize: number): string {
-  const smileCount = packageSize >= 10 ? "exactly 2 or 3" : packageSize >= 5 ? "exactly 1" : "0 (single-image shoots stay neutral)";
+  // Small shoots (< 5) follow the reference: every portrait slot smiles when the
+  // reference is smiling. Larger shoots keep the fixed allocation for variety.
+  const smileCount = packageSize >= 10 ? "exactly 2 or 3 normal portrait slots" : packageSize >= 5 ? "exactly 1 normal portrait slot" : "every normal portrait slot";
   const smileBlock = catalog.smilingIndices.length > 0
-    ? `\n2. SMILE ALLOCATION (do not skip): identity ${catalog.smilingIndices.length === 1 ? `IMAGE ${catalog.smilingIndices[0]} shows` : `IMAGES ${catalog.smilingIndices.join(", ")} show`} a genuine smile with visible teeth. Designate ${smileCount} normal portrait slot(s) as genuine-smile slots: their prompt text MUST contain the exact phrase "smiling with visible teeth" and their identity_image_indices MUST list ONLY the smiling image number(s). Never a custom slot (flag/mugshot/bowl/viral/quote card). Every other slot: no smile, and identity_image_indices lists ONLY neutral image numbers.`
+    ? `\n2. SMILE ALLOCATION (do not skip): identity ${catalog.smilingIndices.length === 1 ? `IMAGE ${catalog.smilingIndices[0]} shows` : `IMAGES ${catalog.smilingIndices.join(", ")} show`} a genuine smile with visible teeth. Designate ${smileCount} as genuine-smile slots: their prompt text MUST contain the exact phrase "smiling with visible teeth" and their identity_image_indices MUST list ONLY the smiling image number(s). Never a custom slot (flag/mugshot/bowl/viral/quote card). Every other slot: no smile, and identity_image_indices lists ONLY neutral image numbers.`
     : "";
   return `═══════════════════════════════════════════════════════
 FINAL COMPLIANCE CHECK — IDENTITY IMAGE ROUTING (MANDATORY)
@@ -571,7 +583,7 @@ Select 2-4 indices per prompt when enough references exist. Never select an empt
 
   const dentitionRule = hasSmiling
     ? `1. Smile Allocation Rule — ABSOLUTE RULE
-The subject's GENUINE smile is available: identity ${catalog!.smilingIndices.length === 1 ? `IMAGE ${catalog!.smilingIndices[0]} shows` : `IMAGES ${catalog!.smilingIndices.join(", ")} show`} the subject genuinely smiling with visible teeth. You MUST designate 2-3 portrait slots (in a 10-image shoot; exactly 1 slot in a 5-image shoot; NEVER in a single-image shoot — those stay neutral) as genuine-smile slots: their prompts MUST contain the exact phrase "smiling with visible teeth", describe a warm genuine smile, and their identity_image_indices MUST list ONLY the smiling-teeth reference(s). Custom slots (flag shot, mugshot, bowl, viral pose, quote card) are NEVER smile slots — choose normal portrait slots.
+The subject's GENUINE smile is available: identity ${catalog!.smilingIndices.length === 1 ? `IMAGE ${catalog!.smilingIndices[0]} shows` : `IMAGES ${catalog!.smilingIndices.join(", ")} show`} the subject genuinely smiling with visible teeth. You MUST designate genuine-smile slots as follows: 2-3 portrait slots in a 10-image shoot; exactly 1 slot in a 5-image shoot; EVERY portrait slot in a shoot of fewer than 5 images (a small shoot follows the reference's expression — since the reference is smiling, its slot(s) smile). Genuine-smile slots' prompts MUST contain the exact phrase "smiling with visible teeth", describe a warm genuine smile, and their identity_image_indices MUST list ONLY the smiling-teeth reference(s). Custom slots (flag shot, mugshot, bowl, viral pose, quote card) are NEVER smile slots — choose normal portrait slots.
 ALL OTHER SLOTS: no smiling, no laughing, no visible teeth, no open mouth. Their identity_image_indices must list ONLY neutral references. For these slots the target is ALIVE lips: lips fractionally parted (natural breathing stance), subtle asymmetric lip curve, soft tension in the lower lip, relaxed jawline — natural, unlocked, human lip micro-states are mandatory.`
     : `1. The Dentition Safeguard — ABSOLUTE RULE
 NEVER write any prompt that includes smiling, laughing, open-mouthed, teeth-showing, or grinning expressions. These are unconditionally prohibited regardless of what the identity photos show. Do not add smiles or laughter even if identity photos show them.
@@ -1794,7 +1806,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, s.shot_type, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   // ORDER BY keeps photo→slot mapping stable across worker invocations and retries
   // (photo_upgrade maps source photo i → slot i; unordered reads made that random).
@@ -2007,12 +2019,20 @@ export async function startGenerationWorker(
     }
   }
 
-  // Buyer opted out of smiles (studio + template checkout checkbox), or the
-  // shoot is single-image (too risky — the model invents teeth when the one
-  // slot is forced to smile). Emptying smilingIndices makes the system
-  // instruction fall back to the hard Dentition Safeguard, drops the smile
-  // allocation reminder, and keeps smiling references out of slot routing.
-  const noSmile = shoot.no_smile === true || normalizePackageSize(shoot.package_size) < 5;
+  // "Follow the reference" smile: a shoot smiles when the buyer's identity photos
+  // show a genuine smile (and the buyer did not opt out). This lets small shoots
+  // (< 5 images) match a smiling reference — copying its real teeth — instead of
+  // being forced neutral. Large shoots (5+) keep their existing per-slot smile
+  // allocation and are unaffected by this flag.
+  const referenceSmiling =
+    shoot.no_smile !== true &&
+    Object.values(identityAttributes).some((a) => a.expression === "smiling-teeth");
+  const smallShoot = normalizePackageSize(shoot.package_size) < 5;
+  // Buyer opted out, or a small shoot whose reference is NOT smiling (nothing to
+  // follow). Emptying smilingIndices makes the system instruction fall back to the
+  // hard Dentition Safeguard, drops the smile allocation reminder, and keeps
+  // smiling references out of slot routing.
+  const noSmile = shoot.no_smile === true || (smallShoot && !referenceSmiling);
 
   // Catalog handed to the brief planner — same GROUP A order the planner sees.
   const identityCatalog: IdentityCatalog | null = (() => {
@@ -2613,7 +2633,11 @@ export async function startGenerationWorker(
       // back-view reference, everything else gets neutral front references.
       // Planner-selected identity_image_indices take priority; prompt-text
       // heuristics are the fallback; the full pool is the final safety net.
-      const wantsSmile = identityRoutingActive && !isCustomSlot && !isQuoteSlot && SMILE_TRIGGERS.test(slotPrompt);
+      // Small shoots follow the reference: every portrait slot smiles when the
+      // reference is smiling (deterministic, not reliant on the planner echoing
+      // the trigger phrase). Large shoots keep the planner-driven per-slot smile.
+      const wantsSmile = !isCustomSlot && !isQuoteSlot && !noSmile &&
+        ((smallShoot && referenceSmiling) || (identityRoutingActive && SMILE_TRIGGERS.test(slotPrompt)));
       // A slot only counts as a back-view slot when a back-view reference exists —
       // pose language like "back turn" or "glance back" appears in templates whose
       // buyers uploaded no back photo, and without a reference the pose stays
@@ -2627,13 +2651,19 @@ export async function startGenerationWorker(
       // behavior (safe no-regression default — e.g. a JSON-parse-failure run,
       // or any category/slot where neither source has an opinion yet).
       let wantsFraming: IdentityAttrs["framing"] | undefined;
-      let framingSource: "nursing" | "planner" | "unknown" = "unknown";
+      let framingSource: "nursing" | "planner" | "shoot" | "unknown" = "unknown";
       if (getNursingInductionFraming) {
         wantsFraming = getNursingInductionFraming(slot - 1, total);
         framingSource = "nursing";
       } else if (slotFraming[String(slot)]) {
         wantsFraming = slotFraming[String(slot)];
         framingSource = "planner";
+      } else if (SHOT_TYPE_FRAMING[String(shoot.shot_type ?? "")]) {
+        // Buyer picked a whole-shoot shot type (single-image shoots especially).
+        // Code-known fallback so the framing crop below fires even when the
+        // planner failed to echo "framing" back into the brief JSON.
+        wantsFraming = SHOT_TYPE_FRAMING[String(shoot.shot_type)];
+        framingSource = "shoot";
       }
 
       const identityOnlyEntries = imageEntries.slice(0, identityEntryCount);
@@ -2878,6 +2908,17 @@ export async function startGenerationWorker(
           ? TELEPHOTO_ENHANCEMENT
           : "";
 
+      // Framing crop lock — the model routinely treats "medium shot" as a soft
+      // suggestion and renders a full-body frame. When THIS slot is a medium
+      // shot, restate it as a hard crop the model must obey. The /FRAMING LOCK/
+      // guard keeps it idempotent across slot retries. Scoped to "medium" only:
+      // close-up and full-body are already reliable and the buyer's reported
+      // regression was a medium shoot coming out full-body.
+      const framingCropLock =
+        !isQuoteSlot && wantsFraming === "medium" && !/FRAMING LOCK/i.test(slotPrompt)
+          ? " FRAMING LOCK FOR THIS IMAGE: this is a medium shot framed from the waist up. Crop the frame at or just below the waist. Only the head, torso, and arms are visible. Do NOT show the hips, legs, knees, or feet. This is a hard crop requirement, not a stylistic suggestion."
+          : "";
+
       // Append the reference image map + positive anatomical constraints to every fal call.
       // Smile slots get the real-teeth variant; back-view slots drop face requirements.
       // Gear Equalizer prompts are already fully assembled — nothing is appended.
@@ -2892,7 +2933,7 @@ export async function startGenerationWorker(
         const slotRealism = isQuoteSlot
           ? ""
           : " Photographic realism: realistic fabric texture with visible weave and stitching, sharp material and accessory detail, natural fabric folds, crisp focus on the garment, true-to-life color, editorial lens feel.";
-        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
+        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${framingCropLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
       }
 
       // Gear Equalizer: every photo keeps its own crop — probe the source's real
