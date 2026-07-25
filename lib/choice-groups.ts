@@ -258,7 +258,8 @@ export function buildChoiceBriefSection(choices: ChoiceSelections): string {
       const shapeGuard = (sel.groupType === "outfit" || sel.groupType === "scrubs")
         ? ` GARMENT FIT: the reference is a ghost-mannequin product shot — extract only the garment ` +
           `and fit it naturally to the subject's real body shape and proportions from the identity ` +
-          `references, never the mannequin's hollow form.` +
+          `references, never the mannequin's hollow form. Do NOT take the subject's height, stature, or ` +
+          `body proportions from this garment image — those come only from the identity references.` +
           ` EXACT DESIGN: reproduce every design element — prints, patterns, logos, embroidery, seams, ` +
           `pleats, hemline, neckline, collar, sleeve shape, buttons, zippers, hardware, straps, and trims — ` +
           `with the exact placement and color of each. Add nothing, remove nothing, restyle nothing.`

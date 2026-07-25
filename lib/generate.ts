@@ -625,7 +625,7 @@ II. THE MANDATORY PROMPT PREFIX (For Prompts 1 through 9)
 
 To lock in the image generator's behavioral constraints and protect the subject's identity, every editorial subject prompt must begin with this exact text block, word-for-word, without deviation. Replace [IDENTITY_RANGE] with the exact image range stated in the GROUP A label (e.g. "IMAGES 1 through 3", or "IMAGE 1" if only one identity image was provided):
 
-"Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
+"Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, height, stature, build, and overall body proportions, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. The subject's height and proportions come ONLY from these identity references — never infer them from a garment, outfit, mannequin, or product reference. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
 
 III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 
@@ -2366,7 +2366,7 @@ export async function startGenerationWorker(
         const name = r.customName || r.tag || "REFERENCE";
         // Garment references are ghost-mannequin product shots — the guard stops
         // the model copying the mannequin's hollow form instead of the buyer's body.
-        const mannequinGuard = " (this is a ghost-mannequin product shot: extract ONLY the garment — color, cut, fabric, trim — and fit it naturally to the subject's actual body shape and proportions from the identity references; never reproduce the mannequin's hollow form, stance, or proportions)";
+        const mannequinGuard = " (this is a ghost-mannequin product shot: extract ONLY the garment — color, cut, fabric, trim — and fit it naturally to the subject's actual body shape and proportions from the identity references; never reproduce the mannequin's hollow form, stance, or proportions. Do NOT take the subject's height, stature, leg length, torso length, or overall body proportions from this garment image — the subject's height and build come exclusively from the identity references)";
         const directive =
           r.tag === "BACKGROUND"
             ? "BACKGROUND reference — the environment/backdrop in the output MUST replicate this image exactly (surface, color, floor, texture); match its perspective, camera height, and floor line exactly so the subject appears photographed within this space. Override any conflicting environment description"
