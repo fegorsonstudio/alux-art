@@ -2,7 +2,7 @@
 
 ## Active AI Handoff Status
 
-**Current state:** Production app is stable after upload persistence, gallery fetch, Claude fallback, and provider-error visibility fixes.
+**Current state:** Production app is stable. Fixed a July-2026 regression where the per-slot reference-image map came out empty (uploaded outfit/accessories/identity stopped reaching fal, causing wrong accessories + AI-looking output); added a permanent guard that recovers any empty map. Accessory anti-brand-hallucination + fabric-realism prompt language added. Subject height/proportions now sourced only from identity refs, never the ghost-mannequin outfit. New "Lighting" buyer choice option (hidden prompt + display thumbnail via new `prompt` option kind). Per-group option cap raised 6 -> 100.
 
 **Current focus:** Improving the Vision and Prompt Orchestration Agent rules for fast and advanced shoot modes.
 
