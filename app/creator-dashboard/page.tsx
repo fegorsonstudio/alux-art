@@ -265,6 +265,8 @@ function CreatorDashboard() {
   const [libraryPicker, setLibraryPicker] = useState<{ target: LibraryTarget; groupId?: string } | null>(null);
   const [libraryFilter, setLibraryFilter] = useState<string>("all");
   const [libraryTab, setLibraryTab] = useState<"mine" | "community">("mine");
+  // Backdrop being deleted/replaced from the library popup (imagePath), disables its tile.
+  const [libBusy, setLibBusy] = useState<string | null>(null);
   const [communitySetups, setCommunitySetups] = useState<Array<{ id: string; kind: string; name: string; imageUrl: string; creatorName: string; isMine: boolean }>>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
   const [communityImporting, setCommunityImporting] = useState<string | null>(null);
@@ -968,6 +970,55 @@ function CreatorDashboard() {
     } else if (libraryPicker.target === "trend-viral") {
       setTrendViral(s => ({ ...s, imagePath: asset.imagePath, preview: asset.preview, isNew: false, enabled: true }));
     }
+  };
+
+  // ── Manage backdrops from the library popup (delete everywhere / replace photo) ──
+  const backdropUsageCount = (imagePath: string) =>
+    templates.filter(t => (Array.isArray(t.background_options) ? t.background_options : []).some(o => o.imagePath === imagePath)).length;
+
+  const deleteLibraryBackdrop = async (asset: LibraryAsset) => {
+    const usage = backdropUsageCount(asset.imagePath);
+    if (!window.confirm(`Delete "${asset.name}" from ${usage} template${usage === 1 ? "" : "s"} and remove the image permanently? This can't be undone.`)) return;
+    setLibBusy(asset.imagePath);
+    try {
+      const res = await fetch("/api/creator-dashboard/library-assets", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", imagePath: asset.imagePath, imageBucket: asset.imageBucket }),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); alert(e.error ?? "Delete failed"); return; }
+      // Drop it from every template locally so the library re-derives without it.
+      setTemplates(prev => prev.map(t => ({
+        ...t,
+        background_options: Array.isArray(t.background_options)
+          ? t.background_options.filter(o => o.imagePath !== asset.imagePath)
+          : t.background_options,
+      })));
+      setBackgroundOptions(prev => prev.filter(o => o.imagePath !== asset.imagePath));
+    } catch { alert("Delete failed — check your connection and try again"); }
+    finally { setLibBusy(null); }
+  };
+
+  const replaceLibraryBackdrop = async (asset: LibraryAsset, file: File) => {
+    setLibBusy(asset.imagePath);
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const up = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!up.ok) { const e = await up.json().catch(() => ({})); alert(e.error ?? "Upload failed"); return; }
+      const { storagePath: newPath } = await up.json();
+      const res = await fetch("/api/creator-dashboard/library-assets", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "replace", imagePath: asset.imagePath, imageBucket: asset.imageBucket, newImagePath: newPath, newImageBucket: "template-images" }),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); alert(e.error ?? "Replace failed"); return; }
+      // Update the open form immediately; refetch to move the library thumbnail.
+      const newPreview = URL.createObjectURL(file);
+      setBackgroundOptions(prev => prev.map(o => o.imagePath === asset.imagePath ? { ...o, imagePath: newPath, preview: newPreview } : o));
+      loadDashboard();
+    } catch { alert("Replace failed — check your connection and try again"); }
+    finally { setLibBusy(null); }
   };
 
   // ── Community library (cross-creator setup sharing) ──────────────────────────
@@ -2586,21 +2637,52 @@ function CreatorDashboard() {
                       {libraryAssets
                         .filter(a => libraryFilter === "all" || a.type === libraryFilter)
                         .map(a => (
-                          <button
+                          <div
                             key={a.imagePath}
-                            type="button"
-                            title={`${a.name} — from "${a.sourceTitle}"`}
-                            onClick={() => { addLibraryAsset(a); setLibraryPicker(null); }}
                             style={{
-                              display: "flex", flexDirection: "column", gap: 4, background: "none",
-                              border: "1px solid rgba(127,127,127,0.3)", borderRadius: 8, padding: 6, cursor: "pointer",
+                              display: "flex", flexDirection: "column", gap: 4,
+                              border: "1px solid rgba(127,127,127,0.3)", borderRadius: 8, padding: 6,
+                              opacity: libBusy === a.imagePath ? 0.5 : 1,
                             }}
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={a.preview} alt={a.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
-                            <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
-                            <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.sourceTitle}</span>
-                          </button>
+                            <button
+                              type="button"
+                              title={`${a.name} — from "${a.sourceTitle}"`}
+                              onClick={() => { addLibraryAsset(a); setLibraryPicker(null); }}
+                              style={{
+                                display: "flex", flexDirection: "column", gap: 4, background: "none",
+                                border: "none", padding: 0, cursor: "pointer", color: "inherit",
+                              }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={a.preview} alt={a.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6 }} />
+                              <span style={{ fontSize: "0.72rem", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                              <span style={{ fontSize: "0.6rem", opacity: 0.55, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.sourceTitle}</span>
+                            </button>
+                            {/* Backdrops can be replaced or deleted across every template that uses them. */}
+                            {a.type === "background" && (
+                              <div style={{ display: "flex", gap: 8, justifyContent: "center", borderTop: "1px solid rgba(127,127,127,0.2)", paddingTop: 4 }}>
+                                <label style={{ fontSize: "0.62rem", cursor: libBusy ? "default" : "pointer", opacity: 0.85, textDecoration: "underline" }}>
+                                  {libBusy === a.imagePath ? "Working…" : "Replace"}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: "none" }}
+                                    disabled={!!libBusy}
+                                    onChange={e => { const f = e.target.files?.[0]; if (f) replaceLibraryBackdrop(a, f); e.target.value = ""; }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  disabled={!!libBusy}
+                                  onClick={() => deleteLibraryBackdrop(a)}
+                                  style={{ fontSize: "0.62rem", background: "none", border: "none", padding: 0, color: "#e5484d", cursor: libBusy ? "default" : "pointer", textDecoration: "underline" }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         ))}
                       {libraryAssets.filter(a => libraryFilter === "all" || a.type === libraryFilter).length === 0 && (
                         <p className={styles.fieldHint}>No saved assets of this type yet.</p>
