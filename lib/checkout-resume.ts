@@ -63,6 +63,11 @@ export interface PendingConfig {
   enhanceLighting?: string;
   enhanceCamera?: string;
   enhanceBackdrop?: string;
+  // Manual lighting toggle: regular templates spread lightingPicks across images;
+  // photo_upgrade assigns lightingByPhoto (storagePath → optionId) per source photo.
+  manualLighting?: boolean;
+  lightingPicks?: string[];
+  lightingByPhoto?: Record<string, string>;
   // Buyer opt-out of smile slots
   noSmile?: boolean;
 }

@@ -7,6 +7,7 @@ import { isAdminEmail } from "@/lib/auth";
 import { initializePayment } from "@/lib/payment-gateway";
 import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-plan";
+import { resolveLightingPlan, type LightingLook } from "@/lib/lighting-plan";
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
@@ -44,8 +45,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     rolePrompt?: string;
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
     choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string }>;
+    // Manual lighting toggle (regular templates): buyer ticks one or more
+    // lighting looks from the template's "lighting" choice group; they get
+    // spread across the images. Absent/empty = AI-described lighting.
+    manualLighting?: boolean;
+    lightingOptionIds?: string[];
     induction?: { name?: string; titles?: string[]; year?: number; cap?: "grad" | "none" };
-    enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null };
+    enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null; lightingByPath?: Record<string, string> };
     noSmile?: boolean;
     flagShot?: { enabled?: boolean; text?: string };
     trendSlots?: {
@@ -241,7 +247,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         .map((o: { id?: string }) => o.id)
         .filter(Boolean) as string[]
     );
-    enhance = sanitizeEnhanceSelection(body.enhance, backdropIds);
+    // Manual per-photo lighting looks (creator's "lighting" choice group). Snapshot
+    // the hidden recipes server-side so the client never supplies the prompt text.
+    const photoUpgradeLightingLooks = new Map<string, { name: string; directive: string }>(
+      (Array.isArray(template.option_groups) ? template.option_groups as ChoiceGroup[] : [])
+        .filter((g) => g.type === "lighting")
+        .flatMap((g) => g.options)
+        .filter((o) => o.kind === "prompt" && typeof o.description === "string" && o.description.trim().length > 0)
+        .map((o) => [o.id, { name: o.name, directive: (o.description as string).trim() }])
+    );
+    enhance = sanitizeEnhanceSelection(body.enhance, backdropIds, photoUpgradeLightingLooks);
     if (!enhance) {
       return NextResponse.json({ error: "Pick a lighting style and a camera look for your upgrade" }, { status: 400 });
     }
@@ -280,9 +295,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const templateGroups: ChoiceGroup[] = Array.isArray(template.option_groups)
     ? template.option_groups
     : [];
+  // Lighting is buyer-directed through its own manual-lighting picker (below) and
+  // travels as lighting_plan, NOT as a generic styling selection — exclude it from
+  // the choice-selection path so a lighting look can never double-apply.
+  const nonLightingGroups = templateGroups.filter((g) => g.type !== "lighting");
   const { selections: choiceSelections, error: choiceError } =
-    resolveChoiceSelections(templateGroups, body.choiceSelections);
+    resolveChoiceSelections(nonLightingGroups, body.choiceSelections);
   if (choiceError) return NextResponse.json({ error: choiceError }, { status: 400 });
+
+  // ── Manual lighting allocation (regular templates) ──────────────────────────
+  // The creator's lighting looks are a "lighting" choice group of kind "prompt"
+  // (name + hidden recipe in description). When the buyer turns on manual lighting
+  // and ticks looks, snapshot the hidden recipes server-side (never trusted from
+  // the client) and spread them across the portrait slots. photo_upgrade relights
+  // per uploaded photo instead, so it never uses this whole-shoot plan.
+  const lightingLooks: LightingLook[] = template.category === "photo_upgrade"
+    ? []
+    : templateGroups
+        .filter((g) => g.type === "lighting")
+        .flatMap((g) => g.options)
+        .filter((o) => o.kind === "prompt" && typeof o.description === "string" && o.description.trim().length > 0)
+        .map((o) => ({ id: o.id, name: o.name, directive: (o.description as string).trim() }));
+  const lightingPlan = body.manualLighting === true
+    ? resolveLightingPlan(lightingLooks, body.lightingOptionIds, bgSlotCount)
+    : null;
   // Exclude ALL group option images (chosen ones re-enter as dedicated refs below)
   // and the template's legacy single tagged image for any tag a group now covers.
   const groupOptionPaths = new Set(
@@ -392,13 +428,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [shootRow] = await sql`
     INSERT INTO shoots
       (id, user_id, owner_email, mode, aspect_ratio, currency, package_size, status,
-       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, choice_selections, flag_shot, trend_slots, induction, enhance, no_smile, created_at, updated_at)
+       progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, lighting_plan, choice_selections, flag_shot, trend_slots, induction, enhance, no_smile, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
       ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
       'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
       '', ${shotType}, ${rolePrompt}, ${templateId},
       ${backgroundPlan ? sql.json(backgroundPlan as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${lightingPlan ? sql.json(lightingPlan as unknown as Parameters<typeof sql.json>[0]) : null},
       ${choiceSelections ? sql.json(choiceSelections as unknown as Parameters<typeof sql.json>[0]) : null},
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},

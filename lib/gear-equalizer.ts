@@ -151,33 +151,71 @@ export const LIGHTING_PRESET_IDS = new Set(LIGHTING_PRESETS.map((p) => p.id));
 export const CAMERA_PRESET_IDS = new Set(CAMERA_PRESETS.map((p) => p.id));
 
 // ── Buyer selection ───────────────────────────────────────────────────────────
+// A snapshotted creator lighting look assigned to one source photo (manual
+// per-photo lighting). directive = the hidden recipe, snapshotted server-side.
+export interface EnhanceLightingPick {
+  optionId: string;
+  name: string;
+  directive: string;
+}
+
 export interface EnhanceSelection {
-  lighting: string;              // LIGHTING_PRESETS id
+  lighting?: string;             // LIGHTING_PRESETS id (legacy single-rig path)
   camera: string;                // CAMERA_PRESETS id
   backdropOptionId: string | null; // background_options option id, null = keep own background
+  // Manual per-photo lighting: source photo storagePath → creator lighting look.
+  // When present, overrides the single rig per photo in generation.
+  lightingByPath?: Record<string, EnhanceLightingPick>;
 }
 
 export function sanitizeEnhanceSelection(
   raw: unknown,
-  validBackdropIds: Set<string>
+  validBackdropIds: Set<string>,
+  // Creator lighting looks (optionId → snapshot source), from the template's
+  // "lighting" choice group. Empty when the template has no manual lighting.
+  lightingLooks: Map<string, { name: string; directive: string }> = new Map()
 ): EnhanceSelection | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  const lighting = typeof o.lighting === "string" && LIGHTING_PRESET_IDS.has(o.lighting) ? o.lighting : null;
   const camera = typeof o.camera === "string" && CAMERA_PRESET_IDS.has(o.camera) ? o.camera : null;
-  if (!lighting || !camera) return null;
+  if (!camera) return null;
+
+  // Manual per-photo lighting: client sends { storagePath: optionId }; snapshot
+  // the hidden recipe server-side (never trusted from the client).
+  let lightingByPath: Record<string, EnhanceLightingPick> | undefined;
+  if (o.lightingByPath && typeof o.lightingByPath === "object" && lightingLooks.size > 0) {
+    const out: Record<string, EnhanceLightingPick> = {};
+    for (const [path, optId] of Object.entries(o.lightingByPath as Record<string, unknown>)) {
+      if (typeof path !== "string" || typeof optId !== "string") continue;
+      const look = lightingLooks.get(optId);
+      if (!look) continue;
+      out[path] = { optionId: optId, name: look.name, directive: look.directive };
+    }
+    if (Object.keys(out).length > 0) lightingByPath = out;
+  }
+
+  const lighting = typeof o.lighting === "string" && LIGHTING_PRESET_IDS.has(o.lighting) ? o.lighting : null;
+  // Need at least one lighting source: per-photo creator looks OR a legacy rig.
+  if (!lightingByPath && !lighting) return null;
+
   const backdropOptionId =
     typeof o.backdropOptionId === "string" && validBackdropIds.has(o.backdropOptionId)
       ? o.backdropOptionId
       : null;
-  return { lighting, camera, backdropOptionId };
+  return { lighting: lighting ?? undefined, camera, backdropOptionId, lightingByPath };
 }
 
 // ── The deterministic edit prompt ─────────────────────────────────────────────
 // The source photo is IMAGE 1 (the edit base). When swapping backgrounds, the
 // backdrop plate rides along as IMAGE 2.
-export function buildGearEqualizerPrompt(sel: EnhanceSelection, backdropAttached: boolean): string {
+export function buildGearEqualizerPrompt(
+  sel: EnhanceSelection,
+  backdropAttached: boolean,
+  // Manual per-photo lighting: the recipe for THIS photo overrides the rig.
+  lightingDirectiveOverride?: string
+): string {
   const lighting = LIGHTING_PRESETS.find((p) => p.id === sel.lighting) ?? LIGHTING_PRESETS[0];
+  const lightingDirective = lightingDirectiveOverride ?? lighting.directive;
   const camera = CAMERA_PRESETS.find((p) => p.id === sel.camera) ?? CAMERA_PRESETS[0];
 
   const parts: string[] = [
@@ -191,7 +229,7 @@ export function buildGearEqualizerPrompt(sel: EnhanceSelection, backdropAttached
       "like the input with minor cleanup is a FAILED result.",
 
     // 2. Lighting.
-    "THE NEW LIGHTING: " + lighting.directive + " Rebuild ALL illumination from scratch to " +
+    "THE NEW LIGHTING: " + lightingDirective + " Rebuild ALL illumination from scratch to " +
       "match: shadow direction and softness, highlight placement, catchlights in the eyes, " +
       "light falloff on the background, and color temperature must all follow this setup — " +
       "replacing the original photo's lighting entirely.",

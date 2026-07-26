@@ -229,10 +229,21 @@ export default function CheckoutPanel({
     Object.entries(GROUP_TYPES).filter(([, m]) => m.multiSelect).map(([k]) => k)
   );
   const choiceGroups = template.optionGroups ?? [];
-  const pickableGroups = choiceGroups.filter(g => !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
-  const multiGroups = choiceGroups.filter(g => MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
+  // Lighting looks get their own manual-lighting toggle below — never the generic
+  // styling pickers — so exclude them from pickable/multi groups.
+  const lightingGroups = choiceGroups.filter(g => g.type === "lighting");
+  const lightingLooks = lightingGroups.flatMap(g => g.options ?? []).filter(o => o.kind === "prompt");
+  const pickableGroups = choiceGroups.filter(g => g.type !== "lighting" && !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
+  const multiGroups = choiceGroups.filter(g => g.type !== "lighting" && MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
   const [multiPicks, setMultiPicks] = useState<Record<string, string[]>>({});
+  // Manual lighting toggle: off by default. Regular templates → AI describes
+  // lighting (on = buyer ticks looks, spread across images). photo_upgrade → the
+  // existing single rig (on = a creator lighting look assigned per source photo).
+  const [manualLighting, setManualLighting] = useState(false);
+  const [lightingPicks, setLightingPicks] = useState<string[]>([]);
+  // photo_upgrade per-photo lighting: source photo storagePath → lighting optionId.
+  const [lightingByPhoto, setLightingByPhoto] = useState<Record<string, string>>({});
   // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
 
@@ -410,6 +421,9 @@ export default function CheckoutPanel({
       if (c.enhanceLighting) setEnhanceLighting(c.enhanceLighting);
       if (c.enhanceCamera) setEnhanceCamera(c.enhanceCamera);
       if (c.enhanceBackdrop) setEnhanceBackdrop(c.enhanceBackdrop);
+      if (c.manualLighting) setManualLighting(true);
+      if (Array.isArray(c.lightingPicks)) setLightingPicks(c.lightingPicks);
+      if (c.lightingByPhoto) setLightingByPhoto(c.lightingByPhoto);
       setNoSmile(!!c.noSmile);
       if (pending.files?.length) {
         const items: NewIdentityUpload[] = pending.files.map(f => {
@@ -712,6 +726,18 @@ export default function CheckoutPanel({
     })),
   ];
 
+  // photo_upgrade: the buyer's uploaded source photos (storagePath + a preview to
+  // show beside each per-photo lighting picker). Same order/paths as allIdentityRefs.
+  const sourcePhotos: Array<{ storagePath: string; preview: string }> = photoUpgradeActive
+    ? [
+        ...Array.from(selectedSaved).map(sid => {
+          const r = savedRefs.find(x => x.id === sid)!;
+          return { storagePath: r.storagePath, preview: r.url };
+        }),
+        ...newUploads.filter(u => u.storagePath).map(u => ({ storagePath: u.storagePath, preview: u.preview })),
+      ]
+    : [];
+
   const anyUploading = newUploads.some(u => u.uploading) || poseUploads.some(u => u.uploading)
     || costarUploads.some(u => u.uploading) || !!groupPhotoUpload?.uploading || brandUploads.some(u => u.uploading);
   const bgAllocTotal = Object.values(bgAlloc).reduce((a, b) => a + b, 0);
@@ -720,8 +746,14 @@ export default function CheckoutPanel({
   const mugshotValid = !mugshotOn || (mugshotName.trim().length > 0 && mugshotOffense.trim().length > 0);
   const bowlValid = !bowlOn || (signedOut ? !!bowlUpload : !!bowlUpload?.storagePath);
   const inductionValid = !inductionActive || inductionName.trim().length > 0;
+  // photo_upgrade manual lighting on = a creator look must be assigned to EVERY
+  // uploaded photo; off = the single hardcoded rig must be picked (today's rule).
+  const perPhotoLightingActive = photoUpgradeActive && manualLighting && lightingLooks.length > 0;
+  const enhanceLightingValid = perPhotoLightingActive
+    ? sourcePhotos.length > 0 && sourcePhotos.every(p => !!lightingByPhoto[p.storagePath])
+    : !!enhanceLighting;
   const enhanceValid = !photoUpgradeActive
-    || (!!enhanceLighting && !!enhanceCamera && allIdentityRefs.length === selectedPkg);
+    || (enhanceLightingValid && !!enhanceCamera && allIdentityRefs.length === selectedPkg);
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
@@ -748,6 +780,9 @@ export default function CheckoutPanel({
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
       enhanceBackdrop: enhanceBackdrop ?? undefined,
+      manualLighting: manualLighting || undefined,
+      lightingPicks: lightingPicks.length > 0 ? lightingPicks : undefined,
+      lightingByPhoto: Object.keys(lightingByPhoto).length > 0 ? lightingByPhoto : undefined,
       noSmile: noSmile || undefined,
     };
     const files = newUploads
@@ -804,11 +839,21 @@ export default function CheckoutPanel({
               ...Object.entries(multiPicks).flatMap(([groupId, ids]) => ids.map(optionId => ({ groupId, optionId }))),
             ]
           : undefined,
+        // Manual lighting (regular templates): only sent when the buyer turned it on
+        // and picked at least one look. Off/empty → server plants no plan → AI lighting.
+        manualLighting: !photoUpgradeActive && manualLighting && lightingPicks.length > 0 ? true : undefined,
+        lightingOptionIds: !photoUpgradeActive && manualLighting && lightingPicks.length > 0 ? lightingPicks : undefined,
         induction: inductionActive
           ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear, cap: inductionCap }
           : undefined,
-        enhance: photoUpgradeActive && enhanceLighting && enhanceCamera
-          ? { lighting: enhanceLighting, camera: enhanceCamera, backdropOptionId: enhanceBackdrop }
+        enhance: photoUpgradeActive && enhanceCamera && (perPhotoLightingActive || enhanceLighting)
+          ? {
+              lighting: enhanceLighting ?? undefined,
+              camera: enhanceCamera,
+              backdropOptionId: enhanceBackdrop,
+              // Per-photo creator lighting (manual on) — { storagePath: optionId }.
+              lightingByPath: perPhotoLightingActive ? lightingByPhoto : undefined,
+            }
           : undefined,
         noSmile: noSmile || undefined,
         flagShot: flagShotAvailable && flagShotOn
@@ -1070,35 +1115,93 @@ export default function CheckoutPanel({
               <Collapse
                 icon="💡"
                 title={t("lightingRig")}
-                status={LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? t("pickOneRequired")}
-                warn={!enhanceLighting}
+                status={perPhotoLightingActive
+                  ? t("nPicked", { n: Object.keys(lightingByPhoto).length })
+                  : (LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? t("pickOneRequired"))}
+                warn={!enhanceLightingValid}
                 defaultOpen
               >
-              <div className={styles.pkgRow}>
-                <p className={styles.sectionHint}>{t("lightingHint")}</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {LIGHTING_PRESETS.map(p => {
-                    const on = enhanceLighting === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setEnhanceLighting(on ? null : p.id)}
-                        style={{
-                          display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3,
-                          background: on ? "rgba(127,127,127,0.12)" : "none", cursor: "pointer",
-                          padding: "10px 12px", borderRadius: 10, width: 168, textAlign: "left",
-                          border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
-                        }}
-                      >
-                        <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>{on ? "✓ " : ""}{p.name}</span>
-                        <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>{p.blurb}</span>
-                      </button>
-                    );
-                  })}
+              {/* Manual per-photo lighting is only offered when the creator attached
+                  their own lighting looks. Otherwise the single hardcoded rig stands. */}
+              {lightingLooks.length > 0 && (
+                <div className={styles.pkgRow}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={manualLighting}
+                      onChange={e => { setManualLighting(e.target.checked); if (!e.target.checked) setLightingByPhoto({}); }}
+                    />
+                    <span className={styles.pkgLabel} style={{ margin: 0 }}>{t("setLightingMyself")}</span>
+                  </label>
+                  <p className={styles.sectionHint}>{t("perPhotoLightingHint")}</p>
                 </div>
-                {!enhanceLighting && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickLighting")}</p>}
-              </div>
+              )}
+              {perPhotoLightingActive ? (
+                <div className={styles.pkgRow}>
+                  {sourcePhotos.length === 0 && <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>}
+                  {sourcePhotos.map((sp, i) => (
+                    <div key={sp.storagePath} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
+                      <ImagePreview src={sp.preview} alt={`Photo ${i + 1}`} className={styles.savedImg} preferredWidth={72} />
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {lightingLooks.map(o => {
+                          const on = lightingByPhoto[sp.storagePath] === o.id;
+                          return (
+                            <button
+                              key={o.id}
+                              type="button"
+                              title={o.name}
+                              onClick={() => setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id }))}
+                              style={{
+                                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                                background: "none", cursor: "pointer", padding: 4,
+                                border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                                borderRadius: 8, minWidth: 58,
+                              }}
+                            >
+                              {o.imageUrl ? (
+                                <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={64} />
+                              ) : (
+                                <span style={{ width: 40, height: 50, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.55rem" }}>LIGHT</span>
+                              )}
+                              <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                              {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  {!enhanceLightingValid && sourcePhotos.length > 0 && (
+                    <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("assignEachPhoto")}</p>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.pkgRow}>
+                  <p className={styles.sectionHint}>{t("lightingHint")}</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {LIGHTING_PRESETS.map(p => {
+                      const on = enhanceLighting === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setEnhanceLighting(on ? null : p.id)}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3,
+                            background: on ? "rgba(127,127,127,0.12)" : "none", cursor: "pointer",
+                            padding: "10px 12px", borderRadius: 10, width: 168, textAlign: "left",
+                            border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                          }}
+                        >
+                          <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>{on ? "✓ " : ""}{p.name}</span>
+                          <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>{p.blurb}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!enhanceLighting && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickLighting")}</p>}
+                </div>
+              )}
               </Collapse>
               <Collapse
                 icon="📷"
@@ -1264,6 +1367,65 @@ export default function CheckoutPanel({
                 {inductionTitles.length > 0 ? ` · ${inductionTitles.map(title => title.replace(/\s*\(.*\)$/, "")).join(", ")}` : ""}
               </p>
             </div>
+            </Collapse>
+          )}
+
+          {/* Manual lighting — off by default (AI decides the lighting per image);
+              on lets the buyer tick one or more looks, spread across the images. */}
+          {!photoUpgradeActive && lightingLooks.length > 0 && (
+            <Collapse
+              icon="💡"
+              title={t("lightingSection")}
+              status={manualLighting ? (lightingPicks.length > 0 ? t("nPicked", { n: lightingPicks.length }) : t("pickLooks")) : t("aiDecides")}
+              defaultOpen={false}
+            >
+              <div className={styles.pkgRow}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={manualLighting}
+                    onChange={e => { setManualLighting(e.target.checked); if (!e.target.checked) setLightingPicks([]); }}
+                  />
+                  <span className={styles.pkgLabel} style={{ margin: 0 }}>{t("setLightingMyself")}</span>
+                </label>
+                <p className={styles.sectionHint}>{t("manualLightingHint")}</p>
+              </div>
+              {manualLighting && (
+                <div className={styles.pkgRow}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {lightingLooks.map(o => {
+                      const isOn = lightingPicks.includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          title={o.name}
+                          onClick={() => setLightingPicks(prev => isOn ? prev.filter(id => id !== o.id) : [...prev, o.id])}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                            background: "none", cursor: "pointer", padding: 4,
+                            border: isOn ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                            borderRadius: 8, minWidth: 64,
+                          }}
+                        >
+                          {o.imageUrl ? (
+                            <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={80} />
+                          ) : (
+                            <span style={{ width: 44, height: 55, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.6rem", letterSpacing: "0.04em" }}>
+                              LIGHT
+                            </span>
+                          )}
+                          <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
+                          {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {lightingPicks.length === 0 && (
+                    <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickLightingOrOff")}</p>
+                  )}
+                </div>
+              )}
             </Collapse>
           )}
 

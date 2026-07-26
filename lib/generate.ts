@@ -9,6 +9,7 @@ import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
+import { getLightingForSlot, buildLightingBriefSection, type LightingPlan } from "./lighting-plan";
 import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -1806,7 +1807,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, s.shot_type, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.lighting_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, s.shot_type, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   // ORDER BY keeps photo→slot mapping stable across worker invocations and retries
   // (photo_upgrade maps source photo i → slot i; unordered reads made that random).
@@ -1837,6 +1838,15 @@ export async function startGenerationWorker(
     Array.isArray((shoot.background_plan as BackgroundPlan).allocations) &&
     (shoot.background_plan as BackgroundPlan).allocations.length > 0
       ? (shoot.background_plan as BackgroundPlan)
+      : null;
+
+  // Buyer manual-lighting allocation (regular templates) — looks spread per slot.
+  // Null = manual lighting off → the brief-builder describes lighting itself.
+  const lightingPlan: LightingPlan | null =
+    shoot.lighting_plan &&
+    Array.isArray((shoot.lighting_plan as LightingPlan).allocations) &&
+    (shoot.lighting_plan as LightingPlan).allocations.length > 0
+      ? (shoot.lighting_plan as LightingPlan)
       : null;
 
   // Buyer choice-group selections (pick-one styling options)
@@ -2167,6 +2177,11 @@ export async function startGenerationWorker(
           });
         }
       }
+    }
+
+    // Buyer manual-lighting allocation — per-slot lighting direction for the brief model.
+    if (lightingPlan) {
+      storyContextParts.push(buildLightingBriefSection(lightingPlan, normalizePackageSize(shoot.package_size)));
     }
 
     const storyContext = storyContextParts.length > 0
@@ -2603,7 +2618,13 @@ export async function startGenerationWorker(
         // Gear Equalizer: fully deterministic edit prompt — the reference map is
         // baked in here; no telephoto/anatomy/brief text is appended later.
         const backdropOk = !!enhanceBackdropRef && reachableSet.has(enhanceBackdropRef.url);
-        slotPrompt = buildGearEqualizerPrompt(enhanceSel, backdropOk) + buildGearReferenceMapText(backdropOk);
+        // Manual per-photo lighting: this photo's assigned creator look overrides
+        // the single rig. Keyed by the source photo's storagePath (stable mapping).
+        const upgradeSrc = enhanceSources[slot - 1];
+        const perPhotoLighting = upgradeSrc?.storagePath
+          ? enhanceSel.lightingByPath?.[upgradeSrc.storagePath]?.directive
+          : undefined;
+        slotPrompt = buildGearEqualizerPrompt(enhanceSel, backdropOk, perPhotoLighting) + buildGearReferenceMapText(backdropOk);
       } else if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
         // Locked-base: assemble final prompt from scene fields + base anchor opener
         const scene = rawSlotPrompt as SceneSlotPrompt;
@@ -2901,6 +2922,14 @@ export async function startGenerationWorker(
         ? ` ENVIRONMENT LOCK FOR THIS IMAGE: ${slotBgAlloc.description}.`
         : "";
 
+      // Buyer manual-lighting: belt-and-braces per-slot lighting lock appended to the
+      // prompt (mirrors textBgLock — the brief model already got the per-slot matrix;
+      // this guards against drift). Quote/graphic-card slots have no subject to light.
+      const slotLightingAlloc = lightingPlan ? getLightingForSlot(lightingPlan, slot - 1) : null;
+      const lightingLock = slotLightingAlloc && !isQuoteSlot
+        ? ` LIGHTING LOCK FOR THIS IMAGE: light this shot exactly per this direction — ${slotLightingAlloc.directive}. Do not substitute a different lighting scheme.`
+        : "";
+
       // Telephoto injection for portrait-type slots (never the quote/graphic card).
       // The /200mm/ guard keeps this idempotent across slot retries.
       const telephotoText =
@@ -2933,7 +2962,7 @@ export async function startGenerationWorker(
         const slotRealism = isQuoteSlot
           ? ""
           : " Photographic realism: realistic fabric texture with visible weave and stitching, sharp material and accessory detail, natural fabric folds, crisp focus on the garment, true-to-life color, editorial lens feel.";
-        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${framingCropLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
+        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${lightingLock}${framingCropLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
       }
 
       // Gear Equalizer: every photo keeps its own crop — probe the source's real
