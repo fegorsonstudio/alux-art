@@ -925,7 +925,7 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
   }
 
   const nonCallToBarFlagActive = shoot.category !== "call_to_bar" && !!(shoot.flag_shot?.enabled && shoot.flag_shot.text);
-  if (shoot.trend_slots && (shoot.trend_slots.mugshot?.enabled || shoot.trend_slots.bowl?.enabled)) {
+  if (shoot.trend_slots && (shoot.trend_slots.mugshot?.enabled || shoot.trend_slots.bowl?.enabled || shoot.trend_slots.news?.enabled)) {
     const { buildTrendSlotsBriefSection } = await import("@/lib/trend-slots");
     parts.push({ text: buildTrendSlotsBriefSection(packageSize, shoot.trend_slots, nonCallToBarFlagActive) });
   }
@@ -1292,7 +1292,7 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
   }
 
   const nonCallToBarFlagActiveC = shoot.category !== "call_to_bar" && !!(shoot.flag_shot?.enabled && shoot.flag_shot.text);
-  if (shoot.trend_slots && (shoot.trend_slots.mugshot?.enabled || shoot.trend_slots.bowl?.enabled)) {
+  if (shoot.trend_slots && (shoot.trend_slots.mugshot?.enabled || shoot.trend_slots.bowl?.enabled || shoot.trend_slots.news?.enabled)) {
     const { buildTrendSlotsBriefSection } = await import("@/lib/trend-slots");
     content.push({ type: "text", text: buildTrendSlotsBriefSection(packageSize, shoot.trend_slots, nonCallToBarFlagActiveC) });
   }
@@ -2463,18 +2463,21 @@ export async function startGenerationWorker(
   const bowlPropRef = refs.find((r) => r.purpose === "tagged" && r.tag === "BOWL_PROP" && r.url);
   const bowlContentRef = refs.find((r) => r.purpose === "tagged" && r.tag === "BOWL_CONTENT" && r.url);
   const viralLookRef = refs.find((r) => r.purpose === "tagged" && r.tag === "VIRAL_LOOK" && r.url);
+  const newsFrameRef = refs.find((r) => r.purpose === "tagged" && r.tag === "NEWS_FRAME" && r.url);
   const mugshotActive = !!(trendSel?.mugshot?.enabled && mugshotBoardRef);
   const bowlActive = !!(trendSel?.bowl?.enabled && bowlPropRef && bowlContentRef);
   const viralActive = !!(trendSel?.viral?.enabled && viralLookRef);
-  const { mugshotSlot: mugshotSlotNumber, bowlSlot: bowlSlotNumber, viralSlot: viralSlotNumber, flagSlot: flagSlotNumber } = (() => {
-    if (!mugshotActive && !bowlActive && !viralActive && !flagShotActive) return { mugshotSlot: -1, bowlSlot: -1, viralSlot: -1, flagSlot: -1 };
+  const newsActive = !!(trendSel?.news?.enabled && newsFrameRef);
+  const { mugshotSlot: mugshotSlotNumber, bowlSlot: bowlSlotNumber, viralSlot: viralSlotNumber, flagSlot: flagSlotNumber, newsSlot: newsSlotNumber } = (() => {
+    if (!mugshotActive && !bowlActive && !viralActive && !flagShotActive && !newsActive) return { mugshotSlot: -1, bowlSlot: -1, viralSlot: -1, flagSlot: -1, newsSlot: -1 };
     let next = total;
-    let bowlSlot = -1, mugshotSlot = -1, viralSlot = -1, flagSlot = -1;
+    let bowlSlot = -1, mugshotSlot = -1, viralSlot = -1, flagSlot = -1, newsSlot = -1;
     if (bowlActive) { bowlSlot = next; next -= 1; }
     if (mugshotActive) { mugshotSlot = next; next -= 1; }
     if (flagShotActive) { flagSlot = next; next -= 1; }
+    if (newsActive) { newsSlot = next; next -= 1; }
     if (viralActive) { viralSlot = next; }
-    return { mugshotSlot, bowlSlot, viralSlot, flagSlot };
+    return { mugshotSlot, bowlSlot, viralSlot, flagSlot, newsSlot };
   })();
   const mugshotEntry = mugshotBoardRef
     ? { url: mugshotBoardRef.url, label: "MUGSHOT BOARD plate — the forensics board and height-measurement chart; replicate the board design and chart exactly, subject holds the board in front of the chart (no studio backdrop for this image)" }
@@ -2490,9 +2493,13 @@ export async function startGenerationWorker(
   const viralEntry = viralLookRef
     ? { url: viralLookRef.url, label: "VIRAL LOOK — the original viral post; recreate this EXACT pose, seated composition, outfit style, coat drape, and backdrop mood with the subject from the identity references" }
     : null;
+  const newsEntry = newsFrameRef
+    ? { url: newsFrameRef.url, label: "NEWS FRAME plate — the clean TV news-broadcast on-screen graphics (generic channel logo/handle, caption bar, coloured lower-third banner, ticker); reproduce this frame's layout, colours and fonts exactly, with the subject as the on-camera eyewitness inside it (no studio backdrop for this image)" }
+    : null;
   if (mugshotActive && mugshotEntry) imageUrls = [...imageUrls, mugshotEntry.url];
   if (bowlActive && bowlPropEntry && bowlContentEntry) imageUrls = [...imageUrls, bowlPropEntry.url, bowlContentEntry.url];
   if (viralActive && viralEntry) imageUrls = [...imageUrls, viralEntry.url];
+  if (newsActive && newsEntry) imageUrls = [...imageUrls, newsEntry.url];
 
   // Per-option background images (purpose 'background_option', matched by optionId in note).
   // These are appended per slot — each slot only sees ITS background, never the others.
@@ -2647,6 +2654,7 @@ export async function startGenerationWorker(
         (flagShotActive && slot === flagSlotNumber) ||
         (viralActive && slot === viralSlotNumber) ||
         (mugshotActive && slot === mugshotSlotNumber) ||
+        (newsActive && slot === newsSlotNumber) ||
         (bowlActive && slot === bowlSlotNumber);
 
       // ── Per-slot identity selection ─────────────────────────────────────────
@@ -2842,6 +2850,11 @@ export async function startGenerationWorker(
         // Mugshot slot: identity + board plate ONLY. A minimal list keeps the model's
         // attention on the board text and chart; wardrobe is described in the prompt.
         slotReferenceMap = buildReferenceMap([...slotIdentityEntries, mugshotEntry]);
+      } else if (newsActive && newsEntry && slot === newsSlotNumber) {
+        // News slot: identity + the NEWS_FRAME plate ONLY. A minimal list keeps the model's
+        // attention on reproducing the frame graphics and rendering the buyer's text; the
+        // on-location scene is described in the directive (no studio backdrop).
+        slotReferenceMap = buildReferenceMap([...slotIdentityEntries, newsEntry]);
       } else if (bowlActive && bowlPropEntry && bowlContentEntry && slot === bowlSlotNumber) {
         // Bowl slot: identity + ITS backdrop + bowl + content ONLY. With the full shared
         // list (14 images) the buyer's logo was ignored — a focused list keeps it seen.

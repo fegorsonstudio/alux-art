@@ -10,7 +10,7 @@ import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-p
 import { resolveLightingPlan, type LightingLook } from "@/lib/lighting-plan";
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
-import { sanitizeMugshotSelection, sanitizeBowlSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
+import { sanitizeMugshotSelection, sanitizeBowlSelection, sanitizeNewsSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
 import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
 import { sanitizeInductionSelection, type InductionSelection } from "@/lib/nursing-induction";
 import { sanitizeEnhanceSelection, type EnhanceSelection } from "@/lib/gear-equalizer";
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     trendSlots?: {
       mugshot?: { enabled?: boolean; name?: string; offense?: string; date?: string };
       bowl?: { enabled?: boolean; mode?: string };
+      news?: { headline?: string; subtitle?: string; caption?: string };
     };
     bowlContentRef?: { storagePath?: string; storageBucket?: string };
     storyAssets?: {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const identityRefs: RefInput[] = body.identityRefs ?? [];
   // Slot plates (FLAG_SCENE, MUGSHOT_BOARD, BOWL_PROP) are attached server-side from the
   // template config — never accept them from the client.
-  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK", "CO_STAR"]);
+  const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK", "CO_STAR", "NEWS_FRAME"]);
   const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => !SERVER_ONLY_TAGS.has(r.tag));
 
   if (!Array.isArray(identityRefs) || identityRefs.length === 0) {
@@ -215,8 +216,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const trendViral = templateTrendSlots?.viral?.enabled && templateTrendSlots.viral.imagePath
     ? { enabled: true as const }
     : null;
-  const trendSelection: TrendSlotsSelection | null = (trendMugshot || trendBowl || trendViral)
-    ? { mugshot: trendMugshot, bowl: trendBowl, viral: trendViral }
+  // News-broadcast still: forced-on when the template has it (like viral) but requires
+  // the buyer's three typed lines. sanitizeNewsSelection returns null without them, so
+  // the checkout blocks payment until headline + caption are filled.
+  const trendNews = templateTrendSlots?.news?.enabled && templateTrendSlots.news.imagePath
+    ? sanitizeNewsSelection(body.trendSlots?.news)
+    : null;
+  const trendSelection: TrendSlotsSelection | null = (trendMugshot || trendBowl || trendViral || trendNews)
+    ? { mugshot: trendMugshot, bowl: trendBowl, viral: trendViral, news: trendNews }
     : null;
 
   // ── Induction personalization (nursing_induction category) ─────────────────
@@ -262,9 +269,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // Custom slots (flag, mugshot, bowl, viral) sit outside the backdrop distribution —
+  // Custom slots (flag, mugshot, bowl, viral, news) sit outside the backdrop distribution —
   // the buyer only places their normal portraits across backdrops.
-  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0) - (trendViral ? 1 : 0);
+  const bgSlotCount = buyerPackageSize - (flagShot ? 1 : 0) - (trendMugshot ? 1 : 0) - (trendBowl ? 1 : 0) - (trendViral ? 1 : 0) - (trendNews ? 1 : 0);
 
   // ── Signature poses (creator-uploaded pose mimicry) ─────────────────────────
   // Not buyer-chosen — the planner randomly picks one DISTINCT pose per normal
@@ -608,6 +615,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       name: "viral-look", type: "image/jpeg", size: 1,
       storage_bucket: templateTrendSlots.viral.imageBucket ?? "template-images",
       storage_path: templateTrendSlots.viral.imagePath, created_at: now,
+    }] : []),
+    ...(trendNews && templateTrendSlots?.news?.imagePath ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "NEWS_FRAME", custom_name: "News broadcast frame", note: null,
+      name: "news-frame", type: "image/jpeg", size: 1,
+      storage_bucket: templateTrendSlots.news.imageBucket ?? "template-images",
+      storage_path: templateTrendSlots.news.imagePath, created_at: now,
     }] : []),
     ...(trendBowl && bowlRefValid ? [{
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,

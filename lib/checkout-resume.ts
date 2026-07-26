@@ -59,6 +59,10 @@ export interface PendingConfig {
   inductionTitles?: string[];
   inductionYear?: number;
   inductionCap?: "grad" | "none";
+  // News broadcast trend slot (buyer's three on-screen lines)
+  newsHeadline?: string;
+  newsSubtitle?: string;
+  newsCaption?: string;
   // Gear Equalizer (photo_upgrade category)
   enhanceLighting?: string;
   enhanceCamera?: string;

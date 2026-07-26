@@ -66,6 +66,7 @@ interface TemplateDetail {
     mugshot?: { enabled: boolean; imageUrl?: string | null } | null;
     bowl?: { enabled: boolean; imageUrl?: string | null } | null;
     viral?: { enabled: boolean; imageUrl?: string | null } | null;
+    news?: { enabled: boolean; imageUrl?: string | null } | null;
   } | null;
   poseOptions?: Array<{ id: string; name: string; description?: string; imageUrl: string }>;
 }
@@ -197,6 +198,9 @@ export default function CheckoutPanel({
   const bowlAvailable = !!template.trendSlots?.bowl?.enabled;
   // Viral chair pose: NOT optional — every booking of this template includes it.
   const viralIncluded = !!template.trendSlots?.viral?.enabled;
+  // News broadcast: NOT optional either — the whole image is the news shot. The buyer
+  // must type the three lines (headline + caption required; ticker optional).
+  const newsIncluded = !!template.trendSlots?.news?.enabled;
   const [mugshotOn, setMugshotOn] = useState(false);
   const [mugshotName, setMugshotName] = useState("");
   const [mugshotOffense, setMugshotOffense] = useState("");
@@ -206,6 +210,9 @@ export default function CheckoutPanel({
   const [bowlOn, setBowlOn] = useState(false);
   const [bowlMode, setBowlMode] = useState<"product" | "logo">("product");
   const [bowlUpload, setBowlUpload] = useState<NewIdentityUpload | null>(null);
+  const [newsHeadline, setNewsHeadline] = useState("");
+  const [newsSubtitle, setNewsSubtitle] = useState("");
+  const [newsCaption, setNewsCaption] = useState("");
 
   // Buyer background allocation — active when the template offers 2+ options.
   // Custom slots (flag, mugshot, bowl) don't take part in the backdrop distribution:
@@ -214,7 +221,8 @@ export default function CheckoutPanel({
   const bgExemptCount = (flagShotAvailable && flagShotOn ? 1 : 0)
     + (mugshotAvailable && mugshotOn ? 1 : 0)
     + (bowlAvailable && bowlOn ? 1 : 0)
-    + (viralIncluded ? 1 : 0);
+    + (viralIncluded ? 1 : 0)
+    + (newsIncluded ? 1 : 0);
   const bgTarget = Math.max(0, selectedPkg - bgExemptCount);
   // photo_upgrade uses its own single-pick backdrop-swap UI, not the allocation picker.
   const bgActive = bgOptions.length >= 2 && bgTarget >= 1 && template.category !== "photo_upgrade";
@@ -411,6 +419,9 @@ export default function CheckoutPanel({
       if (c.mugshotName) setMugshotName(c.mugshotName);
       if (c.mugshotOffense) setMugshotOffense(c.mugshotOffense);
       if (c.mugshotDate) setMugshotDate(c.mugshotDate);
+      if (c.newsHeadline) setNewsHeadline(c.newsHeadline);
+      if (c.newsSubtitle) setNewsSubtitle(c.newsSubtitle);
+      if (c.newsCaption) setNewsCaption(c.newsCaption);
       setBowlOn(!!c.bowlOn);
       if (c.bowlMode === "product" || c.bowlMode === "logo") setBowlMode(c.bowlMode);
       if (c.groupColors) setGroupColors(c.groupColors);
@@ -745,6 +756,8 @@ export default function CheckoutPanel({
   const flagValid = !flagShotOn || flagText.trim().length > 0;
   const mugshotValid = !mugshotOn || (mugshotName.trim().length > 0 && mugshotOffense.trim().length > 0);
   const bowlValid = !bowlOn || (signedOut ? !!bowlUpload : !!bowlUpload?.storagePath);
+  // News shot is forced-on: the headline and caption are required (ticker optional).
+  const newsValid = !newsIncluded || (newsHeadline.trim().length > 0 && newsCaption.trim().length > 0);
   const inductionValid = !inductionActive || inductionName.trim().length > 0;
   // photo_upgrade manual lighting on = a creator look must be assigned to EVERY
   // uploaded photo; off = the single hardcoded rig must be picked (today's rule).
@@ -762,6 +775,7 @@ export default function CheckoutPanel({
     && flagValid
     && mugshotValid
     && bowlValid
+    && newsValid
     && inductionValid
     && enhanceValid
     && !bowlUpload?.uploading
@@ -776,6 +790,7 @@ export default function CheckoutPanel({
     const config = {
       selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
+      newsHeadline, newsSubtitle, newsCaption,
       groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
@@ -859,13 +874,16 @@ export default function CheckoutPanel({
         flagShot: flagShotAvailable && flagShotOn
           ? { enabled: true, text: flagText.trim() }
           : undefined,
-        trendSlots: (mugshotAvailable && mugshotOn) || (bowlAvailable && bowlOn)
+        trendSlots: (mugshotAvailable && mugshotOn) || (bowlAvailable && bowlOn) || newsIncluded
           ? {
               mugshot: mugshotAvailable && mugshotOn
                 ? { enabled: true, name: mugshotName.trim(), offense: mugshotOffense.trim(), date: mugshotDate.trim() }
                 : undefined,
               bowl: bowlAvailable && bowlOn
                 ? { enabled: true, mode: bowlMode }
+                : undefined,
+              news: newsIncluded
+                ? { headline: newsHeadline.trim(), subtitle: newsSubtitle.trim(), caption: newsCaption.trim() }
                 : undefined,
             }
           : undefined,
@@ -1579,6 +1597,38 @@ export default function CheckoutPanel({
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("posesIncluded")}</span>
               <p className={styles.sectionHint}>{t("posesHint")}</p>
+            </div>
+          )}
+
+          {/* News broadcast — always included when the template has it; the buyer must
+              type the three on-screen lines. Their photo becomes the on-camera eyewitness. */}
+          {newsIncluded && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>📺 News broadcast details</span>
+              <p className={styles.sectionHint}>
+                Your photo becomes the on-camera eyewitness inside the news frame. Type the three
+                on-screen lines below.
+              </p>
+              {template.trendSlots?.news?.imageUrl && (
+                <ImagePreview src={template.trendSlots.news.imageUrl} alt="News frame" className={styles.flagScenePreview} preferredWidth={420} />
+              )}
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div className={styles.flagField}>
+                  <label className={styles.flagFieldLabel}>Headline banner (shown in CAPS)</label>
+                  <input type="text" className={styles.flagInput} placeholder="e.g. TRAGEDY" value={newsHeadline} maxLength={25} onChange={e => setNewsHeadline(e.target.value)} />
+                </div>
+                <div className={styles.flagField}>
+                  <label className={styles.flagFieldLabel}>Ticker line (keep it short)</label>
+                  <input type="text" className={styles.flagInput} placeholder="e.g. Enugu Air Crash-Lands At Benin Airport" value={newsSubtitle} maxLength={70} onChange={e => setNewsSubtitle(e.target.value)} />
+                </div>
+                <div className={styles.flagField}>
+                  <label className={styles.flagFieldLabel}>Top caption</label>
+                  <input type="text" className={styles.flagInput} placeholder="e.g. Eye witness recounts the incident" value={newsCaption} maxLength={110} onChange={e => setNewsCaption(e.target.value)} />
+                </div>
+                {(!newsHeadline.trim() || !newsCaption.trim()) && (
+                  <p className={styles.identityWarn}>Add a headline and a caption to continue.</p>
+                )}
+              </div>
             </div>
           )}
 

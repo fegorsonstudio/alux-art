@@ -29,6 +29,12 @@ export interface TrendSlotsConfig {
   // template gets one slot recreating the original viral post exactly (the plate
   // is the viral reference photo itself).
   viral?: TrendSlotPlate | null;
+  // TV news-broadcast still — NOT buyer-optional (like viral): when configured, the
+  // slot recreates the attached news-frame plate with the buyer as the on-camera
+  // eyewitness, and the buyer's three typed lines (headline / subtitle / caption) are
+  // rendered into the on-screen graphics. The plate is a clean, generic-branding
+  // news frame (NEWS_FRAME).
+  news?: TrendSlotPlate | null;
 }
 
 export interface MugshotSelection {
@@ -43,15 +49,27 @@ export interface BowlSelection {
   mode: "product" | "logo";
 }
 
+export interface NewsSelection {
+  enabled: boolean;
+  headline: string;  // the coloured lower-third banner, rendered ALL CAPS
+  subtitle: string;  // the short ticker line beneath the banner
+  caption: string;   // the top caption line (e.g. the eyewitness line)
+}
+
 export interface TrendSlotsSelection {
   mugshot?: MugshotSelection | null;
   bowl?: BowlSelection | null;
   viral?: { enabled: boolean } | null;
+  news?: NewsSelection | null;
 }
 
 export const MUGSHOT_NAME_MAXLEN = 30;
 export const MUGSHOT_OFFENSE_MAXLEN = 100;
 export const MUGSHOT_DATE_MAXLEN = 20;
+
+export const NEWS_HEADLINE_MAXLEN = 25;
+export const NEWS_SUBTITLE_MAXLEN = 70;
+export const NEWS_CAPTION_MAXLEN = 110;
 
 // ── Creator config sanitizer (templates POST/PATCH) ──────────────────────────
 export function sanitizeTrendSlotsConfig(raw: unknown, userId: string): TrendSlotsConfig | null {
@@ -74,8 +92,9 @@ export function sanitizeTrendSlotsConfig(raw: unknown, userId: string): TrendSlo
   const mugshot = plate(o.mugshot);
   const bowl = plate(o.bowl);
   const viral = plate(o.viral);
-  if (!mugshot && !bowl && !viral) return null;
-  return { mugshot, bowl, viral };
+  const news = plate(o.news);
+  if (!mugshot && !bowl && !viral && !news) return null;
+  return { mugshot, bowl, viral, news };
 }
 
 // ── Buyer text sanitizers (book route) ───────────────────────────────────────
@@ -101,6 +120,20 @@ export function sanitizeBowlSelection(raw: unknown): BowlSelection | null {
   return { enabled: true, mode };
 }
 
+// The news slot is forced-on for a template that has it (not a buyer toggle), so
+// `enabled` is not required here — the presence of the required text is what matters.
+// headline + caption are required; the short subtitle/ticker line is optional. The
+// headline is uppercased (it renders in the ALL-CAPS lower-third banner).
+export function sanitizeNewsSelection(raw: unknown): NewsSelection | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const headline = clean(o.headline, NEWS_HEADLINE_MAXLEN).toUpperCase();
+  const subtitle = clean(o.subtitle, NEWS_SUBTITLE_MAXLEN);
+  const caption = clean(o.caption, NEWS_CAPTION_MAXLEN);
+  if (!headline || !caption) return null;
+  return { enabled: true, headline, subtitle, caption };
+}
+
 // ── Slot placement ───────────────────────────────────────────────────────────
 // Enabled custom slots occupy the END of the package (keeping the background
 // plan's contiguous slot mapping intact for the normal portraits): bowl last,
@@ -111,18 +144,20 @@ export function sanitizeBowlSelection(raw: unknown): BowlSelection | null {
 // claiming the same final slot.
 export function getTrendSlotNumbers(
   packageSize: number,
-  sel: { mugshotOn: boolean; bowlOn: boolean; viralOn?: boolean; flagOn?: boolean }
-): { mugshotSlot: number | null; bowlSlot: number | null; viralSlot: number | null; flagSlot: number | null } {
+  sel: { mugshotOn: boolean; bowlOn: boolean; viralOn?: boolean; flagOn?: boolean; newsOn?: boolean }
+): { mugshotSlot: number | null; bowlSlot: number | null; viralSlot: number | null; flagSlot: number | null; newsSlot: number | null } {
   let next = packageSize;
   let bowlSlot: number | null = null;
   let mugshotSlot: number | null = null;
   let flagSlot: number | null = null;
   let viralSlot: number | null = null;
+  let newsSlot: number | null = null;
   if (sel.bowlOn) { bowlSlot = next; next -= 1; }
   if (sel.mugshotOn) { mugshotSlot = next; next -= 1; }
   if (sel.flagOn) { flagSlot = next; next -= 1; }
+  if (sel.newsOn) { newsSlot = next; next -= 1; }
   if (sel.viralOn) { viralSlot = next; }
-  return { mugshotSlot, bowlSlot, viralSlot, flagSlot };
+  return { mugshotSlot, bowlSlot, viralSlot, flagSlot, newsSlot };
 }
 
 // ── Combined brief section (both slots, with their slot numbers) ─────────────
@@ -130,8 +165,15 @@ export function buildTrendSlotsBriefSection(packageSize: number, sel: TrendSlots
   const mugshotOn = !!sel.mugshot?.enabled;
   const bowlOn = !!sel.bowl?.enabled;
   const viralOn = !!sel.viral?.enabled;
-  const { mugshotSlot, bowlSlot, viralSlot } = getTrendSlotNumbers(packageSize, { mugshotOn, bowlOn, viralOn, flagOn });
+  const newsOn = !!sel.news?.enabled;
+  const { mugshotSlot, bowlSlot, viralSlot, newsSlot } = getTrendSlotNumbers(packageSize, { mugshotOn, bowlOn, viralOn, flagOn, newsOn });
   const parts: string[] = [];
+  if (newsOn && sel.news && newsSlot) {
+    parts.push(
+      `SLOT ${newsSlot} OVERRIDE — the following replaces the normal portrait directive for slot ${newsSlot}:\n` +
+      buildNewsShotDirective(sel.news.headline, sel.news.subtitle, sel.news.caption)
+    );
+  }
   if (viralOn && viralSlot) {
     parts.push(
       `SLOT ${viralSlot} OVERRIDE — the following replaces the normal portrait directive for slot ${viralSlot}:\n` +
@@ -179,6 +221,48 @@ export function buildViralLookDirective(): string {
     "Warm, softly directional studio lighting matching the reference. Identity locked from the " +
       "identity references — same face, skin tone and build. Realistic fabric folds in the " +
       "draped coat, editorial lens feel.",
+    "═══════════════════════════════════════════════════════",
+  ].join("\n");
+}
+
+// The TV news-broadcast still — the whole image on a 1-image news template. The buyer
+// becomes the on-camera eyewitness inside a recreated broadcast frame, and their three
+// typed lines are rendered into the on-screen graphics. Uses ONLY the generic branding
+// in the attached [NEWS_FRAME] plate — never a real news organisation's identity.
+export function buildNewsShotDirective(headline: string, subtitle: string, caption: string): string {
+  const safe = (t: string, max: number) => t.replace(/"/g, "'").slice(0, max);
+  const h = safe(headline, NEWS_HEADLINE_MAXLEN).toUpperCase();
+  const s = safe(subtitle, NEWS_SUBTITLE_MAXLEN);
+  const c = safe(caption, NEWS_CAPTION_MAXLEN);
+  const tickerLine = s
+    ? `- TICKER (the thin line beneath the banner, short): "${s}"`
+    : "- TICKER (the thin line beneath the banner): leave it as a plain coloured bar with no text.";
+  return [
+    "═══════════════════════════════════════════════════════",
+    "THIS SLOT — VIRAL TV NEWS-BROADCAST STILL (this is the whole image)",
+    "═══════════════════════════════════════════════════════",
+    "Recreate the on-screen look of a live television news broadcast, matching the attached " +
+      "[NEWS_FRAME] reference image EXACTLY for its on-screen graphics: the channel logo/handle " +
+      "in the top corners, the top caption bar, the coloured lower-third headline banner, and the " +
+      "news ticker beneath it — same layout, proportions, colours and font styling as the reference.",
+    "BRANDING RULE — ABSOLUTE: use ONLY the generic channel branding shown in the reference plate. " +
+      "NEVER invent, add, or substitute any real news organisation's name, logo, initials, or " +
+      "website. Do not add any station identity that is not already drawn in the reference.",
+    "THE ON-CAMERA PERSON: place the identity-locked subject as the interviewee / eyewitness, framed " +
+      "waist-up and facing the camera as if being interviewed outdoors on location, with a reporter's " +
+      "handheld microphone held up near their mouth — matching the framing, wardrobe feel and setting " +
+      "of the reference plate. Identity locked from the identity references (same face, skin tone and " +
+      "build). Natural documentary-news daylight; a realistic outdoor location behind them.",
+    "RENDER THIS EXACT TEXT into the on-screen graphics, spelled EXACTLY and clearly legible, each in " +
+      "its correct zone:",
+    `- TOP CAPTION (the upper caption bar): "${c}"`,
+    `- HEADLINE (bold, inside the coloured lower-third banner, ALL CAPS): "${h}"`,
+    tickerLine,
+    "Keep every letter accurate. The text must look like real crisp broadcast graphics printed on the " +
+      "overlay — not handwritten, not warped, not misspelled. Do not add any other text or watermarks " +
+      "beyond the reference's own branding and the lines above.",
+    "Photojournalistic, true-to-life TV-broadcast still. This slot IGNORES any studio backdrop " +
+      "selection — the on-location news scene is its own environment.",
     "═══════════════════════════════════════════════════════",
   ].join("\n");
 }
