@@ -245,9 +245,12 @@ export function buildNewsShotDirective(headline: string, subtitle: string, capti
       "[NEWS_FRAME] reference image EXACTLY for its on-screen graphics: the channel logo/handle " +
       "in the top corners, the top caption bar, the coloured lower-third headline banner, and the " +
       "news ticker beneath it — same layout, proportions, colours and font styling as the reference.",
-    "BRANDING RULE — ABSOLUTE: use ONLY the generic channel branding shown in the reference plate. " +
-      "NEVER invent, add, or substitute any real news organisation's name, logo, initials, or " +
-      "website. Do not add any station identity that is not already drawn in the reference.",
+    "CHANNEL BRANDING — ABSOLUTE, RENDER IN EVERY IMAGE: in the top corner (matching the reference's " +
+      "handle position), render THIS channel's branding on two lines — the website " +
+      "\"www.aluxartandframes.shop\" and beneath it the handle \"@aluxartandframes\" — clean, crisp and " +
+      "legible. This REPLACES and overrides any website, handle, logo, or station name shown in the " +
+      "reference plate. NEVER render \"frankstantv\", \"frankstan\", \"FTV\", \"@ftvreport\", or ANY other " +
+      "news organisation's name, logo, initials, or website — ONLY the Alux Art branding above.",
     "THE ON-CAMERA PERSON: place the identity-locked subject as the interviewee / eyewitness, framed " +
       "waist-up and facing the camera as if being interviewed outdoors on location, with a reporter's " +
       "handheld microphone held up near their mouth — matching the framing, wardrobe feel and setting " +
@@ -255,12 +258,15 @@ export function buildNewsShotDirective(headline: string, subtitle: string, capti
       "build). Natural documentary-news daylight; a realistic outdoor location behind them.",
     "RENDER THIS EXACT TEXT into the on-screen graphics, spelled EXACTLY and clearly legible, each in " +
       "its correct zone:",
-    `- TOP CAPTION (the upper caption bar): "${c}"`,
+    `- TOP CAPTION (the upper caption bar): render "${c}" in white text, BUT with its single most ` +
+      `important / attention-grabbing keyword highlighted inside a bright YELLOW rectangular marker box ` +
+      `with dark near-black bold text — exactly like a live-news keyword highlight. Highlight ONLY that ` +
+      `one word; the rest of the caption stays plain white.`,
     `- HEADLINE (bold, inside the coloured lower-third banner, ALL CAPS): "${h}"`,
     tickerLine,
     "Keep every letter accurate. The text must look like real crisp broadcast graphics printed on the " +
       "overlay — not handwritten, not warped, not misspelled. Do not add any other text or watermarks " +
-      "beyond the reference's own branding and the lines above.",
+      "beyond the Alux Art channel branding and the lines above.",
     "Photojournalistic, true-to-life TV-broadcast still. This slot IGNORES any studio backdrop " +
       "selection — the on-location news scene is its own environment.",
     "═══════════════════════════════════════════════════════",
