@@ -51,6 +51,12 @@ const IconEmail = (
     <path d="m3.5 7 8.5 6 8.5-6" />
   </svg>
 );
+const IconInstall = (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+    <path d="M12 7v6m0 0 2.2-2.2M12 13l-2.2-2.2" />
+  </svg>
+);
 
 type LinkItem = {
   label: string;
@@ -66,11 +72,12 @@ type LinkItem = {
 // handle/number once provided.
 const LINKS: LinkItem[] = [
   { label: "Enter the Studio", sub: "Book your AI photoshoot", href: "https://aluxartandframes.shop/marketplace", icon: IconStudio, primary: true },
+  { label: "Install the App", sub: "Add Alux Art to your home screen", href: "/install", icon: IconInstall },
   { label: "Alux Art Academy", sub: "Free daily tutorials on Telegram", href: "https://t.me/AluxArtAcademy", icon: IconTelegram, external: true },
   { label: "Instagram", sub: "@aluxartandframes", href: "https://instagram.com/aluxartandframes", icon: IconInstagram, external: true },
   { label: "WhatsApp", sub: "Chat with us", href: "https://wa.me/2348137861670?text=Hi%20Alux%20Art%2C%20I%27d%20like%20to%20book%20a%20shoot", icon: IconWhatsApp, external: true },
   { label: "TikTok", sub: "@aluxartandframes", href: "https://tiktok.com/@aluxartandframes", icon: IconTikTok, external: true },
-  { label: "Email us", sub: "aluxartandframes@gmail.com", href: "mailto:aluxartandframes@gmail.com", icon: IconEmail },
+  { label: "Email us", sub: "support@aluxartandframes.shop", href: "mailto:support@aluxartandframes.shop", icon: IconEmail },
 ];
 
 export default function LinksPage() {

@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
   // flagged /privacy as "unresponsive" when that lookup made it intermittently
   // slow. We still seed the locale cookie so the page renders translated.
   const staticPublicPath = request.nextUrl.pathname;
-  if (staticPublicPath === "/privacy" || staticPublicPath === "/terms" || staticPublicPath === "/support" || staticPublicPath === "/links") {
+  if (staticPublicPath === "/privacy" || staticPublicPath === "/terms" || staticPublicPath === "/support" || staticPublicPath === "/links" || staticPublicPath === "/install") {
     const res = NextResponse.next();
     if (!isLocale(request.cookies.get(LOCALE_COOKIE)?.value)) {
       const locale = resolveLocale(undefined, request.headers.get("accept-language"));
