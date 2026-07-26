@@ -68,7 +68,7 @@ const LINKS: LinkItem[] = [
   { label: "Enter the Studio", sub: "Book your AI photoshoot", href: "https://aluxartandframes.shop/marketplace", icon: IconStudio, primary: true },
   { label: "Alux Art Academy", sub: "Free daily tutorials on Telegram", href: "https://t.me/AluxArtAcademy", icon: IconTelegram, external: true },
   { label: "Instagram", sub: "@aluxartandframes", href: "https://instagram.com/aluxartandframes", icon: IconInstagram, external: true },
-  { label: "WhatsApp", sub: "Chat with us", href: "https://wa.me/2340000000000", icon: IconWhatsApp, external: true },
+  { label: "WhatsApp", sub: "Chat with us", href: "https://wa.me/2348137861670?text=Hi%20Alux%20Art%2C%20I%27d%20like%20to%20book%20a%20shoot", icon: IconWhatsApp, external: true },
   { label: "TikTok", sub: "@aluxartandframes", href: "https://tiktok.com/@aluxartandframes", icon: IconTikTok, external: true },
   { label: "Email us", sub: "aluxartandframes@gmail.com", href: "mailto:aluxartandframes@gmail.com", icon: IconEmail },
 ];
