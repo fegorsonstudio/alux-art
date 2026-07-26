@@ -16,6 +16,10 @@ import { fileURLToPath } from "node:url";
 const DRY_RUN = process.argv.includes("--dry-run");
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT = process.env.TELEGRAM_CHANNEL_ID;
+// Optional: the admin's private chat id. When set, the bot DMs the admin a
+// reminder whenever a lesson due to post needs a screenshot that isn't in yet
+// (the lesson is held, not posted, until the image arrives).
+const ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const DATA_DIR = process.env.TELEGRAM_DATA_DIR || "/home/aluxart/telegram-data";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LESSONS_FILE = path.join(__dirname, "telegram-lessons.json");
@@ -31,11 +35,11 @@ if (!TOKEN || !CHAT) {
   process.exit(1);
 }
 
-async function tgSendMessage(text) {
+async function tgSendMessage(text, chatId = CHAT) {
   const r = await fetch(API("sendMessage"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT, text, parse_mode: "HTML", disable_web_page_preview: false }),
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: false }),
   });
   const j = await r.json();
   if (!j.ok) throw new Error("sendMessage failed: " + JSON.stringify(j));
@@ -76,10 +80,33 @@ async function main() {
   const lesson = lessons[next];
   const img = lesson.image ? path.join(SHOTS_DIR, lesson.image) : null;
   const hasPhoto = !!(img && existsSync(img));
+  // A lesson that names an image but whose file isn't in yet is "waiting on a visual".
+  const waitingOnVisual = !!(lesson.image && !hasPhoto);
 
   if (DRY_RUN) {
-    log(`DRY RUN — would post lesson ${next + 1}/${lessons.length}: "${lesson.title || "(untitled)"}"${hasPhoto ? " [with photo " + lesson.image + "]" : lesson.image ? " [photo MISSING: " + lesson.image + "]" : ""}`);
+    log(`DRY RUN — would post lesson ${next + 1}/${lessons.length}: "${lesson.title || "(untitled)"}"${hasPhoto ? " [with photo " + lesson.image + "]" : waitingOnVisual ? " [HELD — photo MISSING: " + lesson.image + "]" : ""}`);
     console.log("\n----- LESSON PREVIEW -----\n" + lesson.text + "\n--------------------------\n");
+    return;
+  }
+
+  // Hold the lesson (don't post, don't advance) until its screenshot arrives, and
+  // DM the admin what's needed. One nudge per day so it isn't spammy.
+  if (waitingOnVisual) {
+    log(`HELD lesson ${next + 1}/${lessons.length} "${lesson.title}" — missing image ${lesson.image}. Not posting.`);
+    const today = new Date().toISOString().slice(0, 10);
+    const reminderKey = `${next}:${today}`;
+    if (ADMIN && state.lastReminderKey !== reminderKey) {
+      const need = lesson.needs || `a screenshot named "${lesson.image}"`;
+      await tgSendMessage(
+        `📸 <b>Alux Art Academy — heads up</b>\n\nToday's lesson (Day ${next + 1}: "${lesson.title}") is waiting for a visual: ${need}.\n\nSend it over and it'll post on the next run. Nothing went to the channel today.`,
+        ADMIN,
+      ).catch((e) => log("admin DM failed:", e.message));
+      state.lastReminderKey = reminderKey;
+      await writeFile(STATE_FILE, JSON.stringify(state, null, 2));
+      log("reminder DM sent to admin.");
+    } else if (!ADMIN) {
+      log("no TELEGRAM_ADMIN_CHAT_ID set — cannot DM a reminder.");
+    }
     return;
   }
 
