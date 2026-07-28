@@ -393,16 +393,15 @@
   ],
   "generatedAt": "2026-07-28T15:07:26.720Z",
   "downloadPhase": {
-    "status": "UNBLOCKED — solution found via Flow download filenames",
-    "keyInsight": "Flow names every download <AI-generated descriptive title>_<2K>_<YYYYMMDDHHMM>.jpeg — e.g. Key_light_and_rim_light_202607281054.jpeg. That gives TWO independent mapping signals in the filename itself: a prompt-derived title and a minute-resolution timestamp. No need to scrape prompts off the page, which was returning stale/shared text.",
-    "mappingPlan": [
-      "1. scripts/lighting-thumbnail-timestamps.json holds all 45 slot -> generation-minute pairs, recovered from the runner log (15:24 to 15:52 on 20260728).",
-      "2. The grid is reverse-chronological and the runner generated in strict queue order, so the 45 NEWEST images are my run in reverse log order. Older images in the project (the pre-session patterned-dress set, the 3 uploaded sources, and slots 1-2 generated ~13:24) all sort after them.",
-      "3. Download each image and keep Flow own filename. Then map the i-th newest to log entry (45 - i).",
-      "4. VERIFY, do not assume: the YYYYMMDDHHMM in the downloaded filename must equal that log row minute. Mismatch = stop, do not attach. This check is what makes order-based mapping safe rather than a guess.",
-      "5. Timestamps are not unique (16 minutes hold 2 images), so where a minute is shared, disambiguate with the descriptive title before accepting."
+    "status": "FILES DOWNLOADED BUT MIS-NAMED — do NOT attach",
+    "whatIsGood": "All 45 images are downloaded as real 2K PNGs (~2.3MB each, 95MB total) in .playwright-mcp/thumbnails/. The pixels are fine and nothing needs regenerating.",
+    "whatIsWrong": "The slot names on those files are WRONG. They were assigned by grid order on the assumption that the N newest tiles are the run in reverse. Visual check killed it: 12-cool-ripple-projection.png is a warm amber portrait with no ripple pattern at all, while Flow own title for it said warm_light. Flow was right, the label was wrong. 19 of 45 failed the title corroboration and 3 actively contradicted (12 cool->warm, 47 warm->blue, 23 hard->soft); those flags were true signals.",
+    "rootCause": "Grid order is not a dependable proxy for generation order. Flow filename timestamps are DOWNLOAD time, not generation time, so they cannot verify identity either.",
+    "nextTime": [
+      "Best fix: capture identity at CREATION. In flow-thumbnail-runner.mjs, right after each send, read the newly added /edit/<id> href and store it on that queue item. Mapping then needs no inference at all.",
+      "For the 45 already downloaded: do NOT re-generate. Identify them from the images themselves - the styles are visually distinctive (blue ripple, magenta clamshell, gobo patterns, overhead beam). Feed each PNG plus the 47 style descriptions to gemini-2.5-flash and have it assign the best-matching style, then spot-check. That is cheap, fast, and uses the one signal that cannot drift: what the picture actually shows.",
+      "Flow auto-titles are a useful weak signal (they were right where my mapping was wrong) but 4 of them are just the raw prompt opening, so they cannot stand alone."
     ],
-    "alsoNote": "Grid lazy-loads: must scroll until the /edit/ link count stops growing (a first pass saw 30, a second 35, of 47).",
-    "doNot": "Do not attach thumbnails from an unverified mapping — a wrong map puts the wrong look on every style and is invisible until a buyer sees it."
+    "doNot": "Do not attach these filenames to the template. A wrong map puts the wrong look on every style and is invisible until a buyer sees it."
   }
 }

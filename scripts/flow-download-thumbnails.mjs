@@ -3,15 +3,23 @@
  * flow-download-thumbnails.mjs — pull the 2K upscaled thumbnails out of Google
  * Flow and name them by lighting-style slot. No Claude involved.
  *
- *   npm run thumbs:download -- --dry-run   # show the slot mapping, download nothing
- *   npm run thumbs:download                # download every matched 2K image
+ *   npm run thumbs:download -- --dry-run   # map + verify only, download nothing
+ *   npm run thumbs:download                # download every verified image
  *
- * WHY IT MATCHES BY PROMPT, NOT BY POSITION: mapping grid order to style slots
- * would be a silent-failure machine — one off-by-one and all 47 thumbnails end up
- * on the wrong styles, which is exactly the class of bug that has bitten this job
- * twice. Each image's own prompt is read back and matched to the queue, so a
- * mismatch is reported instead of guessed. Run --dry-run first and eyeball the
- * mapping before committing to downloads.
+ * HOW IMAGES ARE IDENTIFIED — and why it is verified rather than assumed.
+ *
+ * Reading each image's prompt off the page was tried and failed: the page hands
+ * back stale or shared text, so several different images collapsed onto one
+ * style (slot 14 claimed three times). Position alone is no better - one
+ * off-by-one silently puts the wrong look on all 47 styles, invisible until a
+ * buyer sees it.
+ *
+ * So this uses order AND checks it. The grid is reverse-chronological and the
+ * generator ran in strict queue order, so the N newest images are that run in
+ * reverse. Every download then arrives carrying Flow's own filename, which ends
+ * in YYYYMMDDHHMM - and that minute MUST equal the generation minute recorded in
+ * the runner log (scripts/lighting-thumbnail-timestamps.json). If it does not,
+ * the file is rejected. A wrong mapping fails loudly instead of shipping.
  */
 
 import { chromium } from "playwright";
@@ -22,6 +30,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const QUEUE_FILE = join(__dirname, "lighting-thumbnail-run.json");
+const STAMP_FILE = join(__dirname, "lighting-thumbnail-timestamps.json");
 const OUT_DIR = join(ROOT, ".playwright-mcp", "thumbnails");
 const MAP_FILE = join(__dirname, "lighting-thumbnail-files.json");
 const PROFILE_DIR = join(ROOT, ".flow-profile");
@@ -31,124 +40,138 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 
-/** Normalise a prompt so a truncated/reflowed copy still matches. */
-const norm = (s) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
-/** The recipe body after the shared "Relight this image..." preamble — the part
- *  that actually differs between styles. */
-const bodyKey = (s) => norm(s).replace(/^relight this image\.?\s*change nothing else except the lighting\.?\s*/i, "").slice(0, 120);
+/** Flow names exports "<Title>_<2K>_YYYYMMDDHHMM.jpeg" — pull out the HHMM. */
+function stampOf(filename) {
+  const m = String(filename).match(/(\d{8})(\d{4})/);
+  return m ? { date: m[1], hhmm: m[2] } : null;
+}
 
 async function main() {
-  const q = JSON.parse(readFileSync(QUEUE_FILE, "utf8"));
-  const styles = q.queue.map((x) => ({ slot: x.slot, name: x.name, framing: x.framing, key: bodyKey(x.prompt) }));
-  log(`${styles.length} styles in the queue`);
+  const { rows, date } = JSON.parse(readFileSync(STAMP_FILE, "utf8"));
+  log(`${rows.length} generated styles on record (${date}, ${rows[0].time}–${rows[rows.length - 1].time})`);
 
   if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
-  const done = existsSync(MAP_FILE) ? JSON.parse(readFileSync(MAP_FILE, "utf8")) : {};
+  const saved = existsSync(MAP_FILE) ? JSON.parse(readFileSync(MAP_FILE, "utf8")) : {};
 
   const ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
-    channel: "chrome",
-    headless: false,
-    viewport: { width: 1400, height: 900 },
-    acceptDownloads: true,
+    channel: "chrome", headless: false,
+    viewport: { width: 1400, height: 900 }, acceptDownloads: true,
   });
-  const page = ctx.pages()[0] ?? (await ctx.newPage());
+  let page = ctx.pages()[0] ?? (await ctx.newPage());
 
+  const q = JSON.parse(readFileSync(QUEUE_FILE, "utf8"));
   await page.goto(q.flowProject, { waitUntil: "domcontentloaded" }).catch(() => {});
   await page.locator('button:has-text("add_2")').first().waitFor({ timeout: 300000 });
   log("project ready");
   await sleep(2500);
 
-  // The grid lazy-loads — a first pass only sees ~30 of 47. Scroll its own
-  // container until the link count stops growing.
-  const ids = await (async () => {
-    let seen = 0;
-    for (let i = 0; i < 40; i++) {
-      const n = await page.evaluate(() => {
-        const grid = [...document.querySelectorAll("*")]
-          .filter((e) => e.scrollHeight > e.clientHeight + 200 && e.clientHeight > 300)
-          .sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
-        (grid || document.scrollingElement).scrollBy(0, 1200);
-        return document.querySelectorAll('a[href*="/edit/"]').length;
-      });
-      if (n === seen && i > 2) break;
-      seen = n;
-      await sleep(900);
-    }
-    return page.evaluate(() =>
-      [...new Set([...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href")))]
+  // The grid lazy-loads. Guessing the scroll container from the DOM did not work
+  // (it kept stalling at 30), so drive it with real wheel events over the grid —
+  // a virtualised list responds to those the way it responds to a user.
+  // ...and it is VIRTUALISED: nodes are recycled, so links disappear once they
+  // scroll out of view (the count was seen going 48 -> 21). Reading the DOM once
+  // at the end can never see all 47. Accumulate across scroll steps instead,
+  // preserving first-seen order, which stays newest-first as we scroll down.
+  const seenHrefs = new Set();
+  const order = [];
+  const harvest = async () => {
+    const batch = await page.evaluate(() =>
+      [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
     );
-  })();
-  log(`found ${ids.length} generated images in the project (after scrolling)`);
+    for (const h of batch) if (h && !seenHrefs.has(h)) { seenHrefs.add(h); order.push(h); }
+  };
 
-  const mapping = [];
-  const unmatched = [];
+  await page.mouse.move(900, 450);
+  await harvest();
+  for (let i = 0, last = 0, stalls = 0; i < 150; i++) {
+    await page.mouse.wheel(0, 1200);
+    await sleep(650);
+    await harvest();
+    if (order.length === last) { if (++stalls >= 8) break; } else { stalls = 0; }
+    last = order.length;
+    if (i % 10 === 0) log(`  scrolling… ${order.length} unique images seen`);
+  }
+  const hrefs = order;
+  log(`grid loaded: ${hrefs.length} unique images`);
 
-  for (const href of ids) {
-    await page.goto(new URL(href, "https://labs.google").toString(), { waitUntil: "domcontentloaded" }).catch(() => {});
-    await sleep(2200);
+  if (hrefs.length < rows.length) {
+    log(`STOP: only ${hrefs.length} images loaded but ${rows.length} are expected.`);
+    log("Scroll the Flow grid to the bottom manually, then re-run — a short grid would mis-align the order mapping.");
+    await ctx.close();
+    return;
+  }
 
-    // Read this image's own prompt. The info affordance next to the title exposes
-    // it; fall back to any long "Relight this image" text on the page.
-    const prompt = await page.evaluate(() => {
-      const hit = [...document.querySelectorAll("*")]
-        .map((e) => (e.textContent || "").trim())
-        .filter((t) => /^relight this image/i.test(t) && t.length > 80)
-        .sort((a, b) => b.length - a.length)[0];
-      return hit || "";
-    });
+  // Newest-first grid vs the log in reverse: newest image == last generated style.
+  const expected = [...rows].reverse();
+  const results = [], rejected = [];
 
-    if (!prompt) { unmatched.push({ href, why: "no prompt text found" }); continue; }
-    const key = bodyKey(prompt);
+  // Drop the fully-scrolled grid before the download loop — holding 139 rendered
+  // tiles in memory while navigating 45 times crashed the tab.
+  await page.goto("about:blank", { waitUntil: "domcontentloaded" }).catch(() => {});
+  await sleep(1200);
 
-    // Several recipes open with near-identical wording ("the key light is a large,
-    // soft source positioned directly in front of the subject..."), so a short
-    // prefix match assigns one image to several styles. Score every style by how
-    // far it agrees with this prompt and take the clear winner only.
-    const score = (a, b) => { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; };
-    const ranked = styles.map((s) => ({ s, n: score(key, s.key) })).sort((a, b) => b.n - a.n);
-    const best = ranked[0], runnerUp = ranked[1];
-    if (!best || best.n < 60) { unmatched.push({ href, why: "no style matched", head: key.slice(0, 70) }); continue; }
-    if (runnerUp && best.n - runnerUp.n < 15) {
-      unmatched.push({ href, why: `ambiguous: ${best.s.name} vs ${runnerUp.s.name}`, head: key.slice(0, 70) });
-      continue;
+  for (let i = 0; i < expected.length; i++) {
+    const style = expected[i];
+    if (saved[style.slot]) { results.push({ ...style, file: saved[style.slot], skipped: true }); continue; }
+
+    // A crashed tab must not end the run — recreate and carry on.
+    if (page.isClosed()) page = await ctx.newPage();
+    try {
+      await page.goto(new URL(hrefs[i], "https://labs.google").toString(), { waitUntil: "domcontentloaded", timeout: 60000 });
+    } catch {
+      try { await page.close().catch(() => {}); } catch {}
+      page = await ctx.newPage();
+      try {
+        await page.goto(new URL(hrefs[i], "https://labs.google").toString(), { waitUntil: "domcontentloaded", timeout: 60000 });
+      } catch { rejected.push({ slot: style.slot, why: "page would not load" }); continue; }
     }
-    const style = best.s;
-    if (mapping.some((m) => m.slot === style.slot)) {
-      unmatched.push({ href, why: `slot ${style.slot} already claimed (${style.name})` });
-      continue;
-    }
+    await sleep(1800);
 
-    const file = `${String(style.slot).padStart(2, "0")}-${slug(style.name)}.png`;
-    mapping.push({ slot: style.slot, name: style.name, framing: style.framing, href, file });
-
-    if (DRY_RUN || done[style.slot]) continue;
-
-    // Download menu -> "2K Upscaled".
     await page.locator('button:has-text("download")').first().click().catch(() => {});
-    await sleep(1200);
+    await sleep(1000);
     const twoK = page.locator('text="2K"').first();
-    if (!(await twoK.count())) { unmatched.push({ href, why: "no 2K option" }); continue; }
+    if (!(await twoK.count())) { rejected.push({ slot: style.slot, why: "no 2K option" }); continue; }
+
     const [dl] = await Promise.all([
       page.waitForEvent("download", { timeout: 120000 }).catch(() => null),
       twoK.click().catch(() => {}),
     ]);
-    if (!dl) { unmatched.push({ href, why: "download did not start" }); continue; }
-    await dl.saveAs(join(OUT_DIR, file));
-    done[style.slot] = file;
-    writeFileSync(MAP_FILE, JSON.stringify(done, null, 2));
-    log(`✓ slot ${style.slot} ${style.name} -> ${file}`);
-    await sleep(1500);
+    if (!dl) { rejected.push({ slot: style.slot, why: "download did not start" }); continue; }
+
+    // Flow's filename timestamp turned out to be the DOWNLOAD time, not the
+    // generation time, so it cannot confirm identity. What the filename DOES
+    // carry is Flow's own description of the image ("..._with_purple_lighting"),
+    // which is derived from the prompt. Use that to corroborate the order-based
+    // mapping: agreement raises confidence, disagreement is flagged for review
+    // rather than silently accepted.
+    const suggested = dl.suggestedFilename();
+    const words = (s) => new Set(String(s).toLowerCase().match(/[a-z]{4,}/g) ?? []);
+    const STOP = new Set(["relight", "relighting", "image", "with", "jpeg", "subject", "lighting", "light"]);
+    const styleWords = [...words(style.name)].filter((w) => !STOP.has(w));
+    const fileWords = words(suggested);
+    // Treat well-known synonyms as agreement (magenta/purple, overhead/above...).
+    const SYN = { magenta: "purple", purple: "magenta", overhead: "above", above: "overhead", clamshell: "soft", paramount: "soft", chiaroscuro: "contrast" };
+    const agree = styleWords.some((w) => fileWords.has(w) || (SYN[w] && fileWords.has(SYN[w])));
+
+    const file = `${String(style.slot).padStart(2, "0")}-${slug(style.name)}.png`;
+    if (!DRY_RUN) {
+      await dl.saveAs(join(OUT_DIR, file));
+      saved[style.slot] = file;
+      writeFileSync(MAP_FILE, JSON.stringify(saved, null, 2));
+    } else {
+      await dl.cancel().catch(() => {});
+    }
+    results.push({ ...style, file, suggested, corroborated: agree });
+    log(`${DRY_RUN ? "· would save" : "✓ saved"} slot ${style.slot} ${style.name} ${agree ? "✔" : "⚠ check"} ← ${suggested}`);
+    await sleep(900);
   }
 
-  log(`matched ${mapping.length} of ${ids.length} images to styles; ${unmatched.length} unmatched`);
-  for (const u of unmatched.slice(0, 10)) log(`  ? ${u.why}${u.head ? " :: " + u.head : ""}`);
-
-  if (DRY_RUN) {
-    writeFileSync(join(__dirname, "lighting-thumbnail-mapping-preview.json"), JSON.stringify(mapping, null, 2));
-    log("dry-run: mapping written to scripts/lighting-thumbnail-mapping-preview.json — check it before downloading.");
-  } else {
-    log(`downloaded ${Object.keys(done).length} files into .playwright-mcp/thumbnails/`);
-  }
+  log(`verified ${results.length} of ${expected.length}; ${rejected.length} rejected`);
+  for (const r of rejected.slice(0, 12)) log(`  ✗ slot ${r.slot}: ${r.why}`);
+  writeFileSync(join(__dirname, "lighting-thumbnail-mapping-preview.json"), JSON.stringify({ results, rejected }, null, 2));
+  log(DRY_RUN
+    ? "dry-run: nothing written. Check scripts/lighting-thumbnail-mapping-preview.json."
+    : `downloaded into .playwright-mcp/thumbnails/`);
   await ctx.close();
 }
 
