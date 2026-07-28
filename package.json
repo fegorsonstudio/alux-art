@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "thumbnails": "node scripts/flow-thumbnail-runner.mjs"
+    "thumbnails": "node scripts/flow-thumbnail-runner.mjs",
+    "thumbs:download": "node scripts/flow-download-thumbnails.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
