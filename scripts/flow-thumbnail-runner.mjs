@@ -66,11 +66,15 @@ async function attachSource(page, wantFile) {
   const dlg = page.locator('[role="dialog"]').first();
   if (!(await dlg.count())) return { ok: false, why: "picker did not open" };
 
-  // Uploads tab: generated images can never appear here.
+  // Uploads tab: generated images can never appear here. Only click it when it is
+  // NOT already the active tab — clicking the selected tab is intercepted by the
+  // tab bar and times out.
   const tab = dlg.locator('[role="tab"]', { hasText: "Uploads" }).first();
   if (!(await tab.count())) return { ok: false, why: "no Uploads tab" };
-  await tab.click();
-  await sleep(1800);
+  if ((await tab.getAttribute("aria-selected")) !== "true") {
+    await tab.click({ timeout: 10000 }).catch(() => {});
+    await sleep(1800);
+  }
 
   const opt = dlg.locator('[role="option"]').filter({ hasText: wantFile }).first();
   if (!(await opt.count())) return { ok: false, why: `${wantFile} not in Uploads` };
@@ -87,6 +91,74 @@ async function attachSource(page, wantFile) {
   await add.click();
   await sleep(1400);
   return { ok: true };
+}
+
+/**
+ * Force output settings to 3:4 portrait and 1 variant, then VERIFY.
+ *
+ * The runner uses its own Chrome profile, so it does NOT inherit settings made in
+ * any other browser — a fresh profile silently defaults to a different aspect
+ * ratio (9:16), which is how a whole run can come out the wrong shape. Set it
+ * explicitly on every run and confirm from the composer's own label.
+ */
+// The composer label shows the aspect as an ICON LIGATURE, not the ratio text:
+// 3:4 reads "crop_portrait", 16:9 reads "crop_16_9". Verifying against "3:4"
+// alone can therefore never match. Accept either form.
+const RATIO_TOKENS = {
+  "3:4": ["3:4", "crop_portrait"],
+  "9:16": ["9:16", "crop_9_16"],
+  "1:1": ["1:1", "crop_square"],
+  "4:3": ["4:3", "crop_landscape"],
+  "16:9": ["16:9", "crop_16_9"],
+};
+
+async function ensureSettings(page, { ratio = "3:4", variants = "1x" } = {}) {
+  const modelBtn = page.locator('button:has-text("Nano Banana")').first();
+  if (!(await modelBtn.count())) return { ok: false, why: "no model button" };
+
+  const tokens = RATIO_TOKENS[ratio] ?? [ratio];
+  const label = async () => ((await modelBtn.innerText().catch(() => "")) || "").replace(/\s+/g, " ").trim();
+  const good = (l) => tokens.some((t) => l.includes(t)) && l.includes(variants);
+
+  if (good(await label())) return { ok: true, label: await label(), changed: false };
+
+  await modelBtn.click();
+  await sleep(1500);
+
+  // Option buttons render as "<icon ligature> 3:4", so exact-equality on "3:4"
+  // fails. Strip lowercase ligature tokens, then compare what remains.
+  //
+  // Resolve the button INDEX in JS, but do the actual click through Playwright:
+  // a synthetic el.click() does not fire React's handler here, so the panel
+  // reports the click yet the setting never changes.
+  const clicked = [];
+  for (const want of [ratio, variants]) {
+    const idx = await page.evaluate((w) => {
+      const clean = (el) => (el.innerText || "")
+        .split(/\s+/)
+        .filter((x) => x && !/^[a-z0-9_]+$/.test(x))
+        .join(" ")
+        .trim();
+      const all = [...document.querySelectorAll("button")];
+      for (let i = all.length - 1; i >= 0; i--) {
+        if (clean(all[i]) === w || (all[i].innerText || "").trim() === w) return i;
+      }
+      return -1;
+    }, want);
+    if (idx >= 0) {
+      await page.locator("button").nth(idx).click({ timeout: 8000 }).catch(() => {});
+      clicked.push(want);
+      await sleep(700);
+    }
+  }
+
+  await sleep(1400);
+  await page.keyboard.press("Escape").catch(() => {});
+  await sleep(900);
+
+  const after = await label();
+  const ok = good(after);
+  return { ok, label: after, clicked, why: ok ? "" : `settings did not stick (label: ${after}, clicked: ${clicked.join("+") || "nothing"})` };
 }
 
 /**
@@ -168,6 +240,16 @@ async function main() {
     return;
   }
   log("project ready");
+
+  // Getting this wrong ruins every image in the run, so refuse to generate unless
+  // the composer itself confirms 3:4 / 1x.
+  const st = await ensureSettings(page, { ratio: "3:4", variants: "1x" });
+  if (!st.ok) {
+    log(`ABORT: could not set 3:4 / 1x — ${st.why}`);
+    await ctx.close();
+    return;
+  }
+  log(`settings confirmed: ${st.label}`);
 
   if (DRY_RUN) {
     const probe = await attachSource(page, pending[0].flowSource);
