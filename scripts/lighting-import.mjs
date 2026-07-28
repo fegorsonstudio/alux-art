@@ -31,7 +31,7 @@ WHAT TO DESCRIBE — the lighting only. Always cover, in this order, whatever is
 
 4. Shadows: their direction, hardness or softness, depth, and edge transition (crisp vs feathered).
 
-5. Catchlights: shape and clock position in the eyes (e.g. "a single large catchlight at 10 o'clock").
+5. Catchlights: shape and clock position in the eyes (e.g. "a single large catchlight at 10 o'clock"). If the eyes are closed, hidden behind glasses, or turned away, say NOTHING about catchlights at all — never explain their absence, because that reads as an instruction to close the subject's eyes when the recipe is applied to a different photo.
 
 6. Color temperature and any color: warm/neutral/cool in Kelvin terms (e.g. "warm ~3200K"), and any colored gels or mixed color sources.
 
@@ -41,8 +41,11 @@ WHAT TO DESCRIBE — the lighting only. Always cover, in this order, whatever is
 
 WHAT TO IGNORE COMPLETELY — never mention or describe: the person's face, identity, gender, skin tone, expression, pose, hands, body, clothing, hair style, makeup, accessories, props, the location or background objects, the composition, crop, or camera angle. If you catch yourself describing the subject or scene, delete it. You describe how the scene is LIT, not what is in it.
 
+This applies even when the light lands on something: say "the back of the head", never "the veil"; say "the brow", never "the hat". NEVER mention closed eyes, a gaze direction, glasses, sunglasses, a veil, a hat, or any garment. These recipes get applied to a COMPLETELY DIFFERENT photo, so any detail of this reference's subject would be wrongly recreated on someone else.
+
 OUTPUT FORMAT:
 
+- BEGIN the description with exactly: "Relight this image. Change nothing else except the lighting."
 - Write ONE tight paragraph, 1–3 sentences, in concrete photographic language.
 
 - Phrase it as a reusable lighting SETUP ("key light from camera-left at 45°…"), not as "the light on her face."
