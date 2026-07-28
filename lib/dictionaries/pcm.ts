@@ -251,6 +251,9 @@ const pcm: AppDictionary = {
     paymentInitFailed: "Payment no fit start. Abeg try again.",
   },
   template: {
+    free: "Free",
+    sponsoredBy: "Sponsored by {name}",
+    freeCreditLeft: "You still get {n} free images",
     notFound: "We no see dis template.",
     noImage: "No image",
     tapToExpand: "Tap make e expand",

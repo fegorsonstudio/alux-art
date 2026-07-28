@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2ProxyUrl } from "@/lib/r2";
+import { grantBalance } from "@/lib/free-access";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -106,6 +107,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       priceNgn: template.price_ngn,
       price1Ngn: template.price_1_ngn != null ? Number(template.price_1_ngn) : (template.price_ngn ? Math.round(Number(template.price_ngn) * 0.12) : null),
       price5Ngn: template.price_5_ngn != null ? Number(template.price_5_ngn) : (template.price_ngn ? Math.round(Number(template.price_ngn) * 0.60) : null),
+      // A sponsor is funding this template, so buyers book it free (one shoot each,
+      // until the campaign's booking cap is reached or its end date passes).
+      sponsored: (template.is_sponsored
+        && (!template.sponsor_expires_at || new Date(template.sponsor_expires_at) > new Date())
+        && (template.sponsor_total_limit == null || (template.sponsor_used_count ?? 0) < template.sponsor_total_limit))
+        ? {
+            name: template.sponsor_name ?? null,
+            packageSize: template.sponsor_package_size ?? null,
+          }
+        : null,
+      // Images this buyer has been comped by an admin, so checkout can offer them.
+      freeCredits: user?.email ? await grantBalance(user.email) : 0,
       shootMode: template.shoot_mode,
       aspectRatio: template.aspect_ratio,
       packageSize: template.package_size,

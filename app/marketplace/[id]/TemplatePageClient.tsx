@@ -57,6 +57,10 @@ interface TemplateDetail {
   priceNgn: number;
   price1Ngn?: number | null;
   price5Ngn?: number | null;
+  // A brand is funding this template, so this buyer books it free (one shoot each).
+  sponsored?: { name: string | null; packageSize: number | null } | null;
+  // Free images an admin has comped to this buyer's email address.
+  freeCredits?: number;
   shootMode: string;
   aspectRatio: string;
   packageSize: number;
@@ -555,16 +559,41 @@ export default function TemplatePage() {
               </p>
             )}
 
-            <div className={styles.priceRow}>
-              {couponResult?.valid && couponResult.discountNgn ? (
-                <>
+            {/* This booking costs nothing: either a sponsor is covering the selected
+                package, or the buyer has enough admin-granted credit for it. Show
+                that instead of a price so they are not surprised by a free checkout. */}
+            {(() => {
+              const sponsorCovers = !!template.sponsored
+                && (template.sponsored.packageSize ?? 0) >= selectedPkg;
+              const creditCovers = (template.freeCredits ?? 0) >= selectedPkg;
+              if (!sponsorCovers && !creditCovers) {
+                return (
+                  <div className={styles.priceRow}>
+                    {couponResult?.valid && couponResult.discountNgn ? (
+                      <>
+                        <span className={styles.priceOriginal}>{formatPrice(pkgPrice)}</span>
+                        <span className={styles.priceFinal}>{formatPrice(displayedPrice)}</span>
+                      </>
+                    ) : (
+                      <span className={styles.priceFinal}>{formatPrice(pkgPrice)}</span>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <div className={styles.priceRow} style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
                   <span className={styles.priceOriginal}>{formatPrice(pkgPrice)}</span>
-                  <span className={styles.priceFinal}>{formatPrice(displayedPrice)}</span>
-                </>
-              ) : (
-                <span className={styles.priceFinal}>{formatPrice(pkgPrice)}</span>
-              )}
-            </div>
+                  <span className={styles.priceFinal}>{t("free")}</span>
+                  <span style={{ fontSize: "0.78rem", opacity: 0.75 }}>
+                    {sponsorCovers
+                      ? (template.sponsored?.name
+                          ? t("sponsoredBy", { name: template.sponsored.name })
+                          : t("free"))
+                      : t("freeCreditLeft", { n: String(template.freeCredits ?? 0) })}
+                  </span>
+                </div>
+              );
+            })()}
 
             {error && <p className={styles.buyError}>{error}</p>}
 

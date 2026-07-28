@@ -250,6 +250,9 @@ const en = {
     paymentInitFailed: "Payment initialization failed. Please try again.",
   },
   template: {
+    free: "Free",
+    sponsoredBy: "Sponsored by {name}",
+    freeCreditLeft: "{n} free images left on your account",
     notFound: "Template not found.",
     noImage: "No image",
     tapToExpand: "Tap to expand",

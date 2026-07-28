@@ -251,6 +251,9 @@ const ar: AppDictionary = {
     paymentInitFailed: "تعذّر بدء الدفع. حاول مرة أخرى.",
   },
   template: {
+    free: "مجاني",
+    sponsoredBy: "برعاية {name}",
+    freeCreditLeft: "لديك {n} صور مجانية متبقية",
     notFound: "القالب غير موجود.",
     noImage: "لا توجد صورة",
     tapToExpand: "اضغط للتكبير",

@@ -4,6 +4,46 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import styles from "./admin.module.css";
 
+// A template a brand has paid to make free for everyone.
+interface AdminTemplate {
+  id: string;
+  title: string;
+  status: string;
+  price_ngn: number;
+  creator_display_name?: string | null;
+  is_sponsored: boolean;
+  sponsor_name: string | null;
+  sponsor_package_size: number | null;
+  sponsor_total_limit: number | null;
+  sponsor_used_count: number;
+  sponsor_expires_at: string | null;
+}
+
+// An admin comp: N free images credited to an email address. Keyed by email so it
+// can be issued before that person has ever signed up.
+interface FreeGrant {
+  id: string;
+  email: string;
+  images_granted: number;
+  images_used: number;
+  images_remaining: number;
+  bookings_count: number;
+  note: string | null;
+  granted_by: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+// Money owed to a creator for free bookings — no gateway split runs on those,
+// so Alux Art settles them by hand.
+interface OwedCreator {
+  creator_id: string;
+  creator_name: string | null;
+  owed_ngn: number;
+  bookings: number;
+}
+
 interface Coupon {
   id: string;
   code: string;
@@ -439,6 +479,29 @@ export default function AdminPage() {
   const [couponSaving, setCouponSaving] = useState(false);
   const [couponMsg, setCouponMsg] = useState("");
 
+  // Free generations: admin comps N images to an email address.
+  const [grants, setGrants] = useState<FreeGrant[]>([]);
+  const [grantEmail, setGrantEmail] = useState("");
+  const [grantImages, setGrantImages] = useState("5");
+  const [grantNote, setGrantNote] = useState("");
+  const [grantExpires, setGrantExpires] = useState("");
+  const [grantSaving, setGrantSaving] = useState(false);
+  const [grantMsg, setGrantMsg] = useState("");
+
+  // What the platform owes creators for free bookings (no gateway split happens).
+  const [owed, setOwed] = useState<OwedCreator[]>([]);
+  const [settling, setSettling] = useState<string | null>(null);
+
+  // Sponsored templates: a brand funds a template so buyers book it free.
+  const [adminTemplates, setAdminTemplates] = useState<AdminTemplate[]>([]);
+  const [sponsorTemplateId, setSponsorTemplateId] = useState("");
+  const [sponsorName, setSponsorName] = useState("");
+  const [sponsorPkg, setSponsorPkg] = useState("5");
+  const [sponsorLimit, setSponsorLimit] = useState("");
+  const [sponsorExpires, setSponsorExpires] = useState("");
+  const [sponsorSaving, setSponsorSaving] = useState(false);
+  const [sponsorMsg, setSponsorMsg] = useState("");
+
   const [adminCreators, setAdminCreators] = useState<AdminCreator[]>([]);
   const [shootFilter, setShootFilter] = useState("ALL");
   const [userSearch, setUserSearch] = useState("");
@@ -470,6 +533,21 @@ export default function AdminPage() {
     fetch("/api/admin/coupons")
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.coupons) setCoupons(d.coupons); })
+      .catch(() => {});
+
+    fetch("/api/admin/free-grants")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.grants) setGrants(d.grants); })
+      .catch(() => {});
+
+    fetch("/api/admin/free-bookings")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.owed) setOwed(d.owed); })
+      .catch(() => {});
+
+    fetch("/api/admin/templates")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.templates) setAdminTemplates(d.templates); })
       .catch(() => {});
 
     fetch("/api/admin/creators")
@@ -531,6 +609,99 @@ export default function AdminPage() {
       setModelConfig(next); setModelMsg("Saved!");
     } catch (e) { setModelMsg(e instanceof Error ? e.message : "Error"); }
     finally { setModelSaving(false); setTimeout(() => setModelMsg(""), 3000); }
+  };
+
+  const createGrant = async () => {
+    if (!grantEmail.trim()) { setGrantMsg("Email is required"); return; }
+    setGrantSaving(true); setGrantMsg("");
+    try {
+      const res = await fetch("/api/admin/free-grants", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: grantEmail.trim(),
+          images: Number(grantImages),
+          note: grantNote.trim() || undefined,
+          expiresAt: grantExpires || undefined,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error ?? "Error");
+      setGrants(prev => [payload.grant, ...prev]);
+      setGrantEmail(""); setGrantNote(""); setGrantExpires("");
+      setGrantMsg(`Credited ${payload.grant.images_granted} images`);
+    } catch (e) { setGrantMsg(e instanceof Error ? e.message : "Error"); }
+    finally { setGrantSaving(false); setTimeout(() => setGrantMsg(""), 4000); }
+  };
+
+  const toggleGrant = async (id: string, isActive: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/free-grants/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
+      if (!res.ok) return;
+      setGrants(prev => prev.map(g => g.id === id ? { ...g, is_active: !isActive } : g));
+    } catch { /* leave the row as-is */ }
+  };
+
+  const settleCreator = async (creatorId: string) => {
+    setSettling(creatorId);
+    try {
+      const res = await fetch("/api/admin/free-bookings", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ creatorId, settled: true }),
+      });
+      if (res.ok) setOwed(prev => prev.filter(o => o.creator_id !== creatorId));
+    } catch { /* keep it listed so it is not forgotten */ }
+    finally { setSettling(null); }
+  };
+
+  const patchTemplate = async (id: string, patch: Record<string, unknown>) => {
+    const res = await fetch("/api/admin/templates", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...patch }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error ?? "Error");
+  };
+
+  const startSponsorship = async () => {
+    if (!sponsorTemplateId) { setSponsorMsg("Pick a template"); return; }
+    if (!sponsorLimit || Number(sponsorLimit) < 1) {
+      setSponsorMsg("A total booking cap is required"); return;
+    }
+    setSponsorSaving(true); setSponsorMsg("");
+    try {
+      await patchTemplate(sponsorTemplateId, {
+        isSponsored: true,
+        sponsorName: sponsorName.trim() || null,
+        sponsorPackageSize: Number(sponsorPkg),
+        sponsorTotalLimit: Number(sponsorLimit),
+        sponsorExpiresAt: sponsorExpires || null,
+      });
+      setAdminTemplates(prev => prev.map(t => t.id === sponsorTemplateId ? {
+        ...t, is_sponsored: true, sponsor_name: sponsorName.trim() || null,
+        sponsor_package_size: Number(sponsorPkg), sponsor_total_limit: Number(sponsorLimit),
+        sponsor_expires_at: sponsorExpires || null,
+      } : t));
+      setSponsorTemplateId(""); setSponsorName(""); setSponsorLimit(""); setSponsorExpires("");
+      setSponsorMsg("Now free to book");
+    } catch (e) { setSponsorMsg(e instanceof Error ? e.message : "Error"); }
+    finally { setSponsorSaving(false); setTimeout(() => setSponsorMsg(""), 4000); }
+  };
+
+  const stopSponsorship = async (id: string) => {
+    try {
+      await patchTemplate(id, { isSponsored: false });
+      setAdminTemplates(prev => prev.map(t => t.id === id ? { ...t, is_sponsored: false } : t));
+    } catch { /* leave the row as-is */ }
+  };
+
+  const resetSponsorCount = async (id: string) => {
+    try {
+      await patchTemplate(id, { resetSponsorCount: true });
+      setAdminTemplates(prev => prev.map(t => t.id === id ? { ...t, sponsor_used_count: 0 } : t));
+    } catch { /* leave the row as-is */ }
   };
 
   const createCoupon = async () => {
@@ -1039,6 +1210,106 @@ export default function AdminPage() {
       </>)}
 
       {tab === "people" && (<>
+      {/* ---- Free generations (admin comps) ---- */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Free generations</h2>
+        <p style={{ margin: "0 0 12px", opacity: 0.7, fontSize: "0.82rem" }}>
+          Credit someone free images by email. They do not need an account yet — the credit is
+          picked up the first time they book with that address. Images are spent per shoot, so
+          10 can become one 10-image shoot or two 5s.
+        </p>
+        <div className={styles.couponForm}>
+          <input
+            className={styles.priceInput} style={{ width: 220 }} type="email"
+            placeholder="their@email.com" value={grantEmail}
+            onChange={e => setGrantEmail(e.target.value)}
+          />
+          <select
+            className={`${styles.priceInput} ${styles.selectInput}`} value={grantImages}
+            onChange={e => setGrantImages(e.target.value)}
+          >
+            <option value="1">1 image</option>
+            <option value="5">5 images</option>
+            <option value="10">10 images</option>
+            <option value="20">20 images</option>
+          </select>
+          <input
+            className={styles.priceInput} style={{ width: 200 }}
+            placeholder="Note (why)" value={grantNote}
+            onChange={e => setGrantNote(e.target.value)} maxLength={300}
+          />
+          <input
+            className={styles.priceInput} style={{ width: 150 }} type="date"
+            title="Optional expiry" value={grantExpires}
+            onChange={e => setGrantExpires(e.target.value)}
+          />
+          <button type="button" className={styles.saveBtn} onClick={createGrant} disabled={grantSaving}>
+            {grantSaving ? "Crediting..." : "Credit"}
+          </button>
+          {grantMsg && <span className={styles.saveMsg}>{grantMsg}</span>}
+        </div>
+        {grants.length === 0 ? (
+          <p className={styles.empty}>No free generations issued yet.</p>
+        ) : (
+          <table className={styles.table} style={{ marginTop: 16 }}>
+            <thead><tr><th>Email</th><th>Used</th><th>Left</th><th>Note</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {grants.map(g => (
+                <tr key={g.id}>
+                  <td className={styles.mono}>{g.email}</td>
+                  <td>{g.images_used} / {g.images_granted}</td>
+                  <td><strong>{g.images_remaining}</strong></td>
+                  <td>{g.note ?? "—"}</td>
+                  <td>{g.expires_at ? new Date(g.expires_at).toLocaleDateString() : "—"}</td>
+                  <td>
+                    <span className={g.is_active ? styles.activeBadge : styles.bannedBadge}>
+                      {g.is_active ? "Active" : "Revoked"}
+                    </span>
+                  </td>
+                  <td>
+                    <button className={styles.banBtn} onClick={() => toggleGrant(g.id, g.is_active)}>
+                      {g.is_active ? "Revoke" : "Restore"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* ---- Owed to creators (free bookings skip the gateway split) ---- */}
+      {owed.length > 0 && (
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>Owed to creators</h2>
+          <p style={{ margin: "0 0 12px", opacity: 0.7, fontSize: "0.82rem" }}>
+            Free and sponsored bookings never reach Paystack, so no automatic split happens.
+            These creators still earned their share — pay them, then mark it settled.
+          </p>
+          <table className={styles.table}>
+            <thead><tr><th>Creator</th><th>Free bookings</th><th>Owed</th><th></th></tr></thead>
+            <tbody>
+              {owed.map(o => (
+                <tr key={o.creator_id}>
+                  <td>{o.creator_name ?? "—"}</td>
+                  <td>{o.bookings}</td>
+                  <td><strong>₦{o.owed_ngn.toLocaleString()}</strong></td>
+                  <td>
+                    <button
+                      className={styles.banBtn}
+                      onClick={() => settleCreator(o.creator_id)}
+                      disabled={settling === o.creator_id}
+                    >
+                      {settling === o.creator_id ? "Settling..." : "Mark settled"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* ---- Users ---- */}
       <div className={styles.card}>
         <div className={styles.shootsHeader}>
@@ -1070,6 +1341,87 @@ export default function AdminPage() {
       </>)}
 
       {tab === "marketplace" && (<>
+      {/* ---- Sponsored templates ---- */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Sponsored templates</h2>
+        <p style={{ fontSize: "0.78rem", color: "#4e7076", margin: "0 0 12px" }}>
+          A sponsor pays for a template so anyone can book it free. Each person gets one free
+          shoot, and the campaign stops automatically at the booking cap — that cap is what
+          protects you from a runaway generation bill, so it is required.
+        </p>
+        <div className={styles.couponForm}>
+          <select
+            className={`${styles.priceInput} ${styles.selectInput}`} style={{ width: 220 }}
+            value={sponsorTemplateId} onChange={e => setSponsorTemplateId(e.target.value)}
+          >
+            <option value="">Choose a template…</option>
+            {adminTemplates.filter(t => !t.is_sponsored && t.status === "published").map(t => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+          <input
+            className={styles.priceInput} style={{ width: 140 }}
+            placeholder="Sponsor (e.g. Netflix)" value={sponsorName}
+            onChange={e => setSponsorName(e.target.value)} maxLength={60}
+          />
+          <select
+            className={`${styles.priceInput} ${styles.selectInput}`} value={sponsorPkg}
+            onChange={e => setSponsorPkg(e.target.value)}
+          >
+            <option value="1">1 image free</option>
+            <option value="5">5 images free</option>
+            <option value="10">10 images free</option>
+          </select>
+          <input
+            className={styles.priceInput} style={{ width: 110 }} type="number" min={1}
+            placeholder="Cap (shoots)" value={sponsorLimit}
+            onChange={e => setSponsorLimit(e.target.value)}
+          />
+          <input
+            className={styles.priceInput} style={{ width: 150 }} type="date"
+            title="Optional end date" value={sponsorExpires}
+            onChange={e => setSponsorExpires(e.target.value)}
+          />
+          <button type="button" className={styles.saveBtn} onClick={startSponsorship} disabled={sponsorSaving}>
+            {sponsorSaving ? "Saving..." : "Make free"}
+          </button>
+          {sponsorMsg && <span className={styles.saveMsg}>{sponsorMsg}</span>}
+        </div>
+        {adminTemplates.filter(t => t.is_sponsored).length === 0 ? (
+          <p className={styles.empty}>No sponsored templates running.</p>
+        ) : (
+          <table className={styles.table} style={{ marginTop: 16 }}>
+            <thead><tr><th>Template</th><th>Sponsor</th><th>Free</th><th>Used / cap</th><th>Ends</th><th></th></tr></thead>
+            <tbody>
+              {adminTemplates.filter(t => t.is_sponsored).map(t => {
+                const capped = t.sponsor_total_limit != null && t.sponsor_used_count >= t.sponsor_total_limit;
+                const ended = !!t.sponsor_expires_at && new Date(t.sponsor_expires_at) <= new Date();
+                return (
+                  <tr key={t.id}>
+                    <td>{t.title}</td>
+                    <td>{t.sponsor_name ?? "—"}</td>
+                    <td>{t.sponsor_package_size ?? "—"} images</td>
+                    <td>
+                      <strong>{t.sponsor_used_count}</strong> / {t.sponsor_total_limit ?? "∞"}
+                      {(capped || ended) && (
+                        <span className={styles.bannedBadge} style={{ marginLeft: 6 }}>
+                          {capped ? "Cap reached" : "Ended"}
+                        </span>
+                      )}
+                    </td>
+                    <td>{t.sponsor_expires_at ? new Date(t.sponsor_expires_at).toLocaleDateString() : "—"}</td>
+                    <td style={{ display: "flex", gap: 6 }}>
+                      <button className={styles.banBtn} onClick={() => stopSponsorship(t.id)}>Stop</button>
+                      <button className={styles.banBtn} onClick={() => resetSponsorCount(t.id)}>Reset count</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       {/* ---- Coupons ---- */}
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Coupon Codes</h2>

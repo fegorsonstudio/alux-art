@@ -251,6 +251,9 @@ const zh: AppDictionary = {
     paymentInitFailed: "支付启动失败，请重试。",
   },
   template: {
+    free: "免费",
+    sponsoredBy: "由 {name} 赞助",
+    freeCreditLeft: "您还剩 {n} 张免费图片",
     notFound: "未找到该模板。",
     noImage: "暂无图片",
     tapToExpand: "点按放大",

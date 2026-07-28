@@ -6,6 +6,7 @@ import { isAdminEmail } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site-url";
 import { initializePayment } from "@/lib/payment-gateway";
 import type { InitPaymentParams } from "@/lib/payment-types";
+import { claimFreeBooking, releaseFreeBooking, recordFreeBooking } from "@/lib/free-access";
 
 const PRICE_KEYS = [
   "price_1_ngn", "price_5_ngn", "price_10_ngn",
@@ -35,18 +36,37 @@ export async function POST(
   const isAdmin = isAdminEmail(user.email);
   const packageSize = normalizePackageSize(shoot.package_size);
 
-  // Admin bypass — no payment required
-  if (isAdmin) {
-    await sql`
+  // Free — admin, or an admin-granted credit on this email. Studio shoots have no
+  // template, so sponsorship never applies here. No payment required.
+  const freeClaim = await claimFreeBooking({
+    userId: user.id,
+    email: user.email,
+    isAdmin,
+    packageSize,
+  });
+  if (freeClaim) {
+    const queued = await sql`
       UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
-      WHERE id = ${id} AND status = 'PENDING_PAYMENT'
+      WHERE id = ${id} AND status = 'PENDING_PAYMENT' RETURNING id
     `;
+    if (queued.length === 0) {
+      await releaseFreeBooking(freeClaim, { packageSize });
+      return NextResponse.json({ error: "This shoot is no longer payable" }, { status: 409 });
+    }
+    await recordFreeBooking({
+      claim: freeClaim, shootId: id, userId: user.id, email: user.email, packageSize,
+    });
     fetch(`${SITE_URL}/api/shoots/${id}/start`, {
       method: "POST",
       headers: process.env.INTERNAL_API_SECRET ? { "x-internal-secret": process.env.INTERNAL_API_SECRET } : {},
       cache: "no-store",
     }).catch(console.error);
-    return NextResponse.json({ bypass: true });
+    return NextResponse.json({
+      bypass: true,
+      free: true,
+      freeSource: freeClaim.source,
+      freeRemaining: freeClaim.remaining ?? null,
+    });
   }
 
   // Read prices from app_config

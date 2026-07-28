@@ -251,6 +251,9 @@ const fr: AppDictionary = {
     paymentInitFailed: "L'initialisation du paiement a échoué. Veuillez réessayer.",
   },
   template: {
+    free: "Gratuit",
+    sponsoredBy: "Offert par {name}",
+    freeCreditLeft: "Il vous reste {n} images gratuites",
     notFound: "Template introuvable.",
     noImage: "Pas d'image",
     tapToExpand: "Touchez pour agrandir",

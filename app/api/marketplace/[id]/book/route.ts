@@ -14,6 +14,7 @@ import { sanitizeMugshotSelection, sanitizeBowlSelection, sanitizeNewsSelection,
 import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
 import { sanitizeInductionSelection, type InductionSelection } from "@/lib/nursing-induction";
 import { sanitizeEnhanceSelection, type EnhanceSelection } from "@/lib/gear-equalizer";
+import { claimFreeBooking, releaseFreeBooking, recordFreeBooking, sponsorshipCovers, grantBalance, type SponsorFields } from "@/lib/free-access";
 
 interface RefInput {
   name?: string;
@@ -151,7 +152,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
   const isAdmin = isAdminEmail(user.email);
 
-  if (!template.cr_subaccount_paystack && !template.cr_subaccount_flw && !isAdmin) {
+  // A free booking (admin, sponsor-funded template, or an admin-granted credit)
+  // never touches a payment gateway, so the creator's payout setup is irrelevant
+  // to it. Checked without consuming anything — the actual claim happens below.
+  const freeEligible = isAdmin
+    || sponsorshipCovers(template as SponsorFields, buyerPackageSize)
+    || (await grantBalance(user.email)) >= buyerPackageSize;
+
+  if (!template.cr_subaccount_paystack && !template.cr_subaccount_flw && !freeEligible) {
     return NextResponse.json({ error: "Creator has not set up payouts yet" }, { status: 422 });
   }
 
@@ -642,11 +650,51 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // Admin bypass — queue immediately, no payment
-  if (isAdmin) {
-    await sql`UPDATE shoots SET status = 'QUEUED', updated_at = NOW() WHERE id = ${shootId} AND status = 'PENDING_PAYMENT'`;
-    const siteUrl = SITE_URL;
-    fetch(`${siteUrl}/api/shoots/${shootId}/start`, {
+  // Free booking — admin, a sponsor-funded template, or an admin-granted credit.
+  // Queue immediately, no payment. The claim is atomic: if the sponsor's cap or
+  // the grant ran out since the eligibility check above, this returns null and we
+  // fall through to the normal paid flow.
+  const freeClaim = await claimFreeBooking({
+    userId: user.id,
+    email: user.email,
+    isAdmin,
+    packageSize: buyerPackageSize,
+    template: template as SponsorFields,
+  });
+  if (freeClaim) {
+    const queued = await sql`
+      UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
+      WHERE id = ${shootId} AND status = 'PENDING_PAYMENT' RETURNING id
+    `;
+    if (queued.length === 0) {
+      // Someone else already moved this shoot — never keep the consumed credit.
+      await releaseFreeBooking(freeClaim, { packageSize: buyerPackageSize, templateId });
+      return NextResponse.json({ error: "Booking could not be started" }, { status: 409 });
+    }
+
+    // The creator still earns on a free booking. There is no gateway split to do
+    // it automatically, so record the full (uncapped) payout as owed and settle
+    // it by hand from the admin dashboard. The gateway-fee cap that produces
+    // safeCreatorPayoutNgn does not apply when no gateway is involved.
+    await recordFreeBooking({
+      claim: freeClaim, shootId, userId: user.id, email: user.email,
+      templateId, packageSize: buyerPackageSize, creatorPayoutNgn,
+    });
+    // Zero-amount purchase row so the creator's existing earnings query keeps
+    // working unchanged; is_free lets revenue/sales counts exclude it.
+    await sql`
+      INSERT INTO template_purchases
+        (id, template_id, shoot_id, user_id, amount_ngn, platform_fee_ngn, creator_payout_ngn,
+         coupon_id, coupon_discount_ngn, currency, amount_usd,
+         payment_provider, status, is_free, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${templateId}, ${shootId}, ${user.id}, 0, 0,
+        ${creatorPayoutNgn}, null, 0, ${payCurrency}, null,
+        'free', 'success', true, ${now}
+      )
+    `.catch((err) => console.error("[book] free purchase row failed:", err));
+
+    fetch(`${SITE_URL}/api/shoots/${shootId}/start`, {
       method: "POST",
       headers: process.env.INTERNAL_API_SECRET ? { "x-internal-secret": process.env.INTERNAL_API_SECRET } : {},
       cache: "no-store",
@@ -654,6 +702,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({
       bypass: true,
       shootId,
+      free: true,
+      freeSource: freeClaim.source,
+      freeRemaining: freeClaim.remaining ?? null,
       callbackUrl: `/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
     });
   }
