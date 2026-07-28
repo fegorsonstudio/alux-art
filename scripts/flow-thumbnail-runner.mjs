@@ -129,11 +129,44 @@ async function main() {
     viewport: { width: 1400, height: 900 },
     args: ["--disable-blink-features=AutomationControlled"],
   });
-  const page = ctx.pages()[0] ?? (await ctx.newPage());
+  let page = ctx.pages()[0] ?? (await ctx.newPage());
 
-  await page.goto(q.flowProject, { waitUntil: "domcontentloaded" });
-  log("opened Flow project — sign in if prompted");
-  await page.locator('button:has-text("add_2")').first().waitFor({ timeout: 180000 });
+  // Getting to a signed-in project is the flakiest moment of the whole run: the
+  // first launch bounces through Google OAuth, and that redirect can crash the
+  // tab. So poll patiently instead of waiting on one locator, recreate the page
+  // if it dies, and say plainly when a human needs to sign in.
+  const READY = 'button:has-text("add_2")';
+  const DEADLINE = Date.now() + 10 * 60 * 1000;
+  let announcedLogin = false;
+  await page.goto(q.flowProject, { waitUntil: "domcontentloaded" }).catch(() => {});
+  log("opened Flow project");
+
+  while (Date.now() < DEADLINE) {
+    if (page.isClosed()) page = await ctx.newPage();
+    try {
+      if (await page.locator(READY).first().isVisible({ timeout: 4000 })) break;
+    } catch { /* not ready yet, or the page is mid-navigation */ }
+
+    const url = page.url();
+    if (url.includes("accounts.google.com")) {
+      if (!announcedLogin) {
+        log("→ Google sign-in needed. Sign in in the open Chrome window; this waits for you.");
+        announcedLogin = true;
+      }
+    } else if (!url.includes("/flow/project/")) {
+      // Crashed or wandered off — steer it back.
+      await page.goto(q.flowProject, { waitUntil: "domcontentloaded" }).catch(async () => {
+        if (page.isClosed()) page = await ctx.newPage();
+      });
+    }
+    await sleep(5000);
+  }
+
+  if (!(await page.locator(READY).first().count())) {
+    log("could not reach the project (sign-in not completed?). Re-run when signed in.");
+    await ctx.close();
+    return;
+  }
   log("project ready");
 
   if (DRY_RUN) {
