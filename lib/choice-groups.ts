@@ -23,7 +23,14 @@ export interface ChoiceOption {
   description?: string;        // required for text/prompt, optional creator note for photo
   imagePath?: string;          // required for photo; display-only thumbnail for prompt
   imageBucket?: string;        // defaults to "template-images"
+  // Lighting options only: the shot size this recipe's light was designed for. A
+  // clamshell beauty look judged on a full-length shot tells the buyer nothing, so
+  // the before/after preview pairs each style with a source photo of this framing.
+  framing?: LightingFraming;
 }
+
+export type LightingFraming = "full" | "medium" | "head";
+export const LIGHTING_FRAMINGS: LightingFraming[] = ["full", "medium", "head"];
 
 // Optional garment recolor for single-select outfit/scrubs picks: the buyer keeps
 // the garment's cut/fabric but ticks a different fabric color. Fixed palette so
@@ -39,11 +46,15 @@ export interface ChoiceGroup {
   type: ChoiceGroupType;
   label: string;               // shown to buyers, e.g. "Outfit", "Shoes"
   options: ChoiceOption[];
-  // Lighting groups only: one shared "before" original photo (display-only). The
-  // buyer's picker crossfades this "before" into each style's "after" thumbnail
-  // (option.imagePath) so they see what a look does without tapping. Never a
-  // generation reference — display only, exactly like the prompt thumbnails.
-  beforeImagePath?: string;
+  // Lighting groups only: the un-lit "before" originals the picker crossfades into
+  // each style's "after" thumbnail, so a buyer sees what a look does without
+  // tapping. Display-only — never a generation reference.
+  //
+  // One per shot size, because the pair must match: a full-body "before" fading
+  // into a head-and-shoulders "after" reads as a broken morph, not a relight. Each
+  // style uses the entry for its own `framing`, falling back to beforeImagePath.
+  beforeImages?: Partial<Record<LightingFraming, string>>;
+  beforeImagePath?: string;    // legacy/shared fallback when a framing has no image
   beforeImageBucket?: string;
 }
 
@@ -138,6 +149,9 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
           name,
           kind,
           description,
+          ...(LIGHTING_FRAMINGS.includes(o.framing as LightingFraming)
+            ? { framing: o.framing as LightingFraming }
+            : {}),
           ...(imagePath ? { imagePath, imageBucket: typeof o.imageBucket === "string" && o.imageBucket ? o.imageBucket : "template-images" } : {}),
         });
       } else {
