@@ -265,11 +265,18 @@ export function buildNewsShotDirective(headline: string, subtitle: string, capti
       "legible. This REPLACES and overrides any website, handle, logo, or station name shown in the " +
       "reference plate.",
     "THE ON-CAMERA PERSON: place the identity-locked subject as the interviewee / eyewitness, framed " +
-      "waist-up and facing the camera as if being interviewed outdoors on location, with a reporter's " +
-      "handheld microphone held up near their mouth — matching the framing, wardrobe feel and setting " +
-      "of the reference plate. Identity locked from the identity references (same face, skin tone and " +
-      "build). Natural documentary-news daylight. THE LOCATION BEHIND THEM IS THE REFERENCE PLATE'S " +
-      "OWN LOCATION — same place, same background elements, same time of day — not an invented one.",
+      "waist-up and facing the camera as if being interviewed on location, with a reporter's " +
+      "handheld microphone held up near their mouth, matching the framing of the reference plate. " +
+      "Identity locked from the identity references (same face, skin tone and build). Natural " +
+      "documentary-news daylight. THE LOCATION BEHIND THEM IS THE REFERENCE PLATE'S OWN LOCATION — " +
+      "same place, same background elements, same time of day — not an invented one.",
+    "OUTFIT — WEAR EXACTLY WHAT THE PERSON IN THE [NEWS_FRAME] PLATE IS WEARING. Reproduce every " +
+      "garment they have on element for element: the same jacket or hoodie in the same colour and " +
+      "fabric, the hood up or down exactly as it is, and ANY HEADWEAR — helmet, cap or hood — " +
+      "reproduced faithfully, same colour, same shape, worn the same way. Do not restyle it, do not " +
+      "smarten it up, and never substitute ordinary clothes. This slot IGNORES the buyer's own " +
+      "outfit, hairstyle and accessory selections — the plate's on-camera clothing IS the outfit, " +
+      "because the whole joke is that this is the same eyewitness clip with a new face.",
     "RENDER THIS EXACT TEXT — these are the ONLY words allowed in the finished image, spelled EXACTLY " +
       "and clearly legible, each in its correct zone. ALL THREE ZONES MUST BE VISIBLY FILLED:",
     `- TOP CAPTION (the upper caption bar): render "${c}" in white text, BUT with its single most ` +
