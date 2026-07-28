@@ -11,11 +11,17 @@
     17,
     19,
     20,
-    21
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27
   ],
-  "remaining": 35,
+  "remaining": 29,
   "byFraming": {
-    "medium": 17,
+    "medium": 11,
     "full": 9,
     "head": 9
   },
@@ -27,48 +33,6 @@
     "head": "source-head.jpeg"
   },
   "queue": [
-    {
-      "slot": 22,
-      "name": "Hard Sunlight High-Key",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct source, likely direct sunlight or a bare strobe, positioned from camera-right at about 60°, significantly above eye level, creating distinct shadows. Fill light is minimal, resulting in a high-contrast ratio. A subtle rim light is present on the camera-left side of the head, separating it from the bright background. Shadows are hard-edged and deep, falling towards camera-left and slightly forward. The color temperature is neutral, around 5500K. The background is brightly lit, almost pure white, indicating a deliberate high-key approach with strong falloff from the subject's left side."
-    },
-    {
-      "slot": 23,
-      "name": "Hard Profile Edge Light",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a soft, medium-sized source positioned camera-left at approximately 90° to the subject, slightly above eye level, creating a distinct highlight along the profile with significant falloff into shadow on the face and body. No apparent fill light is present, resulting in a high-contrast, low-key look. A subtle rim light from camera-left and slightly behind the subject enhances separation from the dark background. Shadows are deep and soft with feathered edges. The color temperature is neutral ~5500K. The background is completely dark, ensuring strong subject isolation."
-    },
-    {
-      "slot": 24,
-      "name": "Hard Rim Silhouette",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. This high-contrast, low-key chiaroscuro setup uses a hard, focused rim light from camera-right at roughly 45° behind the subject and slightly above head level, creating a crisp, bright outline that separates the subject from the completely dark background. There is no discernible fill light, resulting in deep, hard shadows with no visible detail on the camera-left side, and no catchlights are present. The overall lighting is neutral in color temperature."
-    },
-    {
-      "slot": 25,
-      "name": "Hard Split Light",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A hard key light with a narrow beam or gobo is positioned directly from camera-left at eye level, creating a stark, high-contrast split across the face and body, with no apparent fill light. Shadows are deep with crisp, defined edges, and a single, rectangular catchlight is visible at 9 o'clock in the visible eye. The background is evenly lit to a bright white, suggesting a separate background light or broad, even illumination. The overall lighting is neutral in color temperature and creates a dramatic, graphic effect."
-    },
-    {
-      "slot": 26,
-      "name": "Hard Split Red Rim",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, focused beam from camera-left at approximately 45°, slightly above eye level, creating a dramatic split light effect with crisp shadow edges and deep contrast, appearing to be a gridded spot or snooted flash. There is minimal fill, resulting in a low-key, high-contrast ratio that renders the unlit areas in deep shadow. A subtle rim light from camera-right, behind the subject, separates the form from the background. Catchlights are small and sharp, positioned at 10 o'clock in the visible eye. The lighting is neutral ~5500K, with a strong red gel applied to the background light, which falls off quickly into darkness at the edges."
-    },
-    {
-      "slot": 27,
-      "name": "High-Contrast Blue Rim",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct source positioned high and slightly to camera-right, creating deep, crisp shadows under the brow and body, indicating a high-contrast ratio with minimal fill. A soft, broad blue light illuminates the background, creating a smooth gradient and separating the subject with a subtle blue rim on the camera-left side. The overall color temperature is cool, with the background being a vibrant blue."
-    },
     {
       "slot": 28,
       "name": "High-Contrast Spot Rim",
