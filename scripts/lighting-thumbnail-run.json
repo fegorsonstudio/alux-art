@@ -393,13 +393,16 @@
   ],
   "generatedAt": "2026-07-28T15:07:26.720Z",
   "downloadPhase": {
-    "status": "BLOCKED — mapping strategy unsound, do not download yet",
-    "whatWorks": "Flow per-image download menu offers 1K / 2K upscaled / 4K(paid). 2K is free on PRO. The download click + saveAs path is written and parses.",
-    "problems": [
-      "Grid lazy-loads: scrolling reached only 35 of 47 image links, so a run would silently miss a dozen images.",
-      "Prompt read-back is unreliable: extracting the longest \"Relight this image...\" text on the page returns stale or shared text, so several different images resolve to the SAME style (seen: slot 14 claimed 3x). Strict matching then correctly refuses, leaving 29 of 35 unmatched."
+    "status": "UNBLOCKED — solution found via Flow download filenames",
+    "keyInsight": "Flow names every download <AI-generated descriptive title>_<2K>_<YYYYMMDDHHMM>.jpeg — e.g. Key_light_and_rim_light_202607281054.jpeg. That gives TWO independent mapping signals in the filename itself: a prompt-derived title and a minute-resolution timestamp. No need to scrape prompts off the page, which was returning stale/shared text.",
+    "mappingPlan": [
+      "1. scripts/lighting-thumbnail-timestamps.json holds all 45 slot -> generation-minute pairs, recovered from the runner log (15:24 to 15:52 on 20260728).",
+      "2. The grid is reverse-chronological and the runner generated in strict queue order, so the 45 NEWEST images are my run in reverse log order. Older images in the project (the pre-session patterned-dress set, the 3 uploaded sources, and slots 1-2 generated ~13:24) all sort after them.",
+      "3. Download each image and keep Flow own filename. Then map the i-th newest to log entry (45 - i).",
+      "4. VERIFY, do not assume: the YYYYMMDDHHMM in the downloaded filename must equal that log row minute. Mismatch = stop, do not attach. This check is what makes order-based mapping safe rather than a guess.",
+      "5. Timestamps are not unique (16 minutes hold 2 images), so where a minute is shared, disambiguate with the descriptive title before accepting."
     ],
-    "recommendedFix": "Do not make the downloader guess. Have the GENERATOR record identity: after each send, capture the newly created /edit/<id> href and store it on that queue item. Mapping then becomes exact with no text matching at all. For the already-generated 47, either (a) find where Flow exposes a single image's own prompt reliably - likely the (i) info control next to the title, read AFTER navigation settles - or (b) map by creation order, which is deterministic because the runner generated strictly in queue order, then spot-check a few visually before attaching.",
+    "alsoNote": "Grid lazy-loads: must scroll until the /edit/ link count stops growing (a first pass saw 30, a second 35, of 47).",
     "doNot": "Do not attach thumbnails from an unverified mapping — a wrong map puts the wrong look on every style and is invisible until a buyer sees it."
   }
 }

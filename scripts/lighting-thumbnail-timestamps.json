@@ -1,0 +1,320 @@
+{
+  "date": "20260728",
+  "rows": [
+    {
+      "hhmm": "1524",
+      "time": "15:24",
+      "slot": 4,
+      "name": "Soft Frontal High-Key",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1524",
+      "time": "15:24",
+      "slot": 6,
+      "name": "Soft Frontal Glamour",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1525",
+      "time": "15:25",
+      "slot": 8,
+      "name": "Hard Split Blue Background",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1526",
+      "time": "15:26",
+      "slot": 10,
+      "name": "High-Key Monochromatic Patterned",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1526",
+      "time": "15:26",
+      "slot": 13,
+      "name": "Hard Magenta Spot Editorial",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1527",
+      "time": "15:27",
+      "slot": 15,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1528",
+      "time": "15:28",
+      "slot": 17,
+      "name": "Hard Blue Chiaroscuro",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1528",
+      "time": "15:28",
+      "slot": 19,
+      "name": "Hard Golden Chiaroscuro",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1529",
+      "time": "15:29",
+      "slot": 20,
+      "name": "Soft Frontal Glamour",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1530",
+      "time": "15:30",
+      "slot": 21,
+      "name": "Green Gelled Glamour",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1530",
+      "time": "15:30",
+      "slot": 22,
+      "name": "Hard Sunlight High-Key",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1531",
+      "time": "15:31",
+      "slot": 23,
+      "name": "Hard Profile Edge Light",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1532",
+      "time": "15:32",
+      "slot": 24,
+      "name": "Hard Rim Silhouette",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1532",
+      "time": "15:32",
+      "slot": 25,
+      "name": "Hard Split Light",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1533",
+      "time": "15:33",
+      "slot": 26,
+      "name": "Hard Split Red Rim",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1533",
+      "time": "15:33",
+      "slot": 27,
+      "name": "High-Contrast Blue Rim",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1534",
+      "time": "15:34",
+      "slot": 28,
+      "name": "High-Contrast Spot Rim",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1535",
+      "time": "15:35",
+      "slot": 29,
+      "name": "Frontal Soft Key with Warm Backlight",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1535",
+      "time": "15:35",
+      "slot": 30,
+      "name": "Hard Strip Light Portrait",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1536",
+      "time": "15:36",
+      "slot": 31,
+      "name": "Soft Window Rim Light",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1537",
+      "time": "15:37",
+      "slot": 33,
+      "name": "Glamour Backlight Array",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1537",
+      "time": "15:37",
+      "slot": 34,
+      "name": "Dramatic Hard Rimlight Portrait",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1538",
+      "time": "15:38",
+      "slot": 35,
+      "name": "Soft Glamour Rim-Lit Portrait",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1539",
+      "time": "15:39",
+      "slot": 36,
+      "name": "Soft Glam Studio Portrait",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1539",
+      "time": "15:39",
+      "slot": 38,
+      "name": "Hard Split Light",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1540",
+      "time": "15:40",
+      "slot": 40,
+      "name": "Soft Glam Studio",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1541",
+      "time": "15:41",
+      "slot": 47,
+      "name": "Hard Warm Kicker",
+      "framing": "medium"
+    },
+    {
+      "hhmm": "1541",
+      "time": "15:41",
+      "slot": 12,
+      "name": "Cool Ripple Projection",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1542",
+      "time": "15:42",
+      "slot": 16,
+      "name": "Hard Sunlight Graphic",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1543",
+      "time": "15:43",
+      "slot": 18,
+      "name": "Hard Split Backlight with Gel",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1543",
+      "time": "15:43",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1544",
+      "time": "15:44",
+      "slot": 42,
+      "name": "Soft Key Rim-Lit Spotlight",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1544",
+      "time": "15:44",
+      "slot": 43,
+      "name": "Dramatic Overhead Spotlight",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1545",
+      "time": "15:45",
+      "slot": 44,
+      "name": "Hard Caustic Key",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1546",
+      "time": "15:46",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1546",
+      "time": "15:46",
+      "slot": 46,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full"
+    },
+    {
+      "hhmm": "1547",
+      "time": "15:47",
+      "slot": 3,
+      "name": "Soft Glam Shell",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1548",
+      "time": "15:48",
+      "slot": 5,
+      "name": "Soft Glamour Loop Lighting",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1548",
+      "time": "15:48",
+      "slot": 7,
+      "name": "High-Key Beauty Clamshell",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1549",
+      "time": "15:49",
+      "slot": 9,
+      "name": "Chiaroscuro Spot Accent",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1550",
+      "time": "15:50",
+      "slot": 11,
+      "name": "Soft Magenta Clamshell",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1550",
+      "time": "15:50",
+      "slot": 14,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1551",
+      "time": "15:51",
+      "slot": 32,
+      "name": "Hard Chiaroscuro Spotlight",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1552",
+      "time": "15:52",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head"
+    },
+    {
+      "hhmm": "1552",
+      "time": "15:52",
+      "slot": 39,
+      "name": "Soft Clamshell Portrait",
+      "framing": "head"
+    }
+  ]
+}
