@@ -29,28 +29,36 @@
       "name": "Soft Frontal High-Key",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, creating broad, balanced illumination with minimal shadows. Fill light is nearly complete, resulting in a flat, high-key contrast ratio on the subject, while subtle rim lighting from behind and slightly to the sides separates the subject from the background. The lighting is neutral ~5500K, and the background features a warm ~3200K red-orange gradient that falls off to dark at the edges."
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, creating broad, balanced illumination with minimal shadows. Fill light is nearly complete, resulting in a flat, high-key contrast ratio on the subject, while subtle rim lighting from behind and slightly to the sides separates the subject from the background. The lighting is neutral ~5500K, and the background features a warm ~3200K red-orange gradient that falls off to dark at the edges.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d448812b-63de-4dee-ac97-df5382b37c64",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Soft Frontal Glamour",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject and slightly above eye level, creating balanced, even illumination with minimal shadows and a flat contrast ratio. A subtle, cool-toned rim light from camera-left and slightly behind separates the subject from the dark background, with a matching kicker from camera-right providing additional separation and sparkle. The overall color temperature is neutral to slightly cool, ~5500K-6000K, with the background falling off to dark grey."
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject and slightly above eye level, creating balanced, even illumination with minimal shadows and a flat contrast ratio. A subtle, cool-toned rim light from camera-left and slightly behind separates the subject from the dark background, with a matching kicker from camera-right providing additional separation and sparkle. The overall color temperature is neutral to slightly cool, ~5500K-6000K, with the background falling off to dark grey.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/903447bb-c5e4-4c37-96de-6850d2079b51",
+      "done": true
     },
     {
       "slot": 8,
       "name": "Hard Split Blue Background",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A single hard key light is positioned from camera-right at approximately 90° to the subject, slightly above eye level, creating a stark split lighting pattern with deep, crisp shadows on the camera-left side of the face and body, indicating a high-contrast ratio with no apparent fill. A subtle rim light from the background separates the subject from the vibrant, evenly lit blue background, which appears to be a seamless paper or cyclorama. A single small, rectangular catchlight is visible in the subject's right eye at 9 o'clock. The overall color temperature is neutral to slightly cool, with the prominent blue background contributing to the cool aesthetic."
+      "prompt": "Relight this image. Change nothing else except the lighting. A single hard key light is positioned from camera-right at approximately 90° to the subject, slightly above eye level, creating a stark split lighting pattern with deep, crisp shadows on the camera-left side of the face and body, indicating a high-contrast ratio with no apparent fill. A subtle rim light from the background separates the subject from the vibrant, evenly lit blue background, which appears to be a seamless paper or cyclorama. A single small, rectangular catchlight is visible in the subject's right eye at 9 o'clock. The overall color temperature is neutral to slightly cool, with the prominent blue background contributing to the cool aesthetic.",
+      "editHref": null,
+      "done": true
     },
     {
       "slot": 10,
       "name": "High-Key Monochromatic Patterned",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, providing a balanced, flat fill with minimal shadows and a high-key contrast ratio. A single large, soft catchlight is visible at 12 o'clock in the eyes. The entire scene is bathed in a monochromatic pink color, suggesting a gelled key light or a pink-painted environment, with a distinct patterned shadow from camera-left projected onto the background, creating depth and visual interest behind the subject."
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, providing a balanced, flat fill with minimal shadows and a high-key contrast ratio. A single large, soft catchlight is visible at 12 o'clock in the eyes. The entire scene is bathed in a monochromatic pink color, suggesting a gelled key light or a pink-painted environment, with a distinct patterned shadow from camera-left projected onto the background, creating depth and visual interest behind the subject.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/432abab7-9c7b-40e0-8861-8bbc8455a2d0",
+      "done": true
     },
     {
       "slot": 13,
