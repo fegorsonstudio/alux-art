@@ -10,6 +10,32 @@ import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES, GROUP_TYPES } from "@/lib/choice-
 import { LIGHTING_PRESETS, CAMERA_PRESETS } from "@/lib/gear-equalizer";
 import { useT } from "@/lib/useLocale";
 
+// Lighting-style thumbnail. When both a shared "before" original and this style's
+// "after" thumbnail exist, it auto-crossfades between them (no tap) so the buyer
+// sees what the lighting does. Only "after" → static image. Neither → placeholder.
+function LightingThumb({ beforeUrl, afterUrl, name, size = 64 }: {
+  beforeUrl?: string | null; afterUrl?: string | null; name: string; size?: number;
+}) {
+  const w = size, h = Math.round(size * 1.25);
+  if (afterUrl && beforeUrl) {
+    return (
+      <span className={styles.laThumb} style={{ width: w, height: h }} title={name}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={beforeUrl} alt="" className={styles.laBefore} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={afterUrl} alt={name} className={styles.laAfter} />
+        <span className={styles.laBadge} aria-hidden>BEFORE / AFTER</span>
+      </span>
+    );
+  }
+  if (afterUrl) {
+    return <ImagePreview src={afterUrl} alt={name} className={styles.savedImg} preferredWidth={w} />;
+  }
+  return (
+    <span style={{ width: Math.round(w * 0.62), height: Math.round(h * 0.62), display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.55rem", letterSpacing: "0.04em" }}>LIGHT</span>
+  );
+}
+
 interface TemplateImage {
   id: string;
   url: string | null;
@@ -52,6 +78,7 @@ interface TemplateDetail {
     id: string;
     type: string;
     label: string;
+    beforeImageUrl?: string | null;
     options: Array<{
       id: string;
       name: string;
@@ -241,6 +268,9 @@ export default function CheckoutPanel({
   // styling pickers — so exclude them from pickable/multi groups.
   const lightingGroups = choiceGroups.filter(g => g.type === "lighting");
   const lightingLooks = lightingGroups.flatMap(g => g.options ?? []).filter(o => o.kind === "prompt");
+  // Shared "before" original for the crossfade preview (one per lighting group in
+  // practice; take the first that has one).
+  const lightingBeforeUrl = lightingGroups.map(g => g.beforeImageUrl).find(Boolean) ?? null;
   const pickableGroups = choiceGroups.filter(g => g.type !== "lighting" && !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
   const multiGroups = choiceGroups.filter(g => g.type !== "lighting" && MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
@@ -1176,11 +1206,7 @@ export default function CheckoutPanel({
                                 borderRadius: 8, minWidth: 58,
                               }}
                             >
-                              {o.imageUrl ? (
-                                <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={64} />
-                              ) : (
-                                <span style={{ width: 40, height: 50, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.55rem" }}>LIGHT</span>
-                              )}
+                              <LightingThumb beforeUrl={lightingBeforeUrl} afterUrl={o.imageUrl} name={o.name} size={56} />
                               <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
                               {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
                             </button>
@@ -1426,13 +1452,7 @@ export default function CheckoutPanel({
                             borderRadius: 8, minWidth: 64,
                           }}
                         >
-                          {o.imageUrl ? (
-                            <ImagePreview src={o.imageUrl} alt={o.name} className={styles.savedImg} preferredWidth={80} />
-                          ) : (
-                            <span style={{ width: 44, height: 55, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(127,127,127,0.15)", fontSize: "0.6rem", letterSpacing: "0.04em" }}>
-                              LIGHT
-                            </span>
-                          )}
+                          <LightingThumb beforeUrl={lightingBeforeUrl} afterUrl={o.imageUrl} name={o.name} size={72} />
                           <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
                           {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
                         </button>

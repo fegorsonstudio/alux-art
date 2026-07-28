@@ -131,10 +131,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
           : null,
       })),
-      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string }> }) => ({
+      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string }> }) => ({
         id: g.id,
         type: g.type,
         label: g.label,
+        // Lighting groups: shared display-only "before" original for the buyer's
+        // crossfade preview. Never a generation reference.
+        beforeImageUrl: g.type === "lighting" && g.beforeImagePath
+          ? r2ProxyUrl(g.beforeImageBucket ?? "template-images", g.beforeImagePath)
+          : null,
         options: (g.options ?? []).map((o) => ({
           id: o.id,
           name: o.name,

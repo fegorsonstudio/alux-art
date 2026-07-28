@@ -39,6 +39,12 @@ export interface ChoiceGroup {
   type: ChoiceGroupType;
   label: string;               // shown to buyers, e.g. "Outfit", "Shoes"
   options: ChoiceOption[];
+  // Lighting groups only: one shared "before" original photo (display-only). The
+  // buyer's picker crossfades this "before" into each style's "after" thumbnail
+  // (option.imagePath) so they see what a look does without tapping. Never a
+  // generation reference — display only, exactly like the prompt thumbnails.
+  beforeImagePath?: string;
+  beforeImageBucket?: string;
 }
 
 export interface ChoiceSelection extends ChoiceOption {
@@ -146,11 +152,20 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
       }
     }
     if (options.length === 0) continue;
+    // Lighting groups may carry a shared display-only "before" image for the
+    // buyer's crossfade preview. Only trust a path under this creator's prefix.
+    const beforeImagePath = type === "lighting" && typeof group.beforeImagePath === "string"
+      && group.beforeImagePath.startsWith(`${userId}/`)
+      ? group.beforeImagePath
+      : undefined;
     out.push({
       id: typeof group.id === "string" && group.id ? group.id : crypto.randomUUID(),
       type,
       label,
       options,
+      ...(beforeImagePath
+        ? { beforeImagePath, beforeImageBucket: typeof group.beforeImageBucket === "string" && group.beforeImageBucket ? group.beforeImageBucket : "template-images" }
+        : {}),
     });
   }
   return out.length > 0 ? out : null;

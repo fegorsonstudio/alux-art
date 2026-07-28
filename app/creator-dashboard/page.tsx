@@ -46,7 +46,7 @@ interface TemplateRow {
   role_chips?: string[];
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
-  option_groups?: Array<{ id: string; type: string; label: string; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
+  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
   flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   trend_slots?: {
     mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
@@ -192,6 +192,10 @@ interface ChoiceGroupDraft {
   type: ChoiceGroupType;
   label: string;
   options: ChoiceOptionDraft[];
+  // Lighting groups: shared "before" original for the buyer's crossfade preview.
+  beforeImagePath?: string;
+  beforeImagePreview?: string;
+  beforeUploading?: boolean;
 }
 
 const defaultForm = () => ({
@@ -491,6 +495,10 @@ function CreatorDashboard() {
       id: g.id,
       type: (g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType,
       label: g.label ?? GROUP_TYPE_META[(g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType].label,
+      beforeImagePath: g.beforeImagePath ?? "",
+      beforeImagePreview: g.beforeImagePath
+        ? (bgImgs.find(img => img.storage_path === g.beforeImagePath)?.signed_url ?? mediaUrl(g.beforeImageBucket ?? "template-images", g.beforeImagePath))
+        : "",
       options: (g.options ?? []).map((o) => ({
         id: o.id,
         name: o.name ?? "",
@@ -848,6 +856,27 @@ function CreatorDashboard() {
     }
   };
 
+  // Lighting group only: the shared "before" original the buyer's crossfade shows
+  // against each style's "after" thumbnail. Display-only, never a generation ref.
+  const uploadLightingBeforeFile = async (file: File, groupId: string) => {
+    const patch = (p: Partial<ChoiceGroupDraft>) =>
+      setChoiceGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...p } : g));
+    patch({ beforeUploading: true });
+    try {
+      const f = await resizeIfNeeded(file);
+      const fd = new FormData();
+      fd.append("file", f, f.name);
+      fd.append("bucket", "template-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: fd });
+      if (!res.ok) { patch({ beforeUploading: false }); setFormError("Before image upload failed"); return; }
+      const { storagePath } = await res.json();
+      patch({ beforeUploading: false, beforeImagePath: storagePath, beforeImagePreview: URL.createObjectURL(file) });
+    } catch {
+      patch({ beforeUploading: false });
+      setFormError("Upload failed — check your connection and try again");
+    }
+  };
+
   const uploadFlagShotFile = async (file: File) => {
     setFlagShotUploading(true);
     try {
@@ -1162,6 +1191,7 @@ function CreatorDashboard() {
         id: g.id,
         type: g.type,
         label: g.label.trim() || GROUP_TYPE_META[g.type].label,
+        ...(g.type === "lighting" && g.beforeImagePath ? { beforeImagePath: g.beforeImagePath } : {}),
         options: g.options.map(o => {
           // Lighting options are always "prompt" kind: hidden prompt (description)
           // + display-only thumbnail (imagePath). Other groups keep photo/text.
@@ -2402,6 +2432,27 @@ function CreatorDashboard() {
                     value={group.label}
                     onChange={e => setChoiceGroups(prev => prev.map(g => g.id === group.id ? { ...g, label: e.target.value } : g))}
                   />
+
+                  {group.type === "lighting" && (
+                    <div style={{ border: "1px dashed rgba(127,127,127,0.4)", borderRadius: 8, padding: "8px 10px", display: "flex", alignItems: "center", gap: 10 }}>
+                      {group.beforeImagePreview && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={group.beforeImagePreview} alt="before" style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 6 }} />
+                      )}
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
+                          {group.beforeUploading ? "Uploading..." : group.beforeImagePath ? 'Replace "before" original' : 'Upload "before" original'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadLightingBeforeFile(f, group.id); e.target.value = ""; }}
+                          />
+                        </label>
+                        <span style={{ fontSize: "0.72rem", opacity: 0.6 }}>One shared un-lit photo. Each style&apos;s thumbnail below auto-crossfades from this &quot;before&quot; to its &quot;after&quot;.</span>
+                      </div>
+                    </div>
+                  )}
 
                   {group.options.map(opt => (
                     <div key={opt.id} style={{ border: "1px solid rgba(127,127,127,0.25)", borderRadius: 8, padding: "8px 10px", display: "grid", gap: 8 }}>
