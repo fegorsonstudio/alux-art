@@ -74,3 +74,6 @@ scratch/
 # Debug screenshots and one-off test scripts in project root
 *.jpeg
 test-payment.mjs
+
+# Chrome profile for the Flow thumbnail runner (holds a Google login)
+.flow-profile/
