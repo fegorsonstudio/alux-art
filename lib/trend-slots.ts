@@ -241,29 +241,45 @@ export function buildNewsShotDirective(headline: string, subtitle: string, capti
     "═══════════════════════════════════════════════════════",
     "THIS SLOT — VIRAL TV NEWS-BROADCAST STILL (this is the whole image)",
     "═══════════════════════════════════════════════════════",
-    "Recreate the on-screen look of a live television news broadcast, matching the attached " +
-      "[NEWS_FRAME] reference image EXACTLY for its on-screen graphics: the channel logo/handle " +
-      "in the top corners, the top caption bar, the coloured lower-third headline banner, and the " +
-      "news ticker beneath it — same layout, proportions, colours and font styling as the reference.",
+    // The single most important rule, stated FIRST: the plate is a blank layout, not
+    // content to copy. Without this the edit model reproduces the reference's own
+    // baked-in lettering pixel-for-pixel and silently ignores the buyer's text.
+    "THE TEXT BELOW IS THE ENTIRE POINT OF THIS IMAGE. The attached [NEWS_FRAME] reference is a " +
+      "BLANK LAYOUT GUIDE ONLY — copy the POSITION, SHAPE, PROPORTIONS, COLOURS and FONT STYLING of " +
+      "its graphic bars (top caption bar, coloured lower-third headline banner, ticker strip, corner " +
+      "branding block), and NOTHING ELSE. Treat every one of those bars as EMPTY and re-letter it " +
+      "from scratch with the exact text specified below.",
+    "DO NOT COPY ANY LETTERING FROM THE REFERENCE PLATE. Every word, letter, logo, website, handle " +
+      "and station name visible in the reference is a PLACEHOLDER from an unrelated broadcast and " +
+      "MUST NOT appear anywhere in the output — not in the corner, not in the caption bar, not in " +
+      "the banner, not in the ticker. In particular NEVER render \"frankstantv\", \"frankstan\", " +
+      "\"FTV\", \"@ftvreport\", \"Eye witness\", \"recount\", or any other wording carried over from the " +
+      "reference. If a word appears in the reference and is not listed below, it is FORBIDDEN.",
     "CHANNEL BRANDING — ABSOLUTE, RENDER IN EVERY IMAGE: in the top corner (matching the reference's " +
       "handle position), render THIS channel's branding on two lines — the website " +
       "\"www.aluxartandframes.shop\" and beneath it the handle \"@aluxartandframes\" — clean, crisp and " +
       "legible. This REPLACES and overrides any website, handle, logo, or station name shown in the " +
-      "reference plate. NEVER render \"frankstantv\", \"frankstan\", \"FTV\", \"@ftvreport\", or ANY other " +
-      "news organisation's name, logo, initials, or website — ONLY the Alux Art branding above.",
+      "reference plate.",
     "THE ON-CAMERA PERSON: place the identity-locked subject as the interviewee / eyewitness, framed " +
       "waist-up and facing the camera as if being interviewed outdoors on location, with a reporter's " +
       "handheld microphone held up near their mouth — matching the framing, wardrobe feel and setting " +
       "of the reference plate. Identity locked from the identity references (same face, skin tone and " +
       "build). Natural documentary-news daylight; a realistic outdoor location behind them.",
-    "RENDER THIS EXACT TEXT into the on-screen graphics, spelled EXACTLY and clearly legible, each in " +
-      "its correct zone:",
+    "RENDER THIS EXACT TEXT — these are the ONLY words allowed in the finished image, spelled EXACTLY " +
+      "and clearly legible, each in its correct zone. ALL THREE ZONES MUST BE VISIBLY FILLED:",
     `- TOP CAPTION (the upper caption bar): render "${c}" in white text, BUT with its single most ` +
       `important / attention-grabbing keyword highlighted inside a bright YELLOW rectangular marker box ` +
       `with dark near-black bold text — exactly like a live-news keyword highlight. Highlight ONLY that ` +
       `one word; the rest of the caption stays plain white.`,
     `- HEADLINE (bold, inside the coloured lower-third banner, ALL CAPS): "${h}"`,
     tickerLine,
+    // The supplied plate can be cropped so tightly that the lower third is barely
+    // visible; the model must still draw the banner rather than omit the headline.
+    "BANNER GEOMETRY: the coloured lower-third headline banner and the ticker strip beneath it must " +
+      "both be FULLY VISIBLE inside the frame, wide enough for their text to fit on one line. If the " +
+      "reference plate's banner or ticker is cropped, cut off at the edge, partially hidden or absent, " +
+      "DRAW a clean full-width one in the same broadcast style and colours anyway, positioned in the " +
+      "lower third — never omit the headline or ticker because the reference lacked room for it.",
     "Keep every letter accurate. The text must look like real crisp broadcast graphics printed on the " +
       "overlay — not handwritten, not warped, not misspelled. Do not add any other text or watermarks " +
       "beyond the Alux Art channel branding and the lines above.",
