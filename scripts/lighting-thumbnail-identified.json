@@ -1,0 +1,298 @@
+{
+  "identified": [
+    {
+      "file": "03-soft-glam-shell.png",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "04-soft-frontal-high-key.png",
+      "slot": 29,
+      "name": "Frontal Soft Key with Warm Backlight",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "05-soft-glamour-loop-lighting.png",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "06-soft-frontal-glamour.png",
+      "slot": 36,
+      "name": "Soft Glam Studio Portrait",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "07-high-key-beauty-clamshell.png",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "08-hard-split-blue-background.png",
+      "slot": 8,
+      "name": "Hard Split Blue Background",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "09-chiaroscuro-spot-accent.png",
+      "slot": 14,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "10-high-key-monochromatic-patterned.png",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "11-soft-magenta-clamshell.png",
+      "slot": 11,
+      "name": "Soft Magenta Clamshell",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "12-cool-ripple-projection.png",
+      "slot": 19,
+      "name": "Hard Golden Chiaroscuro",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "13-hard-magenta-spot-editorial.png",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "14-hard-spot-chiaroscuro.png",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "15-hard-spot-chiaroscuro.png",
+      "slot": 19,
+      "name": "Hard Golden Chiaroscuro",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "16-hard-sunlight-graphic.png",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "17-hard-blue-chiaroscuro.png",
+      "slot": 17,
+      "name": "Hard Blue Chiaroscuro",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "18-hard-split-backlight-with-gel.png",
+      "slot": 43,
+      "name": "Dramatic Overhead Spotlight",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "19-hard-golden-chiaroscuro.png",
+      "slot": 19,
+      "name": "Hard Golden Chiaroscuro",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "20-soft-frontal-glamour.png",
+      "slot": 44,
+      "name": "Hard Caustic Key",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "21-green-gelled-glamour.png",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "22-hard-sunlight-high-key.png",
+      "slot": 29,
+      "name": "Frontal Soft Key with Warm Backlight",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "23-hard-profile-edge-light.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "24-hard-rim-silhouette.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "25-hard-split-light.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "26-hard-split-red-rim.png",
+      "slot": 38,
+      "name": "Hard Split Light",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "27-high-contrast-blue-rim.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "28-high-contrast-spot-rim.png",
+      "slot": 43,
+      "name": "Dramatic Overhead Spotlight",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "29-frontal-soft-key-with-warm-backlight.png",
+      "slot": 44,
+      "name": "Hard Caustic Key",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "30-hard-strip-light-portrait.png",
+      "slot": 25,
+      "name": "Hard Split Light",
+      "framing": "medium",
+      "confidence": "high"
+    },
+    {
+      "file": "31-soft-window-rim-light.png",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "32-hard-chiaroscuro-spotlight.png",
+      "slot": 32,
+      "name": "Hard Chiaroscuro Spotlight",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "33-glamour-backlight-array.png",
+      "slot": 44,
+      "name": "Hard Caustic Key",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "34-dramatic-hard-rimlight-portrait.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "35-soft-glamour-rim-lit-portrait.png",
+      "slot": 42,
+      "name": "Soft Key Rim-Lit Spotlight",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "36-soft-glam-studio-portrait.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "37-soft-clamshell-paramount.png",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "38-hard-split-light.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "39-soft-clamshell-portrait.png",
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "confidence": "high"
+    },
+    {
+      "file": "40-soft-glam-studio.png",
+      "slot": 41,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "full",
+      "confidence": "medium"
+    },
+    {
+      "file": "41-hard-spot-chiaroscuro.png",
+      "slot": 45,
+      "name": "Hard Patterned Chiaroscuro",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "42-soft-key-rim-lit-spotlight.png",
+      "slot": 12,
+      "name": "Cool Ripple Projection",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "43-dramatic-overhead-spotlight.png",
+      "slot": 43,
+      "name": "Dramatic Overhead Spotlight",
+      "framing": "full",
+      "confidence": "high"
+    },
+    {
+      "file": "44-hard-caustic-key.png",
+      "slot": 44,
+      "name": "Hard Caustic Key",
+      "framing": "full",
+      "confidence": "high"
+    }
+  ]
+}

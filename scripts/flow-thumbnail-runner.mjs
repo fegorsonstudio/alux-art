@@ -265,6 +265,11 @@ async function main() {
     if (done >= LIMIT) { log(`--limit ${LIMIT} reached`); break; }
     const label = `slot ${item.slot} ${item.name} [${item.framing}]`;
 
+    // Snapshot the grid before sending, so the new image can be told apart after.
+    item._beforeIds = await page.evaluate(() =>
+      [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
+    ).catch(() => []);
+
     let ok = false, why = "";
     for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
       const a = await attachSource(page, item.flowSource);
@@ -275,12 +280,26 @@ async function main() {
     }
 
     if (ok) {
+      // Wait for the generation, then CAPTURE ITS IDENTITY. Everything downstream
+      // failed for want of this: mapping images back to styles afterwards by grid
+      // order drifted, filename timestamps turned out to be download time, and
+      // vision matching collapsed 42 images onto 17 styles. The only reliable
+      // answer is to record which image this style produced, at the moment it
+      // appears — the newest /edit/<id> that was not present before the send.
+      const before = new Set(item._beforeIds ?? []);
+      await sleep(30000);
+      const after = await page.evaluate(() =>
+        [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
+      ).catch(() => []);
+      const fresh = after.filter((h) => h && !before.has(h));
+      item.editHref = fresh[0] ?? null;   // newest-first grid: [0] is the new one
+      delete item._beforeIds;
+
       item.done = true;
       done++;
       // Persist after EVERY image so a crash or Ctrl-C never loses progress.
       saveQueue(q);
-      log(`✓ ${label}  (${done} this run)`);
-      await sleep(30000); // let the generation finish before queuing the next
+      log(`✓ ${label}${item.editHref ? "" : "  (WARN: no image id captured)"}  (${done} this run)`);
     } else {
       failed++;
       log(`✗ ${label} — ${why}`);
