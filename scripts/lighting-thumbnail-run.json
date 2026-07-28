@@ -391,5 +391,15 @@
     "3. browser_click button:has-text(\"arrow_forward\"). Wait ~30s.",
     "The Uploads tab is the whole fix: generated images can never appear there, so the picker cannot silently hand back a relit image."
   ],
-  "generatedAt": "2026-07-28T15:07:26.720Z"
+  "generatedAt": "2026-07-28T15:07:26.720Z",
+  "downloadPhase": {
+    "status": "BLOCKED — mapping strategy unsound, do not download yet",
+    "whatWorks": "Flow per-image download menu offers 1K / 2K upscaled / 4K(paid). 2K is free on PRO. The download click + saveAs path is written and parses.",
+    "problems": [
+      "Grid lazy-loads: scrolling reached only 35 of 47 image links, so a run would silently miss a dozen images.",
+      "Prompt read-back is unreliable: extracting the longest \"Relight this image...\" text on the page returns stale or shared text, so several different images resolve to the SAME style (seen: slot 14 claimed 3x). Strict matching then correctly refuses, leaving 29 of 35 unmatched."
+    ],
+    "recommendedFix": "Do not make the downloader guess. Have the GENERATOR record identity: after each send, capture the newly created /edit/<id> href and store it on that queue item. Mapping then becomes exact with no text matching at all. For the already-generated 47, either (a) find where Flow exposes a single image's own prompt reliably - likely the (i) info control next to the title, read AFTER navigation settles - or (b) map by creation order, which is deterministic because the runner generated strictly in queue order, then spot-check a few visually before attaching.",
+    "doNot": "Do not attach thumbnails from an unverified mapping — a wrong map puts the wrong look on every style and is invisible until a buyer sees it."
+  }
 }
