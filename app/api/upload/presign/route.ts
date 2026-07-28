@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { r2SignedUploadUrl } from "@/lib/r2";
 
-const MAX_SIZE = 20 * 1024 * 1024;
+// Matches fal.ai nano-banana-2's 30MB per-image limit — see lib/resize-image.ts.
+const MAX_SIZE = 30 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images", "template-images"]);
 
 function sanitizeFileName(name: string) {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (contentType === "image/svg+xml" || (typeof filename === "string" && /\.svg$/i.test(filename)))
     return NextResponse.json({ error: "SVG images are not allowed" }, { status: 400 });
   if (typeof size !== "number" || size <= 0 || size > MAX_SIZE)
-    return NextResponse.json({ error: "size must be 1–20MB" }, { status: 400 });
+    return NextResponse.json({ error: "size must be 1–30MB" }, { status: 400 });
   if (typeof bucket !== "string" || !ALLOWED_BUCKETS.has(bucket))
     return NextResponse.json({ error: "invalid bucket" }, { status: 400 });
 

@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2Upload, r2ProxyUrl } from "@/lib/r2";
 
-const MAX_SIZE = 10 * 1024 * 1024;
+// Matches fal.ai nano-banana-2's 30MB per-image limit — see lib/resize-image.ts.
+// These are identity/inspiration uploads, so shrinking them costs likeness fidelity.
+const MAX_SIZE = 30 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images"]);
 
 export const runtime = "nodejs";
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
   if (!file.type.startsWith("image/")) return NextResponse.json({ error: "File must be an image" }, { status: 400 });
-  if (file.size <= 0 || file.size > MAX_SIZE) return NextResponse.json({ error: "Max 10MB" }, { status: 400 });
+  if (file.size <= 0 || file.size > MAX_SIZE) return NextResponse.json({ error: "Max 30MB" }, { status: 400 });
 
   const uniqueId = crypto.randomUUID();
   const path = `${user.id}/${uniqueId}-${sanitizeFileName(file.name)}`;

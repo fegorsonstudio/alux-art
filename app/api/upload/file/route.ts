@@ -3,7 +3,10 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { createClient } from "@/lib/supabase-server";
 import { r2 } from "@/lib/r2";
 
-const MAX_SIZE = 20 * 1024 * 1024;
+// Matches fal.ai nano-banana-2's 30MB per-image limit — see lib/resize-image.ts.
+// Uploads at or under this are stored untouched at native resolution so the
+// model receives full reference/identity fidelity.
+const MAX_SIZE = 30 * 1024 * 1024;
 const ALLOWED_BUCKETS = new Set(["identity-images", "inspiration-images", "template-images"]);
 
 function sanitizeFileName(name: string) {
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
   if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name))
     return NextResponse.json({ error: "SVG images are not allowed" }, { status: 400 });
   if (file.size > MAX_SIZE)
-    return NextResponse.json({ error: "file too large (max 20MB)" }, { status: 400 });
+    return NextResponse.json({ error: "file too large (max 30MB)" }, { status: 400 });
 
   const uniqueId = crypto.randomUUID();
   const storagePath = `${user.id}/${uniqueId}-${sanitizeFileName(file.name)}`;
