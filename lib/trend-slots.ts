@@ -244,11 +244,15 @@ export function buildNewsShotDirective(headline: string, subtitle: string, capti
     // The single most important rule, stated FIRST: the plate is a blank layout, not
     // content to copy. Without this the edit model reproduces the reference's own
     // baked-in lettering pixel-for-pixel and silently ignores the buyer's text.
-    "THE TEXT BELOW IS THE ENTIRE POINT OF THIS IMAGE. The attached [NEWS_FRAME] reference is a " +
-      "BLANK LAYOUT GUIDE ONLY — copy the POSITION, SHAPE, PROPORTIONS, COLOURS and FONT STYLING of " +
-      "its graphic bars (top caption bar, coloured lower-third headline banner, ticker strip, corner " +
-      "branding block), and NOTHING ELSE. Treat every one of those bars as EMPTY and re-letter it " +
-      "from scratch with the exact text specified below.",
+    "USE THE [NEWS_FRAME] REFERENCE FOR TWO THINGS: (1) THE SETTING — recreate the same location, " +
+      "environment and backdrop the reference was shot in, with the same time of day, weather and " +
+      "surroundings behind the subject. Do NOT invent a different place, and never substitute a " +
+      "generic park, street or studio. (2) THE GRAPHICS LAYOUT — copy the position, shape, " +
+      "proportions, colours and font styling of its on-screen bars (top caption bar, coloured " +
+      "lower-third headline banner, ticker strip, corner branding block).",
+    "THE ONE THING NOT TO TAKE FROM IT IS THE WORDING. Treat every bar as EMPTY and re-letter it " +
+      "from scratch with the exact text specified below. Keeping the scene while replacing the words " +
+      "is the whole job.",
     "DO NOT COPY ANY LETTERING FROM THE REFERENCE PLATE. Every word, letter, logo, website, handle " +
       "and station name visible in the reference is a PLACEHOLDER from an unrelated broadcast and " +
       "MUST NOT appear anywhere in the output — not in the corner, not in the caption bar, not in " +
@@ -264,7 +268,8 @@ export function buildNewsShotDirective(headline: string, subtitle: string, capti
       "waist-up and facing the camera as if being interviewed outdoors on location, with a reporter's " +
       "handheld microphone held up near their mouth — matching the framing, wardrobe feel and setting " +
       "of the reference plate. Identity locked from the identity references (same face, skin tone and " +
-      "build). Natural documentary-news daylight; a realistic outdoor location behind them.",
+      "build). Natural documentary-news daylight. THE LOCATION BEHIND THEM IS THE REFERENCE PLATE'S " +
+      "OWN LOCATION — same place, same background elements, same time of day — not an invented one.",
     "RENDER THIS EXACT TEXT — these are the ONLY words allowed in the finished image, spelled EXACTLY " +
       "and clearly legible, each in its correct zone. ALL THREE ZONES MUST BE VISIBLY FILLED:",
     `- TOP CAPTION (the upper caption bar): render "${c}" in white text, BUT with its single most ` +
