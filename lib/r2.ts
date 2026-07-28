@@ -133,6 +133,46 @@ export async function r2Download(bucket: string, path: string): Promise<{ buffer
 }
 
 
+/**
+ * Stream an object straight through to the caller, optionally a byte range.
+ *
+ * Used by the image download route so the browser never sees an
+ * *.r2.cloudflarestorage.com URL. Streaming (not buffering) is the point: an
+ * earlier version read whole ~18MB files into memory before responding, which
+ * truncated downloads on flaky connections and 502'd across restarts. Passing
+ * the body through untouched, with Content-Length and Range honoured, keeps
+ * downloads resumable and costs no server memory.
+ */
+export async function r2GetStream(
+  bucket: string,
+  path: string,
+  range?: string | null
+): Promise<{
+  stream: ReadableStream<Uint8Array>;
+  contentType: string;
+  contentLength?: number;
+  contentRange?: string;
+  totalSize?: number;
+}> {
+  const res = await r2.send(new GetObjectCommand({
+    Bucket: bucket,
+    Key: path,
+    ...(range ? { Range: range } : {}),
+  }));
+  const body = res.Body as { transformToWebStream(): ReadableStream<Uint8Array> };
+  // ContentRange looks like "bytes 0-1023/17825792" — the tail is the full size.
+  const totalSize = res.ContentRange
+    ? Number(res.ContentRange.split("/")[1]) || undefined
+    : res.ContentLength;
+  return {
+    stream: body.transformToWebStream(),
+    contentType: res.ContentType ?? "image/png",
+    contentLength: res.ContentLength,
+    contentRange: res.ContentRange,
+    totalSize,
+  };
+}
+
 export async function r2Delete(bucket: string, paths: string[]): Promise<void> {
   if (!paths.length) return;
   await r2.send(
