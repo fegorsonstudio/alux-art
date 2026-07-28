@@ -24,7 +24,8 @@ interface CreatorProfile {
     id: string;
     title: string;
     category: string;
-    priceNgn: number;
+    priceNgn: number;        // the 10-image package price
+    price1Ngn?: number | null; // single-image price — what the card advertises
     purchaseCount: number;
     coverUrl: string | null;
     createdAt: string;
@@ -128,7 +129,9 @@ export default function CreatorPageClient() {
                 <div className={styles.cardBody}>
                   <h3 className={styles.cardTitle}>{t.title}</h3>
                   <div className={styles.cardFooter}>
-                    <span className={styles.price}>₦{t.priceNgn.toLocaleString()}</span>
+                    {/* Single-image price, matching the marketplace grid (see
+                        app/marketplace/page.tsx) — the 10-pack headline scared buyers off. */}
+                    <span className={styles.price}>from ₦{(t.price1Ngn ?? Math.round(t.priceNgn * 0.12)).toLocaleString()}</span>
                     <span className={styles.sales}>{t.purchaseCount} sales</span>
                   </div>
                 </div>

@@ -79,6 +79,7 @@ const zh: AppDictionary = {
     saleOne: "已售 {n} 次",
     saleMany: "已售 {n} 次",
     newBadge: "新品",
+    priceFrom: "{price} 起",
     loadMore: "加载更多",
     photographerTitle: "你是摄影师吗？",
     photographerSub: "上架你的拍摄风格,每笔预订都有收入。",

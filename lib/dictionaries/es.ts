@@ -79,6 +79,7 @@ const es: AppDictionary = {
     saleOne: "{n} venta",
     saleMany: "{n} ventas",
     newBadge: "Nuevo",
+    priceFrom: "desde {price}",
     loadMore: "Cargar más",
     photographerTitle: "¿Eres fotógrafo?",
     photographerSub: "Publica tus estilos de sesión y gana con cada reserva.",

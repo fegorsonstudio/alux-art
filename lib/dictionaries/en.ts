@@ -78,6 +78,7 @@ const en = {
     saleOne: "{n} sale",
     saleMany: "{n} sales",
     newBadge: "New",
+    priceFrom: "from {price}",
     loadMore: "Load more",
     photographerTitle: "Are you a photographer?",
     photographerSub: "List your shoot styles and earn on every booking.",

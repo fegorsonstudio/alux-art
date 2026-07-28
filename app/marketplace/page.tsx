@@ -13,7 +13,8 @@ interface TemplateCard {
   id: string;
   title: string;
   category: string;
-  priceNgn: number;
+  priceNgn: number;        // the 10-image package price
+  price1Ngn?: number | null; // single-image price — what the card advertises
   purchaseCount: number;
   avgRating: number | null;
   ratingCount: number;
@@ -205,7 +206,13 @@ export default function MarketplacePage() {
                   )}
                   <StarDisplay rating={tpl.avgRating} count={tpl.ratingCount} />
                   <div className={styles.cardFooter}>
-                    <span className={styles.price}>{formatPrice(tpl.priceNgn)}</span>
+                    {/* Advertise the SINGLE-image price, not the 10-pack — a ₦25,000
+                        headline scared buyers off. Fallback mirrors the server's own
+                        rule in app/api/marketplace/[id]/book/route.ts so the card can
+                        never quote a price the checkout won't honour. */}
+                    <span className={styles.price}>
+                      {t("priceFrom", { price: formatPrice(tpl.price1Ngn ?? Math.round(tpl.priceNgn * 0.12)) })}
+                    </span>
                     {tpl.purchaseCount > 0
                       ? <span className={styles.salesCount}>{tpl.purchaseCount === 1 ? t("saleOne", { n: 1 }) : t("saleMany", { n: tpl.purchaseCount })}</span>
                       : <span className={styles.newBadge}>{t("newBadge")}</span>

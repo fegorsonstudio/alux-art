@@ -79,6 +79,7 @@ const pcm: AppDictionary = {
     saleOne: "{n} sale",
     saleMany: "{n} sales",
     newBadge: "New",
+    priceFrom: "from {price}",
     loadMore: "Load more",
     photographerTitle: "You be photographer?",
     photographerSub: "List your shoot styles make you dey chop on every booking.",

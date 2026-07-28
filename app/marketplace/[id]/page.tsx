@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
 
   const [template] = await sql`
-    SELECT title, description, price_ngn, package_size, cover_storage_path, cover_bucket
+    SELECT title, description, price_ngn, price_1_ngn, package_size, cover_storage_path, cover_bucket
     FROM templates WHERE id = ${id} AND status = 'published'
   `;
 
@@ -23,9 +23,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const title = `${template.title} — Alux Art`;
+  // Advertise the SINGLE-image entry price, matching the marketplace cards. Quoting
+  // the 10-pack here put a ₦25,000 headline on every shared WhatsApp/Facebook link.
+  const entryPriceNgn = template.price_1_ngn != null
+    ? Number(template.price_1_ngn)
+    : Math.round(Number(template.price_ngn) * 0.12);
   const description =
     template.description ||
-    `${template.package_size} AI-generated professional photos. Book your shoot for ₦${Number(template.price_ngn).toLocaleString("en-NG")}.`;
+    `AI-generated professional photos from ₦${entryPriceNgn.toLocaleString("en-NG")}. Choose 1, 5 or 10 images.`;
 
   // Cover image served via proxy so Meta's scraper always gets a fresh signed URL
   const ogImage = `${siteUrl}/api/marketplace/${id}/cover-image`;
@@ -50,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Facebook / Instagram Shopping product tags
     other: {
       "og:type": "product",
-      "product:price:amount": String(template.price_ngn),
+      "product:price:amount": String(entryPriceNgn),
       "product:price:currency": "NGN",
       "product:retailer_item_id": id,
       "og:availability": "in stock",

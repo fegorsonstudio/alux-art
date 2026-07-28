@@ -79,6 +79,7 @@ const fr: AppDictionary = {
     saleOne: "{n} vente",
     saleMany: "{n} ventes",
     newBadge: "Nouveau",
+    priceFrom: "à partir de {price}",
     loadMore: "Voir plus",
     photographerTitle: "Vous êtes photographe ?",
     photographerSub: "Publiez vos styles de séance et gagnez sur chaque réservation.",
