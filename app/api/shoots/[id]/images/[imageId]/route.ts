@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
-import { r2Download, r2Exists, r2GetStream } from "@/lib/r2";
+import { r2Download, r2Exists, r2SignedDownloadUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
 
@@ -34,32 +34,28 @@ export async function GET(
   const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
 
   if (isDownload) {
-    // 1. R2: STREAM the object through this route rather than redirecting to a
-    // signed R2 URL. Buyers were landing on a raw *.r2.cloudflarestorage.com file
-    // page, which exposed the storage provider and did not read as a download.
+    // 1. R2 (new files saved by r2StreamUpload): redirect to a signed URL so the
+    // browser downloads straight from R2 — resumable (Accept-Ranges), correct
+    // Content-Length, zero server memory, and immune to app restarts. Proxying
+    // ~18MB files through Node produced truncated files on flaky connections
+    // and 502s during restarts, which browsers saved as kilobyte "images".
     //
-    // The redirect existed because an older version BUFFERED whole ~18MB files in
-    // memory before responding, which truncated downloads on flaky connections
-    // and 502'd across restarts. Streaming avoids that: the body is piped through
-    // untouched, Content-Length is preserved, and Range requests are passed to R2
-    // so downloads stay resumable — the properties the redirect was protecting.
+    // Do NOT replace this with a stream/proxy through the app to hide the bucket
+    // hostname. That was tried (d1f5d07) and reverted the same day: measured on a
+    // real 18MB file, R2 -> browser runs at ~529 KB/s (34s) because Cloudflare
+    // serves it from an edge near the buyer, while browser -> our VPS runs at
+    // 20-47 KB/s whether or not Cloudflare fronts it, so the same file took 6-9
+    // minutes and died on mobile data. The server itself is fast (R2 -> VPS is
+    // 24 MB/s); the buyer's link to the VPS is the ceiling, so no code change
+    // makes proxying fast. To hide the hostname, put the bucket behind an R2
+    // custom domain (media.aluxartandframes.shop) and sign against that endpoint
+    // — edge delivery is kept and the URL becomes ours.
     if (await r2Exists(storageBucket, storagePath)) {
-      try {
-        const range = request.headers.get("range");
-        const obj = await r2GetStream(storageBucket, storagePath, range);
+      const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null);
+      if (signedUrl) {
         sql`INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW())`.catch(() => {});
-        return new Response(obj.stream, {
-          status: obj.contentRange ? 206 : 200,
-          headers: {
-            "Content-Type": obj.contentType,
-            "Content-Disposition": `attachment; filename="${filename}"`,
-            "Accept-Ranges": "bytes",
-            ...(obj.contentLength ? { "Content-Length": String(obj.contentLength) } : {}),
-            ...(obj.contentRange ? { "Content-Range": obj.contentRange } : {}),
-            "Cache-Control": "private, max-age=0, must-revalidate",
-          },
-        });
-      } catch { /* fall through to the buffered/legacy paths below */ }
+        return NextResponse.redirect(signedUrl, 302);
+      }
     }
 
     let body: ReadableStream<Uint8Array> | ArrayBuffer | undefined;
@@ -110,11 +106,14 @@ export async function GET(
     });
   }
 
-  // Metadata path: hand back a URL on OUR domain, not a signed R2 one. Any caller
-  // navigating to this gets the streaming branch above, so the bucket host is
-  // never visible to a buyer.
+  // Desktop path: return a signed URL with Content-Disposition:attachment baked in.
+  // The browser navigates directly to R2 — zero server memory for the file transfer.
+  const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null);
+  if (!signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
+
   return NextResponse.json({
-    url: `/api/shoots/${id}/images/${imageId}?download=1`,
+    url: signedUrl,
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
     filename,
   });
 }

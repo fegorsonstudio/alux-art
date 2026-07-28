@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2Download, r2Upload } from "@/lib/r2";
+import { r2Download, r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 
 export async function GET(
   _request: NextRequest,
@@ -69,11 +69,10 @@ export async function GET(
 
   const zipFilename = `aluxart-portraits-${id.slice(0, 8)}.zip`;
 
-  // Store the ZIP in R2 for reuse, but serve it from OUR domain rather than
-  // redirecting to a signed bucket URL — buyers were seeing a raw
-  // *.r2.cloudflarestorage.com page and asking what it was. The zip is already
-  // fully built in memory here, so returning it directly costs nothing extra and
-  // keeps Content-Length exact.
+  // Upload the ZIP to R2, then redirect the browser to a signed URL so it downloads
+  // straight from R2 — resumable, correct Content-Length, no multi-hundred-MB
+  // response held open through Node/nginx (which truncated large transfers on
+  // flaky connections).
   try {
     const zipPath = `${user.id}/${id}/shoot-${id}.zip`;
     await r2Upload("shoot-zips", zipPath, zipBuf, "application/zip");
@@ -81,7 +80,9 @@ export async function GET(
       UPDATE shoots SET zip_storage_bucket = 'shoot-zips', zip_storage_path = ${zipPath}, zip_status = 'ready'
       WHERE id = ${id}
     `;
-  } catch { /* non-fatal — the download below still works without the cached copy */ }
+    const signedUrl = await r2SignedDownloadUrl("shoot-zips", zipPath, 3600, zipFilename);
+    return NextResponse.redirect(signedUrl, 302);
+  } catch { /* non-fatal — fall back to serving the buffer directly */ }
 
   return new Response(zipBuf.buffer as ArrayBuffer, {
     headers: {
