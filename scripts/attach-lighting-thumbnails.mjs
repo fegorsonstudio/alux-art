@@ -83,7 +83,14 @@ async function main() {
     const option = options[slot - 1];
     if (!style) { problems.push(`${file}: slot ${slot} is not in lighting-import.json`); continue; }
     if (!option) { problems.push(`${file}: slot ${slot} has no option on the template`); continue; }
-    if (option.name !== style.name) {
+    // The template de-duplicates repeated style names by appending a number
+    // ("Hard Spot Chiaroscuro" appears at slots 14, 15 and 41, stored as the
+    // plain name, "… 2" and "… 3"). That trailing counter is the ONLY difference
+    // tolerated — any other disagreement still aborts, because it would mean the
+    // slots genuinely do not line up.
+    const sameStyle = option.name === style.name
+      || option.name.replace(/ \d+$/, "") === style.name;
+    if (!sameStyle) {
       problems.push(`${file}: slot ${slot} names disagree — template "${option.name}" vs import "${style.name}"`);
       continue;
     }
