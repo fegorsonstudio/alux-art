@@ -1,0 +1,23 @@
+name = "aluxart-media"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+# custom_domain = true makes Cloudflare create the DNS record and certificate for
+# media.aluxartandframes.shop on deploy, so there is nothing to click afterwards.
+[[routes]]
+pattern = "media.aluxartandframes.shop"
+custom_domain = true
+
+# Buckets are bound directly to the Worker. They stay PRIVATE — binding is not
+# public access, and every request still has to carry a valid signature.
+[[r2_buckets]]
+binding = "GENERATED_4K"
+bucket_name = "generated-4k"
+
+[[r2_buckets]]
+binding = "SHOOT_ZIPS"
+bucket_name = "shoot-zips"
+
+# MEDIA_SIGNING_SECRET is NOT set here — it is a secret, set once with:
+#   npx wrangler secret put MEDIA_SIGNING_SECRET
+# The exact same value goes in the app's .env.local on the VPS.

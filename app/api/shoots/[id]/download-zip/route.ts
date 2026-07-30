@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2Download, r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
+import { signedMediaUrl } from "@/lib/media-url";
 
 export async function GET(
   _request: NextRequest,
@@ -80,7 +81,11 @@ export async function GET(
       UPDATE shoots SET zip_storage_bucket = 'shoot-zips', zip_storage_path = ${zipPath}, zip_status = 'ready'
       WHERE id = ${id}
     `;
-    const signedUrl = await r2SignedDownloadUrl("shoot-zips", zipPath, 3600, zipFilename);
+    // Our own media hostname when the Worker is configured, otherwise the R2
+    // signed URL exactly as before (signedMediaUrl returns null when unset).
+    const signedUrl =
+      (await signedMediaUrl("shoot-zips", zipPath, { filename: zipFilename }).catch(() => null))
+      ?? (await r2SignedDownloadUrl("shoot-zips", zipPath, 3600, zipFilename));
     return NextResponse.redirect(signedUrl, 302);
   } catch { /* non-fatal — fall back to serving the buffer directly */ }
 

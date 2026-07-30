@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { r2Download, r2Exists, r2SignedDownloadUrl } from "@/lib/r2";
+import { signedMediaUrl } from "@/lib/media-url";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
 
@@ -51,7 +52,13 @@ export async function GET(
     // custom domain (media.aluxartandframes.shop) and sign against that endpoint
     // — edge delivery is kept and the URL becomes ours.
     if (await r2Exists(storageBucket, storagePath)) {
-      const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null);
+      // Prefer our own media hostname when the Worker is configured. Same edge
+      // delivery and same expiring-link protection, minus the bucket URL. Returns
+      // null when MEDIA_DOMAIN/MEDIA_SIGNING_SECRET are unset, so this is inert
+      // until they are set.
+      const signedUrl =
+        (await signedMediaUrl(storageBucket, storagePath, { filename }).catch(() => null))
+        ?? (await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null));
       if (signedUrl) {
         sql`INSERT INTO download_logs (id, user_id, shoot_id, image_id, type, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${id}, ${imageId}, '4k', NOW())`.catch(() => {});
         return NextResponse.redirect(signedUrl, 302);
@@ -108,7 +115,9 @@ export async function GET(
 
   // Desktop path: return a signed URL with Content-Disposition:attachment baked in.
   // The browser navigates directly to R2 — zero server memory for the file transfer.
-  const signedUrl = await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null);
+  const signedUrl =
+    (await signedMediaUrl(storageBucket, storagePath, { filename }).catch(() => null))
+    ?? (await r2SignedDownloadUrl(storageBucket, storagePath, 3600, filename).catch(() => null));
   if (!signedUrl) return NextResponse.json({ error: "Could not sign URL" }, { status: 500 });
 
   return NextResponse.json({
