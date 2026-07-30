@@ -129,8 +129,12 @@ export default {
       return new Response(null, { status: 304, headers });
     }
 
+    // Only answer 206 when the client actually asked for a range. R2 reports a
+    // range on the object even for a plain request, and replying 206 to a request
+    // that carried no Range header confuses download managers and some mobile
+    // browsers into treating a complete file as a partial one.
     let status = 200;
-    if (object.range && object.size !== undefined && "offset" in object.range) {
+    if (request.headers.has("range") && object.range && object.size !== undefined && "offset" in object.range) {
       const start = object.range.offset ?? 0;
       const length = object.range.length ?? object.size - start;
       headers.set("Content-Range", `bytes ${start}-${start + length - 1}/${object.size}`);
