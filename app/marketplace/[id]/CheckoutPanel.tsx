@@ -1197,7 +1197,23 @@ export default function CheckoutPanel({
               )}
               {perPhotoLightingActive ? (
                 <div className={styles.pkgRow}>
-                  {sourcePhotos.length === 0 && <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>}
+                  {/* Before any photo is uploaded the per-photo rows below have
+                      nothing to render, so ticking the box appeared to do nothing
+                      at all. Show the looks themselves: the buyer can see what
+                      they are buying, and it is obvious why they cannot pick yet. */}
+                  {sourcePhotos.length === 0 && (
+                    <>
+                      <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, opacity: 0.5, pointerEvents: "none" }} aria-hidden="true">
+                        {lightingLooks.map(o => (
+                          <div key={o.id} title={o.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 4, minWidth: 58 }}>
+                            <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
+                            <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                   {sourcePhotos.map((sp, i) => (
                     <div key={sp.storagePath} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
                       <ImagePreview src={sp.preview} alt={`Photo ${i + 1}`} className={styles.savedImg} preferredWidth={72} />

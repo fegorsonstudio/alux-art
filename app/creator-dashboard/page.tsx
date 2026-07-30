@@ -46,7 +46,7 @@ interface TemplateRow {
   role_chips?: string[];
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
-  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
+  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string; framing?: string }> }> | null;
   flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   trend_slots?: {
     mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
@@ -185,6 +185,10 @@ interface ChoiceOptionDraft {
   uploading: boolean;
   fromDb?: boolean;
   error?: string;
+  // Which shot size this lighting style was previewed on. Carried through the
+  // editor untouched: publishing the template used to drop it, which silently
+  // broke the framing-matched before/after on all 47 styles.
+  framing?: string;
 }
 
 // The three shot sizes a lighting style can be previewed on. A style is paired
@@ -527,6 +531,7 @@ function CreatorDashboard() {
       options: (g.options ?? []).map((o) => ({
         id: o.id,
         name: o.name ?? "",
+        framing: o.framing,
         kind: o.kind === "text" ? "text" as const : o.kind === "prompt" ? "prompt" as const : "photo" as const,
         description: o.description ?? "",
         imagePath: o.imagePath ?? "",
@@ -1239,6 +1244,7 @@ function CreatorDashboard() {
             kind,
             description: o.description.trim() || undefined,
             imagePath: (kind === "photo" || kind === "prompt") ? o.imagePath : undefined,
+            ...(o.framing ? { framing: o.framing } : {}),
           };
         }),
       })),
