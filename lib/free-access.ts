@@ -23,8 +23,11 @@ export type FreeSource = "admin" | "grant" | "sponsored";
 
 export interface FreeClaim {
   source: FreeSource;
+  /** First grant drawn from — kept for the free_bookings ledger's single FK. */
   grantId?: string;
-  /** Images left on the grant after this claim — shown back to the buyer. */
+  /** Every grant this claim drew from, and how much came off each one. */
+  grantParts?: { id: string; taken: number }[];
+  /** Images left across all the buyer's grants after this claim. */
   remaining?: number;
 }
 
@@ -108,25 +111,59 @@ export async function claimFreeBooking(opts: ClaimOpts): Promise<FreeClaim | nul
     }
   }
 
-  // 3. Personal grant. Consume the oldest live grant that still has room, so a
-  //    soon-to-expire grant is spent before a fresh one.
+  // 3. Personal grants. Spend ACROSS grants, soonest-to-expire first.
+  //
+  // This used to require one single grant to cover the whole package. That
+  // silently disagreed with grantBalance() (which sums every grant) and with the
+  // checkout screen that reads it: someone comped 5 + 5 was shown "free" for a
+  // 10-image shoot, then handed a payment request when no single grant could
+  // cover it. Draining several grants keeps the promise the sum makes.
   if (email) {
-    const consumed = await sql<{ id: string; remaining: number }[]>`
-      UPDATE free_grants
-      SET images_used = images_used + ${packageSize}, updated_at = NOW()
-      WHERE id = (
-        SELECT id FROM free_grants
-        WHERE lower(email) = ${email.toLowerCase()}
-          AND is_active
-          AND (expires_at IS NULL OR expires_at > NOW())
-          AND images_granted - images_used >= ${packageSize}
-        ORDER BY expires_at NULLS LAST, created_at
-        LIMIT 1
-      )
-      RETURNING id, (images_granted - images_used)::int AS remaining
+    const live = await sql<{ id: string; remaining: number }[]>`
+      SELECT id, (images_granted - images_used)::int AS remaining
+      FROM free_grants
+      WHERE lower(email) = ${email.toLowerCase()}
+        AND is_active
+        AND (expires_at IS NULL OR expires_at > NOW())
+        AND images_granted > images_used
+      ORDER BY expires_at NULLS LAST, created_at
     `;
-    if (consumed.length > 0) {
-      return { source: "grant", grantId: consumed[0].id, remaining: consumed[0].remaining };
+    const available = live.reduce((sum, g) => sum + g.remaining, 0);
+
+    if (available >= packageSize) {
+      const parts: { id: string; taken: number }[] = [];
+      let needed = packageSize;
+
+      for (const grant of live) {
+        if (needed <= 0) break;
+        const take = Math.min(needed, grant.remaining);
+        // The WHERE guard is what makes this safe against a simultaneous booking:
+        // whoever gets there first takes the images, the loser skips that grant.
+        const claimed = await sql<{ id: string }[]>`
+          UPDATE free_grants
+          SET images_used = images_used + ${take}, updated_at = NOW()
+          WHERE id = ${grant.id} AND images_granted - images_used >= ${take}
+          RETURNING id
+        `;
+        if (claimed.length > 0) {
+          parts.push({ id: grant.id, taken: take });
+          needed -= take;
+        }
+      }
+
+      if (needed === 0) {
+        return {
+          source: "grant",
+          grantId: parts[0].id,
+          grantParts: parts,
+          remaining: available - packageSize,
+        };
+      }
+
+      // Another booking drained a grant mid-loop and we could not gather the full
+      // package. Hand back every part taken so far rather than charge them AND
+      // keep the images.
+      await releaseFreeBooking({ source: "grant", grantParts: parts }, { packageSize });
     }
   }
 
@@ -143,12 +180,22 @@ export async function releaseFreeBooking(
 ): Promise<void> {
   if (!claim) return;
   try {
-    if (claim.source === "grant" && claim.grantId) {
-      await sql`
-        UPDATE free_grants
-        SET images_used = GREATEST(0, images_used - ${opts.packageSize}), updated_at = NOW()
-        WHERE id = ${claim.grantId}
-      `;
+    if (claim.source === "grant") {
+      // Give each grant back exactly what came off it. Falls back to the whole
+      // package against the single recorded grant for claims made before
+      // multi-grant spending existed.
+      const parts = claim.grantParts?.length
+        ? claim.grantParts
+        : claim.grantId
+          ? [{ id: claim.grantId, taken: opts.packageSize }]
+          : [];
+      for (const part of parts) {
+        await sql`
+          UPDATE free_grants
+          SET images_used = GREATEST(0, images_used - ${part.taken}), updated_at = NOW()
+          WHERE id = ${part.id}
+        `;
+      }
     } else if (claim.source === "sponsored" && opts.templateId) {
       await sql`
         UPDATE templates
