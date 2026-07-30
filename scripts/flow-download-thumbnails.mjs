@@ -33,9 +33,17 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const QUEUE_FILE = join(__dirname, "lighting-thumbnail-run.json");
-const OUT_DIR = join(ROOT, ".playwright-mcp", "thumbnails");
-const MAP_FILE = join(__dirname, "lighting-thumbnail-files.json");
+const argAt = (name) => {
+  const i = process.argv.indexOf(name);
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : null;
+};
+const resolveIn = (v, fallback) => !v ? fallback
+  : (v.includes("/") || v.includes("\\") ? v : join(__dirname, v));
+// --queue/--out/--map keep each section's files and bookkeeping separate, so
+// downloading atmosphere cannot overwrite the lighting thumbnails.
+const QUEUE_FILE = resolveIn(argAt("--queue"), join(__dirname, "lighting-thumbnail-run.json"));
+const OUT_DIR = argAt("--out") ?? join(ROOT, ".playwright-mcp", "thumbnails");
+const MAP_FILE = resolveIn(argAt("--map"), join(__dirname, "lighting-thumbnail-files.json"));
 const PROFILE_DIR = join(ROOT, ".flow-profile");
 
 const DRY_RUN = process.argv.includes("--dry-run");

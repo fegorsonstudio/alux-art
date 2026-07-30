@@ -13,6 +13,19 @@ import { useT } from "@/lib/useLocale";
 // Lighting-style thumbnail. When both a shared "before" original and this style's
 // "after" thumbnail exist, it auto-crossfades between them (no tap) so the buyer
 // sees what the lighting does. Only "after" → static image. Neither → placeholder.
+// The crossfade renders two raw <img> tags, which bypassed the resizing every
+// other image in the app goes through: a 56px thumbnail was pulling the full 2K
+// original. Measured at 2,198,682 bytes each against 6,212 for the same image at
+// thumbnail size — 354x heavier, and this template shows 47 of them at once, so
+// the picker was fetching about 103MB to draw 47 postage stamps.
+function thumbSrc(url: string, displayWidth: number) {
+  if (!url || url.startsWith("blob:") || url.startsWith("data:")) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  // 2x the drawn size for sharpness on high-density screens, capped.
+  const w = Math.min(320, Math.round(displayWidth * 2));
+  return `${url}${sep}width=${w}&quality=72&format=webp`;
+}
+
 function LightingThumb({ beforeUrl, afterUrl, name, size = 64 }: {
   beforeUrl?: string | null; afterUrl?: string | null; name: string; size?: number;
 }) {
@@ -21,9 +34,9 @@ function LightingThumb({ beforeUrl, afterUrl, name, size = 64 }: {
     return (
       <span className={styles.laThumb} style={{ width: w, height: h }} title={name}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={beforeUrl} alt="" className={styles.laBefore} />
+        <img src={thumbSrc(beforeUrl, w)} alt="" className={styles.laBefore} loading="lazy" decoding="async" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={afterUrl} alt={name} className={styles.laAfter} />
+        <img src={thumbSrc(afterUrl, w)} alt={name} className={styles.laAfter} loading="lazy" decoding="async" />
         <span className={styles.laBadge} aria-hidden>BEFORE / AFTER</span>
       </span>
     );

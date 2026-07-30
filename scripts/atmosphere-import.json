@@ -1,0 +1,57 @@
+{
+  "section": "Atmosphere",
+  "label": "Atmosphere — smoke, haze & fog",
+  "note": "Every recipe opens with the relight lock and then names EXACTLY what may be added. Atmosphere is the first section that adds something to the frame rather than only changing light, so each prompt repeats that identity, pose, outfit, hair and framing are untouched — without that the model re-poses the subject or restyles the clothing.",
+  "styles": [
+    {
+      "name": "Backlit Haze Beam",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of atmospheric haze. A hard backlight sits behind the subject and slightly camera-right, aimed toward the lens, so a visible beam of light cuts through fine airborne haze and separates the subject from a dark background. The haze is thin and even, densest where the beam is brightest, thinning toward the frame edges. Front fill is minimal, leaving the face in soft shadow with a bright rim along the hair and shoulders. Neutral white light, realistic falloff, subtle film grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Rising Fog",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of fog. Dense fog rises around the subject from below the bottom of the frame, thickest at the lower edge and thinning as it climbs past waist height until the head and shoulders are clear of it. A low side light from camera-left skims through the fog so it glows and its drifting texture is visible, while the background sits in darkness above the fog. Cool neutral temperature, physically plausible light scatter through vapour, subtle grain. Keep the subject identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Smoke Swirl Side-Lit",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of drifting smoke. Loose curls of smoke drift through the frame beside and behind the subject, lit from camera-left by a hard source that catches the smoke's edges and leaves its cores dark. The smoke never crosses the face. Contrast is high, the background is near black, and the subject keeps a defined side key with deep shadow on the opposite cheek. Realistic smoke density variation, natural turbulence, subtle grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Volumetric Shaft",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of atmospheric haze. A single hard shaft of light enters from high camera-right at roughly 60 degrees, made visible by fine haze filling the room, and lands across the subject and the floor. Everything outside the shaft falls off steeply into shadow. The beam has clean, defined edges as though thrown through a doorway or high window. Neutral to slightly warm light, realistic atmospheric scatter, physically plausible falloff. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Warm Smoke Drift",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of coloured smoke. Warm amber smoke drifts in from camera-right behind the subject, lit by a gelled source of the same colour so the smoke glows orange against a deep, unlit background. A neutral key from the front keeps the face's colour true while the smoke stays strongly tinted. The smoke stays behind and beside the subject, never obscuring the face. Realistic smoke behaviour, visible density variation, subtle grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Cool Smoke Drift",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of coloured smoke. Cold cyan-blue smoke rolls through the background and along one edge of the frame, lit by a gelled source so it reads as luminous vapour against near-black surroundings. A neutral key holds the subject's skin at a natural colour, and a matching cool rim traces the far shoulder. The smoke stays clear of the face. Realistic turbulence and density falloff, physically plausible scatter. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Silhouette Through Smoke",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of dense smoke. Thick smoke fills the space behind the subject and is lit from directly behind by a powerful source, turning the background into a bright glowing field and reducing the subject to a near-silhouette with only a thin bright edge along the body. A very low front fill keeps a trace of detail in the face and clothing rather than pure black. Strong separation, high contrast, realistic smoke gradients. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Haze with Hard Rim",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of light haze. Fine haze fills the air, softening the falloff of a hard rim light placed behind and above camera-left, which draws a crisp bright line along the jaw, cheekbone and hair while the haze spreads a gentle glow around it. The front of the face is lit by a restrained fill so the features stay readable. Background is a dark, even field with a faint atmospheric lift. Realistic skin texture, natural asymmetry, subtle grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Fog with Practical Lamp",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of fog. Moderate fog fills the scene and a single warm practical lamp sits behind the subject at roughly hip height, its glow blooming through the fog into a soft halo and casting the subject's long shadow toward camera. The rest of the frame falls into cool darkness, so the warm pool of lamp light and the cool ambient read against each other. Realistic light scatter through fog, physically plausible shadow direction. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    },
+    {
+      "name": "Dense Atmospheric Bloom",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting and the addition of heavy haze. Heavy haze sits between camera and subject, blooming the highlights so bright areas spread softly into their surroundings and overall contrast drops. A broad frontal key lights the face evenly through the haze, giving a diffused, luminous quality with lifted shadows and a slightly milky background. Skin texture stays real rather than smoothed. Editorial lens feel, subtle film grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are."
+    }
+  ]
+}

@@ -30,7 +30,14 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const QUEUE_FILE = join(__dirname, "lighting-thumbnail-run.json");
+// --queue <path> so one runner serves every section of the archive
+// (lighting, atmosphere, gels...). Defaults to the original lighting queue.
+const queueArg = process.argv.indexOf("--queue");
+const QUEUE_FILE = queueArg >= 0 && process.argv[queueArg + 1]
+  ? (process.argv[queueArg + 1].includes("/") || process.argv[queueArg + 1].includes("\\")
+      ? process.argv[queueArg + 1]
+      : join(__dirname, process.argv[queueArg + 1]))
+  : join(__dirname, "lighting-thumbnail-run.json");
 const PROFILE_DIR = join(ROOT, ".flow-profile");
 const SOURCE_DIR = join(ROOT, ".playwright-mcp", "sources");
 
@@ -72,6 +79,30 @@ async function dismissOverlays(page) {
     await page.mouse.click(20, 500).catch(() => {});
     await sleep(900);
   }
+}
+
+/**
+ * The grid's edit links once they have stopped changing.
+ *
+ * Returns as soon as the link count holds steady for QUIET_MS, so a late arrival
+ * from the previous generation is already counted and cannot be mistaken for the
+ * next one's output.
+ */
+async function gridSettled(page, { quietMs = 12000, maxMs = 180000 } = {}) {
+  const read = () => page.evaluate(() =>
+    [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
+  ).catch(() => []);
+
+  let last = await read();
+  let stableFor = 0;
+  for (let waited = 0; waited < maxMs && stableFor < quietMs; waited += 3000) {
+    await sleep(3000);
+    const now = await read();
+    if (now.length === last.length) stableFor += 3000;
+    else stableFor = 0;
+    last = now;
+  }
+  return last;
 }
 
 /**
@@ -306,9 +337,14 @@ async function main() {
     const label = `slot ${item.slot} ${item.name} [${item.framing}]`;
 
     // Snapshot the grid before sending, so the new image can be told apart after.
-    item._beforeIds = await page.evaluate(() =>
-      [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
-    ).catch(() => []);
+    //
+    // WAIT FOR THE GRID TO GO QUIET FIRST. The previous style's image can still be
+    // landing when this one is sent; it would then be absent from this snapshot,
+    // appear during this style's wait, and be recorded as THIS style's output —
+    // shifting every image in the run onto the wrong style by one. That is exactly
+    // what happened to a 10-image run (each "generation" took only 15s, far too
+    // fast to be real, because it was seeing the previous image arrive).
+    item._beforeIds = await gridSettled(page);
 
     let ok = false, why = "";
     for (let attempt = 1; attempt <= 2 && !ok; attempt++) {

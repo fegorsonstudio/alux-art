@@ -1,0 +1,72 @@
+{
+  "section": "Dark Romantic",
+  "label": "Dark Romantic & Gothic Glam",
+  "why": "Ranked #2 by Pinterest's published 2026 search growth: gothic +180%, dark romantic makeup +160%, vampire beauty +90%, with Plum Noir named one of the five colours of the year. Three independent signals for one look family.",
+  "rules": [
+    "Every recipe opens with the relight lock — without it the model re-poses the subject or restyles the clothing.",
+    "Never mention the subject's body, wardrobe, expression or eyes. Early lighting prompts that did this told people to close their eyes and had to be rewritten.",
+    "Deep shadow is the point of this section, but the face must stay readable. Every recipe names a fill or a reflected source so the subject never disappears into black."
+  ],
+  "styles": [
+    {
+      "name": "Candlelit Chiaroscuro",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A single warm candle-temperature source sits low and close at camera-left, roughly at chin height, throwing steep upward-angled shadows across the far cheek and leaving the opposite side of the face in deep shadow. A very low warm bounce keeps detail alive in the shadow side rather than letting it go pure black. The background falls off to near darkness within a short distance. Warm 2000K light, realistic skin texture, natural asymmetry, subtle film grain."
+    },
+    {
+      "name": "Plum Noir Wash",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A deep plum-violet gelled key comes from camera-left at 45 degrees and slightly above eye level, washing the scene in a dark purple cast, while a cooler magenta rim traces the far shoulder and jaw. Shadows stay dense and saturated rather than grey. A restrained neutral fill holds the skin just clear of the colour so the face reads as a face, not a silhouette. Rich saturation, deep blacks, physically plausible falloff."
+    },
+    {
+      "name": "Single Candle Close",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. One small warm flame-like source sits just off camera-right at cheek height and very close to the subject, so falloff across the face is rapid and obvious: the near cheek is bright and warm, the far side drops into shadow within inches. A faint flicker quality shows in the highlight edges. Background is unlit and effectively black. Warm colour temperature, visible skin texture, natural asymmetry, subtle grain."
+    },
+    {
+      "name": "Burgundy Gel Key",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A deep burgundy-red gelled key sits at camera-right, 45 degrees off axis and slightly above, saturating the scene in wine-dark red with dense shadows on the opposite side. A small cool blue accent from behind camera-left separates the shoulder and stops the frame from reading as one flat colour. Skin keeps its own tone under the wash rather than turning uniformly red. High saturation, deep blacks, realistic fabric and skin texture."
+    },
+    {
+      "name": "Blood Red Rim",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A saturated red gelled source sits directly behind the subject and slightly above, drawing a hard red edge along the hair, shoulders and jawline against a black background. Front light is a single soft neutral source at low power, enough to keep the face readable while the red edge dominates the frame. Strong separation, deep blacks, no colour spill onto the background. Physically plausible rim placement, subtle grain."
+    },
+    {
+      "name": "Victorian Window Gloom",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Weak, cool overcast daylight enters from a tall window at camera-left, falling across the subject with soft-edged but rapid falloff so the far side of the frame sinks into gloom. The window's shape reads faintly in the light's edge on the floor. No fill from the right, leaving heavy shadow. Desaturated cool palette, gentle contrast in the lit area and deep shadow elsewhere, realistic light direction, subtle film grain."
+    },
+    {
+      "name": "Deep Shadow Half-Face",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard source at 90 degrees camera-left lights exactly one half of the face and leaves the other half in near total shadow, with the shadow line running down the centre of the nose. A trace of reflected light keeps the shadowed eye barely visible rather than lost. Background is unlit black. Neutral colour temperature, hard-edged shadow transition, realistic skin texture, natural asymmetry."
+    },
+    {
+      "name": "Cathedral Shaft",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting, and light haze so the beam is visible. A single narrow shaft of cool light falls steeply from high camera-right, as though through a high window in a tall stone space, landing on the subject and a small pool of floor. Everything outside the shaft is deep shadow with only faint ambient lift. Fine haze makes the beam's edges visible in the air. Cool neutral temperature, steep falloff, physically plausible scatter, subtle grain."
+    },
+    {
+      "name": "Moonlit Silver",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. A cool silver-blue source sits high and behind camera-left, imitating moonlight, giving a hard-edged top-and-side rim with very low ambient fill so the scene reads as night. Shadows are blue-black rather than neutral. A faint warm accent low in the frame stops the palette from going monochrome. Low overall exposure with clean highlights, realistic falloff, subtle film grain."
+    },
+    {
+      "name": "Wine Dark Backlight",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A deep wine-red source behind the subject floods the background with dark saturated colour that falls off toward the frame edges, while the subject is lit from the front by a single soft neutral key at moderate power. The result is a clearly lit subject standing against a glowing dark-red field. No red spill on the face. Rich colour separation, deep blacks, realistic skin texture."
+    },
+    {
+      "name": "Black Velvet Low-Key",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A narrow soft source at camera-left, feathered so only its edge reaches the subject, lights the face and one shoulder and nothing else. There is no fill, no background light and no rim, so the subject emerges from a black field with a slow gradient from lit to unlit across the body. Neutral temperature, high contrast with retained shadow detail on the lit side, realistic texture, subtle grain."
+    },
+    {
+      "name": "Crimson Underlight",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A crimson source sits below the subject's face pointing upward, inverting the normal shadow direction so shadows climb the cheeks and brow, with a cooler dim source above providing enough top light to keep the features from reading as a mask. The background stays black and takes no spill. Saturated red in the lower half of the face falling to cool shadow above, hard-edged transitions, realistic skin texture."
+    }
+  ]
+}
