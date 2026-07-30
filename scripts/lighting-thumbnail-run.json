@@ -1,10 +1,6 @@
 {
   "status": "RESET for a clean re-run with identity capture. The 45 previously downloaded PNGs are unlabelable — see downloadPhase.",
-  "verifiedGood": [
-    1,
-    2
-  ],
-  "remaining": 45,
+  "remaining": 2,
   "byFraming": {
     "medium": 27,
     "full": 9,
@@ -25,12 +21,48 @@
   "recommendedFix": "Before EACH generation, re-upload the framing source via Upload media + browser_file_upload from .playwright-mcp/sources/. A freshly uploaded file becomes the most recent asset, so the picker default is then correct. Verify the composer thumbnail looks like the plain grey-background source before clicking send.",
   "queue": [
     {
+      "slot": 1,
+      "name": "Soft Side Key and Rim",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A large, soft key light comes from camera-left, approximately 45° off-axis and slightly above eye level, creating a balanced contrast ratio with soft, feathered shadows and a gentle falloff. A subtle rim light from the upper camera-right separates the subject from the background, which features a gradient from dark to light on the right. The color temperature is neutral (~5500K).",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/cb829994-9ee5-4e26-a8cd-41ca76501389",
+      "done": true
+    },
+    {
+      "slot": 2,
+      "name": "Hard Split Kicker",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard, focused key light from camera-right at approximately 45° above eye level creates a distinct highlight on the face and shoulder, producing a high-contrast ratio with deep, crisp shadows and rapid falloff. A subtle kicker or rim light from camera-left, positioned slightly behind the subject, highlights the back of the head and shoulder, separating the subject from the dark, subtly gradient background. The overall color temperature is neutral, with no visible catchlights.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/411b6b7d-4466-4c10-a9e7-4ff4591cfe0a",
+      "done": true
+    },
+    {
+      "slot": 3,
+      "name": "Soft Glam Shell",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, very soft source from camera-left at approximately 45°, slightly above eye level, providing a balanced, low-contrast fill with minimal shadows and soft edge transitions. A subtle rim light from camera-right separates the subject from the background. Catchlights are large and soft at 10 o'clock in the eyes. The lighting is neutral ~5500K, with the background evenly illuminated and slightly darker than the subject, creating a soft, ethereal high-key portrait.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d56f4123-a1c9-4ef2-9b91-50eb2c6b5eb9",
+      "done": true
+    },
+    {
       "slot": 4,
       "name": "Soft Frontal High-Key",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, creating broad, balanced illumination with minimal shadows. Fill light is nearly complete, resulting in a flat, high-key contrast ratio on the subject, while subtle rim lighting from behind and slightly to the sides separates the subject from the background. The lighting is neutral ~5500K, and the background features a warm ~3200K red-orange gradient that falls off to dark at the edges.",
       "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d448812b-63de-4dee-ac97-df5382b37c64",
+      "done": true
+    },
+    {
+      "slot": 5,
+      "name": "Soft Glamour Loop Lighting",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned high and slightly to camera-right, creating soft, graduated shadows and a balanced contrast ratio. A subtle rim light from camera-left, positioned slightly behind, accentuates the contours and separates the subject from the background, which shows a gradual falloff to dark gray. Shadows are soft with feathered edges, and there is a single, large, soft catchlight at 11 o'clock in the eyes. The color temperature is neutral ~5500K.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/f76723da-c232-428d-861c-6070763cc232",
       "done": true
     },
     {
@@ -43,12 +75,31 @@
       "done": true
     },
     {
+      "slot": 7,
+      "name": "High-Key Beauty Clamshell",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, very soft source from slightly camera-right, placed high and wrapping around the front, creating minimal shadows and a very balanced, flat fill. Shadows are very soft, shallow, and almost imperceptible, indicating a very low contrast ratio. Catchlights are large, soft rectangles at 10 and 2 o'clock in the eyes. The color temperature is neutral (~5500K), with a pure white background that appears evenly lit, suggesting a clamshell or butterfly setup with additional back/background lighting to eliminate falloff.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/5f56b5bd-c139-4865-adf1-75f9d845b8dc",
+      "done": true
+    },
+    {
       "slot": 8,
       "name": "Hard Split Blue Background",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. A single hard key light is positioned from camera-right at approximately 90° to the subject, slightly above eye level, creating a stark split lighting pattern with deep, crisp shadows on the camera-left side of the face and body, indicating a high-contrast ratio with no apparent fill. A subtle rim light from the background separates the subject from the vibrant, evenly lit blue background, which appears to be a seamless paper or cyclorama. A single small, rectangular catchlight is visible in the subject's right eye at 9 o'clock. The overall color temperature is neutral to slightly cool, with the prominent blue background contributing to the cool aesthetic.",
-      "editHref": null
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ca35152e-b964-4e93-b0f4-ce5a04107e6e",
+      "done": true
+    },
+    {
+      "slot": 9,
+      "name": "Chiaroscuro Spot Accent",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, warm ~3200K spot from camera-right, high and forward at approximately 1 o'clock, creating a dramatic, high-contrast effect with deep, crisp shadows and a feathered edge transition. There is no visible fill, contributing to the overall low-key chiaroscuro style, and a single, small, bright catchlight is visible at 1 o'clock. The background is dark with significant falloff, illuminated only by the spill from the main key light, creating a focused, painterly light on the subject.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/87325626-9928-4e8e-b93e-967a0caa5196",
+      "done": true
     },
     {
       "slot": 10,
@@ -60,12 +111,40 @@
       "done": true
     },
     {
+      "slot": 11,
+      "name": "Soft Magenta Clamshell",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned high and directly in front of the subject, creating a flat, beauty-style illumination with minimal shadows and a balanced contrast ratio. A subtle magenta-purple gel is applied to the key light, with a more saturated purple rim light from camera-right and slightly behind, creating separation and highlighting texture. Shadows are soft and minimal, falling directly behind the subject from the key light's perspective. Catchlights are large and soft, positioned centrally in the upper half of the eyes. The background is evenly lit with a magenta-purple color, showing a slight falloff to darker tones, enhancing the overall monochromatic purple mood.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/96710ce2-f2df-4245-818b-3c908aa32c69",
+      "done": true
+    },
+    {
+      "slot": 12,
+      "name": "Cool Ripple Projection",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A medium-soft key light from camera-left at approximately 45° and slightly above eye level creates soft shadows with feathered edges, a balanced contrast ratio, and a single diffuse catchlight at 10 o'clock. A strong blue gel is applied to all lights, including a background light with a ripple effect projector to create a dynamic water-like pattern across the background and floor, with slight falloff behind the subject. The overall color temperature is cool, approximately 6500K with a strong blue cast.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d360c291-5ea2-4235-840c-7e831798bd98",
+      "done": true
+    },
+    {
       "slot": 13,
       "name": "Hard Magenta Spot Editorial",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct spot from slightly camera-left and above eye level, creating a distinct shadow under the chin and nose, with a high contrast ratio and minimal fill. A strong rim light from behind and camera-right, likely another hard spot, separates the subject from the background. Shadows are deep with crisp edges, consistent with hard light. Catchlights are small and distinct at 10 and 2 o'clock. The overall color temperature is cool, with a dominant magenta/purple color cast from the background lighting, which consists of multiple hard, narrow-beam spotlights arranged in a radiating pattern, creating a high-energy, theatrical effect against a dark background.",
-      "editHref": null
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ebd4bfda-036a-4077-8d6a-ce94706bc59e",
+      "done": true
+    },
+    {
+      "slot": 14,
+      "name": "Hard Spot Chiaroscuro",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard, direct key light is positioned high and slightly to camera-right, creating distinct shadows under the chin and nose, with minimal fill resulting in high contrast and a low-key aesthetic. Catchlights are small and sharp at approximately 1 o'clock, indicating a concentrated source like a bare bulb or small reflector, which also creates bright, specular highlights and starbursts on reflective surfaces. The background is dark, with soft, out-of-focus light spots suggesting a projector or scattered light effect. The overall color temperature is neutral to slightly cool.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/233bac86-0414-4823-a580-69d2218b1fa7",
+      "done": true
     },
     {
       "slot": 15,
@@ -77,12 +156,30 @@
       "done": true
     },
     {
+      "slot": 16,
+      "name": "Hard Sunlight Graphic",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct, warm (~3200K) source from camera-right at about 60°, significantly above eye level, creating distinct, long shadows cast towards camera-left, with crisp edges and deep contrast against the background. There is minimal fill light, resulting in a high-contrast, dramatic look, with the subject partially silhouetted against a brighter background area while also having a strong rim light from the key on their camera-right side. A distinct, bright rectangular catchlight is visible at 10 o'clock in the eyes. The background is unevenly lit by the same hard source, with a bright diagonal strip of light and a darker falloff to the left, enhancing the overall graphic quality of the shadows.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/3cbbba99-d61d-4e57-ad23-d4c8c10ca8fe",
+      "done": true
+    },
+    {
       "slot": 17,
       "name": "Hard Blue Chiaroscuro",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct point source from camera-right at roughly 45°, slightly above eye level, creating strong specular highlights and lens flares on the reflective surfaces, with deep, sharp shadows. There is no apparent fill light, resulting in a low-key, high-contrast chiaroscuro with a pure black background. The overall color temperature is cool, approximately 6000K-7000K, with a strong blue gel applied to the key light.",
       "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/317256de-9fc7-4dec-8a02-3f1b62c6309e",
+      "done": true
+    },
+    {
+      "slot": 18,
+      "name": "Hard Split Backlight with Gel",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct source from camera-right, positioned high and slightly behind the subject, creating a dramatic, long, and sharp shadow on the background that falls to camera-left. Fill light is minimal, resulting in a high-contrast ratio with deep, hard-edged shadows on the camera-left side of the subject, creating a split-lighting effect. A large, soft, circular light source projects a neutral-to-warm ~4000K light onto the background, creating a bright spot for the subject to stand against, while the surrounding background is lit with a strong red gel, suggesting mixed color temperatures and colored light. Catchlights are small and high on the camera-right side of the eyes.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/45839e47-6949-49ee-8238-8787a37e19e6",
       "done": true
     },
     {
@@ -100,7 +197,8 @@
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, creating a balanced, near-flat fill with minimal shadow definition. A subtle rim light from camera-right at roughly 45° behind the subject separates the outline from the background. Shadows are very soft with feathered edges, mostly visible under the chin and on the camera-left side of the body, indicating a low-contrast ratio. Catchlights are large and soft, positioned centrally in the upper half of the eyes. The lighting is neutral ~5500K, with the background evenly illuminated by a separate red-gelled light, creating a bright, vibrant backdrop with no noticeable falloff.",
-      "editHref": null
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/f151a027-dd47-4652-a3a9-2185e9bb0bd4",
+      "done": true
     },
     {
       "slot": 21,
@@ -180,7 +278,8 @@
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject and slightly above eye level, creating a balanced, nearly shadowless illumination with soft transitions. A warm back/rim light from behind and slightly above camera-right creates separation and a subtle glow, while a second, larger warm light illuminates the background with a smoky texture and falloff towards the bottom. Shadows are minimal, soft, and directed straight down, indicating a frontal key, and catchlights are large and rounded at 11 and 1 o'clock. The overall color temperature is warm at approximately 3200K, with a neutral fill.",
-      "editHref": null
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/4b717e72-eb58-4480-930f-8a76171edb77",
+      "done": true
     },
     {
       "slot": 30,
@@ -198,6 +297,15 @@
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source, likely a window or large softbox, positioned camera-right at roughly 45° and slightly above eye level, creating soft, feathered shadows and a balanced contrast ratio with ambient fill. A subtle hard rim light from camera-left, high and behind, separates the subject from the background, creating a crisp, angled shadow pattern on the background. Catchlights are large and soft at 10 o'clock in the eyes. The lighting is neutral ~5500K with no apparent color shifts. The background is evenly lit with a gentle falloff, appearing slightly darker than the subject.",
       "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/a2c13a38-4fa2-4fd1-bf8f-3f813efaa14a",
+      "done": true
+    },
+    {
+      "slot": 32,
+      "name": "Hard Chiaroscuro Spotlight",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard, focused key light from camera-left at approximately 45° above eye level creates a dramatic, high-contrast chiaroscuro effect with deep shadows and minimal fill, resembling a theatrical spotlight. The shadows are hard and well-defined, with crisp edges falling to camera-right, and the background is dark with significant falloff. A single small, bright catchlight is visible at 10 o'clock in the visible eye, indicating a small, direct source. The color temperature is neutral, with no apparent gels.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/9712470e-c89b-4221-83d8-1c7c4a79c38f",
       "done": true
     },
     {
@@ -233,7 +341,17 @@
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source, likely a large softbox or parabolic umbrella, positioned slightly camera-right, about 45° off-axis and slightly above eye level, creating soft, feathered shadows and a balanced, low-contrast fill. A subtle rim light from camera-left at the same height separates the subject from the background, which is evenly lit with a slight falloff to the camera-right. The catchlights are soft and large at approximately 10 o'clock and 2 o'clock, indicating a large, diffuse source. The overall color temperature is neutral to slightly warm, around 3500K-4000K, with no apparent color gels.",
-      "editHref": null
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/6dce4d70-0321-4eec-935d-b7e017d2e9c0",
+      "done": true
+    },
+    {
+      "slot": 37,
+      "name": "Soft Clamshell Paramount",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A large, soft key light is positioned centrally and slightly above eye level, creating very soft, minimal shadows directly beneath the nose and chin, indicative of a butterfly/Paramount light. Fill light is balanced and even, suggesting a clamshell setup or large ambient bounce, resulting in a flat, high-key contrast ratio. There is no discernible rim or hair light. Shadows are very soft with feathered transitions and minimal depth. Catchlights are large, soft rectangles positioned at 12 o'clock in both eyes. The color temperature is neutral ~5500K. The background is evenly lit, slightly darker than the subject, with no significant falloff, creating a clean, professional look.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/e1113537-c5ff-40e0-97d1-0e635c6c817c",
+      "done": true
     },
     {
       "slot": 38,
@@ -245,47 +363,21 @@
       "done": true
     },
     {
+      "slot": 39,
+      "name": "Soft Clamshell Portrait",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, creating a balanced, nearly shadowless illumination with soft feathered edges. Fill light is very high, resulting in a flat, high-key contrast ratio, likely from the key source itself or a large reflector directly below. Catchlights are large and soft, positioned centrally at 12 o'clock in the eyes. The color temperature is neutral ~5500K, with the background evenly lit and reading slightly darker than the subject, showing minimal falloff.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/23ec400e-4624-4b59-a9eb-af8e28fecf66",
+      "done": true
+    },
+    {
       "slot": 40,
       "name": "Soft Glam Studio",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
       "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned high and slightly to camera-left, creating a broad, even illumination with gentle falloff. Fill light is present, creating a balanced contrast ratio with soft, open shadows that are well-lifted. A subtle rim light from camera-right separates the subject from the background. Shadows are soft and feathered, contributing to a smooth, almost ethereal feel. Catchlights are large and soft, positioned at approximately 10 o'clock in the eyes. The color temperature is neutral ~5500K, with no apparent color gels. The background is softly lit, appearing brighter at the top and gradually falling off to a darker tone at the bottom, with some reflective highlights on the foreground surface.",
       "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/8bcf9259-252e-47b1-849a-57a10755eae0",
-      "done": true
-    },
-    {
-      "slot": 47,
-      "name": "Hard Warm Kicker",
-      "framing": "medium",
-      "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, warm (~2800K) source, likely a bare bulb or small reflector, placed camera-right at about 3 o'clock and slightly above eye level, creating a dramatic, high-contrast, low-key effect with no apparent fill light. Shadows are deep and hard-edged, falling on the camera-left side of the face and body, with a single bright catchlight visible in the eye at 10 o'clock. A subtle kicker or rim light from behind and camera-right separates the subject from the warm, medium-dark background, which exhibits gradual falloff.",
-      "editHref": null
-    },
-    {
-      "slot": 12,
-      "name": "Cool Ripple Projection",
-      "framing": "full",
-      "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A medium-soft key light from camera-left at approximately 45° and slightly above eye level creates soft shadows with feathered edges, a balanced contrast ratio, and a single diffuse catchlight at 10 o'clock. A strong blue gel is applied to all lights, including a background light with a ripple effect projector to create a dynamic water-like pattern across the background and floor, with slight falloff behind the subject. The overall color temperature is cool, approximately 6500K with a strong blue cast.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d360c291-5ea2-4235-840c-7e831798bd98",
-      "done": true
-    },
-    {
-      "slot": 16,
-      "name": "Hard Sunlight Graphic",
-      "framing": "full",
-      "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct, warm (~3200K) source from camera-right at about 60°, significantly above eye level, creating distinct, long shadows cast towards camera-left, with crisp edges and deep contrast against the background. There is minimal fill light, resulting in a high-contrast, dramatic look, with the subject partially silhouetted against a brighter background area while also having a strong rim light from the key on their camera-right side. A distinct, bright rectangular catchlight is visible at 10 o'clock in the eyes. The background is unevenly lit by the same hard source, with a bright diagonal strip of light and a darker falloff to the left, enhancing the overall graphic quality of the shadows.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/3cbbba99-d61d-4e57-ad23-d4c8c10ca8fe",
-      "done": true
-    },
-    {
-      "slot": 18,
-      "name": "Hard Split Backlight with Gel",
-      "framing": "full",
-      "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, direct source from camera-right, positioned high and slightly behind the subject, creating a dramatic, long, and sharp shadow on the background that falls to camera-left. Fill light is minimal, resulting in a high-contrast ratio with deep, hard-edged shadows on the camera-left side of the subject, creating a split-lighting effect. A large, soft, circular light source projects a neutral-to-warm ~4000K light onto the background, creating a bright spot for the subject to stand against, while the surrounding background is lit with a strong red gel, suggesting mixed color temperatures and colored light. Catchlights are small and high on the camera-right side of the eyes.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/45839e47-6949-49ee-8238-8787a37e19e6",
       "done": true
     },
     {
@@ -343,84 +435,12 @@
       "done": true
     },
     {
-      "slot": 3,
-      "name": "Soft Glam Shell",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, very soft source from camera-left at approximately 45°, slightly above eye level, providing a balanced, low-contrast fill with minimal shadows and soft edge transitions. A subtle rim light from camera-right separates the subject from the background. Catchlights are large and soft at 10 o'clock in the eyes. The lighting is neutral ~5500K, with the background evenly illuminated and slightly darker than the subject, creating a soft, ethereal high-key portrait.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d56f4123-a1c9-4ef2-9b91-50eb2c6b5eb9",
-      "done": true
-    },
-    {
-      "slot": 5,
-      "name": "Soft Glamour Loop Lighting",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned high and slightly to camera-right, creating soft, graduated shadows and a balanced contrast ratio. A subtle rim light from camera-left, positioned slightly behind, accentuates the contours and separates the subject from the background, which shows a gradual falloff to dark gray. Shadows are soft with feathered edges, and there is a single, large, soft catchlight at 11 o'clock in the eyes. The color temperature is neutral ~5500K.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/f76723da-c232-428d-861c-6070763cc232",
-      "done": true
-    },
-    {
-      "slot": 7,
-      "name": "High-Key Beauty Clamshell",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, very soft source from slightly camera-right, placed high and wrapping around the front, creating minimal shadows and a very balanced, flat fill. Shadows are very soft, shallow, and almost imperceptible, indicating a very low contrast ratio. Catchlights are large, soft rectangles at 10 and 2 o'clock in the eyes. The color temperature is neutral (~5500K), with a pure white background that appears evenly lit, suggesting a clamshell or butterfly setup with additional back/background lighting to eliminate falloff.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/5f56b5bd-c139-4865-adf1-75f9d845b8dc",
-      "done": true
-    },
-    {
-      "slot": 9,
-      "name": "Chiaroscuro Spot Accent",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, warm ~3200K spot from camera-right, high and forward at approximately 1 o'clock, creating a dramatic, high-contrast effect with deep, crisp shadows and a feathered edge transition. There is no visible fill, contributing to the overall low-key chiaroscuro style, and a single, small, bright catchlight is visible at 1 o'clock. The background is dark with significant falloff, illuminated only by the spill from the main key light, creating a focused, painterly light on the subject.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/87325626-9928-4e8e-b93e-967a0caa5196",
-      "done": true
-    },
-    {
-      "slot": 11,
-      "name": "Soft Magenta Clamshell",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned high and directly in front of the subject, creating a flat, beauty-style illumination with minimal shadows and a balanced contrast ratio. A subtle magenta-purple gel is applied to the key light, with a more saturated purple rim light from camera-right and slightly behind, creating separation and highlighting texture. Shadows are soft and minimal, falling directly behind the subject from the key light's perspective. Catchlights are large and soft, positioned centrally in the upper half of the eyes. The background is evenly lit with a magenta-purple color, showing a slight falloff to darker tones, enhancing the overall monochromatic purple mood.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/96710ce2-f2df-4245-818b-3c908aa32c69",
-      "done": true
-    },
-    {
-      "slot": 14,
-      "name": "Hard Spot Chiaroscuro",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A hard, direct key light is positioned high and slightly to camera-right, creating distinct shadows under the chin and nose, with minimal fill resulting in high contrast and a low-key aesthetic. Catchlights are small and sharp at approximately 1 o'clock, indicating a concentrated source like a bare bulb or small reflector, which also creates bright, specular highlights and starbursts on reflective surfaces. The background is dark, with soft, out-of-focus light spots suggesting a projector or scattered light effect. The overall color temperature is neutral to slightly cool.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/233bac86-0414-4823-a580-69d2218b1fa7",
-      "done": true
-    },
-    {
-      "slot": 32,
-      "name": "Hard Chiaroscuro Spotlight",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A hard, focused key light from camera-left at approximately 45° above eye level creates a dramatic, high-contrast chiaroscuro effect with deep shadows and minimal fill, resembling a theatrical spotlight. The shadows are hard and well-defined, with crisp edges falling to camera-right, and the background is dark with significant falloff. A single small, bright catchlight is visible at 10 o'clock in the visible eye, indicating a small, direct source. The color temperature is neutral, with no apparent gels.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/9712470e-c89b-4221-83d8-1c7c4a79c38f",
-      "done": true
-    },
-    {
-      "slot": 37,
-      "name": "Soft Clamshell Paramount",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A large, soft key light is positioned centrally and slightly above eye level, creating very soft, minimal shadows directly beneath the nose and chin, indicative of a butterfly/Paramount light. Fill light is balanced and even, suggesting a clamshell setup or large ambient bounce, resulting in a flat, high-key contrast ratio. There is no discernible rim or hair light. Shadows are very soft with feathered transitions and minimal depth. Catchlights are large, soft rectangles positioned at 12 o'clock in both eyes. The color temperature is neutral ~5500K. The background is evenly lit, slightly darker than the subject, with no significant falloff, creating a clean, professional look.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/e1113537-c5ff-40e0-97d1-0e635c6c817c",
-      "done": true
-    },
-    {
-      "slot": 39,
-      "name": "Soft Clamshell Portrait",
-      "framing": "head",
-      "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a large, soft source positioned directly in front of the subject, slightly above eye level, creating a balanced, nearly shadowless illumination with soft feathered edges. Fill light is very high, resulting in a flat, high-key contrast ratio, likely from the key source itself or a large reflector directly below. Catchlights are large and soft, positioned centrally at 12 o'clock in the eyes. The color temperature is neutral ~5500K, with the background evenly lit and reading slightly darker than the subject, showing minimal falloff.",
-      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/23ec400e-4624-4b59-a9eb-af8e28fecf66",
+      "slot": 47,
+      "name": "Hard Warm Kicker",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. The key light is a hard, warm (~2800K) source, likely a bare bulb or small reflector, placed camera-right at about 3 o'clock and slightly above eye level, creating a dramatic, high-contrast, low-key effect with no apparent fill light. Shadows are deep and hard-edged, falling on the camera-left side of the face and body, with a single bright catchlight visible in the eye at 10 o'clock. A subtle kicker or rim light from behind and camera-right separates the subject from the warm, medium-dark background, which exhibits gradual falloff.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/27138d00-581a-4acc-92e2-e68d565ef39e",
       "done": true
     }
   ],

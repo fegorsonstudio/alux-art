@@ -53,24 +53,60 @@ function saveQueue(q) {
 }
 
 /**
+ * Flow shows a "what's new" changelog in an iframe after each product update. It
+ * covers the page and swallows every click, and it registers as a [role=dialog] —
+ * so the picker never opens, the runner grabs the changelog as if it were the
+ * picker, finds no Uploads tab inside it, and fails every style in the queue.
+ * That is exactly how a 6-style run was lost. Clear it before touching anything.
+ */
+async function dismissOverlays(page) {
+  const overlay = () => page.locator('iframe[src*="changelog"]');
+  if (!(await overlay().count().catch(() => 0))) return;
+  await page.keyboard.press("Escape").catch(() => {});
+  await sleep(900);
+  if (await overlay().count().catch(() => 0)) {
+    await page.locator('[aria-label*="lose" i]').first().click({ timeout: 4000 }).catch(() => {});
+    await sleep(900);
+  }
+  if (await overlay().count().catch(() => 0)) {
+    await page.mouse.click(20, 500).catch(() => {});
+    await sleep(900);
+  }
+}
+
+/**
  * Attach the correct source photo. Returns true only when the exact expected
  * file is provably the selected one — otherwise returns false and generates
  * nothing, because a wrong attachment silently ruins the image.
  */
 async function attachSource(page, wantFile) {
+  await dismissOverlays(page);
+
   // Open the picker if it is not already open.
   if (!(await page.locator('[role="dialog"]').count())) {
     await page.locator('button:has-text("add_2")').first().click();
     await sleep(1800);
   }
-  const dlg = page.locator('[role="dialog"]').first();
+  let dlg = page.locator('[role="dialog"]').first();
   if (!(await dlg.count())) return { ok: false, why: "picker did not open" };
 
   // Uploads tab: generated images can never appear here. Only click it when it is
   // NOT already the active tab — clicking the selected tab is intercepted by the
   // tab bar and times out.
-  const tab = dlg.locator('[role="tab"]', { hasText: "Uploads" }).first();
-  if (!(await tab.count())) return { ok: false, why: "no Uploads tab" };
+  let tab = dlg.locator('[role="tab"]', { hasText: "Uploads" }).first();
+  // No Uploads tab means the dialog we grabbed is not the picker (an
+  // announcement, a survey, whatever Flow put up today). Clear it and reopen once
+  // before giving up — the tab itself has never actually gone missing.
+  if (!(await tab.count())) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await sleep(900);
+    await dismissOverlays(page);
+    await page.locator('button:has-text("add_2")').first().click({ timeout: 15000 }).catch(() => {});
+    await sleep(2200);
+    dlg = page.locator('[role="dialog"]').last();
+    tab = dlg.locator('[role="tab"]', { hasText: "Uploads" }).first();
+  }
+  if (!(await tab.count())) return { ok: false, why: "no Uploads tab (an overlay is covering the picker)" };
   if ((await tab.getAttribute("aria-selected")) !== "true") {
     await tab.click({ timeout: 10000 }).catch(() => {});
     await sleep(1800);
@@ -118,7 +154,11 @@ async function ensureSettings(page, { ratio = "3:4", variants = "1x" } = {}) {
 
   const tokens = RATIO_TOKENS[ratio] ?? [ratio];
   const label = async () => ((await modelBtn.innerText().catch(() => "")) || "").replace(/\s+/g, " ").trim();
-  const good = (l) => tokens.some((t) => l.includes(t)) && l.includes(variants);
+  // Flow renders the variant count as "1x" in some builds and "x1" in others —
+  // same setting, different formatting. Accept either, or the guard blocks a
+  // correctly-configured run (it aborted a whole batch over exactly this).
+  const variantForms = [variants, variants.split("").reverse().join("")];
+  const good = (l) => tokens.some((t) => l.includes(t)) && variantForms.some((v) => l.includes(v));
 
   if (good(await label())) return { ok: true, label: await label(), changed: false };
 
@@ -287,11 +327,18 @@ async function main() {
       // answer is to record which image this style produced, at the moment it
       // appears — the newest /edit/<id> that was not present before the send.
       const before = new Set(item._beforeIds ?? []);
-      await sleep(30000);
-      const after = await page.evaluate(() =>
-        [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
-      ).catch(() => []);
-      const fresh = after.filter((h) => h && !before.has(h));
+      // Poll rather than look once after a fixed wait. A single 30s snapshot
+      // missed a slower style twice in a row (slot 36) and recorded no id, which
+      // is what forces a regenerate — waiting longer costs nothing when the image
+      // is already there, because this returns the moment the new link appears.
+      let fresh = [];
+      for (let waited = 0; waited < 240000 && fresh.length === 0; waited += 5000) {
+        await sleep(5000);
+        const after = await page.evaluate(() =>
+          [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
+        ).catch(() => []);
+        fresh = after.filter((h) => h && !before.has(h));
+      }
       item.editHref = fresh[0] ?? null;   // newest-first grid: [0] is the new one
       delete item._beforeIds;
 
