@@ -187,18 +187,30 @@ interface ChoiceOptionDraft {
   error?: string;
 }
 
+// The three shot sizes a lighting style can be previewed on. A style is paired
+// with the original of ITS OWN framing, so like is compared with like.
+const LIGHTING_BEFORE_SLOTS = [
+  { framing: "full", label: "Full length", hint: "head to feet" },
+  { framing: "medium", label: "Waist-up", hint: "waist to head" },
+  { framing: "head", label: "Head & shoulders", hint: "close crop" },
+] as const;
+
 interface ChoiceGroupDraft {
   id: string;
   type: ChoiceGroupType;
   label: string;
   options: ChoiceOptionDraft[];
   // Lighting groups: shared "before" original for the buyer's crossfade preview.
+  // Legacy shared original, kept so templates that predate per-framing previews
+  // (and any style with no framing) still have something to crossfade from.
   beforeImagePath?: string;
   beforeImagePreview?: string;
   beforeUploading?: boolean;
-  // Per-shot-size "before" originals. Carried through the editor untouched so
-  // that saving an unrelated edit cannot wipe the framing-matched previews.
+  // One "before" per shot size, so a beauty clamshell crossfades against a
+  // head-and-shoulders original rather than a full-length one.
   beforeImages?: Record<string, string>;
+  beforeImagePreviews?: Record<string, string>;
+  beforeUploadingFraming?: string | null;
 }
 
 const defaultForm = () => ({
@@ -500,6 +512,15 @@ function CreatorDashboard() {
       label: g.label ?? GROUP_TYPE_META[(g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType].label,
       beforeImagePath: g.beforeImagePath ?? "",
       beforeImages: g.beforeImages,
+      beforeImagePreviews: Object.fromEntries(
+        Object.entries(g.beforeImages ?? {})
+          .filter(([, path]) => typeof path === "string" && path)
+          .map(([framing, path]) => [
+            framing,
+            bgImgs.find(img => img.storage_path === path)?.signed_url
+              ?? mediaUrl(g.beforeImageBucket ?? "template-images", path),
+          ])
+      ),
       beforeImagePreview: g.beforeImagePath
         ? (bgImgs.find(img => img.storage_path === g.beforeImagePath)?.signed_url ?? mediaUrl(g.beforeImageBucket ?? "template-images", g.beforeImagePath))
         : "",
@@ -862,21 +883,32 @@ function CreatorDashboard() {
 
   // Lighting group only: the shared "before" original the buyer's crossfade shows
   // against each style's "after" thumbnail. Display-only, never a generation ref.
-  const uploadLightingBeforeFile = async (file: File, groupId: string) => {
-    const patch = (p: Partial<ChoiceGroupDraft>) =>
-      setChoiceGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...p } : g));
-    patch({ beforeUploading: true });
+  const uploadLightingBeforeFile = async (file: File, groupId: string, framing: string) => {
+    const patch = (fn: (g: ChoiceGroupDraft) => Partial<ChoiceGroupDraft>) =>
+      setChoiceGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...fn(g) } : g));
+    patch(() => ({ beforeUploadingFraming: framing }));
     try {
       const f = await resizeIfNeeded(file);
       const fd = new FormData();
       fd.append("file", f, f.name);
       fd.append("bucket", "template-images");
       const res = await fetch("/api/upload/file", { method: "POST", body: fd });
-      if (!res.ok) { patch({ beforeUploading: false }); setFormError("Before image upload failed"); return; }
+      if (!res.ok) { patch(() => ({ beforeUploadingFraming: null })); setFormError("Before image upload failed"); return; }
       const { storagePath } = await res.json();
-      patch({ beforeUploading: false, beforeImagePath: storagePath, beforeImagePreview: URL.createObjectURL(file) });
+      const preview = URL.createObjectURL(file);
+      patch(g => ({
+        beforeUploadingFraming: null,
+        beforeImages: { ...(g.beforeImages ?? {}), [framing]: storagePath },
+        beforeImagePreviews: { ...(g.beforeImagePreviews ?? {}), [framing]: preview },
+        // Keep the shared fallback pointing at something sensible: the waist-up
+        // shot if there is one, otherwise whichever was uploaded first. Styles
+        // with no framing recorded fall back to it.
+        ...(framing === "medium" || !g.beforeImagePath
+          ? { beforeImagePath: storagePath, beforeImagePreview: preview }
+          : {}),
+      }));
     } catch {
-      patch({ beforeUploading: false });
+      patch(() => ({ beforeUploadingFraming: null }));
       setFormError("Upload failed — check your connection and try again");
     }
   };
@@ -2439,22 +2471,41 @@ function CreatorDashboard() {
                   />
 
                   {group.type === "lighting" && (
-                    <div style={{ border: "1px dashed rgba(127,127,127,0.4)", borderRadius: 8, padding: "8px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-                      {group.beforeImagePreview && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={group.beforeImagePreview} alt="before" style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 6 }} />
-                      )}
-                      <div style={{ display: "grid", gap: 4 }}>
-                        <label className={styles.addSceneBtn} style={{ cursor: "pointer" }}>
-                          {group.beforeUploading ? "Uploading..." : group.beforeImagePath ? 'Replace "before" original' : 'Upload "before" original'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            style={{ display: "none" }}
-                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadLightingBeforeFile(f, group.id); e.target.value = ""; }}
-                          />
-                        </label>
-                        <span style={{ fontSize: "0.72rem", opacity: 0.6 }}>One shared un-lit photo. Each style&apos;s thumbnail below auto-crossfades from this &quot;before&quot; to its &quot;after&quot;.</span>
+                    <div style={{ border: "1px dashed rgba(127,127,127,0.4)", borderRadius: 8, padding: "10px 12px", display: "grid", gap: 8 }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: 600 }}>&quot;Before&quot; originals</span>
+                      <span style={{ fontSize: "0.72rem", opacity: 0.6, lineHeight: 1.5 }}>
+                        Upload one un-lit photo per shot size. Each style&apos;s thumbnail crossfades from the
+                        original of its OWN shot size, so a close-up look is compared against a close-up.
+                        Any shot size you skip falls back to the waist-up photo.
+                      </span>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        {LIGHTING_BEFORE_SLOTS.map(slot => {
+                          const preview = group.beforeImagePreviews?.[slot.framing];
+                          const busy = group.beforeUploadingFraming === slot.framing;
+                          return (
+                            <div key={slot.framing} style={{ display: "grid", gap: 4, justifyItems: "center", width: 104 }}>
+                              <label style={{ cursor: busy ? "progress" : "pointer", width: 72, height: 90, borderRadius: 6, border: "1px solid rgba(127,127,127,0.35)", display: "grid", placeItems: "center", overflow: "hidden", background: "rgba(127,127,127,0.08)" }}>
+                                {preview ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={preview} alt={slot.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                  <span style={{ fontSize: "1.4rem", opacity: 0.45 }}>+</span>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  style={{ display: "none" }}
+                                  disabled={busy}
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadLightingBeforeFile(f, group.id, slot.framing); e.target.value = ""; }}
+                                />
+                              </label>
+                              <span style={{ fontSize: "0.72rem", fontWeight: 600, textAlign: "center" }}>{slot.label}</span>
+                              <span style={{ fontSize: "0.68rem", opacity: 0.55, textAlign: "center" }}>
+                                {busy ? "Uploading..." : preview ? "Tap to replace" : slot.hint}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
