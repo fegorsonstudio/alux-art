@@ -172,14 +172,29 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
       && group.beforeImagePath.startsWith(`${userId}/`)
       ? group.beforeImagePath
       : undefined;
+    // One "before" per shot size, same ownership rule. Without this the map is
+    // dropped on every save, so a creator editing anything unrelated would
+    // silently wipe the framing-matched previews.
+    let beforeImages: Partial<Record<LightingFraming, string>> | undefined;
+    if (type === "lighting" && group.beforeImages && typeof group.beforeImages === "object") {
+      const entries = Object.entries(group.beforeImages as Record<string, unknown>)
+        .filter(([framing, path]) =>
+          LIGHTING_FRAMINGS.includes(framing as LightingFraming)
+          && typeof path === "string"
+          && path.startsWith(`${userId}/`)
+        ) as [LightingFraming, string][];
+      if (entries.length > 0) beforeImages = Object.fromEntries(entries);
+    }
     out.push({
       id: typeof group.id === "string" && group.id ? group.id : crypto.randomUUID(),
       type,
       label,
       options,
-      ...(beforeImagePath
-        ? { beforeImagePath, beforeImageBucket: typeof group.beforeImageBucket === "string" && group.beforeImageBucket ? group.beforeImageBucket : "template-images" }
+      ...(beforeImages ? { beforeImages } : {}),
+      ...(beforeImagePath || beforeImages
+        ? { beforeImageBucket: typeof group.beforeImageBucket === "string" && group.beforeImageBucket ? group.beforeImageBucket : "template-images" }
         : {}),
+      ...(beforeImagePath ? { beforeImagePath } : {}),
     });
   }
   return out.length > 0 ? out : null;

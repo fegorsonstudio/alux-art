@@ -46,7 +46,7 @@ interface TemplateRow {
   role_chips?: string[];
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
-  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
+  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string }> }> | null;
   flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   trend_slots?: {
     mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
@@ -196,6 +196,9 @@ interface ChoiceGroupDraft {
   beforeImagePath?: string;
   beforeImagePreview?: string;
   beforeUploading?: boolean;
+  // Per-shot-size "before" originals. Carried through the editor untouched so
+  // that saving an unrelated edit cannot wipe the framing-matched previews.
+  beforeImages?: Record<string, string>;
 }
 
 const defaultForm = () => ({
@@ -496,6 +499,7 @@ function CreatorDashboard() {
       type: (g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType,
       label: g.label ?? GROUP_TYPE_META[(g.type in GROUP_TYPE_META ? g.type : "outfit") as ChoiceGroupType].label,
       beforeImagePath: g.beforeImagePath ?? "",
+      beforeImages: g.beforeImages,
       beforeImagePreview: g.beforeImagePath
         ? (bgImgs.find(img => img.storage_path === g.beforeImagePath)?.signed_url ?? mediaUrl(g.beforeImageBucket ?? "template-images", g.beforeImagePath))
         : "",
@@ -1192,6 +1196,7 @@ function CreatorDashboard() {
         type: g.type,
         label: g.label.trim() || GROUP_TYPE_META[g.type].label,
         ...(g.type === "lighting" && g.beforeImagePath ? { beforeImagePath: g.beforeImagePath } : {}),
+        ...(g.type === "lighting" && g.beforeImages ? { beforeImages: g.beforeImages } : {}),
         options: g.options.map(o => {
           // Lighting options are always "prompt" kind: hidden prompt (description)
           // + display-only thumbnail (imagePath). Other groups keep photo/text.

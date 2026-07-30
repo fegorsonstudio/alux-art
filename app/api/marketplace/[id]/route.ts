@@ -144,7 +144,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
           : null,
       })),
-      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string }> }) => ({
+      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string; framing?: string }> }) => ({
         id: g.id,
         type: g.type,
         label: g.label,
@@ -152,6 +152,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         // crossfade preview. Never a generation reference.
         beforeImageUrl: g.type === "lighting" && g.beforeImagePath
           ? r2ProxyUrl(g.beforeImageBucket ?? "template-images", g.beforeImagePath)
+          : null,
+        // One "before" per shot size. A clamshell beauty look was shot on a
+        // head-and-shoulders source and a floor gobo on a full-length one, so
+        // pairing every style with a single before makes half the previews
+        // compare different framings and read as a mistake.
+        beforeImageUrls: g.type === "lighting" && g.beforeImages
+          ? Object.fromEntries(
+              Object.entries(g.beforeImages)
+                .filter(([, path]) => typeof path === "string" && path)
+                .map(([framing, path]) => [framing, r2ProxyUrl(g.beforeImageBucket ?? "template-images", path)])
+            )
           : null,
         options: (g.options ?? []).map((o) => ({
           id: o.id,
@@ -164,6 +175,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           imageUrl: (o.kind === "photo" || o.kind === "prompt") && o.imagePath
             ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
             : null,
+          // Which shot size this style was previewed on, so the client can pair it
+          // with the matching "before".
+          framing: o.framing ?? null,
         })),
       })),
       poseOptions: (Array.isArray(template.pose_options) ? template.pose_options : []).map((p: { id: string; name: string; description?: string; imagePath: string; imageBucket?: string }) => ({

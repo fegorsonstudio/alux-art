@@ -79,6 +79,7 @@ interface TemplateDetail {
     type: string;
     label: string;
     beforeImageUrl?: string | null;
+    beforeImageUrls?: Record<string, string> | null;
     options: Array<{
       id: string;
       name: string;
@@ -86,6 +87,7 @@ interface TemplateDetail {
       description?: string;
       imagePath?: string | null;
       imageUrl?: string | null;
+      framing?: string | null;
     }>;
   }>;
   flagShot?: { enabled: boolean; imageUrl?: string | null } | null;
@@ -271,6 +273,15 @@ export default function CheckoutPanel({
   // Shared "before" original for the crossfade preview (one per lighting group in
   // practice; take the first that has one).
   const lightingBeforeUrl = lightingGroups.map(g => g.beforeImageUrl).find(Boolean) ?? null;
+  // Per-shot-size "before" originals. Each style was previewed on a source of its
+  // own framing, so a beauty clamshell crossfades against the head-and-shoulders
+  // original and a floor gobo against the full-length one. Without this every
+  // style compares against one framing and half the previews look like a mistake.
+  const lightingBeforeByFraming = lightingGroups
+    .map(g => g.beforeImageUrls)
+    .find(m => m && Object.keys(m).length > 0) ?? null;
+  const beforeUrlFor = (framing?: string | null) =>
+    (framing && lightingBeforeByFraming?.[framing]) || lightingBeforeUrl;
   const pickableGroups = choiceGroups.filter(g => g.type !== "lighting" && !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
   const multiGroups = choiceGroups.filter(g => g.type !== "lighting" && MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
@@ -1206,7 +1217,7 @@ export default function CheckoutPanel({
                                 borderRadius: 8, minWidth: 58,
                               }}
                             >
-                              <LightingThumb beforeUrl={lightingBeforeUrl} afterUrl={o.imageUrl} name={o.name} size={56} />
+                              <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
                               <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
                               {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
                             </button>
@@ -1452,7 +1463,7 @@ export default function CheckoutPanel({
                             borderRadius: 8, minWidth: 64,
                           }}
                         >
-                          <LightingThumb beforeUrl={lightingBeforeUrl} afterUrl={o.imageUrl} name={o.name} size={72} />
+                          <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={72} />
                           <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
                           {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
                         </button>
