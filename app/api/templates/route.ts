@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 import { ASPECTS, packagePrice } from "@/lib/types";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
 import { sanitizeOptionGroups } from "@/lib/choice-groups";
@@ -67,7 +68,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid aspect ratio" }, { status: 400 });
   }
 
-  const platformFeeNgn = await getPlatformFee();
+  // Admin-authored templates are exempt from the platform-fee floor — see the
+  // note in app/api/templates/[id]/route.ts.
+  const platformFeeNgn = isAdminEmail(user.email) ? 0 : await getPlatformFee();
 
   if (!Number.isInteger(priceNgn) || (priceNgn as number) <= platformFeeNgn) {
     return NextResponse.json({ error: `10-image price must be more than ₦${platformFeeNgn.toLocaleString()} (the platform fee)` }, { status: 400 });

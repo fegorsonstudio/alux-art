@@ -145,6 +145,7 @@ const en = {
     pickLightingOrOff: "Pick at least one lighting look, or turn manual lighting off.",
     perPhotoLightingHint: "On: assign a lighting look to each photo. Off: one lighting rig for all photos.",
     uploadPhotosFirst: "Upload your photos first, then assign a lighting look to each.",
+    perPhotoPrice: "each",
     pickLookThenUpload: "Pick a look now and it will be used for every photo you upload. You can change any photo afterwards.",
     lightingPickedForAll: "That look will be applied to every photo you upload. You can change any photo afterwards.",
     assignEachPhoto: "Assign a lighting look to every photo.",

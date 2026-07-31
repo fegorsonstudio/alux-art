@@ -108,7 +108,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  const buyerPackageSize: 1 | 5 | 10 = ([1, 5, 10] as const).includes(body.packageSize as 1 | 5 | 10)
+  // What the buyer asked for. Which of these counts is legal depends on the
+  // template, which is loaded further down, so the decision is made there.
+  const requestedCount = Number(body.packageSize);
+  const packagedSize: 1 | 5 | 10 = ([1, 5, 10] as const).includes(body.packageSize as 1 | 5 | 10)
     ? (body.packageSize as 1 | 5 | 10)
     : 10;
 
@@ -121,7 +124,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const VALID_SHOT_TYPES = new Set(["headshot", "close_up", "medium", "full_body"]);
   const shotType: string | null =
-    buyerPackageSize === 1 && typeof body.shotType === "string" && VALID_SHOT_TYPES.has(body.shotType)
+    packagedSize === 1 && typeof body.shotType === "string" && VALID_SHOT_TYPES.has(body.shotType)
       ? body.shotType
       : null;
 
@@ -151,6 +154,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
   const isAdmin = isAdminEmail(user.email);
+
+  // Photo upgrades are priced PER IMAGE rather than in 1/5/10 packages: the buyer
+  // brings however many photos they have and pays the single-image price for
+  // each, up to ten. Everything else keeps the fixed packages.
+  const perImagePricing = template.category === "photo_upgrade";
+  const buyerPackageSize: number = perImagePricing
+    ? Math.min(10, Math.max(1, Number.isInteger(requestedCount) ? requestedCount : 1))
+    : packagedSize;
 
   // A free booking (admin, sponsor-funded template, or an admin-granted credit)
   // never touches a payment gateway, so the creator's payout setup is irrelevant
@@ -374,15 +385,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  const platformFeeNgn = packagePrice(basePlatformFeeNgn, buyerPackageSize);
-
   const price10 = Number(template.price_ngn) || 0;
+  const unitPriceNgn = template.price_1_ngn != null
+    ? Number(template.price_1_ngn)
+    : (price10 ? Math.round(price10 * 0.12) : 0);
+
+  // Per-image: the fee and the price both scale with the actual photo count.
+  const platformFeeNgn = perImagePricing
+    ? Math.ceil(basePlatformFeeNgn * (buyerPackageSize / 10))
+    : packagePrice(basePlatformFeeNgn, buyerPackageSize as 1 | 5 | 10);
+
   const priceMap: Record<1 | 5 | 10, number | null> = {
-    1: template.price_1_ngn != null ? Number(template.price_1_ngn) : (price10 ? Math.round(price10 * 0.12) : null),
+    1: unitPriceNgn || null,
     5: template.price_5_ngn != null ? Number(template.price_5_ngn) : (price10 ? Math.round(price10 * 0.60) : null),
     10: price10 || null,
   };
-  const buyerAmountNgn: number | null = priceMap[buyerPackageSize];
+  const buyerAmountNgn: number | null = perImagePricing
+    ? (unitPriceNgn ? unitPriceNgn * buyerPackageSize : null)
+    : priceMap[buyerPackageSize as 1 | 5 | 10];
   if (!buyerAmountNgn) {
     return NextResponse.json({ error: "This package is not available for this template" }, { status: 422 });
   }

@@ -146,6 +146,7 @@ const es: AppDictionary = {
     pickLightingOrOff: "Elige al menos un estilo de iluminación, o desactiva la iluminación manual.",
     perPhotoLightingHint: "Activado: asigna un estilo de iluminación a cada foto. Desactivado: una sola iluminación para todas.",
     uploadPhotosFirst: "Sube tus fotos primero y luego asigna un estilo de iluminación a cada una.",
+    perPhotoPrice: "cada una",
     pickLookThenUpload: "Elige un estilo ahora y se usara en todas las fotos que subas. Podras cambiar cada foto despues.",
     lightingPickedForAll: "Ese estilo se aplicara a todas las fotos que subas. Podras cambiar cada foto despues.",
     assignEachPhoto: "Asigna un estilo de iluminación a cada foto.",

@@ -146,6 +146,7 @@ const pcm: AppDictionary = {
     pickLightingOrOff: "Pick at least one lighting style, or turn off di manual lighting.",
     perPhotoLightingHint: "On: give each photo im own lighting style. Off: one lighting for all di photos.",
     uploadPhotosFirst: "Upload your photos first, den give each one im own lighting style.",
+    perPhotoPrice: "each one",
     pickLookThenUpload: "Pick one look now, e go work for every photo wey you upload. You fit change any photo later.",
     lightingPickedForAll: "Dat look go apply to every photo wey you upload. You fit change any photo later.",
     assignEachPhoto: "Give each photo im own lighting style.",

@@ -970,8 +970,15 @@ export default function CheckoutPanel({
   const enhanceLightingValid = perPhotoLightingActive
     ? sourcePhotos.length > 0 && sourcePhotos.every(p => !!lightingByPhoto[p.storagePath])
     : !!enhanceLighting;
+  // Photo upgrades are priced per image: the buyer brings however many photos
+  // they have (1-10) and pays the single-image price for each, rather than being
+  // forced into a 1/5/10 package and made to upload exactly that many.
+  const perImagePricing = photoUpgradeActive;
+  const unitPriceNgn = pkgOptions.find(o => o.n === 1)?.price ?? 0;
+  const uploadedCount = Math.min(10, allIdentityRefs.length);
+  const effectivePkg = perImagePricing ? Math.max(1, uploadedCount) : selectedPkg;
   const enhanceValid = !photoUpgradeActive
-    || (enhanceLightingValid && !!enhanceCamera && allIdentityRefs.length === selectedPkg);
+    || (enhanceLightingValid && !!enhanceCamera && uploadedCount >= 1 && uploadedCount <= 10);
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
@@ -1046,7 +1053,7 @@ export default function CheckoutPanel({
         })),
         shotType: selectedPkg === 1 ? shotType : undefined,
         couponCode: couponResult?.valid ? couponCode : undefined,
-        packageSize: selectedPkg,
+        packageSize: effectivePkg,
         currency,
         rolePrompt: template.isStory && rolePrompt.trim() ? rolePrompt.trim() : undefined,
         storyAssets,
@@ -1120,7 +1127,9 @@ export default function CheckoutPanel({
   // ── Derived price ─────────────────────────────────────────────────────────
 
   const activePkg = pkgOptions.find(o => o.n === selectedPkg) ?? pkgOptions[pkgOptions.length - 1];
-  const pkgPrice = activePkg?.price ?? 0;
+  const pkgPrice = perImagePricing
+    ? unitPriceNgn * Math.max(1, uploadedCount)
+    : (activePkg?.price ?? 0);
   const displayedPrice = couponResult?.valid && couponResult.discountNgn
     ? pkgPrice - couponResult.discountNgn
     : pkgPrice;
@@ -1167,8 +1176,20 @@ export default function CheckoutPanel({
               {t("signedOutSetup")}
             </button>
           )}
+          {/* Photo upgrades: no packages, just a price per photo. */}
+          {perImagePricing && unitPriceNgn > 0 && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>{t("images")}</span>
+              <p className={styles.sectionHint} style={{ margin: 0 }}>
+                {formatPrice(unitPriceNgn)} {t("perPhotoPrice")}{" "}
+                {uploadedCount > 0
+                  ? `— ${uploadedCount} ${imagesWord(uploadedCount)} = ${formatPrice(unitPriceNgn * uploadedCount)}`
+                  : ""}
+              </p>
+            </div>
+          )}
           {/* Package picker */}
-          {pkgOptions.length > 1 && (
+          {!perImagePricing && pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("images")}</span>
               <div className={styles.pkgPills}>
@@ -1188,7 +1209,7 @@ export default function CheckoutPanel({
           )}
 
           {/* Shot type (1-image package only) */}
-          {selectedPkg === 1 && (
+          {!perImagePricing && selectedPkg === 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("shotType")}</span>
               <div className={styles.shotTypeRow}>

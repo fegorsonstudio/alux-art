@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 import { ASPECTS, packagePrice } from "@/lib/types";
 import { r2ProxyUrl } from "@/lib/r2";
 import { sanitizeBackgroundOptions, categoryAllowsBackgroundOptions } from "@/lib/background-plan";
@@ -56,7 +57,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!creator) return NextResponse.json({ error: "Creator profile not found" }, { status: 404 });
 
   const body = await request.json() as Record<string, unknown>;
-  const platformFeeNgn = await getPlatformFee();
+  // The platform-fee floor exists so an outside creator cannot price a template
+  // below what a shoot costs us to run. It does not apply to Alux Art's own
+  // templates: the upgrade/relight products are deliberately cheap, and the
+  // margin on them is the studio's call, not a rule to be enforced against
+  // itself. Admin-authored templates therefore price freely.
+  const isAdmin = isAdminEmail(user.email);
+  const platformFeeNgn = isAdmin ? 0 : await getPlatformFee();
   const updates: Record<string, unknown> = { updated_at: new Date() };
 
   if (typeof body.title === "string" && body.title.trim().length >= 2) updates.title = body.title.trim();
