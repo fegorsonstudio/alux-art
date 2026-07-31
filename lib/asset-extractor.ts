@@ -121,18 +121,30 @@ const A = (id: string, label: string, directive: string): AssetAngle => ({ id, l
 // generator every side of the garment at once instead of one arbitrary view.
 export const SHEET_ANGLE_ID = "sheet";
 
-const SHEET_RULES =
-  "SHEET LAYOUT — produce ONE single image divided into equal panels arranged " +
-  "as a grid in the order listed, reading left to right then top to bottom, " +
-  "separated by a thin neutral gap: FOUR panels are two rows of two, three " +
-  "panels sit in one row, two panels sit side by side. The mid-grey " +
-  "backdrop runs continuously behind every panel so the sheet reads as one " +
-  "photograph, not a pasted-together collage. Every panel shows the SAME single " +
-  "item at the SAME scale under the SAME light — only the viewing angle changes " +
-  "between them. Print each panel's name in small plain grey type under it. " +
-  "Where the framing rule below says the item fills the frame, it means the item " +
-  "fills ITS OWN PANEL. Every panel is the same size and the grid fills the " +
-  "whole frame edge to edge.";
+const sheetRules = (count: number, layout: string): string =>
+  "SHEET LAYOUT — produce ONE single image containing EXACTLY " + count + " panel" +
+  (count === 1 ? "" : "s") + ", " + layout + ", in the order listed and read left " +
+  "to right then top to bottom. " +
+  // Stated as a hard count and repeated as a prohibition: given a menu of
+  // layouts the model chose its own, padding a two-view sheet out to a
+  // four-panel grid by repeating views and inventing a new one.
+  "THE COUNT IS FIXED: there are " + count + " panels, no more and no fewer. Do " +
+  "not repeat a view, do not duplicate a panel to fill space, do not add a view " +
+  "that is not on the list, and do not leave a panel empty. " +
+  "Every panel is the same size, and together they fill the whole frame edge to " +
+  "edge with no border or margin around the outside. The mid-grey backdrop runs " +
+  "continuously behind every panel, divided only by a thin neutral line, so the " +
+  "sheet reads as one photograph rather than pictures pasted onto a page. Every " +
+  "panel shows the SAME single item at the SAME scale under the SAME light — only " +
+  "the viewing angle changes between them. Print each panel's name in small plain " +
+  "grey type under it. Where the framing rule below says the item fills the frame, " +
+  "it means the item fills ITS OWN PANEL.";
+
+const sheetLayout = (n: number): string =>
+  n === 4 ? "arranged as two rows of two"
+  : n === 3 ? "arranged side by side in a single row of three"
+  : n === 2 ? "arranged side by side in a single row of two"
+  : "filling the frame on its own";
 
 /**
  * The single view a kind renders as. Multi-view kinds collapse into one sheet;
@@ -144,7 +156,7 @@ export function assetSheetAngle(kind: AssetKind): AssetAngle {
     id: SHEET_ANGLE_ID,
     label: kind.angles.map((a) => a.label).join(" / "),
     directive:
-      SHEET_RULES + " THE PANELS, IN ORDER — " +
+      sheetRules(kind.angles.length, sheetLayout(kind.angles.length)) + " THE PANELS, IN ORDER — " +
       kind.angles.map((a, i) => `PANEL ${i + 1} (${a.label}): ${a.directive}`).join(" "),
   };
 }
@@ -274,7 +286,10 @@ export const ASSET_KINDS: AssetKind[] = [
         "necklace or pendant hung on a featureless white neck-and-shoulders bust " +
         "with the chain falling naturally and the pendant centred, and any " +
         "earrings on small white ear forms beside it, left and right kept on their " +
-        "own sides. Omit this view entirely if no neck or ear jewellery is worn."),
+        "own sides. If the source shows no neck or ear jewellery at all, use this " +
+        "panel for the wrist-worn pieces instead — bracelets, bangles or a watch on " +
+        "plain white wrist forms, each on the side it is worn on — so the panel is " +
+        "never empty."),
     ],
     directive:
       "Extract every piece of jewellery worn — rings, bracelets, bangles, watch, " +
