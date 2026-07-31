@@ -315,6 +315,12 @@ export default function CheckoutPanel({
   const [lightingPicks, setLightingPicks] = useState<string[]>([]);
   // photo_upgrade per-photo lighting: source photo storagePath → lighting optionId.
   const [lightingByPhoto, setLightingByPhoto] = useState<Record<string, string>>({});
+  // A look chosen before any photo is uploaded, applied to every photo as it
+  // arrives. Without this the picker showed 193 dimmed, unclickable thumbnails
+  // until photos existed, which reads as broken rather than as "upload first" —
+  // and it forced the buyer to assign every photo one at a time even when they
+  // wanted the same look on all of them.
+  const [defaultLighting, setDefaultLighting] = useState<string | null>(null);
   // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
 
@@ -395,6 +401,7 @@ export default function CheckoutPanel({
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+
 
   // Load saved identity refs + init tagged refs from template
   useEffect(() => {
@@ -812,6 +819,22 @@ export default function CheckoutPanel({
       ]
     : [];
 
+  // Apply the look chosen before uploading to every photo that has no look of
+  // its own, including photos added later. A per-photo choice always wins, so
+  // picking one look for everything and then changing a single photo works.
+  const photoPathsKey = sourcePhotos.map(p => p.storagePath).join("|");
+  useEffect(() => {
+    if (!defaultLighting || !photoPathsKey) return;
+    setLightingByPhoto(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const path of photoPathsKey.split("|")) {
+        if (path && !next[path]) { next[path] = defaultLighting; changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [defaultLighting, photoPathsKey]);
+
   const anyUploading = newUploads.some(u => u.uploading) || poseUploads.some(u => u.uploading)
     || costarUploads.some(u => u.uploading) || !!groupPhotoUpload?.uploading || brandUploads.some(u => u.uploading);
   const bgAllocTotal = Object.values(bgAlloc).reduce((a, b) => a + b, 0);
@@ -1225,8 +1248,12 @@ export default function CheckoutPanel({
                       they are buying, and it is obvious why they cannot pick yet. */}
                   {sourcePhotos.length === 0 && (
                     <>
-                      <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>
-                      <div style={{ opacity: 0.5, pointerEvents: "none" }} aria-hidden="true">
+                      <p className={styles.sectionHint}>
+                        {defaultLighting
+                          ? t("lightingPickedForAll")
+                          : t("pickLookThenUpload")}
+                      </p>
+                      <div>
                         {lightingSections.map(section => (
                           <div key={section.id} style={{ marginBottom: 10 }}>
                             {showLightingHeadings && (
@@ -1235,12 +1262,27 @@ export default function CheckoutPanel({
                               </p>
                             )}
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                              {section.looks.map(o => (
-                                <div key={o.id} title={o.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 4, minWidth: 58 }}>
-                                  <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
-                                  <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
-                                </div>
-                              ))}
+                              {section.looks.map(o => {
+                                const on = defaultLighting === o.id;
+                                return (
+                                  <button
+                                    key={o.id}
+                                    type="button"
+                                    title={o.name}
+                                    onClick={() => setDefaultLighting(on ? null : o.id)}
+                                    style={{
+                                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                                      background: "none", cursor: "pointer", padding: 4,
+                                      border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                                      borderRadius: 8, minWidth: 58,
+                                    }}
+                                  >
+                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
+                                    <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                                    {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}

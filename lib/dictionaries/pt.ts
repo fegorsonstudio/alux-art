@@ -146,6 +146,8 @@ const pt: AppDictionary = {
     pickLightingOrOff: "Escolha pelo menos um estilo de iluminação, ou desative a iluminação manual.",
     perPhotoLightingHint: "Ligado: atribua um estilo de iluminação a cada foto. Desligado: uma única iluminação para todas.",
     uploadPhotosFirst: "Envie suas fotos primeiro e depois atribua um estilo de iluminação a cada uma.",
+    pickLookThenUpload: "Escolha um visual agora e ele sera usado em todas as fotos que enviar. Pode alterar cada foto depois.",
+    lightingPickedForAll: "Esse visual sera aplicado a todas as fotos que enviar. Pode alterar cada foto depois.",
     assignEachPhoto: "Atribua um estilo de iluminação a cada foto.",
     nPicked: "{n} escolhido(s)",
     optionalTap: "opcional — toque para ver",
