@@ -1012,19 +1012,33 @@ async function generateImageWithFal(
     return `https://image.pollinations.ai/prompt/${encoded}?width=${w}&height=${h}&nologo=1&seed=${Date.now()}`;
   }
 
-  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
-    input: {
-      prompt,
-      num_images: 1,
-      // All our AspectRatio values are in fal's union; cast through unknown to satisfy strict type
-      aspect_ratio: aspectRatio as unknown as "4:5",
-      output_format: "png",
-      safety_tolerance: "6",
-      image_urls: imageUrls.slice(0, NANO_BANANA_MAX_IMAGES),
-      limit_generations: false,
-      ...(resolution ? { resolution: resolution as unknown as "4K" } : {}),
-    },
-  });
+  let response;
+  try {
+    response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
+      input: {
+        prompt,
+        num_images: 1,
+        // All our AspectRatio values are in fal's union; cast through unknown to satisfy strict type
+        aspect_ratio: aspectRatio as unknown as "4:5",
+        output_format: "png",
+        safety_tolerance: "6",
+        image_urls: imageUrls.slice(0, NANO_BANANA_MAX_IMAGES),
+        limit_generations: false,
+        ...(resolution ? { resolution: resolution as unknown as "4K" } : {}),
+      },
+    });
+  } catch (err) {
+    // fal's ValidationError carries the REASON in its body; the bare Error
+    // message is only the HTTP status text. A real failure was recorded as
+    // "Unprocessable Entity" with nothing to act on — whether the prompt was
+    // refused, an image URL was unreachable, or a field was invalid was lost.
+    const e = err as { message?: string; status?: number; body?: unknown };
+    const detail = e?.body ? JSON.stringify(e.body).slice(0, 600) : "";
+    console.error("[fal] nano-banana-2/edit failed:", e?.status ?? "", e?.message ?? String(err),
+      detail ? "| detail: " + detail : "| (no detail in error body)",
+      "| images:", imageUrls.length, "| aspect:", aspectRatio, "| resolution:", resolution ?? "default");
+    throw new Error(`fal ${e?.status ?? ""} ${e?.message ?? String(err)}${detail ? " — " + detail : ""}`.trim());
+  }
 
   // Handle both newer and older fal-ai/client versions
   const output = ((response as Record<string, unknown>).data || response) as FalOutput;
