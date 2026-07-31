@@ -1447,8 +1447,16 @@ export default function CheckoutPanel({
                   )}
                   {sourcePhotos.map((sp, i) => (
                     <div key={sp.storagePath} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
-                      <ImagePreview src={sp.preview} alt={`Photo ${i + 1}`} className={styles.savedImg} preferredWidth={72} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Fixed box. Without it the uploaded photo contributes its
+                          natural width to the flex row, takes almost all of it,
+                          and squeezes the looks into an unusable strip at the
+                          right edge — which is exactly what a 3-photo booking
+                          looked like on a phone. */}
+                      <span style={{ flex: "0 0 72px", width: 72, height: 90, borderRadius: 6, overflow: "hidden", display: "block" }}>
+                        <ImagePreview src={sp.preview} alt={`Photo ${i + 1}`} className={styles.savedImg} preferredWidth={72}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </span>
+                      <div style={{ flex: "1 1 0", minWidth: 0 }}>
                         {lightingSections.map(section => (
                           <div key={section.id} style={{ marginBottom: 10 }}>
                             {showLightingHeadings && (
