@@ -26,6 +26,96 @@ function thumbSrc(url: string, displayWidth: number) {
   return `${url}${sep}width=${w}&quality=72&format=webp`;
 }
 
+/**
+ * Big before/after preview, opened by holding a look tile.
+ *
+ * A drag handle rather than a crossfade: at this size the buyer wants to compare
+ * the two states themselves, and a timed fade makes that impossible — you cannot
+ * hold both halves in your eye at once. Dragging also works the same with a
+ * finger and a mouse.
+ */
+function LookPreview({ name, beforeUrl, afterUrl, onClose }: {
+  name: string; beforeUrl: string | null; afterUrl: string | null; onClose: () => void;
+}) {
+  const [split, setSplit] = useState(50);
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const setFromClientX = (clientX: number) => {
+    const box = frameRef.current?.getBoundingClientRect();
+    if (!box || box.width === 0) return;
+    setSplit(Math.min(100, Math.max(0, ((clientX - box.left) / box.width) * 100)));
+  };
+
+  // 1200px covers the full width of any phone at 2x, and these are 1K originals.
+  const big = (u: string | null) => (!u ? null : `${u}${u.includes("?") ? "&" : "?"}width=1200&quality=82&format=webp`);
+  const beforeBig = big(beforeUrl), afterBig = big(afterUrl);
+
+  return (
+    <div
+      role="dialog"
+      aria-label={`${name} before and after`}
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.88)",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 16,
+      }}
+    >
+      <div
+        ref={frameRef}
+        onClick={e => e.stopPropagation()}
+        onPointerDown={e => { dragging.current = true; setFromClientX(e.clientX); }}
+        onPointerMove={e => { if (dragging.current) setFromClientX(e.clientX); }}
+        onPointerUp={() => { dragging.current = false; }}
+        onPointerLeave={() => { dragging.current = false; }}
+        style={{
+          position: "relative", width: "min(88vw, 460px)", aspectRatio: "3 / 4",
+          borderRadius: 12, overflow: "hidden", touchAction: "none", cursor: "ew-resize",
+          background: "rgba(255,255,255,0.04)",
+        }}
+      >
+        {beforeBig && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={beforeBig} alt="before" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        )}
+        {afterBig && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={afterBig}
+            alt={name}
+            style={{
+              position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+              clipPath: `inset(0 0 0 ${split}%)`,
+            }}
+          />
+        )}
+        {beforeBig && afterBig && (
+          <>
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: `${split}%`, width: 2, background: "rgba(255,255,255,0.9)", pointerEvents: "none" }} />
+            <div style={{
+              position: "absolute", top: "50%", left: `${split}%`, transform: "translate(-50%, -50%)",
+              width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.95)", color: "#111",
+              display: "grid", placeItems: "center", fontSize: "0.8rem", pointerEvents: "none",
+            }}>◂▸</div>
+            <span style={{ position: "absolute", left: 10, bottom: 10, fontSize: "0.68rem", letterSpacing: "0.08em", color: "#fff", background: "rgba(0,0,0,0.5)", padding: "3px 7px", borderRadius: 4, pointerEvents: "none" }}>BEFORE</span>
+            <span style={{ position: "absolute", right: 10, bottom: 10, fontSize: "0.68rem", letterSpacing: "0.08em", color: "#fff", background: "rgba(0,0,0,0.5)", padding: "3px 7px", borderRadius: 4, pointerEvents: "none" }}>AFTER</span>
+          </>
+        )}
+      </div>
+      <p style={{ color: "#fff", fontSize: "0.95rem", fontWeight: 600, margin: 0, textAlign: "center" }}>{name}</p>
+      <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.75rem", margin: 0, textAlign: "center" }}>
+        Drag to compare · tap anywhere to close
+      </p>
+    </div>
+  );
+}
+
 function LightingThumb({ beforeUrl, afterUrl, name, size = 64 }: {
   beforeUrl?: string | null; afterUrl?: string | null; name: string; size?: number;
 }) {
@@ -304,6 +394,35 @@ export default function CheckoutPanel({
     .find(m => m && Object.keys(m).length > 0) ?? null;
   const beforeUrlFor = (framing?: string | null) =>
     (framing && lightingBeforeByFraming?.[framing]) || lightingBeforeUrl;
+
+  // Hold a look to see it big. At 56px a thumbnail cannot show whether a look is
+  // worth buying, and the crossfade at that size is easy to miss entirely.
+  const [lookPreview, setLookPreview] = useState<{ name: string; beforeUrl: string | null; afterUrl: string | null } | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const clearPress = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
+  /** Press-and-hold props for a look tile. Spread onto the tile's button. */
+  const holdToPreview = (o: { id: string; name: string; imageUrl?: string | null; framing?: string | null }) => ({
+    onPointerDown: () => {
+      longPressFired.current = false;
+      clearPress();
+      pressTimer.current = setTimeout(() => {
+        longPressFired.current = true;
+        setLookPreview({ name: o.name, beforeUrl: beforeUrlFor(o.framing) ?? null, afterUrl: o.imageUrl ?? null });
+      }, 420);
+    },
+    onPointerUp: clearPress,
+    onPointerLeave: clearPress,
+    onPointerCancel: clearPress,
+    // Stop iOS showing its own "save image" menu on a long press.
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  });
+  /** True when the tap was really a hold, so the tile must not also select. */
+  const consumedByHold = () => {
+    if (!longPressFired.current) return false;
+    longPressFired.current = false;
+    return true;
+  };
   const pickableGroups = choiceGroups.filter(g => g.type !== "lighting" && !MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 2);
   const multiGroups = choiceGroups.filter(g => g.type !== "lighting" && MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
@@ -1008,6 +1127,16 @@ export default function CheckoutPanel({
 
   return (
     <>
+      {/* Hold a look to compare it big. Sits above the checkout panel. */}
+      {lookPreview && (
+        <LookPreview
+          name={lookPreview.name}
+          beforeUrl={lookPreview.beforeUrl}
+          afterUrl={lookPreview.afterUrl}
+          onClose={() => setLookPreview(null)}
+        />
+      )}
+
       {/* Backdrop */}
       <div className={styles.overlay} onClick={onClose} />
 
@@ -1269,7 +1398,8 @@ export default function CheckoutPanel({
                                     key={o.id}
                                     type="button"
                                     title={o.name}
-                                    onClick={() => setDefaultLighting(on ? null : o.id)}
+                                    onClick={() => { if (consumedByHold()) return; setDefaultLighting(on ? null : o.id); }}
+                                    {...holdToPreview(o)}
                                     style={{
                                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                                       background: "none", cursor: "pointer", padding: 4,
@@ -1308,7 +1438,8 @@ export default function CheckoutPanel({
                                     key={o.id}
                                     type="button"
                                     title={o.name}
-                                    onClick={() => setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id }))}
+                                    onClick={() => { if (consumedByHold()) return; setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id })); }}
+                                    {...holdToPreview(o)}
                                     style={{
                                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                                       background: "none", cursor: "pointer", padding: 4,
@@ -1564,7 +1695,8 @@ export default function CheckoutPanel({
                               key={o.id}
                               type="button"
                               title={o.name}
-                              onClick={() => setLightingPicks(prev => isOn ? prev.filter(id => id !== o.id) : [...prev, o.id])}
+                              onClick={() => { if (consumedByHold()) return; setLightingPicks(prev => isOn ? prev.filter(id => id !== o.id) : [...prev, o.id]); }}
+                              {...holdToPreview(o)}
                               style={{
                                 display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                                 background: "none", cursor: "pointer", padding: 4,
