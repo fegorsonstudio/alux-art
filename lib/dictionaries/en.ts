@@ -146,6 +146,8 @@ const en = {
     perPhotoLightingHint: "On: assign a lighting look to each photo. Off: one lighting rig for all photos.",
     uploadPhotosFirst: "Upload your photos first, then assign a lighting look to each.",
     perPhotoPrice: "each",
+    upgradeHintAny: "Upload any number of photos from 1 to 10 — you pay per photo.",
+    uploadOneToTen: "Upload between 1 and 10 photos.",
     pickLookThenUpload: "Pick a look now and it will be used for every photo you upload. You can change any photo afterwards.",
     lightingPickedForAll: "That look will be applied to every photo you upload. You can change any photo afterwards.",
     assignEachPhoto: "Assign a lighting look to every photo.",

@@ -147,6 +147,8 @@ const pcm: AppDictionary = {
     perPhotoLightingHint: "On: give each photo im own lighting style. Off: one lighting for all di photos.",
     uploadPhotosFirst: "Upload your photos first, den give each one im own lighting style.",
     perPhotoPrice: "each one",
+    upgradeHintAny: "Upload any number of photo from 1 to 10 — you go pay per photo.",
+    uploadOneToTen: "Upload between 1 and 10 photos.",
     pickLookThenUpload: "Pick one look now, e go work for every photo wey you upload. You fit change any photo later.",
     lightingPickedForAll: "Dat look go apply to every photo wey you upload. You fit change any photo later.",
     assignEachPhoto: "Give each photo im own lighting style.",

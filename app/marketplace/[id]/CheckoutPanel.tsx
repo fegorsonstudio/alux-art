@@ -977,6 +977,11 @@ export default function CheckoutPanel({
   const unitPriceNgn = pkgOptions.find(o => o.n === 1)?.price ?? 0;
   const uploadedCount = Math.min(10, allIdentityRefs.length);
   const effectivePkg = perImagePricing ? Math.max(1, uploadedCount) : selectedPkg;
+  // In per-image mode any count from 1 to 10 is correct, so the counter must not
+  // read as an error just because it does not equal a package size.
+  const uploadCountBad = perImagePricing
+    ? (allIdentityRefs.length < 1 || allIdentityRefs.length > 10)
+    : (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0);
   const enhanceValid = !photoUpgradeActive
     || (enhanceLightingValid && !!enhanceCamera && uploadedCount >= 1 && uploadedCount <= 10);
   const canPay = allIdentityRefs.length > 0
@@ -2114,21 +2119,21 @@ export default function CheckoutPanel({
               </span>
               <span style={{
                 fontSize: "0.72rem",
-                fontWeight: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? 700 : 500,
-                color: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? "#c0392b" : undefined,
-                opacity: (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0) ? 1 : 0.65,
+                fontWeight: uploadCountBad ? 700 : 500,
+                color: uploadCountBad ? "#c0392b" : undefined,
+                opacity: uploadCountBad ? 1 : 0.65,
               }}>
-                {photoUpgradeActive
-                  ? t("nOfMSelected", { n: allIdentityRefs.length, m: selectedPkg })
-                  : allIdentityRefs.length > 0 ? t("nSelected", { n: allIdentityRefs.length }) : t("required")}
+                {allIdentityRefs.length > 0 ? t("nSelected", { n: allIdentityRefs.length }) : t("required")}
               </span>
             </div>
             {photoUpgradeActive ? (
               <>
-                <p className={styles.sectionHint}>{t("upgradeHint", { n: selectedPkg })}</p>
-                <p className={styles.sectionHint} style={{ fontWeight: 600, ...(allIdentityRefs.length !== selectedPkg ? { color: "#c0392b" } : {}) }}>
-                  {t("nOfMSelected", { n: allIdentityRefs.length, m: selectedPkg })}
-                </p>
+                <p className={styles.sectionHint}>{t("upgradeHintAny")}</p>
+                {uploadCountBad && (
+                  <p className={styles.sectionHint} style={{ fontWeight: 600, color: "#c0392b" }}>
+                    {t("uploadOneToTen")}
+                  </p>
+                )}
               </>
             ) : (
               <>

@@ -147,6 +147,8 @@ const fr: AppDictionary = {
     perPhotoLightingHint: "Activé : attribuez un style d'éclairage à chaque photo. Désactivé : un seul éclairage pour toutes.",
     uploadPhotosFirst: "Importez d'abord vos photos, puis attribuez un style d'éclairage à chacune.",
     perPhotoPrice: "chacune",
+    upgradeHintAny: "Importez de 1 a 10 photos, autant que vous voulez — le prix est par photo.",
+    uploadOneToTen: "Importez entre 1 et 10 photos.",
     pickLookThenUpload: "Choisissez un rendu maintenant : il sera applique a toutes vos photos. Vous pourrez le changer photo par photo ensuite.",
     lightingPickedForAll: "Ce rendu sera applique a toutes les photos que vous importez. Vous pourrez le changer photo par photo ensuite.",
     assignEachPhoto: "Attribuez un style d'éclairage à chaque photo.",
