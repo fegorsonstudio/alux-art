@@ -14,56 +14,72 @@
       "name": "Golden Hour Backlight",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting exactly as they are; only the light falling on them changes. A low, warm sun-like source sits behind the subject near the horizon line, rimming the hair and shoulders with amber and letting warm light spill toward the lens, while a soft warm bounce keeps the front of the subject from going dark. Long, soft-edged shadows fall toward camera. Warm 3000K key, gentle contrast, realistic skin texture, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting exactly as they are; only the light falling on them changes. A low, warm sun-like source sits behind the subject near the horizon line, rimming the hair and shoulders with amber and letting warm light spill toward the lens, while a soft warm bounce keeps the front of the subject from going dark. Long, soft-edged shadows fall toward camera. Warm 3000K key, gentle contrast, realistic skin texture, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/af4cacda-2d1c-4585-b16e-51684396ee5b",
+      "done": true
     },
     {
       "slot": 2,
       "name": "Warm Window Glow",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only its illumination changes. Warm late-afternoon light enters from a low angle at camera-left as though through a window, falling across the subject with a soft edge and a visible warm-to-cool gradient from the lit side to the shadow side. No fill from the right, so shadows stay deep but retain detail. Warm key against cool ambient shadow, soft-edged transitions, realistic skin texture, natural asymmetry."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only its illumination changes. Warm late-afternoon light enters from a low angle at camera-left as though through a window, falling across the subject with a soft edge and a visible warm-to-cool gradient from the lit side to the shadow side. No fill from the right, so shadows stay deep but retain detail. Warm key against cool ambient shadow, soft-edged transitions, realistic skin texture, natural asymmetry.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ed2e44b6-95d1-4ae5-9407-76102b20c120",
+      "done": true
     },
     {
       "slot": 3,
       "name": "Sunset Rim",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A low warm source behind the subject at camera-right draws a bright amber edge along the cheekbone, jaw, shoulder and stray hairs, while the front of the face is lit only by soft, cooler ambient at low power. The contrast between warm rim and cool front is the whole look. Background sits darker than the rim so the edge reads clearly. Realistic falloff, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A low warm source behind the subject at camera-right draws a bright amber edge along the cheekbone, jaw, shoulder and stray hairs, while the front of the face is lit only by soft, cooler ambient at low power. The contrast between warm rim and cool front is the whole look. Background sits darker than the rim so the edge reads clearly. Realistic falloff, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ecc03381-0689-4c9d-a4d6-21f310ee1572",
+      "done": true
     },
     {
       "slot": 4,
       "name": "Low Sun Side Wash",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. A warm, hard, low-angle source rakes across the frame from camera-left at almost ground level, lighting one side of the subject and the background brightly while throwing a long shadow to the right. Texture in fabric and surfaces is exaggerated by the raking angle. Warm colour temperature, hard-edged long shadows, physically plausible direction, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. A warm, hard, low-angle source rakes across the frame from camera-left at almost ground level, lighting one side of the subject and the background brightly while throwing a long shadow to the right. Texture in fabric and surfaces is exaggerated by the raking angle. Warm colour temperature, hard-edged long shadows, physically plausible direction, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/93ba0353-73a2-4061-bd5a-159494729c2d",
+      "done": true
     },
     {
       "slot": 5,
       "name": "Golden Haze Flare",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting and a veil of warm haze in the air. Keep the existing background exactly as it is. A low warm source just outside the frame at camera-right throws light across the lens, producing a soft golden flare and a hazy bloom over that side of the image, with contrast lifted and blacks slightly milky where the flare falls. The opposite side of the frame stays clear and better defined. Warm bloom, gentle veiling glare, realistic skin texture, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting and a veil of warm haze in the air. Keep the existing background exactly as it is. A low warm source just outside the frame at camera-right throws light across the lens, producing a soft golden flare and a hazy bloom over that side of the image, with contrast lifted and blacks slightly milky where the flare falls. The opposite side of the frame stays clear and better defined. Warm bloom, gentle veiling glare, realistic skin texture, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/dcb4616a-dce4-41fe-8f66-c7d840859f02",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Amber Bounce Fill",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. The face is lit by warm light bounced up from a large surface below and in front, as though from sunlit ground, giving an even amber glow with the shadows falling gently upward under the brow. A cooler soft source from above balances the top of the frame so the effect reads natural rather than staged. Warm reflected light, soft shadow edges, realistic skin texture with visible pores, natural asymmetry."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. The face is lit by warm light bounced up from a large surface below and in front, as though from sunlit ground, giving an even amber glow with the shadows falling gently upward under the brow. A cooler soft source from above balances the top of the frame so the effect reads natural rather than staged. Warm reflected light, soft shadow edges, realistic skin texture with visible pores, natural asymmetry.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/68ed55c3-6a04-4b85-84b5-1fa60d47bc91",
+      "done": true
     },
     {
       "slot": 7,
       "name": "Last Light Silhouette",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only its brightness and colour change. A strong warm source directly behind the subject makes the background the brightest part of the frame and reduces the subject to a dark shape with a thin amber edge, with only a trace of front fill keeping some detail alive in the figure. Deep foreground shadow against a glowing warm field, high contrast, realistic gradients, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only its brightness and colour change. A strong warm source directly behind the subject makes the background the brightest part of the frame and reduces the subject to a dark shape with a thin amber edge, with only a trace of front fill keeping some detail alive in the figure. Deep foreground shadow against a glowing warm field, high contrast, realistic gradients, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/b4cf1eb7-8764-46eb-b193-f219d4699ec0",
+      "done": true
     },
     {
       "slot": 8,
       "name": "Warm Overhead Canopy",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Warm light filters down from directly above and slightly in front, broken into a soft dappled pattern as though passing through leaves, so brightness varies gently across the face and shoulders without any hard-edged shapes. Shadows sit under the brow and chin and stay warm rather than neutral. Warm dappled illumination, soft-edged variation, realistic skin texture, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Warm light filters down from directly above and slightly in front, broken into a soft dappled pattern as though passing through leaves, so brightness varies gently across the face and shoulders without any hard-edged shapes. Shadows sit under the brow and chin and stay warm rather than neutral. Warm dappled illumination, soft-edged variation, realistic skin texture, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/8e4e664f-3c0d-4f2a-9109-fc50dfd7561a",
+      "done": true
     }
   ]
 }

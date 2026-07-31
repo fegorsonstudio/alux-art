@@ -14,56 +14,72 @@
       "name": "Neon Sign Glow",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only the light falling on it changes. A bright magenta-pink source sits just out of frame at camera-left at head height, as though from a glowing sign, throwing saturated colour across that side of the face and a soft coloured pool onto the nearby background, falling off quickly into darkness. No lettering or shapes are visible anywhere. A faint cyan bounce lifts the shadow side. Saturated colour, rapid falloff, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only the light falling on it changes. A bright magenta-pink source sits just out of frame at camera-left at head height, as though from a glowing sign, throwing saturated colour across that side of the face and a soft coloured pool onto the nearby background, falling off quickly into darkness. No lettering or shapes are visible anywhere. A faint cyan bounce lifts the shadow side. Saturated colour, rapid falloff, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/f9c202af-91e3-48a0-a855-1d5eb6dd2de8",
+      "done": true
     },
     {
       "slot": 2,
       "name": "Blue Hour Street",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Deep blue twilight ambient fills the whole frame at low level, while a single warm point source at camera-right adds a small pool of amber on the subject, so a cold overall image carries one warm accent. Shadows are blue rather than neutral and the darkest areas keep detail. Cool ambient against a warm practical, low overall exposure with clean highlights, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Deep blue twilight ambient fills the whole frame at low level, while a single warm point source at camera-right adds a small pool of amber on the subject, so a cold overall image carries one warm accent. Shadows are blue rather than neutral and the darkest areas keep detail. Cool ambient against a warm practical, low overall exposure with clean highlights, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/b0830f04-0b33-4b3d-bc75-c249472dad8f",
+      "done": true
     },
     {
       "slot": 3,
       "name": "Split Neon Pink Cyan",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Two saturated sources face the subject from opposite sides at head height: hot pink from camera-left, electric cyan from camera-right, each claiming half the face and shoulders with a soft blend down the centre line. The background takes matching coloured pools on each side and stays dark between them. High saturation, deep blacks between the colours, realistic skin texture, natural asymmetry."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Two saturated sources face the subject from opposite sides at head height: hot pink from camera-left, electric cyan from camera-right, each claiming half the face and shoulders with a soft blend down the centre line. The background takes matching coloured pools on each side and stays dark between them. High saturation, deep blacks between the colours, realistic skin texture, natural asymmetry.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/04d32743-f702-4a66-a6e1-bc4f1a3245e6",
+      "done": true
     },
     {
       "slot": 4,
       "name": "Window Neon Spill",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Coloured light spills in from a low angle at camera-left as though reflected off a wet surface outside, throwing an uneven violet wash across the lower part of the subject and the nearby background, brightest near the floor and fading upward. The upper part of the frame stays in cool shadow. Uneven, directional colour, realistic falloff, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Coloured light spills in from a low angle at camera-left as though reflected off a wet surface outside, throwing an uneven violet wash across the lower part of the subject and the nearby background, brightest near the floor and fading upward. The upper part of the frame stays in cool shadow. Uneven, directional colour, realistic falloff, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/99b94bff-a5aa-4750-bf9d-8b1cd30509ae",
+      "done": true
     },
     {
       "slot": 5,
       "name": "LED Panel Wash",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. A large flat panel of saturated blue-violet light sits directly in front of and slightly above the subject, giving even, shadowless coloured illumination with a distinctive broad rectangular catchlight in the eyes and a clean falloff behind. The background takes the same colour at lower intensity. Even saturated wash, soft shadow edges, realistic skin texture with pores, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. A large flat panel of saturated blue-violet light sits directly in front of and slightly above the subject, giving even, shadowless coloured illumination with a distinctive broad rectangular catchlight in the eyes and a clean falloff behind. The background takes the same colour at lower intensity. Even saturated wash, soft shadow edges, realistic skin texture with pores, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/959c3698-91e3-46ff-a637-3a2e2dcfdafc",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Neon Rim Backlight",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Two saturated coloured sources behind the subject, orange at camera-left and blue at camera-right, draw bright coloured edges down each side of the face and hair, while the front is lit by a single dim neutral source at low power so the features stay readable without competing with the rims. Background stays near black. Two clean coloured edges, high contrast with retained facial detail, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Two saturated coloured sources behind the subject, orange at camera-left and blue at camera-right, draw bright coloured edges down each side of the face and hair, while the front is lit by a single dim neutral source at low power so the features stay readable without competing with the rims. Background stays near black. Two clean coloured edges, high contrast with retained facial detail, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/7db9302b-b447-4fe3-b933-5091c022ec04",
+      "done": true
     },
     {
       "slot": 7,
       "name": "Screen Glow",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. The only light comes from a screen-like source held low and close in front of the subject, casting cool blue-white light upward across the face with shadows climbing the cheeks and brow, and a faint flicker quality in the highlights. Colour shifts subtly between cool blue and pale cyan across the face. The background falls to near darkness. Cool underlight, realistic skin texture, natural asymmetry, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. The only light comes from a screen-like source held low and close in front of the subject, casting cool blue-white light upward across the face with shadows climbing the cheeks and brow, and a faint flicker quality in the highlights. Colour shifts subtly between cool blue and pale cyan across the face. The background falls to near darkness. Cool underlight, realistic skin texture, natural asymmetry, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/937454f3-466d-413a-b834-4eeebc07249c",
+      "done": true
     },
     {
       "slot": 8,
       "name": "Sodium and Neon Mix",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Warm sodium-orange light comes from high camera-left while saturated teal fills the lower right of the frame, the two meeting across the subject with a visible transition and neither dominating. Shadows carry colour rather than going grey. Background takes both colours at lower intensity. Two-source colour contrast, physically plausible directions, realistic fabric and skin texture, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Warm sodium-orange light comes from high camera-left while saturated teal fills the lower right of the frame, the two meeting across the subject with a visible transition and neither dominating. Shadows carry colour rather than going grey. Background takes both colours at lower intensity. Two-source colour contrast, physically plausible directions, realistic fabric and skin texture, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/b4a685fc-1c1a-4b7b-9fb5-542e7c5caab1",
+      "done": true
     }
   ]
 }

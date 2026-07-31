@@ -14,56 +14,72 @@
       "name": "Teal & Orange",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction, shadow shapes and background as they are. Push the shadows and midtone neutrals toward teal-cyan while holding skin tones warm and orange, so the subject separates from a cooler surround. Contrast is moderate with slightly crushed blacks and clean highlights. Skin stays natural and warm rather than sliding orange. Complementary warm-cool separation, moderate contrast, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction, shadow shapes and background as they are. Push the shadows and midtone neutrals toward teal-cyan while holding skin tones warm and orange, so the subject separates from a cooler surround. Contrast is moderate with slightly crushed blacks and clean highlights. Skin stays natural and warm rather than sliding orange. Complementary warm-cool separation, moderate contrast, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/3dfad928-569d-429b-9f20-8ef8a66394cb",
+      "done": true
     },
     {
       "slot": 2,
       "name": "Bleach Bypass",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Strip most of the saturation while raising contrast hard, so the image reads as a desaturated high-contrast frame with a silvery cast, deep blacks and bright, slightly blown highlights, as though the bleach step were skipped in development. A trace of colour remains in the skin. Heavy desaturation, raised contrast, retained skin warmth, visible grain."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Strip most of the saturation while raising contrast hard, so the image reads as a desaturated high-contrast frame with a silvery cast, deep blacks and bright, slightly blown highlights, as though the bleach step were skipped in development. A trace of colour remains in the skin. Heavy desaturation, raised contrast, retained skin warmth, visible grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/62a9b732-a51d-4382-9125-3adf28bbe3a3",
+      "done": true
     },
     {
       "slot": 3,
       "name": "Day for Night",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes and the existing background. Drop overall exposure, push the whole frame toward cool blue, crush the shadows and hold only the brightest areas near their original brightness, so daylight reads as moonlit night. Skin keeps a trace of warmth so the subject does not turn grey. Low exposure with clean bright accents, blue cast throughout, deep shadows, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes and the existing background. Drop overall exposure, push the whole frame toward cool blue, crush the shadows and hold only the brightest areas near their original brightness, so daylight reads as moonlit night. Skin keeps a trace of warmth so the subject does not turn grey. Low exposure with clean bright accents, blue cast throughout, deep shadows, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/5d84296f-b94b-4297-92e9-1d95d9403136",
+      "done": true
     },
     {
       "slot": 4,
       "name": "Cross Processed",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Shift the highlights toward yellow-green and the shadows toward blue-cyan with raised contrast and heightened saturation, in the way film processed in the wrong chemistry renders. Skin takes a slight yellow-green lean in the light and cools in shadow but stays readable as skin. Split-toned colour shift, high saturation, raised contrast, visible grain."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Shift the highlights toward yellow-green and the shadows toward blue-cyan with raised contrast and heightened saturation, in the way film processed in the wrong chemistry renders. Skin takes a slight yellow-green lean in the light and cools in shadow but stays readable as skin. Split-toned colour shift, high saturation, raised contrast, visible grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/fc5c6d1c-6cc8-4101-9692-5590eaf0c785",
+      "done": true
     },
     {
       "slot": 5,
       "name": "Muted Morandi",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Lower saturation across the frame and lift the blacks to a soft grey, holding colours in a narrow band of dusty, chalky tones with no strong hue dominating and no pure black or white anywhere. Skin sits soft and slightly desaturated but never grey. Low contrast, restrained dusty palette, lifted blacks, realistic skin texture, fine grain."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Lower saturation across the frame and lift the blacks to a soft grey, holding colours in a narrow band of dusty, chalky tones with no strong hue dominating and no pure black or white anywhere. Skin sits soft and slightly desaturated but never grey. Low contrast, restrained dusty palette, lifted blacks, realistic skin texture, fine grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ac887856-7cf6-4cd9-9826-1c1c7ea02a65",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Sepia Archive",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Remove the colour and re-tone the whole frame in warm brown sepia, with slightly lifted blacks, gently compressed highlights and a soft warm cast throughout, as an aged print renders. Tonal separation across the face stays clear so features remain defined. Monochrome sepia toning, gentle contrast, fine grain, realistic skin texture with visible pores."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Remove the colour and re-tone the whole frame in warm brown sepia, with slightly lifted blacks, gently compressed highlights and a soft warm cast throughout, as an aged print renders. Tonal separation across the face stays clear so features remain defined. Monochrome sepia toning, gentle contrast, fine grain, realistic skin texture with visible pores.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/492dd2c2-39a0-4881-9542-f93de52ee986",
+      "done": true
     },
     {
       "slot": 7,
       "name": "High-Contrast Monochrome",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Convert to black and white with strong contrast: deep blacks with little shadow detail, bright clean whites, and a wide tonal separation across the face so the lighting pattern reads graphically. Skin texture stays sharp and visible rather than smoothed. Punchy monochrome, deep blacks, crisp highlight detail, pronounced grain."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Convert to black and white with strong contrast: deep blacks with little shadow detail, bright clean whites, and a wide tonal separation across the face so the lighting pattern reads graphically. Skin texture stays sharp and visible rather than smoothed. Punchy monochrome, deep blacks, crisp highlight detail, pronounced grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/05e81c11-32eb-4d8d-ac87-205b525c7401",
+      "done": true
     },
     {
       "slot": 8,
       "name": "Faded Pastel",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Lift the blacks noticeably, reduce contrast, and push the whole frame toward soft pink-cream pastels with the shadows leaning slightly green, as faded consumer film does. No area reaches full black. Skin stays soft and warm rather than washing out to white. Low contrast, lifted milky blacks, pastel cast, fine grain, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Lift the blacks noticeably, reduce contrast, and push the whole frame toward soft pink-cream pastels with the shadows leaning slightly green, as faded consumer film does. No area reaches full black. Skin stays soft and warm rather than washing out to white. Low contrast, lifted milky blacks, pastel cast, fine grain, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/8eafb9c5-3934-4e84-90dc-2430606300c5",
+      "done": true
     }
   ]
 }

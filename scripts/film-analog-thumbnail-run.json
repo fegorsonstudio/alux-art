@@ -14,56 +14,72 @@
       "name": "Halation Rim",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A hard, bright source behind the subject at camera-right draws a strong edge along the hair and shoulder, and that highlight bleeds a soft red-orange glow outward into the surrounding dark area, as film does when light passes through the emulsion and reflects off the backing. The glow hugs the bright edge closely and fades within a short distance; nothing else in the frame is blurred. Warm halation on a hard rim, deep surrounding shadow, fine grain, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A hard, bright source behind the subject at camera-right draws a strong edge along the hair and shoulder, and that highlight bleeds a soft red-orange glow outward into the surrounding dark area, as film does when light passes through the emulsion and reflects off the backing. The glow hugs the bright edge closely and fades within a short distance; nothing else in the frame is blurred. Warm halation on a hard rim, deep surrounding shadow, fine grain, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/7b5ce898-ea55-43b6-b76a-9a9087ef3a67",
+      "done": true
     },
     {
       "slot": 2,
       "name": "Halation Window",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Bright daylight enters from a window-shaped source at camera-left, blowing out to near-white where it falls, and that bright patch bleeds a red-orange halo into the darker wall and shadow beside it. The rest of the frame stays clean and sharp with normal contrast. Highlights roll off gently rather than clipping hard. Warm halation around a blown highlight, gentle roll-off, fine grain, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Bright daylight enters from a window-shaped source at camera-left, blowing out to near-white where it falls, and that bright patch bleeds a red-orange halo into the darker wall and shadow beside it. The rest of the frame stays clean and sharp with normal contrast. Highlights roll off gently rather than clipping hard. Warm halation around a blown highlight, gentle roll-off, fine grain, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/9ac61d2b-9067-4f5c-ba10-09cf7483c5bb",
+      "done": true
     },
     {
       "slot": 3,
       "name": "Tungsten Halation Night",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Warm tungsten point sources sit in the background at low level, each blooming into a soft red-orange halo against the surrounding darkness, while the subject is lit by a cooler, dimmer source from the front so they read as separate from the glowing background. Overall exposure is low with lifted, slightly milky blacks. Strong halation on point highlights, cool subject against warm glow, pronounced grain in the shadows."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Warm tungsten point sources sit in the background at low level, each blooming into a soft red-orange halo against the surrounding darkness, while the subject is lit by a cooler, dimmer source from the front so they read as separate from the glowing background. Overall exposure is low with lifted, slightly milky blacks. Strong halation on point highlights, cool subject against warm glow, pronounced grain in the shadows.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d6cadfa6-d483-472c-ba15-19c3faffd5e7",
+      "done": true
     },
     {
       "slot": 4,
       "name": "Faded Black Film",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Soft, even light with the shadows lifted so the darkest tone in the frame is a soft grey rather than black, contrast reduced overall, and a slight warm cast through the midtones as though from aged colour film. Highlights compress gently instead of clipping. No area of the frame is fully black or fully white. Low-contrast faded rendering, warm midtones, visible fine grain, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Soft, even light with the shadows lifted so the darkest tone in the frame is a soft grey rather than black, contrast reduced overall, and a slight warm cast through the midtones as though from aged colour film. Highlights compress gently instead of clipping. No area of the frame is fully black or fully white. Low-contrast faded rendering, warm midtones, visible fine grain, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/0e90f1e3-6d06-4d67-8d04-60575ad6a86a",
+      "done": true
     },
     {
       "slot": 5,
       "name": "Highlight Roll-Off",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. A large soft source at camera-left is bright enough to push the lit side of the face toward the top of the tonal range, but the brightest areas transition into white gradually over a wide band rather than clipping abruptly, in the way film shoulders off. Shadows stay open with detail throughout. Gentle highlight compression, wide tonal transition, fine grain, realistic skin texture with pores intact."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. A large soft source at camera-left is bright enough to push the lit side of the face toward the top of the tonal range, but the brightest areas transition into white gradually over a wide band rather than clipping abruptly, in the way film shoulders off. Shadows stay open with detail throughout. Gentle highlight compression, wide tonal transition, fine grain, realistic skin texture with pores intact.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ec988c1d-03b5-44e9-b43c-88b13f014e5d",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Push-Processed Grain",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Low, uneven available light from a single direction at camera-right, exposed as though the film was underexposed and pushed in development: contrast is raised, shadows are coarse and blocked up, colour is slightly desaturated with a green-grey cast in the darker areas, and grain is coarse and clearly visible across the whole frame. Higher contrast, muddy shadows, heavy grain, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Low, uneven available light from a single direction at camera-right, exposed as though the film was underexposed and pushed in development: contrast is raised, shadows are coarse and blocked up, colour is slightly desaturated with a green-grey cast in the darker areas, and grain is coarse and clearly visible across the whole frame. Higher contrast, muddy shadows, heavy grain, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/dac66585-5307-4d07-accf-3f17a3487971",
+      "done": true
     },
     {
       "slot": 7,
       "name": "Warm Analog Daylight",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Soft, broad daylight from camera-left with a warm cast through the skin tones and a slight cyan lean in the shadows, the colour separation between warm light and cool shadow being the main characteristic. Contrast is moderate, highlights roll off softly, and fine grain sits across the midtones. Warm-cool colour separation, moderate contrast, fine grain, realistic skin texture with natural asymmetry."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Soft, broad daylight from camera-left with a warm cast through the skin tones and a slight cyan lean in the shadows, the colour separation between warm light and cool shadow being the main characteristic. Contrast is moderate, highlights roll off softly, and fine grain sits across the midtones. Warm-cool colour separation, moderate contrast, fine grain, realistic skin texture with natural asymmetry.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/cb63da81-fb53-4779-9da8-aafec98a29df",
+      "done": true
     },
     {
       "slot": 8,
       "name": "Halation Neon Bleed",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A saturated red-pink source just out of frame at camera-left burns to its brightest at the edge of the frame and bleeds a wide, soft glow of the same colour into the surrounding darkness, while the subject catches that colour along one side and falls into deep shadow on the other. The glow is strongest nearest the source and fades smoothly. Heavy coloured halation, deep unlit shadow, visible grain, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A saturated red-pink source just out of frame at camera-left burns to its brightest at the edge of the frame and bleeds a wide, soft glow of the same colour into the surrounding darkness, while the subject catches that colour along one side and falls into deep shadow on the other. The glow is strongest nearest the source and fades smoothly. Heavy coloured halation, deep unlit shadow, visible grain, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/0bc533c3-f202-4ad3-ab2f-66ae5e1438f0",
+      "done": true
     }
   ]
 }

@@ -14,56 +14,72 @@
       "name": "Prism Refraction Edge",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting and an optical refraction along one edge. Keep the existing background as it is and keep the subject sharp. A glass prism held at the edge of the lens splits light entering from camera-left into a band of rainbow colour along that side of the frame, with a faint smeared repetition of nearby highlights inside the band. The centre and right of the frame stay clean and unaffected. Spectral colour confined to one edge, sharp subject, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting and an optical refraction along one edge. Keep the existing background as it is and keep the subject sharp. A glass prism held at the edge of the lens splits light entering from camera-left into a band of rainbow colour along that side of the frame, with a faint smeared repetition of nearby highlights inside the band. The centre and right of the frame stay clean and unaffected. Spectral colour confined to one edge, sharp subject, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/d30c46c1-c812-4a32-9519-556f56d98e4e",
+      "done": true
     },
     {
       "slot": 2,
       "name": "Anamorphic Blue Flare",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting and a lens flare. Keep the existing background as it is and keep the subject sharp. A bright source just outside the frame at camera-right produces a long horizontal streak of cool blue light across the image at roughly the height of the source, thin and sharply defined, in the way an anamorphic lens flares. Contrast lifts slightly where the streak crosses. Nothing else in the frame is blurred. Single horizontal blue streak, otherwise clean rendering, realistic skin texture."
+      "prompt": "Relight this image. Change nothing else except the lighting and a lens flare. Keep the existing background as it is and keep the subject sharp. A bright source just outside the frame at camera-right produces a long horizontal streak of cool blue light across the image at roughly the height of the source, thin and sharply defined, in the way an anamorphic lens flares. Contrast lifts slightly where the streak crosses. Nothing else in the frame is blurred. Single horizontal blue streak, otherwise clean rendering, realistic skin texture.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/fe0f1836-95cd-4137-a926-768da402f436",
+      "done": true
     },
     {
       "slot": 3,
       "name": "Warm Lens Flare",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting and a lens flare. Keep the existing background as it is and the subject sharp. A warm source at the top corner of camera-right throws a chain of soft polygonal flare shapes diagonally across the frame toward the opposite corner, with a broad veiling glow washing that corner and lifting its blacks. The subject stays defined and correctly exposed. Warm polygonal flare, localised veiling glare, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting and a lens flare. Keep the existing background as it is and the subject sharp. A warm source at the top corner of camera-right throws a chain of soft polygonal flare shapes diagonally across the frame toward the opposite corner, with a broad veiling glow washing that corner and lifting its blacks. The subject stays defined and correctly exposed. Warm polygonal flare, localised veiling glare, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/864aeb01-6a46-4d94-8336-eb28ecec8d3a",
+      "done": true
     },
     {
       "slot": 4,
       "name": "Diffusion Filter Bloom",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting and a diffusion filter over the lens. Keep the existing background as it is. Highlights spread softly into their surroundings while edges and skin texture stay resolved underneath, so the image reads glowing rather than out of focus: the brightest areas of the face bloom gently, contrast drops slightly, and blacks lift a touch. A soft frontal key provides the highlights that bloom. Highlight bloom with retained detail, slightly lifted blacks, realistic skin texture with visible pores."
+      "prompt": "Relight this image. Change nothing else except the lighting and a diffusion filter over the lens. Keep the existing background as it is. Highlights spread softly into their surroundings while edges and skin texture stay resolved underneath, so the image reads glowing rather than out of focus: the brightest areas of the face bloom gently, contrast drops slightly, and blacks lift a touch. A soft frontal key provides the highlights that bloom. Highlight bloom with retained detail, slightly lifted blacks, realistic skin texture with visible pores.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/103ba92c-91e3-4da8-8715-bd5e35dd5951",
+      "done": true
     },
     {
       "slot": 5,
       "name": "Foreground Bokeh Veil",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting and out-of-focus elements at the frame edge. Keep the existing background as it is and the subject sharp. Something bright and out of focus sits very close to the lens along the bottom-left edge, rendering as a soft blurred wash of colour and light that intrudes into the corner of the frame and catches the light from the key. The subject and the rest of the frame stay in focus. Soft foreground intrusion in one corner only, sharp subject, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting and out-of-focus elements at the frame edge. Keep the existing background as it is and the subject sharp. Something bright and out of focus sits very close to the lens along the bottom-left edge, rendering as a soft blurred wash of colour and light that intrudes into the corner of the frame and catches the light from the key. The subject and the rest of the frame stay in focus. Soft foreground intrusion in one corner only, sharp subject, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/102b504c-cdd2-4479-b701-4f85ae0e7f00",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Starburst Highlight",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting as they are. A small bright point source behind the subject at camera-left is rendered as a defined multi-pointed star, the way a narrow aperture renders a hard point of light, with clean straight rays radiating from it. The rest of the image keeps normal contrast and sharpness. One clean starburst, deep surrounding shadow, physically plausible ray direction, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting as they are. A small bright point source behind the subject at camera-left is rendered as a defined multi-pointed star, the way a narrow aperture renders a hard point of light, with clean straight rays radiating from it. The rest of the image keeps normal contrast and sharpness. One clean starburst, deep surrounding shadow, physically plausible ray direction, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/5fe0c4df-d864-4977-9bcb-d6e9a6833b34",
+      "done": true
     },
     {
       "slot": 7,
       "name": "Mist Filter Glow",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting and a mist filter over the lens. Keep the existing background as it is. Overall contrast drops, blacks lift to a soft grey, and every highlight carries a fine halo, giving an even atmospheric softness across the whole frame while facial features stay resolved. A broad soft key supplies the light that halos. Even low-contrast glow, lifted blacks, resolved detail underneath, realistic skin texture, fine grain."
+      "prompt": "Relight this image. Change nothing else except the lighting and a mist filter over the lens. Keep the existing background as it is. Overall contrast drops, blacks lift to a soft grey, and every highlight carries a fine halo, giving an even atmospheric softness across the whole frame while facial features stay resolved. A broad soft key supplies the light that halos. Even low-contrast glow, lifted blacks, resolved detail underneath, realistic skin texture, fine grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/6369e574-a487-4a8b-899d-432b6bef173b",
+      "done": true
     },
     {
       "slot": 8,
       "name": "Split Focus Glow",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting and an optical falloff toward the frame edges. Keep the existing background as it is and the centre sharp. Light and definition fall away toward the corners: the centre of the frame where the subject sits is crisp and correctly exposed, while the outer edges dim, soften and lose contrast as an old uncorrected lens renders them. The transition is gradual with no visible boundary. Centre-sharp with soft dim corners, smooth falloff, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting and an optical falloff toward the frame edges. Keep the existing background as it is and the centre sharp. Light and definition fall away toward the corners: the centre of the frame where the subject sits is crisp and correctly exposed, while the outer edges dim, soften and lose contrast as an old uncorrected lens renders them. The transition is gradual with no visible boundary. Centre-sharp with soft dim corners, smooth falloff, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/8222295b-d669-4776-a857-d3234ee6a8fb",
+      "done": true
     }
   ]
 }

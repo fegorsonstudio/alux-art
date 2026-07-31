@@ -14,42 +14,54 @@
       "name": "Icy Key",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A large soft source with a cold blue-white cast sits at camera-left, 45 degrees off axis and slightly above, giving clean directional light with soft-edged shadows on the opposite side. The background sits a shade darker in the same cold tone. Skin keeps its own warmth in the midtones so the face reads healthy against the cold light rather than grey. Cool key with warm skin retained, soft shadow edges, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. A large soft source with a cold blue-white cast sits at camera-left, 45 degrees off axis and slightly above, giving clean directional light with soft-edged shadows on the opposite side. The background sits a shade darker in the same cold tone. Skin keeps its own warmth in the midtones so the face reads healthy against the cold light rather than grey. Cool key with warm skin retained, soft shadow edges, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/383b23cb-e1c5-4f65-a764-a05bb1e07fc0",
+      "done": true
     },
     {
       "slot": 2,
       "name": "Glacier Rim",
       "framing": "head",
       "flowSource": "source-head.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A hard, very cold blue-white source behind camera-right draws a crisp bright edge along the jaw, cheekbone and hair, while the front of the face is lit by a soft neutral fill at low power. The contrast between the icy edge and the neutral face is the whole look. Background is dark and takes no colour. Cold hard rim against neutral fill, crisp edge, realistic skin texture, natural asymmetry."
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard, very cold blue-white source behind camera-right draws a crisp bright edge along the jaw, cheekbone and hair, while the front of the face is lit by a soft neutral fill at low power. The contrast between the icy edge and the neutral face is the whole look. Background is dark and takes no colour. Cold hard rim against neutral fill, crisp edge, realistic skin texture, natural asymmetry.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/6b3098f0-22a3-4632-9319-1b16cbf5c0de",
+      "done": true
     },
     {
       "slot": 3,
       "name": "Blue Hour Wash",
       "framing": "full",
       "flowSource": "source-full.jpeg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Even, soft, cold blue ambient fills the whole frame at low intensity with no strong direction, as the light does shortly after sunset, and shadows are soft and blue rather than black. A single slightly warmer accent from camera-left keeps the subject from merging into the surroundings. Low-contrast cool ambient, one warm accent, realistic falloff, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Even, soft, cold blue ambient fills the whole frame at low intensity with no strong direction, as the light does shortly after sunset, and shadows are soft and blue rather than black. A single slightly warmer accent from camera-left keeps the subject from merging into the surroundings. Low-contrast cool ambient, one warm accent, realistic falloff, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/ef5715dd-83dd-4111-b8c0-94af540b82ad",
+      "done": true
     },
     {
       "slot": 4,
       "name": "Frozen Split",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. A hard cold blue source at 90 degrees camera-left lights one side of the face and body while the other falls into deep shadow, with the division running down the centre. A faint cool bounce keeps a trace of detail in the shadow side. Skin on the lit side keeps a hint of natural tone under the blue. Background is black. Hard cold split, retained shadow detail, realistic skin texture, subtle grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard cold blue source at 90 degrees camera-left lights one side of the face and body while the other falls into deep shadow, with the division running down the centre. A faint cool bounce keeps a trace of detail in the shadow side. Skin on the lit side keeps a hint of natural tone under the blue. Background is black. Hard cold split, retained shadow detail, realistic skin texture, subtle grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/617f4626-6370-4585-bc4a-5c765d6d2d83",
+      "done": true
     },
     {
       "slot": 5,
       "name": "Cold Overcast",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Broad, even, cold-toned light comes from high and slightly in front, as from a heavily overcast sky, giving very soft-edged shadows under the brow and chin, low contrast and a flat blue-grey cast across the whole frame. Skin keeps a faint warmth so it separates from the grey surroundings. Soft directionless cold light, low contrast, realistic skin texture with visible pores, fine grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Broad, even, cold-toned light comes from high and slightly in front, as from a heavily overcast sky, giving very soft-edged shadows under the brow and chin, low contrast and a flat blue-grey cast across the whole frame. Skin keeps a faint warmth so it separates from the grey surroundings. Soft directionless cold light, low contrast, realistic skin texture with visible pores, fine grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/a36d1e3d-05d2-4d91-961a-6b5aec2d94d8",
+      "done": true
     },
     {
       "slot": 6,
       "name": "Steel and Ice",
       "framing": "medium",
       "flowSource": "source-medium.jpg",
-      "prompt": "Relight this image. Change nothing else except the lighting. Two cold sources of different intensity: a stronger blue-white key at camera-right and a weaker, even colder source behind camera-left drawing a thin icy edge along the far shoulder and hair. Shadows are deep and blue-black with clean transitions. Skin holds a trace of warmth in the highlights so the face stays alive against the cold scheme. Two-source cold lighting, deep blue shadows, realistic skin texture, subtle film grain."
+      "prompt": "Relight this image. Change nothing else except the lighting. Two cold sources of different intensity: a stronger blue-white key at camera-right and a weaker, even colder source behind camera-left drawing a thin icy edge along the far shoulder and hair. Shadows are deep and blue-black with clean transitions. Skin holds a trace of warmth in the highlights so the face stays alive against the cold scheme. Two-source cold lighting, deep blue shadows, realistic skin texture, subtle film grain.",
+      "editHref": "/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25/edit/61e4198d-21dc-44f0-bd40-ce5d3b8ccc91",
+      "done": true
     }
   ]
 }
