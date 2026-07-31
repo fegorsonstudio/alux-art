@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import sql from "./db";
@@ -15,6 +15,25 @@ import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+
+/**
+ * Gemini's default thresholds block at MEDIUM_AND_ABOVE on every category, and
+ * none of these calls had ever set them. That is what killed shoot ea5ff40a:
+ * "Response was blocked due to OTHER" while writing the brief for a lingerie
+ * shoot the buyer had commissioned of themselves, with all five slots left
+ * QUEUED and nothing generated.
+ *
+ * These calls do not produce images. They read reference photos and write a
+ * planning document. Letting the planner describe what is plainly in the
+ * photographs is the whole job; the image models downstream keep their own
+ * checks, and the categories that allow adult work are gated separately.
+ */
+const GEMINI_SAFETY = [
+  HarmCategory.HARM_CATEGORY_HARASSMENT,
+  HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+  HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+  HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_NONE }));
 
 fal.config({ credentials: process.env.FAL_KEY ?? process.env.FAL_API_KEY ?? "" });
 
@@ -200,6 +219,7 @@ async function identifyForbiddenWord(prompt: string): Promise<{
   sanitizedPrompt: string;
 } | null> {
   const model = genai.getGenerativeModel({
+    safetySettings: GEMINI_SAFETY,
     model: "gemini-2.5-flash",
     generationConfig: { maxOutputTokens: 256, responseMimeType: "application/json" },
   });
@@ -367,6 +387,7 @@ async function analyzeIdentityImages(imageUrls: string[], groupMode = false): Pr
   }
 
   const model = genai.getGenerativeModel({
+    safetySettings: GEMINI_SAFETY,
     model: "gemini-2.5-flash",
     generationConfig: { maxOutputTokens: 1024 },
   });
@@ -466,6 +487,7 @@ async function classifyIdentityAttributes(
     if (imageParts.length !== usable.length) return fallback;
 
     const model = genai.getGenerativeModel({
+      safetySettings: GEMINI_SAFETY,
       model: "gemini-2.5-flash",
       generationConfig: { maxOutputTokens: 512 },
     });
@@ -987,6 +1009,7 @@ Output ONLY valid JSON matching the output structure in your instructions. No ma
   }
 
   const geminiModel = genai.getGenerativeModel({
+    safetySettings: GEMINI_SAFETY,
     model: "gemini-2.5-flash",
     systemInstruction: buildShootBriefSystemInstruction(identityCatalog),
     generationConfig: {
@@ -1643,6 +1666,7 @@ Return ONLY valid JSON (no markdown):
   };
   try {
     const designModel = genai.getGenerativeModel({
+      safetySettings: GEMINI_SAFETY,
       model: "gemini-2.5-flash",
       generationConfig: { maxOutputTokens: 256, responseMimeType: "application/json" },
     });
