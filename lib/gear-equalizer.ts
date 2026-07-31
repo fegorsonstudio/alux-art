@@ -219,14 +219,22 @@ export function buildGearEqualizerPrompt(
   const camera = CAMERA_PRESETS.find((p) => p.id === sel.camera) ?? CAMERA_PRESETS[0];
 
   const parts: string[] = [
-    // 1. The mission — the lighting transformation IS the product. Leading with it
-    //    matters: an over-weighted preservation lock makes the model barely touch
-    //    the image (verified in production — "no lighting improvement" complaints).
-    "STUDIO RELIGHT of the attached photograph (IMAGE 1). Your job: completely re-render " +
-      "the LIGHTING of this exact photograph as described below. The lighting " +
-      "transformation must be CLEARLY VISIBLE and dramatic — a before/after comparison " +
-      "must instantly show a different professional lighting setup. An output that looks " +
-      "like the input with minor cleanup is a FAILED result.",
+    // 1. The mission. This wording is load-bearing and was rewritten after a real
+    //    test: the previous version led with "the transformation must be CLEARLY
+    //    VISIBLE and dramatic — an output that looks like the input with minor
+    //    cleanup is a FAILED result", which told the model that leaving the
+    //    buyer's photo looking like their photo counts as failure. It duly
+    //    redesigned a child's pearl crown into a different jewelled tiara and
+    //    drifted her face. What must change dramatically is the LIGHT. What must
+    //    not change at all is WHAT IS IN THE FRAME. Say both, in that order.
+    "STUDIO RELIGHT AND RESTORATION of the attached photograph (IMAGE 1). This is a real " +
+      "photograph of real people. The output must be unmistakably the SAME photograph of " +
+      "the SAME people and the SAME objects — recognisable at a glance, side by side with " +
+      "the original — but lit by a professional studio setup and rendered on professional " +
+      "gear. Two separate tests apply and BOTH must pass: (a) the LIGHTING must visibly and " +
+      "clearly change to the setup described below; (b) NOTHING that is physically in the " +
+      "photograph may change. Re-imagining, restyling or replacing any person, garment or " +
+      "object is a FAILED result, no matter how good it looks.",
 
     // 2. Lighting.
     "THE NEW LIGHTING: " + lightingDirective + " Rebuild ALL illumination from scratch to " +
@@ -236,19 +244,37 @@ export function buildGearEqualizerPrompt(
 
     // 3. Preservation lock — scoped to WHAT is in the frame, not how it is lit.
     "SUBJECT LOCK — while transforming the light, preserve faithfully: the subject's " +
-      "identity, facial structure, skin tone, expression, gaze, pose, hands and fingers, " +
-      "body proportions, clothing and its folds, hair, any other people present, and the " +
+      "identity, facial structure, exact facial features and their proportions, eye shape " +
+      "and size, skin tone, expression, gaze, pose, hands and fingers, body proportions, " +
+      "clothing and its folds, hair, any other people present, and the " +
       "composition/framing/crop of IMAGE 1. Do not add, remove, move, resize, or " +
       "re-imagine any person or object. This lock applies to CONTENT and GEOMETRY only — " +
       "illumination, shadows, highlights, color grade, and background rendering MUST " +
       "change per the lighting directive.",
 
+    // 3b. Worn and printed detail, itemised. The generic lock above lists clothing
+    //     and hair but named nothing worn ON them, and a child's pearl crown came
+    //     back as a different jewelled tiara. Anything the buyer owns and chose is
+    //     the reason they are buying the photo — it must survive verbatim.
+    "WORN AND PRINTED DETAIL — reproduce EXACTLY, with the same shape, size, placement, " +
+      "colour, material and count: every crown, tiara, headpiece, hat, veil, hairband and " +
+      "hair accessory; every earring, necklace, chain, pendant, bracelet, watch, ring and " +
+      "brooch; every glass, frame and strap; every button, zip, buckle, bead, sequin, pearl, " +
+      "stone, embroidery, applique, lace and trim; every print, pattern, graphic, logo and " +
+      "lettering on any garment or object. These are not details to interpret. If a piece is " +
+      "partly hidden or unclear in IMAGE 1, render the closest faithful match to what IS " +
+      "visible — never invent, upgrade, simplify or substitute a different design.",
+
     // 4. Camera / rendering quality.
-    "CAMERA QUALITY UPGRADE — " + camera.directive + " Restore and enhance fine detail the " +
-      "original sensor could not capture (skin texture, fabric weave, hair strands, eye " +
-      "detail); remove digital noise and compression artifacts; correct white balance and " +
-      "exposure. Enhancement must REVEAL what is in the photograph — never alter geometry, " +
-      "features, or content.",
+    "CAMERA QUALITY UPGRADE — this is the second half of the product and must be plainly " +
+      "visible when the result is zoomed in: " + camera.directive + " Resolve fine detail " +
+      "the phone sensor smeared away — individual skin pores and fine hairs, the weave and " +
+      "nap of fabric, separate layers of netting or lace, the facets of stones and beads, " +
+      "catchlight structure in the eyes; remove digital noise, smearing and compression " +
+      "artifacts; correct white balance and exposure. Enhancement means REVEALING what is " +
+      "already in the photograph at a resolution the original could not hold. It never means " +
+      "adding, redesigning or embellishing anything, and never alters geometry, proportions " +
+      "or features.",
 
     // 5. Background.
     backdropAttached
