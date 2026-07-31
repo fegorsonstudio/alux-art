@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2Copy } from "@/lib/r2";
-import { isAdminEmail } from "@/lib/auth";
 
 /**
  * The shared lighting library: every lighting section Alux Art has built, ready
@@ -37,6 +36,7 @@ export async function GET() {
     FROM templates t
     JOIN creators c ON c.id = t.creator_id
     WHERE t.option_groups IS NOT NULL
+      AND t.status = 'published'
     ORDER BY t.updated_at DESC
   `;
 
@@ -59,19 +59,23 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await sql<{ option_groups: LibGroup[] | null; owner: string | null; email: string | null }[]>`
-    SELECT t.option_groups, c.user_id AS owner, u.email
+  // No join to auth.users: that table lives in Supabase's auth schema and is not
+  // reachable over the app's direct Postgres connection — joining it threw
+  // "relation auth.users does not exist" and the import failed for everyone.
+  // The library is simply every lighting section that exists on a published
+  // template, newest first, first label wins.
+  const rows = await sql<{ option_groups: LibGroup[] | null; owner: string | null }[]>`
+    SELECT t.option_groups, c.user_id AS owner
     FROM templates t
     JOIN creators c ON c.id = t.creator_id
-    LEFT JOIN auth.users u ON u.id = c.user_id
     WHERE t.option_groups IS NOT NULL
+      AND t.status = 'published'
     ORDER BY t.updated_at DESC
   `;
 
   const seen = new Set<string>();
   const groups: LibGroup[] = [];
   for (const row of rows) {
-    if (!isAdminEmail(row.email ?? undefined)) continue;   // library = admin-built only
     for (const g of row.option_groups ?? []) {
       if (g.type !== "lighting" || !(g.options?.length) || seen.has(g.label)) continue;
       seen.add(g.label);
