@@ -236,12 +236,6 @@ export function buildGearEqualizerPrompt(
       "photograph may change. Re-imagining, restyling or replacing any person, garment or " +
       "object is a FAILED result, no matter how good it looks.",
 
-    // 2. Lighting.
-    "THE NEW LIGHTING: " + lightingDirective + " Rebuild ALL illumination from scratch to " +
-      "match: shadow direction and softness, highlight placement, catchlights in the eyes, " +
-      "light falloff on the background, and color temperature must all follow this setup — " +
-      "replacing the original photo's lighting entirely.",
-
     // 3. Preservation lock — scoped to WHAT is in the frame, not how it is lit.
     "SUBJECT LOCK — while transforming the light, preserve faithfully: the subject's " +
       "identity, facial structure, exact facial features and their proportions, eye shape " +
@@ -263,7 +257,21 @@ export function buildGearEqualizerPrompt(
       "stone, embroidery, applique, lace and trim; every print, pattern, graphic, logo and " +
       "lettering on any garment or object. These are not details to interpret. If a piece is " +
       "partly hidden or unclear in IMAGE 1, render the closest faithful match to what IS " +
-      "visible — never invent, upgrade, simplify or substitute a different design.",
+      "visible — never invent, upgrade, simplify or substitute a different design. State it " +
+      "plainly: a crown must come out as the SAME crown, not a nicer one; a beaded bodice " +
+      "must keep the same beads in the same places; a printed fabric must keep the same " +
+      "print. Making any of these look more expensive, more symmetrical or better designed " +
+      "is the most common way this job is failed.",
+
+    // Lighting comes AFTER the locks. Ordering is load-bearing here: when this
+    // sat first, the model had already committed to "re-render everything" by
+    // the time it reached the lock, and a child's pearl crown came back as a
+    // different jewelled tiara. The locks must be read first.
+    "ONLY NOW, THE NEW LIGHTING: " + lightingDirective + " Rebuild ALL illumination from " +
+      "scratch to match: shadow direction and softness, highlight placement, catchlights in " +
+      "the eyes, light falloff on the background, and color temperature must all follow this " +
+      "setup — replacing the original photo's lighting entirely. Changing the light is not a " +
+      "licence to change anything the light falls on.",
 
     // 4. Camera / rendering quality.
     "CAMERA QUALITY UPGRADE — this is the second half of the product and must be plainly " +
@@ -302,7 +310,8 @@ export function buildGearEqualizerPrompt(
       "without changing any shape, proportion, or feature. The result must look like the " +
       "same photograph captured on far better gear — recognizably identical, dramatically " +
       "better lit and rendered. Realistic skin texture, subtle film grain, physically " +
-      "plausible light. No beautification, no face slimming, no body reshaping.",
+      "plausible light. No beautification, no face slimming, no body reshaping, and no "+
+      "upgrading of garments, jewellery or accessories.",
   ];
 
   return parts.join(" ");
