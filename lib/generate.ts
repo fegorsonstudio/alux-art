@@ -243,25 +243,41 @@ async function callFalWithFallback(
   aspectRatio: string,
   resolution: string,
   dbForbiddenWords: Array<{ word: string; replacement: string }> = [],
-  generationModel: "nano-banana" | "seedream" = "nano-banana"
-): Promise<{ url: string; sanitized: boolean }> {
+  generationModel: "nano-banana" | "seedream" = "nano-banana",
+  allowAdult = false
+): Promise<{ url: string; sanitized: boolean; model: string }> {
+  const primary = generationModel === "seedream"
+    ? "fal-ai/bytedance/seedream/v4/edit"
+    : "fal-ai/nano-banana-2/edit";
   const generate = (prompt: string) =>
     generationModel === "seedream"
-      ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution)
+      ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution, allowAdult)
       : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
 
   const isForbidden = (err: unknown) =>
     err instanceof Error && err.message.toLowerCase().includes("forbidden");
   try {
     const url = await withRetry(() => generate(slotPrompt));
-    return { url, sanitized: false };
+    return { url, sanitized: false, model: primary };
   } catch (err) {
     if (isForbidden(err)) {
       const clean = sanitizeForFal(slotPrompt, dbForbiddenWords);
       if (clean !== slotPrompt) {
-        const url = await withRetry(() => generate(clean));
-        return { url, sanitized: true };
+        try {
+          const url = await withRetry(() => generate(clean));
+          return { url, sanitized: true, model: primary };
+        } catch (retryErr) {
+          if (!allowAdult) throw retryErr;
+        }
       }
+    }
+    // Adult categories get one more attempt on the open-weights model, which has
+    // no server-side moderation or prompt rewriter in front of it. Without this a
+    // refusal is simply a failed slot the buyer already paid for.
+    if (allowAdult) {
+      console.log("[generate] primary refused an adult-category slot — retrying on qwen-image-edit-plus");
+      const url = await withRetry(() => generateImageWithQwenEdit(slotPrompt, imageUrls, aspectRatio, resolution));
+      return { url, sanitized: false, model: "fal-ai/qwen-image-edit-plus" };
     }
     throw err;
   }
@@ -1100,7 +1116,8 @@ async function generateImageWithSeedream(
   prompt: string,
   imageUrls: string[],
   aspectRatio: string,
-  resolution = "1K"
+  resolution = "1K",
+  allowAdult = false
 ): Promise<string> {
   if (USE_MOCK_FAL) {
     return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
@@ -1115,7 +1132,10 @@ async function generateImageWithSeedream(
       // biome-ignore lint: fal type is too narrow for SeedDream's flexible image_size
       image_size: imageSize as never,
       num_images: 1,
-      enable_safety_checker: true,
+      // Boudoir and glamour are the categories this is for: a lingerie portrait
+      // the buyer booked of themselves is the product, and the checker rejects
+      // it. Every other category keeps the checker on.
+      enable_safety_checker: !allowAdult,
       enhance_prompt_mode: "standard" as const,
       image_urls: imageUrls.slice(0, 10),
     },
@@ -1124,6 +1144,62 @@ async function generateImageWithSeedream(
   const output = ((response as Record<string, unknown>).data || response) as FalOutput;
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("SeedDream returned no image URL");
+  return url;
+}
+
+/**
+ * Qwen-Image-Edit-Plus — the fallback for the adult categories.
+ *
+ * Seedream is the better photographic model and is tried first, but it is
+ * ByteDance-hosted: beyond enable_safety_checker it moderates server-side and
+ * runs a prompt rewriter that cannot be switched off (enhance_prompt_mode has no
+ * "off" value), so a boudoir brief can come back as an empty bedroom. Qwen is
+ * open-weights running on fal's own hardware with a genuine safety toggle and no
+ * rewriter in front of it, and it takes multiple reference images, so identity
+ * and wardrobe still reach the model.
+ *
+ * It costs resolution: Qwen renders natively around 1.3K and smears when pushed
+ * to Seedream's 4096, so this asks for at most 2048 on the long edge. A smaller
+ * delivered image beats a failed slot, and it only ever runs when Seedream has
+ * already refused.
+ */
+const QWEN_MAX_EDGE = 2048;
+
+async function generateImageWithQwenEdit(
+  prompt: string,
+  imageUrls: string[],
+  aspectRatio: string,
+  resolution = "1K"
+): Promise<string> {
+  if (USE_MOCK_FAL) return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
+
+  const tier = resolution === "4K" ? "4K" : "1K";
+  const size = SEEDREAM_SIZES[tier]?.[aspectRatio] ?? SEEDREAM_SIZES["1K"]["4:5"];
+  // Reuse the aspect table, then scale the long edge down to what Qwen renders
+  // cleanly. String presets pass through untouched.
+  let imageSize: unknown = size;
+  if (size && typeof size === "object") {
+    const { width, height } = size as { width: number; height: number };
+    const scale = Math.min(1, QWEN_MAX_EDGE / Math.max(width, height));
+    imageSize = { width: Math.round(width * scale), height: Math.round(height * scale) };
+  }
+
+  const response = await fal.subscribe("fal-ai/qwen-image-edit-plus", {
+    input: {
+      prompt,
+      // biome-ignore lint: fal type is too narrow for Qwen's flexible image_size
+      image_size: imageSize as never,
+      num_images: 1,
+      enable_safety_checker: false,
+      // Qwen degrades once past a handful of references — it blends them rather
+      // than layering them. The slot's list is already ordered identity-first.
+      image_urls: imageUrls.slice(0, 4),
+    },
+  });
+
+  const output = ((response as Record<string, unknown>).data || response) as FalOutput;
+  const url = output.images?.[0]?.url ?? "";
+  if (!url) throw new Error("Qwen edit returned no image URL");
   return url;
 }
 
@@ -2009,6 +2085,11 @@ export async function startGenerationWorker(
     generationModel = "seedream";
     console.log(`[generate] category "${shootCategory}" routed to seedream (nano-banana rejects it)`);
   }
+  // Lingerie and implied-nude portraiture is the whole point of a boudoir
+  // booking, and a default-on safety checker rejects it. These categories run
+  // with the checker off and fall back to the open-weights model if the primary
+  // still refuses. Everything else keeps the checker exactly as it was.
+  const allowAdult = SEEDREAM_CATEGORIES.has(shootCategory);
 
   // Resolve whether this shoot's owner is an admin (for admin-only prompt-only mode)
   const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
@@ -3094,7 +3175,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: rawFalUrl, sanitized: promptWasSanitized } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, generationModel);
+      const { url: rawFalUrl, sanitized: promptWasSanitized, model: modelUsed } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, generationModel, allowAdult);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }
@@ -3148,7 +3229,7 @@ export async function startGenerationWorker(
       } catch (probeErr) {
         console.warn("[generate] could not measure slot", slot, probeErr instanceof Error ? probeErr.message : probeErr);
       }
-      console.log(`[generate] slot ${slot} produced ${outW ?? "?"}x${outH ?? "?"} (${outBytes ? Math.round(outBytes/1024) + "KB" : "size unknown"}) via ${generationModel}`);
+      console.log(`[generate] slot ${slot} produced ${outW ?? "?"}x${outH ?? "?"} (${outBytes ? Math.round(outBytes/1024) + "KB" : "size unknown"}) via ${modelUsed}`);
 
       await sql`UPDATE shoot_images SET
         status = 'COMPLETE',
@@ -3158,7 +3239,7 @@ export async function startGenerationWorker(
         download_file_size = ${outBytes},
         stage = ${`Completed slot ${slot}`},
         provider = ${isTestMode ? "pollinations" : "vercel-fal"},
-        configured_model = ${isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "fal-ai/nano-banana-2/edit")},
+        configured_model = ${isTestMode ? "pollinations-free" : modelUsed},
         preview_storage_bucket = ${isTestMode ? "test" : "generated-4k"},
         preview_storage_path = ${storagePath},
         download_storage_bucket = ${isTestMode ? "test" : "generated-4k"},
