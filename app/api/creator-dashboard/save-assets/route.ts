@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { r2Copy } from "@/lib/r2";
-import { assetKindById } from "@/lib/asset-extractor";
+import { assetKindById, assetAngleById, SHEET_ANGLE_ID } from "@/lib/asset-extractor";
 
 /**
  * Move finished Asset Extractor images into a template as tagged references.
@@ -79,8 +79,11 @@ export async function POST(request: NextRequest) {
     const kind = step ? assetKindById(step.kindId) : undefined;
     if (!kind) { failed.push({ slot: img.slot, why: "no plan entry" }); continue; }
 
-    const name = kind.angles.length > 1
-      ? `${kind.label} — ${kind.angles.find(a => a.id === step.angleId)?.label ?? step.angleId}`
+    // A sheet holds every view, so it is named for the kind alone. Shoots booked
+    // before the sheet change still name their single view.
+    const view = assetAngleById(kind, step.angleId);
+    const name = step.angleId !== SHEET_ANGLE_ID && kind.angles.length > 1
+      ? `${kind.label} — ${view?.label ?? step.angleId}`
       : kind.label;
 
     try {

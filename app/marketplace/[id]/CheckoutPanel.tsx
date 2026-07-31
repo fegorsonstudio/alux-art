@@ -1007,7 +1007,7 @@ export default function CheckoutPanel({
   const assetPlanCount = Object.values(assetPicks).reduce(
     (n, kinds) => n + kinds.reduce((m, id) => {
       const k = ASSET_KINDS.find(x => x.id === id);
-      return m + (k && k.output === "image" ? k.angles.length : 0);
+      return m + (k && k.output === "image" ? 1 : 0);
     }, 0),
     0
   );
@@ -1255,7 +1255,7 @@ export default function CheckoutPanel({
                     });
                     const count = picked.reduce((m, id) => {
                       const k = ASSET_KINDS.find(x => x.id === id);
-                      return m + (k && k.output === "image" ? k.angles.length : 0);
+                      return m + (k && k.output === "image" ? 1 : 0);
                     }, 0);
                     return (
                       <div key={path} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
@@ -1280,7 +1280,6 @@ export default function CheckoutPanel({
                                   }}
                                 >
                                   {on ? "✓ " : ""}{k.label}
-                                  {k.angles.length > 1 && <span style={{ opacity: 0.6 }}> ×{k.angles.length}</span>}
                                 </button>
                               );
                             })}

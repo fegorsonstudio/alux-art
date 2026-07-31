@@ -148,7 +148,7 @@ const en = {
     perPhotoPrice: "each",
     outputSize: "Output size",
     whatToExtract: "What to extract",
-    extractHint: "Tick what to pull out of each photo. An outfit gives you three angles.",
+    extractHint: "Tick what to pull out of each photo. Each tick is one image, with every angle inside it.",
     assetsFromPhoto: "{n} assets from this photo",
     nothingPicked: "Nothing picked yet",
     pickSomethingToExtract: "Pick at least one thing to extract",

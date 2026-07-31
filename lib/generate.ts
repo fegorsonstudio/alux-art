@@ -5,7 +5,7 @@ import sharp from "sharp";
 import sql from "./db";
 import { normalizePackageSize, ASPECTS, type AspectRatio } from "./types";
 import { buildGearEqualizerPrompt, buildGearReferenceMapText, type EnhanceSelection } from "./gear-equalizer";
-import { assetKindById, buildAssetExtractPrompt, buildAssetReferenceMapText } from "./asset-extractor";
+import { assetKindById, assetAngleById, buildAssetExtractPrompt, buildAssetReferenceMapText } from "./asset-extractor";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
@@ -2672,7 +2672,7 @@ export async function startGenerationWorker(
       if (isAssetExtract && assetPlan) {
         const step = assetPlan[slot - 1];
         const kind = step ? assetKindById(step.kindId) : undefined;
-        const angle = kind?.angles.find((a) => a.id === step.angleId);
+        const angle = kind ? assetAngleById(kind, step.angleId) : undefined;
         if (!step || !kind || !angle) {
           throw new Error(`asset extract: no plan entry for slot ${slot}`);
         }

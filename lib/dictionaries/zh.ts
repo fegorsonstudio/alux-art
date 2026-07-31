@@ -149,7 +149,7 @@ const zh: AppDictionary = {
     perPhotoPrice: "每张",
     outputSize: "输出尺寸",
     whatToExtract: "要提取什么",
-    extractHint: "勾选每张照片要提取的内容。一套服装会生成三个角度。",
+    extractHint: "勾选每张照片要提取的内容。每勾选一项生成一张图，所有角度都在同一张里。",
     assetsFromPhoto: "从这张照片提取 {n} 个素材",
     nothingPicked: "尚未选择",
     pickSomethingToExtract: "请至少选择一项",

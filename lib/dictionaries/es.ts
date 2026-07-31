@@ -149,7 +149,7 @@ const es: AppDictionary = {
     perPhotoPrice: "cada una",
     outputSize: "Tamano de salida",
     whatToExtract: "Que extraer",
-    extractHint: "Marca que sacar de cada foto. Un conjunto da tres angulos.",
+    extractHint: "Marca que sacar de cada foto. Cada marca es una imagen, con todos los angulos dentro.",
     assetsFromPhoto: "{n} recursos de esta foto",
     nothingPicked: "Nada seleccionado",
     pickSomethingToExtract: "Elige al menos una cosa",

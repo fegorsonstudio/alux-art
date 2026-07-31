@@ -149,7 +149,7 @@ const pcm: AppDictionary = {
     perPhotoPrice: "each one",
     outputSize: "Output size",
     whatToExtract: "Wetin you wan extract",
-    extractHint: "Tick wetin you wan comot from each photo. Outfit go give you three angles.",
+    extractHint: "Tick wetin you wan comot from each photo. Each tick na one image, with all di angles inside am.",
     assetsFromPhoto: "{n} assets from dis photo",
     nothingPicked: "You never pick anything",
     pickSomethingToExtract: "Pick at least one thing",

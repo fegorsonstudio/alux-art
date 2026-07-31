@@ -113,19 +113,69 @@ const GHOST =
 
 const A = (id: string, label: string, directive: string): AssetAngle => ({ id, label, directive });
 
+// ── One asset kind = one image ───────────────────────────────────────────────
+// A gown used to cost three slots (front, back, side) and arrive as three
+// separate files. The creator wants one picture per thing, with the views laid
+// out inside it — three images for three ticked kinds, not seven. That is also
+// the better reference: a template that points at a single sheet shows the
+// generator every side of the garment at once instead of one arbitrary view.
+export const SHEET_ANGLE_ID = "sheet";
+
+const SHEET_RULES =
+  "SHEET LAYOUT — produce ONE single image divided into equal panels arranged " +
+  "as a grid in the order listed, reading left to right then top to bottom, " +
+  "separated by a thin neutral gap: FOUR panels are two rows of two, three " +
+  "panels sit in one row, two panels sit side by side. The mid-grey " +
+  "backdrop runs continuously behind every panel so the sheet reads as one " +
+  "photograph, not a pasted-together collage. Every panel shows the SAME single " +
+  "item at the SAME scale under the SAME light — only the viewing angle changes " +
+  "between them. Print each panel's name in small plain grey type under it. " +
+  "Where the framing rule below says the item fills the frame, it means the item " +
+  "fills ITS OWN PANEL. Every panel is the same size and the grid fills the " +
+  "whole frame edge to edge.";
+
+/**
+ * The single view a kind renders as. Multi-view kinds collapse into one sheet;
+ * single-view kinds are unchanged and gain no layout instruction.
+ */
+export function assetSheetAngle(kind: AssetKind): AssetAngle {
+  if (kind.angles.length <= 1) return kind.angles[0];
+  return {
+    id: SHEET_ANGLE_ID,
+    label: kind.angles.map((a) => a.label).join(" / "),
+    directive:
+      SHEET_RULES + " THE PANELS, IN ORDER — " +
+      kind.angles.map((a, i) => `PANEL ${i + 1} (${a.label}): ${a.directive}`).join(" "),
+  };
+}
+
+/** Resolve a plan entry's angle. Shoots booked before the sheet change still
+ *  carry real angle ids, so both forms have to keep working. */
+export function assetAngleById(kind: AssetKind, angleId: string): AssetAngle | undefined {
+  if (angleId === SHEET_ANGLE_ID) return assetSheetAngle(kind);
+  return kind.angles.find((a) => a.id === angleId);
+}
+
 const FRONT = A("front", "Front", "Show the front of the item, squared to camera at eye level.");
 const BACK  = A("back",  "Back",  "Show the BACK of the item, squared to camera at eye level — the reverse of the front view, reconstructed faithfully from the construction visible in the source.");
 const SIDE  = A("side",  "Side",  "Show the item in profile from its left side, so the silhouette and depth read clearly.");
+// The fourth garment view. A close-up detail crop would read better for prints
+// and beadwork, but it breaks the same-scale rule that lets the four panels be
+// compared — so the turnaround gains an angle instead of a zoom.
+const THREE_QUARTER = A("three-quarter", "Three-quarter",
+  "Show the item turned roughly forty-five degrees between the front and the left side, " +
+  "so the way the front meets the side reads clearly and the true volume and depth of " +
+  "the shape are visible.");
 
 // ── The catalogue ────────────────────────────────────────────────────────────
 export const ASSET_KINDS: AssetKind[] = [
   {
     id: "outfit",
     label: "Outfit",
-    blurb: "Ghost mannequin — front, back and side",
+    blurb: "One sheet — front, three-quarter, side and back",
     tag: "OUTFIT",
     output: "image" as const,
-    angles: [FRONT, BACK, SIDE],
+    angles: [FRONT, THREE_QUARTER, SIDE, BACK],
     directive:
       "Extract the complete outfit the person is wearing — every garment layer " +
       "together as one coordinated look (dress, top, trousers, skirt, jacket, " +
@@ -134,10 +184,10 @@ export const ASSET_KINDS: AssetKind[] = [
   {
     id: "gown",
     label: "Gown / dress",
-    blurb: "Ghost mannequin — front, back and side",
+    blurb: "One sheet — front, three-quarter, side and back",
     tag: "GOWN",
     output: "image" as const,
-    angles: [FRONT, BACK, SIDE],
+    angles: [FRONT, THREE_QUARTER, SIDE, BACK],
     directive:
       "Extract the gown or dress only, full length including any train, and " +
       "nothing else the person is wearing or holding.",
@@ -145,10 +195,10 @@ export const ASSET_KINDS: AssetKind[] = [
   {
     id: "suit",
     label: "Suit",
-    blurb: "Ghost mannequin — front, back and side",
+    blurb: "One sheet — front, three-quarter, side and back",
     tag: "SUIT",
     output: "image" as const,
-    angles: [FRONT, BACK, SIDE],
+    angles: [FRONT, THREE_QUARTER, SIDE, BACK],
     directive:
       "Extract the suit as worn — jacket over shirt with trousers, keeping the " +
       "lapel shape, button stance, pocket style and any tie or pocket square in " +
@@ -157,7 +207,7 @@ export const ASSET_KINDS: AssetKind[] = [
   {
     id: "scrubs",
     label: "Scrubs",
-    blurb: "Ghost mannequin — front and back",
+    blurb: "One sheet — front and back",
     tag: "SCRUBS",
     output: "image" as const,
     angles: [FRONT, BACK],
@@ -204,7 +254,7 @@ export const ASSET_KINDS: AssetKind[] = [
   {
     id: "jewellery",
     label: "Jewellery",
-    blurb: "On display hands and a neck form, as worn",
+    blurb: "One sheet — hands, neck and ears, as worn",
     tag: "ACCESSORY",
     output: "image" as const,
     angles: [
@@ -421,11 +471,12 @@ export function assetDestination(kind: AssetKind): "template_image" | "choice_op
   return kind.output === "text" ? "choice_option" : "template_image";
 }
 
-/** Images produced by a set of ticked kinds — this is the slot count AND the price. */
+/** Images produced by a set of ticked kinds — this is the slot count AND the
+ *  price. One ticked kind is one image: its views share a single sheet. */
 export function assetImageCount(kindIds: string[]): number {
   return kindIds.reduce((n, id) => {
     const k = assetKindById(id);
-    return n + (k && k.output === "image" ? k.angles.length : 0);
+    return n + (k && k.output === "image" ? 1 : 0);
   }, 0);
 }
 
@@ -434,17 +485,17 @@ export function assetImageCount(kindIds: string[]): number {
 export function assetTextCount(kindIds: string[]): number {
   return kindIds.reduce((n, id) => {
     const k = assetKindById(id);
-    return n + (k && k.output === "text" ? k.angles.length : 0);
+    return n + (k && k.output === "text" ? 1 : 0);
   }, 0);
 }
 
-/** Every (kind, angle) pair a selection expands to, in a stable order. */
+/** What a selection renders as, in a stable order — one entry per ticked kind. */
 export function expandAssetSelection(kindIds: string[]): Array<{ kind: AssetKind; angle: AssetAngle }> {
   const out: Array<{ kind: AssetKind; angle: AssetAngle }> = [];
   for (const id of kindIds) {
     const kind = assetKindById(id);
     if (!kind) continue;
-    for (const angle of kind.angles) out.push({ kind, angle });
+    out.push({ kind, angle: assetSheetAngle(kind) });
   }
   return out;
 }

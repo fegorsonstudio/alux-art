@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
-import { assetKindById } from "@/lib/asset-extractor";
+import { assetSheetAngle, assetKindById } from "@/lib/asset-extractor";
 import { SITE_URL } from "@/lib/site-url";
 import { isAdminEmail } from "@/lib/auth";
 import { initializePayment } from "@/lib/payment-gateway";
@@ -161,9 +161,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Photo upgrades are priced PER IMAGE rather than in 1/5/10 packages: the buyer
   // brings however many photos they have and pays the single-image price for
   // each, up to ten. Everything else keeps the fixed packages.
-  // Asset Extractor: the buyer ticks what to pull out of each photo. One photo
-  // with a gown and shoes ticked yields four assets (3 gown angles + 1 pair), so
-  // the slot count comes from the expansion, never from the photo count.
+  // Asset Extractor: the buyer ticks what to pull out of each photo. One ticked
+  // kind is one image — a gown's front, back and side share a single sheet — so
+  // the slot count is the number of ticks, never the photo count.
   const isAssetExtract = template.category === "asset_extract";
   const assetPlan: Array<{ sourcePath: string; kindId: string; angleId: string }> = [];
   if (isAssetExtract) {
@@ -175,9 +175,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Only image kinds occupy a generation slot; text recipes cost a vision
         // call and are handled separately.
         if (!kind || kind.output !== "image") continue;
-        for (const angle of kind.angles) {
-          assetPlan.push({ sourcePath, kindId: kind.id, angleId: angle.id });
-        }
+        assetPlan.push({ sourcePath, kindId: kind.id, angleId: assetSheetAngle(kind).id });
       }
     }
     if (assetPlan.length === 0) {

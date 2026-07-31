@@ -149,7 +149,7 @@ const ar: AppDictionary = {
     perPhotoPrice: "لكل صورة",
     outputSize: "مقاس الإخراج",
     whatToExtract: "ما الذي تريد استخراجه",
-    extractHint: "حدد ما تريد استخراجه من كل صورة. الملابس تعطي ثلاث زوايا.",
+    extractHint: "حدد ما تريد استخراجه من كل صورة. كل اختيار يعطي صورة واحدة تضم كل الزوايا.",
     assetsFromPhoto: "{n} عناصر من هذه الصورة",
     nothingPicked: "لم يتم اختيار شيء",
     pickSomethingToExtract: "اختر عنصرا واحدا على الاقل",
