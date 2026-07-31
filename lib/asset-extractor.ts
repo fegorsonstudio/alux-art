@@ -77,6 +77,13 @@ const NO_PERSON =
   "no skin, no hair. Remove them entirely and reconstruct whatever they were " +
   "covering.";
 
+const DISPLAY_FORM =
+  "DISPLAY FORM — present the item on a plain matte white articulated display " +
+  "form (the jointed white mannequin used in jewellery catalogues): smooth " +
+  "featureless white material with visible segment joints, no skin texture, no " +
+  "skin tone, no fingernails, no veins, no hair, no face. The form is a neutral " +
+  "stand, never a person, and must read unmistakably as a mannequin.";
+
 const GHOST =
   "GHOST MANNEQUIN — present the garment as a professional invisible-mannequin " +
   "product shot: filled out to a natural worn shape with the body removed, hollow " +
@@ -170,13 +177,50 @@ export const ASSET_KINDS: AssetKind[] = [
   {
     id: "jewellery",
     label: "Jewellery",
-    blurb: "Every piece, laid out and separated",
+    blurb: "On display hands and a neck form, as worn",
     tag: "ACCESSORY",
-    angles: [A("flat", "Flat lay", "Lay every piece flat and separated with clear space between them, each fully visible and none overlapping.")],
+    angles: [
+      A("hands",
+        "Hands",
+        "Show a pair of matte white articulated display hands side by side, backs " +
+        "of the hands to camera, fingers together and straight, wrists at the top " +
+        "of the frame. Place each hand-worn piece on the SAME hand and the SAME " +
+        "finger it is worn on in the source: a ring on the third finger of the " +
+        "right hand appears on the third finger of the right hand here, a watch on " +
+        "the left wrist stays on the left wrist. Label the two hands with small " +
+        "neutral grey text reading LEFT HAND and RIGHT HAND above each wrist. If " +
+        "the source shows only one hand, show only that hand and label it."),
+      A("neck",
+        "Neck and ears",
+        "Show the neck-worn and ear-worn pieces on plain matte white forms: a " +
+        "necklace or pendant hung on a featureless white neck-and-shoulders bust " +
+        "with the chain falling naturally and the pendant centred, and any " +
+        "earrings on small white ear forms beside it, left and right kept on their " +
+        "own sides. Omit this view entirely if no neck or ear jewellery is worn."),
+    ],
     directive:
-      "Extract every piece of jewellery worn — earrings, necklace, bracelet, " +
-      "watch, rings, brooch, hair jewellery — keeping the exact design, metal " +
-      "colour, stone count, stone colour and size relationships between pieces.",
+      "Extract every piece of jewellery worn — rings, bracelets, bangles, watch, " +
+      "necklace, pendant, earrings, brooch — keeping the exact design, metal " +
+      "colour, stone shape, stone colour, stone count and the size relationships " +
+      "between pieces. Which hand, which finger and which wrist each piece is worn " +
+      "on is part of the item and must be preserved.",
+  },
+  {
+    id: "belt",
+    label: "Belt",
+    blurb: "Full length with the buckle square to camera",
+    tag: "ACCESSORY",
+    angles: [A("front",
+      "Front",
+      "Lay the belt out with a gentle even curve so its full length is in frame, " +
+      "buckle at the centre and squared to camera so its shape, mechanism and any " +
+      "engraving read clearly, strap tapering away evenly on both sides with the " +
+      "tip and the punched holes visible.")],
+    directive:
+      "Extract the belt only, keeping the exact strap width, length, material, " +
+      "colour, texture and stitching, and reproducing the buckle precisely — its " +
+      "shape, metal colour, mechanism, prong, keeper loops and any logo, monogram " +
+      "or engraving on it.",
   },
   {
     id: "headwear",
@@ -239,6 +283,9 @@ export const ASSET_KINDS: AssetKind[] = [
   },
 ];
 
+/** Kinds displayed on a white mannequin form rather than free-standing. */
+const FORM_KINDS = new Set(["jewellery", "wig", "headwear"]);
+
 export const ASSET_KIND_IDS = new Set(ASSET_KINDS.map((k) => k.id));
 export const assetKindById = (id: string): AssetKind | undefined =>
   ASSET_KINDS.find((k) => k.id === id);
@@ -284,6 +331,12 @@ export function buildAssetExtractPrompt(kind: AssetKind, angle: AssetAngle): str
     ...(kind.tag === "OUTFIT" || kind.tag === "GOWN" || kind.tag === "SUIT" || kind.tag === "SCRUBS"
       ? [GHOST]
       : []),
+
+    // Jewellery, wigs and headwear are meaningless without something to sit on:
+    // a flat-laid ring loses which finger it was worn on, and a wig loses its
+    // styled shape. They get a white mannequin form, which the NO PERSON rule
+    // above would otherwise be read as forbidding.
+    ...(FORM_KINDS.has(kind.id) ? [DISPLAY_FORM] : []),
 
     "VIEW — " + angle.directive,
 
