@@ -92,7 +92,13 @@ export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: s
   scrubs:      { tag: "SCRUBS",      defaultLabel: "Scrubs color" },
 };
 
-export const MAX_CHOICE_GROUPS = 6;
+// Raised from 6. The sanitizer slices to this on EVERY save, so a template with
+// more sections than the cap loses the surplus silently and permanently: the
+// Gear Equalizer's 13 lighting sections were cut to 6 — 56 looks destroyed —
+// simply by opening and saving it in the editor. Sections are cheap (they are
+// one JSON object each) and the archive is sold in them, so the cap now sits far
+// above any real template rather than just above the old default set.
+export const MAX_CHOICE_GROUPS = 40;
 export const MAX_OPTIONS_PER_GROUP = 100;
 // Hidden generation prompt for "prompt"-kind options (lighting recipes) can be long
 // and detailed. Other option descriptions stay short (see MAX_OPTION_DESCRIPTION).

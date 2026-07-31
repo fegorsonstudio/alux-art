@@ -172,7 +172,7 @@ const GROUP_TYPE_META: Record<ChoiceGroupType, { tag: string; label: string }> =
   props:       { tag: "ACCESSORY",   label: "Props" },
   scrubs:      { tag: "SCRUBS",      label: "Scrubs color" },
 };
-const MAX_CHOICE_GROUPS = 6;
+const MAX_CHOICE_GROUPS = 40;   // must not be lower than lib/choice-groups.ts
 const MAX_GROUP_OPTIONS = 100;
 
 interface ChoiceOptionDraft {
