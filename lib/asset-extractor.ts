@@ -80,7 +80,13 @@ const FIDELITY =
   "— never invent a different design. Do not tidy, restyle, simplify, recolour, " +
   "straighten, symmetrise or make the item look more expensive. An asset that " +
   "looks better than the real object is a FAILED result: the creator is selling " +
-  "the thing they own.";
+  "the thing they own. State it plainly: a beaded bodice keeps the SAME beads in " +
+  "the SAME places and the same count, not a richer arrangement; a printed fabric " +
+  "keeps the same print at the same scale in the same position; lace keeps its own " +
+  "pattern; a plain garment stays plain and gains no decoration; buttons, zips and " +
+  "hardware keep their number, size and spacing. Where the source is soft or " +
+  "low-resolution, resolve the detail that is genuinely there — never upgrade the " +
+  "design while sharpening it.";
 
 const NO_PERSON =
   "NO PERSON — the human being in the source photograph must be completely " +

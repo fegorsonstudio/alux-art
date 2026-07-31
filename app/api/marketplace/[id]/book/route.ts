@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { ASPECTS, packagePrice } from "@/lib/types";
+import { assetKindById } from "@/lib/asset-extractor";
 import { SITE_URL } from "@/lib/site-url";
 import { isAdminEmail } from "@/lib/auth";
 import { initializePayment } from "@/lib/payment-gateway";
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     poseRefs?: RefInput[];
     shotType?: string;
     aspectRatio?: string;   // photo upgrades only — the buyer keeps their own shape
+    assetPicks?: Record<string, string[]>;   // asset extractor: photo path -> kind ids
     couponCode?: string;
     packageSize?: number;
     currency?: string;
@@ -159,7 +161,47 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Photo upgrades are priced PER IMAGE rather than in 1/5/10 packages: the buyer
   // brings however many photos they have and pays the single-image price for
   // each, up to ten. Everything else keeps the fixed packages.
-  const perImagePricing = template.category === "photo_upgrade";
+  // Asset Extractor: the buyer ticks what to pull out of each photo. One photo
+  // with a gown and shoes ticked yields four assets (3 gown angles + 1 pair), so
+  // the slot count comes from the expansion, never from the photo count.
+  const isAssetExtract = template.category === "asset_extract";
+  const assetPlan: Array<{ sourcePath: string; kindId: string; angleId: string }> = [];
+  if (isAssetExtract) {
+    const picks = body.assetPicks && typeof body.assetPicks === "object" ? body.assetPicks : {};
+    for (const [sourcePath, kindIds] of Object.entries(picks)) {
+      if (typeof sourcePath !== "string" || !Array.isArray(kindIds)) continue;
+      for (const kindId of kindIds) {
+        const kind = typeof kindId === "string" ? assetKindById(kindId) : undefined;
+        // Only image kinds occupy a generation slot; text recipes cost a vision
+        // call and are handled separately.
+        if (!kind || kind.output !== "image") continue;
+        for (const angle of kind.angles) {
+          assetPlan.push({ sourcePath, kindId: kind.id, angleId: angle.id });
+        }
+      }
+    }
+    if (assetPlan.length === 0) {
+      return NextResponse.json({ error: "Choose at least one thing to extract from your photos." }, { status: 400 });
+    }
+    if (assetPlan.length > 10) {
+      return NextResponse.json(
+        { error: `That selection makes ${assetPlan.length} assets — the most in one job is 10. Untick something or split it into two jobs.` },
+        { status: 400 }
+      );
+    }
+  }
+
+  const perImagePricing = template.category === "photo_upgrade" || isAssetExtract;
+  if (isAssetExtract) {
+    const uploaded = new Set(identityRefs.map((r) => r.storagePath));
+    const unknown = assetPlan.find((p) => !uploaded.has(p.sourcePath));
+    if (identityRefs.length === 0) {
+      return NextResponse.json({ error: "Upload at least one photo to extract from." }, { status: 400 });
+    }
+    if (unknown) {
+      return NextResponse.json({ error: "One of the selections points at a photo that was not uploaded." }, { status: 400 });
+    }
+  }
   // Photo upgrades act on the buyer's own photograph, so the output shape is
   // theirs to choose — the creator's template ratio would re-crop a picture they
   // already framed. Every other template keeps the ratio its creator set.
@@ -167,9 +209,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const shootAspectRatio = perImagePricing && requestedAspect in ASPECTS
     ? requestedAspect
     : (template.aspect_ratio ?? "4:5");
-  const buyerPackageSize: number = perImagePricing
-    ? Math.min(10, Math.max(1, Number.isInteger(requestedCount) ? requestedCount : 1))
-    : packagedSize;
+  const buyerPackageSize: number = isAssetExtract
+    ? assetPlan.length
+    : perImagePricing
+      ? Math.min(10, Math.max(1, Number.isInteger(requestedCount) ? requestedCount : 1))
+      : packagedSize;
 
   // A free booking (admin, sponsor-funded template, or an admin-granted credit)
   // never touches a payment gateway, so the creator's payout setup is irrelevant
@@ -269,6 +313,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // The uploaded "identity" photos ARE the source photographs to upgrade — one
   // photo per package slot, upgraded with the clicked lighting + camera presets.
   let enhance: EnhanceSelection | null = null;
+  // The extraction plan rides the same column — generate.ts reads it back per
+  // category — so slot N is plan[N-1] no matter how the shoot is retried.
+  let assetEnhance: { plan: typeof assetPlan } | null = isAssetExtract ? { plan: assetPlan } : null;
   if (template.category === "photo_upgrade") {
     if (identityRefs.length !== buyerPackageSize) {
       return NextResponse.json(
@@ -483,7 +530,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
       ${induction ? sql.json(induction as unknown as Parameters<typeof sql.json>[0]) : null},
-      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : null},
+      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : (assetEnhance ? sql.json(assetEnhance as unknown as Parameters<typeof sql.json>[0]) : null)},
       ${body.noSmile === true},
       ${now}, ${now}
     )

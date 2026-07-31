@@ -8,6 +8,7 @@ import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResu
 import { NURSING_TITLES, INDUCTION_NAME_MAXLEN, INDUCTION_MAX_TITLES, inductionYearRange } from "@/lib/nursing-induction";
 import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES, GROUP_TYPES } from "@/lib/choice-groups";
 import { LIGHTING_PRESETS, CAMERA_PRESETS } from "@/lib/gear-equalizer";
+import { ASSET_KINDS } from "@/lib/asset-extractor";
 import { useT } from "@/lib/useLocale";
 
 // Lighting-style thumbnail. When both a shared "before" original and this style's
@@ -467,6 +468,8 @@ export default function CheckoutPanel({
   // Photo upgrades act on the buyer's own photograph, so the output shape is
   // theirs: forcing the template ratio re-crops a picture they already framed.
   const [upgradeAspect, setUpgradeAspect] = useState<string>(template.aspectRatio ?? "4:5");
+  // Asset Extractor: which items to pull out of each uploaded photo.
+  const [assetPicks, setAssetPicks] = useState<Record<string, string[]>>({});
   // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
 
@@ -955,7 +958,7 @@ export default function CheckoutPanel({
 
   // photo_upgrade: the buyer's uploaded source photos (storagePath + a preview to
   // show beside each per-photo lighting picker). Same order/paths as allIdentityRefs.
-  const sourcePhotos: Array<{ storagePath: string; preview: string }> = photoUpgradeActive
+  const sourcePhotos: Array<{ storagePath: string; preview: string }> = (photoUpgradeActive || template.category === "asset_extract")
     ? [
         ...Array.from(selectedSaved).map(sid => {
           const r = savedRefs.find(x => x.id === sid)!;
@@ -1000,10 +1003,20 @@ export default function CheckoutPanel({
   // Photo upgrades are priced per image: the buyer brings however many photos
   // they have (1-10) and pays the single-image price for each, rather than being
   // forced into a 1/5/10 package and made to upload exactly that many.
-  const perImagePricing = photoUpgradeActive;
+  const assetExtractActive = template.category === "asset_extract";
+  const assetPlanCount = Object.values(assetPicks).reduce(
+    (n, kinds) => n + kinds.reduce((m, id) => {
+      const k = ASSET_KINDS.find(x => x.id === id);
+      return m + (k && k.output === "image" ? k.angles.length : 0);
+    }, 0),
+    0
+  );
+  const perImagePricing = photoUpgradeActive || assetExtractActive;
   const unitPriceNgn = pkgOptions.find(o => o.n === 1)?.price ?? 0;
   const uploadedCount = Math.min(10, allIdentityRefs.length);
-  const effectivePkg = perImagePricing ? Math.max(1, uploadedCount) : selectedPkg;
+  const effectivePkg = assetExtractActive
+    ? Math.max(1, assetPlanCount)
+    : perImagePricing ? Math.max(1, uploadedCount) : selectedPkg;
   // In per-image mode any count from 1 to 10 is correct, so the counter must not
   // read as an error just because it does not equal a package size.
   const uploadCountBad = perImagePricing
@@ -1087,6 +1100,7 @@ export default function CheckoutPanel({
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: effectivePkg,
         ...(perImagePricing ? { aspectRatio: upgradeAspect } : {}),
+        ...(assetExtractActive ? { assetPicks } : {}),
         currency,
         rolePrompt: template.isStory && rolePrompt.trim() ? rolePrompt.trim() : undefined,
         storyAssets,
@@ -1160,9 +1174,11 @@ export default function CheckoutPanel({
   // ── Derived price ─────────────────────────────────────────────────────────
 
   const activePkg = pkgOptions.find(o => o.n === selectedPkg) ?? pkgOptions[pkgOptions.length - 1];
-  const pkgPrice = perImagePricing
-    ? unitPriceNgn * Math.max(1, uploadedCount)
-    : (activePkg?.price ?? 0);
+  const pkgPrice = assetExtractActive
+    ? unitPriceNgn * assetPlanCount
+    : perImagePricing
+      ? unitPriceNgn * Math.max(1, uploadedCount)
+      : (activePkg?.price ?? 0);
   const displayedPrice = couponResult?.valid && couponResult.discountNgn
     ? pkgPrice - couponResult.discountNgn
     : pkgPrice;
@@ -1221,6 +1237,71 @@ export default function CheckoutPanel({
               </p>
             </div>
           )}
+          {/* Asset Extractor — tick what to pull out of each uploaded photo. */}
+          {assetExtractActive && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>{t("whatToExtract")}</span>
+              {allIdentityRefs.length === 0 ? (
+                <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>
+              ) : (
+                <>
+                  <p className={styles.sectionHint}>{t("extractHint")}</p>
+                  {sourcePhotos.map((ref, i) => {
+                    const path = ref.storagePath;
+                    const picked = assetPicks[path] ?? [];
+                    const toggle = (id: string) => setAssetPicks(prev => {
+                      const cur = prev[path] ?? [];
+                      return { ...prev, [path]: cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id] };
+                    });
+                    const count = picked.reduce((m, id) => {
+                      const k = ASSET_KINDS.find(x => x.id === id);
+                      return m + (k && k.output === "image" ? k.angles.length : 0);
+                    }, 0);
+                    return (
+                      <div key={path} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
+                        <span style={{ flex: "0 0 72px", width: 72, height: 90, borderRadius: 6, overflow: "hidden", display: "block" }}>
+                          <ImagePreview src={ref.preview} alt={`Photo ${i + 1}`} className={styles.savedImg} preferredWidth={72}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </span>
+                        <div style={{ flex: "1 1 0", minWidth: 0 }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {ASSET_KINDS.filter(k => k.output === "image").map(k => {
+                              const on = picked.includes(k.id);
+                              return (
+                                <button
+                                  key={k.id}
+                                  type="button"
+                                  title={k.blurb}
+                                  onClick={() => toggle(k.id)}
+                                  style={{
+                                    padding: "5px 9px", borderRadius: 999, cursor: "pointer",
+                                    fontSize: "0.74rem", background: on ? "rgba(127,127,127,0.16)" : "none",
+                                    border: on ? "2px solid currentColor" : "1px solid rgba(127,127,127,0.3)",
+                                  }}
+                                >
+                                  {on ? "✓ " : ""}{k.label}
+                                  {k.angles.length > 1 && <span style={{ opacity: 0.6 }}> ×{k.angles.length}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className={styles.sectionHint} style={{ marginTop: 4 }}>
+                            {count > 0 ? t("assetsFromPhoto", { n: String(count) }) : t("nothingPicked")}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p className={styles.sectionHint} style={{ fontWeight: 600, marginTop: 6 }}>
+                    {assetPlanCount > 0
+                      ? `${assetPlanCount} ${imagesWord(assetPlanCount)} — ${formatPrice(unitPriceNgn * assetPlanCount)}`
+                      : t("pickSomethingToExtract")}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Output size — upgrades only. */}
           {perImagePricing && (
             <div className={styles.pkgRow}>
