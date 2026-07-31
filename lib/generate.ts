@@ -1091,7 +1091,7 @@ const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
     "1:1":  { width: 4096, height: 4096 },
     "16:9": { width: 4096, height: 2304 },
     "9:16": { width: 2304, height: 4096 },
-    "2:3":  { width: 1707, height: 2560 },
+    "2:3":  { width: 2730, height: 4096 },
   },
 };
 
@@ -3099,8 +3099,31 @@ export async function startGenerationWorker(
         }
       }
 
+      // Measure what we actually produced. These columns existed but nothing ever
+      // wrote them, so every row read nullxnull and the only way to answer "did
+      // this come out at 4K?" was to read the code. Never fail a finished slot
+      // over a measurement.
+      let outW: number | null = null, outH: number | null = null, outBytes: number | null = null;
+      try {
+        const probe = await fetch(isTestMode ? MOCK_FAL_PLACEHOLDER_IMAGE_URL : falUrl);
+        if (probe.ok) {
+          const b = Buffer.from(await probe.arrayBuffer());
+          outBytes = b.byteLength;
+          const meta = await sharp(b).metadata();
+          outW = meta.width ?? null;
+          outH = meta.height ?? null;
+        }
+      } catch (probeErr) {
+        console.warn("[generate] could not measure slot", slot, probeErr instanceof Error ? probeErr.message : probeErr);
+      }
+      console.log(`[generate] slot ${slot} produced ${outW ?? "?"}x${outH ?? "?"} (${outBytes ? Math.round(outBytes/1024) + "KB" : "size unknown"}) via ${generationModel}`);
+
       await sql`UPDATE shoot_images SET
         status = 'COMPLETE',
+        width = ${outW},
+        height = ${outH},
+        file_size = ${outBytes},
+        download_file_size = ${outBytes},
         stage = ${`Completed slot ${slot}`},
         provider = ${isTestMode ? "pollinations" : "vercel-fal"},
         configured_model = ${isTestMode ? "pollinations-free" : (generationModel === "seedream" ? "fal-ai/bytedance/seedream/v4/edit" : "fal-ai/nano-banana-2/edit")},
