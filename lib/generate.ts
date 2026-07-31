@@ -1978,6 +1978,18 @@ export async function startGenerationWorker(
     console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode, adminPromptOnlyMode, polishPassEnabled });
   } catch { /* non-fatal — defaults apply */ }
 
+  // Category routing. nano-banana refuses these outright at the PROMPT stage with
+  // 422 content_policy_violation — the request never reaches image generation, so
+  // a boudoir booking failed with an empty shoot no matter how it was worded.
+  // Seedream is already wired in and accepts this work, so these categories go
+  // there regardless of the global switch. Everything else is unaffected.
+  const SEEDREAM_CATEGORIES = new Set(["boudoir", "glamour"]);
+  const shootCategory = typeof shoot.category === "string" ? shoot.category : "";
+  if (SEEDREAM_CATEGORIES.has(shootCategory) && generationModel !== "seedream") {
+    generationModel = "seedream";
+    console.log(`[generate] category "${shootCategory}" routed to seedream (nano-banana rejects it)`);
+  }
+
   // Resolve whether this shoot's owner is an admin (for admin-only prompt-only mode)
   const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
     .split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
