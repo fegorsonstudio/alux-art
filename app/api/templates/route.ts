@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       (creator_id, title, description, category, tags, price_ngn, price_1_ngn, price_5_ngn,
        shoot_mode, aspect_ratio, package_size, status, cover_storage_path, cover_bucket,
        is_story, story_type, default_role, role_chips, scenes, background_options, option_groups, flag_shot, trend_slots, pose_options,
-       is_private, created_at, updated_at)
+       is_private, platform_fee_exempt, created_at, updated_at)
     VALUES (
       ${creator.id},
       ${(title as string).trim()},
