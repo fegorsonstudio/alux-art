@@ -2355,7 +2355,7 @@ export async function startGenerationWorker(
     const shootForBrief = { ...shoot, storyContext, storyImageUrls } as never;
     const buildGeminiBrief = () =>
       buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
-    let briefServedBy: "claude" | "gemini" | "gemini-fallback" | "claude-fallback" = "gemini";
+    let briefServedBy: "claude" | "gemini" | "gemini-fallback" | "claude-fallback" | "gemini-no-refs" = "gemini";
     if (visionModel === "claude") {
       try {
         shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
@@ -2371,12 +2371,30 @@ export async function startGenerationWorker(
         shootBrief = await buildGeminiBrief();
         JSON.parse(shootBrief);
       } catch (err) {
-        // Same reasoning as the identity step: a Gemini safety block or a
-        // truncated brief used to end the shoot here, at 20%, with every slot
+        // A Gemini refusal used to end the shoot here, at 20%, with every slot
         // still QUEUED and the buyer already charged.
-        console.warn("[generate] Gemini brief failed — falling back to Claude:", err instanceof Error ? err.message : String(err));
-        shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
-        briefServedBy = "claude-fallback";
+        //
+        // The attached reference photographs are what trips it — the same brief
+        // written from text alone comes back fine. So the first recovery is to
+        // ask again without them: the identity profile has already been written
+        // in words by this point, so the brief keeps who the subject is and
+        // loses only the visual art direction. A shoot with a plainer brief is
+        // worth having; a failed one is not.
+        //
+        // Claude is the second recovery and is deliberately last: it is the
+        // better writer but the key is not always funded, and a refusal here is
+        // usually about the images rather than the model.
+        console.warn("[generate] Gemini brief failed — retrying without reference images:", err instanceof Error ? err.message : String(err));
+        const textOnlyRefs = refs.filter((r) => r.purpose === "identity");
+        try {
+          shootBrief = await buildShootBrief(shootForBrief, identityProfile, textOnlyRefs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
+          JSON.parse(shootBrief);
+          briefServedBy = "gemini-no-refs";
+        } catch (err2) {
+          console.warn("[generate] Gemini brief still refused — falling back to Claude:", err2 instanceof Error ? err2.message : String(err2));
+          shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
+          briefServedBy = "claude-fallback";
+        }
       }
     }
     console.log(`[generate] brief served by: ${briefServedBy}`);
