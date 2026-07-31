@@ -1,0 +1,52 @@
+{
+  "section": "Golden Hour",
+  "label": "Golden Hour — warm light",
+  "why": "The most replicated portrait look on Instagram and TikTok. Warm low-angle light is flattering on every skin tone, which is why it is the one aesthetic photographers are asked for by name.",
+  "rules": [
+    "Every recipe opens with the relight lock.",
+    "Never mention the subject's body, wardrobe, expression or eyes.",
+    "GOLDEN HOUR IS A QUALITY OF LIGHT, NOT A LOCATION. Left loose, 'golden hour' invites the model to move the subject outdoors and invent a sunset, which breaks the one rule the whole archive rests on. Every recipe here states that the existing background stays and only the light falling on it changes."
+  ],
+  "styles": [
+    {
+      "name": "Golden Hour Backlight",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting exactly as they are; only the light falling on them changes. A low, warm sun-like source sits behind the subject near the horizon line, rimming the hair and shoulders with amber and letting warm light spill toward the lens, while a soft warm bounce keeps the front of the subject from going dark. Long, soft-edged shadows fall toward camera. Warm 3000K key, gentle contrast, realistic skin texture, subtle film grain."
+    },
+    {
+      "name": "Warm Window Glow",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only its illumination changes. Warm late-afternoon light enters from a low angle at camera-left as though through a window, falling across the subject with a soft edge and a visible warm-to-cool gradient from the lit side to the shadow side. No fill from the right, so shadows stay deep but retain detail. Warm key against cool ambient shadow, soft-edged transitions, realistic skin texture, natural asymmetry."
+    },
+    {
+      "name": "Sunset Rim",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A low warm source behind the subject at camera-right draws a bright amber edge along the cheekbone, jaw, shoulder and stray hairs, while the front of the face is lit only by soft, cooler ambient at low power. The contrast between warm rim and cool front is the whole look. Background sits darker than the rim so the edge reads clearly. Realistic falloff, subtle film grain."
+    },
+    {
+      "name": "Low Sun Side Wash",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. A warm, hard, low-angle source rakes across the frame from camera-left at almost ground level, lighting one side of the subject and the background brightly while throwing a long shadow to the right. Texture in fabric and surfaces is exaggerated by the raking angle. Warm colour temperature, hard-edged long shadows, physically plausible direction, subtle grain."
+    },
+    {
+      "name": "Golden Haze Flare",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting and a veil of warm haze in the air. Keep the existing background exactly as it is. A low warm source just outside the frame at camera-right throws light across the lens, producing a soft golden flare and a hazy bloom over that side of the image, with contrast lifted and blacks slightly milky where the flare falls. The opposite side of the frame stays clear and better defined. Warm bloom, gentle veiling glare, realistic skin texture, subtle film grain."
+    },
+    {
+      "name": "Amber Bounce Fill",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. The face is lit by warm light bounced up from a large surface below and in front, as though from sunlit ground, giving an even amber glow with the shadows falling gently upward under the brow. A cooler soft source from above balances the top of the frame so the effect reads natural rather than staged. Warm reflected light, soft shadow edges, realistic skin texture with visible pores, natural asymmetry."
+    },
+    {
+      "name": "Last Light Silhouette",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only its brightness and colour change. A strong warm source directly behind the subject makes the background the brightest part of the frame and reduces the subject to a dark shape with a thin amber edge, with only a trace of front fill keeping some detail alive in the figure. Deep foreground shadow against a glowing warm field, high contrast, realistic gradients, subtle grain."
+    },
+    {
+      "name": "Warm Overhead Canopy",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Warm light filters down from directly above and slightly in front, broken into a soft dappled pattern as though passing through leaves, so brightness varies gently across the face and shoulders without any hard-edged shapes. Shadows sit under the brow and chin and stay warm rather than neutral. Warm dappled illumination, soft-edged variation, realistic skin texture, subtle film grain."
+    }
+  ]
+}

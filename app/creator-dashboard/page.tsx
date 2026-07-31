@@ -263,6 +263,10 @@ function CreatorDashboard() {
   const [costarRightsOk, setCostarRightsOk] = useState(false);
   const [backgroundOptions, setBackgroundOptions] = useState<BackgroundOptionDraft[]>([]);
   const [choiceGroups, setChoiceGroups] = useState<ChoiceGroupDraft[]>([]);
+  // Which lighting sections are showing the full editor instead of the gallery.
+  // Default (absent) is gallery, because with 50+ looks the common job is
+  // reviewing and removing, not rewriting a hidden prompt.
+  const [groupEditorOpen, setGroupEditorOpen] = useState<Record<string, boolean>>({});
   // Flag shot (Call to Bar)
   const [flagShotEnabled, setFlagShotEnabled] = useState(false);
   const [flagShotImagePath, setFlagShotImagePath] = useState("");
@@ -2516,7 +2520,62 @@ function CreatorDashboard() {
                     </div>
                   )}
 
-                  {group.options.map(opt => (
+                  {/* Gallery view. A lighting section can hold 50+ looks, and the
+                      full editor card below is a name field, an upload and a
+                      prompt box each — unusable for the actual job of scanning
+                      the set and dropping the ones you don't like. This shows
+                      them as thumbnails with a ✕, and the toggle switches to the
+                      full editor when a prompt genuinely needs changing. */}
+                  {group.type === "lighting" && group.options.length > 6 && (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 600 }}>
+                          {group.options.length} looks
+                        </span>
+                        <button
+                          type="button"
+                          className={styles.addSceneBtn}
+                          onClick={() => setGroupEditorOpen(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                        >
+                          {groupEditorOpen[group.id] ? "Done editing — back to gallery" : "Edit names & prompts"}
+                        </button>
+                        <span style={{ fontSize: "0.72rem", opacity: 0.6 }}>
+                          Tap ✕ on any look to remove it. Nothing is saved until you save the template.
+                        </span>
+                      </div>
+                      {!groupEditorOpen[group.id] && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          {group.options.map(opt => (
+                            <div key={opt.id} style={{ position: "relative", width: 84, display: "grid", gap: 3, justifyItems: "center" }}>
+                              {opt.preview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={opt.preview} alt={opt.name} loading="lazy" decoding="async"
+                                  style={{ width: 72, height: 90, objectFit: "cover", borderRadius: 6 }} />
+                              ) : (
+                                <span style={{ width: 72, height: 90, borderRadius: 6, background: "rgba(127,127,127,0.15)", display: "grid", placeItems: "center", fontSize: "0.6rem" }}>no image</span>
+                              )}
+                              <span style={{ fontSize: "0.66rem", textAlign: "center", lineHeight: 1.2 }}>{opt.name}</span>
+                              <button
+                                type="button"
+                                aria-label={`Remove ${opt.name}`}
+                                title={`Remove ${opt.name}`}
+                                onClick={() => setChoiceGroups(prev => prev.map(g => g.id === group.id
+                                  ? { ...g, options: g.options.filter(o => o.id !== opt.id) }
+                                  : g))}
+                                style={{
+                                  position: "absolute", top: -4, right: 2, width: 20, height: 20, borderRadius: "50%",
+                                  border: "1px solid rgba(127,127,127,0.4)", background: "rgba(0,0,0,0.65)", color: "#fff",
+                                  cursor: "pointer", fontSize: "0.7rem", lineHeight: 1, display: "grid", placeItems: "center",
+                                }}
+                              >✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(group.type !== "lighting" || group.options.length <= 6 || groupEditorOpen[group.id]) && group.options.map(opt => (
                     <div key={opt.id} style={{ border: "1px solid rgba(127,127,127,0.25)", borderRadius: 8, padding: "8px 10px", display: "grid", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <input

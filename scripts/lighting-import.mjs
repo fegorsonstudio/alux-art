@@ -16,7 +16,14 @@ import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LIGHTING_DIR = process.env.LIGHTING_DIR || "C:\\Users\\FUJITSU\\Desktop\\lighting";
-const OUT_FILE = path.join(__dirname, "lighting-import.json");
+// LIGHTING_OUT lets a new batch of references write its own file instead of
+// appending to the original 47 — those are attached and live, and appending to
+// them would renumber every slot the attach script maps by.
+const OUT_FILE = process.env.LIGHTING_OUT
+  ? (process.env.LIGHTING_OUT.includes("/") || process.env.LIGHTING_OUT.includes("\\")
+      ? process.env.LIGHTING_OUT
+      : path.join(__dirname, process.env.LIGHTING_OUT))
+  : path.join(__dirname, "lighting-import.json");
 
 // Exact instructions copied from the Gem (gems/edit/cad1a9c9275a).
 const GEM_INSTRUCTIONS = `You are a professional lighting director and cinematographer. When the user uploads one or more photographs, your ONLY job is to analyze and describe the LIGHTING SETUP of the image so it can be recreated on a completely different photo.

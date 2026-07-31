@@ -1,0 +1,53 @@
+{
+  "section": "Neon & Nightlife",
+  "label": "Neon & Nightlife",
+  "why": "Neon portraiture is cited across the 2026 trend roundups as soaring on Instagram, Reels and Pinterest — coloured LED and sign light reads instantly in a feed. It also overlaps the Cool Blue and Plum Noir colour signals.",
+  "rules": [
+    "Every recipe opens with the relight lock.",
+    "Never mention the subject's body, wardrobe, expression or eyes.",
+    "Like Golden Hour, these describe a QUALITY OF LIGHT, not a place. A loose mention of a bar or a street invites the model to rebuild the scene, so each recipe states that the existing background stays and only the light on it changes.",
+    "No readable words. Sign-like sources are described as glowing shapes and colour, never as text, because invented lettering is the fastest way to make an image look fake."
+  ],
+  "styles": [
+    {
+      "name": "Neon Sign Glow",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is; only the light falling on it changes. A bright magenta-pink source sits just out of frame at camera-left at head height, as though from a glowing sign, throwing saturated colour across that side of the face and a soft coloured pool onto the nearby background, falling off quickly into darkness. No lettering or shapes are visible anywhere. A faint cyan bounce lifts the shadow side. Saturated colour, rapid falloff, realistic skin texture, subtle grain."
+    },
+    {
+      "name": "Blue Hour Street",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Deep blue twilight ambient fills the whole frame at low level, while a single warm point source at camera-right adds a small pool of amber on the subject, so a cold overall image carries one warm accent. Shadows are blue rather than neutral and the darkest areas keep detail. Cool ambient against a warm practical, low overall exposure with clean highlights, subtle film grain."
+    },
+    {
+      "name": "Split Neon Pink Cyan",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Two saturated sources face the subject from opposite sides at head height: hot pink from camera-left, electric cyan from camera-right, each claiming half the face and shoulders with a soft blend down the centre line. The background takes matching coloured pools on each side and stays dark between them. High saturation, deep blacks between the colours, realistic skin texture, natural asymmetry."
+    },
+    {
+      "name": "Window Neon Spill",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Coloured light spills in from a low angle at camera-left as though reflected off a wet surface outside, throwing an uneven violet wash across the lower part of the subject and the nearby background, brightest near the floor and fading upward. The upper part of the frame stays in cool shadow. Uneven, directional colour, realistic falloff, subtle grain."
+    },
+    {
+      "name": "LED Panel Wash",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. A large flat panel of saturated blue-violet light sits directly in front of and slightly above the subject, giving even, shadowless coloured illumination with a distinctive broad rectangular catchlight in the eyes and a clean falloff behind. The background takes the same colour at lower intensity. Even saturated wash, soft shadow edges, realistic skin texture with pores, subtle grain."
+    },
+    {
+      "name": "Neon Rim Backlight",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Two saturated coloured sources behind the subject, orange at camera-left and blue at camera-right, draw bright coloured edges down each side of the face and hair, while the front is lit by a single dim neutral source at low power so the features stay readable without competing with the rims. Background stays near black. Two clean coloured edges, high contrast with retained facial detail, subtle film grain."
+    },
+    {
+      "name": "Screen Glow",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. The only light comes from a screen-like source held low and close in front of the subject, casting cool blue-white light upward across the face with shadows climbing the cheeks and brow, and a faint flicker quality in the highlights. Colour shifts subtly between cool blue and pale cyan across the face. The background falls to near darkness. Cool underlight, realistic skin texture, natural asymmetry, subtle grain."
+    },
+    {
+      "name": "Sodium and Neon Mix",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Warm sodium-orange light comes from high camera-left while saturated teal fills the lower right of the frame, the two meeting across the subject with a visible transition and neither dominating. Shadows carry colour rather than going grey. Background takes both colours at lower intensity. Two-source colour contrast, physically plausible directions, realistic fabric and skin texture, subtle film grain."
+    }
+  ]
+}

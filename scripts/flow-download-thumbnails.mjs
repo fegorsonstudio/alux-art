@@ -162,8 +162,12 @@ async function main() {
       const twoK = page.locator('text="2K"').first();
       if (!(await twoK.count())) { failed.push({ slot: style.slot, why: "no 2K option on the page" }); continue; }
 
+      // Flow prepares the 2K export on demand and the most recently generated
+      // images take noticeably longer — the last three of a 14-image run failed
+      // twice at 120s while everything older succeeded. Wait longer rather than
+      // report a false failure.
       const [dl] = await Promise.all([
-        page.waitForEvent("download", { timeout: 120000 }).catch(() => null),
+        page.waitForEvent("download", { timeout: 300000 }).catch(() => null),
         twoK.click().catch(() => {}),
       ]);
       if (!dl) { failed.push({ slot: style.slot, why: "download did not start" }); continue; }
