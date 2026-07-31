@@ -2128,7 +2128,16 @@ export async function startGenerationWorker(
         identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls, groupMode), 2);
       }
     } else {
-      identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls, groupMode), 2);
+      // ...and the same in reverse. Gemini refuses some perfectly legitimate
+      // shoots outright — "Response was blocked due to OTHER" on a boudoir brief
+      // — and with no fallback behind it the whole shoot died at 10% having
+      // generated nothing. Claude gets the same chance Gemini gets above.
+      try {
+        identityProfile = await withRetry(() => analyzeIdentityImages(identityUrls, groupMode), 2);
+      } catch (err) {
+        console.warn("[generate] Gemini identity analysis failed — falling back to Claude:", err instanceof Error ? err.message : String(err));
+        identityProfile = await withRetry(() => analyzeIdentityImagesClaude(identityUrls, groupMode), 1);
+      }
     }
 
     await sql`UPDATE shoots SET identity_profile = ${identityProfile}, updated_at = ${ts()} WHERE id = ${shootId}`;
@@ -2322,7 +2331,7 @@ export async function startGenerationWorker(
     const shootForBrief = { ...shoot, storyContext, storyImageUrls } as never;
     const buildGeminiBrief = () =>
       buildShootBrief(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
-    let briefServedBy: "claude" | "gemini" | "gemini-fallback" = "gemini";
+    let briefServedBy: "claude" | "gemini" | "gemini-fallback" | "claude-fallback" = "gemini";
     if (visionModel === "claude") {
       try {
         shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
@@ -2334,7 +2343,17 @@ export async function startGenerationWorker(
         briefServedBy = "gemini-fallback";
       }
     } else {
-      shootBrief = await buildGeminiBrief();
+      try {
+        shootBrief = await buildGeminiBrief();
+        JSON.parse(shootBrief);
+      } catch (err) {
+        // Same reasoning as the identity step: a Gemini safety block or a
+        // truncated brief used to end the shoot here, at 20%, with every slot
+        // still QUEUED and the buyer already charged.
+        console.warn("[generate] Gemini brief failed — falling back to Claude:", err instanceof Error ? err.message : String(err));
+        shootBrief = await buildShootBriefClaude(shootForBrief, identityProfile, refs, characterBaseUrl, forbiddenExamples, dbForbiddenWordsForBrief, identityCatalog);
+        briefServedBy = "claude-fallback";
+      }
     }
     console.log(`[generate] brief served by: ${briefServedBy}`);
 
