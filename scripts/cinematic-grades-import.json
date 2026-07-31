@@ -1,0 +1,53 @@
+{
+  "section": "Cinematic Grades",
+  "label": "Cinematic Grades — film looks",
+  "why": "Teal and orange, bleach bypass and day-for-night are the named grades photographers ask for by name, and they need no lighting knowledge from the buyer to appreciate — the impulse buy of the archive.",
+  "rules": [
+    "Every recipe opens with the relight lock.",
+    "Never mention the subject's body, wardrobe, expression or eyes.",
+    "A grade is a change to COLOUR AND TONE, not to the lighting setup. Each recipe says the light direction and shape stay as they are, so the model regrades rather than relights and the subject stays recognisably the same photograph.",
+    "Skin must survive the grade. Every recipe states where skin tone should land, because an unconstrained grade turns faces grey, green or orange."
+  ],
+  "styles": [
+    {
+      "name": "Teal & Orange",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction, shadow shapes and background as they are. Push the shadows and midtone neutrals toward teal-cyan while holding skin tones warm and orange, so the subject separates from a cooler surround. Contrast is moderate with slightly crushed blacks and clean highlights. Skin stays natural and warm rather than sliding orange. Complementary warm-cool separation, moderate contrast, realistic skin texture, subtle grain."
+    },
+    {
+      "name": "Bleach Bypass",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Strip most of the saturation while raising contrast hard, so the image reads as a desaturated high-contrast frame with a silvery cast, deep blacks and bright, slightly blown highlights, as though the bleach step were skipped in development. A trace of colour remains in the skin. Heavy desaturation, raised contrast, retained skin warmth, visible grain."
+    },
+    {
+      "name": "Day for Night",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes and the existing background. Drop overall exposure, push the whole frame toward cool blue, crush the shadows and hold only the brightest areas near their original brightness, so daylight reads as moonlit night. Skin keeps a trace of warmth so the subject does not turn grey. Low exposure with clean bright accents, blue cast throughout, deep shadows, subtle grain."
+    },
+    {
+      "name": "Cross Processed",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Shift the highlights toward yellow-green and the shadows toward blue-cyan with raised contrast and heightened saturation, in the way film processed in the wrong chemistry renders. Skin takes a slight yellow-green lean in the light and cools in shadow but stays readable as skin. Split-toned colour shift, high saturation, raised contrast, visible grain."
+    },
+    {
+      "name": "Muted Morandi",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Lower saturation across the frame and lift the blacks to a soft grey, holding colours in a narrow band of dusty, chalky tones with no strong hue dominating and no pure black or white anywhere. Skin sits soft and slightly desaturated but never grey. Low contrast, restrained dusty palette, lifted blacks, realistic skin texture, fine grain."
+    },
+    {
+      "name": "Sepia Archive",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Remove the colour and re-tone the whole frame in warm brown sepia, with slightly lifted blacks, gently compressed highlights and a soft warm cast throughout, as an aged print renders. Tonal separation across the face stays clear so features remain defined. Monochrome sepia toning, gentle contrast, fine grain, realistic skin texture with visible pores."
+    },
+    {
+      "name": "High-Contrast Monochrome",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Convert to black and white with strong contrast: deep blacks with little shadow detail, bright clean whites, and a wide tonal separation across the face so the lighting pattern reads graphically. Skin texture stays sharp and visible rather than smoothed. Punchy monochrome, deep blacks, crisp highlight detail, pronounced grain."
+    },
+    {
+      "name": "Faded Pastel",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Lift the blacks noticeably, reduce contrast, and push the whole frame toward soft pink-cream pastels with the shadows leaning slightly green, as faded consumer film does. No area reaches full black. Skin stays soft and warm rather than washing out to white. Low contrast, lifted milky blacks, pastel cast, fine grain, realistic skin texture."
+    }
+  ]
+}

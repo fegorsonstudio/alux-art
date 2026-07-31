@@ -1,0 +1,53 @@
+{
+  "section": "Film & Analog",
+  "label": "Film & Analog — halation & grain",
+  "why": "Named in the 2026 trend roundups: photographers who never shoot film are pulling analog characteristics into digital work — grain, softer highlight roll-off, warmer skin, imperfect edges. Halation in particular is the signature of CineStill 800T and a large part of why an image reads as 'shot on film'.",
+  "rules": [
+    "Every recipe opens with the relight lock.",
+    "Never mention the subject's body, wardrobe, expression or eyes.",
+    "These describe how the LIGHT BEHAVES and how the image renders, not a new scene. Each keeps the existing background and setting.",
+    "Halation only exists where a bright highlight meets a darker surround, so every halation recipe names the light that creates the highlight as well as the glow itself. Asking for 'halation' alone gives a generic soft blur."
+  ],
+  "styles": [
+    {
+      "name": "Halation Rim",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A hard, bright source behind the subject at camera-right draws a strong edge along the hair and shoulder, and that highlight bleeds a soft red-orange glow outward into the surrounding dark area, as film does when light passes through the emulsion and reflects off the backing. The glow hugs the bright edge closely and fades within a short distance; nothing else in the frame is blurred. Warm halation on a hard rim, deep surrounding shadow, fine grain, realistic skin texture."
+    },
+    {
+      "name": "Halation Window",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Bright daylight enters from a window-shaped source at camera-left, blowing out to near-white where it falls, and that bright patch bleeds a red-orange halo into the darker wall and shadow beside it. The rest of the frame stays clean and sharp with normal contrast. Highlights roll off gently rather than clipping hard. Warm halation around a blown highlight, gentle roll-off, fine grain, realistic skin texture."
+    },
+    {
+      "name": "Tungsten Halation Night",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Warm tungsten point sources sit in the background at low level, each blooming into a soft red-orange halo against the surrounding darkness, while the subject is lit by a cooler, dimmer source from the front so they read as separate from the glowing background. Overall exposure is low with lifted, slightly milky blacks. Strong halation on point highlights, cool subject against warm glow, pronounced grain in the shadows."
+    },
+    {
+      "name": "Faded Black Film",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Soft, even light with the shadows lifted so the darkest tone in the frame is a soft grey rather than black, contrast reduced overall, and a slight warm cast through the midtones as though from aged colour film. Highlights compress gently instead of clipping. No area of the frame is fully black or fully white. Low-contrast faded rendering, warm midtones, visible fine grain, realistic skin texture."
+    },
+    {
+      "name": "Highlight Roll-Off",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. A large soft source at camera-left is bright enough to push the lit side of the face toward the top of the tonal range, but the brightest areas transition into white gradually over a wide band rather than clipping abruptly, in the way film shoulders off. Shadows stay open with detail throughout. Gentle highlight compression, wide tonal transition, fine grain, realistic skin texture with pores intact."
+    },
+    {
+      "name": "Push-Processed Grain",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. Low, uneven available light from a single direction at camera-right, exposed as though the film was underexposed and pushed in development: contrast is raised, shadows are coarse and blocked up, colour is slightly desaturated with a green-grey cast in the darker areas, and grain is coarse and clearly visible across the whole frame. Higher contrast, muddy shadows, heavy grain, realistic skin texture."
+    },
+    {
+      "name": "Warm Analog Daylight",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is. Soft, broad daylight from camera-left with a warm cast through the skin tones and a slight cyan lean in the shadows, the colour separation between warm light and cool shadow being the main characteristic. Contrast is moderate, highlights roll off softly, and fine grain sits across the midtones. Warm-cool colour separation, moderate contrast, fine grain, realistic skin texture with natural asymmetry."
+    },
+    {
+      "name": "Halation Neon Bleed",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is. A saturated red-pink source just out of frame at camera-left burns to its brightest at the edge of the frame and bleeds a wide, soft glow of the same colour into the surrounding darkness, while the subject catches that colour along one side and falls into deep shadow on the other. The glow is strongest nearest the source and fades smoothly. Heavy coloured halation, deep unlit shadow, visible grain, realistic skin texture."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "section": "Cool Blue",
+  "label": "Cool Blue — icy light",
+  "why": "Pinterest's 2026 report names Cool Blue as one of the five colours of the year, with icy blue +50%, blue drinks +55% and glacier aesthetic +35%. The existing archive has blue rim and blue chiaroscuro looks but nothing built around cold light as the subject.",
+  "rules": [
+    "Every recipe opens with the relight lock.",
+    "Never mention the subject's body, wardrobe, expression or eyes.",
+    "Cold light drains skin. Every recipe names where skin tone should sit, so faces read as living rather than corpse-grey — the specific failure mode of an unconstrained blue wash."
+  ],
+  "styles": [
+    {
+      "name": "Icy Key",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A large soft source with a cold blue-white cast sits at camera-left, 45 degrees off axis and slightly above, giving clean directional light with soft-edged shadows on the opposite side. The background sits a shade darker in the same cold tone. Skin keeps its own warmth in the midtones so the face reads healthy against the cold light rather than grey. Cool key with warm skin retained, soft shadow edges, realistic skin texture, subtle grain."
+    },
+    {
+      "name": "Glacier Rim",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard, very cold blue-white source behind camera-right draws a crisp bright edge along the jaw, cheekbone and hair, while the front of the face is lit by a soft neutral fill at low power. The contrast between the icy edge and the neutral face is the whole look. Background is dark and takes no colour. Cold hard rim against neutral fill, crisp edge, realistic skin texture, natural asymmetry."
+    },
+    {
+      "name": "Blue Hour Wash",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting; only the light on them changes. Even, soft, cold blue ambient fills the whole frame at low intensity with no strong direction, as the light does shortly after sunset, and shadows are soft and blue rather than black. A single slightly warmer accent from camera-left keeps the subject from merging into the surroundings. Low-contrast cool ambient, one warm accent, realistic falloff, subtle film grain."
+    },
+    {
+      "name": "Frozen Split",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A hard cold blue source at 90 degrees camera-left lights one side of the face and body while the other falls into deep shadow, with the division running down the centre. A faint cool bounce keeps a trace of detail in the shadow side. Skin on the lit side keeps a hint of natural tone under the blue. Background is black. Hard cold split, retained shadow detail, realistic skin texture, subtle grain."
+    },
+    {
+      "name": "Cold Overcast",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Broad, even, cold-toned light comes from high and slightly in front, as from a heavily overcast sky, giving very soft-edged shadows under the brow and chin, low contrast and a flat blue-grey cast across the whole frame. Skin keeps a faint warmth so it separates from the grey surroundings. Soft directionless cold light, low contrast, realistic skin texture with visible pores, fine grain."
+    },
+    {
+      "name": "Steel and Ice",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Two cold sources of different intensity: a stronger blue-white key at camera-right and a weaker, even colder source behind camera-left drawing a thin icy edge along the far shoulder and hair. Shadows are deep and blue-black with clean transitions. Skin holds a trace of warmth in the highlights so the face stays alive against the cold scheme. Two-source cold lighting, deep blue shadows, realistic skin texture, subtle film grain."
+    }
+  ]
+}

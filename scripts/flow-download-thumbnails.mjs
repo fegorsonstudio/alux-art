@@ -157,20 +157,26 @@ async function main() {
       if (!loaded) { failed.push({ slot: style.slot, why: "page would not load" }); continue; }
       await sleep(1800);
 
-      await page.locator('button:has-text("download")').first().click().catch(() => {});
-      await sleep(1000);
-      const twoK = page.locator('text="2K"').first();
-      if (!(await twoK.count())) { failed.push({ slot: style.slot, why: "no 2K option on the page" }); continue; }
-
-      // Flow prepares the 2K export on demand and the most recently generated
-      // images take noticeably longer — the last three of a 14-image run failed
-      // twice at 120s while everything older succeeded. Wait longer rather than
-      // report a false failure.
-      const [dl] = await Promise.all([
-        page.waitForEvent("download", { timeout: 300000 }).catch(() => null),
-        twoK.click().catch(() => {}),
-      ]);
-      if (!dl) { failed.push({ slot: style.slot, why: "download did not start" }); continue; }
+      // Prefer 1K. These images are only ever shown as thumbnails — the checkout
+      // requests them at 240px and the creator gallery at 72px — so a 2K export
+      // is bytes nobody sees. It is also the slow path: Flow prepares 2K on
+      // demand and began stalling on it entirely after a few hundred exports,
+      // producing zero files in eleven minutes. 1K is ready far sooner.
+      let dl = null;
+      for (const size of ["1K", "2K"]) {
+        await page.locator('button:has-text("download")').first().click().catch(() => {});
+        await sleep(1000);
+        const opt = page.locator(`text="${size}"`).first();
+        if (!(await opt.count())) { await page.keyboard.press("Escape").catch(() => {}); continue; }
+        [dl] = await Promise.all([
+          page.waitForEvent("download", { timeout: 90000 }).catch(() => null),
+          opt.click().catch(() => {}),
+        ]);
+        if (dl) break;
+        await page.keyboard.press("Escape").catch(() => {});
+        await sleep(800);
+      }
+      if (!dl) { failed.push({ slot: style.slot, why: "download did not start at 1K or 2K" }); continue; }
 
       const file = `${String(style.slot).padStart(2, "0")}-${slug(style.name)}.png`;
       if (DRY_RUN) {

@@ -1,0 +1,83 @@
+{
+  "section": "Projection & Gobo",
+  "status": "Pattern cast onto the subject or backdrop needs real gear in a real studio: a hard source, a cutter and space to throw the beam. The original 47 contains only three patterned looks, so this is a large gap in the part of the archive a buyer cannot reproduce at home.",
+  "flowProject": "https://labs.google/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25",
+  "flowSettings": "Nano Banana 2, 1x, 3:4 portrait, 0 credits on PRO",
+  "sourcesInFlow": {
+    "full": "source-full.jpeg",
+    "medium": "source-medium.jpg",
+    "head": "source-head.jpeg"
+  },
+  "queue": [
+    {
+      "slot": 1,
+      "name": "Window Blind Slats",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting exactly as they are and add nothing to the scene. A single hard source at camera-left passes through horizontal slats out of frame, laying a series of parallel bright bands and dark shadows diagonally across the subject and the background behind them. The bands bend as they cross the body and stay sharp-edged. Everything outside the bands sits in low fill. Hard-edged parallel shadows, physically plausible bend over form, realistic skin texture, subtle grain."
+    },
+    {
+      "slot": 2,
+      "name": "Dappled Foliage",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is and add nothing to the scene. A hard source from high camera-right passes through leaf-like breakup out of frame, scattering irregular soft-edged patches of light and shadow across the subject and the wall behind. Patch sizes vary and edges are slightly soft, as sunlight through leaves is. Warm colour temperature, irregular organic pattern, realistic falloff, subtle film grain."
+    },
+    {
+      "slot": 3,
+      "name": "Venetian Hard Stripe",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is and add nothing to the scene. A hard, narrow source at camera-left throws a small number of crisp horizontal light bars across the face, one falling across the eyes and one across the mouth, with dense shadow between them. The bars are bright and hard-edged with no spill. Background stays dark and takes one or two faint bars. High contrast graphic shadow, crisp edges, realistic skin texture, natural asymmetry."
+    },
+    {
+      "slot": 4,
+      "name": "Lattice Grid",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is and add nothing to the scene. A hard source directly in front and slightly above passes through a square grid out of frame, casting a regular pattern of bright squares separated by dark lines across the subject and the background. The grid distorts over the contours of the body and stays aligned on flat surfaces. Neutral temperature, regular geometric pattern, hard edges, realistic skin and fabric texture."
+    },
+    {
+      "slot": 5,
+      "name": "Circular Spot Falloff",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting as they are. A hard focused source from front camera-right throws a defined circle of light onto the scene, centred on the subject and reaching the floor and background, with a clean soft-edged boundary beyond which everything drops sharply into shadow. Brightness falls gradually from the centre of the circle to its edge. Defined pool of light, steep falloff outside it, physically plausible geometry, subtle grain."
+    },
+    {
+      "slot": 6,
+      "name": "Stained Glass Colour Cast",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is and add nothing to the scene. A hard source at camera-left passes through irregular coloured panes out of frame, throwing overlapping patches of deep red, amber and blue light across the subject and the background, separated by dark leading lines. The colours stay saturated where they land and the unlit areas remain neutral shadow. Saturated multi-colour projection, hard-edged shapes, realistic skin texture, subtle grain."
+    },
+    {
+      "slot": 7,
+      "name": "Palm Frond Shadow",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting exactly as they are and add nothing to the scene. A hard warm source low at camera-right casts long, blade-like shadows of fronds across the subject and the wall behind, radiating from one direction with crisp edges and clear gaps of bright light between them. Warm colour temperature, strong directional pattern, hard shadow edges, realistic falloff, subtle film grain."
+    },
+    {
+      "slot": 8,
+      "name": "Broken Glass Shards",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background as it is and add nothing to the scene. A hard source at camera-left passes through irregular angular breakup, scattering jagged shards of light and shadow across the subject and background in no repeating order, with sharp edges and high contrast between lit and unlit areas. Neutral temperature, chaotic angular pattern, crisp edges, realistic skin texture."
+    },
+    {
+      "slot": 9,
+      "name": "Doorway Slash",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background and setting as they are and add nothing to the scene. A single hard source out of frame at camera-right throws one broad, clean-edged rectangle of light diagonally across the floor and up the subject, as though a door stands open just out of shot. Everything outside that shape falls into deep shadow with only faint ambient. One clean geometric shape of light, deep surrounding shadow, physically plausible perspective, subtle grain."
+    },
+    {
+      "slot": 10,
+      "name": "Text Shadow Play",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Keep the existing background exactly as it is and add nothing to the scene. A hard source at camera-right casts an abstract pattern of blocky rectangular shadows across the subject and the wall behind, varying in size and spacing with hard edges, suggesting shapes cut from a card without forming any readable letters or symbols. Neutral temperature, graphic blocky pattern, crisp shadow edges, realistic skin and fabric texture."
+    }
+  ]
+}
