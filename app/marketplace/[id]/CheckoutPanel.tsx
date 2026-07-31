@@ -283,6 +283,15 @@ export default function CheckoutPanel({
   // styling pickers — so exclude them from pickable/multi groups.
   const lightingGroups = choiceGroups.filter(g => g.type === "lighting");
   const lightingLooks = lightingGroups.flatMap(g => g.options ?? []).filter(o => o.kind === "prompt");
+  // The archive is sold in sections (Lighting, Atmosphere, Dark Romantic...) and
+  // each is its own group with its own label. Keep that structure for rendering:
+  // a flat list of 69+ looks is a scroll, a labelled one is a shop. lightingLooks
+  // above stays flat because the selection logic works on individual looks.
+  const lightingSections = lightingGroups
+    .map(g => ({ id: g.id, label: g.label, looks: (g.options ?? []).filter(o => o.kind === "prompt") }))
+    .filter(s => s.looks.length > 0);
+  // Only worth showing headings once there is more than one section.
+  const showLightingHeadings = lightingSections.length > 1;
   // Shared "before" original for the crossfade preview (one per lighting group in
   // practice; take the first that has one).
   const lightingBeforeUrl = lightingGroups.map(g => g.beforeImageUrl).find(Boolean) ?? null;
@@ -1217,11 +1226,22 @@ export default function CheckoutPanel({
                   {sourcePhotos.length === 0 && (
                     <>
                       <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, opacity: 0.5, pointerEvents: "none" }} aria-hidden="true">
-                        {lightingLooks.map(o => (
-                          <div key={o.id} title={o.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 4, minWidth: 58 }}>
-                            <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
-                            <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                      <div style={{ opacity: 0.5, pointerEvents: "none" }} aria-hidden="true">
+                        {lightingSections.map(section => (
+                          <div key={section.id} style={{ marginBottom: 10 }}>
+                            {showLightingHeadings && (
+                              <p style={{ fontSize: "0.72rem", fontWeight: 600, margin: "0 0 4px", letterSpacing: "0.02em" }}>
+                                {section.label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({section.looks.length})</span>
+                              </p>
+                            )}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              {section.looks.map(o => (
+                                <div key={o.id} title={o.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 4, minWidth: 58 }}>
+                                  <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
+                                  <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1230,28 +1250,39 @@ export default function CheckoutPanel({
                   {sourcePhotos.map((sp, i) => (
                     <div key={sp.storagePath} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
                       <ImagePreview src={sp.preview} alt={`Photo ${i + 1}`} className={styles.savedImg} preferredWidth={72} />
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {lightingLooks.map(o => {
-                          const on = lightingByPhoto[sp.storagePath] === o.id;
-                          return (
-                            <button
-                              key={o.id}
-                              type="button"
-                              title={o.name}
-                              onClick={() => setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id }))}
-                              style={{
-                                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                                background: "none", cursor: "pointer", padding: 4,
-                                border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
-                                borderRadius: 8, minWidth: 58,
-                              }}
-                            >
-                              <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
-                              <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
-                              {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
-                            </button>
-                          );
-                        })}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {lightingSections.map(section => (
+                          <div key={section.id} style={{ marginBottom: 10 }}>
+                            {showLightingHeadings && (
+                              <p style={{ fontSize: "0.72rem", fontWeight: 600, margin: "0 0 4px", letterSpacing: "0.02em" }}>
+                                {section.label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({section.looks.length})</span>
+                              </p>
+                            )}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              {section.looks.map(o => {
+                                const on = lightingByPhoto[sp.storagePath] === o.id;
+                                return (
+                                  <button
+                                    key={o.id}
+                                    type="button"
+                                    title={o.name}
+                                    onClick={() => setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id }))}
+                                    style={{
+                                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                                      background: "none", cursor: "pointer", padding: 4,
+                                      border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                                      borderRadius: 8, minWidth: 58,
+                                    }}
+                                  >
+                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
+                                    <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                                    {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -1476,29 +1507,38 @@ export default function CheckoutPanel({
               </div>
               {manualLighting && (
                 <div className={styles.pkgRow}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                    {lightingLooks.map(o => {
-                      const isOn = lightingPicks.includes(o.id);
-                      return (
-                        <button
-                          key={o.id}
-                          type="button"
-                          title={o.name}
-                          onClick={() => setLightingPicks(prev => isOn ? prev.filter(id => id !== o.id) : [...prev, o.id])}
-                          style={{
-                            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                            background: "none", cursor: "pointer", padding: 4,
-                            border: isOn ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
-                            borderRadius: 8, minWidth: 64,
-                          }}
-                        >
-                          <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={72} />
-                          <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
-                          {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {lightingSections.map(section => (
+                    <div key={section.id} style={{ marginBottom: 12 }}>
+                      {showLightingHeadings && (
+                        <p style={{ fontSize: "0.76rem", fontWeight: 600, margin: "0 0 6px", letterSpacing: "0.02em" }}>
+                          {section.label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({section.looks.length})</span>
+                        </p>
+                      )}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                        {section.looks.map(o => {
+                          const isOn = lightingPicks.includes(o.id);
+                          return (
+                            <button
+                              key={o.id}
+                              type="button"
+                              title={o.name}
+                              onClick={() => setLightingPicks(prev => isOn ? prev.filter(id => id !== o.id) : [...prev, o.id])}
+                              style={{
+                                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                                background: "none", cursor: "pointer", padding: 4,
+                                border: isOn ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                                borderRadius: 8, minWidth: 64,
+                              }}
+                            >
+                              <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={72} />
+                              <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
+                              {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                   {lightingPicks.length === 0 && (
                     <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickLightingOrOff")}</p>
                   )}
