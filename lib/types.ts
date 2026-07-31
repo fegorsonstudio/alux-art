@@ -221,6 +221,7 @@ export interface PackagePricing {
 export type TemplateCategory =
   | "portrait" | "editorial" | "corporate" | "glamour" | "wedding"
   | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story"
+  | "asset_extract"
   | "call_to_bar" | "nursing_induction" | "photo_upgrade" | "trending"
   | "fashion_brand";
 
@@ -253,6 +254,7 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string; isSt
   { value: "maternity",   label: "Maternity" },
   { value: "fantasy",     label: "Fantasy" },
   { value: "boudoir",     label: "Boudoir" },
+  { value: "asset_extract", label: "Asset Extractor" },
   { value: "street",      label: "Street" },
   { value: "call_to_bar", label: "⚖️ Call to Bar" },
   { value: "nursing_induction", label: "🩺 Nursing Induction" },

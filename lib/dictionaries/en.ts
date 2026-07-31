@@ -444,6 +444,7 @@ const en = {
     maternity: "Maternity",
     fantasy: "Fantasy",
     boudoir: "Boudoir",
+    asset_extract: "Asset Extractor",
     street: "Street",
     call_to_bar: "⚖️ Call to Bar",
     nursing_induction: "🩺 Nursing Induction",

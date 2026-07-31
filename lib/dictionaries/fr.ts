@@ -445,6 +445,7 @@ const fr: AppDictionary = {
     maternity: "Maternité",
     fantasy: "Fantaisie",
     boudoir: "Boudoir",
+    asset_extract: "Extracteur d'elements",
     street: "Street",
     call_to_bar: "⚖️ Call to Bar",
     nursing_induction: "🩺 Induction infirmière",

@@ -445,6 +445,7 @@ const ar: AppDictionary = {
     maternity: "أمومة",
     fantasy: "خيال",
     boudoir: "بودوار",
+    asset_extract: "مستخرج العناصر",
     street: "شارع",
     call_to_bar: "⚖️ Call to Bar",
     nursing_induction: "🩺 تخرّج التمريض",

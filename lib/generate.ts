@@ -5,6 +5,7 @@ import sharp from "sharp";
 import sql from "./db";
 import { normalizePackageSize, ASPECTS, type AspectRatio } from "./types";
 import { buildGearEqualizerPrompt, buildGearReferenceMapText, type EnhanceSelection } from "./gear-equalizer";
+import { assetKindById, buildAssetExtractPrompt, buildAssetReferenceMapText } from "./asset-extractor";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
@@ -1842,6 +1843,21 @@ export async function startGenerationWorker(
       ? (shoot.enhance as EnhanceSelection)
       : null;
   const isPhotoUpgrade = !!enhanceSel;
+
+  // Asset Extractor (asset_extract): each slot isolates ONE item out of ONE of
+  // the buyer's photos. Like the upgrade it is deterministic — no identity
+  // analysis, no planner, no brief — but unlike it there is no person to keep:
+  // the person is the thing being removed.
+  //
+  // The plan is expanded at booking (one entry per source photo x kind x angle)
+  // and rides in `enhance`, whose meaning is already category-scoped. Slot N is
+  // plan[N-1], so the mapping is positional and stable.
+  const assetPlan: Array<{ sourcePath: string; kindId: string; angleId: string }> | null =
+    shoot.category === "asset_extract" && shoot.enhance && typeof shoot.enhance === "object"
+      && Array.isArray((shoot.enhance as { plan?: unknown }).plan)
+      ? ((shoot.enhance as { plan: Array<{ sourcePath: string; kindId: string; angleId: string }> }).plan)
+      : null;
+  const isAssetExtract = !!assetPlan;
   // postgres returns JSONB columns as JS objects — normalize to string first.
   const rawIdentity = shoot.identity_profile;
   let identityProfile: string =
@@ -2006,7 +2022,7 @@ export async function startGenerationWorker(
 
   // --- Step 1: Identity analysis (skip if base provides it; photo-upgrade edits
   // the buyer's own photo, so there is nothing to analyze) ---
-  if (!identityProfile && !hasBase && !isPhotoUpgrade) {
+  if (!identityProfile && !hasBase && !isPhotoUpgrade && !isAssetExtract) {
     await sql`UPDATE shoots SET pipeline_stage = 'Analyzing identity', progress = 10, updated_at = ${ts()} WHERE id = ${shootId}`;
 
     logEvent('stage', { stage: "Analyzing identity", progress: 10 });
@@ -2563,6 +2579,8 @@ export async function startGenerationWorker(
   // slot i); the optional swap backdrop rides as a background_option ref. Both
   // must join the reachability check below.
   const enhanceSources = isPhotoUpgrade ? identityRefsOrdered : [];
+  // Extraction reads from the same uploaded pool; a slot attaches exactly one.
+  const assetSources = isAssetExtract ? identityRefsOrdered : [];
   const enhanceBackdropRef = isPhotoUpgrade && enhanceSel?.backdropOptionId
     ? refs.find((r) => r.purpose === "background_option" && r.url && r.note === enhanceSel.backdropOptionId) ?? null
     : null;
@@ -2651,7 +2669,21 @@ export async function startGenerationWorker(
       // Prompt text first — per-slot identity routing reads it to detect what the
       // slot asks for (smile / back view) before the reference list is assembled.
       const rawSlotPrompt = prompts[String(slot)] ?? prompts["1"];
-      if (isPhotoUpgrade && enhanceSel) {
+      if (isAssetExtract && assetPlan) {
+        const step = assetPlan[slot - 1];
+        const kind = step ? assetKindById(step.kindId) : undefined;
+        const angle = kind?.angles.find((a) => a.id === step.angleId);
+        if (!step || !kind || !angle) {
+          throw new Error(`asset extract: no plan entry for slot ${slot}`);
+        }
+        // Attach ONLY this step's source photo. Handing the model several photos
+        // invites it to blend items from different pictures into one asset.
+        const src = assetSources.find((r) => r.storagePath === step.sourcePath) ?? assetSources[0];
+        if (!src?.url) throw new Error(`asset extract: source photo missing for slot ${slot}`);
+        imageUrls.length = 0;
+        imageUrls.push(src.url);
+        slotPrompt = buildAssetExtractPrompt(kind, angle) + buildAssetReferenceMapText();
+      } else if (isPhotoUpgrade && enhanceSel) {
         // Gear Equalizer: fully deterministic edit prompt — the reference map is
         // baked in here; no telephoto/anatomy/brief text is appended later.
         const backdropOk = !!enhanceBackdropRef && reachableSet.has(enhanceBackdropRef.url);

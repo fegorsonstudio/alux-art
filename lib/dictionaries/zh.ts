@@ -445,6 +445,7 @@ const zh: AppDictionary = {
     maternity: "孕照",
     fantasy: "奇幻",
     boudoir: "私房",
+    asset_extract: "素材提取器",
     street: "街拍",
     call_to_bar: "⚖️ Call to Bar",
     nursing_induction: "🩺 护士授帽礼",

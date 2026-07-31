@@ -445,6 +445,7 @@ const es: AppDictionary = {
     maternity: "Maternidad",
     fantasy: "Fantasía",
     boudoir: "Boudoir",
+    asset_extract: "Extractor de recursos",
     street: "Urbano",
     call_to_bar: "⚖️ Call to Bar",
     nursing_induction: "🩺 Inducción de enfermería",
