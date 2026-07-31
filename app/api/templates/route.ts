@@ -70,7 +70,10 @@ export async function POST(request: NextRequest) {
 
   // Admin-authored templates are exempt from the platform-fee floor — see the
   // note in app/api/templates/[id]/route.ts.
-  const platformFeeNgn = isAdminEmail(user.email) ? 0 : await getPlatformFee();
+  // Recorded on the template so the booking route can honour the same exemption
+  // — it knows the buyer's identity, not the author's.
+  const isAdminAuthor = isAdminEmail(user.email);
+  const platformFeeNgn = isAdminAuthor ? 0 : await getPlatformFee();
 
   if (!Number.isInteger(priceNgn) || (priceNgn as number) <= platformFeeNgn) {
     return NextResponse.json({ error: `10-image price must be more than ₦${platformFeeNgn.toLocaleString()} (the platform fee)` }, { status: 400 });
@@ -136,7 +139,7 @@ export async function POST(request: NextRequest) {
       ${safeFlagShot ? sql.json(safeFlagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safeTrendSlots ? sql.json(safeTrendSlots as unknown as Parameters<typeof sql.json>[0]) : null},
       ${safePoseOptions ? sql.json(safePoseOptions as unknown as Parameters<typeof sql.json>[0]) : null},
-      ${isPrivate}, NOW(), NOW()
+      ${isPrivate}, ${isAdminAuthor}, NOW(), NOW()
     )
     RETURNING *
   `.catch((err) => { console.error("[templates POST]", err); return [null]; });

@@ -462,7 +462,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "This package is not available for this template" }, { status: 422 });
   }
 
-  if (buyerAmountNgn <= platformFeeNgn) {
+  // Admin-authored templates are exempt: the upgrade, relight and extraction
+  // products are deliberately cheap and their margin is the studio's call. The
+  // flag is recorded on the template because this route knows the BUYER's
+  // identity, not the author's, and auth.users is unreachable from here.
+  if (!template.platform_fee_exempt && buyerAmountNgn <= platformFeeNgn) {
     return NextResponse.json({ error: "Template price must exceed the platform fee" }, { status: 422 });
   }
 
