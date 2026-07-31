@@ -1081,12 +1081,16 @@ const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
     "9:16": "portrait_16_9",
     "2:3":  { width: 854,  height: 1280 },
   },
+  // Seedream accepts custom dimensions up to 4096 on either side. The old "4K"
+  // tier asked for 2048x2560 — 5MP, against the 17MP nano-banana returns for the
+  // same shoot — so a buyer paying for 4K got a visibly smaller file whenever a
+  // shoot routed here. Each entry now sits at the 4096 ceiling on its long edge.
   "4K": {
-    "3:4":  { width: 1920, height: 2560 },
-    "4:5":  { width: 2048, height: 2560 },
-    "1:1":  { width: 2048, height: 2048 },
-    "16:9": { width: 2560, height: 1440 },
-    "9:16": { width: 1440, height: 2560 },
+    "3:4":  { width: 3072, height: 4096 },
+    "4:5":  { width: 3276, height: 4096 },
+    "1:1":  { width: 4096, height: 4096 },
+    "16:9": { width: 4096, height: 2304 },
+    "9:16": { width: 2304, height: 4096 },
     "2:3":  { width: 1707, height: 2560 },
   },
 };
