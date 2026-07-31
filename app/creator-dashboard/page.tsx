@@ -316,6 +316,9 @@ function CreatorDashboard() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrTemplateId, setQrTemplateId] = useState<string | null>(null);
   const [platformFeeNgn, setPlatformFeeNgn] = useState(15000);
+  // Alux Art's own templates price freely — the floor protects against outside
+  // creators pricing below what a shoot costs, not against the studio.
+  const [feeExempt, setFeeExempt] = useState(false);
   const [showCollageEditor, setShowCollageEditor] = useState(false);
   const [storefrontOpen, setStorefrontOpen] = useState(false);
   const [storefrontTheme, setStorefrontTheme] = useState("alux");
@@ -353,7 +356,10 @@ function CreatorDashboard() {
   useEffect(() => {
     fetch("/api/config")
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.platformFeeNgn) setPlatformFeeNgn(d.platformFeeNgn); })
+      .then(d => {
+        if (d?.platformFeeNgn) setPlatformFeeNgn(d.platformFeeNgn);
+        if (d?.feeExempt) setFeeExempt(true);
+      })
       .catch(() => {});
   }, []);
 
@@ -741,7 +747,7 @@ function CreatorDashboard() {
     a.click();
   };
 
-  const feeNgn = platformFeeNgn;
+  const feeNgn = feeExempt ? 0 : platformFeeNgn;
 
   const uploadFile = async (file: File, localId: string) => {
     setImages(prev => prev.map(img => img.localId === localId ? { ...img, uploading: true, error: undefined } : img));

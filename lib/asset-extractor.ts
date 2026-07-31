@@ -64,7 +64,10 @@ export interface AssetKind {
 // Appended to every kind so the whole library looks like one catalogue rather
 // than a pile of unrelated cut-outs.
 const PRESENTATION =
-  "PRESENTATION — plain seamless neutral background (very light warm grey), even " +
+  "PRESENTATION — plain seamless MID-GREY background (a clearly grey studio " +
+  "backdrop, roughly 55-65% lightness — visibly grey, not white and not " +
+  "near-white), consistent across every asset so a library of them reads as one " +
+  "set, even " +
   "shadowless studio light with no cast shadow on the backdrop, the item centred " +
   "and filling most of the frame with a small even margin, sharp throughout, " +
   "true-to-life colour, realistic material texture (weave, grain, sheen), and " +
