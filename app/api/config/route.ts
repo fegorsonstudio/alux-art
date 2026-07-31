@@ -29,6 +29,7 @@ export async function GET() {
   } catch { /* anonymous callers are simply not exempt */ }
 
   const rows = await sql`SELECT key, value FROM app_config WHERE key = ANY(${PRICE_KEYS})`;
+  const feeRow = rows.find((r) => r.key === "platform_fee_ngn");
   const map: Record<string, string> = Object.fromEntries(rows.map((r) => [r.key as string, r.value as string]));
 
   const p = (key: keyof typeof DEFAULTS, legacyKey?: string): number => {
@@ -48,10 +49,12 @@ export async function GET() {
     models: FAL_MODELS,
     tags: REFERENCE_TAGS,
     packages,
-    // The dashboard was reading platformFeeNgn from here and never getting it,
-    // so it fell back to a hardcoded 15000 and blocked saves against a fee that
-    // is actually 5000. Send the real one, and whether this caller is exempt.
-    platformFeeNgn: p("price_10_ngn", "platform_fee_ngn"),
+    // The dashboard reads platformFeeNgn and never used to get it, so it fell
+    // back to a hardcoded 15000. That is the platform's own 10-image RETAIL
+    // price (price_10_ngn), not the fee — the floor the server actually applies
+    // is platform_fee_ngn, currently 5000. So the browser was rejecting prices
+    // the server would have accepted. Read the same key getPlatformFee() reads.
+    platformFeeNgn: feeRow?.value ? parseInt(feeRow.value as string, 10) || 0 : 0,
     feeExempt,
   });
 }
