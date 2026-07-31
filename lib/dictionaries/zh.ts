@@ -147,6 +147,7 @@ const zh: AppDictionary = {
     perPhotoLightingHint: "开启：为每张照片指定一种灯光风格。关闭：所有照片使用同一种灯光。",
     uploadPhotosFirst: "请先上传照片，然后为每张照片指定一种灯光风格。",
     perPhotoPrice: "每张",
+    outputSize: "输出尺寸",
     upgradeHintAny: "上传任意数量的照片，1 到 10 张，按张计费。",
     uploadOneToTen: "请上传 1 到 10 张照片。",
     pickLookThenUpload: "现在选择一种光效，将应用到你上传的每张照片。之后可以单独更改任意一张。",

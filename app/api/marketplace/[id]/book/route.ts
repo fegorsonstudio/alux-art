@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { packagePrice } from "@/lib/types";
+import { ASPECTS, packagePrice } from "@/lib/types";
 import { SITE_URL } from "@/lib/site-url";
 import { isAdminEmail } from "@/lib/auth";
 import { initializePayment } from "@/lib/payment-gateway";
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     taggedRefs?: TaggedRefInput[];
     poseRefs?: RefInput[];
     shotType?: string;
+    aspectRatio?: string;   // photo upgrades only — the buyer keeps their own shape
     couponCode?: string;
     packageSize?: number;
     currency?: string;
@@ -159,6 +160,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // brings however many photos they have and pays the single-image price for
   // each, up to ten. Everything else keeps the fixed packages.
   const perImagePricing = template.category === "photo_upgrade";
+  // Photo upgrades act on the buyer's own photograph, so the output shape is
+  // theirs to choose — the creator's template ratio would re-crop a picture they
+  // already framed. Every other template keeps the ratio its creator set.
+  const requestedAspect = typeof body.aspectRatio === "string" ? body.aspectRatio : "";
+  const shootAspectRatio = perImagePricing && requestedAspect in ASPECTS
+    ? requestedAspect
+    : (template.aspect_ratio ?? "4:5");
   const buyerPackageSize: number = perImagePricing
     ? Math.min(10, Math.max(1, Number.isInteger(requestedCount) ? requestedCount : 1))
     : packagedSize;
@@ -466,7 +474,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
        progress, quote, identity_profile, shot_type, role_prompt, template_id, background_plan, lighting_plan, choice_selections, flag_shot, trend_slots, induction, enhance, no_smile, created_at, updated_at)
     VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ''}, ${template.shoot_mode ?? "advanced"},
-      ${template.aspect_ratio ?? "4:5"}, ${payCurrency}, ${buyerPackageSize},
+      ${shootAspectRatio}, ${payCurrency}, ${buyerPackageSize},
       'PENDING_PAYMENT', 0, ${JSON.stringify({ text: "", attribution: "" })}::jsonb,
       '', ${shotType}, ${rolePrompt}, ${templateId},
       ${backgroundPlan ? sql.json(backgroundPlan as unknown as Parameters<typeof sql.json>[0]) : null},

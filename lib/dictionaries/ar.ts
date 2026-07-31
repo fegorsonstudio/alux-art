@@ -147,6 +147,7 @@ const ar: AppDictionary = {
     perPhotoLightingHint: "مُفعّل: خصّص نمط إضاءة لكل صورة. مُعطّل: إضاءة واحدة لجميع الصور.",
     uploadPhotosFirst: "ارفع صورك أولًا، ثم خصّص نمط إضاءة لكل صورة.",
     perPhotoPrice: "لكل صورة",
+    outputSize: "مقاس الإخراج",
     upgradeHintAny: "ارفع أي عدد من الصور من 1 إلى 10 — الدفع لكل صورة.",
     uploadOneToTen: "ارفع من 1 إلى 10 صور.",
     pickLookThenUpload: "اختر إضاءة الآن وسيتم تطبيقها على كل صورة ترفعها. يمكنك تغيير أي صورة لاحقًا.",

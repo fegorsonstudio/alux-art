@@ -147,6 +147,7 @@ const es: AppDictionary = {
     perPhotoLightingHint: "Activado: asigna un estilo de iluminación a cada foto. Desactivado: una sola iluminación para todas.",
     uploadPhotosFirst: "Sube tus fotos primero y luego asigna un estilo de iluminación a cada una.",
     perPhotoPrice: "cada una",
+    outputSize: "Tamano de salida",
     upgradeHintAny: "Sube el numero de fotos que quieras, de 1 a 10 — pagas por foto.",
     uploadOneToTen: "Sube entre 1 y 10 fotos.",
     pickLookThenUpload: "Elige un estilo ahora y se usara en todas las fotos que subas. Podras cambiar cada foto despues.",

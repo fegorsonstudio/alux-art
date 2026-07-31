@@ -286,8 +286,14 @@ export function buildGearEqualizerPrompt(
 
     // 5. Background.
     backdropAttached
-      ? "BACKGROUND SWAP — replace ONLY the environment/background with the backdrop shown " +
-        "in the attached reference (IMAGE 2). CRITICAL SCALE RULE: render the backdrop at " +
+      ? "BACKGROUND SWAP — replace the ENTIRE environment with the backdrop shown in the " +
+        "attached reference (IMAGE 2): the wall behind the subject AND the floor or ground " +
+        "they stand or sit on, as one continuous studio space. A buyer who picked a white " +
+        "backdrop and got a white wall still standing on their own tiled floor has not been " +
+        "given what they paid for — if any floor is visible in IMAGE 1, it must be replaced " +
+        "too, lit to match, with the wall-to-floor transition in the right place for the " +
+        "camera height. Only the subject and what they are wearing or holding survive from " +
+        "IMAGE 1's environment. CRITICAL SCALE RULE: render the backdrop at " +
         "the scale and depth matching IMAGE 1's framing — in a tight headshot or bust " +
         "portrait, only a small, softly defocused region of the backdrop wall appears " +
         "behind the subject, with NO floor line, sweep curve, edge, or seam visible " +

@@ -464,6 +464,9 @@ export default function CheckoutPanel({
   // and it forced the buyer to assign every photo one at a time even when they
   // wanted the same look on all of them.
   const [defaultLighting, setDefaultLighting] = useState<string | null>(null);
+  // Photo upgrades act on the buyer's own photograph, so the output shape is
+  // theirs: forcing the template ratio re-crops a picture they already framed.
+  const [upgradeAspect, setUpgradeAspect] = useState<string>(template.aspectRatio ?? "4:5");
   // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
 
@@ -1083,6 +1086,7 @@ export default function CheckoutPanel({
         shotType: selectedPkg === 1 ? shotType : undefined,
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: effectivePkg,
+        ...(perImagePricing ? { aspectRatio: upgradeAspect } : {}),
         currency,
         rolePrompt: template.isStory && rolePrompt.trim() ? rolePrompt.trim() : undefined,
         storyAssets,
@@ -1215,6 +1219,24 @@ export default function CheckoutPanel({
                   ? `— ${uploadedCount} ${imagesWord(uploadedCount)} = ${formatPrice(unitPriceNgn * uploadedCount)}`
                   : ""}
               </p>
+            </div>
+          )}
+          {/* Output size — upgrades only. */}
+          {perImagePricing && (
+            <div className={styles.pkgRow}>
+              <span className={styles.pkgLabel}>{t("outputSize")}</span>
+              <div className={styles.pkgPills}>
+                {(["4:5", "3:4", "1:1", "16:9", "9:16"] as const).map(r => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={`${styles.pkgPill} ${upgradeAspect === r ? styles.pkgPillActive : ""}`}
+                    onClick={() => setUpgradeAspect(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {/* Package picker */}
