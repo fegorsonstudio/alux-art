@@ -1,0 +1,111 @@
+{
+  "section": "Editorial Gels",
+  "status": "Editorial Gels — avant garde editorial +270%, the strongest single beauty signal.",
+  "flowProject": "https://labs.google/fx/tools/flow/project/6c894d3e-e40f-4b9a-b027-e4c6ac210c25",
+  "flowSettings": "Nano Banana 2, 1x, 3:4 portrait, 0 credits on PRO",
+  "sourcesInFlow": {
+    "full": "source-full.jpeg",
+    "medium": "source-medium.jpg",
+    "head": "source-head.jpeg"
+  },
+  "queue": [
+    {
+      "slot": 1,
+      "name": "Cyan Orange Split",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Two hard gelled sources at equal power face each other across the subject: cyan from camera-left at 80 degrees, warm orange from camera-right at 80 degrees, meeting along the centre line of the face and body so one side reads cold and the other warm with a clean seam between them. Background stays unlit and dark so neither colour spills onto it. Saturated complementary colour, hard-edged transition, realistic skin texture, subtle grain."
+    },
+    {
+      "slot": 2,
+      "name": "Purple Teal Split",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A deep purple gelled key at camera-left and a teal gelled source at camera-right, both slightly behind the subject so the colours rake across the cheekbones and shoulders and leave the centre of the face in a darker neutral. A very low neutral frontal fill keeps the features readable. Background is black with no spill. High saturation, deep blacks, realistic skin texture, natural asymmetry."
+    },
+    {
+      "slot": 3,
+      "name": "Red Key Blue Rim",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A saturated red gelled key at camera-left 45 degrees provides the main exposure, while a hard blue gelled rim behind camera-right traces the jaw, shoulder and hair with a cold edge. The two colours never mix on the face: red holds the front, blue holds the outline. Background is unlit. Strong colour separation, deep blacks, physically plausible rim placement, subtle film grain."
+    },
+    {
+      "slot": 4,
+      "name": "Amber Magenta Cross",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Amber light crosses in from high camera-left and magenta from low camera-right, the two beams overlapping across the chest and lower face where they blend into a warm coral, while the outer edges stay distinctly amber and magenta. Shadows keep colour rather than going grey. Background falls off to dark. Rich saturation, visible colour blending in the overlap, realistic skin texture."
+    },
+    {
+      "slot": 5,
+      "name": "Sodium Street Orange",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A single strong sodium-vapour orange source high at camera-right imitates a street lamp, casting the whole scene in narrow-spectrum amber where all other colours read as muted variants of orange and grey. Shadows are long, hard-edged and deep. A faint cool ambient fills the darkest areas so the frame is not one flat colour. Monochromatic orange palette, hard shadows, realistic falloff, subtle grain."
+    },
+    {
+      "slot": 6,
+      "name": "Ultraviolet Wash",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A deep violet ultraviolet-tinted wash covers the whole scene from a broad frontal source, making light surfaces glow faintly and dark surfaces sink to near black, with a cold blue-white accent from behind the subject picking out the hair and shoulder edges. Skin keeps its own tone under the wash rather than turning uniformly purple. Saturated violet, deep blacks, realistic texture, subtle grain."
+    },
+    {
+      "slot": 7,
+      "name": "Two-Tone Rim Only",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. There is no frontal key. Two hard gelled sources sit behind the subject, one warm pink at camera-left and one cold blue at camera-right, each drawing a bright coloured edge down its side of the face, hair and shoulder, with the centre of the face lit only by a trace of reflected light so features stay just readable. Background is black. Two clean coloured rims, extreme contrast with retained facial detail, subtle grain."
+    },
+    {
+      "slot": 8,
+      "name": "Single Colour Drench",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. One saturated blue gelled source floods the entire frame from the front, drenching subject and background in a single continuous colour so the image reads as a monochrome study in blue, with tonal separation coming only from brightness rather than hue. A slightly brighter core on the face keeps the subject as the focal point. Uniform saturated colour, clean tonal gradation, realistic skin texture."
+    },
+    {
+      "slot": 9,
+      "name": "Gel Gradient Backdrop",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Two gelled sources aimed only at the background create a vertical gradient behind the subject, magenta at the top blending into deep blue at the bottom, while the subject is lit separately by a soft neutral key so their colour stays true against the coloured field. No colour spill onto skin. Clean separation between subject and backdrop, smooth gradient, realistic skin and fabric texture, subtle grain."
+    },
+    {
+      "slot": 10,
+      "name": "Neon Pink Key",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. An intense neon pink source at camera-left, close and slightly above, provides nearly all the exposure, with the colour at full saturation on the lit side and falling to deep unlit shadow on the other. A small white accent from behind picks out the hair edge so the silhouette does not dissolve. Background takes a faint pink glow near the subject and black beyond. High saturation, hard falloff, realistic skin texture."
+    },
+    {
+      "slot": 11,
+      "name": "Acid Green Edge",
+      "framing": "head",
+      "flowSource": "source-head.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A neutral soft key lights the face conventionally while a hard acid-green gelled source directly behind camera-left cuts a thin, vivid green line along the jaw, ear and hairline. The green appears only as that edge and nowhere else in the frame. Background stays black. Neutral face against a single saturated accent, crisp edge definition, realistic skin texture with pores, subtle grain."
+    },
+    {
+      "slot": 12,
+      "name": "Cool Key Warm Shadow",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A cool blue-white key at camera-left provides the main exposure while the fill on the shadow side comes from a warm amber bounce, so highlights read cold and shadows read warm — the inverse of the usual arrangement. The colour split is subtle rather than theatrical, visible mainly in the transition across the cheek. Background is neutral mid-grey. Gentle colour contrast, realistic skin texture, natural asymmetry, subtle film grain."
+    },
+    {
+      "slot": 13,
+      "name": "Triadic Three-Colour",
+      "framing": "full",
+      "flowSource": "source-full.jpeg",
+      "prompt": "Relight this image. Change nothing else except the lighting. Three gelled sources at roughly equal power surround the subject: yellow-orange from high camera-left, magenta from low camera-right, and cyan from behind. Each claims a different part of the figure, with visible blends where they meet and no area left uncoloured. Background is dark and takes only faint spill. Bold three-colour scheme, clear separation between the three zones, realistic fabric and skin texture, subtle grain."
+    },
+    {
+      "slot": 14,
+      "name": "Hard Editorial White",
+      "framing": "medium",
+      "flowSource": "source-medium.jpg",
+      "prompt": "Relight this image. Change nothing else except the lighting. A single small, hard, undiffused source directly above and slightly in front of the subject throws sharp-edged shadows straight down under the brow, nose and chin, in the manner of a hard editorial beauty shot. There is no fill, so the shadows stay dense and graphic. Background is a flat mid-tone with the subject's hard shadow visible on it. Neutral temperature, hard shadow edges, realistic skin texture with pores, natural asymmetry."
+    }
+  ]
+}

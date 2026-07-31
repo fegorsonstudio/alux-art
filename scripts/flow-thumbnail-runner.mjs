@@ -362,20 +362,35 @@ async function main() {
       // vision matching collapsed 42 images onto 17 styles. The only reliable
       // answer is to record which image this style produced, at the moment it
       // appears — the newest /edit/<id> that was not present before the send.
+      // Identify the new image by the TOP tile changing, not by set difference.
+      //
+      // Set difference is unsound here: the grid is virtualised, so only ~20-48
+      // tiles exist in the DOM at any moment. An older image that simply scrolled
+      // into view during the wait looks brand new, and that is how a beauty style
+      // ended up holding a cyan smoke picture from an abandoned earlier run.
+      //
+      // The grid is newest-first and the runner generates strictly one at a time,
+      // waiting for the grid to settle before each send, so once the top tile
+      // changes it is this style's output. Position 0 is always rendered.
       const before = new Set(item._beforeIds ?? []);
+      const topBefore = (item._beforeIds ?? [])[0] ?? null;
       // Poll rather than look once after a fixed wait. A single 30s snapshot
       // missed a slower style twice in a row (slot 36) and recorded no id, which
       // is what forces a regenerate — waiting longer costs nothing when the image
       // is already there, because this returns the moment the new link appears.
-      let fresh = [];
-      for (let waited = 0; waited < 240000 && fresh.length === 0; waited += 5000) {
+      let captured = null;
+      for (let waited = 0; waited < 240000 && !captured; waited += 5000) {
         await sleep(5000);
         const after = await page.evaluate(() =>
           [...document.querySelectorAll('a[href*="/edit/"]')].map((a) => a.getAttribute("href"))
         ).catch(() => []);
-        fresh = after.filter((h) => h && !before.has(h));
+        const top = after[0] ?? null;
+        // The top tile must have changed AND be one we had not already seen, so a
+        // recycled old tile re-entering the DOM at the top cannot be mistaken for
+        // this style's output.
+        if (top && top !== topBefore && !before.has(top)) captured = top;
       }
-      item.editHref = fresh[0] ?? null;   // newest-first grid: [0] is the new one
+      item.editHref = captured;
       delete item._beforeIds;
 
       item.done = true;

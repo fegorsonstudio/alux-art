@@ -1,0 +1,62 @@
+{
+  "section": "Luminous Beauty",
+  "label": "Luminous Beauty — glow & clamshell",
+  "why": "Ranked #3 by Pinterest's published 2026 search growth: frosted makeup +150%, opalescent +115%, soft dewy makeup +115%. Three signals for one look family — luminous, lifted, flattering skin.",
+  "rules": [
+    "Every recipe opens with the relight lock.",
+    "Never mention the subject's body, wardrobe, expression or eyes.",
+    "Beauty light must not become plastic skin. Every recipe names real skin texture explicitly, because a soft frontal wash is exactly the setup where an image model smooths pores away and the result stops looking photographed."
+  ],
+  "styles": [
+    {
+      "name": "Frosted Clamshell",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A large soft source sits directly in front and above the subject angled down, with a second soft source or bright reflector directly below angled up, closing around the face like an open shell. Shadows under the nose and chin are almost eliminated, catchlights appear above and below, and the skin carries a cool frosted sheen on the cheekbones, brow and nose bridge. Neutral to slightly cool temperature, even exposure, realistic skin texture with visible pores, natural asymmetry, subtle film grain."
+    },
+    {
+      "name": "Opalescent Glow",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. Broad, wrapping soft light from a very large frontal source, with faint pearlescent colour shifting across the highlights — cool blue-green on one cheekbone edge, warm pink on the other — as though light is passing through opal. Shadows are open and luminous rather than dark. Background is a clean pale field with a gentle gradient. Low contrast, luminous midtones, realistic skin texture with pores intact, subtle grain."
+    },
+    {
+      "name": "Dewy High-Key",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Bright, even, wrapping light from a large frontal source with generous fill from both sides, lifting shadows almost completely and rendering a bright background just short of pure white. Specular highlights sit tight and wet-looking on the high points of the face, giving a dewy finish while skin pores and fine texture stay visible. Neutral temperature, clean highlights without clipping, natural asymmetry, subtle grain."
+    },
+    {
+      "name": "Pearl Softbox Wrap",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A very large softbox placed close at camera-left and slightly above wraps light around the face and shoulders, with a white bounce at camera-right lifting the shadow side to within a stop of the key. Falloff across the body is gradual and creamy. Background sits a shade darker than the subject so the figure separates without a rim light. Neutral temperature, soft-edged shadows, realistic fabric and skin texture, subtle grain."
+    },
+    {
+      "name": "Halo Ring Beauty",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A ring source encircling the lens lights the face flat and evenly from the front, producing a circular catchlight in each eye and a soft, even shadow outlining the subject on the background directly behind. Contrast is low across the face with a slight falloff at the very edges of the frame. Neutral temperature, crisp detail, realistic skin texture with pores, natural asymmetry, subtle grain."
+    },
+    {
+      "name": "Silk Diffusion",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. Light passes through heavy silk diffusion placed close to the subject, giving very soft-edged shadows, a gentle highlight roll-off and slightly reduced contrast, as though shot on an overcast day indoors. The key comes from camera-left at 30 degrees with a soft fill opposite. The background is an even mid-tone with no hotspots. Neutral temperature, smooth tonal gradation, realistic skin texture, subtle film grain."
+    },
+    {
+      "name": "White Cyc Wrap",
+      "framing": "full",
+      "prompt": "Relight this image. Change nothing else except the lighting. Multiple large sources light a seamless white background evenly and spill back onto the subject from every side, so shadows on the body are minimal and the whole frame reads bright and open, with the floor and background merging into one continuous white field. A slightly stronger frontal key keeps the face defined rather than flat. High-key exposure with clean, unclipped highlights, realistic skin and fabric texture, subtle grain."
+    },
+    {
+      "name": "Champagne Soft Key",
+      "framing": "medium",
+      "prompt": "Relight this image. Change nothing else except the lighting. A large soft key with a warm champagne cast sits at camera-right just above eye level, giving skin a golden luminosity, while a neutral bounce on the opposite side keeps the shadow side clean rather than muddy. Background is a warm neutral falling gently darker toward the corners. Warm 3500K key against neutral fill, soft-edged shadows, realistic skin texture with pores, subtle grain."
+    },
+    {
+      "name": "Frosted Rim Halo",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. A soft frontal beauty key lights the face evenly while two cool-toned sources behind the subject, one on each side, draw matching bright rims along the hair and the outer edges of the shoulders, creating a cool halo around a warmly lit face. Background stays dark enough for the rims to read clearly. Cool rim against neutral key, luminous skin with visible texture, natural asymmetry, subtle film grain."
+    },
+    {
+      "name": "Luminous Bounce",
+      "framing": "head",
+      "prompt": "Relight this image. Change nothing else except the lighting. The only source is light bounced off a large white surface just out of frame at camera-left, so the subject is lit entirely by reflected light: extremely soft shadow edges, a broad soft catchlight, and a slow falloff across the face into an open shadow side. Nothing is lit directly. Background is a soft mid-tone with gentle vignetting from the falloff. Neutral temperature, gentle contrast, realistic skin texture with pores intact, subtle grain."
+    }
+  ]
+}
