@@ -382,6 +382,30 @@ export default function CheckoutPanel({
     .filter(s => s.looks.length > 0);
   // Only worth showing headings once there is more than one section.
   const showLightingHeadings = lightingSections.length > 1;
+  // Which lighting sections are expanded. Collapsed by default: 193 looks across
+  // 13 sections is a very long scroll to get past on a phone, and a buyer should
+  // be able to read the section titles and open only the one they want.
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (id: string) => setOpenSections(p => ({ ...p, [id]: !p[id] }));
+  // A single section needs no disclosure — it is the whole list.
+  const sectionOpen = (id: string) => !showLightingHeadings || openSections[id] === true;
+  const SectionToggle = ({ id, label, count }: { id: string; label: string; count: number }) => (
+    <button
+      type="button"
+      onClick={() => toggleSection(id)}
+      aria-expanded={sectionOpen(id)}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+        gap: 8, padding: "8px 10px", marginBottom: 6, cursor: "pointer", textAlign: "left",
+        background: "rgba(127,127,127,0.08)", border: "1px solid rgba(127,127,127,0.22)", borderRadius: 8,
+      }}
+    >
+      <span style={{ fontSize: "0.78rem", fontWeight: 600 }}>
+        {label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({count})</span>
+      </span>
+      <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>{sectionOpen(id) ? "▲" : "▼"}</span>
+    </button>
+  );
   // Shared "before" original for the crossfade preview (one per lighting group in
   // practice; take the first that has one).
   const lightingBeforeUrl = lightingGroups.map(g => g.beforeImageUrl).find(Boolean) ?? null;
@@ -1412,11 +1436,9 @@ export default function CheckoutPanel({
                         {lightingSections.map(section => (
                           <div key={section.id} style={{ marginBottom: 10 }}>
                             {showLightingHeadings && (
-                              <p style={{ fontSize: "0.72rem", fontWeight: 600, margin: "0 0 4px", letterSpacing: "0.02em" }}>
-                                {section.label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({section.looks.length})</span>
-                              </p>
+                              <SectionToggle id={section.id} label={section.label} count={section.looks.length} />
                             )}
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            <div style={{ display: sectionOpen(section.id) ? "flex" : "none", flexWrap: "wrap", gap: 8 }}>
                               {section.looks.map(o => {
                                 const on = defaultLighting === o.id;
                                 return (
@@ -1460,11 +1482,9 @@ export default function CheckoutPanel({
                         {lightingSections.map(section => (
                           <div key={section.id} style={{ marginBottom: 10 }}>
                             {showLightingHeadings && (
-                              <p style={{ fontSize: "0.72rem", fontWeight: 600, margin: "0 0 4px", letterSpacing: "0.02em" }}>
-                                {section.label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({section.looks.length})</span>
-                              </p>
+                              <SectionToggle id={section.id} label={section.label} count={section.looks.length} />
                             )}
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            <div style={{ display: sectionOpen(section.id) ? "flex" : "none", flexWrap: "wrap", gap: 8 }}>
                               {section.looks.map(o => {
                                 const on = lightingByPhoto[sp.storagePath] === o.id;
                                 return (
@@ -1717,11 +1737,9 @@ export default function CheckoutPanel({
                   {lightingSections.map(section => (
                     <div key={section.id} style={{ marginBottom: 12 }}>
                       {showLightingHeadings && (
-                        <p style={{ fontSize: "0.76rem", fontWeight: 600, margin: "0 0 6px", letterSpacing: "0.02em" }}>
-                          {section.label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({section.looks.length})</span>
-                        </p>
+                        <SectionToggle id={section.id} label={section.label} count={section.looks.length} />
                       )}
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                      <div style={{ display: sectionOpen(section.id) ? "flex" : "none", flexWrap: "wrap", gap: 10 }}>
                         {section.looks.map(o => {
                           const isOn = lightingPicks.includes(o.id);
                           return (

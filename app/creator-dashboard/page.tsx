@@ -267,6 +267,7 @@ function CreatorDashboard() {
   // Default (absent) is gallery, because with 50+ looks the common job is
   // reviewing and removing, not rewriting a hidden prompt.
   const [groupEditorOpen, setGroupEditorOpen] = useState<Record<string, boolean>>({});
+  const [importingLighting, setImportingLighting] = useState(false);
   // Flag shot (Call to Bar)
   const [flagShotEnabled, setFlagShotEnabled] = useState(false);
   const [flagShotImagePath, setFlagShotImagePath] = useState("");
@@ -2437,6 +2438,57 @@ function CreatorDashboard() {
                   + Add group
                 </button>
               )}
+              {/* One click instead of rebuilding 193 looks by hand. Images that
+                  belong to someone else are copied into this creator's own
+                  storage server-side, because an option may only reference
+                  storage under its own creator's prefix. */}
+              <button
+                type="button"
+                className={styles.addSceneBtn}
+                disabled={importingLighting}
+                onClick={async () => {
+                  setImportingLighting(true);
+                  setFormError("");
+                  try {
+                    const res = await fetch("/api/creator-dashboard/lighting-library", { method: "POST" });
+                    const data = await res.json();
+                    if (!res.ok) { setFormError(data.error ?? "Could not import the lighting library"); return; }
+                    const incoming = (data.groups ?? []) as Array<{ id: string; type: string; label: string; options: Array<Record<string, unknown>>; beforeImages?: Record<string, string>; beforeImageBucket?: string; beforeImagePath?: string }>;
+                    setChoiceGroups(prev => {
+                      // Never import a section this template already has.
+                      const have = new Set(prev.map(g => g.label));
+                      const added = incoming.filter(g => !have.has(g.label)).map(g => ({
+                        id: g.id,
+                        type: "lighting" as ChoiceGroupType,
+                        label: g.label,
+                        beforeImages: g.beforeImages,
+                        beforeImagePath: g.beforeImagePath ?? "",
+                        beforeImagePreviews: Object.fromEntries(
+                          Object.entries(g.beforeImages ?? {}).map(([f, path]) => [f, mediaUrl(g.beforeImageBucket ?? "template-images", path)])
+                        ),
+                        options: g.options.map(o => ({
+                          id: String(o.id),
+                          name: String(o.name ?? ""),
+                          kind: "prompt" as const,
+                          description: String(o.description ?? ""),
+                          imagePath: String(o.imagePath ?? ""),
+                          preview: o.imagePath ? mediaUrl(String(o.imageBucket ?? "template-images"), String(o.imagePath)) : "",
+                          uploading: false,
+                          framing: o.framing ? String(o.framing) : undefined,
+                          fromDb: true,
+                        })),
+                      }));
+                      return [...prev, ...added];
+                    });
+                  } catch {
+                    setFormError("Could not import the lighting library — check your connection");
+                  } finally {
+                    setImportingLighting(false);
+                  }
+                }}
+              >
+                {importingLighting ? "Importing…" : "✨ Import Alux Art lighting"}
+              </button>
             </div>
             <p className={styles.fieldHint}>
               Offer multiple outfits, hairstyles, makeup looks, etc. on one template. The buyer picks
