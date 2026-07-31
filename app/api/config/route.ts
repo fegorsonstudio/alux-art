@@ -16,6 +16,10 @@ const DEFAULTS = {
   price_1_usd: 1, price_5_usd: 5, price_10_usd: 10,
 };
 
+// This response now varies per caller (feeExempt), so it must never be shared
+// between users by a CDN or Next's route cache.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   // Admin-authored templates are exempt from the platform-fee floor. The
   // creator dashboard enforces that floor in the browser before it sends
@@ -56,5 +60,5 @@ export async function GET() {
     // the server would have accepted. Read the same key getPlatformFee() reads.
     platformFeeNgn: feeRow?.value ? parseInt(feeRow.value as string, 10) || 0 : 0,
     feeExempt,
-  });
+  }, { headers: { "Cache-Control": "private, no-store" } });
 }
