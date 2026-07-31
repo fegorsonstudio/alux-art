@@ -32,7 +32,9 @@ export type AssetTag =
   | "OUTFIT" | "GOWN" | "SUIT" | "SCRUBS"
   | "HAIRSTYLE" | "WIG" | "MAKEUP" | "NAIL_DESIGN"
   | "ACCESSORY" | "SASH" | "COLLAR_MALE" | "COLLAR_FEMALE"
-  | "BACKGROUND";
+  // LIGHTING and COLOR_GRADE are carried by choice groups rather than
+  // template_images rows — they are recipes, not pictures.
+  | "BACKGROUND" | "LIGHTING" | "COLOR_GRADE";
 
 export interface AssetAngle {
   id: string;      // "front" | "back" | "side" ...
@@ -45,7 +47,16 @@ export interface AssetKind {
   label: string;        // card title
   blurb: string;        // one-line card subtitle
   tag: AssetTag;
-  angles: AssetAngle[]; // one generated image per angle
+  // "image" — fal renders one picture per angle, saved as a template_images row.
+  // "text"  — a vision model WRITES a reusable recipe. Lighting and colour grade
+  //           are not objects that can be photographed out of a picture; they are
+  //           descriptions of how a picture was lit and graded, and the platform
+  //           already consumes them as text: a lighting choice-group option holds
+  //           its recipe in `description` (kind "prompt"), and a colour grade is a
+  //           choice-group option of kind "text". Rendering them as pictures would
+  //           produce something unusable by either.
+  output: "image" | "text";
+  angles: AssetAngle[]; // one asset per entry
   directive: string;    // what to extract and how to present it
 }
 
@@ -104,6 +115,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Outfit",
     blurb: "Ghost mannequin — front, back and side",
     tag: "OUTFIT",
+    output: "image" as const,
     angles: [FRONT, BACK, SIDE],
     directive:
       "Extract the complete outfit the person is wearing — every garment layer " +
@@ -115,6 +127,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Gown / dress",
     blurb: "Ghost mannequin — front, back and side",
     tag: "GOWN",
+    output: "image" as const,
     angles: [FRONT, BACK, SIDE],
     directive:
       "Extract the gown or dress only, full length including any train, and " +
@@ -125,6 +138,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Suit",
     blurb: "Ghost mannequin — front, back and side",
     tag: "SUIT",
+    output: "image" as const,
     angles: [FRONT, BACK, SIDE],
     directive:
       "Extract the suit as worn — jacket over shirt with trousers, keeping the " +
@@ -136,6 +150,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Scrubs",
     blurb: "Ghost mannequin — front and back",
     tag: "SCRUBS",
+    output: "image" as const,
     angles: [FRONT, BACK],
     directive:
       "Extract the scrubs set — top and trousers together — keeping the exact " +
@@ -146,6 +161,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Wig / hairstyle",
     blurb: "On an invisible head form — front and back",
     tag: "WIG",
+    output: "image" as const,
     angles: [FRONT, BACK],
     directive:
       "Extract the hair or wig as a standalone hairpiece, holding its styled " +
@@ -158,6 +174,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Shoes",
     blurb: "The pair, three-quarter view",
     tag: "ACCESSORY",
+    output: "image" as const,
     angles: [A("pair", "Pair", "Show BOTH shoes as a pair, angled three-quarter to camera, one slightly ahead of the other, both fully visible from toe to heel.")],
     directive:
       "Extract the footwear only, both shoes of the pair, keeping the exact " +
@@ -169,6 +186,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Bag",
     blurb: "Standing upright, front three-quarter",
     tag: "ACCESSORY",
+    output: "image" as const,
     angles: [A("front", "Front", "Show the bag standing upright, angled slightly three-quarter, handles or straps arranged naturally and fully visible.")],
     directive:
       "Extract the bag or purse only, keeping the exact shape, colour, material, " +
@@ -179,6 +197,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Jewellery",
     blurb: "On display hands and a neck form, as worn",
     tag: "ACCESSORY",
+    output: "image" as const,
     angles: [
       A("hands",
         "Hands",
@@ -210,6 +229,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Belt",
     blurb: "Full length with the buckle square to camera",
     tag: "ACCESSORY",
+    output: "image" as const,
     angles: [A("front",
       "Front",
       "Lay the belt out with a gentle even curve so its full length is in frame, " +
@@ -227,6 +247,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Headwear",
     blurb: "Gele, cap, hat, crown or veil",
     tag: "ACCESSORY",
+    output: "image" as const,
     angles: [FRONT, BACK],
     directive:
       "Extract the headwear only — gele, headwrap, cap, hat, crown, tiara or " +
@@ -239,6 +260,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Nails",
     blurb: "Hand only, design legible",
     tag: "NAIL_DESIGN",
+    output: "image" as const,
     angles: [A("hand", "Hand", "Show one hand in a relaxed neutral pose with all five nails clearly visible and in focus, cropped at the wrist.")],
     directive:
       "Extract the nail design: the hand and nails only, keeping the exact nail " +
@@ -250,6 +272,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Makeup look",
     blurb: "Face crop, the look readable",
     tag: "MAKEUP",
+    output: "image" as const,
     angles: [A("face", "Face", "Crop tightly to the face, squared to camera, evenly lit so every part of the makeup reads clearly.")],
     directive:
       "Extract the makeup look — foundation finish, brow shape, eyeshadow " +
@@ -261,6 +284,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Sash",
     blurb: "Flat, full length, lettering legible",
     tag: "SASH",
+    output: "image" as const,
     angles: [A("flat", "Flat", "Lay the sash flat and straight, full length in frame, with any lettering upright and completely legible.")],
     directive:
       "Extract the sash only, keeping the exact fabric, colour, trim and — most " +
@@ -272,6 +296,7 @@ export const ASSET_KINDS: AssetKind[] = [
     label: "Backdrop",
     blurb: "The setting with all people removed",
     tag: "BACKGROUND",
+    output: "image" as const,
     angles: [A("scene", "Scene", "Show the full setting as an empty space, from the same camera position and lens as the source photograph.")],
     directive:
       "Extract the environment: keep the setting exactly as photographed — the " +
@@ -280,6 +305,28 @@ export const ASSET_KINDS: AssetKind[] = [
       "of. This asset is the only one where the background is the subject, so the " +
       "PRESENTATION rule below does not apply to the backdrop itself: keep the " +
       "room's own lighting and colour rather than replacing it with studio light.",
+  },
+  {
+    id: "lighting",
+    label: "Lighting recipe",
+    blurb: "The lighting setup, written as a reusable recipe",
+    tag: "LIGHTING",
+    output: "text",
+    angles: [A("recipe", "Recipe", "")],
+    directive:
+      "Describe the LIGHTING SETUP of the photograph so it can be recreated on a " +
+      "completely different photo.",
+  },
+  {
+    id: "color_grade",
+    label: "Colour grade",
+    blurb: "The colour treatment, written as a reusable recipe",
+    tag: "COLOR_GRADE",
+    output: "text",
+    angles: [A("recipe", "Recipe", "")],
+    directive:
+      "Describe the COLOUR AND TONE treatment of the photograph so it can be " +
+      "applied to a completely different photo.",
   },
 ];
 
@@ -290,9 +337,96 @@ export const ASSET_KIND_IDS = new Set(ASSET_KINDS.map((k) => k.id));
 export const assetKindById = (id: string): AssetKind | undefined =>
   ASSET_KINDS.find((k) => k.id === id);
 
+/**
+ * The analysis prompt for a TEXT asset. Sent to the vision model with the source
+ * photograph; the reply IS the asset.
+ *
+ * This mirrors the "professional lighting director" instructions in
+ * scripts/lighting-import.mjs that produced the 193 looks already selling on the
+ * Gear Equalizer, including the two rules learned there:
+ *
+ *   - never mention the subject, their clothing, or the location. The recipe is
+ *     applied to a DIFFERENT photograph, so any detail of this one gets wrongly
+ *     recreated on someone else.
+ *   - never mention closed eyes or a hidden gaze. Saying "the eyes are not
+ *     visible" reads as an instruction to close them when the recipe is applied,
+ *     which is exactly what happened to the first batch and had to be rewritten.
+ */
+export function buildAssetAnalysisPrompt(kind: AssetKind): string {
+  if (kind.id === "color_grade") {
+    return [
+      "You are a professional colourist. Your ONLY job is to describe the COLOUR " +
+        "AND TONE treatment of the attached photograph so it can be applied to a " +
+        "completely different photograph.",
+      "DESCRIBE, in this order and only what is visible: the overall colour cast; " +
+        "where the highlights, midtones and shadows sit in hue (for example warm " +
+        "highlights against teal shadows); saturation level and whether any colour " +
+        "is pushed or muted; contrast and where the black point and white point " +
+        "fall; any lifted or crushed blacks; grain; and a technical name for the " +
+        "look if one fits (teal and orange, bleach bypass, cross-processed, faded " +
+        "film, day for night, monochrome).",
+      "IGNORE COMPLETELY — never mention the person, their face, skin tone, " +
+        "expression, pose, clothing, hair, accessories, the location, the objects " +
+        "in the frame, the composition, the crop, or the lighting setup. You " +
+        "describe how the picture was GRADED, not what is in it or how it was lit. " +
+        "Never mention eyes or a gaze.",
+      "OUTPUT — begin with exactly: \"Apply this colour grade. Change nothing else " +
+        "except colour and tone.\" Then ONE tight paragraph of 1-3 sentences in " +
+        "concrete photographic language. Then a new line reading " +
+        "\"Suggested name: <a short 2-4 word name>\".",
+    ].join(" ");
+  }
+
+  return [
+    "You are a professional lighting director and cinematographer. Your ONLY job " +
+      "is to describe the LIGHTING SETUP of the attached photograph so it can be " +
+      "recreated on a completely different photograph.",
+    "DESCRIBE, in this order, whatever is visible or can be confidently inferred: " +
+      "the key light (direction as a clock position and height, hard or soft, its " +
+      "apparent size and modifier, relative intensity); the fill and the resulting " +
+      "contrast ratio; any rim, hair or kicker light and how it separates the " +
+      "subject; the shadows (direction, hardness, depth, edge transition); the " +
+      "colour temperature in Kelvin terms and any gels; how the light falls off on " +
+      "the background; and a technical name for the setup (Rembrandt, butterfly, " +
+      "split, loop, clamshell, rim-lit editorial, window light, high-key, low-key " +
+      "chiaroscuro).",
+    "IGNORE COMPLETELY — never mention the person, their face, identity, skin " +
+      "tone, expression, pose, hands, body, clothing, hair, makeup, accessories, " +
+      "props, the location, the background objects, the composition, the crop or " +
+      "the camera angle. Say \"the brow\", never \"the hat\"; say \"the back of the " +
+      "head\", never \"the veil\". If the eyes are closed, hidden or turned away, say " +
+      "NOTHING about catchlights at all — never explain their absence, because " +
+      "that reads as an instruction to close the subject's eyes when the recipe is " +
+      "applied to someone else.",
+    "OUTPUT — begin with exactly: \"Relight this image. Change nothing else except " +
+      "the lighting.\" Then ONE tight paragraph of 1-3 sentences in concrete " +
+      "photographic language, phrased as a reusable setup (\"key light from " +
+      "camera-left at 45 degrees\"), not as a description of this picture. Then a " +
+      "new line reading \"Suggested name: <a short 2-4 word name>\".",
+  ].join(" ");
+}
+
+/** Where a finished asset is stored. Text recipes are choice-group options, not
+ *  template_images rows — see the note on AssetKind.output. */
+export function assetDestination(kind: AssetKind): "template_image" | "choice_option" {
+  return kind.output === "text" ? "choice_option" : "template_image";
+}
+
 /** Images produced by a set of ticked kinds — this is the slot count AND the price. */
 export function assetImageCount(kindIds: string[]): number {
-  return kindIds.reduce((n, id) => n + (assetKindById(id)?.angles.length ?? 0), 0);
+  return kindIds.reduce((n, id) => {
+    const k = assetKindById(id);
+    return n + (k && k.output === "image" ? k.angles.length : 0);
+  }, 0);
+}
+
+/** Text recipes produced by a selection. These cost a vision call rather than an
+ *  image render, so they are counted — and can be priced — separately. */
+export function assetTextCount(kindIds: string[]): number {
+  return kindIds.reduce((n, id) => {
+    const k = assetKindById(id);
+    return n + (k && k.output === "text" ? k.angles.length : 0);
+  }, 0);
 }
 
 /** Every (kind, angle) pair a selection expands to, in a stable order. */
