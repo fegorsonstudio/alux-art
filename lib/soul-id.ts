@@ -16,6 +16,7 @@
 
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
+import JSZip from "jszip";
 import sql from "./db";
 import { r2Upload, r2Download, r2SignedDownloadUrl } from "./r2";
 import {
@@ -220,7 +221,6 @@ export async function trainSoulId(loraId: string): Promise<string> {
       throw new Error(`only ${images.length} training images — too few for a stable identity`);
     }
 
-    const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     for (const img of images) zip.file(img.name, img.buffer);
     const zipBuf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
