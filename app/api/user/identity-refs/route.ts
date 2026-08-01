@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
-import { r2ProxyUrl, r2Delete } from "@/lib/r2";
+import { r2ProxyUrl, r2Delete, r2Exists } from "@/lib/r2";
 
 export async function GET() {
   const supabase = await createClient();
@@ -25,7 +25,27 @@ export async function GET() {
     return true;
   }).slice(0, 20);
 
-  const signed = deduped.map((ref) => ({
+  // These rows point at photographs from past shoots, and the 48-hour retention
+  // cleanup deletes those files without deleting the rows. Four of eighteen were
+  // already dead here: the picker rendered broken tiles, and — worse — a buyer
+  // could select one and pay for a shoot whose source photograph no longer
+  // exists. Drop anything that is no longer in storage.
+  //
+  // r2Exists reports false for any error, not just a missing object, so a
+  // transient R2 hiccup can hide a good photo for one page load. That is the
+  // better failure: a photo briefly absent from the picker beats a photo that
+  // cannot generate after payment.
+  const alive = await Promise.all(
+    deduped.map(async (ref) =>
+      (await r2Exists(ref.storage_bucket as string, ref.storage_path as string)) ? ref : null
+    )
+  );
+  const present = alive.filter((r): r is NonNullable<typeof r> => r !== null);
+  if (present.length !== deduped.length) {
+    console.log(`[identity-refs] hid ${deduped.length - present.length} reference(s) whose files are gone`);
+  }
+
+  const signed = present.map((ref) => ({
     id: ref.id,
     name: ref.name,
     storagePath: ref.storage_path,
