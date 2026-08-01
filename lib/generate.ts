@@ -264,15 +264,20 @@ async function callFalWithFallback(
   resolution: string,
   dbForbiddenWords: Array<{ word: string; replacement: string }> = [],
   generationModel: "nano-banana" | "seedream" = "nano-banana",
-  allowAdult = false
+  allowAdult = false,
+  soulId: { loraUrl: string; triggerPhrase: string } | null = null
 ): Promise<{ url: string; sanitized: boolean; model: string }> {
-  const primary = generationModel === "seedream"
-    ? "fal-ai/bytedance/seedream/v4/edit"
-    : "fal-ai/nano-banana-2/edit";
+  const primary = soulId
+    ? "fal-ai/flux-lora"
+    : generationModel === "seedream"
+      ? "fal-ai/bytedance/seedream/v4/edit"
+      : "fal-ai/nano-banana-2/edit";
   const generate = (prompt: string) =>
-    generationModel === "seedream"
-      ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution, allowAdult)
-      : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
+    soulId
+      ? generateImageWithFluxLora(prompt, soulId.loraUrl, soulId.triggerPhrase, aspectRatio, resolution)
+      : generationModel === "seedream"
+        ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution, allowAdult)
+        : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
 
   const isForbidden = (err: unknown) =>
     err instanceof Error && err.message.toLowerCase().includes("forbidden");
@@ -1226,6 +1231,126 @@ async function generateImageWithQwenEdit(
   return url;
 }
 
+// ── Soul ID: FLUX.1-dev + a trained identity LoRA ───────────────────────────
+//
+// The boudoir path when the buyer has a trained Soul ID. Likeness comes from the
+// LoRA weights rather than from reference photographs re-read on every slot,
+// which is what stops the face drifting between images.
+
+// FLUX renders cleanly around 1-1.5MP and smears above it, so it is asked for
+// its native size and the upscaler carries it the rest of the way. Every edge is
+// a multiple of 16, which FLUX's latent grid expects.
+const FLUX_SIZES: Record<string, { width: number; height: number }> = {
+  "3:4":  { width: 1024, height: 1360 },
+  "4:5":  { width: 1088, height: 1360 },
+  "1:1":  { width: 1216, height: 1216 },
+  "16:9": { width: 1456, height: 816 },
+  "9:16": { width: 816,  height: 1456 },
+  "2:3":  { width: 1024, height: 1536 },
+};
+
+/**
+ * Rewrite a slot prompt for a text-to-image model.
+ *
+ * Every prompt in this file is written for an image EDITOR — "REFERENCE IMAGES 1
+ * through 4 ARE THE SUBJECT", a reference map naming what is attached. FLUX gets
+ * no attachments, so that language describes images it cannot see and actively
+ * degrades the result. The identity now lives in the LoRA, addressed by its
+ * trigger phrase.
+ *
+ * FLUX also reads through T5 with a 512-token window, so the prompt is trimmed
+ * rather than truncated mid-clause.
+ */
+export function buildFluxPrompt(slotPrompt: string, triggerPhrase: string): string {
+  let text = slotPrompt;
+
+  // Drop the reference map outright — it is a list of attachments that do not exist.
+  const mapAt = text.search(/REFERENCE IMAGE MAP/i);
+  if (mapAt > 0) text = text.slice(0, mapAt);
+
+  const kept = text
+    .split(/(?<=[.!?])\s+/)
+    .filter((sentence) => !/IMAGES?\s*\d|REFERENCE IMAGES?|attached|GROUP [AB]/i.test(sentence))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // The trigger phrase must lead: FLUX weights the opening of a prompt most
+  // heavily, and a LoRA whose token never appears contributes nothing at all.
+  const body = kept.length > 40 ? kept : "editorial boudoir portrait, natural light, realistic skin texture";
+  const composed = `${triggerPhrase}. ${body}`;
+
+  if (composed.length <= 1800) return composed;
+  const clipped = composed.slice(0, 1800);
+  const lastStop = clipped.lastIndexOf(". ");
+  return lastStop > 600 ? clipped.slice(0, lastStop + 1) : clipped;
+}
+
+async function generateImageWithFluxLora(
+  prompt: string,
+  loraUrl: string,
+  triggerPhrase: string,
+  aspectRatio: string,
+  resolution = "1K"
+): Promise<string> {
+  if (USE_MOCK_FAL) return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
+
+  const size = FLUX_SIZES[aspectRatio] ?? FLUX_SIZES["4:5"];
+  const fluxPrompt = buildFluxPrompt(prompt, triggerPhrase);
+  if (!fluxPrompt.includes(triggerPhrase)) {
+    throw new Error("flux prompt lost its trigger phrase — the LoRA would be ignored");
+  }
+
+  const response = await fal.subscribe("fal-ai/flux-lora", {
+    input: {
+      prompt: fluxPrompt,
+      // biome-ignore lint: fal's type is narrower than the custom sizes FLUX accepts
+      image_size: size as never,
+      num_images: 1,
+      num_inference_steps: 28,
+      guidance_scale: 3.5,
+      output_format: "png",
+      // The reason this path exists: a lingerie portrait the buyer commissioned
+      // of themselves is the product, and the checker rejects it.
+      enable_safety_checker: false,
+      loras: [{ path: loraUrl, scale: 0.9 }],
+    },
+  });
+
+  const out = ((response as Record<string, unknown>).data || response) as FalOutput;
+  const url = out.images?.[0]?.url ?? "";
+  if (!url) throw new Error("flux-lora returned no image URL");
+
+  if (resolution !== "4K") return url;
+
+  // Reach the 4K the buyer paid for. creativity is held low and resemblance
+  // high on purpose: given latitude the upscaler redraws the face, which would
+  // undo the identity the LoRA was trained to hold.
+  try {
+    const longEdge = Math.max(size.width, size.height);
+    const factor = Math.min(4, Math.max(2, Math.round((4096 / longEdge) * 10) / 10));
+    const up = await fal.subscribe("fal-ai/clarity-upscaler", {
+      input: {
+        image_url: url,
+        upscale_factor: factor,
+        creativity: 0.2,
+        resemblance: 0.8,
+        num_inference_steps: 18,
+        enable_safety_checker: false,
+      },
+    });
+    const upOut = ((up as Record<string, unknown>).data || up) as { image?: { url?: string }; images?: Array<{ url: string }> };
+    const upUrl = upOut.image?.url ?? upOut.images?.[0]?.url;
+    if (upUrl) return upUrl;
+    console.warn("[flux] upscaler returned no image — delivering the native-resolution frame");
+  } catch (err) {
+    // A failed upscale must not lose an image that already generated and was
+    // already paid for.
+    console.warn("[flux] upscale failed, delivering native resolution:", err instanceof Error ? err.message : String(err));
+  }
+  return url;
+}
+
 // Claude-based identity analysis (alternative to Gemini)
 async function analyzeIdentityImagesClaude(imageUrls: string[], groupMode = false): Promise<string> {
   const imageBlocks = imageUrls
@@ -1926,7 +2051,7 @@ export async function startGenerationWorker(
   const resolution = opts.resolution ?? "4K";
   const ts = () => new Date().toISOString();
 
-  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.lighting_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, s.shot_type, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
+  const [shoot] = await sql`SELECT s.id, s.user_id, s.owner_email, s.mode, s.aspect_ratio, s.package_size, s.quote, s.identity_profile, s.identity_attributes, s.shoot_brief, s.character_base_id, s.role_prompt, s.template_id, s.template_showcase_id, s.background_plan, s.lighting_plan, s.choice_selections, s.flag_shot, s.group_identity, s.trend_slots, s.induction, s.enhance, s.no_smile, s.shot_type, s.character_lora_id, t.is_story, t.story_type, t.scenes, t.category FROM shoots s LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id) WHERE s.id = ${shootId}`;
   if (!shoot) throw new Error("Shoot not found");
   // ORDER BY keeps photo→slot mapping stable across worker invocations and retries
   // (photo_upgrade maps source photo i → slot i; unordered reads made that random).
@@ -2087,6 +2212,7 @@ export async function startGenerationWorker(
   let promptOnlyMode = false;
   let adminPromptOnlyMode = false;
   let polishPassEnabled = false;
+  let fluxBoudoirEnabled = false;
   try {
     const cfgData = await sql`SELECT key, value FROM app_config`;
     const cfgMap = Object.fromEntries(cfgData.map(r => [r.key, r.value]));
@@ -2095,6 +2221,7 @@ export async function startGenerationWorker(
     promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
     adminPromptOnlyMode = cfgMap.admin_prompt_only_mode === "true" || cfgMap.admin_prompt_only_mode === true;
     polishPassEnabled = cfgMap.polish_pass_enabled === "true" || cfgMap.polish_pass_enabled === true;
+    fluxBoudoirEnabled = cfgMap.flux_boudoir_enabled === "true" || cfgMap.flux_boudoir_enabled === true;
     console.log("[generate] active models:", { visionModel, generationModel, promptOnlyMode, adminPromptOnlyMode, polishPassEnabled });
   } catch { /* non-fatal — defaults apply */ }
 
@@ -2114,6 +2241,34 @@ export async function startGenerationWorker(
   // with the checker off and fall back to the open-weights model if the primary
   // still refuses. Everything else keeps the checker exactly as it was.
   const allowAdult = SEEDREAM_CATEGORIES.has(shootCategory);
+
+  // Soul ID: when the buyer has trained an identity and the switch is on, boudoir
+  // slots generate on FLUX with those weights instead of re-reading reference
+  // photographs. Everything about resolving it is best-effort — a missing table,
+  // a half-trained row or a flipped switch must fall through to the existing
+  // Seedream path rather than fail a paid shoot.
+  let soulId: { loraUrl: string; triggerPhrase: string } | null = null;
+  if (allowAdult) {
+    try {
+      if (fluxBoudoirEnabled) {
+        const pinned = typeof shoot.character_lora_id === "string" ? shoot.character_lora_id : null;
+        const [row] = pinned
+          ? await sql<Array<{ lora_url: string; trigger_phrase: string }>>`
+              SELECT lora_url, trigger_phrase FROM character_loras
+              WHERE id = ${pinned} AND status = 'READY' AND lora_url IS NOT NULL`
+          : await sql<Array<{ lora_url: string; trigger_phrase: string }>>`
+              SELECT lora_url, trigger_phrase FROM character_loras
+              WHERE user_id = ${shoot.user_id} AND status = 'READY' AND lora_url IS NOT NULL AND is_archived = FALSE
+              ORDER BY created_at DESC LIMIT 1`;
+        if (row?.lora_url && row.trigger_phrase) {
+          soulId = { loraUrl: row.lora_url, triggerPhrase: row.trigger_phrase };
+          console.log(`[generate] boudoir slot using Soul ID (trigger "${row.trigger_phrase}")`);
+        }
+      }
+    } catch (err) {
+      console.warn("[generate] Soul ID lookup failed — using the standard boudoir path:", err instanceof Error ? err.message : String(err));
+    }
+  }
 
   // Resolve whether this shoot's owner is an admin (for admin-only prompt-only mode)
   const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
@@ -3236,7 +3391,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      const { url: rawFalUrl, sanitized: promptWasSanitized, model: modelUsed } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, generationModel, allowAdult);
+      const { url: rawFalUrl, sanitized: promptWasSanitized, model: modelUsed } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, generationModel, allowAdult, soulId);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }
