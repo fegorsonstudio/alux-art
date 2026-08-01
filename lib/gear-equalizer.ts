@@ -161,7 +161,10 @@ export interface EnhanceLightingPick {
 
 export interface EnhanceSelection {
   lighting?: string;             // LIGHTING_PRESETS id (legacy single-rig path)
-  camera: string;                // CAMERA_PRESETS id
+  // CAMERA_PRESETS id. Optional: the camera picker is hidden for now and the
+  // template offers lighting only. Bookings made while it was visible still
+  // carry one, and still apply it.
+  camera?: string;
   backdropOptionId: string | null; // background_options option id, null = keep own background
   // Manual per-photo lighting: source photo storagePath → creator lighting look.
   // When present, overrides the single rig per photo in generation.
@@ -177,8 +180,10 @@ export function sanitizeEnhanceSelection(
 ): EnhanceSelection | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
+  // No longer required — a missing camera means "lighting only", not an invalid
+  // booking. Rejecting here made every new booking fail the moment the picker
+  // came off the page.
   const camera = typeof o.camera === "string" && CAMERA_PRESET_IDS.has(o.camera) ? o.camera : null;
-  if (!camera) return null;
 
   // Manual per-photo lighting: client sends { storagePath: optionId }; snapshot
   // the hidden recipe server-side (never trusted from the client).
@@ -202,7 +207,7 @@ export function sanitizeEnhanceSelection(
     typeof o.backdropOptionId === "string" && validBackdropIds.has(o.backdropOptionId)
       ? o.backdropOptionId
       : null;
-  return { lighting: lighting ?? undefined, camera, backdropOptionId, lightingByPath };
+  return { lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId, lightingByPath };
 }
 
 // ── The deterministic edit prompt ─────────────────────────────────────────────
@@ -216,7 +221,10 @@ export function buildGearEqualizerPrompt(
 ): string {
   const lighting = LIGHTING_PRESETS.find((p) => p.id === sel.lighting) ?? LIGHTING_PRESETS[0];
   const lightingDirective = lightingDirectiveOverride ?? lighting.directive;
-  const camera = CAMERA_PRESETS.find((p) => p.id === sel.camera) ?? CAMERA_PRESETS[0];
+  // Undefined when the buyer was never offered a camera look. Note the absence
+  // of a fallback: defaulting to the first preset would silently apply a
+  // Hasselblad rendering to a template that no longer advertises one.
+  const camera = sel.camera ? CAMERA_PRESETS.find((p) => p.id === sel.camera) : undefined;
 
   const parts: string[] = [
     // 1. The mission. This wording is load-bearing and was rewritten after a real
@@ -273,9 +281,12 @@ export function buildGearEqualizerPrompt(
       "setup — replacing the original photo's lighting entirely. Changing the light is not a " +
       "licence to change anything the light falls on.",
 
-    // 4. Camera / rendering quality.
-    "CAMERA QUALITY UPGRADE — this is the second half of the product and must be plainly " +
-      "visible when the result is zoomed in: " + camera.directive + " Resolve fine detail " +
+    // 4. Rendering quality. The camera LOOK is optional; the restoration half is
+    // not. Dropping the whole block with the picker would have quietly removed
+    // the denoise, white-balance and detail-recovery work that makes a phone
+    // photo look retouched at all — the lighting change alone does not do that.
+    "IMAGE QUALITY UPGRADE — this must be plainly " +
+      "visible when the result is zoomed in: " + (camera ? camera.directive + " " : "") + "Resolve fine detail " +
       "the phone sensor smeared away — individual skin pores and fine hairs, the weave and " +
       "nap of fabric, separate layers of netting or lace, the facets of stones and beads, " +
       "catchlight structure in the eyes; remove digital noise, smearing and compression " +

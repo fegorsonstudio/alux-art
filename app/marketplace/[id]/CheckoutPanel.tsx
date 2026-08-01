@@ -1023,7 +1023,7 @@ export default function CheckoutPanel({
     ? (allIdentityRefs.length < 1 || allIdentityRefs.length > 10)
     : (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0);
   const enhanceValid = !photoUpgradeActive
-    || (enhanceLightingValid && !!enhanceCamera && uploadedCount >= 1 && uploadedCount <= 10);
+    || (enhanceLightingValid && uploadedCount >= 1 && uploadedCount <= 10);
   const canPay = allIdentityRefs.length > 0
     && !anyUploading
     && !newUploads.some(u => u.error)
@@ -1120,7 +1120,7 @@ export default function CheckoutPanel({
         induction: inductionActive
           ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear, cap: inductionCap }
           : undefined,
-        enhance: photoUpgradeActive && enhanceCamera && (perPhotoLightingActive || enhanceLighting)
+        enhance: photoUpgradeActive && (perPhotoLightingActive || enhanceLighting)
           ? {
               lighting: enhanceLighting ?? undefined,
               camera: enhanceCamera,
@@ -1647,39 +1647,10 @@ export default function CheckoutPanel({
                 </div>
               )}
               </Collapse>
-              <Collapse
-                icon="📷"
-                title={t("yourCamera")}
-                status={CAMERA_PRESETS.find(p => p.id === enhanceCamera)?.name ?? t("pickOneRequired")}
-                warn={!enhanceCamera}
-                defaultOpen
-              >
-              <div className={styles.pkgRow}>
-                <p className={styles.sectionHint}>{t("cameraHint")}</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {CAMERA_PRESETS.map(p => {
-                    const on = enhanceCamera === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setEnhanceCamera(on ? null : p.id)}
-                        style={{
-                          display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3,
-                          background: on ? "rgba(127,127,127,0.12)" : "none", cursor: "pointer",
-                          padding: "10px 12px", borderRadius: 10, width: 168, textAlign: "left",
-                          border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
-                        }}
-                      >
-                        <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>{on ? "✓ " : ""}{p.name}</span>
-                        <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>{p.blurb}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {!enhanceCamera && <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("pickCamera")}</p>}
-              </div>
-              </Collapse>
+              {/* Camera look picker hidden — this template offers lighting only
+                  for now. CAMERA_PRESETS and the prompt support are still in place,
+                  so restoring it is putting this section back. */}
+
               {bgOptions.length > 0 && (
                 <Collapse
                   icon="🖼"
