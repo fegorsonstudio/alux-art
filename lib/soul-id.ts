@@ -33,6 +33,7 @@ const SIGNED_TTL = 3600;
 /** fal's portrait trainer defaults to 2500 steps; that is tuned for exactly this
  *  job (one person, 20-30 images) and is what Higgsfield-class results use. */
 const TRAINING_STEPS = 2500;
+const TRAINER = "fal-ai/flux-lora-portrait-trainer";
 
 export interface SourceRef { bucket: string; path: string }
 
@@ -205,12 +206,18 @@ export async function buildTrainingImages(loraId: string): Promise<Array<{ name:
 }
 
 /**
- * Zip the training set, hand it to fal, and record the trained weights.
+ * Submit the training job and return immediately.
  *
- * Runs after the buyer approves the sheets — training a LoRA on a sheet that
- * does not look like them bakes the wrong face into everything that follows.
+ * Deliberately queue-and-poll rather than fal.subscribe. Training takes three to
+ * five minutes, and a blocking wait means an HTTP request held open that long —
+ * the first real run lost a finished job because the caller died while waiting
+ * and the request id had never been written down. Now the id is recorded before
+ * anything can go wrong, so pollTraining() can always pick the job back up.
+ *
+ * Runs only after the buyer approves the sheets: training on a sheet that does
+ * not look like them bakes the wrong face into everything that follows.
  */
-export async function trainSoulId(loraId: string): Promise<string> {
+export async function submitTraining(loraId: string): Promise<string> {
   const [row] = await sql<SoulIdRow[]>`
     SELECT id, trigger_phrase FROM character_loras WHERE id = ${loraId}`;
   if (!row) throw new Error(`Soul ID ${loraId} not found`);
@@ -234,7 +241,7 @@ export async function trainSoulId(loraId: string): Promise<string> {
       SET status = 'TRAINING', training_image_count = ${images.length}, updated_at = NOW()
       WHERE id = ${loraId}`;
 
-    const result = await fal.subscribe("fal-ai/flux-lora-portrait-trainer", {
+    const { request_id: requestId } = await fal.queue.submit(TRAINER, {
       input: {
         images_data_url: zipUrl,
         trigger_phrase: row.trigger_phrase,
@@ -245,25 +252,47 @@ export async function trainSoulId(loraId: string): Promise<string> {
         multiresolution_training: true,
       },
     });
+    if (!requestId) throw new Error("fal accepted the training job but returned no request id");
 
-    const data = ((result as Record<string, unknown>).data || result) as {
-      diffusers_lora_file?: { url?: string };
-    };
-    const loraUrl = data.diffusers_lora_file?.url;
-    if (!loraUrl) throw new Error("training finished but returned no LoRA file");
-
-    const requestId = (result as { requestId?: string }).requestId ?? null;
     await sql`
       UPDATE character_loras
-      SET status = 'READY', lora_url = ${loraUrl}, training_request_id = ${requestId}, updated_at = NOW()
+      SET training_request_id = ${requestId}, failure_reason = NULL, updated_at = NOW()
       WHERE id = ${loraId}`;
 
-    return loraUrl;
+    return requestId;
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     await sql`UPDATE character_loras SET status = 'FAILED', failure_reason = ${reason.slice(0, 500)}, updated_at = NOW() WHERE id = ${loraId}`;
     throw err;
   }
+}
+
+/**
+ * Check a submitted training job and finish the row when it lands.
+ *
+ * Safe to call as often as you like: it is a status read until the job is done,
+ * and once the row is READY it short-circuits.
+ */
+export async function pollTraining(loraId: string): Promise<{ status: string; loraUrl?: string }> {
+  const [row] = await sql<Array<{ status: string; training_request_id: string | null; lora_url: string | null }>>`
+    SELECT status, training_request_id, lora_url FROM character_loras WHERE id = ${loraId}`;
+  if (!row) throw new Error(`Soul ID ${loraId} not found`);
+  if (row.status === "READY" && row.lora_url) return { status: "READY", loraUrl: row.lora_url };
+  if (!row.training_request_id) return { status: row.status };
+
+  const state = await fal.queue.status(TRAINER, { requestId: row.training_request_id });
+  if (state.status !== "COMPLETED") return { status: row.status };
+
+  const result = await fal.queue.result(TRAINER, { requestId: row.training_request_id });
+  const data = ((result as Record<string, unknown>).data || result) as { diffusers_lora_file?: { url?: string } };
+  const loraUrl = data.diffusers_lora_file?.url;
+  if (!loraUrl) {
+    await sql`UPDATE character_loras SET status = 'FAILED', failure_reason = 'training completed but returned no LoRA file', updated_at = NOW() WHERE id = ${loraId}`;
+    return { status: "FAILED" };
+  }
+
+  await sql`UPDATE character_loras SET status = 'READY', lora_url = ${loraUrl}, updated_at = NOW() WHERE id = ${loraId}`;
+  return { status: "READY", loraUrl };
 }
 
 /** Signed URLs for the approval screen. */
