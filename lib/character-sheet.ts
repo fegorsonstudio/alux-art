@@ -199,6 +199,50 @@ export const CHARACTER_SHEETS: CharacterSheet[] = [
     ],
   },
   {
+    id: "micro",
+    trainable: true,
+    label: "Micro expressions",
+    cols: 3, rows: 2, aspect: "1:1",
+    // A fourth lighting character, and the tightest crops in the set. These are
+    // where a likeness actually lives: eye shape and lip shape survive a change
+    // of angle, hair and makeup do not.
+    scene:
+      "Soft even beauty light, large source directly in front and slightly above, " +
+      "faint shadow under the nose and chin, plain muted backdrop just out of focus.",
+    framing:
+      "EXTREME CLOSE CROPS of one face. Each panel is a tight detail of the same " +
+      "person at the same scale, sharp on the feature named. Skin is real: visible " +
+      "pores, fine lines, natural texture, no retouching and no smoothing.",
+    panels: [
+      P("eyes-open", "Eyes", "Both eyes and the brows, cropped from mid-forehead to the top of the nose, looking into the lens."),
+      P("eyes-closed", "Eyes closed", "The same crop with both eyes gently closed, showing lash length and lid shape."),
+      P("eye-single", "Single eye", "One eye filling the panel, showing iris colour and pattern, lash line and the fold of the lid."),
+      P("lips-closed", "Lips", "The mouth and chin, lips together and relaxed, showing lip shape and natural colour."),
+      P("lips-parted", "Lips parted", "The same crop with the lips slightly parted, upper teeth just visible."),
+      P("profile-detail", "Nose and brow", "The nose and brow line seen from a three-quarter angle, showing the bridge and tip shape."),
+    ],
+  },
+  {
+    id: "posture",
+    trainable: true,
+    label: "Posture variation",
+    cols: 4, rows: 1, aspect: "16:9",
+    // Body language rather than proportion. The turnaround already fixed the
+    // build; this teaches the model how she actually carries it.
+    scene:
+      "Plain warm-white studio backdrop, soft key from camera left with a gentle " +
+      "fill, a little shadow on the floor, the full figure inside every panel.",
+    framing:
+      "FULL BODY in all four panels at the same scale, same simple fitted neutral " +
+      "clothing throughout, same camera height. Only the pose changes.",
+    panels: [
+      P("hand-hip", "Hand on hip", "Standing with one hand on the hip, weight on that leg, shoulders relaxed and squared to camera."),
+      P("arms-crossed", "Arms crossed", "Standing with arms lightly folded, chin level, facing camera."),
+      P("walking", "Mid-stride", "Caught mid-step toward camera, one leg forward, arms swinging naturally."),
+      P("seated", "Seated", "Seated on a plain stool, back straight, hands resting on the thighs, feet flat."),
+    ],
+  },
+  {
     id: "hands",
     trainable: false,
     label: "Hands",

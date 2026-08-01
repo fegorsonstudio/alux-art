@@ -8,6 +8,7 @@ import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packageP
 import { resizeIfNeeded } from "@/lib/resize-image";
 import { useT } from "@/lib/useLocale";
 import styles from "../workspace.module.css";
+import SoulIdPanel from "./SoulIdPanel";
 
 // Maps a shoot status to its studio-dictionary key (translated at the point of use).
 const STATUS_KEY: Record<string, "statusComplete" | "statusFailed" | "statusAwaitingPayment" | "statusLocking" | "statusReviewNeeded" | "statusRejected" | "statusQueued" | "statusGenerating"> = {
@@ -879,6 +880,9 @@ export default function WorkspacePage() {
               )}
               <p className={styles.uploadCount}>{identityImages.length}/{MAX_IDENTITY}</p>
             </div>
+
+            {/* Soul ID — trains this person's likeness once, for boudoir shoots */}
+            <SoulIdPanel identityImageIds={identityImages.map(i => i.id)} styles={styles} />
 
             {/* Save to library toggle */}
             <label className={styles.saveToggle}>

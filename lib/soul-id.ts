@@ -136,6 +136,10 @@ export async function renderSoulIdSheets(loraId: string): Promise<void> {
       // away the three that already cost money.
       await sql`UPDATE character_loras SET sheet_paths = ${sql.json(paths)}, updated_at = NOW() WHERE id = ${loraId}`;
     }
+    // The poster is what the client actually receives; it costs no generation,
+    // so a failure here must not hold up the approval it accompanies.
+    await composeCharacterSheet(loraId).catch((err) =>
+      console.warn("[soul-id] poster compose failed:", loraId, err instanceof Error ? err.message : err));
     await sql`UPDATE character_loras SET status = 'SHEETS_REVIEW', updated_at = NOW() WHERE id = ${loraId}`;
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
@@ -161,6 +165,8 @@ export async function buildTrainingImages(loraId: string): Promise<Array<{ name:
   const images: Array<{ name: string; buffer: Buffer }> = [];
 
   for (const [sheetId, path] of Object.entries(row.sheet_paths ?? {})) {
+    // "poster" is the composed client-facing sheet, not a generated grid — it has
+    // captions on it and no panel geometry, so it must never be sliced.
     const sheet = characterSheetById(sheetId);
     if (!sheet || !sheet.trainable) continue;
     const { buffer } = await r2Download(SHEET_BUCKET, path);
@@ -293,6 +299,76 @@ export async function pollTraining(loraId: string): Promise<{ status: string; lo
 
   await sql`UPDATE character_loras SET status = 'READY', lora_url = ${loraUrl}, updated_at = NOW() WHERE id = ${loraId}`;
   return { status: "READY", loraUrl };
+}
+
+/**
+ * Assemble the rendered sheets into one CHARACTER REFERENCE SHEET poster.
+ *
+ * The sheets are generated separately because they are training data and get
+ * sliced back apart — but the thing the client should actually receive is the
+ * single sheet: one page, sectioned and captioned, that reads as a character
+ * bible for that person. This is pure compositing, no generation, so it costs
+ * nothing and can be rebuilt at any time.
+ *
+ * Captions live HERE and never inside the generated sheets, because a caption
+ * baked into a panel would end up inside a training crop.
+ */
+export async function composeCharacterSheet(loraId: string): Promise<string> {
+  const [row] = await sql<SoulIdRow[]>`
+    SELECT id, user_id, label, sheet_paths FROM character_loras WHERE id = ${loraId}`;
+  if (!row) throw new Error(`Soul ID ${loraId} not found`);
+
+  const W = 2400;          // poster width
+  const PAD = 48;
+  const HEADER = 92;       // room for each section caption
+  const TITLE = 150;
+
+  const blocks: Array<{ label: string; buf: Buffer; h: number }> = [];
+  for (const sheet of CHARACTER_SHEETS) {
+    const path = row.sheet_paths?.[sheet.id];
+    if (!path) continue;
+    const { buffer } = await r2Download(SHEET_BUCKET, path);
+    const inner = W - PAD * 2;
+    const resized = await sharp(buffer).resize(inner, undefined, { fit: "inside" }).png().toBuffer();
+    const meta = await sharp(resized).metadata();
+    blocks.push({ label: sheet.label, buf: resized, h: meta.height ?? 0 });
+  }
+  if (blocks.length === 0) throw new Error("no sheets to compose");
+
+  const totalH = TITLE + blocks.reduce((n, b) => n + HEADER + b.h + PAD, 0) + PAD;
+
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const label = (row.label || "Character").toUpperCase();
+  const svgText = (text: string, size: number, weight: number, y: number, opacity = 1) =>
+    `<text x="${PAD}" y="${y}" font-family="Helvetica,Arial,sans-serif" font-size="${size}" ` +
+    `font-weight="${weight}" letter-spacing="${size * 0.12}" fill="#111" opacity="${opacity}">${esc(text)}</text>`;
+
+  const overlays: sharp.OverlayOptions[] = [];
+  let y = TITLE;
+  const headerSvgs: string[] = [svgText("CHARACTER REFERENCE SHEET", 46, 700, 74),
+                                svgText(label, 26, 400, 116, 0.55)];
+  for (const b of blocks) {
+    headerSvgs.push(svgText(b.label.toUpperCase(), 30, 600, y + HEADER - 30, 0.75));
+    overlays.push({ input: b.buf, left: PAD, top: y + HEADER });
+    y += HEADER + b.h + PAD;
+  }
+
+  const textLayer = Buffer.from(
+    `<svg width="${W}" height="${totalH}" xmlns="http://www.w3.org/2000/svg">${headerSvgs.join("")}</svg>`
+  );
+
+  const poster = await sharp({ create: { width: W, height: totalH, channels: 3, background: "#f4f2ef" } })
+    .composite([...overlays, { input: textLayer, left: 0, top: 0 }])
+    .png()
+    .toBuffer();
+
+  const path = `${row.user_id}/${loraId}/character-sheet.png`;
+  await r2Upload(SHEET_BUCKET, path, poster, "image/png");
+  await sql`
+    UPDATE character_loras
+    SET sheet_paths = ${sql.json({ ...(row.sheet_paths ?? {}), poster: path })}, updated_at = NOW()
+    WHERE id = ${loraId}`;
+  return path;
 }
 
 /** Signed URLs for the approval screen. */
