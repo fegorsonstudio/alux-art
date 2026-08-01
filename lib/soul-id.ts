@@ -67,9 +67,12 @@ export function makeTriggerPhrase(): string {
 async function renderSheet(
   sheet: CharacterSheet,
   identityUrls: string[],
-  identityProfile: string
-): Promise<Buffer> {
-  const prompt = buildCharacterSheetPrompt(sheet, identityProfile);
+  identityProfile: string,
+  anchorUrl?: string
+): Promise<{ buffer: Buffer; url: string }> {
+  const prompt = buildCharacterSheetPrompt(sheet, identityProfile, !!anchorUrl);
+  // The anchor leads the list — the prompt calls it "the FIRST attached image".
+  const inputs = anchorUrl ? [anchorUrl, ...identityUrls] : identityUrls;
   const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
     input: {
       prompt,
@@ -77,7 +80,7 @@ async function renderSheet(
       aspect_ratio: sheet.aspect as unknown as "1:1",
       output_format: "png",
       safety_tolerance: "6",
-      image_urls: identityUrls.slice(0, 8),
+      image_urls: inputs.slice(0, 8),
       limit_generations: false,
       resolution: "4K" as unknown as "4K",
     },
@@ -88,13 +91,17 @@ async function renderSheet(
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`sheet "${sheet.id}" download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
+  return { buffer: Buffer.from(await res.arrayBuffer()), url };
 }
 
 /**
- * Render all four sheets and park them for approval. Sheets are rendered one at
- * a time on purpose: they share an identity and rendering them in parallel gave
- * fal no reason to keep them consistent, while costing the same.
+ * Render all four sheets and park them for approval.
+ *
+ * Sequential, and chained. The first sheet becomes the anchor passed into every
+ * sheet after it. Without that the four disagreed: one buyer's photographs showed
+ * three different hairstyles, so each sheet independently picked its own and the
+ * training set would have taught the LoRA two different people's hair. The anchor
+ * makes the first sheet the authority and the rest follow it.
  */
 export async function renderSoulIdSheets(loraId: string): Promise<void> {
   const [row] = await sql<SoulIdRow[]>`
@@ -112,8 +119,14 @@ export async function renderSoulIdSheets(loraId: string): Promise<void> {
 
   const paths: Record<string, string> = {};
   try {
+    let anchorUrl: string | undefined;
     for (const sheet of CHARACTER_SHEETS) {
-      const buf = await renderSheet(sheet, identityUrls, row.identity_profile ?? "");
+      const { buffer: buf, url } = await renderSheet(sheet, identityUrls, row.identity_profile ?? "", anchorUrl);
+      // The turnaround is rendered first and becomes the anchor: it is the only
+      // sheet showing the whole person, so it settles hair length and build in
+      // one go. fal's output URLs stay reachable long enough for the three
+      // renders that follow.
+      if (!anchorUrl) anchorUrl = url;
       const path = `${row.user_id}/${loraId}/sheet-${sheet.id}.png`;
       await r2Upload(SHEET_BUCKET, path, buf, "image/png");
       paths[sheet.id] = path;
@@ -147,7 +160,7 @@ export async function buildTrainingImages(loraId: string): Promise<Array<{ name:
 
   for (const [sheetId, path] of Object.entries(row.sheet_paths ?? {})) {
     const sheet = characterSheetById(sheetId);
-    if (!sheet) continue;
+    if (!sheet || !sheet.trainable) continue;
     const { buffer } = await r2Download(SHEET_BUCKET, path);
     const meta = await sharp(buffer).metadata();
     const W = meta.width ?? 0;

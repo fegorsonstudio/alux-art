@@ -36,6 +36,16 @@ export interface CharacterSheet {
   aspect: string;        // aspect ratio to request, chosen to suit the grid
   scene: string;         // backdrop + lighting, deliberately different per sheet
   framing: string;       // what part of the body the panels show
+  /**
+   * Whether this sheet's panels join the LoRA training set.
+   *
+   * The hands sheet does not. The trainer crops each frame to its subject, so a
+   * hand-only frame teaches the trigger phrase to mean "a hand" — four such
+   * frames out of twenty-four is a real dilution of the face signal. It is still
+   * generated and still shown, because a character bible wants hands; it just
+   * does not train.
+   */
+  trainable: boolean;
   panels: SheetPanel[];
 }
 
@@ -85,6 +95,31 @@ const IDENTITY_LOCK =
   "prettier stranger is a failed sheet. Keep real skin texture — pores, fine lines, " +
   "natural asymmetry — and photograph the person at the age they actually are.";
 
+/**
+ * People change their hair. The reference photographs for one buyer came back
+ * with three different hairstyles — long and straight, a bob with a fringe, and
+ * a burgundy bob — so each sheet picked a different one and the set disagreed
+ * with itself. A LoRA trained on that either bakes in an arbitrary style or
+ * blends them.
+ *
+ * So one hairstyle is chosen and every sheet is held to it.
+ */
+const HAIR_LOCK =
+  "ONE HAIRSTYLE ACROSS THE WHOLE SHEET — the reference photographs may show this " +
+  "person with different hair on different days. Choose the single hairstyle that " +
+  "appears in the clearest, most front-facing reference and use ONLY that one: the " +
+  "same length, the same cut, the same parting, the same colour and the same texture " +
+  "in every panel. Do not mix two hairstyles and do not change the hair between panels.";
+
+/** The anchor clause used for every sheet after the first. */
+export function anchorClause(): string {
+  return "MATCH THE ANCHOR — the FIRST attached image is a reference sheet of this same " +
+    "person that has already been approved. It is the authority on their appearance: " +
+    "copy its hairstyle, hair length, hair colour, skin tone and facial features exactly. " +
+    "Where the anchor and the other photographs disagree, the anchor wins. The remaining " +
+    "attached photographs are supporting likeness references only.";
+}
+
 const PHOTOGRAPHIC =
   "Photographic, not illustrated: a real camera, realistic depth of field, physically " +
   "plausible light, natural skin. No 3D render, no painting, no plastic sheen, no beauty " +
@@ -93,6 +128,7 @@ const PHOTOGRAPHIC =
 export const CHARACTER_SHEETS: CharacterSheet[] = [
   {
     id: "turnaround",
+    trainable: true,
     label: "Full-body turnaround",
     cols: 4, rows: 1, aspect: "16:9",
     // Plain and even, because this sheet carries proportion information and
@@ -116,6 +152,7 @@ export const CHARACTER_SHEETS: CharacterSheet[] = [
   },
   {
     id: "expression",
+    trainable: true,
     label: "Expressions",
     cols: 3, rows: 2, aspect: "1:1",
     // Warm and directional, so the LoRA sees this face lit differently from the
@@ -139,6 +176,7 @@ export const CHARACTER_SHEETS: CharacterSheet[] = [
   },
   {
     id: "head",
+    trainable: true,
     label: "Head angles",
     cols: 3, rows: 2, aspect: "1:1",
     // Cooler and harder, a third distinct lighting character.
@@ -162,6 +200,7 @@ export const CHARACTER_SHEETS: CharacterSheet[] = [
   },
   {
     id: "hands",
+    trainable: false,
     label: "Hands",
     cols: 2, rows: 2, aspect: "1:1",
     scene:
@@ -193,13 +232,19 @@ export const TOTAL_SHEET_PANELS = CHARACTER_SHEETS.reduce((n, s) => n + s.panels
  * are attached alongside; identityProfile is the written description Stage 1
  * already produced, which anchors details a photograph can leave ambiguous.
  */
-export function buildCharacterSheetPrompt(sheet: CharacterSheet, identityProfile?: string): string {
+export function buildCharacterSheetPrompt(
+  sheet: CharacterSheet,
+  identityProfile?: string,
+  hasAnchor = false
+): string {
   return [
     "CHARACTER REFERENCE SHEET. The attached photographs show one real person. Produce a " +
     "single studio reference sheet of THAT SAME PERSON, photographed from the views listed " +
     "below. This is a likeness task, not a design task.",
 
     IDENTITY_LOCK,
+
+    hasAnchor ? anchorClause() : HAIR_LOCK,
 
     identityProfile?.trim()
       ? "WRITTEN IDENTITY PROFILE — treat this as binding wherever the photographs are " +
