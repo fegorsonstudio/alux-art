@@ -193,6 +193,11 @@ export default function TemplatePage() {
       .then(d => {
         if (d.template) {
           setTemplate(d.template);
+          // Straight into booking. The extra tap on "Book this look" was a step
+          // that asked nothing and told the buyer nothing. The template page is
+          // still underneath — closing the sheet reveals the gallery, reviews and
+          // description, and the button below reopens it.
+          setCheckoutOpen(true);
           setAvgRating(d.template.avgRating ?? null);
           setRatingCount(d.template.ratingCount ?? 0);
           setUserRating(d.template.userRating ?? null);

@@ -996,7 +996,13 @@ export default function CheckoutPanel({
   const inductionValid = !inductionActive || inductionName.trim().length > 0;
   // photo_upgrade manual lighting on = a creator look must be assigned to EVERY
   // uploaded photo; off = the single hardcoded rig must be picked (today's rule).
-  const perPhotoLightingActive = photoUpgradeActive && manualLighting && lightingLooks.length > 0;
+  // Creator looks are the product on a photo upgrade — the Gear Equalizer carries
+  // 193 of them across 13 groups. Gating them behind a "set the lighting myself"
+  // checkbox meant the buyer's first sight of the template was the seven legacy
+  // hardcoded rigs instead, which is what made the page confusing. When a creator
+  // has attached looks, those ARE the lighting; the rigs remain only as the
+  // fallback for a photo-upgrade template that has none.
+  const perPhotoLightingActive = photoUpgradeActive && lightingLooks.length > 0;
   const enhanceLightingValid = perPhotoLightingActive
     ? sourcePhotos.length > 0 && sourcePhotos.every(p => !!lightingByPhoto[p.storagePath])
     : !!enhanceLighting;
@@ -1506,21 +1512,9 @@ export default function CheckoutPanel({
                 warn={!enhanceLightingValid}
                 defaultOpen
               >
-              {/* Manual per-photo lighting is only offered when the creator attached
-                  their own lighting looks. Otherwise the single hardcoded rig stands. */}
-              {lightingLooks.length > 0 && (
-                <div className={styles.pkgRow}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={manualLighting}
-                      onChange={e => { setManualLighting(e.target.checked); if (!e.target.checked) setLightingByPhoto({}); }}
-                    />
-                    <span className={styles.pkgLabel} style={{ margin: 0 }}>{t("setLightingMyself")}</span>
-                  </label>
-                  <p className={styles.sectionHint}>{t("perPhotoLightingHint")}</p>
-                </div>
-              )}
+              {/* The "set the lighting myself" checkbox is gone from photo upgrades:
+                  with creator looks now always in use here it decided nothing. It
+                  still governs regular templates further down this file. */}
               {perPhotoLightingActive ? (
                 <div className={styles.pkgRow}>
                   {/* Before any photo is uploaded the per-photo rows below have
