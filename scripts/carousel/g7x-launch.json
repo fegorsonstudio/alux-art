@@ -1,0 +1,187 @@
+[
+  {
+    "id": "g7x-01-the-club",
+    "account": "fegorson_studio",
+    "caption": "The club was too dark for your phone. That was never your fault.\n\nIn a dark room your phone holds the shutter open longer and cranks the gain, so you get noise and blur. Then it \"helps\" by lifting the brightness, which is where the orange comes from. Add a magenta LED wash and your skin is somebody else's colour.\n\nThe fix was never a better phone. It was a flash — and that can arrive after the night is over.\n\n\"Night Paparazzi G7X\", look 197. ₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#lagosnightlife #nigerianphotographer #phonephotography #lowlightphotography #detty december #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 20%",
+        "title": "Too dark for your phone.",
+        "body": "Same photo. The flash arrived afterwards.",
+        "before": "scripts/carousel/shots/lighting/g7x-paparazzi-before.jpg",
+        "after": "scripts/carousel/shots/lighting/g7x-paparazzi-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "It was never your phone's fault.",
+        "body": "A small sensor in a dark room has two options: hold the shutter open, or turn up the gain. One gives you blur, the other gives you noise. Yours did both."
+      },
+      {
+        "type": "text",
+        "title": "Then it made it worse.",
+        "body": "Your phone lifts the brightness to compensate, and that is where the *orange* comes from. The magenta wall lights did the rest — that colour is on your face, not your skin."
+      },
+      {
+        "type": "text",
+        "title": "The only cure for a dark room is more light.",
+        "body": "Every photographer knows it. Nobody carries a flash to a club. So the light arrives *after* — same night, same dress, same pose, lit like you brought one."
+      },
+      {
+        "type": "text",
+        "title": "No camera. No flash. No reshoot.",
+        "body": "*₦1,000* for one photo. No subscription — you pay for the photos you actually fix, not for a month you might not use."
+      },
+      {
+        "type": "cta",
+        "title": "Send me a dark one.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "g7x-02-where-it-happens",
+    "account": "fegorson_studio",
+    "caption": "You have these photos. Everybody does.\n\nThe lounge that was pitch black. The restaurant that turned your white shirt orange. The owambe where the DJ lights painted everyone green. The night shot where the flash blew out your face and killed the whole background.\n\nYou do not need to go back. The photo is fine — the room was the problem.\n\nLook 197, \"Night Paparazzi G7X\". ₦1,000 a photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#owambe #lagosphotographer #nigerianwedding #phonephotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 20%",
+        "title": "You have these photos.",
+        "body": "The room was the problem. Not the photo.",
+        "before": "scripts/carousel/shots/lighting/g7x-paparazzi-before.jpg",
+        "after": "scripts/carousel/shots/lighting/g7x-paparazzi-after.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Where it always happens.",
+        "items": [
+          "The lounge that was pitch black",
+          "The restaurant that turned your white shirt orange",
+          "The owambe under the DJ's green wash",
+          "The hotel corridor lit by one strip of LED",
+          "Night shots where the flash killed the background"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Why the restaurant ones go orange.",
+        "body": "Those bulbs run at *2700K*. Your eye adjusts and forgets. The sensor cannot, so it records the room exactly as orange as it really was."
+      },
+      {
+        "type": "text",
+        "title": "Same night. Same outfit.",
+        "body": "Nothing gets restaged and nobody gets asked to pose again. The frame you already have is the raw material — only the light on it changes."
+      },
+      {
+        "type": "text",
+        "title": "No camera. No flash. No reshoot.",
+        "body": "*₦1,000* for one photo. No subscription — you pay for the photos you actually fix, not for a month you might not use."
+      },
+      {
+        "type": "cta",
+        "title": "Send me a dark one.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "g7x-03-what-it-does",
+    "account": "fegorson_studio",
+    "caption": "What \"Night Paparazzi G7X\" actually does.\n\nIt puts a hard flash on the lens axis, exposes you about a stop and a half over the room, and holds your skin neutral — so you come out cool, clean and glossy while the room stays warm and golden behind you.\n\nThat contrast is the whole look: the reason a G7X photo outside a restaurant reads expensive and the same shot on a phone reads like a group chat.\n\nLook 197. ₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #directflash #g7x #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 20%",
+        "title": "Cool on you. Warm behind you.",
+        "body": "That contrast is the entire look.",
+        "before": "scripts/carousel/shots/lighting/g7x-paparazzi-before.jpg",
+        "after": "scripts/carousel/shots/lighting/g7x-paparazzi-after.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "What the look does.",
+        "items": [
+          "Hard flash on the lens, straight at you",
+          "You, a stop and a half over the room",
+          "Your skin held neutral, not the venue's colour",
+          "The room left warm and golden behind",
+          "Speculars pushed so skin reads glossy, not flat"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Why it reads expensive.",
+        "body": "It is the look of a compact camera with the flash up outside a restaurant. Everyone recognises it. Almost nobody can get it out of a phone in the dark."
+      },
+      {
+        "type": "text",
+        "title": "Your face stays your face.",
+        "body": "Same pose, same outfit, same expression, same jewellery. The only thing that changes is the light falling on it."
+      },
+      {
+        "type": "text",
+        "title": "No camera. No flash. No reshoot.",
+        "body": "*₦1,000* for one photo. No subscription — you pay for the photos you actually fix, not for a month you might not use."
+      },
+      {
+        "type": "cta",
+        "title": "Send me a dark one.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "g7x-04-camera-roll",
+    "account": "fegorson_studio",
+    "caption": "Go and look at your camera roll from December.\n\nHow many of those did you never post? Not because you looked bad — because the light did. Too dark, too orange, too green, too grainy to survive a zoom.\n\nThose photos are not dead. They were just taken in the wrong room.\n\nLook 197, \"Night Paparazzi G7X\". ₦1,000 for one, no subscription.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#cameraroll #dettydecember #lagosnightlife #phonephotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 20%",
+        "title": "The ones you never posted.",
+        "body": "Not because you looked bad. Because the light did.",
+        "before": "scripts/carousel/shots/lighting/g7x-paparazzi-before.jpg",
+        "after": "scripts/carousel/shots/lighting/g7x-paparazzi-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "You already took the photo.",
+        "body": "That is the part people miss. There is no reshoot, no second outfit, no getting everyone back out. It exists — it was only ever *lit wrong*."
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already have",
+          "Search *197* in the lighting list",
+          "Pick the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "197 of 197.",
+        "body": "That is its number. Type it into the search box and it comes straight up — so when a friend asks which one you used, you can just tell them *197*."
+      },
+      {
+        "type": "text",
+        "title": "No camera. No flash. No reshoot.",
+        "body": "*₦1,000* for one photo. No subscription — you pay for the photos you actually fix, not for a month you might not use."
+      },
+      {
+        "type": "cta",
+        "title": "Send me a dark one.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  }
+]
