@@ -1,0 +1,52 @@
+[
+  {
+    "id": "test-upload-quality",
+    "account": "aolivetv",
+    "caption": "Same app. Same style. Two completely different results.\n\nThe difference is almost never the AI — it's what you feed it. Four photos, chosen properly, and people can't tell how the image was made.\n\nHere's exactly what to upload.\n\naluxartandframes.shop\n\n#nigerianphotographer #lagosphotographer #portraitphotography #photographytips #aiphotography #naijacreatives #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Getting it right",
+        "title": "Why your photos came out looking like someone else.",
+        "body": "It's almost never the AI. It's the *four photos* you gave it.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "The AI doesn't invent your face.",
+        "body": "It works from the one you give it. Three blurry photos from 2019 and you'll get a stranger who *resembles* you. That's not a glitch — it's the input."
+      },
+      {
+        "type": "steps",
+        "title": "Upload these four",
+        "items": [
+          "One full-body photo, head to feet",
+          "One waist-up on a plain background",
+          "One close-up of your face",
+          "One where you're genuinely smiling, teeth showing"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Why the smiling one matters.",
+        "body": "Without it, every smile has to be invented. With it, your *real* smile carries into every shot — the shape of it, how your eyes move."
+      },
+      {
+        "type": "steps",
+        "title": "What ruins it",
+        "items": [
+          "Heavy filters — the AI learns the filter, not you",
+          "Sunglasses or anything covering your face",
+          "Group photos, where it can't tell which face is yours",
+          "Dark or blurry shots"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Your turn",
+        "title": "Four good photos. That's the whole secret.",
+        "body": "Spend two minutes choosing them and the results speak for themselves."
+      }
+    ]
+  }
+]
