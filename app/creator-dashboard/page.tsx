@@ -84,7 +84,10 @@ interface ShowcaseShoot {
 }
 
 interface Stats { totalTemplates: number; publishedTemplates: number; totalSales: number; totalEarnedNgn: number; }
-interface Creator { id: string; display_name: string; username?: string | null; paystack_subaccount_code?: string; theme?: string; font_family?: string; status?: string | null; }
+// payout_connected, not paystack_subaccount_code: /api/creator-dashboard
+// deliberately never sends the raw subaccount code, only a boolean saying whether
+// one exists. The old field name meant this was always undefined.
+interface Creator { id: string; display_name: string; username?: string | null; payout_connected?: boolean; theme?: string; font_family?: string; status?: string | null; }
 
 // Client-side proxy URL builder — mirrors lib/r2.ts's r2ProxyUrl exactly, but
 // that file is `import "server-only"` so it can't be imported here directly.
@@ -1593,7 +1596,9 @@ function CreatorDashboard() {
 
       <div className={styles.main}>
 
-      {creator && !creator.paystack_subaccount_code && (
+      {/* Showed for every creator forever: it tested paystack_subaccount_code,
+          which the API never returns, so the check was always !undefined. */}
+      {creator && creator.payout_connected === false && (
         <div className={styles.banner}>
           Payout setup incomplete.{" "}
           <Link href="/become-creator" className={styles.bannerLink}>Complete your bank details →</Link>
