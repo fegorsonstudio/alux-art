@@ -146,6 +146,7 @@ const pt: AppDictionary = {
     pickLightingOrOff: "Escolha pelo menos um estilo de iluminação, ou desative a iluminação manual.",
     perPhotoLightingHint: "Ligado: atribua um estilo de iluminação a cada foto. Desligado: uma única iluminação para todas.",
     uploadPhotosFirst: "Envie suas fotos primeiro e depois atribua um estilo de iluminação a cada uma.",
+    uploadPhotosFirstExtract: "Envie suas fotos primeiro, depois marque o que tirar de cada uma.",
     perPhotoPrice: "cada",
     outputSize: "Tamanho de saida",
     whatToExtract: "O que extrair",

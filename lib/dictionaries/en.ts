@@ -145,6 +145,7 @@ const en = {
     pickLightingOrOff: "Pick at least one lighting look, or turn manual lighting off.",
     perPhotoLightingHint: "On: assign a lighting look to each photo. Off: one lighting rig for all photos.",
     uploadPhotosFirst: "Upload your photos first, then assign a lighting look to each.",
+    uploadPhotosFirstExtract: "Upload your photos first, then tick what to pull out of each one.",
     perPhotoPrice: "each",
     outputSize: "Output size",
     whatToExtract: "What to extract",

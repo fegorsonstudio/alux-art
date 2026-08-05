@@ -146,6 +146,7 @@ const pcm: AppDictionary = {
     pickLightingOrOff: "Pick at least one lighting style, or turn off di manual lighting.",
     perPhotoLightingHint: "On: give each photo im own lighting style. Off: one lighting for all di photos.",
     uploadPhotosFirst: "Upload your photos first, den give each one im own lighting style.",
+    uploadPhotosFirstExtract: "Upload your photos first, then tick wetin you wan comot from each one.",
     perPhotoPrice: "each one",
     outputSize: "Output size",
     whatToExtract: "Wetin you wan extract",

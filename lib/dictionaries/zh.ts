@@ -146,6 +146,7 @@ const zh: AppDictionary = {
     pickLightingOrOff: "请至少选择一种灯光风格，或关闭手动灯光。",
     perPhotoLightingHint: "开启：为每张照片指定一种灯光风格。关闭：所有照片使用同一种灯光。",
     uploadPhotosFirst: "请先上传照片，然后为每张照片指定一种灯光风格。",
+    uploadPhotosFirstExtract: "请先上传照片，然后勾选每张照片要提取的内容。",
     perPhotoPrice: "每张",
     outputSize: "输出尺寸",
     whatToExtract: "要提取什么",

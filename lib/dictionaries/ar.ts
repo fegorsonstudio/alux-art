@@ -146,6 +146,7 @@ const ar: AppDictionary = {
     pickLightingOrOff: "اختر نمط إضاءة واحدًا على الأقل، أو أوقف الإضاءة اليدوية.",
     perPhotoLightingHint: "مُفعّل: خصّص نمط إضاءة لكل صورة. مُعطّل: إضاءة واحدة لجميع الصور.",
     uploadPhotosFirst: "ارفع صورك أولًا، ثم خصّص نمط إضاءة لكل صورة.",
+    uploadPhotosFirstExtract: "ارفع صورك أولا، ثم حدد ما تريد استخراجه من كل صورة.",
     perPhotoPrice: "لكل صورة",
     outputSize: "مقاس الإخراج",
     whatToExtract: "ما الذي تريد استخراجه",

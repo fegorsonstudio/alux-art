@@ -1248,7 +1248,9 @@ export default function CheckoutPanel({
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("whatToExtract")}</span>
               {allIdentityRefs.length === 0 ? (
-                <p className={styles.sectionHint}>{t("uploadPhotosFirst")}</p>
+                // Not uploadPhotosFirst — that one says "assign a lighting look
+                // to each", which is the Gear Equalizer's job, not this one.
+                <p className={styles.sectionHint}>{t("uploadPhotosFirstExtract")}</p>
               ) : (
                 <>
                   <p className={styles.sectionHint}>{t("extractHint")}</p>
