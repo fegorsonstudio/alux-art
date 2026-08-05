@@ -223,12 +223,12 @@ export default function BecomeCreatorPage() {
         {step === 3 && (
           <div className={styles.successBox}>
             <div className={styles.successIcon}>✓</div>
-            <h2 className={styles.successTitle}>Application received!</h2>
+            <h2 className={styles.successTitle}>You&apos;re in!</h2>
             <p className={styles.successBody}>
-              We&apos;ll review your application and email you within 48 hours.
-              Once approved, you can log in and start building your templates.
+              Your creator account is live — no waiting and nothing to approve.
+              Head to your dashboard and build your first template.
             </p>
-            <Link href="/marketplace" className={styles.backToMarketplace}>Browse the marketplace →</Link>
+            <Link href="/creator-dashboard" className={styles.backToMarketplace}>Go to my dashboard →</Link>
           </div>
         )}
       </div>

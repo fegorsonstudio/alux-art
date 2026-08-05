@@ -47,7 +47,10 @@ export async function POST(request: NextRequest) {
       ${typeof bankName === "string" ? bankName.trim() : null},
       ${typeof accountNumber === "string" ? accountNumber.trim() : null},
       ${typeof accountName === "string" ? accountName.trim() : null},
-      false, 'pending', NOW(), NOW()
+      -- The creator waitlist is open: a new creator is active straight away
+      -- rather than sitting in 'pending' until an admin approves them. Admins
+      -- can still decline or deactivate someone afterwards from /admin.
+      true, 'approved', NOW(), NOW()
     )
     RETURNING *
   `.catch((err) => { console.error("[creators POST]", err); return [null]; });
