@@ -28,7 +28,9 @@ const DRY = process.argv.includes("--dry-run");
 const DATA_DIR = process.env.INSTAGRAM_DATA_DIR || "/home/aluxart/instagram-data";
 const STATE = path.join(DATA_DIR, "schedule.json");
 const APP_DIR = process.env.APP_DIR || "/home/aluxart/app";
-const QUEUE = path.join(APP_DIR, "scripts/carousel/week-01.json");
+// One merged queue rather than per-week files: the scheduler should never need
+// to know which week it is, and a missing week file would stop posting silently.
+const QUEUE = path.join(APP_DIR, "scripts/carousel/queue.json");
 const SLIDES = path.join(DATA_DIR, "slides");
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TG_ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -100,7 +102,7 @@ async function main() {
   if (failed.length) parts.push("❌ <b>Failed</b>\n\n" + failed.map(f => "• " + f).join("\n"));
   if (empty.length) {
     parts.push("📭 <b>Out of carousels</b>\n\n" + empty.map(a => "• @" + a).join("\n") +
-      "\n\nThese accounts have nothing left to post. Add more to week-01.json.");
+      "\n\nThese accounts have nothing left to post. Add more to scripts/carousel/queue.json.");
   }
   if (parts.length) await tellAdmin(parts.join("\n\n"));
 }

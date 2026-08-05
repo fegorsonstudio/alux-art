@@ -1,0 +1,887 @@
+[
+  {
+    "id": "w1-d1-aluxart-results",
+    "account": "aluxartandframes",
+    "day": 1,
+    "caption": "Five photos. One outfit. One session that never happened.\n\nThis is a real Alux Art shoot — same man, five different lighting setups and angles, all generated from photos he already had on his phone.\n\nNo studio booking. No day off work. No deposit.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#agbada #owambe #nigerianfashion #lagosphotographer #naijastyle #menswearnigeria #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "A real shoot",
+        "title": "He never went to a studio.",
+        "body": "Every one of these came from photos already on his *phone*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "One outfit. Five looks.",
+        "body": "Same person, same agbada — different light, different angle, different mood.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "title": "This is what a shoot costs you now.",
+        "body": "No studio hire. No photographer's day rate. No waiting two weeks for edits. You upload, you choose, you download."
+      },
+      {
+        "type": "shot",
+        "title": "Straight to your phone.",
+        "body": "Full resolution, ready for print or posting.",
+        "image": "scripts/carousel/shots/m1-1.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Your turn",
+        "title": "Your next shoot is already in your camera roll.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d1-fegorson-upload",
+    "account": "fegorson_studio",
+    "day": 1,
+    "caption": "The four photos that decide everything.\n\nThe AI doesn't invent your face — it works from what you give it. Get these four right and people can't tell how the image was made.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photographytips #nigerianphotographer #lagosphotographer #portraittips #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Getting it right",
+        "title": "Four photos decide your whole shoot.",
+        "body": "Choose them badly and you get a *stranger*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "The app tells you exactly what to bring.",
+        "body": "It's on the upload screen, before you pay a naira.",
+        "image": "scripts/carousel/shots/upload-guidance.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Upload these four",
+        "items": [
+          "One full-body, head to feet",
+          "One waist-up on a plain background",
+          "One close-up of your face",
+          "One genuinely smiling, teeth showing"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The smiling one is not optional.",
+        "body": "Without it every smile has to be *invented*. With it, your real smile carries into every shot."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Two minutes",
+        "title": "Choose them properly and the results speak.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d1-aolive-marketplace",
+    "account": "aolivetv",
+    "day": 1,
+    "caption": "You don't pick a filter. You pick a photographer's eye.\n\nEvery style on Alux Art was built by a working photographer — their lighting, their posing, their look. You bring your face.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#lagosphotographer #nigerianphotographer #photostudio #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "How it works",
+        "title": "You're not choosing a filter.",
+        "body": "You're choosing a *photographer's eye*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "Every style is somebody's signature.",
+        "body": "Built by working photographers, not generated from nothing.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Three steps",
+        "items": [
+          "Pick the style you want to look like",
+          "Upload a few photos of yourself",
+          "Download your shoot"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The style stays. You change.",
+        "body": "Their lighting, their posing, their colour. *Your* face, your build, your likeness."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Start here",
+        "title": "Find the look you've been saving on your phone.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d2-aluxart-price",
+    "account": "aluxartandframes",
+    "day": 2,
+    "caption": "What a studio shoot costs in Lagos vs what this costs.\n\nNo deposit, no day rate, no travel, no waiting. You choose how many images you want and pay for those.\n\n💬 Comment PRICE and I'll send you the link.\n\n#lagosphotographer #photostudio #nairaprices #nigerianbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Straight talk",
+        "title": "What does a proper shoot actually cost?",
+        "body": "Here is the honest comparison.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "A studio shoot in Lagos",
+        "items": [
+          "Photographer's day rate",
+          "Studio hire by the hour",
+          "Transport, both ways",
+          "A day off work",
+          "Two weeks waiting for edits"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Here, the price is on the screen.",
+        "body": "Before you upload anything. No quotes, no negotiation.",
+        "image": "scripts/carousel/shots/package-and-size.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Pay for what you take.",
+        "body": "One image or ten. No package you have to grow into, no subscription, nothing hidden at checkout."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "See for yourself",
+        "title": "Every price is public before you spend anything.",
+        "body": "Comment PRICE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d2-fegorson-creator",
+    "account": "fegorson_studio",
+    "day": 2,
+    "caption": "Photographers: your style can earn while you sleep.\n\nYou already have a signature look. Turn it into a template, set your own price, and get paid every time somebody books it.\n\nThe waitlist is closed — new creators go live immediately.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#nigerianphotographer #photographerbusiness #lagoscreatives #creatoreconomy #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For photographers",
+        "title": "Get paid for your eye, not your hours.",
+        "body": "Your signature look can earn *while you sleep*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You already have a style.",
+        "body": "The lighting you always reach for. The way you pose people. Right now it only earns when *you* are holding the camera."
+      },
+      {
+        "type": "shot",
+        "title": "This is a real creator account.",
+        "body": "Templates listed, published, and selling. Every sale pays the photographer who built the style.",
+        "image": "scripts/carousel/shots/shot-creator-dashboard-noearnings.png"
+      },
+      {
+        "type": "steps",
+        "title": "Getting listed",
+        "items": [
+          "Upload samples in your style",
+          "Set your lighting, poses and options",
+          "Choose your own price",
+          "Publish — no waitlist, no approval"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Free to list",
+        "title": "Your style. Their shoot. Your money.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d2-aolive-corporate",
+    "account": "aolivetv",
+    "day": 2,
+    "caption": "Your LinkedIn photo is costing you money.\n\nCropped wedding photo. Someone's shoulder still in frame. People decide whether you look serious in under a second.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#linkedin #corporateheadshots #personalbranding #nigerianbusiness #lagosbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Corporate",
+        "title": "Your profile photo is doing you damage.",
+        "body": "People decide in *under a second*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "We've all done it.",
+        "body": "The cropped wedding photo. The one with somebody's shoulder still in it. The selfie from 2019 in a car."
+      },
+      {
+        "type": "steps",
+        "title": "What a clean headshot changes",
+        "items": [
+          "Recruiters take the CV seriously",
+          "Clients believe the invoice",
+          "Investors read the deck",
+          "You stop apologising for your photo"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "It takes minutes, not a day off.",
+        "body": "No studio to book. No half-day gone. Upload the photos you have and pick a corporate style."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Look the part",
+        "title": "Look like the professional you already are.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d3-aluxart-owambe",
+    "account": "aluxartandframes",
+    "day": 3,
+    "caption": "Owambe season never really ends.\n\nBeaded gowns, structured gele, agbada that hangs properly. The detail holds up — the beadwork, the lace, the way light sits on aso-oke.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#owambe #aseobi #gele #nigerianwedding #naijafashion #agbada #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Traditional",
+        "title": "Dress like the occasion. Even on a Tuesday.",
+        "body": "Owambe season *never really ends*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "The detail has to survive.",
+        "body": "Beadwork, lace, embroidery, the fall of aso-oke. If those go soft, the photo is worthless.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "title": "Same outfit, five ways.",
+        "body": "One agbada, photographed under five different lighting setups. Choose the one that suits the post."
+      },
+      {
+        "type": "steps",
+        "title": "Styles waiting for you",
+        "items": [
+          "Beaded and embellished gowns",
+          "Structured gele and headwrap",
+          "Agbada and traditional menswear",
+          "Editorial and studio portraits"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "For the next one",
+        "title": "Be ready before the invitation arrives.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d3-fegorson-lookslikeme",
+    "account": "fegorson_studio",
+    "day": 3,
+    "caption": "\"But will it actually look like me?\"\n\nFair question, honest answer: it depends entirely on what you upload. Give it good material and people who know you can't tell.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#aiphotography #photographytips #nigerianphotographer #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "The honest answer",
+        "title": "\"But will it actually look like me?\"",
+        "body": "Fair question. Here is the truth.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "It depends on you, not the AI.",
+        "body": "Three blurry photos from 2019 and you get a stranger who *resembles* you. That isn't a glitch — it's the input."
+      },
+      {
+        "type": "shot",
+        "title": "This is one real person, five times.",
+        "body": "Same face, same build, same beard line. Different light, different angle.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "What ruins the likeness",
+        "items": [
+          "Heavy filters — it learns the filter",
+          "Sunglasses or anything covering the face",
+          "Group photos, where it can't tell which face",
+          "Dark or blurry shots"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Judge it yourself",
+        "title": "Give it good material and see.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d3-aolive-howitworks",
+    "account": "aolivetv",
+    "day": 3,
+    "caption": "From your camera roll to a finished gallery, start to finish.\n\nNo prompts to write. No settings to learn. Pick a style, upload, download.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#howitworks #aiphotography #photostudio #lagosphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Start to finish",
+        "title": "From camera roll to finished gallery.",
+        "body": "No prompts. No settings. No learning curve.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "Step one: your photos.",
+        "body": "The app tells you exactly which four to upload.",
+        "image": "scripts/carousel/shots/shot-studio-upload.png"
+      },
+      {
+        "type": "shot",
+        "title": "Step two: choose your look.",
+        "body": "Lighting, backdrop, framing — set by the photographer who built the style.",
+        "image": "scripts/carousel/shots/shot-lighting-clean.png"
+      },
+      {
+        "type": "shot",
+        "title": "Step three: your gallery.",
+        "body": "Full resolution, ready to download.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "That's all of it",
+        "title": "Three steps. About an hour.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d4-aluxart-gift",
+    "account": "aluxartandframes",
+    "day": 4,
+    "caption": "Gift someone a shoot.\n\nBirthday, graduation, promotion, or a month that went badly. They pick their own style and upload their own photos — you just cover it.\n\nBetter than another perfume nobody asked for.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#giftideas #nigeriangifts #birthdaygift #lagosgifts #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Gifting",
+        "title": "Give someone a shoot instead of a candle.",
+        "body": "They choose the style. You just *cover it*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "When it lands well",
+        "items": [
+          "A birthday that needs new photos",
+          "A graduation worth marking",
+          "A promotion nobody photographed",
+          "A month that went badly"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "This is what they unwrap.",
+        "body": "A full gallery, theirs to keep and post.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "title": "No sizes. No guessing.",
+        "body": "You can't get it wrong — they pick the look themselves, and upload their own photos."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Send one",
+        "title": "The gift nobody re-gifts.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d4-fegorson-backdrop",
+    "account": "fegorson_studio",
+    "day": 4,
+    "caption": "Most editing apps swap the wall and leave you standing on your old tiled floor. It looks fake instantly.\n\nWall AND floor, replaced as one continuous space, lit to match.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photoediting #photographytips #studiobackdrop #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "The detail nobody fixes",
+        "title": "Why your background swap looks fake.",
+        "body": "They change the wall and forget the *floor*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Your eye catches it instantly.",
+        "body": "New wall behind you, your own tiles under your feet, shadows falling the wrong way. Nobody can name it, but everybody sees it."
+      },
+      {
+        "type": "steps",
+        "title": "What has to change together",
+        "items": [
+          "The wall behind the subject",
+          "The floor they stand on",
+          "Where wall meets floor, at the right height",
+          "The light, matched across both"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Shot in your bedroom.",
+        "body": "Looks like a studio in Lekki. That only works if the *whole room* changes."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "See it work",
+        "title": "One continuous space, not a pasted wall.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d4-aolive-calltobar",
+    "account": "aolivetv",
+    "day": 4,
+    "caption": "Call to Bar season. Congratulations, Counsel.\n\nYou worked years for that wig and gown. The photos should match — proper portraits, not a phone snap in the corridor.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#calltobar #nigerianlawyer #lawschoolnigeria #graduation #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Call to Bar",
+        "title": "You worked years for that wig.",
+        "body": "The photographs should *match the effort*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "The corridor photo isn't it.",
+        "body": "Rushed, badly lit, someone's arm in frame. It's the picture your family will keep for thirty years."
+      },
+      {
+        "type": "steps",
+        "title": "What you get",
+        "items": [
+          "Proper wig and gown, correctly worn",
+          "Studio lighting, not corridor fluorescent",
+          "Several poses and angles",
+          "Full resolution, ready to frame"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "This is the standard.",
+        "body": "Real portraits, several looks from one session.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Mark it properly",
+        "title": "Frame it. Post it. You earned it.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d5-aluxart-vendors",
+    "account": "aluxartandframes",
+    "day": 5,
+    "caption": "Vendors: pull the outfit OUT of the customer photo.\n\nIf you sell clothes, wigs, shoes or bags, you need clean product shots. Most people only have photos of customers wearing the thing.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nigerianvendors #fashionbusiness #lagosvendor #ecommerce #smallbusinessnigeria #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For vendors",
+        "title": "One customer photo becomes a catalogue.",
+        "body": "Pull the outfit *out* of the picture.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You have the wrong photos.",
+        "body": "Customers wearing your pieces, in their sitting room, in bad light. Useful as proof. Useless as a product shot."
+      },
+      {
+        "type": "shot",
+        "title": "Front, three-quarter, side and back.",
+        "body": "The gown lifted onto an invisible mannequin, on a clean grey background.",
+        "image": "scripts/carousel/shots/asset-extractor.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "What it can lift out",
+        "items": [
+          "Gowns, suits, full outfits",
+          "Wigs and headwear",
+          "Shoes, bags and jewellery",
+          "Even the backdrop on its own"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Stock your shop",
+        "title": "Catalogue photos from the pictures you already have.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d5-fegorson-perphoto",
+    "account": "fegorson_studio",
+    "day": 5,
+    "caption": "Don't give ten photos the same treatment.\n\nEach photo can take its own lighting look. One upload becomes a month of content that doesn't look like the same picture five times.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#contentcreator #photographytips #socialmediatips #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "A pro habit",
+        "title": "Ten photos. Ten different looks.",
+        "body": "Not the same treatment *ten times*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "Assign a look per photo.",
+        "body": "Warm on one, moody on the next, clean and bright on the third.",
+        "image": "scripts/carousel/shots/shot-lighting-clean.png"
+      },
+      {
+        "type": "text",
+        "title": "Why it matters for posting.",
+        "body": "Five near-identical images posted across a week reads as *lazy*. Five distinct looks reads as a shoot."
+      },
+      {
+        "type": "steps",
+        "title": "A month from one upload",
+        "items": [
+          "Golden hour for the warm post",
+          "Rembrandt for the serious one",
+          "High-key beauty for the clean one",
+          "Stage spotlight for the dramatic one"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Plan it once",
+        "title": "One session. A month of posts.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d5-aolive-nursing",
+    "account": "aolivetv",
+    "day": 5,
+    "caption": "Nurses — your induction deserves better than a phone snap.\n\nClean, dignified portraits in uniform, with your personalised sash. The day only happens once. The photo lasts a lot longer.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nursingnigeria #nurseinduction #nursesofnigeria #healthcare #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Nursing induction",
+        "title": "The day happens once.",
+        "body": "The photograph lasts *a lot longer*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You trained years for this.",
+        "body": "Then the only picture is a blurry phone snap someone took while the hall emptied."
+      },
+      {
+        "type": "steps",
+        "title": "What the style gives you",
+        "items": [
+          "Uniform, correctly presented",
+          "Your personalised sash",
+          "Studio lighting, dignified framing",
+          "Portraits your family will frame"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "No hall, no queue, no rush.",
+        "body": "Upload your photos afterwards and get the portraits the day deserved."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Do it properly",
+        "title": "Mark the day the way it deserves.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d6-aluxart-retry",
+    "account": "aluxartandframes",
+    "day": 6,
+    "caption": "What happens when one image doesn't come out right?\n\nYou retry that one image. Not the whole shoot, not another payment. Just that frame.\n\n💬 Comment PRICE and I'll send you the link.\n\n#customerservice #aiphotography #nigerianbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Honest answer",
+        "title": "What if one photo comes out wrong?",
+        "body": "You retry *that one*. Nothing else.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "It happens. We don't pretend otherwise.",
+        "body": "Out of ten images, sometimes one lands badly. A hand looks odd, an expression misses."
+      },
+      {
+        "type": "steps",
+        "title": "What you do about it",
+        "items": [
+          "Open the shoot",
+          "Tap retry on that single image",
+          "It regenerates on its own",
+          "The other nine stay exactly as they were"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "No second payment.",
+        "body": "The retry is part of what you already paid for. You are not buying the shoot twice."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Fair terms",
+        "title": "One frame off? Fix that frame.",
+        "body": "Comment PRICE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d6-fegorson-buildtemplate",
+    "account": "fegorson_studio",
+    "day": 6,
+    "caption": "How a photographer turns their style into a listing.\n\nUpload samples, set your lighting and poses, choose your price, publish. No waitlist — new creators go live immediately.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #nigerianphotographer #creatoreconomy #lagoscreatives #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Behind the listing",
+        "title": "How your style becomes a product.",
+        "body": "Four steps, then it earns *without you*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "Building it",
+        "items": [
+          "Upload samples in your style",
+          "Set the lighting looks you want offered",
+          "Add signature poses and options",
+          "Set your price and publish"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Then it sits in the marketplace.",
+        "body": "Alongside every other photographer's work, earning while you shoot something else.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "text",
+        "title": "You keep control.",
+        "body": "Your price, your look, your name on it. Change it whenever you like, or take it down."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Free to list",
+        "title": "Build it once. Sell it repeatedly.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d6-aolive-trending",
+    "account": "aolivetv",
+    "day": 6,
+    "caption": "Not every shoot has to be serious.\n\nThe looks doing rounds right now — the ones your friends recognise the second they scroll past. Fast to make, cheap to try.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#trending #naijatrends #funcontent #lagosvibes #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Trending",
+        "title": "Sometimes the best post is the unexpected one.",
+        "body": "Not everything has to be *editorial*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Your feed is too serious.",
+        "body": "Corporate headshot, corporate headshot, wedding photo. Nobody stops scrolling for consistency."
+      },
+      {
+        "type": "shot",
+        "title": "The looks people recognise.",
+        "body": "Trending styles sit alongside the studio work, same account, same upload.",
+        "image": "scripts/carousel/shots/style-variety.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Why they work",
+        "items": [
+          "People recognise the format instantly",
+          "Cheap enough to experiment",
+          "Fast — minutes, not a booking",
+          "They get shared, not just liked"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Have fun with it",
+        "title": "Post the one nobody expected from you.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d7-aluxart-fiveorten",
+    "account": "aluxartandframes",
+    "day": 7,
+    "caption": "One image or ten? Here's how to decide.\n\nOne clean shot for a profile. Five or ten for a feed you don't have to think about for a month.\n\n💬 Comment PRICE and I'll send you the link.\n\n#contentplanning #socialmediatips #nigerianbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Choosing",
+        "title": "One image, or ten?",
+        "body": "It depends what you're actually *for*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "Take one when",
+        "items": [
+          "You need a profile photo",
+          "It's for a CV or a bio",
+          "You're testing whether you like the style"
+        ]
+      },
+      {
+        "type": "steps",
+        "title": "Take ten when",
+        "items": [
+          "You post regularly and keep running dry",
+          "You want variety from one outfit",
+          "It's for a launch, an event, or a campaign"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Ten looks like this.",
+        "body": "Different light, different angle, same person — a month of posts from one session.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Your call",
+        "title": "Pay for what you take. Nothing more.",
+        "body": "Comment PRICE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d7-fegorson-badphotos",
+    "account": "fegorson_studio",
+    "day": 7,
+    "caption": "The four photos that ruin every shoot.\n\nIf your results keep coming out wrong, it's almost always one of these in your upload.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photographytips #aiphotography #nigerianphotographer #portraittips #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Avoid these",
+        "title": "Four uploads that ruin a shoot.",
+        "body": "If your results keep missing, look *here first*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "The four culprits",
+        "items": [
+          "Heavy filters — it learns the filter, not you",
+          "Sunglasses, masks, anything covering the face",
+          "Group photos — it can't tell which face is yours",
+          "Dark, blurry, or heavily compressed shots"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The filter one surprises people.",
+        "body": "A beauty filter changes your nose, your jaw, your skin. The model learns *that face*, then reproduces it faithfully."
+      },
+      {
+        "type": "shot",
+        "title": "Give it this instead.",
+        "body": "Clear, well-lit, a few angles, one genuine smile.",
+        "image": "scripts/carousel/shots/upload-guidance.jpg"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Two minutes",
+        "title": "Fix the input and the output fixes itself.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d7-aolive-nostudio",
+    "account": "aolivetv",
+    "day": 7,
+    "caption": "Studio portraits. No studio needed.\n\nNo booking, no deposit, no travelling across Lagos, no half-day gone. Photos you already have, turned into a proper shoot.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#lagosphotographer #photostudio #portraitphotography #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "The whole idea",
+        "title": "Studio portraits. No studio.",
+        "body": "Nothing to book. Nothing to travel to.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "What you skip",
+        "items": [
+          "Booking weeks ahead",
+          "The deposit",
+          "Traffic, both ways",
+          "A half-day off work",
+          "Two weeks waiting for edits"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "What you still get.",
+        "body": "Proper lighting, proper framing, full resolution.",
+        "image": "scripts/carousel/shots/m1-1.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "title": "The photographer's work is still in it.",
+        "body": "You're using their lighting and their eye. You're just not using their *diary*."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Try it",
+        "title": "The studio comes to your camera roll.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  }
+]
