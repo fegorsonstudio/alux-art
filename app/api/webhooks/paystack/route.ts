@@ -48,10 +48,17 @@ export async function POST(request: NextRequest) {
   // ── 4. Log the event immutably (append-only, never UPDATE) ────────────────
   // The ON CONFLICT DO NOTHING ensures idempotency: if we've already logged
   // this exact webhook (same body, same key), the INSERT is silently skipped.
+  //
+  // The WHERE clause is not decoration. idx_payment_events_idempotency is a
+  // PARTIAL unique index (... WHERE idempotency_key IS NOT NULL), and Postgres
+  // refuses to infer a partial index as a conflict arbiter unless the statement
+  // repeats its predicate. Without it every call died on 42P10, "no unique or
+  // exclusion constraint matching the ON CONFLICT specification" — which is why
+  // payment_events sat empty and no Paystack webhook has ever been processed.
   const [loggedEvent] = await sql`
     INSERT INTO payment_events (transaction_ref, event_type, raw_payload, idempotency_key, processed_by, created_at)
     VALUES (${reference}, ${eventType}, ${JSON.stringify(event)}, ${idempotencyKey}, 'paystack_webhook', ${now})
-    ON CONFLICT (idempotency_key) DO NOTHING
+    ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
     RETURNING id
   `;
 
