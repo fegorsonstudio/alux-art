@@ -40,6 +40,47 @@
     ]
   },
   {
+    "id": "w1-d1-aolive-marketplace",
+    "account": "aolivetv",
+    "day": 1,
+    "caption": "You don't pick a filter. You pick a photographer's eye.\n\nEvery style on Alux Art was built by a working photographer — their lighting, their posing, their look. You bring your face.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#lagosphotographer #nigerianphotographer #photostudio #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "How it works",
+        "title": "You're not choosing a filter.",
+        "body": "You're choosing a *photographer's eye*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "Every style is somebody's signature.",
+        "body": "Built by working photographers, not generated from nothing.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Three steps",
+        "items": [
+          "Pick the style you want to look like",
+          "Upload a few photos of yourself",
+          "Download your shoot"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The style stays. You change.",
+        "body": "Their lighting, their posing, their colour. *Your* face, your build, your likeness."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Start here",
+        "title": "Find the look you've been saving on your phone.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
     "id": "w1-d1-fegorson-upload",
     "account": "fegorson_studio",
     "day": 1,
@@ -78,47 +119,6 @@
         "eyebrow": "Two minutes",
         "title": "Choose them properly and the results speak.",
         "body": "Comment GUIDE below and I'll send you the link."
-      }
-    ]
-  },
-  {
-    "id": "w1-d1-aolive-marketplace",
-    "account": "aolivetv",
-    "day": 1,
-    "caption": "You don't pick a filter. You pick a photographer's eye.\n\nEvery style on Alux Art was built by a working photographer — their lighting, their posing, their look. You bring your face.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#lagosphotographer #nigerianphotographer #photostudio #portraitphotography #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "How it works",
-        "title": "You're not choosing a filter.",
-        "body": "You're choosing a *photographer's eye*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "shot",
-        "title": "Every style is somebody's signature.",
-        "body": "Built by working photographers, not generated from nothing.",
-        "image": "scripts/carousel/shots/marketplace-grid.jpg"
-      },
-      {
-        "type": "steps",
-        "title": "Three steps",
-        "items": [
-          "Pick the style you want to look like",
-          "Upload a few photos of yourself",
-          "Download your shoot"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "The style stays. You change.",
-        "body": "Their lighting, their posing, their colour. *Your* face, your build, your likeness."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Start here",
-        "title": "Find the look you've been saving on your phone.",
-        "body": "Comment STUDIO below and I'll send you the link."
       }
     ]
   },
@@ -166,6 +166,47 @@
     ]
   },
   {
+    "id": "w1-d2-aolive-corporate",
+    "account": "aolivetv",
+    "day": 2,
+    "caption": "Your LinkedIn photo is costing you money.\n\nCropped wedding photo. Someone's shoulder still in frame. People decide whether you look serious in under a second.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#linkedin #corporateheadshots #personalbranding #nigerianbusiness #lagosbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Corporate",
+        "title": "Your profile photo is doing you damage.",
+        "body": "People decide in *under a second*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "We've all done it.",
+        "body": "The cropped wedding photo. The one with somebody's shoulder still in it. The selfie from 2019 in a car."
+      },
+      {
+        "type": "steps",
+        "title": "What a clean headshot changes",
+        "items": [
+          "Recruiters take the CV seriously",
+          "Clients believe the invoice",
+          "Investors read the deck",
+          "You stop apologising for your photo"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "It takes minutes, not a day off.",
+        "body": "No studio to book. No half-day gone. Upload the photos you have and pick a corporate style."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Look the part",
+        "title": "Look like the professional you already are.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
     "id": "w1-d2-fegorson-creator",
     "account": "fegorson_studio",
     "day": 2,
@@ -208,47 +249,6 @@
     ]
   },
   {
-    "id": "w1-d2-aolive-corporate",
-    "account": "aolivetv",
-    "day": 2,
-    "caption": "Your LinkedIn photo is costing you money.\n\nCropped wedding photo. Someone's shoulder still in frame. People decide whether you look serious in under a second.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#linkedin #corporateheadshots #personalbranding #nigerianbusiness #lagosbusiness #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Corporate",
-        "title": "Your profile photo is doing you damage.",
-        "body": "People decide in *under a second*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "We've all done it.",
-        "body": "The cropped wedding photo. The one with somebody's shoulder still in it. The selfie from 2019 in a car."
-      },
-      {
-        "type": "steps",
-        "title": "What a clean headshot changes",
-        "items": [
-          "Recruiters take the CV seriously",
-          "Clients believe the invoice",
-          "Investors read the deck",
-          "You stop apologising for your photo"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "It takes minutes, not a day off.",
-        "body": "No studio to book. No half-day gone. Upload the photos you have and pick a corporate style."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Look the part",
-        "title": "Look like the professional you already are.",
-        "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w1-d3-aluxart-owambe",
     "account": "aluxartandframes",
     "day": 3,
@@ -287,6 +287,46 @@
         "type": "cta",
         "eyebrow": "For the next one",
         "title": "Be ready before the invitation arrives.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w1-d3-aolive-howitworks",
+    "account": "aolivetv",
+    "day": 3,
+    "caption": "From your camera roll to a finished gallery, start to finish.\n\nNo prompts to write. No settings to learn. Pick a style, upload, download.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#howitworks #aiphotography #photostudio #lagosphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Start to finish",
+        "title": "From camera roll to finished gallery.",
+        "body": "No prompts. No settings. No learning curve.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "Step one: your photos.",
+        "body": "The app tells you exactly which four to upload.",
+        "image": "scripts/carousel/shots/shot-studio-upload.png"
+      },
+      {
+        "type": "shot",
+        "title": "Step two: choose your look.",
+        "body": "Lighting, backdrop, framing — set by the photographer who built the style.",
+        "image": "scripts/carousel/shots/shot-lighting-clean.png"
+      },
+      {
+        "type": "shot",
+        "title": "Step three: your gallery.",
+        "body": "Full resolution, ready to download.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "That's all of it",
+        "title": "Three steps. About an hour.",
         "body": "Comment STUDIO below and I'll send you the link."
       }
     ]
@@ -335,46 +375,6 @@
     ]
   },
   {
-    "id": "w1-d3-aolive-howitworks",
-    "account": "aolivetv",
-    "day": 3,
-    "caption": "From your camera roll to a finished gallery, start to finish.\n\nNo prompts to write. No settings to learn. Pick a style, upload, download.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#howitworks #aiphotography #photostudio #lagosphotographer #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Start to finish",
-        "title": "From camera roll to finished gallery.",
-        "body": "No prompts. No settings. No learning curve.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "shot",
-        "title": "Step one: your photos.",
-        "body": "The app tells you exactly which four to upload.",
-        "image": "scripts/carousel/shots/shot-studio-upload.png"
-      },
-      {
-        "type": "shot",
-        "title": "Step two: choose your look.",
-        "body": "Lighting, backdrop, framing — set by the photographer who built the style.",
-        "image": "scripts/carousel/shots/shot-lighting-clean.png"
-      },
-      {
-        "type": "shot",
-        "title": "Step three: your gallery.",
-        "body": "Full resolution, ready to download.",
-        "image": "scripts/carousel/shots/m1-gallery.jpg",
-        "fit": "contain"
-      },
-      {
-        "type": "cta",
-        "eyebrow": "That's all of it",
-        "title": "Three steps. About an hour.",
-        "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w2-d4-aluxart-gift",
     "account": "aluxartandframes",
     "day": 4,
@@ -414,47 +414,6 @@
         "eyebrow": "Send one",
         "title": "The gift nobody re-gifts.",
         "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
-    "id": "w2-d4-fegorson-backdrop",
-    "account": "fegorson_studio",
-    "day": 4,
-    "caption": "Most editing apps swap the wall and leave you standing on your old tiled floor. It looks fake instantly.\n\nWall AND floor, replaced as one continuous space, lit to match.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photoediting #photographytips #studiobackdrop #nigerianphotographer #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "The detail nobody fixes",
-        "title": "Why your background swap looks fake.",
-        "body": "They change the wall and forget the *floor*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "Your eye catches it instantly.",
-        "body": "New wall behind you, your own tiles under your feet, shadows falling the wrong way. Nobody can name it, but everybody sees it."
-      },
-      {
-        "type": "steps",
-        "title": "What has to change together",
-        "items": [
-          "The wall behind the subject",
-          "The floor they stand on",
-          "Where wall meets floor, at the right height",
-          "The light, matched across both"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "Shot in your bedroom.",
-        "body": "Looks like a studio in Lekki. That only works if the *whole room* changes."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "See it work",
-        "title": "One continuous space, not a pasted wall.",
-        "body": "Comment GUIDE below and I'll send you the link."
       }
     ]
   },
@@ -502,6 +461,47 @@
     ]
   },
   {
+    "id": "w2-d4-fegorson-backdrop",
+    "account": "fegorson_studio",
+    "day": 4,
+    "caption": "Most editing apps swap the wall and leave you standing on your old tiled floor. It looks fake instantly.\n\nWall AND floor, replaced as one continuous space, lit to match.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photoediting #photographytips #studiobackdrop #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "The detail nobody fixes",
+        "title": "Why your background swap looks fake.",
+        "body": "They change the wall and forget the *floor*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Your eye catches it instantly.",
+        "body": "New wall behind you, your own tiles under your feet, shadows falling the wrong way. Nobody can name it, but everybody sees it."
+      },
+      {
+        "type": "steps",
+        "title": "What has to change together",
+        "items": [
+          "The wall behind the subject",
+          "The floor they stand on",
+          "Where wall meets floor, at the right height",
+          "The light, matched across both"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Shot in your bedroom.",
+        "body": "Looks like a studio in Lekki. That only works if the *whole room* changes."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "See it work",
+        "title": "One continuous space, not a pasted wall.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
     "id": "w2-d5-aluxart-vendors",
     "account": "aluxartandframes",
     "day": 5,
@@ -540,6 +540,47 @@
         "type": "cta",
         "eyebrow": "Stock your shop",
         "title": "Catalogue photos from the pictures you already have.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d5-aolive-nursing",
+    "account": "aolivetv",
+    "day": 5,
+    "caption": "Nurses — your induction deserves better than a phone snap.\n\nClean, dignified portraits in uniform, with your personalised sash. The day only happens once. The photo lasts a lot longer.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nursingnigeria #nurseinduction #nursesofnigeria #healthcare #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Nursing induction",
+        "title": "The day happens once.",
+        "body": "The photograph lasts *a lot longer*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You trained years for this.",
+        "body": "Then the only picture is a blurry phone snap someone took while the hall emptied."
+      },
+      {
+        "type": "steps",
+        "title": "What the style gives you",
+        "items": [
+          "Uniform, correctly presented",
+          "Your personalised sash",
+          "Studio lighting, dignified framing",
+          "Portraits your family will frame"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "No hall, no queue, no rush.",
+        "body": "Upload your photos afterwards and get the portraits the day deserved."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Do it properly",
+        "title": "Mark the day the way it deserves.",
         "body": "Comment STUDIO below and I'll send you the link."
       }
     ]
@@ -587,47 +628,6 @@
     ]
   },
   {
-    "id": "w2-d5-aolive-nursing",
-    "account": "aolivetv",
-    "day": 5,
-    "caption": "Nurses — your induction deserves better than a phone snap.\n\nClean, dignified portraits in uniform, with your personalised sash. The day only happens once. The photo lasts a lot longer.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nursingnigeria #nurseinduction #nursesofnigeria #healthcare #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Nursing induction",
-        "title": "The day happens once.",
-        "body": "The photograph lasts *a lot longer*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "You trained years for this.",
-        "body": "Then the only picture is a blurry phone snap someone took while the hall emptied."
-      },
-      {
-        "type": "steps",
-        "title": "What the style gives you",
-        "items": [
-          "Uniform, correctly presented",
-          "Your personalised sash",
-          "Studio lighting, dignified framing",
-          "Portraits your family will frame"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "No hall, no queue, no rush.",
-        "body": "Upload your photos afterwards and get the portraits the day deserved."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Do it properly",
-        "title": "Mark the day the way it deserves.",
-        "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w2-d6-aluxart-retry",
     "account": "aluxartandframes",
     "day": 6,
@@ -665,48 +665,6 @@
         "eyebrow": "Fair terms",
         "title": "One frame off? Fix that frame.",
         "body": "Comment PRICE below and I'll send you the link."
-      }
-    ]
-  },
-  {
-    "id": "w2-d6-fegorson-buildtemplate",
-    "account": "fegorson_studio",
-    "day": 6,
-    "caption": "How a photographer turns their style into a listing.\n\nUpload samples, set your lighting and poses, choose your price, publish. No waitlist — new creators go live immediately.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #nigerianphotographer #creatoreconomy #lagoscreatives #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Behind the listing",
-        "title": "How your style becomes a product.",
-        "body": "Four steps, then it earns *without you*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "steps",
-        "title": "Building it",
-        "items": [
-          "Upload samples in your style",
-          "Set the lighting looks you want offered",
-          "Add signature poses and options",
-          "Set your price and publish"
-        ]
-      },
-      {
-        "type": "shot",
-        "title": "Then it sits in the marketplace.",
-        "body": "Alongside every other photographer's work, earning while you shoot something else.",
-        "image": "scripts/carousel/shots/marketplace-grid.jpg"
-      },
-      {
-        "type": "text",
-        "title": "You keep control.",
-        "body": "Your price, your look, your name on it. Change it whenever you like, or take it down."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Free to list",
-        "title": "Build it once. Sell it repeatedly.",
-        "body": "Comment CREATOR below and I'll send you the link."
       }
     ]
   },
@@ -749,6 +707,48 @@
         "eyebrow": "Have fun with it",
         "title": "Post the one nobody expected from you.",
         "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d6-fegorson-buildtemplate",
+    "account": "fegorson_studio",
+    "day": 6,
+    "caption": "How a photographer turns their style into a listing.\n\nUpload samples, set your lighting and poses, choose your price, publish. No waitlist — new creators go live immediately.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #nigerianphotographer #creatoreconomy #lagoscreatives #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Behind the listing",
+        "title": "How your style becomes a product.",
+        "body": "Four steps, then it earns *without you*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "Building it",
+        "items": [
+          "Upload samples in your style",
+          "Set the lighting looks you want offered",
+          "Add signature poses and options",
+          "Set your price and publish"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Then it sits in the marketplace.",
+        "body": "Alongside every other photographer's work, earning while you shoot something else.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "text",
+        "title": "You keep control.",
+        "body": "Your price, your look, your name on it. Change it whenever you like, or take it down."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Free to list",
+        "title": "Build it once. Sell it repeatedly.",
+        "body": "Comment CREATOR below and I'll send you the link."
       }
     ]
   },
@@ -799,48 +799,6 @@
     ]
   },
   {
-    "id": "w2-d7-fegorson-badphotos",
-    "account": "fegorson_studio",
-    "day": 7,
-    "caption": "The four photos that ruin every shoot.\n\nIf your results keep coming out wrong, it's almost always one of these in your upload.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photographytips #aiphotography #nigerianphotographer #portraittips #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Avoid these",
-        "title": "Four uploads that ruin a shoot.",
-        "body": "If your results keep missing, look *here first*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "steps",
-        "title": "The four culprits",
-        "items": [
-          "Heavy filters — it learns the filter, not you",
-          "Sunglasses, masks, anything covering the face",
-          "Group photos — it can't tell which face is yours",
-          "Dark, blurry, or heavily compressed shots"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "The filter one surprises people.",
-        "body": "A beauty filter changes your nose, your jaw, your skin. The model learns *that face*, then reproduces it faithfully."
-      },
-      {
-        "type": "shot",
-        "title": "Give it this instead.",
-        "body": "Clear, well-lit, a few angles, one genuine smile.",
-        "image": "scripts/carousel/shots/upload-guidance.jpg"
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Two minutes",
-        "title": "Fix the input and the output fixes itself.",
-        "body": "Comment GUIDE below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w2-d7-aolive-nostudio",
     "account": "aolivetv",
     "day": 7,
@@ -881,6 +839,48 @@
         "eyebrow": "Try it",
         "title": "The studio comes to your camera roll.",
         "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w2-d7-fegorson-badphotos",
+    "account": "fegorson_studio",
+    "day": 7,
+    "caption": "The four photos that ruin every shoot.\n\nIf your results keep coming out wrong, it's almost always one of these in your upload.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photographytips #aiphotography #nigerianphotographer #portraittips #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Avoid these",
+        "title": "Four uploads that ruin a shoot.",
+        "body": "If your results keep missing, look *here first*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "The four culprits",
+        "items": [
+          "Heavy filters — it learns the filter, not you",
+          "Sunglasses, masks, anything covering the face",
+          "Group photos — it can't tell which face is yours",
+          "Dark, blurry, or heavily compressed shots"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The filter one surprises people.",
+        "body": "A beauty filter changes your nose, your jaw, your skin. The model learns *that face*, then reproduces it faithfully."
+      },
+      {
+        "type": "shot",
+        "title": "Give it this instead.",
+        "body": "Clear, well-lit, a few angles, one genuine smile.",
+        "image": "scripts/carousel/shots/upload-guidance.jpg"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Two minutes",
+        "title": "Fix the input and the output fixes itself.",
+        "body": "Comment GUIDE below and I'll send you the link."
       }
     ]
   },
@@ -928,48 +928,6 @@
     ]
   },
   {
-    "id": "w3-d8-fegorson-aspect",
-    "account": "fegorson_studio",
-    "day": 8,
-    "caption": "The size you choose decides where the photo works.\n\n4:5 for the feed, 9:16 for stories and reels, 1:1 for profiles. Choose before you generate, not after you crop.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#socialmediatips #contentcreator #photographytips #nigerianphotographer #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Get it right first",
-        "title": "Choose the shape before you shoot.",
-        "body": "Cropping afterwards *throws away* your photo.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "shot",
-        "title": "It's a choice on the screen.",
-        "body": "Set before anything is generated, so the framing is built for that shape.",
-        "image": "scripts/carousel/shots/package-and-size.jpg"
-      },
-      {
-        "type": "steps",
-        "title": "Which size, where",
-        "items": [
-          "4:5 — the Instagram feed, most screen space",
-          "9:16 — stories and reels, full screen",
-          "1:1 — profile pictures, safe everywhere",
-          "16:9 — websites, LinkedIn banners"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "Why cropping later hurts.",
-        "body": "A 4:5 portrait cut to 9:16 loses your shoulders or your head. The composition was built for the *original* shape."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Plan it",
-        "title": "Pick the shape for where it's going.",
-        "body": "Comment GUIDE below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w3-d8-aolive-howlong",
     "account": "aolivetv",
     "day": 8,
@@ -1009,6 +967,48 @@
         "eyebrow": "Tonight, then",
         "title": "Start now, post before bed.",
         "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w3-d8-fegorson-aspect",
+    "account": "fegorson_studio",
+    "day": 8,
+    "caption": "The size you choose decides where the photo works.\n\n4:5 for the feed, 9:16 for stories and reels, 1:1 for profiles. Choose before you generate, not after you crop.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#socialmediatips #contentcreator #photographytips #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Get it right first",
+        "title": "Choose the shape before you shoot.",
+        "body": "Cropping afterwards *throws away* your photo.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "It's a choice on the screen.",
+        "body": "Set before anything is generated, so the framing is built for that shape.",
+        "image": "scripts/carousel/shots/package-and-size.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Which size, where",
+        "items": [
+          "4:5 — the Instagram feed, most screen space",
+          "9:16 — stories and reels, full screen",
+          "1:1 — profile pictures, safe everywhere",
+          "16:9 — websites, LinkedIn banners"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Why cropping later hurts.",
+        "body": "A 4:5 portrait cut to 9:16 loses your shoulders or your head. The composition was built for the *original* shape."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Plan it",
+        "title": "Pick the shape for where it's going.",
+        "body": "Comment GUIDE below and I'll send you the link."
       }
     ]
   },
@@ -1056,47 +1056,6 @@
     ]
   },
   {
-    "id": "w3-d9-fegorson-expression",
-    "account": "fegorson_studio",
-    "day": 9,
-    "caption": "Why some of your photos smile and some don't.\n\nExpression follows what you upload. Give it a genuine smile and it can make smiling shots. Give it none and every smile is guesswork.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photographytips #portraittips #nigerianphotographer #aiphotography #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Expression",
-        "title": "Why your photos won't smile properly.",
-        "body": "It can only use the expressions you *gave* it.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "A smile is not generic.",
-        "body": "Yours has a shape. Which teeth show, how your eyes narrow, which side lifts first. Invented smiles look like somebody else's."
-      },
-      {
-        "type": "steps",
-        "title": "What to upload",
-        "items": [
-          "One genuine smile, teeth showing",
-          "One relaxed neutral face",
-          "Both looking into the lens",
-          "Neither heavily filtered"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "There's a switch for it too.",
-        "body": "If you want every image serious and closed-lipped, there's a *no smiles* option at checkout."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Control it",
-        "title": "Give it your smile and it will use yours.",
-        "body": "Comment GUIDE below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w3-d9-aolive-privacy",
     "account": "aolivetv",
     "day": 9,
@@ -1134,6 +1093,47 @@
         "eyebrow": "Read it yourself",
         "title": "Ask before you upload. Always.",
         "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w3-d9-fegorson-expression",
+    "account": "fegorson_studio",
+    "day": 9,
+    "caption": "Why some of your photos smile and some don't.\n\nExpression follows what you upload. Give it a genuine smile and it can make smiling shots. Give it none and every smile is guesswork.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#photographytips #portraittips #nigerianphotographer #aiphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Expression",
+        "title": "Why your photos won't smile properly.",
+        "body": "It can only use the expressions you *gave* it.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "A smile is not generic.",
+        "body": "Yours has a shape. Which teeth show, how your eyes narrow, which side lifts first. Invented smiles look like somebody else's."
+      },
+      {
+        "type": "steps",
+        "title": "What to upload",
+        "items": [
+          "One genuine smile, teeth showing",
+          "One relaxed neutral face",
+          "Both looking into the lens",
+          "Neither heavily filtered"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "There's a switch for it too.",
+        "body": "If you want every image serious and closed-lipped, there's a *no smiles* option at checkout."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Control it",
+        "title": "Give it your smile and it will use yours.",
+        "body": "Comment GUIDE below and I'll send you the link."
       }
     ]
   },
@@ -1181,6 +1181,47 @@
     ]
   },
   {
+    "id": "w3-d10-aolive-cantdo",
+    "account": "aolivetv",
+    "day": 10,
+    "caption": "What this can't do.\n\nEvery tool has limits. Better you hear them from us than find out after paying.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#honestreview #aiphotography #nigerianbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Honest limits",
+        "title": "What this can't do.",
+        "body": "Better from us than *after you pay*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "It will not",
+        "items": [
+          "Fix photos where your face isn't visible",
+          "Work well from heavily filtered uploads",
+          "Guess how you look from behind without a photo",
+          "Replace a photographer for a live event"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "It is not a wedding photographer.",
+        "body": "Nothing here covers a live event, a moving crowd, or a moment you had to be there for. Different job entirely."
+      },
+      {
+        "type": "text",
+        "title": "What it does do well.",
+        "body": "Portraits, headshots, styled looks, product and outfit shots — anything where *you* are the subject and there is time to plan."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Now you know",
+        "title": "Use it for what it's actually good at.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
     "id": "w3-d10-fegorson-framing",
     "account": "fegorson_studio",
     "day": 10,
@@ -1223,47 +1264,6 @@
     ]
   },
   {
-    "id": "w3-d10-aolive-cantdo",
-    "account": "aolivetv",
-    "day": 10,
-    "caption": "What this can't do.\n\nEvery tool has limits. Better you hear them from us than find out after paying.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#honestreview #aiphotography #nigerianbusiness #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Honest limits",
-        "title": "What this can't do.",
-        "body": "Better from us than *after you pay*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "steps",
-        "title": "It will not",
-        "items": [
-          "Fix photos where your face isn't visible",
-          "Work well from heavily filtered uploads",
-          "Guess how you look from behind without a photo",
-          "Replace a photographer for a live event"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "It is not a wedding photographer.",
-        "body": "Nothing here covers a live event, a moving crowd, or a moment you had to be there for. Different job entirely."
-      },
-      {
-        "type": "text",
-        "title": "What it does do well.",
-        "body": "Portraits, headshots, styled looks, product and outfit shots — anything where *you* are the subject and there is time to plan."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Now you know",
-        "title": "Use it for what it's actually good at.",
-        "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w3-d11-aluxart-thanksgiving",
     "account": "aluxartandframes",
     "day": 11,
@@ -1298,6 +1298,47 @@
         "eyebrow": "For the album",
         "title": "The day deserves better than a blurred snap.",
         "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w3-d11-aolive-cv",
+    "account": "aolivetv",
+    "day": 11,
+    "caption": "Job hunting? Your CV photo is doing half the talking.\n\nA clean, serious portrait costs less than the transport to one interview.\n\n💬 Comment PRICE and I'll send you the link.\n\n#jobsearch #cvtips #nigerianjobs #careertips #linkedin #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Job hunting",
+        "title": "Your CV photo talks before you do.",
+        "body": "It arrives *before* your first sentence.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "The cropped one isn't working.",
+        "body": "Everybody can tell it came from a wedding. It says you didn't think this mattered."
+      },
+      {
+        "type": "steps",
+        "title": "What a proper one changes",
+        "items": [
+          "Your CV gets read further down",
+          "LinkedIn profile visits go somewhere",
+          "You look like you plan ahead",
+          "You stop dreading the photo question"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Cheaper than the interview trip.",
+        "body": "It costs less than transport to one interview, and you use it for years."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Before the next application",
+        "title": "Fix the photo before you send the CV.",
+        "body": "Comment PRICE below and I'll send you the link."
       }
     ]
   },
@@ -1345,47 +1386,6 @@
     ]
   },
   {
-    "id": "w3-d11-aolive-cv",
-    "account": "aolivetv",
-    "day": 11,
-    "caption": "Job hunting? Your CV photo is doing half the talking.\n\nA clean, serious portrait costs less than the transport to one interview.\n\n💬 Comment PRICE and I'll send you the link.\n\n#jobsearch #cvtips #nigerianjobs #careertips #linkedin #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "Job hunting",
-        "title": "Your CV photo talks before you do.",
-        "body": "It arrives *before* your first sentence.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "The cropped one isn't working.",
-        "body": "Everybody can tell it came from a wedding. It says you didn't think this mattered."
-      },
-      {
-        "type": "steps",
-        "title": "What a proper one changes",
-        "items": [
-          "Your CV gets read further down",
-          "LinkedIn profile visits go somewhere",
-          "You look like you plan ahead",
-          "You stop dreading the photo question"
-        ]
-      },
-      {
-        "type": "text",
-        "title": "Cheaper than the interview trip.",
-        "body": "It costs less than transport to one interview, and you use it for years."
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Before the next application",
-        "title": "Fix the photo before you send the CV.",
-        "body": "Comment PRICE below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w3-d12-aluxart-couples",
     "account": "aluxartandframes",
     "day": 12,
@@ -1422,6 +1422,46 @@
         "type": "cta",
         "eyebrow": "Bring someone",
         "title": "One session. Both of you.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w3-d12-aolive-firsttime",
+    "account": "aolivetv",
+    "day": 12,
+    "caption": "Never done this before? Start here.\n\nThe whole thing, from opening the site to downloading, explained for someone who has never tried it.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#beginnerguide #howto #aiphotography #lagosphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "First time",
+        "title": "Never done this before?",
+        "body": "Here is the whole thing, *start to finish*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "shot",
+        "title": "1. Browse the styles.",
+        "body": "Each one is a real photographer's look. Tap the one you want.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "shot",
+        "title": "2. Upload your photos.",
+        "body": "The screen tells you exactly which four to bring.",
+        "image": "scripts/carousel/shots/shot-studio-upload.png"
+      },
+      {
+        "type": "shot",
+        "title": "3. Collect your gallery.",
+        "body": "Images appear as they finish. Download what you want.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "That's all",
+        "title": "Three steps. No prompts to write.",
         "body": "Comment STUDIO below and I'll send you the link."
       }
     ]
@@ -1470,46 +1510,6 @@
     ]
   },
   {
-    "id": "w3-d12-aolive-firsttime",
-    "account": "aolivetv",
-    "day": 12,
-    "caption": "Never done this before? Start here.\n\nThe whole thing, from opening the site to downloading, explained for someone who has never tried it.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#beginnerguide #howto #aiphotography #lagosphotographer #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "First time",
-        "title": "Never done this before?",
-        "body": "Here is the whole thing, *start to finish*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "shot",
-        "title": "1. Browse the styles.",
-        "body": "Each one is a real photographer's look. Tap the one you want.",
-        "image": "scripts/carousel/shots/marketplace-grid.jpg"
-      },
-      {
-        "type": "shot",
-        "title": "2. Upload your photos.",
-        "body": "The screen tells you exactly which four to bring.",
-        "image": "scripts/carousel/shots/shot-studio-upload.png"
-      },
-      {
-        "type": "shot",
-        "title": "3. Collect your gallery.",
-        "body": "Images appear as they finish. Download what you want.",
-        "image": "scripts/carousel/shots/m1-gallery.jpg",
-        "fit": "contain"
-      },
-      {
-        "type": "cta",
-        "eyebrow": "That's all",
-        "title": "Three steps. No prompts to write.",
-        "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
     "id": "w3-d13-aluxart-detty",
     "account": "aluxartandframes",
     "day": 13,
@@ -1549,48 +1549,6 @@
         "eyebrow": "Get ahead",
         "title": "Bank the photos before everyone panics.",
         "body": "Comment STUDIO below and I'll send you the link."
-      }
-    ]
-  },
-  {
-    "id": "w3-d13-fegorson-secondtemplate",
-    "account": "fegorson_studio",
-    "day": 13,
-    "caption": "One template is a test. Five is a business.\n\nEvery style you list is another thing that can sell while you're shooting something else.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #creatoreconomy #nigerianphotographer #passiveincome #aluxart",
-    "slides": [
-      {
-        "type": "cover",
-        "eyebrow": "For photographers",
-        "title": "One template is a test. Five is a business.",
-        "body": "There's no cap on how many you *list*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "Your first one teaches you the format.",
-        "body": "The second takes half the time. By the fifth you know exactly which looks people book."
-      },
-      {
-        "type": "shot",
-        "title": "They all sit in the same marketplace.",
-        "body": "Each one findable on its own, each one earning separately.",
-        "image": "scripts/carousel/shots/marketplace-grid.jpg"
-      },
-      {
-        "type": "steps",
-        "title": "What to list next",
-        "items": [
-          "The look clients ask you for most",
-          "The occasion you shoot every weekend",
-          "A style nobody else is offering",
-          "The one you love that rarely gets booked"
-        ]
-      },
-      {
-        "type": "cta",
-        "eyebrow": "Keep listing",
-        "title": "Every style is another door open.",
-        "body": "Comment CREATOR below and I'll send you the link."
       }
     ]
   },
@@ -1638,6 +1596,48 @@
     ]
   },
   {
+    "id": "w3-d13-fegorson-secondtemplate",
+    "account": "fegorson_studio",
+    "day": 13,
+    "caption": "One template is a test. Five is a business.\n\nEvery style you list is another thing that can sell while you're shooting something else.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #creatoreconomy #nigerianphotographer #passiveincome #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For photographers",
+        "title": "One template is a test. Five is a business.",
+        "body": "There's no cap on how many you *list*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Your first one teaches you the format.",
+        "body": "The second takes half the time. By the fifth you know exactly which looks people book."
+      },
+      {
+        "type": "shot",
+        "title": "They all sit in the same marketplace.",
+        "body": "Each one findable on its own, each one earning separately.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "What to list next",
+        "items": [
+          "The look clients ask you for most",
+          "The occasion you shoot every weekend",
+          "A style nobody else is offering",
+          "The one you love that rarely gets booked"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Keep listing",
+        "title": "Every style is another door open.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
     "id": "w3-d14-aluxart-oldphotos",
     "account": "aluxartandframes",
     "day": 14,
@@ -1674,6 +1674,49 @@
         "type": "cta",
         "eyebrow": "Check first",
         "title": "Look again before the bin.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w3-d14-aolive-whytrust",
+    "account": "aolivetv",
+    "day": 14,
+    "caption": "Built by a working photographer, not a tech company guessing.\n\nEvery rule in it came from a real shoot going wrong and being fixed.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nigerianphotographer #lagosphotographer #builtinnigeria #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Who built this",
+        "title": "Built by a photographer. It shows.",
+        "body": "Not a tech company *guessing* at photography.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "Things only a photographer worries about",
+        "items": [
+          "Skin tone staying true at every depth",
+          "Fabric texture surviving the render",
+          "Wall and floor changing together",
+          "Real lighting names, not sliders"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Every rule came from a mistake.",
+        "body": "A tiara that came back redesigned. A backdrop that changed the wall and not the floor. Each one fixed, then written into the system."
+      },
+      {
+        "type": "shot",
+        "title": "The result is meant to survive a photographer's eye.",
+        "body": "Because one is checking it.",
+        "image": "scripts/carousel/shots/m1-1.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Made in Nigeria",
+        "title": "Built here, for the way we actually shoot.",
         "body": "Comment STUDIO below and I'll send you the link."
       }
     ]
@@ -1721,45 +1764,899 @@
     ]
   },
   {
-    "id": "w3-d14-aolive-whytrust",
-    "account": "aolivetv",
-    "day": 14,
-    "caption": "Built by a working photographer, not a tech company guessing.\n\nEvery rule in it came from a real shoot going wrong and being fixed.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nigerianphotographer #lagosphotographer #builtinnigeria #aluxart",
+    "id": "w4-d15-aluxart-graduation",
+    "account": "aluxartandframes",
+    "day": 15,
+    "caption": "Convocation photos that aren't taken in a crowd.\n\nGown, cap, proper lighting — without queueing behind three hundred other families.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#graduation #convocation #nigerianstudents #classof2026 #aluxart",
     "slides": [
       {
         "type": "cover",
-        "eyebrow": "Who built this",
-        "title": "Built by a photographer. It shows.",
-        "body": "Not a tech company *guessing* at photography.",
+        "eyebrow": "Convocation",
+        "title": "Four years. One rushed photo.",
+        "body": "The queue was *three hundred families* long.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You know how the day goes.",
+        "body": "Gown on, ten minutes of chaos, someone's uncle in the background, and a photo you'll never print."
+      },
+      {
+        "type": "shot",
+        "title": "Do it properly afterwards.",
+        "body": "Proper lighting, several angles, nobody else in frame.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "What you actually want",
+        "items": [
+          "The gown, correctly worn",
+          "A photo your parents will frame",
+          "Something for LinkedIn, not just the group chat",
+          "Time to choose, not ten rushed minutes"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "You earned it",
+        "title": "Four years deserves more than a corridor snap.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d15-aolive-payment",
+    "account": "aolivetv",
+    "day": 15,
+    "caption": "How paying actually works.\n\nCard or bank transfer, both fine. What matters is what happens after — and you don't have to sit there waiting.\n\n💬 Comment PRICE and I'll send you the link.\n\n#payment #paystack #nigerianbusiness #onlinepayment #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Paying",
+        "title": "Card or transfer. Both work.",
+        "body": "What matters is what happens *afterwards*.",
         "kicker": "Swipe →"
       },
       {
         "type": "steps",
-        "title": "Things only a photographer worries about",
+        "title": "The order of things",
         "items": [
-          "Skin tone staying true at every depth",
-          "Fabric texture surviving the render",
-          "Wall and floor changing together",
-          "Real lighting names, not sliders"
+          "Choose your style and options",
+          "The price shows before you commit",
+          "Pay by card or bank transfer",
+          "Your shoot starts once payment lands"
         ]
       },
       {
         "type": "text",
-        "title": "Every rule came from a mistake.",
-        "body": "A tiara that came back redesigned. A backdrop that changed the wall and not the floor. Each one fixed, then written into the system."
+        "title": "Transfers take a few minutes.",
+        "body": "Banks confirm at their own pace. You don't have to sit on the payment page waiting — the shoot starts when the money arrives."
+      },
+      {
+        "type": "text",
+        "title": "The price you saw is the price.",
+        "body": "No booking fee appearing at the end, no subscription, no charge for looking."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "No surprises",
+        "title": "See the price, pay it, done.",
+        "body": "Comment PRICE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d15-fegorson-pricing",
+    "account": "fegorson_studio",
+    "day": 15,
+    "caption": "Photographers: how to price your template.\n\nMost people set it too low out of nerves. Your style is worth what your clients already pay you for it.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #pricingstrategy #nigerianphotographer #creatoreconomy #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For creators",
+        "title": "You are about to underprice this.",
+        "body": "Almost everyone *does*, the first time.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Nerves set the price, not value.",
+        "body": "You list at the lowest number you dare, someone books it, and you have set your ceiling for everyone who comes after."
+      },
+      {
+        "type": "steps",
+        "title": "Price it on what it is",
+        "items": [
+          "What clients already pay for this look",
+          "That you built it once and it sells repeatedly",
+          "That nobody else is offering your exact style",
+          "That cheap reads as unsure, not as generous"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "You can change it whenever.",
+        "body": "The price is yours. Start where you think it belongs and adjust from real bookings, not from nerves."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Your call",
+        "title": "Charge what the work is worth.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d16-aluxart-team",
+    "account": "aluxartandframes",
+    "day": 16,
+    "caption": "Team headshots that actually match.\n\nEight staff, eight different phone photos, one website that looks assembled from strangers. Same style across everyone fixes it.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#teamphotos #corporateheadshots #nigerianbusiness #companyculture #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For teams",
+        "title": "Your team page looks like eight strangers.",
+        "body": "Eight photos, eight *different* days.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Nobody notices why it looks wrong.",
+        "body": "One selfie, one cropped wedding photo, one taken in a car. Different lighting, different backgrounds, no shared standard."
+      },
+      {
+        "type": "steps",
+        "title": "How to fix it in a week",
+        "items": [
+          "Choose one corporate style",
+          "Every staff member uploads their own photos",
+          "Everyone books the same style",
+          "One consistent set, no studio day"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "No half-day off for anyone.",
+        "body": "No photographer visiting the office, no rearranging a meeting room, no one person missing because they were on leave."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Look like one company",
+        "title": "One style. Everybody matching.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d16-aolive-library",
+    "account": "aolivetv",
+    "day": 16,
+    "caption": "Upload once, use again.\n\nYour photos stay in your library, so the second shoot takes about a minute to set up.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#howto #aiphotography #lagosphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "A small thing",
+        "title": "The second shoot takes a minute.",
+        "body": "Because your photos are *already there*.",
+        "kicker": "Swipe →"
       },
       {
         "type": "shot",
-        "title": "The result is meant to survive a photographer's eye.",
-        "body": "Because one is checking it.",
+        "title": "Your saved photos.",
+        "body": "Pick from what you uploaded before, or add new ones.",
+        "image": "scripts/carousel/shots/shot-studio-upload.png"
+      },
+      {
+        "type": "steps",
+        "title": "Why it matters",
+        "items": [
+          "Try a second style without re-uploading",
+          "Compare two looks from the same photos",
+          "Book on your phone in a queue",
+          "Clear the library whenever you want"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "It also makes results consistent.",
+        "body": "Same source photos across shoots means the person in them stays *recognisably* the same person."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Set up once",
+        "title": "Do the work once. Book in a minute after that.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d16-fegorson-whatsells",
+    "account": "fegorson_studio",
+    "day": 16,
+    "caption": "What makes a template sell.\n\nAfter watching which ones get booked, it's rarely the most technically impressive. It's the clearest.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #creatoreconomy #nigerianphotographer #marketing #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "What sells",
+        "title": "The best template rarely wins.",
+        "body": "The *clearest* one does.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Buyers scroll fast.",
+        "body": "They are not studying your lighting. They are asking one question: will I look good in this? Answer it in the cover image."
+      },
+      {
+        "type": "steps",
+        "title": "What actually converts",
+        "items": [
+          "A cover image that shows a face clearly",
+          "A name that says the occasion, not a mood",
+          "A description written for the buyer, not for peers",
+          "Sample images that look like the result"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "This is what they're scrolling past.",
+        "body": "Yours has about one second to be understood.",
+        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Make it obvious",
+        "title": "Clear beats clever. Every time.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d17-aluxart-musicians",
+    "account": "aluxartandframes",
+    "day": 17,
+    "caption": "Artists: press shots and cover art without a studio day.\n\nEvery release needs images. Most budgets don't stretch to a shoot per single.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#nigerianmusic #afrobeats #musicpromo #coverart #independentartist #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For artists",
+        "title": "Every release needs images.",
+        "body": "Few budgets stretch to a shoot *per single*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "The maths never works.",
+        "body": "Cover art, press shot, socials, playlist pitch. Four sets of images for one song that might not recoup."
+      },
+      {
+        "type": "shot",
+        "title": "One session, several moods.",
+        "body": "Moody, bright, dramatic, clean — from one upload.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "What one session covers",
+        "items": [
+          "Cover art in square format",
+          "Press shots for blogs",
+          "Vertical images for stories and reels",
+          "Profile images across platforms"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Before the drop",
+        "title": "Sort the images before the release date.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d17-aolive-install",
+    "account": "aolivetv",
+    "day": 17,
+    "caption": "Put it on your home screen.\n\nIt runs like an app once you add it. No app store, no download, no storage used.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#tech #howto #mobiletips #nigeriantech #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Small tip",
+        "title": "Put it on your home screen.",
+        "body": "It behaves like an app. No *app store*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "On iPhone",
+        "items": [
+          "Open aluxartandframes.shop in Safari",
+          "Tap the Share icon, the box with an arrow",
+          "Scroll down the menu",
+          "Tap Add to Home Screen"
+        ]
+      },
+      {
+        "type": "steps",
+        "title": "On Android",
+        "items": [
+          "Open the site in Chrome",
+          "Tap the three-dot menu",
+          "Tap Install app, or Add to Home screen",
+          "It appears with your other apps"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Why bother.",
+        "body": "One tap instead of typing the address. Opens full screen with no browser bar. Uses almost no storage."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Thirty seconds",
+        "title": "One tap to your next shoot.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d17-fegorson-cover",
+    "account": "fegorson_studio",
+    "day": 17,
+    "caption": "Your cover image is doing 90% of the selling.\n\nIt's the only thing most buyers ever see. Choose it like it's the whole listing, because it nearly is.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #marketing #nigerianphotographer #creatoreconomy #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "One image decides",
+        "title": "Your cover is the whole listing.",
+        "body": "It is the only thing most people *ever* see.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "A cover that works",
+        "items": [
+          "One face, clearly lit, looking at camera",
+          "The style unmistakable at thumbnail size",
+          "No text — the name already says it",
+          "The result you actually deliver"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Test it at thumbnail size.",
+        "body": "Shrink it until it's the size of a fingernail. If you can't tell what it is, buyers scrolling can't either."
+      },
+      {
+        "type": "text",
+        "title": "Don't use your most complicated shot.",
+        "body": "The technically hardest image is rarely the most *legible* one. Legible sells."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Choose carefully",
+        "title": "One image is doing all the work. Pick the right one.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d18-aluxart-mothers",
+    "account": "aluxartandframes",
+    "day": 18,
+    "caption": "Your mother has no good photos of herself.\n\nCheck. She'll have hundreds of everyone else and almost none of her.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#mothersday #familyphotos #nigerianmothers #giftideas #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Go and check",
+        "title": "Your mother has no good photos of herself.",
+        "body": "Hundreds of everyone else. Almost none of *her*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "It's the same in every family.",
+        "body": "She took the pictures, organised the outfits, held the bags. Then she's in three photos, all blurred, all from behind."
+      },
+      {
+        "type": "shot",
+        "title": "A few phone photos are enough.",
+        "body": "Proper portraits from whatever exists on her phone or yours.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "What to do with them",
+        "items": [
+          "Print and frame one properly",
+          "Give her the set for her own phone",
+          "Use one for the family group",
+          "Keep the rest for later. You know why."
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Don't wait",
+        "title": "Take the photos while you still can.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d18-aolive-download",
+    "account": "aolivetv",
+    "day": 18,
+    "caption": "Getting your photos out.\n\nOne at a time, or the whole set as a zip. Full resolution either way.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#howto #aiphotography #photography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Downloading",
+        "title": "Getting your photos out.",
+        "body": "One at a time, or the *whole set*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "Two ways",
+        "items": [
+          "Tap any single image to download it",
+          "Or take the whole shoot as one zip",
+          "Both at full resolution",
+          "Straight to your phone or laptop"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The zip is for the whole set.",
+        "body": "Useful when you're taking ten images to a printer or a designer and don't want to save them one by one."
+      },
+      {
+        "type": "text",
+        "title": "Download them properly, once.",
+        "body": "Save them somewhere you'll find them again. Screenshotting from the gallery throws away most of the quality."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Keep the originals",
+        "title": "Full resolution, not a screenshot.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d18-fegorson-samples",
+    "account": "fegorson_studio",
+    "day": 18,
+    "caption": "Which of your photos should become the samples?\n\nNot your favourites. The ones that show what a buyer will get.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #portfolio #nigerianphotographer #creatoreconomy #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Choosing samples",
+        "title": "Not your favourites. Your clearest.",
+        "body": "Samples are a *promise*, not a portfolio.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Your favourite shot is often the wrong one.",
+        "body": "The dramatic one you're proud of, with half the face in shadow, tells a buyer nothing about what they'll receive."
+      },
+      {
+        "type": "steps",
+        "title": "Pick samples that",
+        "items": [
+          "Show the lighting clearly on a face",
+          "Match what the template actually produces",
+          "Cover a range of people, not one model",
+          "Would still read at thumbnail size"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "One caution about client work.",
+        "body": "If you're using photographs of clients, get their agreement first. It's their face on a public listing."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Set expectations",
+        "title": "Show what they'll get, not what you're proudest of.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d19-aluxart-realestate",
+    "account": "aluxartandframes",
+    "day": 19,
+    "caption": "Agents, consultants, lawyers — you sell trust before you sell anything else.\n\nAnd trust arrives with your photo, before you've said a word.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#realestate #consultant #professionalservices #nigerianbusiness #personalbranding #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Professional services",
+        "title": "You sell trust before anything else.",
+        "body": "And trust arrives with your *photo*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Nobody wires money to a stranger.",
+        "body": "Agents, consultants, lawyers, brokers — the client is deciding whether you're safe long before they read your credentials."
+      },
+      {
+        "type": "steps",
+        "title": "Where the photo is doing work",
+        "items": [
+          "Property listings with your face on them",
+          "WhatsApp Business profile",
+          "Proposals and pitch decks",
+          "Flyers and boards"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Same person, several registers.",
+        "body": "Warm for social, serious for the proposal.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Look reliable",
+        "title": "The photo is the first thing they trust.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d19-aolive-different",
+    "account": "aolivetv",
+    "day": 19,
+    "caption": "Why the same style looks different on everyone.\n\nIt should. The style is the lighting and the framing — you are still you.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#aiphotography #photography #howitworks #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Common question",
+        "title": "Why does it look different on me?",
+        "body": "Because *you* are different. That's the point.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "A style is not a face.",
+        "body": "What you're buying is the lighting, the framing, the colour and the posing. What stays yours is everything about you."
+      },
+      {
+        "type": "steps",
+        "title": "What the style controls",
+        "items": [
+          "Where the light comes from",
+          "How close the camera sits",
+          "The colour and mood",
+          "The background and setting"
+        ]
+      },
+      {
+        "type": "steps",
+        "title": "What stays yours",
+        "items": [
+          "Your face and its structure",
+          "Your skin tone and texture",
+          "Your build and proportions",
+          "Your hair"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "As it should be",
+        "title": "Their lighting. Your face. Every time.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d19-fegorson-assets",
+    "account": "fegorson_studio",
+    "day": 19,
+    "caption": "Build your backdrop library once, reuse it forever.\n\nEvery backdrop, pose and lighting look you add is available to every template you build after it.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #workflow #nigerianphotographer #creatoreconomy #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Work once",
+        "title": "Build the library once. Reuse it forever.",
+        "body": "Every template after the first gets *faster*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "The first template is the slow one.",
+        "body": "Backdrops, poses, lighting options — all set up from nothing. The second one starts from everything you already built."
+      },
+      {
+        "type": "steps",
+        "title": "What carries over",
+        "items": [
+          "Backdrops you've added",
+          "Signature poses",
+          "Lighting looks",
+          "Extracted outfits and assets"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "And you can extract new assets.",
+        "body": "Pull a gown out of a client photo and it becomes a reusable asset.",
+        "image": "scripts/carousel/shots/asset-extractor.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Compounding",
+        "title": "Every asset makes the next template cheaper.",
+        "body": "Comment CREATOR below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d20-aluxart-fitness",
+    "account": "aluxartandframes",
+    "day": 20,
+    "caption": "Coaches and trainers: your before-and-after is your advert.\n\nBut most of it is shot in bad gym lighting on a phone at arm's length.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#fitnessnigeria #personaltrainer #gymnigeria #fitnesscoach #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Coaches",
+        "title": "Your advert is a phone photo in bad gym light.",
+        "body": "And it's the *only* thing selling you.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "The work is real. The photo isn't doing it justice.",
+        "body": "Fluorescent overhead light, a mirror, an outstretched arm. It flattens everything you spent months building."
+      },
+      {
+        "type": "steps",
+        "title": "What proper lighting changes",
+        "items": [
+          "Definition actually reads",
+          "The photo looks intentional, not snatched",
+          "You look like a professional, not a member",
+          "It survives being posted next to competitors"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Same person, proper light.",
+        "body": "It's the lighting doing the work, not a filter.",
         "image": "scripts/carousel/shots/m1-1.jpg",
         "fit": "contain"
       },
       {
         "type": "cta",
-        "eyebrow": "Made in Nigeria",
-        "title": "Built here, for the way we actually shoot.",
+        "eyebrow": "Sell the work",
+        "title": "The results are real. Photograph them properly.",
         "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d20-aolive-questions",
+    "account": "aolivetv",
+    "day": 20,
+    "caption": "The questions people ask before booking.\n\nAll answered honestly, including the awkward ones.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#faq #aiphotography #nigerianbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Asked constantly",
+        "title": "The questions everyone asks first.",
+        "body": "Including the *awkward* ones.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "steps",
+        "title": "The short answers",
+        "items": [
+          "Will it look like me? If your uploads are good, yes",
+          "How long? Minutes",
+          "Can I print them? Yes, full resolution",
+          "What if one is wrong? Retry that one, free"
+        ]
+      },
+      {
+        "type": "steps",
+        "title": "The awkward ones",
+        "items": [
+          "Is this cheating? It's a tool, like a studio light",
+          "Will people know? Not if the uploads are good",
+          "Do you keep my photos? Only while producing your shoot",
+          "Can I get a refund? Talk to us — we answer"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "The one we won't dress up.",
+        "body": "Bad uploads produce bad results. That is not a flaw we can hide, and no amount of budget fixes a blurry photo."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Ask anything",
+        "title": "No question is too basic. Ask before you pay.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d20-fegorson-clientchanges",
+    "account": "fegorson_studio",
+    "day": 20,
+    "caption": "When a client says \"this doesn't look like me\".\n\nUsually they're right, and usually it's the uploads. Here's how to handle it without arguing.\n\n💬 Comment GUIDE and I'll send you the link.\n\n#clientmanagement #photographerbusiness #nigerianphotographer #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Client work",
+        "title": "\"This doesn't look like me.\"",
+        "body": "They are usually *right*. Start there.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Don't defend the output.",
+        "body": "Arguing with someone about their own face is unwinnable, and you'll lose the client even if you win the point."
+      },
+      {
+        "type": "steps",
+        "title": "What to check, in order",
+        "items": [
+          "Were the uploads filtered?",
+          "Was there a clear front-facing photo?",
+          "Was there a genuine smile if they wanted one?",
+          "Was there a full-body shot for proportions?"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Then retry the specific image.",
+        "body": "A single frame can be regenerated on its own. Fix the input, retry that one, show them the difference."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Keep the client",
+        "title": "Fix the input, not the argument.",
+        "body": "Comment GUIDE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d21-aluxart-bridalshower",
+    "account": "aluxartandframes",
+    "day": 21,
+    "caption": "Bridal showers, hen nights, baby showers — everyone dresses up and one person ends up taking every photo.\n\nUsually the same person. Usually she isn't in any of them.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#bridalshower #babyshower #nigerianwedding #hennight #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Every celebration",
+        "title": "One person takes every photo.",
+        "body": "And she is in *none* of them.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You know exactly who it is.",
+        "body": "The organiser. The one who booked the venue, chose the colours, and spent the day behind a phone."
+      },
+      {
+        "type": "steps",
+        "title": "How to fix it after the fact",
+        "items": [
+          "Everyone uploads their own few photos",
+          "Each person picks their own look",
+          "Nobody has to be the photographer",
+          "The organiser finally appears"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "Everyone gets a proper set.",
+        "body": "Not just whoever stood still longest.",
+        "image": "scripts/carousel/shots/m1-gallery.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Include her",
+        "title": "Get the organiser into the photos.",
+        "body": "Comment STUDIO below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d21-aolive-onephoto",
+    "account": "aolivetv",
+    "day": 21,
+    "caption": "Only need one good photo? Start there.\n\nYou don't have to buy ten. One clean shot is a perfectly sensible first order.\n\n💬 Comment PRICE and I'll send you the link.\n\n#aiphotography #headshot #profilephoto #nigerianbusiness #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Start small",
+        "title": "You only need one? Buy one.",
+        "body": "There is no package you have to *grow into*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Most people should start here.",
+        "body": "One image, one style, see whether you like it. It costs less than lunch and answers the question properly."
+      },
+      {
+        "type": "steps",
+        "title": "One image is enough when",
+        "items": [
+          "You need a profile picture",
+          "It's for a CV or a bio",
+          "You're testing whether the style suits you",
+          "You want to see the quality before committing"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Then decide.",
+        "body": "If you like it, your photos are already saved and the next shoot takes a minute to set up."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "No commitment",
+        "title": "Try one. Decide after.",
+        "body": "Comment PRICE below and I'll send you the link."
+      }
+    ]
+  },
+  {
+    "id": "w4-d21-fegorson-timeback",
+    "account": "fegorson_studio",
+    "day": 21,
+    "caption": "The real thing this gives a photographer back is time.\n\nNot every job needs you in a room for three hours. Some of them just need your eye.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #worklifebalance #nigerianphotographer #creatoreconomy #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "The honest pitch",
+        "title": "It gives you your Saturdays back.",
+        "body": "Not every job needs you *in the room*.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You know which jobs these are.",
+        "body": "The straightforward headshot. The one profile picture. Three hours of your weekend for something that isn't really photography."
+      },
+      {
+        "type": "steps",
+        "title": "What to keep for yourself",
+        "items": [
+          "Weddings and live events",
+          "Anything with a moment you must catch",
+          "Work where being there is the point",
+          "The jobs you actually enjoy"
+        ]
+      },
+      {
+        "type": "steps",
+        "title": "What a template can carry",
+        "items": [
+          "Standard headshots",
+          "Repeat styles you shoot constantly",
+          "Overflow when you're fully booked",
+          "Clients in cities you don't travel to"
+        ]
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Both, not either",
+        "title": "Keep the work you love. List the rest.",
+        "body": "Comment CREATOR below and I'll send you the link."
       }
     ]
   }
