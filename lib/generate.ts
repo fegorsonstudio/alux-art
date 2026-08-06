@@ -3533,11 +3533,19 @@ export async function startGenerationWorker(
   // A finished shoot that didn't produce every image gets a one-time free
   // regeneration instead of a refund (see /api/shoots/[id]/regenerate).
   const hasFailures = done && totalComplete < total;
+  // Nothing came back at all. This used to report COMPLETE at 100%, so a buyer
+  // who paid and received no images was told their shoot had finished
+  // successfully. "No slots left to work on" is not the same as "it worked".
+  const allFailed = done && totalComplete === 0;
 
   await sql`UPDATE shoots SET
-    status = ${done ? "COMPLETE" : "PROCESSING"},
+    status = ${done ? (allFailed ? "FAILED" : "COMPLETE") : "PROCESSING"},
     progress = ${done ? 100 : Math.max(10, Math.round((totalComplete / total) * 100))},
-    pipeline_stage = ${done ? "Complete" : `Completed ${totalComplete}/${total} shots`},
+    pipeline_stage = ${
+      !done ? `Completed ${totalComplete}/${total} shots`
+      : allFailed ? "No images could be generated"
+      : "Complete"
+    },
     completed_at = ${done ? ts() : null},
     updated_at = ${ts()}
     WHERE id = ${shootId}`;
@@ -3551,7 +3559,15 @@ export async function startGenerationWorker(
   }
 
   if (done) {
-    logEvent('complete', { progress: 100, stage: "Complete" });
+    // The event name must stay 'complete' — the studio page listens for it to
+    // stop streaming (app/studio/page.tsx). It means "processing finished",
+    // not "it worked", so the payload says which one actually happened.
+    logEvent('complete', {
+      progress: 100,
+      stage: allFailed ? "No images could be generated" : "Complete",
+      completed: totalComplete,
+      total,
+    });
   }
 
   // Only clean up reference files on a FULLY successful shoot. If any slot failed,
