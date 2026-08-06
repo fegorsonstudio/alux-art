@@ -24,6 +24,15 @@ export interface Keyword {
   reply: string;
   /** Optional public comment reply, so others see the exchange happened. */
   publicReply?: string;
+  /**
+   * The same message with no URL in it.
+   *
+   * Instagram refuses a DM containing a link when the sending account is under
+   * a link restriction: error 508, subcode 2534122, "Link can't be shared".
+   * The whole message is dropped, so without this the commenter gets nothing at
+   * all. This version points at the profile's bio link instead of carrying one.
+   */
+  replyNoLink?: string;
 }
 
 const SITE = "https://aluxartandframes.shop";
@@ -36,6 +45,11 @@ export const KEYWORDS: Keyword[] = [
       `${SITE}\n\n` +
       "Pick a style, upload a few photos, and your shoot is ready in minutes. " +
       "Any questions, just reply to this message.",
+    replyNoLink:
+      "Here you go 👇\n\n" +
+      "Tap our name at the top of this chat — the link is in our bio.\n\n" +
+      "Pick a style, upload a few photos, and your shoot is ready in minutes. " +
+      "Any questions, just reply to this message.",
     publicReply: "Sent you a DM 📩",
   },
   {
@@ -46,6 +60,12 @@ export const KEYWORDS: Keyword[] = [
       "Four photos is all it takes: one full body, one waist-up on a plain background, " +
       "one close-up, and one where you're genuinely smiling. That last one is the difference " +
       "between a stranger and you.",
+    replyNoLink:
+      "Here's the upload guide 👇\n\n" +
+      "Four photos is all it takes: one full body, one waist-up on a plain background, " +
+      "one close-up, and one where you're genuinely smiling. That last one is the difference " +
+      "between a stranger and you.\n\n" +
+      "Tap our name at the top of this chat to start — the link is in our bio.",
     publicReply: "Just sent it 📩",
   },
   {
@@ -53,6 +73,12 @@ export const KEYWORDS: Keyword[] = [
     reply:
       "Here's where to start 👇\n\n" +
       `${SITE}/become-creator\n\n` +
+      "List your style as a template, set your own price, and get paid every time someone " +
+      "books it. Free to list, and the waitlist is open — you're in straight away.",
+    replyNoLink:
+      "Here's where to start 👇\n\n" +
+      "Tap our name at the top of this chat, open the link in our bio, then go to " +
+      "Become a Creator.\n\n" +
       "List your style as a template, set your own price, and get paid every time someone " +
       "books it. Free to list, and the waitlist is open — you're in straight away.",
     publicReply: "Sent 📩",
@@ -64,6 +90,11 @@ export const KEYWORDS: Keyword[] = [
       `${SITE}/marketplace\n\n` +
       "Every style shows its price before you pay, and you choose how many images you want. " +
       "No subscription, no hidden fees.",
+    replyNoLink:
+      "Here's how pricing works 👇\n\n" +
+      "Every style shows its price before you pay, and you choose how many images you want. " +
+      "No subscription, no hidden fees.\n\n" +
+      "Tap our name at the top of this chat to browse — the link is in our bio.",
     publicReply: "Check your DMs 📩",
   },
 ];

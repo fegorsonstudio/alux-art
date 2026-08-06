@@ -132,41 +132,36 @@ export async function POST(request: NextRequest) {
 
       try {
         // The private reply: one message, addressed to the comment.
-        const send = (cid: string) => fetch(`${GRAPH}/${igUserId}/messages`, {
+        const send = (body: string) => fetch(`${GRAPH}/${igUserId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            recipient: { comment_id: cid },
-            message: { text: keyword.reply },
+            recipient: { comment_id: commentId },
+            message: { text: body },
             access_token: token,
           }),
         }).then(x => x.json());
 
-        let r = await send(commentId);
+        let r = await send(keyword.reply);
 
-        // "Invalid message id" means the id in the webhook payload is not the
-        // one the send API accepts. Sending the same reply by hand with the id
-        // from GET /{media}/comments works, so when the payload id is rejected,
-        // look the comment up on its media and match it by author and text.
-        // Logs both ids so the mismatch stops being a mystery.
-        if (r.error) {
-          const mediaId = (v.media as { id?: string } | undefined)?.id;
-          if (mediaId) {
-            const list = await fetch(
-              `${GRAPH}/${mediaId}/comments?fields=id,text,timestamp,from&access_token=${token}`
-            ).then(x => x.json()).catch(() => null);
-            const match = (list?.data ?? []).find(
-              (c: { id?: string; text?: string; from?: { id?: string } }) =>
-                (c.text ?? "").trim() === text.trim() &&
-                (!from.id || !c.from?.id || c.from.id === from.id)
+        // Instagram drops the entire message when the account is under a link
+        // restriction. It reports that as "Invalid message id", which points at
+        // the wrong thing entirely — the real reason is only in error_subcode
+        // 2534122 / error_user_title "Link can't be shared". Retry without the
+        // URL so the commenter gets a useful reply instead of silence.
+        if (r.error && keyword.replyNoLink) {
+          const linkBlocked =
+            r.error.error_subcode === 2534122 ||
+            /link can'?t be shared|share links/i.test(
+              `${r.error.error_user_title ?? ""} ${r.error.error_user_msg ?? ""}`
             );
-            if (match?.id && match.id !== commentId) {
-              console.warn(
-                `[ig webhook] payload comment id ${commentId} rejected (${r.error.message}); ` +
-                `retrying with looked-up id ${match.id}`
-              );
-              r = await send(match.id);
-            }
+          if (linkBlocked) {
+            console.warn(
+              `[ig webhook] links are blocked for this account — sending the ` +
+              `link-free reply to @${from.username ?? from.id}. ` +
+              `Resolve at Instagram → Settings → Account Status.`
+            );
+            r = await send(keyword.replyNoLink);
           }
         }
 
