@@ -109,6 +109,15 @@ const SLIDES = {
     ${footer(n, t)}`),
 
   /** A screenshot doing the arguing. Caption above so the image can run large. */
+  /**
+   * A screenshot or photo in a rounded frame.
+   *
+   * `contain` is the default and `cover` must be asked for. It used to be the
+   * other way round, and 20 slides were quietly having their edges sliced off —
+   * on a pricing slide the naira sign was the character that got cut. Cropping
+   * a photo loses a little scenery; cropping a screenshot loses words, and
+   * almost every shot here is a screenshot.
+   */
   shot: (s, n, t) => shell(`
     <div class="rule"></div>
     <h2 style="font-size:56px">${em(s.title)}</h2>
@@ -120,7 +129,7 @@ const SLIDES = {
       background:#0b1d15; border:1px solid rgba(67,204,178,.38);
       display:flex; align-items:center; justify-content:center;
     }
-    .shotwrap img{width:100%;height:100%;object-fit:${s.fit === "contain" ? "contain" : "cover"};object-position:top center}`),
+    .shotwrap img{width:100%;height:100%;object-fit:${s.fit === "cover" ? "cover" : "contain"};object-position:top center}`),
 
   /** Numbered steps. Caps at 5 so the type never has to shrink. */
   steps: (s, n, t) => shell(`
