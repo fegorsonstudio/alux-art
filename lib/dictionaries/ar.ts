@@ -413,6 +413,7 @@ const ar: AppDictionary = {
     payAndGenerate: "ادفع {price} وأنشئ {count}",
     adminGenerateFree: "المشرف: إنشاء مجاني",
     yourShoots: "جلساتك ({count})",
+    showMoreShoots: "عرض الجلسات الأقدم",
     openGallery: "فتح المعرض",
     stop: "إيقاف",
     delete: "حذف",

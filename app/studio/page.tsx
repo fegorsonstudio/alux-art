@@ -94,6 +94,11 @@ export default function WorkspacePage() {
   // Shoots
   const [shoots, setShoots] = useState<Shoot[]>([]);
   const [currentShoot, setCurrentShoot] = useState<Shoot | null>(null);
+  // /api/shoots returns 20 at a time plus a cursor. The page used to drop the
+  // cursor, so anyone past 20 shoots could not reach their older galleries at
+  // all — and with a 7-day retention window, unreachable means lost.
+  const [shootsCursor, setShootsCursor] = useState<string | null>(null);
+  const [loadingMoreShoots, setLoadingMoreShoots] = useState(false);
 
   // UI state
   const [status, setStatus] = useState<{ type: "idle" | "loading" | "ok" | "error"; message?: string }>({ type: "idle" });
@@ -171,8 +176,10 @@ export default function WorkspacePage() {
           }
         }
         if (shootsRes.ok) {
-          const shootList: Shoot[] = (await shootsRes.json()).shoots ?? [];
+          const shootsJson = await shootsRes.json();
+          const shootList: Shoot[] = shootsJson.shoots ?? [];
           setShoots(shootList);
+          setShootsCursor(shootsJson.nextCursor ?? null);
           if (shootList.length > 0) {
             const enrichRes = await fetch(`/api/shoots/${shootList[0].id}`);
             if (enrichRes.ok) {
@@ -555,6 +562,28 @@ export default function WorkspacePage() {
       setStatus({ type: "error", message: data.error ?? "Re-roll failed" });
     }
     setBaseAction("idle");
+  };
+
+  const loadMoreShoots = async () => {
+    if (!shootsCursor || loadingMoreShoots) return;
+    setLoadingMoreShoots(true);
+    try {
+      const res = await fetch(`/api/shoots?cursor=${encodeURIComponent(shootsCursor)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const older: Shoot[] = data.shoots ?? [];
+        // Guard against a duplicate page if the button is somehow fired twice.
+        setShoots(prev => {
+          const seen = new Set(prev.map(s => s.id));
+          return [...prev, ...older.filter(s => !seen.has(s.id))];
+        });
+        setShootsCursor(data.nextCursor ?? null);
+      }
+    } catch {
+      setStatus({ type: "error", message: t("msgCouldNotLoad") });
+    } finally {
+      setLoadingMoreShoots(false);
+    }
   };
 
   const openShootGallery = async (shoot: Shoot) => {
@@ -1242,6 +1271,16 @@ export default function WorkspacePage() {
                   );
                 })}
               </div>
+              {shootsCursor && (
+                <button
+                  type="button"
+                  className={styles.loadMoreShootsBtn}
+                  onClick={loadMoreShoots}
+                  disabled={loadingMoreShoots}
+                >
+                  {loadingMoreShoots ? "…" : t("showMoreShoots")}
+                </button>
+              )}
             </div>
           )}
 

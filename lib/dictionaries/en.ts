@@ -412,6 +412,7 @@ const en = {
     payAndGenerate: "Pay {price} & Generate {count}",
     adminGenerateFree: "Admin: Generate Free",
     yourShoots: "Your Shoots ({count})",
+    showMoreShoots: "Show older shoots",
     openGallery: "Open gallery",
     stop: "Stop",
     delete: "Delete",

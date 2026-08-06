@@ -413,6 +413,7 @@ const pt: AppDictionary = {
     payAndGenerate: "Pagar {price} e gerar {count}",
     adminGenerateFree: "Admin: gerar grátis",
     yourShoots: "Suas sessões ({count})",
+    showMoreShoots: "Ver sessões anteriores",
     openGallery: "Abrir galeria",
     stop: "Parar",
     delete: "Excluir",

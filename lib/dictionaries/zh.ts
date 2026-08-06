@@ -413,6 +413,7 @@ const zh: AppDictionary = {
     payAndGenerate: "支付 {price} 并生成 {count} 张",
     adminGenerateFree: "管理员：免费生成",
     yourShoots: "您的拍摄 ({count})",
+    showMoreShoots: "查看更早的拍摄",
     openGallery: "打开图库",
     stop: "停止",
     delete: "删除",

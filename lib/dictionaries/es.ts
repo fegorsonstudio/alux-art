@@ -413,6 +413,7 @@ const es: AppDictionary = {
     payAndGenerate: "Pagar {price} y generar {count}",
     adminGenerateFree: "Admin: generar gratis",
     yourShoots: "Tus sesiones ({count})",
+    showMoreShoots: "Ver sesiones anteriores",
     openGallery: "Abrir galería",
     stop: "Detener",
     delete: "Eliminar",

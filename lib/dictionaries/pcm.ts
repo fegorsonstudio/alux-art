@@ -413,6 +413,7 @@ const pcm: AppDictionary = {
     payAndGenerate: "Pay {price} make we generate {count}",
     adminGenerateFree: "Admin: Generate Free",
     yourShoots: "Your Shoots ({count})",
+    showMoreShoots: "Show older shoots",
     openGallery: "Open gallery",
     stop: "Stop",
     delete: "Delete",
