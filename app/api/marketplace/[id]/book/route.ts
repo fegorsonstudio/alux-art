@@ -32,7 +32,32 @@ interface TaggedRefInput extends RefInput {
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user: sessionUser }, error: authError } = await supabase.auth.getUser();
+
+  // Normally a browser session. The WhatsApp bot has no session — its customer
+  // is a phone number — so a server-to-server call may instead present the
+  // internal secret plus the user it is acting for. Everything downstream is
+  // unchanged and still keyed to user.id, including the checks that every
+  // supplied storage path sits under `${user.id}/`, so a bot booking cannot
+  // reach another person's photos any more than a browser one can.
+  //
+  // Deliberately strict: the secret must be configured AND presented AND match,
+  // and the id must resolve to a real user. Any doubt falls through to 401.
+  let user = sessionUser;
+  if (!user) {
+    const secret = process.env.INTERNAL_API_SECRET;
+    const presented = request.headers.get("x-internal-secret");
+    const actAs = request.headers.get("x-act-as-user");
+    if (secret && presented === secret && actAs && /^[0-9a-f-]{36}$/i.test(actAs)) {
+      const [row] = await sql<{ id: string; email: string | null }[]>`
+        SELECT id, email FROM auth.users WHERE id = ${actAs}`;
+      // Cast, not construct: only id and email are read downstream, and taking
+      // the email from the database means an internal caller cannot claim to be
+      // an admin by asserting one.
+      if (row) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
+    }
+  }
+
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: templateId } = await params;

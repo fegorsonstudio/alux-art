@@ -23,7 +23,25 @@ export async function POST(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+
+  // Same internal door as the booking route, for the same reason: the WhatsApp
+  // bot's customer is a phone number with no browser session. The shoot lookup
+  // below still requires user_id to match, so this cannot pay for someone
+  // else's shoot. The email is read from the database, never asserted by the
+  // caller, so an internal call cannot claim admin and skip payment.
+  let user = sessionUser;
+  if (!user) {
+    const secret = process.env.INTERNAL_API_SECRET;
+    const presented = request.headers.get("x-internal-secret");
+    const actAs = request.headers.get("x-act-as-user");
+    if (secret && presented === secret && actAs && /^[0-9a-f-]{36}$/i.test(actAs)) {
+      const [row] = await sql<{ id: string; email: string | null }[]>`
+        SELECT id, email FROM auth.users WHERE id = ${actAs}`;
+      if (row) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
+    }
+  }
+
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [shoot] = await sql`SELECT id, status, currency, package_size, user_id FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;

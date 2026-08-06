@@ -371,21 +371,83 @@ async function confirm(
     return;
   }
 
-  // Booking and payment run through the site's own booking route so the chat
-  // can never drift from what the web checkout does. That route is the most
-  // safety-critical in the app and still authenticates by session only, so
-  // until it accepts an internal server call the chat hands over with a link
-  // that carries everything already collected.
   const userId = await ensureUser(session, phone);
-  const link = `${SITE_URL}/marketplace/${session.template_id}/book?wa=${encodeURIComponent(session.id)}`;
+  await sendText(creds, phone, "Setting that up now, one moment…");
 
-  await sql`UPDATE whatsapp_sessions SET state = 'AWAITING_PAYMENT', user_id = ${userId}, updated_at = NOW() WHERE id = ${session.id}`;
+  // Booking goes through the site's own route rather than its own SQL, so the
+  // chat can never drift from the web checkout on price, fees, coupons or
+  // template rules. It authenticates this call with the internal secret and the
+  // user being acted for.
+  const paths = await sql<{ storage_path: string; type: string; size: number }[]>`
+    SELECT storage_path, type, size FROM identity_images
+    WHERE user_id = ${userId} AND storage_path = ANY(${session.selfie_paths})`;
 
+  const booking = await fetch(`${SITE_URL}/api/marketplace/${session.template_id}/book`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
+      "x-act-as-user": userId,
+    },
+    body: JSON.stringify({
+      packageSize: session.package_size ?? 5,
+      currency: session.currency ?? "NGN",
+      identityRefs: paths.map((p, i) => ({
+        id: crypto.randomUUID(),
+        name: `WhatsApp ${i + 1}`,
+        type: p.type || "image/jpeg",
+        size: p.size || 1,
+        storageBucket: "identity-images",
+        storagePath: p.storage_path,
+      })),
+    }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e) }));
+
+  if (booking?.error || !booking?.shoot?.id) {
+    console.error("[wa] booking failed:", JSON.stringify(booking).slice(0, 300));
+    await sendText(creds, phone,
+      "Something went wrong setting up your shoot. Nothing has been charged.\n\n" +
+      `You can finish it here instead: ${SITE_URL}/marketplace/${session.template_id}`);
+    return;
+  }
+
+  const shootId = booking.shoot.id as string;
+  await sql`
+    UPDATE whatsapp_sessions
+    SET shoot_id = ${shootId}, state = 'AWAITING_PAYMENT', user_id = ${userId}, updated_at = NOW()
+    WHERE id = ${session.id}`;
+
+  const pay = await fetch(`${SITE_URL}/api/shoots/${shootId}/pay`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
+      "x-act-as-user": userId,
+    },
+  }).then((r) => r.json()).catch((e) => ({ error: String(e) }));
+
+  if (pay?.authorization_url || pay?.url) {
+    await sql`UPDATE whatsapp_sessions SET payment_reference = ${pay.reference ?? null} WHERE id = ${session.id}`;
+    await sendText(creds, phone,
+      "Here's your secure checkout 👇\n\n" +
+      `${pay.authorization_url ?? pay.url}\n\n` +
+      "Pay with card or bank transfer. Your photos are already uploaded, so this is the last step — " +
+      "I'll send the finished shoot straight back here.");
+    return;
+  }
+
+  // Free bookings (an admin grant, a sponsored template) come back with no
+  // payment link because there is nothing to pay.
+  if (pay?.free || pay?.ok) {
+    await sql`UPDATE whatsapp_sessions SET state = 'GENERATING', updated_at = NOW() WHERE id = ${session.id}`;
+    await sendText(creds, phone, "You're all set — no payment needed. Making your photos now ✨");
+    return;
+  }
+
+  console.error("[wa] payment init failed:", JSON.stringify(pay).slice(0, 300));
   await sendText(creds, phone,
-    "Perfect. Here's your secure checkout 👇\n\n" +
-    `${link}\n\n` +
-    "Your photos are already uploaded and waiting, so it's just the payment. " +
-    "I'll send the finished shoot straight back here.");
+    "Your shoot is saved but I couldn't open the payment page.\n\n" +
+    `Finish it here: ${SITE_URL}/studio`);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
