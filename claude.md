@@ -2,9 +2,40 @@
 
 ## Active AI Handoff Status
 
-**Current state:** Production app is stable. Fixed a July-2026 regression where the per-slot reference-image map came out empty (uploaded outfit/accessories/identity stopped reaching fal, causing wrong accessories + AI-looking output); added a permanent guard that recovers any empty map. Accessory anti-brand-hallucination + fabric-realism prompt language added. Subject height/proportions now sourced only from identity refs, never the ghost-mannequin outfit. New "Lighting" buyer choice option (hidden prompt + display thumbnail via new `prompt` option kind). Per-group option cap raised 6 -> 100.
+**Current state (2026-08-06):** Production stable. Session covered five things:
 
-**Current focus:** Improving the Vision and Prompt Orchestration Agent rules for fast and advanced shoot modes.
+1. **Retention cleanup built** — `/api/cron/cleanup-expired` never existed; an hourly cron
+   had been hitting a 404 for weeks, so nothing was ever deleted. Now 7-day retention,
+   daily 03:15 UTC. First run removed 315 objects. **NEVER sweep `shoot_references`** —
+   730 of its rows point into `template-images` (creators' published assets) and 201 files
+   are shared between shoots. See `migrations/` and the route's header comment.
+2. **A shoot where every image failed now reports FAILED**, not COMPLETE at 100%.
+   8 historical rows corrected; rollback list at `/home/aluxart/relabel-rollback.json`.
+3. **Studio pagination** — buyers could only reach their most recent 20 shoots; the API
+   always returned a cursor and the page threw it away.
+4. **Instagram comment→DM working.** Two separate faults: the callback URL was blank in
+   *API setup with Instagram login → step 3* (NOT the generic Webhooks page), and
+   `IG_APP_SECRET` was the wrong secret. Posts now stagger 11:00/15:00/19:00 Lagos, one
+   account per slot. Note: a DM containing a link is refused while an account is under a
+   link restriction (error 508/2534122) — each keyword has a `replyNoLink` fallback.
+5. **WhatsApp booking bot — code complete, not yet live.** See below.
+
+**WhatsApp bot:** every creator connects their own number; one webhook routes by
+`phone_number_id`. Conversation is a state machine in `whatsapp_sessions`
+(IDLE → CHOOSING_TEMPLATE → COLLECTING_PHOTOS → CONFIRMING → AWAITING_PAYMENT →
+GENERATING → DONE). Booking and payment go through the existing marketplace route, which
+now accepts an internal server call (`x-internal-secret` + `x-act-as-user`) alongside the
+browser session — users resolve from `profiles`, **not `auth.users`, which does not exist
+in this database**. Delivery is a poller (`/api/whatsapp/deliver`, cron every 2 min), kept
+out of `lib/generate.ts` on purpose.
+
+**Blocked on the owner:** nothing runs until a WhatsApp Business number is connected —
+needs a dedicated number, a WhatsApp Business Account and Meta business verification
+(CAC certificate for Nigeria, 3–10 days). Per-creator means *each* creator does all of
+that; a house number would work with the same code.
+
+**Current focus:** connect a first WhatsApp number and run one booking end to end before
+opening it to customers.
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
