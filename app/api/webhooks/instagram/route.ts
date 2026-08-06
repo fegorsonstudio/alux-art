@@ -95,6 +95,11 @@ export async function POST(request: NextRequest) {
   };
   try { body = JSON.parse(raw); } catch { return NextResponse.json({ ok: true }); }
 
+  // Meta's exact payload. Comment text and public ids only — no tokens, no
+  // secrets. Kept because the shape of `value` is what decides which id the
+  // send API will accept, and guessing at it cost a day.
+  console.log("[ig webhook] payload:", raw.slice(0, 1200));
+
   const mine = ourHandles();
 
   for (const entry of body.entry ?? []) {
@@ -127,18 +132,50 @@ export async function POST(request: NextRequest) {
 
       try {
         // The private reply: one message, addressed to the comment.
-        const r = await fetch(`${GRAPH}/${igUserId}/messages`, {
+        const send = (cid: string) => fetch(`${GRAPH}/${igUserId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            recipient: { comment_id: commentId },
+            recipient: { comment_id: cid },
             message: { text: keyword.reply },
             access_token: token,
           }),
         }).then(x => x.json());
 
+        let r = await send(commentId);
+
+        // "Invalid message id" means the id in the webhook payload is not the
+        // one the send API accepts. Sending the same reply by hand with the id
+        // from GET /{media}/comments works, so when the payload id is rejected,
+        // look the comment up on its media and match it by author and text.
+        // Logs both ids so the mismatch stops being a mystery.
         if (r.error) {
-          console.error("[ig webhook] private reply failed:", r.error.message?.slice(0, 160));
+          const mediaId = (v.media as { id?: string } | undefined)?.id;
+          if (mediaId) {
+            const list = await fetch(
+              `${GRAPH}/${mediaId}/comments?fields=id,text,timestamp,from&access_token=${token}`
+            ).then(x => x.json()).catch(() => null);
+            const match = (list?.data ?? []).find(
+              (c: { id?: string; text?: string; from?: { id?: string } }) =>
+                (c.text ?? "").trim() === text.trim() &&
+                (!from.id || !c.from?.id || c.from.id === from.id)
+            );
+            if (match?.id && match.id !== commentId) {
+              console.warn(
+                `[ig webhook] payload comment id ${commentId} rejected (${r.error.message}); ` +
+                `retrying with looked-up id ${match.id}`
+              );
+              r = await send(match.id);
+            }
+          }
+        }
+
+        if (r.error) {
+          console.error(
+            "[ig webhook] private reply failed:",
+            JSON.stringify(r.error).slice(0, 400),
+            "| commentId used:", commentId
+          );
         } else {
           console.log(`[ig webhook] sent "${keyword.word}" to @${from.username ?? from.id}`);
           // A public acknowledgement so other readers see it worked. Best effort:
