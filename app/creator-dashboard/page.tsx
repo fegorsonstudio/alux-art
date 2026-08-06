@@ -11,6 +11,7 @@ import ImagePreview from "@/components/ImagePreview";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import { MAX_PROMPT_DESCRIPTION } from "@/lib/choice-groups";
 import CollageEditor, { type CollageImage } from "./CollageEditor";
+import WhatsAppPanel from "./WhatsAppPanel";
 import { Analytics } from "@/lib/analytics";
 import TemplateShareCard from "@/components/TemplateShareCard";
 
@@ -1613,6 +1614,8 @@ function CreatorDashboard() {
           <div className={styles.stat}><span className={styles.statVal}>₦{stats.totalEarnedNgn.toLocaleString()}</span><span className={styles.statLabel}>Total Earned</span></div>
         </div>
       )}
+
+      <WhatsAppPanel />
 
       {/* Username / profile URL */}
       <div className={styles.storefrontSection}>
