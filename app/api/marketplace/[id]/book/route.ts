@@ -49,12 +49,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const presented = request.headers.get("x-internal-secret");
     const actAs = request.headers.get("x-act-as-user");
     if (secret && presented === secret && actAs && /^[0-9a-f-]{36}$/i.test(actAs)) {
-      const [row] = await sql<{ id: string; email: string | null }[]>`
-        SELECT id, email FROM auth.users WHERE id = ${actAs}`;
+      // profiles, not auth.users: Supabase auth lives in Supabase cloud and
+      // that schema is not reachable from this database at all. Querying it
+      // threw, which turned a should-be-401 into a 500.
+      const [row] = await sql<{ id: string; email: string | null; banned: boolean | null }[]>`
+        SELECT id, email, banned FROM profiles WHERE id = ${actAs}`.catch(() => []);
       // Cast, not construct: only id and email are read downstream, and taking
       // the email from the database means an internal caller cannot claim to be
-      // an admin by asserting one.
-      if (row) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
+      // an admin by asserting one. A banned account is refused here too, the
+      // same as it would be through the browser.
+      if (row && !row.banned) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
     }
   }
 

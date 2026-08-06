@@ -462,8 +462,12 @@ async function ensureUser(session: Session, phone: string): Promise<string> {
   if (session.user_id) return session.user_id;
 
   const email = `wa-${phone}@whatsapp.aluxartandframes.shop`;
+
+  // profiles is this database's mirror of the Supabase user. auth.users lives
+  // in Supabase cloud and is not reachable from here, so it is the wrong thing
+  // to look in — every route that needs a user by id or email uses profiles.
   const [existing] = await sql<{ id: string }[]>`
-    SELECT id FROM auth.users WHERE email = ${email} LIMIT 1`.catch(() => []);
+    SELECT id FROM profiles WHERE email = ${email} LIMIT 1`;
   if (existing) return existing.id;
 
   const supa = createServiceClient();
@@ -473,6 +477,15 @@ async function ensureUser(session: Session, phone: string): Promise<string> {
     user_metadata: { source: "whatsapp", phone },
   });
   if (error || !data?.user) throw new Error(`could not create user for ${phone}: ${error?.message}`);
+
+  // The profile row is what the booking and pay routes read to authorise this
+  // customer. A Supabase user without one would be a customer who can be
+  // created but can never book.
+  await sql`
+    INSERT INTO profiles (id, email, display_name, created_at, updated_at)
+    VALUES (${data.user.id}, ${email}, ${`WhatsApp ${phone.slice(-4)}`}, NOW(), NOW())
+    ON CONFLICT (id) DO NOTHING`;
+
   return data.user.id;
 }
 

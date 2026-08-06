@@ -36,9 +36,12 @@ export async function POST(
     const presented = request.headers.get("x-internal-secret");
     const actAs = request.headers.get("x-act-as-user");
     if (secret && presented === secret && actAs && /^[0-9a-f-]{36}$/i.test(actAs)) {
-      const [row] = await sql<{ id: string; email: string | null }[]>`
-        SELECT id, email FROM auth.users WHERE id = ${actAs}`;
-      if (row) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
+      // profiles, not auth.users — that schema is in Supabase cloud and is not
+      // reachable from this database. The .catch keeps a lookup failure a 401
+      // rather than a 500.
+      const [row] = await sql<{ id: string; email: string | null; banned: boolean | null }[]>`
+        SELECT id, email, banned FROM profiles WHERE id = ${actAs}`.catch(() => []);
+      if (row && !row.banned) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
     }
   }
 
