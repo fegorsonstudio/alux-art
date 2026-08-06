@@ -25,6 +25,10 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 const DRY = process.argv.includes("--dry-run");
+// Post one named account rather than all of them, so the three accounts can be
+// spaced hours apart on separate cron entries instead of firing back to back.
+// Omitted means every account, which is the original behaviour.
+const ONLY = (process.argv.find(a => a.startsWith("--account=")) ?? "").split("=")[1] || null;
 const DATA_DIR = process.env.INSTAGRAM_DATA_DIR || "/home/aluxart/instagram-data";
 const STATE = path.join(DATA_DIR, "schedule.json");
 const APP_DIR = process.env.APP_DIR || "/home/aluxart/app";
@@ -55,7 +59,14 @@ async function main() {
 
   // Group by account so each is handled independently.
   const byAccount = {};
-  for (const c of queue) (byAccount[c.account] ??= []).push(c);
+  for (const c of queue) {
+    if (ONLY && c.account !== ONLY) continue;
+    (byAccount[c.account] ??= []).push(c);
+  }
+  if (ONLY && !byAccount[ONLY]) {
+    log(`no carousels queued for account "${ONLY}" — check the spelling against queue.json`);
+    return;
+  }
 
   const posted = [], failed = [], empty = [];
 
@@ -89,7 +100,18 @@ async function main() {
       posted.push(`@${account} — ${next.id}\n  ${link}`);
       log(`${account}: posted ${next.id} -> ${link}`);
     } catch (e) {
-      const msg = (e.stderr || e.message || String(e)).slice(0, 200);
+      // stderr is not the error. The AWS SDK prints a Node-version warning
+      // there on every run, and taking the first 200 characters of stderr
+      // reported that warning as the failure — the real cause of the first
+      // aluxartandframes failure was never visible anywhere.
+      const noise = /NodeVersionSupportWarning|The AWS SDK for JavaScript|versions published after|will require node|^\s*$|^To co/;
+      const lines = [e.stdout, e.stderr, e.message]
+        .filter(Boolean).join("\n").split("\n")
+        .map(l => l.trim())
+        .filter(l => l && !noise.test(l));
+      // Instagram's own error text is the useful part when it is present.
+      const best = lines.find(l => /error|fail|invalid|expired|limit|denied/i.test(l)) ?? lines.at(-1) ?? String(e);
+      const msg = best.slice(0, 300);
       failed.push(`${account}: ${next.id} failed — ${msg}`);
       log(`${account}: FAILED`, msg);
     }

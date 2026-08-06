@@ -69,7 +69,24 @@ export async function POST(request: NextRequest) {
   const ok = sent.length === expected.length &&
     timingSafeEqual(Buffer.from(sent), Buffer.from(expected));
   if (!ok) {
-    console.warn("[ig webhook] bad signature — ignoring");
+    // Events ARE arriving and being dropped here, which is why no auto-DM has
+    // ever gone out. Log enough to tell the two causes apart without ever
+    // printing the secret: a mangled body (lengths/prefix differ oddly) versus
+    // the wrong app secret (body fine, digests simply do not match). Meta signs
+    // with the INSTAGRAM app secret, which is not the Facebook app secret —
+    // that is the usual reason this fails.
+    let accounts = "?";
+    try {
+      const peek = JSON.parse(raw) as { entry?: Array<{ id?: string }> };
+      accounts = (peek.entry ?? []).map(e => e.id).join(",") || "none";
+    } catch { accounts = "unparseable"; }
+    console.warn(
+      "[ig webhook] bad signature — ignoring." +
+      ` bodyBytes=${Buffer.byteLength(raw)} entryIds=${accounts}` +
+      ` sentPrefix=${sent.slice(0, 15)} computedPrefix=${expected.slice(0, 15)}` +
+      ` secretLen=${secret.length}` +
+      " — if the body parsed and only the digests differ, IG_APP_SECRET is the wrong app secret"
+    );
     return NextResponse.json({ error: "bad signature" }, { status: 401 });
   }
 
@@ -90,11 +107,20 @@ export async function POST(request: NextRequest) {
       const from = (v.from ?? {}) as { id?: string; username?: string };
 
       if (!commentId || !text) continue;
-      // Never answer ourselves.
-      if (from.username && mine.has(from.username.toLowerCase())) continue;
+      // Never answer ourselves. Worth logging: testing the automation by
+      // commenting from the account that owns the post is the obvious thing to
+      // try, and it can never work — Instagram usually does not even deliver a
+      // webhook for the owner's own comment. Test from a personal account.
+      if (from.username && mine.has(from.username.toLowerCase())) {
+        console.log(`[ig webhook] ignoring our own comment from @${from.username} — test from a different account`);
+        continue;
+      }
 
       const keyword = matchKeyword(text);
-      if (!keyword) continue;
+      if (!keyword) {
+        console.log(`[ig webhook] comment from @${from.username ?? from.id} matched no keyword: ${text.slice(0, 60)}`);
+        continue;
+      }
 
       const token = tokenForAccountId(igUserId);
       if (!token) { console.warn("[ig webhook] no token for account", igUserId); continue; }
