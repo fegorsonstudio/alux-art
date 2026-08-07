@@ -250,21 +250,27 @@
           "angle": "sheet",
           "recolour": null,
           "done": true,
-          "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3da41f23-7f6a-437b-9953-bd4577c0ec18"
+          "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3da41f23-7f6a-437b-9953-bd4577c0ec18",
+          "localFile": "img-0589--wig.jpeg",
+          "downloadedSize": "2K"
         },
         {
           "kind": "jewellery",
           "angle": "sheet",
           "recolour": null,
           "done": true,
-          "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/64c5ec25-4485-4213-a1c8-687766feddb3"
+          "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/64c5ec25-4485-4213-a1c8-687766feddb3",
+          "localFile": "img-0589--jewellery.jpeg",
+          "downloadedSize": "2K"
         },
         {
           "kind": "nails",
           "angle": "hand",
           "recolour": null,
           "done": true,
-          "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f1916c39-bea6-41f3-a44c-1d7c40d68cf3"
+          "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f1916c39-bea6-41f3-a44c-1d7c40d68cf3",
+          "localFile": "img-0589--nails.jpeg",
+          "downloadedSize": "2K"
         },
         {
           "kind": "backdrop",

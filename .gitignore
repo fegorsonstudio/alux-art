@@ -78,3 +78,4 @@ test-payment.mjs
 # Chrome profile for the Flow thumbnail runner (holds a Google login)
 .flow-profile/
 .wardrobe-assets/
+.wardrobe-download.log
