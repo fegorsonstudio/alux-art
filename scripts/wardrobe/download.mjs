@@ -114,7 +114,13 @@ async function main() {
       if (!loaded) { failed++; log(`✗ ${label} — page would not load`); continue; }
       await sleep(1800);
 
+      // Flow throttles exports: after a run of them it simply stops preparing
+      // the file and the download never starts. Backing off and asking again
+      // recovers, where moving straight on loses the asset. Two extra attempts
+      // with a widening pause, then give up and let a later run retry it.
       let dl = null, usedSize = null;
+      for (let attempt = 1; attempt <= 3 && !dl; attempt++) {
+      if (attempt > 1) { log(`  … throttled, waiting ${attempt * 20}s before retry ${attempt}`); await sleep(attempt * 20000); }
       for (const size of ["2K", "1K"]) {
         // Match the LABEL word "Download", not the lowercase icon ligature. The
         // button reads "download Download"; a lowercase has-text plus .first()
@@ -134,6 +140,7 @@ async function main() {
         if (dl) { usedSize = size; break; }
         await page.keyboard.press("Escape").catch(() => {});
         await sleep(800);
+      }
       }
       // Count failures toward --limit too. Without this a --limit 2 test ran on
       // through five assets, because only successes advanced the counter.
