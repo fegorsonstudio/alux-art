@@ -1,0 +1,119 @@
+{
+  "uploads": {
+    "IMG_0585.JPG::gown": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/f63288d8-6c6d-49a8-bdb3-01e1da023e28-img-0585--gown-deep-emerald.jpeg",
+      "bucket": "template-images",
+      "kind": "gown",
+      "recolour": "deep emerald"
+    },
+    "IMG_0585.JPG::wig": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/e91226a4-2fc5-41c0-ab7b-5c4e755df1ae-img-0585--wig.jpeg",
+      "bucket": "template-images",
+      "kind": "wig",
+      "recolour": null
+    },
+    "IMG_0585.JPG::jewellery": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/2c5b60fa-34be-4b26-a10d-8828540ff565-img-0585--jewellery.jpeg",
+      "bucket": "template-images",
+      "kind": "jewellery",
+      "recolour": null
+    },
+    "IMG_0585.JPG::nails": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/102d7ef3-b4fe-4557-bf4a-764d40a4c83e-img-0585--nails.jpeg",
+      "bucket": "template-images",
+      "kind": "nails",
+      "recolour": null
+    },
+    "IMG_0585.JPG::backdrop": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/fb50f46f-e035-410c-950b-eef116ea61f8-img-0585--backdrop.jpeg",
+      "bucket": "template-images",
+      "kind": "backdrop",
+      "recolour": null
+    },
+    "IMG_0586.JPG::gown": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/312a3f8e-621f-408d-aafb-43119345248b-img-0586--gown-sapphire-blue.jpeg",
+      "bucket": "template-images",
+      "kind": "gown",
+      "recolour": "sapphire blue"
+    },
+    "IMG_0586.JPG::nails": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/b63d7157-2e44-49c6-ac1e-97d71e16b92c-img-0586--nails.jpeg",
+      "bucket": "template-images",
+      "kind": "nails",
+      "recolour": null
+    },
+    "IMG_0586.JPG::backdrop": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/b49b6593-fbe8-4599-8a37-6ab92b73389c-img-0586--backdrop.jpeg",
+      "bucket": "template-images",
+      "kind": "backdrop",
+      "recolour": null
+    },
+    "IMG_0587.JPG::gown": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/af642696-8850-4996-9aba-3dd8daf8a685-img-0587--gown-ruby-red.jpeg",
+      "bucket": "template-images",
+      "kind": "gown",
+      "recolour": "ruby red"
+    },
+    "IMG_0587.JPG::wig": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/e6e03963-9d2f-4eaf-a74f-9a43965fff13-img-0587--wig.jpeg",
+      "bucket": "template-images",
+      "kind": "wig",
+      "recolour": null
+    },
+    "IMG_0587.JPG::jewellery": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/7c7a419c-943e-4fb4-9933-afc403b8f45a-img-0587--jewellery.jpeg",
+      "bucket": "template-images",
+      "kind": "jewellery",
+      "recolour": null
+    },
+    "IMG_0587.JPG::nails": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/f23294a0-40b8-42ad-ab80-2bee1a183b80-img-0587--nails.jpeg",
+      "bucket": "template-images",
+      "kind": "nails",
+      "recolour": null
+    },
+    "IMG_0587.JPG::backdrop": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/40d3056f-8960-4627-bc16-f009e7968862-img-0587--backdrop.jpeg",
+      "bucket": "template-images",
+      "kind": "backdrop",
+      "recolour": null
+    },
+    "IMG_0588.JPG::gown": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/d6a034cf-f618-470b-beb9-bdcb5079016f-img-0588--gown-silver.jpeg",
+      "bucket": "template-images",
+      "kind": "gown",
+      "recolour": "silver"
+    },
+    "IMG_0588.JPG::wig": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/adfa2294-7876-4d80-9ae9-ff04f3eda8ea-img-0588--wig.jpeg",
+      "bucket": "template-images",
+      "kind": "wig",
+      "recolour": null
+    },
+    "IMG_0588.JPG::jewellery": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/5db7d881-1b71-4a0e-8cf2-c7735058ef32-img-0588--jewellery.jpeg",
+      "bucket": "template-images",
+      "kind": "jewellery",
+      "recolour": null
+    },
+    "IMG_0588.JPG::nails": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/8657725e-cebf-4112-88fd-e3174d163e57-img-0588--nails.jpeg",
+      "bucket": "template-images",
+      "kind": "nails",
+      "recolour": null
+    },
+    "IMG_0588.JPG::backdrop": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/8e8422f0-9035-4b3c-9fd9-7425f12adacd-img-0588--backdrop.jpeg",
+      "bucket": "template-images",
+      "kind": "backdrop",
+      "recolour": null
+    },
+    "IMG_0589.JPG::gown": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/219c71cd-8bc6-42c2-9e33-8a8987983e3f-img-0589--gown-amethyst-purple.jpeg",
+      "bucket": "template-images",
+      "kind": "gown",
+      "recolour": "amethyst purple"
+    }
+  },
+  "ownerId": "d80f9e08-014e-48b7-8545-b37652059605"
+}

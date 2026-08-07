@@ -41,6 +41,17 @@ const LIMIT = (() => { const i = args.indexOf("--limit"); return i >= 0 ? parseI
 
 const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
 
+/**
+ * The photo's filename, used as the manifest key.
+ *
+ * NOT path.basename: the queue stores Windows paths, the upload phase runs on
+ * Windows and the template phase runs on Linux, where basename() does not treat
+ * "\" as a separator and hands back the whole "C:\Users\...\IMG_0585.JPG"
+ * string. The keys then never matched and every template was skipped with
+ * "its garment has not been uploaded yet". Split on both separators instead.
+ */
+const fileKey = (p) => String(p).split(/[\\/]/).pop();
+
 const CREATOR_ID = "ae32d95e-85f5-4c8d-bcbb-5446153314f8";   // Fegorson Studio
 const BUCKET = "template-images";
 
@@ -92,7 +103,7 @@ async function upload() {
   for (const p of q.photos.filter(x => x.usable)) {
     for (const j of p.jobs) {
       if (!j.localFile) continue;
-      const key = `${basename(p.file)}::${j.kind}`;
+      const key = `${fileKey(p.file)}::${j.kind}`;
       if (manifest.uploads[key]) continue;
       todo.push({ p, j, key });
     }
@@ -136,7 +147,7 @@ async function templates() {
 
   const q = JSON.parse(readFileSync(QUEUE_FILE, "utf8"));
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"));
-  const up = (photoFile, kind) => manifest.uploads[`${basename(photoFile)}::${kind}`] ?? null;
+  const up = (photoFile, kind) => manifest.uploads[`${fileKey(photoFile)}::${kind}`] ?? null;
 
   const usable = q.photos.filter(p => p.usable);
 
@@ -150,7 +161,7 @@ async function templates() {
       if (!u) continue;
       (pool[p.category] ??= {});
       (pool[p.category][j.kind] ??= []).push({
-        name: `${p.subject || basename(p.file)}`.slice(0, 40),
+        name: `${p.subject || fileKey(p.file)}`.slice(0, 40),
         storagePath: u.storagePath,
       });
     }
@@ -162,7 +173,7 @@ async function templates() {
     if (p.templateId) continue;                 // already built
     const garmentKind = p.garmentKind;
     const garment = garmentKind ? up(p.file, garmentKind) : null;
-    if (!garment) { log(`· skip ${basename(p.file)} — its garment has not been uploaded yet`); continue; }
+    if (!garment) { log(`· skip ${fileKey(p.file)} — its garment has not been uploaded yet`); continue; }
 
     const groups = [];
     // The outfit group holds this template's own recoloured garment.
@@ -208,6 +219,10 @@ async function templates() {
       continue;
     }
 
+    // sql.json(), not JSON.stringify(...)::jsonb. postgres.js already serialises
+    // the value, so stringifying first stored the whole array as a jsonb STRING
+    // — jsonb_typeof came back "string" instead of "array" and the booking page
+    // would have rendered no choice groups at all.
     const [row] = await sql`
       INSERT INTO templates (
         id, creator_id, title, description, category, status,
@@ -218,7 +233,7 @@ async function templates() {
         ${randomUUID()}, ${CREATOR_ID}, ${title}, ${description}, ${p.category}, 'draft',
         ${PRICING.price_1_ngn}, ${PRICING.price_5_ngn}, ${PRICING.price_ngn},
         ${SHOOT.aspect_ratio}, ${SHOOT.shoot_mode}, ${SHOOT.package_size},
-        ${JSON.stringify(groups)}::jsonb, ${JSON.stringify(backgrounds)}::jsonb, NOW(), NOW()
+        ${sql.json(groups)}, ${sql.json(backgrounds)}, NOW(), NOW()
       ) RETURNING id`;
 
     // The garment also goes in as the template's own reference image.
