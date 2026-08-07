@@ -1,0 +1,2065 @@
+{
+  "sourceDir": "C:/Users/FUJITSU/Downloads/sa",
+  "scannedAt": "2026-08-07T14:26:22.484Z",
+  "photos": [
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0585.JPG",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "red carpet event",
+      "garmentKind": "gown",
+      "garmentDescription": "A halter-neck sweetheart-cut gown with an embellished gold bodice featuring leaf-like patterns, a corset-style midsection with vertical beadwork, and a fitted skirt with horizontal beadwork and hip cut-outs.",
+      "colourOriginal": "metallic gold and silver",
+      "colourNew": "deep emerald",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "deep emerald",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0586.JPG",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "Gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A floor-length, form-fitting mermaid gown featuring a high halter-neckline, sweetheart bust, and intricate gold beading, sequins, and rhinestones throughout, with sheer side cut-outs and long, flowing fabric trails from the shoulders.",
+      "colourOriginal": "gold",
+      "colourNew": "sapphire blue",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "sapphire blue",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0587.JPG",
+      "usable": true,
+      "subject": "woman in a gold and bronze beaded gown",
+      "category": "editorial",
+      "occasion": "gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A shimmering gold and bronze floor-length gown featuring a structured, heavily beaded corset bodice with a sweetheart neckline and intricate gold embroidery that extends onto sheer illusion fabric, flowing into a draped skirt made of sparkling metallic mesh adorned with crystals.",
+      "colourOriginal": "gold and bronze",
+      "colourNew": "ruby red",
+      "notes": "There is noticeable motion blur on the left side of the image. The very bottom of the skirt is slightly cropped. A light-colored shawl is draped over the model's arms. A photographer's watermark is visible in the bottom left corner.",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "ruby red",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0588.JPG",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A full-length, sleeveless gown with a halter neckline, featuring intricate gold beading and a shimmering mesh-like skirt.",
+      "colourOriginal": "gold",
+      "colourNew": "silver",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "silver",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0589.JPG",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A floor-length, form-fitting mermaid gown with a halter illusion neckline, intricately embellished with gold beading on the bodice and shimmering iridescent beadwork throughout the sheer fabric.",
+      "colourOriginal": "gold and iridescent silver",
+      "colourNew": "amethyst purple",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "amethyst purple",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0590.JPG",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "gala",
+      "garmentKind": "gown",
+      "garmentDescription": "A floor-length, sleeveless gown with a halter neckline, featuring an intricately embellished corset bodice and a form-fitting skirt made of metallic beading or chainmail-like material, creating a shimmering effect.",
+      "colourOriginal": "bronze metallic",
+      "colourNew": "wine",
+      "notes": "shoes mostly obscured by gown",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "wine",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0591.JPG",
+      "usable": true,
+      "subject": "woman in an embellished gold gown",
+      "category": "editorial",
+      "occasion": "glamorous event",
+      "garmentKind": "gown",
+      "garmentDescription": "A floor-length gold gown featuring a halter neckline, an intricately beaded corset-style bodice with cutout details, and a shimmering, form-fitting mesh skirt that pools at the feet, with a draped fabric.",
+      "colourOriginal": "gold",
+      "colourNew": "pearl white",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "pearl white",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0592.JPG",
+      "usable": true,
+      "subject": "woman in a gold beaded and chainmail gown",
+      "category": "editorial",
+      "occasion": "gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A floor-length, sleeveless gown with a high halter neckline, featuring an ornate gold beaded and embroidered bust, a sheer corset-style bodice with cutouts at the waist, and a draped skirt made of sparkling gold chainmail mesh that pools at the feet.",
+      "colourOriginal": "gold",
+      "colourNew": "teal",
+      "notes": "shoes are not visible",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "teal",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0593.JPG",
+      "usable": true,
+      "subject": "woman in a beaded golden gown",
+      "category": "editorial",
+      "occasion": "red carpet, gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A halter-neck gown with an intricately beaded gold bodice, featuring a corset-style midsection with vertical lines of gold beads and clear crystals, and a lower part made of shimmering gold mesh fabric with cutouts at the hips.",
+      "colourOriginal": "gold",
+      "colourNew": "bronze",
+      "notes": "The full length of the gown and the shoes are cropped and not visible.",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "bronze",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\IMG_0594.JPG",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "red carpet event",
+      "garmentKind": "gown",
+      "garmentDescription": "A fitted, floor-length gown with a high halter neckline, a corseted bodice adorned with intricate gold beading and sequins, and a shimmering, sheer mesh skirt.",
+      "colourOriginal": "gold",
+      "colourNew": "platinum",
+      "notes": "Right hand is covering part of the bust, left hand is covering part of the waist, and shoes are mostly hidden by the gown.",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "platinum",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_101ADE65-78F8-4774-87E3-967E2355FAB7.WEBP",
+      "usable": true,
+      "subject": "woman in a black blazer dress",
+      "category": "editorial",
+      "occasion": "cocktail party, formal event",
+      "garmentKind": "gown",
+      "garmentDescription": "Mini blazer dress with a deep V-neckline, long sleeves, a fitted bodice with buttons, and a pleated A-line skirt.",
+      "colourOriginal": "black",
+      "colourNew": "Navy blue",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Navy blue",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_106BE9FD-EB4D-42DF-9618-01C4A7E1B33C.WEBP",
+      "usable": true,
+      "subject": "woman in an olive green vest top and brown trousers",
+      "category": "trending",
+      "occasion": "smart casual",
+      "garmentKind": "outfit",
+      "garmentDescription": "The outfit consists of a sleeveless, fitted olive green vest top with gold button detailing and a peplum hem, paired with high-waisted, wide-leg chocolate brown trousers featuring a central seam.",
+      "colourOriginal": "olive green top and chocolate brown trousers",
+      "colourNew": "deep magenta top and classic black trousers",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "deep magenta top and classic black trousers",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_1158B748-C7FC-468E-9D77-245974FA48D3.WEBP",
+      "usable": true,
+      "subject": "man in a stylish jacket and wide-leg trousers",
+      "category": "trending",
+      "occasion": "fashion lookbook",
+      "garmentKind": "outfit",
+      "garmentDescription": "A sophisticated outfit featuring a collared, structured, waist-length jacket with an off-white and black plaid pattern, worn over a white collared shirt and a black tie, paired with black full-length wide-leg trousers.",
+      "colourOriginal": "Off-white plaid jacket with black trousers",
+      "colourNew": "Terracotta plaid jacket with black trousers",
+      "notes": "Sunglasses cover the subject's eyes in some frames; a phone covers his face in one frame.",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Terracotta plaid jacket with black trousers",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_128B7D9C-314F-41F1-A496-948473D0A752.WEBP",
+      "usable": true,
+      "subject": "man in a beige jacket and brown trousers",
+      "category": "editorial",
+      "occasion": "casual smart, brunch, date night",
+      "garmentKind": "outfit",
+      "garmentDescription": "A smart-casual outfit featuring a collared light blue long-sleeve shirt with a dark patterned tie, layered under a short, light beige bomber-style jacket with a subtle sheen, paired with tailored, straight-leg dark brown trousers.",
+      "colourOriginal": "light beige jacket, light blue shirt, dark brown trousers",
+      "colourNew": "olive green",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "olive green",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_14745D66-14CC-46BD-9EA8-6E881F1C5C87.WEBP",
+      "usable": true,
+      "subject": "woman in a black suit with a tie",
+      "category": "corporate",
+      "occasion": "corporate headshot, business profile, professional portrait",
+      "garmentKind": "suit",
+      "garmentDescription": "A fitted black blazer with a notched lapel, two-button closure, and long sleeves, worn over a white collared shirt and a slim black tie, paired with matching black trousers (partially visible).",
+      "colourOriginal": "Classic black",
+      "colourNew": "Deep plum",
+      "notes": "Trousers are mostly obscured by the pose; shoes are not visible for the described outfit.",
+      "jobs": [
+        {
+          "kind": "suit",
+          "angle": "sheet",
+          "recolour": "Deep plum",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_17C29F89-5C41-499D-B444-807FF56E6869.WEBP",
+      "usable": true,
+      "subject": "women in black suits",
+      "category": "trending",
+      "occasion": "power dressing",
+      "garmentKind": "suit",
+      "garmentDescription": "A classic black single-breasted blazer paired with a crisp white collared shirt and a slender black tie. The blazer is sometimes worn with matching black trousers (both fitted and wide-leg styles are shown) or draped over the shoulders.",
+      "colourOriginal": "Classic black with white shirt and black tie",
+      "colourNew": "Burgundy",
+      "notes": "Image is a collage of multiple subjects and poses. Some subjects wear sunglasses. Shoes are not clearly visible in any frame. One subject's blazer is draped over her shoulders.",
+      "jobs": [
+        {
+          "kind": "suit",
+          "angle": "sheet",
+          "recolour": "Burgundy",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_24CC815E-249D-4017-9386-8EA540DA8944.WEBP",
+      "usable": true,
+      "subject": "woman in a corporate suit",
+      "category": "corporate",
+      "occasion": "business meeting, corporate event",
+      "garmentKind": "suit",
+      "garmentDescription": "A fitted peplum blazer in nude beige with a v-neck lapel and two gold buttons, paired with high-waisted wide-leg trousers in burgundy.",
+      "colourOriginal": "Nude beige blazer and burgundy trousers",
+      "colourNew": "Charcoal Grey",
+      "notes": "Subject's face is partially obscured by a phone reflection due to the mirror selfie.",
+      "jobs": [
+        {
+          "kind": "suit",
+          "angle": "sheet",
+          "recolour": "Charcoal Grey",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_25F9D63A-D678-40A3-98D9-D6530B2E1624.WEBP",
+      "usable": true,
+      "subject": "woman in a light green outfit",
+      "category": "trending",
+      "occasion": "stylish everyday wear",
+      "garmentKind": "outfit",
+      "garmentDescription": "The outfit features a light green sleeveless polo shirt with a collared neckline, worn over a white long-sleeve turtleneck, paired with matching high-waisted wide-leg trousers.",
+      "colourOriginal": "light green",
+      "colourNew": "champagne",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "champagne",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_336C6665-B7C7-46EA-8806-7E5DB5399FF9.WEBP",
+      "usable": false,
+      "reason": "The image is a collage featuring four distinct outfits, making it impossible to provide a singular garment description for the photograph."
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_4294CA9F-17CE-4E27-8BC8-07474F623D5B.WEBP",
+      "usable": false,
+      "reason": "Image is a collage featuring multiple distinct garments and subjects, not a single photograph of one garment."
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_43AE9F01-7DF5-49CC-AF3C-56D4725BD174.WEBP",
+      "usable": true,
+      "subject": "man in a red jacket and black wide-leg trousers",
+      "category": "editorial",
+      "occasion": "fashion shoot, streetwear",
+      "garmentKind": "outfit",
+      "garmentDescription": "A vibrant red cropped jacket with button details, worn over a white collared shirt and a black slim tie, paired with loose-fitting, wide-leg black trousers.",
+      "colourOriginal": "Red jacket, white shirt, black trousers",
+      "colourNew": "Mustard yellow",
+      "notes": "shoes partially obscured by trousers",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Mustard yellow",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_45251A4C-87A4-45FF-B534-C6F18C18C71D.WEBP",
+      "usable": true,
+      "subject": "woman in an elaborate pink beaded fringe dress",
+      "category": "editorial",
+      "occasion": "fashion event",
+      "garmentKind": "gown",
+      "garmentDescription": "A strapless, sweetheart neckline mini-dress featuring an intricately beaded bodice and structured peplum, with an elaborate skirt overlay of long, flowing fringe strands adorned with small flower-like details.",
+      "colourOriginal": "bubblegum pink",
+      "colourNew": "coral orange",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "coral orange",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_456CC01A-C2A5-4394-AB6A-D7E7D4E32615.WEBP",
+      "usable": true,
+      "subject": "woman in a pinstripe suit",
+      "category": "editorial",
+      "occasion": "fashion editorial",
+      "garmentKind": "suit",
+      "garmentDescription": "A black pinstripe double-breasted suit featuring wide lapels and padded shoulders, paired with a white collared shirt, a black tie with a metallic embellishment, and matching wide-leg trousers.",
+      "colourOriginal": "black pinstripe",
+      "colourNew": "Espresso Brown",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "suit",
+          "angle": "sheet",
+          "recolour": "Espresso Brown",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_45884AF6-A183-4969-8C89-E23B206DE310.WEBP",
+      "usable": true,
+      "subject": "woman in a black blazer dress",
+      "category": "corporate",
+      "occasion": "corporate headshot",
+      "garmentKind": "outfit",
+      "garmentDescription": "A double-breasted black blazer dress with white cuffs, peak lapels, and silver buttons. It is short, above the knee, and features a wrap-style front slit.",
+      "colourOriginal": "black",
+      "colourNew": "rose gold",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "rose gold",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_527046F5-ADC8-433E-ACD9-FE0C7B72B662.WEBP",
+      "usable": true,
+      "subject": "woman in a baby blue top and white trousers taking a mirror selfie",
+      "category": "trending",
+      "occasion": "fashion event",
+      "garmentKind": "outfit",
+      "garmentDescription": "A light blue sleeveless wrap-style pleated top with a V-neckline and structured waist, paired with high-waisted, wide-leg white trousers.",
+      "colourOriginal": "baby blue and white",
+      "colourNew": "sage green and ivory",
+      "notes": "Mirror selfie, slight reflection distortion, but all assets are clearly visible.",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "sage green and ivory",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_576A360B-A4DA-4FF9-BCDD-659F37EEB00C.WEBP",
+      "usable": true,
+      "subject": "woman in a sage green and white outfit",
+      "category": "trending",
+      "occasion": "corporate casual",
+      "garmentKind": "outfit",
+      "garmentDescription": "A white ribbed long-sleeve turtleneck layered under a sage green sleeveless collared knit polo shirt, paired with high-waisted, wide-leg, pleated sage green trousers.",
+      "colourOriginal": "sage green and white",
+      "colourNew": "sky blue",
+      "notes": "shoes are slightly cropped at the bottom but clearly visible.",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "sky blue",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_6A97B07C-492D-471E-8944-E52EDEF7F808.WEBP",
+      "usable": true,
+      "subject": "man in a casual black short-sleeved shirt and shorts",
+      "category": "trending",
+      "occasion": "casual outing, street style",
+      "garmentKind": "outfit",
+      "garmentDescription": "A black short-sleeved button-up shirt, worn open over a white t-shirt, paired with black cargo shorts featuring white circular patterns.",
+      "colourOriginal": "Black and white",
+      "colourNew": "Burnt orange",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Burnt orange",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_7736796A-9D20-4EEF-A227-1AFB23C66A12.WEBP",
+      "usable": true,
+      "subject": "woman in a black blazer dress",
+      "category": "corporate",
+      "occasion": "corporate headshot",
+      "garmentKind": "gown",
+      "garmentDescription": "A classic black blazer-style mini dress featuring a tailored fit, long sleeves, a V-neckline with a stand collar, and a single button closure.",
+      "colourOriginal": "classic black",
+      "colourNew": "Cobalt Blue",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Cobalt Blue",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_81F827DB-4130-429A-837A-A0428D68DF42.WEBP",
+      "usable": true,
+      "subject": "Woman in a white sleeveless mini dress with black accents",
+      "category": "editorial",
+      "occasion": "cocktail party, dinner event, fashion event",
+      "garmentKind": "gown",
+      "garmentDescription": "A sleeveless white mini dress featuring a black Peter Pan collar, a fitted bodice, two black decorative pocket flaps on the A-line skirt, and worn with patterned black tights.",
+      "colourOriginal": "white",
+      "colourNew": "Jet Black",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Jet Black",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_93624056-C43F-4C55-AB2E-6E6B191730F4.WEBP",
+      "usable": true,
+      "subject": "woman in a draped green gown",
+      "category": "editorial",
+      "occasion": "gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "A strapless, fitted midi-length gown with a draped cowl-neck scarf detail and an asymmetrical ruffled hem, made of a satin-like fabric.",
+      "colourOriginal": "Vibrant green",
+      "colourNew": "Marigold yellow",
+      "notes": "Shoes are not visible, and a small part of the bag is slightly covered by the hand but still clearly identifiable.",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Marigold yellow",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_943A83D8-C44D-4AA4-8126-230F19DD6F57.WEBP",
+      "usable": true,
+      "subject": "Man in a preppy vest and tie outfit",
+      "category": "trending",
+      "occasion": "Smart casual, preppy fashion",
+      "garmentKind": "outfit",
+      "garmentDescription": "A long-sleeve white collared shirt worn under a black V-neck knitted sweater vest featuring white striped details on the neckline and hem, paired with classic black slim-fit trousers.",
+      "colourOriginal": "White and Black with a black and white tie",
+      "colourNew": "Forest Green",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Forest Green",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_97C8882B-2E4B-45C5-83D2-BC590F908614.WEBP",
+      "usable": true,
+      "subject": "Four men displaying various stylish outfits and accessories in a composite image",
+      "category": "editorial",
+      "occasion": "fashion photoshoot, smart casual, men's style inspiration",
+      "garmentKind": "outfit",
+      "garmentDescription": "A short-sleeved polo shirt in an off-white ribbed knit with a black collar and cuff trim, paired with black pleated trousers that have a straight, wide leg and a classic fit.",
+      "colourOriginal": "Off-white and black",
+      "colourNew": "Periwinkle blue polo and dark crimson trousers",
+      "notes": "Composite image with four distinct outfits and backdrops. The detailed garment description refers to the top-right outfit, while 'outfit' in assets refers to the other three complete ensembles.",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Periwinkle blue polo and dark crimson trousers",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "belt",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_9C085956-9CEB-47C8-A7D3-45B589A28F94.WEBP",
+      "usable": true,
+      "subject": "woman in a beaded gown",
+      "category": "editorial",
+      "occasion": "Gala event",
+      "garmentKind": "gown",
+      "garmentDescription": "An off-the-shoulder, sweetheart neckline gown with long sheer sleeves, form-fitting and flaring out at the bottom, entirely adorned with small, shimmering red sequins.",
+      "colourOriginal": "bright red",
+      "colourNew": "Fuchsia",
+      "notes": "Shoes are not visible.",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Fuchsia",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_A1141ADE-1088-4038-8162-073CF7B400E0.WEBP",
+      "usable": false,
+      "reason": "The image is a collage of four distinct outfits, making it impossible to provide a single garment description as required by the schema."
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_A90D63BD-5D03-43FC-A27F-08C59DD915C3.WEBP",
+      "usable": true,
+      "subject": "Man in a casual smart outfit",
+      "category": "editorial",
+      "occasion": "casual smart wear, men's fashion",
+      "garmentKind": "outfit",
+      "garmentDescription": "A casual smart outfit featuring a light wash denim jacket with a classic collar, button-front, and breast pockets, worn over a white long-sleeve shirt, a black tie, and slim-fit black tailored trousers.",
+      "colourOriginal": "Light blue denim, white, and black.",
+      "colourNew": "Powder blue denim jacket, soft cream shirt, pewter grey tie, and umber brown trousers.",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Powder blue denim jacket, soft cream shirt, pewter grey tie, and umber brown trousers.",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "belt",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_AC5410AC-852C-46F9-83B9-E9ADF17A390E.WEBP",
+      "usable": true,
+      "subject": "woman in a red halter-neck dress with a bouquet",
+      "category": "portrait",
+      "occasion": "birthday celebration",
+      "garmentKind": "gown",
+      "garmentDescription": "A sleeveless, halter-neck bodycon midi dress in a smooth, stretch fabric.",
+      "colourOriginal": "ruby red",
+      "colourNew": "Cerulean blue",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Cerulean blue",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_AD140266-D4BD-43E5-9B09-3441D3CCD0AF.WEBP",
+      "usable": true,
+      "subject": "woman in a white top and brown trousers",
+      "category": "trending",
+      "occasion": "business casual, smart casual, everyday chic",
+      "garmentKind": "outfit",
+      "garmentDescription": "A fitted white sleeveless peplum top with a round neckline and a diagonal line of decorative gold-toned buttons, paired with high-waisted chocolate brown wide-leg trousers featuring front pleats.",
+      "colourOriginal": "White top and Chocolate Brown trousers",
+      "colourNew": "Oxblood",
+      "notes": "Shoes are slightly cropped at the very tip; the hand covers part of the bag.",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Oxblood",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_B401A03F-51AE-413F-BB14-024D3DF4911E.WEBP",
+      "usable": true,
+      "subject": "woman in a white mini dress",
+      "category": "editorial",
+      "occasion": "cocktail party",
+      "garmentKind": "gown",
+      "garmentDescription": "A mini-length, bodycon dress with a draped cowl neckline and wide, structured shoulder caps forming a cape-like sleeve.",
+      "colourOriginal": "white",
+      "colourNew": "Turquoise",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Turquoise",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_BBE33BE7-9272-4887-984F-7FFB49A627D4.WEBP",
+      "usable": true,
+      "subject": "woman in a two-piece outfit",
+      "category": "trending",
+      "occasion": "corporate casual",
+      "garmentKind": "outfit",
+      "garmentDescription": "A short-sleeved collared button-up top paired with high-waisted, wide-leg trousers featuring a self-tie belt.",
+      "colourOriginal": "Chocolate brown top and cream trousers",
+      "colourNew": "Dusty rose top and light dove grey trousers",
+      "notes": "Subject holding phone covering part of face.",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "Dusty rose top and light dove grey trousers",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_C91BECDE-DB73-4893-AD9E-BA39E044D68E.WEBP",
+      "usable": true,
+      "subject": "woman in a sage green plaid top and black trousers",
+      "category": "trending",
+      "occasion": "casual chic, fashion content",
+      "garmentKind": "outfit",
+      "garmentDescription": "A cropped sage green and white plaid collared V-neck top with voluminous long sleeves and cuffs, paired with high-waisted black wide-leg trousers featuring front seam details.",
+      "colourOriginal": "sage green and white plaid top with black trousers",
+      "colourNew": "crimson red plaid top and black trousers",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "outfit",
+          "angle": "sheet",
+          "recolour": "crimson red plaid top and black trousers",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "bag",
+          "angle": "front",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_CE3F194A-00CF-4FBA-9554-3B62CCEB1514.WEBP",
+      "usable": true,
+      "subject": "woman in a black suit with a graduation stole",
+      "category": "call_to_bar",
+      "occasion": "call to bar, graduation portrait",
+      "garmentKind": "suit",
+      "garmentDescription": "A black double-breasted blazer with structured shoulders, a peplum hemline with feather trim, and a matching fitted mini skirt also with feather trim, paired with a crisp white collared shirt and a black skinny tie.",
+      "colourOriginal": "Classic Black",
+      "colourNew": "Garnet Red",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "suit",
+          "angle": "sheet",
+          "recolour": "Garnet Red",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_E98D0EDB-C045-4445-A280-CAC13ABDCAB0.WEBP",
+      "usable": true,
+      "subject": "woman in a black blazer and wide-leg trousers",
+      "category": "corporate",
+      "occasion": "corporate photoshoot",
+      "garmentKind": "suit",
+      "garmentDescription": "A sophisticated double-breasted blazer with notched lapels, a deep V-neckline, and long sleeves, paired with wide-leg trousers, all in a solid fabric.",
+      "colourOriginal": "Black",
+      "colourNew": "Midnight Blue",
+      "notes": "",
+      "jobs": [
+        {
+          "kind": "suit",
+          "angle": "sheet",
+          "recolour": "Midnight Blue",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "nails",
+          "angle": "hand",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    },
+    {
+      "file": "C:\\Users\\FUJITSU\\Downloads\\sa\\temp_image_FE6B12D8-909B-4444-B2C1-18092B6A902F.WEBP",
+      "usable": true,
+      "subject": "woman in a baby blue gown",
+      "category": "portrait",
+      "occasion": "formal event, prom",
+      "garmentKind": "gown",
+      "garmentDescription": "A structured, off-the-shoulder gown in baby blue, featuring bow-like draped sleeves, a fitted corset-style bodice with subtle embroidered floral patterns, and a voluminous, gathered A-line skirt.",
+      "colourOriginal": "Baby Blue",
+      "colourNew": "Lavender",
+      "notes": "Shoes are partially cropped but the style is clear.",
+      "jobs": [
+        {
+          "kind": "gown",
+          "angle": "sheet",
+          "recolour": "Lavender",
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "wig",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "shoes",
+          "angle": "pair",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "jewellery",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "headwear",
+          "angle": "sheet",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        },
+        {
+          "kind": "backdrop",
+          "angle": "scene",
+          "recolour": null,
+          "done": false,
+          "flowAsset": null
+        }
+      ]
+    }
+  ]
+}

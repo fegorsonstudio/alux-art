@@ -138,17 +138,30 @@ async function main() {
 
   const usedColours = () => usedColoursFrom(queue);
 
+  const failures = [];
   let done = 0;
   for (const file of files) {
     if (done >= LIMIT) break;
     if (already.has(file) && !FORCE) continue;
 
     process.stdout.write(`  ${basename(file).padEnd(46)}`);
-    let info;
-    try {
-      info = await scanOne(model, file, usedColours());
-    } catch (e) {
-      console.log("ERROR", e.message.slice(0, 80));
+    // Retry transient failures. A first run lost its last four photographs to
+    // rate limiting and still printed a clean summary, because the error path
+    // recorded nothing — the files simply never appeared in the queue.
+    let info, lastErr;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        info = await scanOne(model, file, usedColours());
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 4000));
+      }
+    }
+    if (lastErr) {
+      console.log("ERROR", (lastErr.message || String(lastErr)).slice(0, 80));
+      failures.push(basename(file));
       continue;
     }
 
@@ -207,6 +220,13 @@ async function main() {
   const byCat = {};
   for (const p of usable) byCat[p.category] = (byCat[p.category] ?? 0) + 1;
   log("categories: " + Object.entries(byCat).map(([c, n]) => `${c} ${n}`).join(", "));
+  if (failures.length) {
+    log(`FAILED after retries (re-run to pick these up): ${failures.join(", ")}`);
+  }
+  const onDisk = files.length;
+  if (queue.photos.length < onDisk) {
+    log(`WARNING: ${onDisk - queue.photos.length} photo(s) on disk are not in the queue yet`);
+  }
   log(`queue written to ${QUEUE_FILE}`);
 }
 
