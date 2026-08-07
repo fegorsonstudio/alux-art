@@ -81,7 +81,17 @@ async function main() {
   });
   let page = ctx.pages()[0] ?? (await ctx.newPage());
 
-  const ensurePage = async () => (page.isClosed() ? (page = await ctx.newPage()) : page);
+  // If the browser itself goes away there is nothing left to retry against.
+  // Without this the loop ran on for 207 assets in six minutes, marking every
+  // one failed against a dead context and turning one crash into a whole
+  // failed run.
+  let browserGone = false;
+  ctx.on("close", () => { browserGone = true; });
+
+  const ensurePage = async () => {
+    if (browserGone) throw new Error("browser closed");
+    return page.isClosed() ? (page = await ctx.newPage()) : page;
+  };
 
   let done = 0, failed = 0;
   for (const { photo, job } of todo) {
@@ -143,9 +153,14 @@ async function main() {
       done++;
       await sleep(700);
     } catch (e) {
+      const msg = String(e.message ?? e);
       failed++;
-      log(`✗ ${label} — ${String(e.message ?? e).slice(0, 80)}`);
-      try { page = await ensurePage(); } catch {}
+      log(`✗ ${label} — ${msg.slice(0, 80)}`);
+      if (browserGone || /browser has been closed|browser closed|Target crashed/i.test(msg)) {
+        log("browser is gone — stopping. Re-run to continue; nothing done so far is lost.");
+        break;
+      }
+      try { page = await ensurePage(); } catch { break; }
     }
   }
 
