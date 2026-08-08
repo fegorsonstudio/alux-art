@@ -4,12 +4,14 @@
  *
  * A template with no gallery is unsellable: a buyer cannot judge a style from a
  * flat garment cut-out. This generates four images per template in Google Flow —
- * one cover and three gallery shots — from three references at once:
+ * one cover and three gallery shots — from TWO attached references:
  *
  *   identity   the buyer-facing face, from the male or female folder
  *   outfit     that template's own recoloured garment
- *   pose       the photograph the template was built from, so the stance and
- *              energy of the original shot carry over
+ *
+ * The pose comes from the source photograph as a WRITTEN description, never as
+ * an attached image. Attaching it and asking for "only the pose" put the sample
+ * person's face into every shoot instead of the buyer's.
  *
  *   node --experimental-strip-types --env-file=.env.local scripts/wardrobe/shoot.mjs --dry-run
  *   node --experimental-strip-types --env-file=.env.local scripts/wardrobe/shoot.mjs --limit 4
@@ -45,6 +47,31 @@ const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
 const loadQueue = () => JSON.parse(readFileSync(QUEUE_FILE, "utf8"));
 const saveQueue = (q) => writeFileSync(QUEUE_FILE, JSON.stringify(q, null, 2));
 
+/**
+ * Describe a sample photograph's pose in words, once, and cache it.
+ *
+ * The pose photograph is NEVER attached to the generation. Attaching a picture
+ * of a different person and instructing the model to take "only the pose" does
+ * not work — it copied that person's face into every shoot, which is exactly
+ * the fault the owner reported twice. Words carry the stance; they cannot carry
+ * a likeness.
+ */
+async function describePose(photo) {
+  if (photo.poseDescription) return photo.poseDescription;
+  const { GoogleGenerativeAI } = await import("@google/generative-ai");
+  const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const model = genai.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const mime = /\.png$/i.test(photo.file) ? "image/png" : /\.webp$/i.test(photo.file) ? "image/webp" : "image/jpeg";
+  const res = await model.generateContent([
+    { inlineData: { data: readFileSync(photo.file).toString("base64"), mimeType: mime } },
+    "Describe ONLY the body position and camera in this photograph, in one sentence a " +
+    "photographer could act on: stance, weight, arm and hand placement, head angle, gaze " +
+    "direction, and the camera's height and distance. Say nothing about the person's face, " +
+    "identity, clothing, colour or background. No preamble.",
+  ]);
+  return res.response.text().trim().replace(/\s+/g, " ").slice(0, 400);
+}
+
 /** Decided from what the scanner already recorded, so nobody has to label 40 photos. */
 const genderOf = (p) => {
   const s = `${p.subject} ${p.garmentDescription}`;
@@ -59,7 +86,7 @@ const genderOf = (p) => {
  */
 const SHOTS = [
   { id: "cover", framing: "full-length standing portrait, head to below the hem, subject centred",
-    pose: "the exact stance and attitude of the person in IMAGE 3" },
+    pose: "standing tall and square to camera, weight even, arms relaxed at the sides" },
   { id: "three-quarter", framing: "three-quarter length, cropped mid-thigh",
     pose: "turned slightly off-axis, weight on one leg, hands relaxed" },
   { id: "waist-up", framing: "waist-up portrait",
@@ -72,8 +99,9 @@ function shootPrompt(photo, shot) {
   return [
     "EDITORIAL FASHION PHOTOGRAPH built from the attached images.",
     "REFERENCE IMAGE MAP — IMAGE 1: identity reference, the real person whose face and " +
-    "body this must be. IMAGE 2: the garment to be worn, a product cut-out. IMAGE 3: a " +
-    "pose and composition reference only.",
+    "body this must be. IMAGE 2: the garment to be worn, a product cut-out. There is no " +
+    "third image: the pose is described in words below and must not be taken from any " +
+    "photograph.",
 
     "IDENTITY LOCK — the person in the output must be the SAME individual as IMAGE 1: " +
     "same face shape, eye spacing, nose, lips, jawline, skin tone, hairline and body " +
@@ -87,8 +115,11 @@ function shootPrompt(photo, shot) {
     "garment. Fit it to the subject's real body from IMAGE 1, never to a hollow " +
     "mannequin shape.",
 
-    `POSE AND FRAMING — ${shot.framing}. Pose: ${shot.pose}. Take ONLY pose, camera ` +
-    "angle and composition from IMAGE 3 — never its face, its clothing or its identity.",
+    `POSE AND FRAMING — ${shot.framing}. Pose: ${shot.pose}.` +
+    (photo.poseDescription ? ` Reference pose to reproduce: ${photo.poseDescription}` : ""),
+
+    "THE ONLY FACE IN THIS IMAGE IS THE ONE IN IMAGE 1. Do not use any other face " +
+    "from anywhere. If IMAGE 2 shows a garment, take the garment and nothing else.",
 
     `Scene: professional studio, ${photo.occasion || "editorial"} setting, clean seamless ` +
     "backdrop, soft directional key with gentle falloff and a subtle rim for separation.",
@@ -343,6 +374,11 @@ async function main() {
     const garment = join(ASSET_DIR, garmentJob.localFile);
     const pose = p.file;
 
+    if (!p.poseDescription) {
+      p.poseDescription = await describePose(p).catch(() => "");
+      saveQueue(q);
+    }
+
     const label = `${basename(p.file)} ${shot.id} [${gender}]`;
     if (DRY_RUN) {
       log(`· would shoot ${label}`);
@@ -351,15 +387,16 @@ async function main() {
       continue;
     }
 
+    // Only two references now. The pose photograph is deliberately NOT attached.
     let ok = true;
-    for (const f of [identity, garment, pose]) {
+    for (const f of [identity, garment]) {
       const u = await uploadOnce(page, f, uploaded);
       if (!u.ok) { log(`✗ ${label} — upload ${basename(f)}: ${u.why}`); ok = false; break; }
     }
     if (!ok) { failed++; continue; }
 
     const beforeIds = await gridSettled(page);
-    const a = await attachAll(page, [basename(identity), basename(garment), basename(pose)]);
+    const a = await attachAll(page, [basename(identity), basename(garment)]);
     if (!a.ok) { failed++; log(`✗ ${label} — ${a.why}`); await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {}); await sleep(6000); continue; }
 
     const s = await promptAndSend(page, shootPrompt(p, shot));
