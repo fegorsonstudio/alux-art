@@ -161,7 +161,10 @@ async function templates() {
       if (!u) continue;
       (pool[p.category] ??= {});
       (pool[p.category][j.kind] ??= []).push({
-        name: `${p.subject || fileKey(p.file)}`.slice(0, 40),
+        // The asset's OWN name, from name.mjs. Naming these after the source
+        // photo's subject gave a template three pairs of shoes all called
+        // "woman in a beaded gown", which no buyer could choose between.
+        name: (j.assetName || j.kind).slice(0, 40),
         storagePath: u.storagePath,
       });
     }
@@ -177,11 +180,12 @@ async function templates() {
 
     const groups = [];
     // The outfit group holds this template's own recoloured garment.
+    const garmentJob = p.jobs.find(j => j.kind === garmentKind);
     groups.push({
       id: randomUUID(), type: "outfit", label: "Outfit",
       options: [{
         id: randomUUID(), kind: "photo",
-        name: `${p.colourNew || "Outfit"}`.slice(0, 40),
+        name: (garmentJob?.assetName || p.colourNew || "Outfit").slice(0, 40),
         imagePath: garment.storagePath, imageBucket: BUCKET,
       }],
     });
