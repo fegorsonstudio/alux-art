@@ -22,7 +22,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ae2634b1-5eb9-4a28-9811-083d71874aec",
           "localFile": "img-0585--gown-deep-emerald.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Emerald Beaded Halter Gown"
+          "assetName": "Emerald Beaded Halter Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -32,7 +39,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cf3facaf-9185-415a-bb0a-39527e1c00e1",
           "localFile": "img-0585--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black afro wig"
+          "assetName": "Black afro wig",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -42,7 +56,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5cf77ab2-65a3-4adf-9d07-41c6418d14ac",
           "localFile": "img-0585--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold beaded sequin choker"
+          "assetName": "Gold beaded sequin choker",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -52,7 +73,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4c9a1ffd-d0e5-4503-8ced-cd3f6d5508e4",
           "localFile": "img-0585--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold stiletto glitter beads"
+          "assetName": "Gold stiletto glitter beads",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -88,7 +116,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e473ba5f-764e-41ec-b3f1-248385e6e069",
           "localFile": "img-0586--gown-sapphire-blue.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Royal Blue Beaded Cutout Gown"
+          "assetName": "Royal Blue Beaded Cutout Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -98,7 +133,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/557a1412-fc92-4fc2-8632-c2730fdad95b",
           "localFile": "img-0586--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Glitter Rhinestone Almond"
+          "assetName": "Gold Glitter Rhinestone Almond",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -108,7 +150,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/db5aae32-e77b-444c-94ae-72c695486de9",
           "localFile": "img-0586--backdrop.PNG",
           "downloadedSize": "2K",
-          "assetName": "Golden flame pattern"
+          "assetName": "Golden flame pattern",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -133,7 +182,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/945222c1-32c1-4cc3-8e75-4db21015cd0d",
           "localFile": "img-0587--gown-ruby-red.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Red beaded cape gown"
+          "assetName": "Red beaded cape gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -143,7 +199,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d718a4b3-1224-4388-8d24-42ea47f276b9",
           "localFile": "img-0587--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Dark Brown Wavy Low Bun"
+          "assetName": "Dark Brown Wavy Low Bun",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -153,7 +216,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eb585d95-38ce-4f59-a104-a4a7ee17c3d5",
           "localFile": "img-0587--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold wavy ring"
+          "assetName": "Gold wavy ring",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -163,7 +233,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2e814c1f-081f-4920-a402-639a6044fa5d",
           "localFile": "img-0587--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Rose Gold Glitter Rhinestone Stiletto"
+          "assetName": "Rose Gold Glitter Rhinestone Stiletto",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -173,7 +250,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/16896a28-d295-417d-b01b-b6a719913a1b",
           "localFile": "img-0587--backdrop.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Amber Wavy Reflections"
+          "assetName": "Amber Wavy Reflections",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -198,7 +282,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c15e811f-4258-4d4d-8c39-f2bb2ec62dd1",
           "localFile": "img-0588--gown-silver.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver Beaded Halter Corset Gown"
+          "assetName": "Silver Beaded Halter Corset Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -208,7 +299,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96255989-4b43-439f-af6b-bfcc0ce0d804",
           "localFile": "img-0588--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Side-Swept Curly Updo"
+          "assetName": "Black Side-Swept Curly Updo",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -218,7 +316,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/b1b36679-4772-4104-b9c2-d3ea665ba6d9",
           "localFile": "img-0588--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold beaded choker bustier"
+          "assetName": "Gold beaded choker bustier",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -228,7 +333,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3fbb673e-9db7-48d3-8768-beede73516e7",
           "localFile": "img-0588--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Clear stiletto nails"
+          "assetName": "Clear stiletto nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -238,7 +350,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/49214d5d-176c-4a3e-8943-34a65a5089e0",
           "localFile": "img-0588--backdrop.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Golden Wavy Reflections"
+          "assetName": "Golden Wavy Reflections",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -263,7 +382,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d7356d71-cb58-412f-9d45-6f87843ec1ac",
           "localFile": "img-0589--gown-amethyst-purple.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Purple Beaded Halter Gown"
+          "assetName": "Purple Beaded Halter Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -273,7 +399,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3da41f23-7f6a-437b-9953-bd4577c0ec18",
           "localFile": "img-0589--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black short coiffed curls"
+          "assetName": "Black short coiffed curls",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -283,7 +416,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/64c5ec25-4485-4213-a1c8-687766feddb3",
           "localFile": "img-0589--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Filigree Necklace"
+          "assetName": "Gold Filigree Necklace",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -293,7 +433,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f1916c39-bea6-41f3-a44c-1d7c40d68cf3",
           "localFile": "img-0589--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold chunky glitter nails"
+          "assetName": "Gold chunky glitter nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -329,7 +476,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/085f5e73-c748-40e7-9abb-a7a933e04f25",
           "localFile": "img-0590--gown-wine.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Red Halter Beaded Gown"
+          "assetName": "Red Halter Beaded Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -339,7 +493,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/13071c1c-edfc-4f39-9ec0-a3a813b921db",
           "localFile": "img-0590--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black kinky curly"
+          "assetName": "Black kinky curly",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Descriptive text labels in image"
+          }
         },
         {
           "kind": "jewellery",
@@ -349,7 +510,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/97109a94-aed9-4c15-b189-2249cbe6f0e5",
           "localFile": "img-0590--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold ornate bib necklace"
+          "assetName": "Gold ornate bib necklace",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -359,7 +527,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/7fa3ce1a-e0fc-4867-b7b2-0c9a32329ed7",
           "localFile": "img-0590--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Rhinestone Almond Nails"
+          "assetName": "Gold Rhinestone Almond Nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -369,7 +544,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eab0c56f-61ab-43a0-86e7-f3e9f483571b",
           "localFile": "img-0590--backdrop.PNG",
           "downloadedSize": "2K",
-          "assetName": "Fiery Energy Reflection"
+          "assetName": "Fiery Energy Reflection",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -394,7 +576,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ebcffd26-d670-4b4e-a00e-0938bdcd21f9",
           "localFile": "img-0591--gown-pearl-white.JPEG",
           "downloadedSize": "2K",
-          "assetName": "White Beaded Corset Gown"
+          "assetName": "White Beaded Corset Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -404,7 +593,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a3fd7314-c0a3-41c5-af79-b7b19406452d",
           "localFile": "img-0591--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Braided Curly Bun"
+          "assetName": "Black Braided Curly Bun",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -414,7 +610,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e784d36a-9923-431d-8ab5-477a1be19e42",
           "localFile": "img-0591--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Pearl Jewellery Set"
+          "assetName": "Gold Pearl Jewellery Set",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -424,7 +627,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/002a6d90-9dcf-4268-a23f-5550d0e9b4b6",
           "localFile": "img-0591--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Stiletto Beaded Nails"
+          "assetName": "Gold Stiletto Beaded Nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -434,7 +644,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9182512c-00e9-4c6e-bac8-0c68594eb4ba",
           "localFile": "img-0591--backdrop.PNG",
           "downloadedSize": "2K",
-          "assetName": "Golden Water Reflections"
+          "assetName": "Golden Water Reflections",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -459,7 +676,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/23a1f49e-439b-4d02-b960-e788abe9effc",
           "localFile": "img-0592--gown-teal.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Teal Beaded Cut-out Gown"
+          "assetName": "Teal Beaded Cut-out Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -469,7 +693,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cca42c3d-094b-40f6-85cb-1cd709bff8d4",
           "localFile": "img-0592--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black short coiled wig"
+          "assetName": "Black short coiled wig",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": false,
+            "problem": "Text labels on the background"
+          }
         },
         {
           "kind": "jewellery",
@@ -490,7 +721,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9e0051a7-8113-4aa2-b65b-29325c53f389",
           "localFile": "img-0592--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold glitter beaded stiletto"
+          "assetName": "Gold glitter beaded stiletto",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -500,7 +738,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eacb978e-be29-4c70-ab79-009234690387",
           "localFile": "img-0592--backdrop.PNG",
           "downloadedSize": "2K",
-          "assetName": "Gold Water Ripple Backdrop"
+          "assetName": "Gold Water Ripple Backdrop",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -536,7 +781,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1a63a14b-b530-49d7-9a9c-217291e23f1b",
           "localFile": "img-0593--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Bronze Beaded Halter Gown"
+          "assetName": "Bronze Beaded Halter Gown",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "The item shown is a dress, not a wig as specified in the product description."
+          }
         },
         {
           "kind": "nails",
@@ -546,7 +798,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ab3722de-b20b-4e04-9ee4-62450db92b38",
           "localFile": "img-0593--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Side-swept Curly Updo"
+          "assetName": "Black Side-swept Curly Updo",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": false,
+            "background_clean": true,
+            "problem": "Expected 'nails' but found a wig on a mannequin"
+          }
         },
         {
           "kind": "backdrop",
@@ -556,7 +815,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ccec7b29-63ca-4ee9-a4f1-4262ff2db5bc",
           "localFile": "img-0593--backdrop.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Golden Water Reflection Backdrop"
+          "assetName": "Golden Water Reflection Backdrop",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -581,7 +847,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3d7857a2-55ca-4970-b0fa-4aaa0d756b4b",
           "localFile": "img-0594--gown-platinum.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver Rhinestone Halter Gown"
+          "assetName": "Silver Rhinestone Halter Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -591,7 +864,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96aa9bbf-8dbc-4cf8-8d11-bb803803a93c",
           "localFile": "img-0594--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black kinky curly updo"
+          "assetName": "Black kinky curly updo",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -601,7 +881,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fdc07822-f7e1-44d5-978c-b3b6c3423d96",
           "localFile": "img-0594--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold beaded sequin collar"
+          "assetName": "Gold beaded sequin collar",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -611,7 +898,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a91eb289-3600-43c4-b4a8-4314b3d0f1ec",
           "localFile": "img-0594--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Olive Cat Eye Stiletto"
+          "assetName": "Olive Cat Eye Stiletto",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -621,7 +915,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/dce98894-b366-4f9c-ad86-76d5fcd19247",
           "localFile": "img-0594--backdrop.PNG",
           "downloadedSize": "2K",
-          "assetName": "Golden Fiery Waves"
+          "assetName": "Golden Fiery Waves",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -646,7 +947,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6923a95a-f2ac-4661-aafe-b29a1a4a6829",
           "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--gown-navy-blue.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Navy pleated peplum blazer"
+          "assetName": "Navy pleated peplum blazer",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Item is a blazer, not a gown; text labels are present"
+          }
         },
         {
           "kind": "wig",
@@ -656,7 +964,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1f524f8e-9d01-404d-8544-32ab78a622e0",
           "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black sleek low ponytail"
+          "assetName": "Black sleek low ponytail",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -666,7 +981,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a68b789d-e057-4924-9674-a03007830f72",
           "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Plain Jewelry"
+          "assetName": "Gold Plain Jewelry",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -713,7 +1035,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d1faa2ec-3dcf-4cde-94ff-225df21db055",
           "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--outfit-deep-magenta-top-and-classic-black-trous.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Magenta Peplum Suit"
+          "assetName": "Magenta Peplum Suit",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -723,7 +1052,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/491dfc20-e82f-4aa7-874e-c16871b35c91",
           "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown Pointed Toe Pumps"
+          "assetName": "Brown Pointed Toe Pumps",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -744,7 +1080,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0aecb27b-4e6c-4e2b-accc-37e1734068ac",
           "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver square bracelet watch"
+          "assetName": "Silver square bracelet watch",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -754,7 +1097,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0323acfe-d21f-46a9-b989-cf5490098430",
           "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown straight bangs"
+          "assetName": "Brown straight bangs",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -764,7 +1114,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/30701d8a-dfce-47b7-bd56-4ad42c05e416",
           "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Nude almond nails"
+          "assetName": "Nude almond nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -822,7 +1179,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3c7adb1d-847e-4e66-be3e-9154abd116ef",
           "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Kinky Curly"
+          "assetName": "Black Kinky Curly",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "headwear",
@@ -832,7 +1196,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f38d8857-1715-4a36-904d-2a2d0365af06",
           "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--headwear.JPEG",
           "downloadedSize": "2K",
-          "assetName": "White Tweed Check Cap"
+          "assetName": "White Tweed Check Cap",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -868,7 +1239,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c7ab7391-4e84-4d70-925b-41c3499b7734",
           "localFile": "temp-image-128b7d9c-314f-41f1-a496-94847--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Navy Suede Striped Sneakers"
+          "assetName": "Navy Suede Striped Sneakers",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -937,7 +1315,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/157e9ff0-8ab7-4100-89ed-5a9ae51dea2e",
           "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold Fluted Watch, Gold Dome Ring, Gold "
+          "assetName": "Gold Fluted Watch, Gold Dome Ring, Gold ",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -947,7 +1332,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2fd8fc63-4dca-4ec4-9a82-ded12d7c4d0f",
           "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Nude glitter nails"
+          "assetName": "Nude glitter nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1054,7 +1446,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/71de10ae-8d3d-4f73-8d6c-808b71656aad",
           "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--bag.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Burgundy Gold Lock Satchel"
+          "assetName": "Burgundy Gold Lock Satchel",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -1064,7 +1463,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ba877768-da75-4802-b34e-9ec00fa5423f",
           "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold watch bangle set"
+          "assetName": "Gold watch bangle set",
+          "qa": {
+            "verdict": "usable",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Descriptive text present."
+          }
         },
         {
           "kind": "nails",
@@ -1074,7 +1480,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d3b606d6-d43a-477a-8e84-eef5e652da33",
           "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Burgundy Gold Tip Nails"
+          "assetName": "Burgundy Gold Tip Nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1110,7 +1523,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/efe046f6-bb43-425f-8522-c28b9b16b88b",
           "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--outfit-champagne.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Beige Ribbed Polo Set"
+          "assetName": "Beige Ribbed Polo Set",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -1120,7 +1540,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/8386a890-4d00-4ec3-a0b0-43dfc3199a42",
           "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "White pointed V-cut pumps"
+          "assetName": "White pointed V-cut pumps",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -1130,7 +1557,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5d3df226-509d-49f2-8085-4b495b83751a",
           "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--bag.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Sage green top handle gold chain"
+          "assetName": "Sage green top handle gold chain",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -1140,7 +1574,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/24226cd8-ff43-4598-89d1-d59216c33ba8",
           "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold layered necklace set"
+          "assetName": "Gold layered necklace set",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Text on image"
+          }
         },
         {
           "kind": "wig",
@@ -1150,7 +1591,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/07a40978-5073-4597-bc6a-f71b07c5dbd6",
           "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Dark Brown Wavy Bob"
+          "assetName": "Dark Brown Wavy Bob",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -1185,7 +1633,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/58a24351-9ff9-4bd9-b17d-074f5c07bba1",
           "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--outfit-mustard-yellow.jpg",
           "downloadedSize": "2K",
-          "assetName": "Mustard striped floral co-ord"
+          "assetName": "Mustard striped floral co-ord",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": false,
+            "problem": "text on image"
+          }
         },
         {
           "kind": "shoes",
@@ -1206,7 +1661,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/bb4a18ae-6d15-4d09-bf55-6fbaac12545c",
           "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver Black Men's Jewellery Set"
+          "assetName": "Silver Black Men's Jewellery Set",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "headwear",
@@ -1253,7 +1715,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9cda6953-f376-40e8-b29b-8ce7c2286b75",
           "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--gown-coral-orange.jpg",
           "downloadedSize": "2K",
-          "assetName": "Coral Floral Fringe Gown"
+          "assetName": "Coral Floral Fringe Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -1263,7 +1732,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c3b1a42d-188d-455b-8dad-330791cb2396",
           "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black curled bob lace front"
+          "assetName": "Black curled bob lace front",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "watermark or logo present"
+          }
         },
         {
           "kind": "shoes",
@@ -1273,7 +1749,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/8e26245b-fc32-43bb-b579-975e7ba35a0f",
           "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver clear block heels"
+          "assetName": "Silver clear block heels",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -1294,7 +1777,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/19f65d38-238c-43b4-99b7-c099444f2c1b",
           "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver textured floral"
+          "assetName": "Silver textured floral",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -1304,7 +1794,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cc55e795-092a-480a-8479-c9149f6c6d89",
           "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Nude French Square Nails"
+          "assetName": "Nude French Square Nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1351,7 +1848,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3e70bd82-38d7-4f8c-ba71-2d8932792909",
           "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Blunt Bob"
+          "assetName": "Black Blunt Bob",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -1394,7 +1898,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96be1a0f-d4bd-4b3c-8cc0-9b80d3524152",
           "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Red striped almond nails"
+          "assetName": "Red striped almond nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1430,7 +1941,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/586f2640-6a3a-441a-9e17-3d328ecbf1e8",
           "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--outfit-rose-gold.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Blush satin double-breasted blazer"
+          "assetName": "Blush satin double-breasted blazer",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -1440,7 +1958,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0cc98aeb-c1f7-4a29-b4ee-37939320c7ed",
           "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black patent red-sole pumps"
+          "assetName": "Black patent red-sole pumps",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -1450,7 +1975,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fcb527dd-0abb-4236-a6cb-4e2f1ecf3743",
           "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--jewellery.jpg",
           "downloadedSize": "2K",
-          "assetName": "Rose Gold Square Halo Studs"
+          "assetName": "Rose Gold Square Halo Studs",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Text overlays are present, which are not part of the product or expected in a clean catalogue asset."
+          }
         },
         {
           "kind": "wig",
@@ -1460,7 +1992,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/071789c5-fe3e-4445-b9da-de17c27e80fa",
           "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Wavy Ponytail"
+          "assetName": "Black Wavy Ponytail",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -1470,7 +2009,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f01ff9f9-a6ac-440a-a530-787c5103f262",
           "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black embossed coffin nails"
+          "assetName": "Black embossed coffin nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1506,7 +2052,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/bb7eba91-a117-4ccd-a794-080774c5390a",
           "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--outfit-sage-green-and-ivory.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Sage ribbed wrap top"
+          "assetName": "Sage ribbed wrap top",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Contains text labels 'SIDE' and 'BACK'"
+          }
         },
         {
           "kind": "wig",
@@ -1516,7 +2069,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/856e6553-d159-4466-a366-7fcc4dae68c1",
           "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Dark Brown Straight Middle Part"
+          "assetName": "Dark Brown Straight Middle Part",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -1526,7 +2086,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/aa75f2c2-3d49-4e6d-bb54-b877a8a7e204",
           "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Pale blue crystal pumps"
+          "assetName": "Pale blue crystal pumps",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -1536,7 +2103,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9e8a4326-c3e7-455e-9123-0d3986a5b0b2",
           "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--bag.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Light blue quilted C bag"
+          "assetName": "Light blue quilted C bag",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -1546,7 +2120,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9338ec56-112a-4176-831d-506c8292c827",
           "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold intricate pendant necklace"
+          "assetName": "Gold intricate pendant necklace",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1582,7 +2163,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0d5ef2d4-d330-4dcf-b7cd-922d389df738",
           "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--outfit-sky-blue.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Light blue ribbed polo set"
+          "assetName": "Light blue ribbed polo set",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Text labels present"
+          }
         },
         {
           "kind": "wig",
@@ -1592,7 +2180,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1d72522c-fbfb-44e5-91c5-9c71c04ed753",
           "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown Straight Center Part"
+          "assetName": "Brown Straight Center Part",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -1602,7 +2197,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/28461e50-685b-4d96-bf9e-eb63f617b0b1",
           "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "White pointed toe pumps"
+          "assetName": "White pointed toe pumps",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -1612,7 +2214,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4e5d3a28-ca4f-4e96-ba35-28280926729a",
           "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--bag.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Mint Green Gold Clasp Bag"
+          "assetName": "Mint Green Gold Clasp Bag",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -1622,7 +2231,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c613e229-9287-4813-864a-7a7e4fa952eb",
           "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold watch, bracelet, necklace"
+          "assetName": "Gold watch, bracelet, necklace",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": false,
+            "problem": "Descriptive text present on the image"
+          }
         },
         {
           "kind": "backdrop",
@@ -1691,7 +2307,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/235bf77a-761b-44a0-a039-5d3294cef844",
           "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver octagonal watch"
+          "assetName": "Silver octagonal watch",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1727,7 +2350,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96a2daef-3303-4bc0-a2de-c0c4092b858a",
           "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--gown-cobalt-blue.jpg",
           "downloadedSize": "2K",
-          "assetName": "Royal Blue Asymmetric Dress"
+          "assetName": "Royal Blue Asymmetric Dress",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": false,
+            "problem": "Contains descriptive text labels"
+          }
         },
         {
           "kind": "shoes",
@@ -1737,7 +2367,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ad66b238-00ad-4027-ae47-2438687cc0e9",
           "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Gold Knot Pumps"
+          "assetName": "Black Gold Knot Pumps",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -1747,7 +2384,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/dade80bf-a805-4745-80d5-390e49eb2449",
           "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold band ring"
+          "assetName": "Gold band ring",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -1768,7 +2412,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f742e439-dcdf-48ab-a647-1fef676595f1",
           "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black wavy lace front"
+          "assetName": "Black wavy lace front",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1804,7 +2455,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a6f90a9a-edde-438d-b0b9-1e81e41e40ae",
           "localFile": "temp-image-81f827db-4130-429a-837a-a0428--gown-jet-black.jpg",
           "downloadedSize": "2K",
-          "assetName": "Black Beaded Strapless"
+          "assetName": "Black Beaded Strapless",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -1836,7 +2494,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fc3d319e-ad11-4df3-90b4-853b885981dc",
           "localFile": "temp-image-81f827db-4130-429a-837a-a0428--jewellery.jpg",
           "downloadedSize": "2K",
-          "assetName": "Mixed Gold Silver Jewellery"
+          "assetName": "Mixed Gold Silver Jewellery",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Text is present in the image."
+          }
         },
         {
           "kind": "nails",
@@ -1846,7 +2511,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/aa1c9abe-eec9-417a-8586-a56c211900c9",
           "localFile": "temp-image-81f827db-4130-429a-837a-a0428--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Sheer white striped nails"
+          "assetName": "Sheer white striped nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1882,7 +2554,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9d3c4a30-10e5-4055-9d68-c7ece62c9a9d",
           "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--gown-marigold-yellow.jpg",
           "downloadedSize": "2K",
-          "assetName": "Mustard Yellow Ruffled Cape Gown"
+          "assetName": "Mustard Yellow Ruffled Cape Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -1903,7 +2582,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2bdfc998-5b3b-4e0c-b42c-bcbd9fd18fa4",
           "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--jewellery.jpg",
           "downloadedSize": "2K",
-          "assetName": "Gold Solitaire Cluster Drop Set"
+          "assetName": "Gold Solitaire Cluster Drop Set",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -1961,7 +2647,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/051d904c-25db-47a8-b106-c466f2e57311",
           "localFile": "temp-image-943a83d8-c44d-4aa4-8126-230f1--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Silver diamond bezel watch"
+          "assetName": "Silver diamond bezel watch",
+          "qa": {
+            "verdict": "reject",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "Descriptive text ('LEFT HAND', 'RIGHT HAND', 'PANEL 2 (Neck and ears)') is present within the image."
+          }
         },
         {
           "kind": "headwear",
@@ -2030,7 +2723,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9dbdcfd2-7837-488f-a506-d89ce5c3a061",
           "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--jewellery.jpg",
           "downloadedSize": "2K",
-          "assetName": "Silver wide bangle"
+          "assetName": "Silver wide bangle",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "belt",
@@ -2040,7 +2740,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/aaddb98e-327e-4c48-be64-c17d9adbb72a",
           "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--belt.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black smooth leather belt"
+          "assetName": "Black smooth leather belt",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -2076,7 +2783,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0cc68fb0-1f1b-4da4-a69e-3e7dd4b81974",
           "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--gown-fuchsia.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Fuchsia Off-shoulder Beaded Gown"
+          "assetName": "Fuchsia Off-shoulder Beaded Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -2086,7 +2800,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/04f1b8ec-9a17-4174-983c-109fb247a72f",
           "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black Loose Wavy Long"
+          "assetName": "Black Loose Wavy Long",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -2096,7 +2817,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3e2e6449-37a4-4f76-8a0b-ab3b863cd459",
           "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "White display forms"
+          "assetName": "White display forms",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "nails",
@@ -2106,7 +2834,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c411cf63-d22a-4552-87aa-68d3c5e6de63",
           "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--nails.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Red beaded nails"
+          "assetName": "Red beaded nails",
+          "qa": {
+            "verdict": "good",
+            "shows_person": true,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -2116,7 +2851,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ae0938c7-a8e4-4a50-af29-5f9cdd94904f",
           "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--backdrop.PNG",
           "downloadedSize": "2K",
-          "assetName": "Golden Liquid Light"
+          "assetName": "Golden Liquid Light",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         }
       ],
       "uploaded": true
@@ -2146,7 +2888,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2f9dea9c-7e85-451d-8470-3632b3a694be",
           "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--outfit-powder-blue-denim-jacket-soft-cream-shir.jpg",
           "downloadedSize": "2K",
-          "assetName": "Light Blue Denim Jacket"
+          "assetName": "Light Blue Denim Jacket",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -2167,7 +2916,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1aeac7b1-b9a6-42b7-a43e-83136b6913d3",
           "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--belt.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black brushed buckle belt"
+          "assetName": "Black brushed buckle belt",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -2177,7 +2933,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/80c6030a-9196-4cc6-b808-acfda0cbf517",
           "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold pendant necklace"
+          "assetName": "Gold pendant necklace",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -2224,7 +2987,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6f21db0d-31e9-44b0-8b4f-181a13e80139",
           "localFile": "temp-image-ac5410ac-852c-46f9-83b9-e9adf--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Black long wavy lace front"
+          "assetName": "Black long wavy lace front",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -2271,7 +3041,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/74a96080-cbd4-47fa-abdc-2c9a188e4839",
           "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--outfit-oxblood.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Burgundy Gold Button Set"
+          "assetName": "Burgundy Gold Button Set",
+          "qa": {
+            "verdict": "usable",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": "text labels on image"
+          }
         },
         {
           "kind": "wig",
@@ -2281,7 +3058,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a9adb716-d8c0-4222-98ae-16111bdc1875",
           "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown Straight Bangs Bob"
+          "assetName": "Brown Straight Bangs Bob",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -2291,7 +3075,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/05efd33d-b772-495d-9d9a-4541a2d03cb6",
           "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--shoes.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown monogram flats"
+          "assetName": "Brown monogram flats",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "bag",
@@ -2301,7 +3092,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a8a2e73b-cf65-43bb-b317-3f18ccdefde3",
           "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--bag.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown gold lock top handle"
+          "assetName": "Brown gold lock top handle",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "jewellery",
@@ -2311,7 +3109,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c3e1bf64-e988-461b-9515-106120d42e68",
           "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold stacked blush bracelets"
+          "assetName": "Gold stacked blush bracelets",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -2347,7 +3152,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/afe91fe4-3589-4ffb-8e3d-7fc80e6003ad",
           "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--gown-turquoise.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Aqua Feather Gown"
+          "assetName": "Aqua Feather Gown",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -2357,7 +3169,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/7ffd97d3-7b39-4188-a97e-68d0fc5509a4",
           "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Auburn Loose Wave Lace Front"
+          "assetName": "Auburn Loose Wave Lace Front",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",
@@ -2389,7 +3208,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fd92d1c7-35db-4d6c-86c0-27730a4d4506",
           "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--jewellery.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Gold ruffled earrings"
+          "assetName": "Gold ruffled earrings",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "backdrop",
@@ -2425,7 +3251,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/15dba3b7-bffe-41fd-b54e-8193494b9a00",
           "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--outfit-dusty-rose-top-and-light-dove-grey-trous.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Dusty Pink collared tie-waist set"
+          "assetName": "Dusty Pink collared tie-waist set",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "wig",
@@ -2435,7 +3268,14 @@
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/84da07a3-0095-484b-a5ca-e4c6c08da3a5",
           "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--wig.JPEG",
           "downloadedSize": "2K",
-          "assetName": "Brown straight bob bangs"
+          "assetName": "Brown straight bob bangs",
+          "qa": {
+            "verdict": "good",
+            "shows_person": false,
+            "item_present": true,
+            "background_clean": true,
+            "problem": ""
+          }
         },
         {
           "kind": "shoes",

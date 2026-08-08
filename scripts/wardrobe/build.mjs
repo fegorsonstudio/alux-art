@@ -216,6 +216,10 @@ async function templates() {
   for (const p of usable) {
     for (const j of p.jobs) {
       if (GARMENTS.has(j.kind)) continue;      // the garment belongs to its own template
+      // Assets the checker rejected — text burned into the image, a watermark,
+      // or simply the wrong item. Relying on anyone remembering which were bad
+      // is how one reaches a live template.
+      if (j.qa?.verdict === "reject") continue;
       const u = up(p.file, j.kind);
       if (!u) continue;
       (pool[p.category] ??= {});
@@ -234,7 +238,10 @@ async function templates() {
     if (built >= LIMIT) { log(`--limit ${LIMIT} reached`); break; }
     if (p.templateId) continue;                 // already built
     const garmentKind = p.garmentKind;
-    const garment = garmentKind ? up(p.file, garmentKind) : null;
+    const garmentJobPre = p.jobs.find(j => j.kind === garmentKind);
+    // A rejected garment means no template: it is the one asset the whole
+    // template is built around.
+    const garment = (garmentKind && garmentJobPre?.qa?.verdict !== "reject") ? up(p.file, garmentKind) : null;
     if (!garment) { log(`· skip ${fileKey(p.file)} — its garment has not been uploaded yet`); continue; }
 
     const groups = [];
