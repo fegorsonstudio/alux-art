@@ -99,16 +99,29 @@ async function upload() {
   const ownerId = manifest.ownerId || process.env.WARDROBE_OWNER_ID || "d80f9e08-014e-48b7-8545-b37652059605";
   manifest.ownerId = ownerId;
 
+  const { createHash } = await import("node:crypto");
+  const hashOf = (buf) => createHash("sha256").update(buf).digest("hex").slice(0, 16);
+
   const todo = [];
+  let replaced = 0;
   for (const p of q.photos.filter(x => x.usable)) {
     for (const j of p.jobs) {
       if (!j.localFile) continue;
       const key = `${fileKey(p.file)}::${j.kind}`;
-      if (manifest.uploads[key]) continue;
+      const prev = manifest.uploads[key];
+      if (prev) {
+        // An asset edited by hand in .wardrobe-assets must actually reach R2.
+        // Skipping anything already uploaded would silently keep serving the
+        // original, and the edit would appear to have done nothing.
+        const local = join(ASSET_DIR, j.localFile);
+        if (!existsSync(local)) continue;
+        if (prev.hash && prev.hash === hashOf(readFileSync(local))) continue;
+        replaced++;
+      }
       todo.push({ p, j, key });
     }
   }
-  log(`${todo.length} asset(s) to upload to R2`);
+  log(`${todo.length} asset(s) to upload to R2${replaced ? ` (${replaced} edited since last upload)` : ""}`);
 
   let n = 0;
   for (const { p, j, key } of todo) {
@@ -122,7 +135,10 @@ async function upload() {
       await r2.send(new PutObjectCommand({
         Bucket: BUCKET, Key: storagePath, Body: body, ContentType: "image/jpeg",
       }));
-      manifest.uploads[key] = { storagePath, bucket: BUCKET, kind: j.kind, recolour: j.recolour ?? null };
+      manifest.uploads[key] = {
+        storagePath, bucket: BUCKET, kind: j.kind, recolour: j.recolour ?? null,
+        hash: hashOf(body),   // so a later edit to this file is noticed and re-uploaded
+      };
       writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
     }
     n++;

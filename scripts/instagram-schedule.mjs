@@ -70,9 +70,18 @@ async function main() {
 
   const posted = [], failed = [], empty = [];
 
+  // Posts held after a preview review. A Call to Bar carousel went out carrying
+  // photographs of a man in agbada and had to be archived; holding is how that
+  // gets stopped once the preview shows it.
+  const holdsFile = path.join(DATA_DIR, "holds.json");
+  const held = new Set(
+    existsSync(holdsFile) ? (JSON.parse(await readFile(holdsFile, "utf8")).held ?? []) : []
+  );
+  if (held.size) log(`${held.size} post(s) on hold — skipping them`);
+
   for (const [account, items] of Object.entries(byAccount)) {
     const done = new Set(state.posted[account] ?? []);
-    const next = items.find(c => !done.has(c.id));
+    const next = items.find(c => !done.has(c.id) && !held.has(c.id));
 
     if (!next) { empty.push(account); log(`${account}: queue empty — nothing left to post`); continue; }
 
