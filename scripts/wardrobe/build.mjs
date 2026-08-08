@@ -210,6 +210,56 @@ async function templates() {
 
   const usable = q.photos.filter(p => p.usable);
 
+  /**
+   * Everything this creator already offers, deduplicated by image.
+   *
+   * A buyer should choose from the whole wardrobe, not only from the folder
+   * that happened to produce their gown. Without this, a new template offered
+   * two pairs of shoes while 9 more, 18 backdrops and 9 props sat unused in
+   * templates published months ago.
+   *
+   * Keyed by GROUP TYPE rather than by category: a pair of shoes is a pair of
+   * shoes whether it came from a nursing shoot or an editorial one.
+   */
+  /**
+   * Occasion-bound templates. Their assets belong to that celebration and do
+   * not travel: a stethoscope, giant RN letters or a barrister's wig turning up
+   * on a red-carpet gown is worse than offering less choice.
+   */
+  const OCCASION_TEMPLATES = new Set(["nursing_induction", "call_to_bar"]);
+  /** Types that are occupation dress by definition, wherever they came from. */
+  const NEVER_POOL = new Set(["scrubs", "sash"]);
+
+  const libraryByType = {};
+  const libraryBackdrops = new Map();
+  {
+    const published = await sql`
+      SELECT category, option_groups, background_options FROM templates
+      WHERE creator_id = ${CREATOR_ID} AND status = 'published'`;
+    let skipped = 0;
+    for (const t of published) {
+      if (OCCASION_TEMPLATES.has(t.category)) { skipped++; continue; }
+      for (const g of t.option_groups ?? []) {
+        if (!g?.type || NEVER_POOL.has(g.type)) continue;
+        for (const o of g.options ?? []) {
+          if (o.kind !== "photo" || !o.imagePath) continue;
+          (libraryByType[g.type] ??= new Map()).set(o.imagePath, {
+            name: o.name ?? g.type, storagePath: o.imagePath, bucket: o.imageBucket ?? BUCKET,
+          });
+        }
+      }
+      for (const b of t.background_options ?? []) {
+        if (b?.kind !== "photo" || !b.imagePath) continue;
+        libraryBackdrops.set(b.imagePath, {
+          name: b.name ?? "Backdrop", storagePath: b.imagePath, bucket: b.imageBucket ?? BUCKET,
+        });
+      }
+    }
+    const n = Object.values(libraryByType).reduce((a, m) => a + m.size, 0) + libraryBackdrops.size;
+    log(`existing library: ${n} asset(s) pooled from ${published.length - skipped} template(s); ` +
+        `${skipped} occasion-specific template(s) left out`);
+  }
+
   // Pool the accessories per category, so every template in a category offers
   // everything extracted across that category.
   const pool = {};   // category -> kind -> [{name, storagePath}]
@@ -257,24 +307,51 @@ async function templates() {
     });
 
     // Everything else is pooled across the category.
+    // Build by TYPE, merging the newly extracted assets with the creator's
+    // existing library. Deduplicated on storage path so an asset that is both
+    // newly extracted and already in a published template appears once.
     const byType = {};
-    for (const [kind, cfg] of Object.entries(GROUP_FOR)) {
-      const items = (pool[p.category]?.[kind] ?? []).slice(0, 10);
-      if (!items.length) continue;
-      (byType[cfg.type] ??= { id: randomUUID(), type: cfg.type, label: cfg.label, options: [] });
-      for (const it of items) {
-        byType[cfg.type].options.push({
-          id: randomUUID(), kind: "photo", name: it.name,
-          imagePath: it.storagePath, imageBucket: BUCKET,
-        });
-      }
-    }
-    // "accessory" collects jewellery, bags, headwear and belts, so cap it.
-    for (const g of Object.values(byType)) { g.options = g.options.slice(0, 12); groups.push(g); }
+    const seen = new Set([garment.storagePath]);
+    const addOption = (type, label, it) => {
+      if (!it?.storagePath || seen.has(it.storagePath)) return;
+      seen.add(it.storagePath);
+      (byType[type] ??= { id: randomUUID(), type, label, options: [] });
+      byType[type].options.push({
+        id: randomUUID(), kind: "photo", name: (it.name || type).slice(0, 40),
+        imagePath: it.storagePath, imageBucket: it.bucket ?? BUCKET,
+      });
+    };
 
-    const backgrounds = (pool[p.category]?.backdrop ?? []).slice(0, 10).map(b => ({
-      id: randomUUID(), kind: "photo", name: b.name, imagePath: b.storagePath, imageBucket: BUCKET,
-    }));
+    // Newly extracted, pooled across this template's category.
+    for (const [kind, cfg] of Object.entries(GROUP_FOR)) {
+      for (const it of pool[p.category]?.[kind] ?? []) addOption(cfg.type, cfg.label, it);
+    }
+    // Everything already published — shoes, props, hairstyles, backdrops and
+    // the rest — regardless of which template it came from.
+    const LABELS = { shoes: "Shoes", hairstyle: "Hairstyle", nails: "Nails",
+                     accessory: "Accessories", props: "Props", outfit: "Outfit" };
+    for (const [type, m] of Object.entries(libraryByType)) {
+      if (type === "outfit") continue;    // the garment defines the template
+      for (const it of m.values()) addOption(type, LABELS[type] ?? type, it);
+    }
+
+    // The platform allows up to 100 per group; 40 is plenty to choose from
+    // without turning the booking page into a catalogue.
+    for (const g of Object.values(byType)) { g.options = g.options.slice(0, 40); groups.push(g); }
+
+    // Newly extracted backdrops first, then every backdrop already published,
+    // so a buyer picks from the whole set rather than this folder's handful.
+    const bgSeen = new Set();
+    const backgrounds = [];
+    for (const b of [...(pool[p.category]?.backdrop ?? []), ...libraryBackdrops.values()]) {
+      if (!b?.storagePath || bgSeen.has(b.storagePath)) continue;
+      bgSeen.add(b.storagePath);
+      backgrounds.push({
+        id: randomUUID(), kind: "photo", name: (b.name || "Backdrop").slice(0, 40),
+        imagePath: b.storagePath, imageBucket: b.bucket ?? BUCKET,
+      });
+      if (backgrounds.length >= 40) break;
+    }
 
     const title = titleFor(p);
     const description = [
