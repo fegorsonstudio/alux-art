@@ -180,22 +180,48 @@ async function uploadOnce(page, file, uploaded) {
  * garment on the wrong face.
  */
 async function attachAll(page, names) {
-  const p = await openPicker(page);
-  if (!p.ok) return p;
+  // ONE ASSET PER OPEN. Flow's picker closes the moment something is selected,
+  // so selecting three in a single session is impossible — the second click
+  // lands on a dialog that no longer exists. The first version did exactly that
+  // and generated four shoots from one reference, which is why the identity
+  // photographs never appeared in the output.
   for (const name of names) {
+    const p = await openPicker(page);
+    if (!p.ok) return { ok: false, why: `${p.why} (attaching ${name})` };
+
     const opt = p.dlg.locator('[role="option"]').filter({ hasText: name }).first();
     if (!(await opt.count())) return { ok: false, why: `${name} not in Uploads` };
-    if ((await opt.getAttribute("aria-selected")) !== "true") {
-      await opt.click();
-      await sleep(1000);
-    }
-    if ((await opt.getAttribute("aria-selected")) !== "true") return { ok: false, why: `could not select ${name}` };
+    await opt.click().catch(() => {});
+    await sleep(1200);
+
+    // The picker usually closes and attaches on click. When it does not, the
+    // explicit button is still there.
+    const add = page.locator('button:has-text("Add to Prompt")').first();
+    if (await add.count()) { await add.click().catch(() => {}); await sleep(1200); }
+    await sleep(600);
   }
-  const add = page.locator('button:has-text("Add to Prompt")').first();
-  if (!(await add.count())) return { ok: false, why: "no Add to Prompt button" };
-  await add.click();
-  await sleep(1600);
-  return { ok: true };
+
+  // Refuse to generate unless all three really are attached. A missing
+  // reference produces a plausible-looking image of the wrong person, which is
+  // far worse than a failure — it looks like success.
+  // Count the thumbnails the composer is actually holding. Attachments appear
+  // in an ancestor of the prompt box between two and six levels up; higher than
+  // that and the count becomes the whole page's gallery (30-odd images), lower
+  // and it is always zero. Take the closest ancestor holding a plausible number.
+  const attached = await page.evaluate(() => {
+    let n = document.querySelector('div[contenteditable="true"]');
+    for (let depth = 1; n && depth <= 6; depth++) {
+      n = n.parentElement;
+      if (!n) break;
+      const c = n.querySelectorAll("img").length;
+      if (c > 0 && c < 10) return c;
+    }
+    return 0;
+  }).catch(() => -1);
+  if (attached >= 0 && attached < names.length) {
+    return { ok: false, why: `only ${attached} of ${names.length} references attached` };
+  }
+  return { ok: true, attached };
 }
 
 const RATIO_TOKENS = { "4:5": ["4:5", "crop_portrait"], "3:4": ["3:4", "crop_portrait"] };
