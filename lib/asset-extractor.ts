@@ -111,6 +111,22 @@ const GHOST =
   "would be. No mannequin, stand, dress form, hanger or support of any kind is " +
   "visible. The garment holds its own shape as though worn by someone invisible.";
 
+/**
+ * Garments came back cropped at the waist — a two-piece would show the top and
+ * simply omit the trousers, leaving the buyer's shoot to invent the bottom half.
+ * "Extract the complete outfit" was already in the directive but describes WHAT
+ * to take, not how much of it to show, so the model cropped and still believed
+ * it had complied.
+ */
+const FULL_LENGTH =
+  "FULL LENGTH — show the garment in its ENTIRE length in every panel, from the " +
+  "highest point (collar or shoulder) down to the lowest hem. A two-piece must " +
+  "show both pieces together: the top AND the trousers or skirt, complete to the " +
+  "hem, at the same time and in the same panel. Never crop at the waist, hip or " +
+  "thigh. Never show only the upper half and never omit the lower garment. If the " +
+  "whole length does not fit, make the garment smaller in the frame — do not cut " +
+  "any part of it off.";
+
 const A = (id: string, label: string, directive: string): AssetAngle => ({ id, label, directive });
 
 // ── One asset kind = one image ───────────────────────────────────────────────
@@ -538,7 +554,7 @@ export function buildAssetExtractPrompt(kind: AssetKind, angle: AssetAngle): str
     NO_PERSON,
 
     ...(kind.tag === "OUTFIT" || kind.tag === "GOWN" || kind.tag === "SUIT" || kind.tag === "SCRUBS"
-      ? [GHOST]
+      ? [GHOST, FULL_LENGTH]
       : []),
 
     // Jewellery, wigs and headwear are meaningless without something to sit on:
