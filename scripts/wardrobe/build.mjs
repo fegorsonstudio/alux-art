@@ -107,17 +107,33 @@ async function upload() {
   // the file has to be enough on its own, so anything now missing is dropped
   // from the manifest and unmarked in the queue. Otherwise the template build
   // would keep using the copy already in R2 and the deletion would do nothing.
-  let removed = 0;
+  // Resolve by the name WITHOUT its extension. Editing an asset and re-saving
+  // it changes the extension — a review turned .jpeg into .JPEG, .PNG and .jpg
+  // — and exact-name matching then reported all 179 as deleted when 121 were
+  // sitting right there. The stem is what identifies an asset; the container
+  // format is incidental.
+  const { readdirSync } = await import("node:fs");
+  const stem = (f) => f.replace(/\.[^.]+$/, "").toLowerCase();
+  const onDisk = new Map();
+  for (const f of readdirSync(ASSET_DIR)) onDisk.set(stem(f), f);
+
+  let removed = 0, renamed = 0;
   for (const p of q.photos.filter(x => x.usable)) {
     for (const j of p.jobs) {
       if (!j.localFile) continue;
-      if (existsSync(join(ASSET_DIR, j.localFile))) continue;
+      const actual = onDisk.get(stem(j.localFile));
+      if (actual) {
+        // Keep the queue pointing at whatever the file is really called now.
+        if (actual !== j.localFile) { j.localFile = actual; renamed++; }
+        continue;
+      }
       delete manifest.uploads[`${fileKey(p.file)}::${j.kind}`];
       j.rejected = true;
       j.localFile = null;
       removed++;
     }
   }
+  if (renamed) log(`${renamed} asset(s) re-saved with a different extension — queue updated to match`);
   if (removed) {
     writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
     writeFileSync(QUEUE_FILE, JSON.stringify(q, null, 2));
@@ -160,7 +176,7 @@ async function upload() {
 
     if (!DRY_RUN) {
       await r2.send(new PutObjectCommand({
-        Bucket: BUCKET, Key: storagePath, Body: body, ContentType: "image/jpeg",
+        Bucket: BUCKET, Key: storagePath, Body: body, ContentType: j.localFile.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg",
       }));
       manifest.uploads[key] = {
         storagePath, bucket: BUCKET, kind: j.kind, recolour: j.recolour ?? null,

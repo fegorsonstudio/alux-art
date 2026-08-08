@@ -20,7 +20,7 @@
           "recolour": "deep emerald",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ae2634b1-5eb9-4a28-9811-083d71874aec",
-          "localFile": "img-0585--gown-deep-emerald.jpeg",
+          "localFile": "img-0585--gown-deep-emerald.JPEG",
           "downloadedSize": "2K",
           "assetName": "Emerald Beaded Halter Gown"
         },
@@ -30,7 +30,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cf3facaf-9185-415a-bb0a-39527e1c00e1",
-          "localFile": "img-0585--wig.jpeg",
+          "localFile": "img-0585--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black afro wig"
         },
@@ -40,7 +40,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5cf77ab2-65a3-4adf-9d07-41c6418d14ac",
-          "localFile": "img-0585--jewellery.jpeg",
+          "localFile": "img-0585--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold beaded sequin choker"
         },
@@ -50,7 +50,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4c9a1ffd-d0e5-4503-8ced-cd3f6d5508e4",
-          "localFile": "img-0585--nails.jpeg",
+          "localFile": "img-0585--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold stiletto glitter beads"
         },
@@ -60,9 +60,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6764b509-8332-483f-acb5-af0c74bc414e",
-          "localFile": "img-0585--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Gold streaky light smoke"
+          "assetName": "Gold streaky light smoke",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -85,7 +86,7 @@
           "recolour": "sapphire blue",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e473ba5f-764e-41ec-b3f1-248385e6e069",
-          "localFile": "img-0586--gown-sapphire-blue.jpeg",
+          "localFile": "img-0586--gown-sapphire-blue.JPEG",
           "downloadedSize": "2K",
           "assetName": "Royal Blue Beaded Cutout Gown"
         },
@@ -95,7 +96,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/557a1412-fc92-4fc2-8632-c2730fdad95b",
-          "localFile": "img-0586--nails.jpeg",
+          "localFile": "img-0586--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Glitter Rhinestone Almond"
         },
@@ -105,7 +106,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/db5aae32-e77b-444c-94ae-72c695486de9",
-          "localFile": "img-0586--backdrop.jpeg",
+          "localFile": "img-0586--backdrop.PNG",
           "downloadedSize": "2K",
           "assetName": "Golden flame pattern"
         }
@@ -130,7 +131,7 @@
           "recolour": "ruby red",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/945222c1-32c1-4cc3-8e75-4db21015cd0d",
-          "localFile": "img-0587--gown-ruby-red.jpeg",
+          "localFile": "img-0587--gown-ruby-red.JPEG",
           "downloadedSize": "2K",
           "assetName": "Red beaded cape gown"
         },
@@ -140,7 +141,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d718a4b3-1224-4388-8d24-42ea47f276b9",
-          "localFile": "img-0587--wig.jpeg",
+          "localFile": "img-0587--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Dark Brown Wavy Low Bun"
         },
@@ -150,7 +151,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eb585d95-38ce-4f59-a104-a4a7ee17c3d5",
-          "localFile": "img-0587--jewellery.jpeg",
+          "localFile": "img-0587--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold wavy ring"
         },
@@ -160,7 +161,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2e814c1f-081f-4920-a402-639a6044fa5d",
-          "localFile": "img-0587--nails.jpeg",
+          "localFile": "img-0587--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Rose Gold Glitter Rhinestone Stiletto"
         },
@@ -170,7 +171,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/16896a28-d295-417d-b01b-b6a719913a1b",
-          "localFile": "img-0587--backdrop.jpeg",
+          "localFile": "img-0587--backdrop.JPEG",
           "downloadedSize": "2K",
           "assetName": "Amber Wavy Reflections"
         }
@@ -195,7 +196,7 @@
           "recolour": "silver",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c15e811f-4258-4d4d-8c39-f2bb2ec62dd1",
-          "localFile": "img-0588--gown-silver.jpeg",
+          "localFile": "img-0588--gown-silver.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver Beaded Halter Corset Gown"
         },
@@ -205,7 +206,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96255989-4b43-439f-af6b-bfcc0ce0d804",
-          "localFile": "img-0588--wig.jpeg",
+          "localFile": "img-0588--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Side-Swept Curly Updo"
         },
@@ -215,7 +216,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/b1b36679-4772-4104-b9c2-d3ea665ba6d9",
-          "localFile": "img-0588--jewellery.jpeg",
+          "localFile": "img-0588--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold beaded choker bustier"
         },
@@ -225,7 +226,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3fbb673e-9db7-48d3-8768-beede73516e7",
-          "localFile": "img-0588--nails.jpeg",
+          "localFile": "img-0588--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Clear stiletto nails"
         },
@@ -235,7 +236,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/49214d5d-176c-4a3e-8943-34a65a5089e0",
-          "localFile": "img-0588--backdrop.jpeg",
+          "localFile": "img-0588--backdrop.JPEG",
           "downloadedSize": "2K",
           "assetName": "Golden Wavy Reflections"
         }
@@ -260,7 +261,7 @@
           "recolour": "amethyst purple",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d7356d71-cb58-412f-9d45-6f87843ec1ac",
-          "localFile": "img-0589--gown-amethyst-purple.jpeg",
+          "localFile": "img-0589--gown-amethyst-purple.JPEG",
           "downloadedSize": "2K",
           "assetName": "Purple Beaded Halter Gown"
         },
@@ -270,7 +271,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3da41f23-7f6a-437b-9953-bd4577c0ec18",
-          "localFile": "img-0589--wig.jpeg",
+          "localFile": "img-0589--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black short coiffed curls"
         },
@@ -280,7 +281,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/64c5ec25-4485-4213-a1c8-687766feddb3",
-          "localFile": "img-0589--jewellery.jpeg",
+          "localFile": "img-0589--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Filigree Necklace"
         },
@@ -290,7 +291,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f1916c39-bea6-41f3-a44c-1d7c40d68cf3",
-          "localFile": "img-0589--nails.jpeg",
+          "localFile": "img-0589--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold chunky glitter nails"
         },
@@ -300,9 +301,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6c682e5f-a56c-4fb5-9b0c-e7ac293b947f",
-          "localFile": "img-0589--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Golden Wavy Reflections"
+          "assetName": "Golden Wavy Reflections",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -325,7 +327,7 @@
           "recolour": "wine",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/085f5e73-c748-40e7-9abb-a7a933e04f25",
-          "localFile": "img-0590--gown-wine.jpeg",
+          "localFile": "img-0590--gown-wine.JPEG",
           "downloadedSize": "2K",
           "assetName": "Red Halter Beaded Gown"
         },
@@ -335,7 +337,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/13071c1c-edfc-4f39-9ec0-a3a813b921db",
-          "localFile": "img-0590--wig.jpeg",
+          "localFile": "img-0590--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black kinky curly"
         },
@@ -345,7 +347,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/97109a94-aed9-4c15-b189-2249cbe6f0e5",
-          "localFile": "img-0590--jewellery.jpeg",
+          "localFile": "img-0590--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold ornate bib necklace"
         },
@@ -355,7 +357,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/7fa3ce1a-e0fc-4867-b7b2-0c9a32329ed7",
-          "localFile": "img-0590--nails.jpeg",
+          "localFile": "img-0590--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Rhinestone Almond Nails"
         },
@@ -365,7 +367,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eab0c56f-61ab-43a0-86e7-f3e9f483571b",
-          "localFile": "img-0590--backdrop.jpeg",
+          "localFile": "img-0590--backdrop.PNG",
           "downloadedSize": "2K",
           "assetName": "Fiery Energy Reflection"
         }
@@ -390,7 +392,7 @@
           "recolour": "pearl white",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ebcffd26-d670-4b4e-a00e-0938bdcd21f9",
-          "localFile": "img-0591--gown-pearl-white.jpeg",
+          "localFile": "img-0591--gown-pearl-white.JPEG",
           "downloadedSize": "2K",
           "assetName": "White Beaded Corset Gown"
         },
@@ -400,7 +402,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a3fd7314-c0a3-41c5-af79-b7b19406452d",
-          "localFile": "img-0591--wig.jpeg",
+          "localFile": "img-0591--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Braided Curly Bun"
         },
@@ -410,7 +412,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e784d36a-9923-431d-8ab5-477a1be19e42",
-          "localFile": "img-0591--jewellery.jpeg",
+          "localFile": "img-0591--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Pearl Jewellery Set"
         },
@@ -420,7 +422,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/002a6d90-9dcf-4268-a23f-5550d0e9b4b6",
-          "localFile": "img-0591--nails.jpeg",
+          "localFile": "img-0591--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Stiletto Beaded Nails"
         },
@@ -430,7 +432,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9182512c-00e9-4c6e-bac8-0c68594eb4ba",
-          "localFile": "img-0591--backdrop.jpeg",
+          "localFile": "img-0591--backdrop.PNG",
           "downloadedSize": "2K",
           "assetName": "Golden Water Reflections"
         }
@@ -455,7 +457,7 @@
           "recolour": "teal",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/23a1f49e-439b-4d02-b960-e788abe9effc",
-          "localFile": "img-0592--gown-teal.jpeg",
+          "localFile": "img-0592--gown-teal.JPEG",
           "downloadedSize": "2K",
           "assetName": "Teal Beaded Cut-out Gown"
         },
@@ -465,7 +467,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cca42c3d-094b-40f6-85cb-1cd709bff8d4",
-          "localFile": "img-0592--wig.jpeg",
+          "localFile": "img-0592--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black short coiled wig"
         },
@@ -475,9 +477,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4e3c3e3b-2f96-4506-8e4d-64a3614697db",
-          "localFile": "img-0592--jewellery.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Gold Beaded Scallop Necklace"
+          "assetName": "Gold Beaded Scallop Necklace",
+          "rejected": true
         },
         {
           "kind": "nails",
@@ -485,7 +488,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9e0051a7-8113-4aa2-b65b-29325c53f389",
-          "localFile": "img-0592--nails.jpeg",
+          "localFile": "img-0592--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold glitter beaded stiletto"
         },
@@ -495,7 +498,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eacb978e-be29-4c70-ab79-009234690387",
-          "localFile": "img-0592--backdrop.jpeg",
+          "localFile": "img-0592--backdrop.PNG",
           "downloadedSize": "2K",
           "assetName": "Gold Water Ripple Backdrop"
         }
@@ -520,9 +523,10 @@
           "recolour": "bronze",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/8af08f08-4f46-4954-ae3f-a70a26259d90",
-          "localFile": "img-0593--gown-bronze.jpeg",
+          "localFile": null,
           "downloadedSize": "1K",
-          "assetName": "Gold Embellished Corset Gown"
+          "assetName": "Gold Embellished Corset Gown",
+          "rejected": true
         },
         {
           "kind": "wig",
@@ -530,7 +534,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1a63a14b-b530-49d7-9a9c-217291e23f1b",
-          "localFile": "img-0593--wig.jpeg",
+          "localFile": "img-0593--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Bronze Beaded Halter Gown"
         },
@@ -540,7 +544,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ab3722de-b20b-4e04-9ee4-62450db92b38",
-          "localFile": "img-0593--nails.jpeg",
+          "localFile": "img-0593--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Side-swept Curly Updo"
         },
@@ -550,7 +554,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ccec7b29-63ca-4ee9-a4f1-4262ff2db5bc",
-          "localFile": "img-0593--backdrop.jpeg",
+          "localFile": "img-0593--backdrop.JPEG",
           "downloadedSize": "2K",
           "assetName": "Golden Water Reflection Backdrop"
         }
@@ -575,7 +579,7 @@
           "recolour": "platinum",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3d7857a2-55ca-4970-b0fa-4aaa0d756b4b",
-          "localFile": "img-0594--gown-platinum.jpeg",
+          "localFile": "img-0594--gown-platinum.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver Rhinestone Halter Gown"
         },
@@ -585,7 +589,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96aa9bbf-8dbc-4cf8-8d11-bb803803a93c",
-          "localFile": "img-0594--wig.jpeg",
+          "localFile": "img-0594--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black kinky curly updo"
         },
@@ -595,7 +599,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fdc07822-f7e1-44d5-978c-b3b6c3423d96",
-          "localFile": "img-0594--jewellery.jpeg",
+          "localFile": "img-0594--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold beaded sequin collar"
         },
@@ -605,7 +609,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a91eb289-3600-43c4-b4a8-4314b3d0f1ec",
-          "localFile": "img-0594--nails.jpeg",
+          "localFile": "img-0594--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Olive Cat Eye Stiletto"
         },
@@ -615,7 +619,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/dce98894-b366-4f9c-ad86-76d5fcd19247",
-          "localFile": "img-0594--backdrop.jpeg",
+          "localFile": "img-0594--backdrop.PNG",
           "downloadedSize": "2K",
           "assetName": "Golden Fiery Waves"
         }
@@ -640,7 +644,7 @@
           "recolour": "Navy blue",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6923a95a-f2ac-4661-aafe-b29a1a4a6829",
-          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--gown-navy-blue.jpeg",
+          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--gown-navy-blue.JPEG",
           "downloadedSize": "2K",
           "assetName": "Navy pleated peplum blazer"
         },
@@ -650,7 +654,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1f524f8e-9d01-404d-8544-32ab78a622e0",
-          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--wig.jpeg",
+          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black sleek low ponytail"
         },
@@ -660,7 +664,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a68b789d-e057-4924-9674-a03007830f72",
-          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--jewellery.jpeg",
+          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Plain Jewelry"
         },
@@ -670,9 +674,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f90192a6-957d-4255-97ee-0e96fcd62873",
-          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--nails.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "White Long Stiletto Nails"
+          "assetName": "White Long Stiletto Nails",
+          "rejected": true
         },
         {
           "kind": "backdrop",
@@ -680,9 +685,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fdb41c41-f783-474c-8240-e07f63ce4289",
-          "localFile": "temp-image-101ade65-78f8-4774-87e3-967e2--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Taupe gradient"
+          "assetName": "Taupe gradient",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -705,7 +711,7 @@
           "recolour": "deep magenta top and classic black trousers",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d1faa2ec-3dcf-4cde-94ff-225df21db055",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--outfit-deep-magenta-top-and-classic-black-trous.jpeg",
+          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--outfit-deep-magenta-top-and-classic-black-trous.JPEG",
           "downloadedSize": "2K",
           "assetName": "Magenta Peplum Suit"
         },
@@ -715,7 +721,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/491dfc20-e82f-4aa7-874e-c16871b35c91",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--shoes.jpeg",
+          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown Pointed Toe Pumps"
         },
@@ -725,9 +731,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cfe127c5-fdc8-4ffb-8f71-710581ce8ea6",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Brown checkerboard dome bag"
+          "assetName": "Brown checkerboard dome bag",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -735,7 +742,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0aecb27b-4e6c-4e2b-accc-37e1734068ac",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--jewellery.jpeg",
+          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver square bracelet watch"
         },
@@ -745,7 +752,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0323acfe-d21f-46a9-b989-cf5490098430",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--wig.jpeg",
+          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown straight bangs"
         },
@@ -755,7 +762,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/30701d8a-dfce-47b7-bd56-4ad42c05e416",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--nails.jpeg",
+          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Nude almond nails"
         },
@@ -765,9 +772,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2c54cef6-c796-44bf-9599-b5274c01b782",
-          "localFile": "temp-image-106be9fd-eb4d-42df-9618-01c4a--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Silver organic mirror"
+          "assetName": "Silver organic mirror",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -790,9 +798,10 @@
           "recolour": "Terracotta plaid jacket with black trousers",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/b119106c-9eb3-4934-a0ff-90cb2d599da3",
-          "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--outfit-terracotta-plaid-jacket-with-black-trous.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Rust Plaid Bomber"
+          "assetName": "Rust Plaid Bomber",
+          "rejected": true
         },
         {
           "kind": "shoes",
@@ -800,9 +809,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e547d646-6889-4e92-806c-64d691470994",
-          "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black White Wavy Loafers"
+          "assetName": "Black White Wavy Loafers",
+          "rejected": true
         },
         {
           "kind": "wig",
@@ -810,7 +820,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3c7adb1d-847e-4e66-be3e-9154abd116ef",
-          "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--wig.jpeg",
+          "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Kinky Curly"
         },
@@ -820,7 +830,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f38d8857-1715-4a36-904d-2a2d0365af06",
-          "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--headwear.jpeg",
+          "localFile": "temp-image-1158b748-c7fc-468e-9d77-24597--headwear.JPEG",
           "downloadedSize": "2K",
           "assetName": "White Tweed Check Cap"
         }
@@ -845,9 +855,10 @@
           "recolour": "olive green",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c1ffa540-70c4-490d-890e-198b9b7803a5",
-          "localFile": "temp-image-128b7d9c-314f-41f1-a496-94847--outfit-olive-green.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Olive knit polo"
+          "assetName": "Olive knit polo",
+          "rejected": true
         },
         {
           "kind": "shoes",
@@ -855,7 +866,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c7ab7391-4e84-4d70-925b-41c3499b7734",
-          "localFile": "temp-image-128b7d9c-314f-41f1-a496-94847--shoes.jpeg",
+          "localFile": "temp-image-128b7d9c-314f-41f1-a496-94847--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Navy Suede Striped Sneakers"
         },
@@ -865,9 +876,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/7d5f5867-ea98-4cec-9af7-503fa2486495",
-          "localFile": "temp-image-128b7d9c-314f-41f1-a496-94847--jewellery.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Gold fluted watch"
+          "assetName": "Gold fluted watch",
+          "rejected": true
         },
         {
           "kind": "backdrop",
@@ -875,9 +887,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/da171d22-6d42-4c4a-ae18-d3d46f3897b4",
-          "localFile": "temp-image-128b7d9c-314f-41f1-a496-94847--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "White quilted lounge chair"
+          "assetName": "White quilted lounge chair",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -900,9 +913,10 @@
           "recolour": "Deep plum",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/be3faa5b-c3f8-4a45-8338-14456fb49f52",
-          "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--suit-deep-plum.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Plum Wide-Leg Suit"
+          "assetName": "Plum Wide-Leg Suit",
+          "rejected": true
         },
         {
           "kind": "wig",
@@ -910,9 +924,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cc7affba-0417-446f-906a-428271ad550c",
-          "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--wig.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black Hollywood wave lace front"
+          "assetName": "Black Hollywood wave lace front",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -920,7 +935,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/157e9ff0-8ab7-4100-89ed-5a9ae51dea2e",
-          "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--jewellery.jpeg",
+          "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold Fluted Watch, Gold Dome Ring, Gold "
         },
@@ -930,7 +945,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2fd8fc63-4dca-4ec4-9a82-ded12d7c4d0f",
-          "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--nails.jpeg",
+          "localFile": "temp-image-14745d66-14cc-46bd-9ea8-6e881--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Nude glitter nails"
         },
@@ -1026,9 +1041,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/da4cb6b7-9782-4a2a-842f-5c4fc0c57d75",
-          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Burgundy pointed-toe heels"
+          "assetName": "Burgundy pointed-toe heels",
+          "rejected": true
         },
         {
           "kind": "bag",
@@ -1036,7 +1052,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/71de10ae-8d3d-4f73-8d6c-808b71656aad",
-          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--bag.jpeg",
+          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--bag.JPEG",
           "downloadedSize": "2K",
           "assetName": "Burgundy Gold Lock Satchel"
         },
@@ -1046,7 +1062,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ba877768-da75-4802-b34e-9ec00fa5423f",
-          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--jewellery.jpeg",
+          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold watch bangle set"
         },
@@ -1056,7 +1072,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d3b606d6-d43a-477a-8e84-eef5e652da33",
-          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--nails.jpeg",
+          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Burgundy Gold Tip Nails"
         },
@@ -1066,9 +1082,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0f5f94e9-6dc2-42fb-90ef-f40458cabc0c",
-          "localFile": "temp-image-24cc815e-249d-4017-9386-8ea54--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Greige cloudy wall"
+          "assetName": "Greige cloudy wall",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1091,7 +1108,7 @@
           "recolour": "champagne",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/efe046f6-bb43-425f-8522-c28b9b16b88b",
-          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--outfit-champagne.jpeg",
+          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--outfit-champagne.JPEG",
           "downloadedSize": "2K",
           "assetName": "Beige Ribbed Polo Set"
         },
@@ -1101,7 +1118,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/8386a890-4d00-4ec3-a0b0-43dfc3199a42",
-          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--shoes.jpeg",
+          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "White pointed V-cut pumps"
         },
@@ -1111,7 +1128,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5d3df226-509d-49f2-8085-4b495b83751a",
-          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--bag.jpeg",
+          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--bag.JPEG",
           "downloadedSize": "2K",
           "assetName": "Sage green top handle gold chain"
         },
@@ -1121,7 +1138,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/24226cd8-ff43-4598-89d1-d59216c33ba8",
-          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--jewellery.jpeg",
+          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold layered necklace set"
         },
@@ -1131,7 +1148,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/07a40978-5073-4597-bc6a-f71b07c5dbd6",
-          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--wig.jpeg",
+          "localFile": "temp-image-25f9d63a-d678-40a3-98d9-d6530--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Dark Brown Wavy Bob"
         }
@@ -1166,7 +1183,7 @@
           "recolour": "Mustard yellow",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/58a24351-9ff9-4bd9-b17d-074f5c07bba1",
-          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--outfit-mustard-yellow.jpeg",
+          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--outfit-mustard-yellow.jpg",
           "downloadedSize": "2K",
           "assetName": "Mustard striped floral co-ord"
         },
@@ -1176,9 +1193,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/b557b8a8-55e7-4e2f-b823-70fc698474f5",
-          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "White floral high-tops"
+          "assetName": "White floral high-tops",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1186,7 +1204,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/bb4a18ae-6d15-4d09-bf55-6fbaac12545c",
-          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--jewellery.jpeg",
+          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver Black Men's Jewellery Set"
         },
@@ -1196,9 +1214,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6e474ee2-833d-45c6-903a-961f7b074114",
-          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--headwear.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Red NY Baseball Cap"
+          "assetName": "Red NY Baseball Cap",
+          "rejected": true
         },
         {
           "kind": "backdrop",
@@ -1206,9 +1225,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/01dcc42e-987e-4420-9084-b4724c9df311",
-          "localFile": "temp-image-43ae9f01-7df5-49cc-af3c-56d47--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black white striped backdrop"
+          "assetName": "Black white striped backdrop",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1231,7 +1251,7 @@
           "recolour": "coral orange",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9cda6953-f376-40e8-b29b-8ce7c2286b75",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--gown-coral-orange.jpeg",
+          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--gown-coral-orange.jpg",
           "downloadedSize": "2K",
           "assetName": "Coral Floral Fringe Gown"
         },
@@ -1241,7 +1261,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c3b1a42d-188d-455b-8dad-330791cb2396",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--wig.jpeg",
+          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black curled bob lace front"
         },
@@ -1251,7 +1271,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/8e26245b-fc32-43bb-b579-975e7ba35a0f",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--shoes.jpeg",
+          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver clear block heels"
         },
@@ -1261,9 +1281,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/409d1616-229c-4403-ad58-edd9771f13d4",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Pink Tasseled Tote"
+          "assetName": "Pink Tasseled Tote",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1271,7 +1292,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/19f65d38-238c-43b4-99b7-c099444f2c1b",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--jewellery.jpeg",
+          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver textured floral"
         },
@@ -1281,7 +1302,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/cc55e795-092a-480a-8479-c9149f6c6d89",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--nails.jpeg",
+          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Nude French Square Nails"
         },
@@ -1291,9 +1312,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/77993f0b-1630-4cfe-92dc-7611b5f401e6",
-          "localFile": "temp-image-45251a4c-87a4-45ff-b534-c6f18--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "White modern natural"
+          "assetName": "White modern natural",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1316,9 +1338,10 @@
           "recolour": "Espresso Brown",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4d32c456-7c8a-4e16-a10e-674a798f0227",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--suit-espresso-brown.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Brown Pinstripe Suit"
+          "assetName": "Brown Pinstripe Suit",
+          "rejected": true
         },
         {
           "kind": "wig",
@@ -1326,7 +1349,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3e70bd82-38d7-4f8c-ba71-2d8932792909",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--wig.jpeg",
+          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Blunt Bob"
         },
@@ -1336,9 +1359,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/82c3eb14-1885-40fc-a684-e221428195b6",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black Patent Pumps"
+          "assetName": "Black Patent Pumps",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1346,9 +1370,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/10bb7602-365c-4680-9767-7b0638a56b46",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--jewellery.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black Prada triangle"
+          "assetName": "Black Prada triangle",
+          "rejected": true
         },
         {
           "kind": "headwear",
@@ -1356,9 +1381,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e2d26f70-7244-4ae1-9604-bca954b49c07",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--headwear.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "White Faceless Head"
+          "assetName": "White Faceless Head",
+          "rejected": true
         },
         {
           "kind": "nails",
@@ -1366,7 +1392,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96be1a0f-d4bd-4b3c-8cc0-9b80d3524152",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--nails.jpeg",
+          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Red striped almond nails"
         },
@@ -1376,9 +1402,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5d9f948f-93ec-4630-bb26-a568d628d0cc",
-          "localFile": "temp-image-456cc01a-c2a5-4394-ab6a-d7e7d--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Blue Grey Studio Backdrop"
+          "assetName": "Blue Grey Studio Backdrop",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1401,7 +1428,7 @@
           "recolour": "rose gold",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/586f2640-6a3a-441a-9e17-3d328ecbf1e8",
-          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--outfit-rose-gold.jpeg",
+          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--outfit-rose-gold.JPEG",
           "downloadedSize": "2K",
           "assetName": "Blush satin double-breasted blazer"
         },
@@ -1411,7 +1438,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0cc98aeb-c1f7-4a29-b4ee-37939320c7ed",
-          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--shoes.jpeg",
+          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black patent red-sole pumps"
         },
@@ -1421,7 +1448,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fcb527dd-0abb-4236-a6cb-4e2f1ecf3743",
-          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--jewellery.jpeg",
+          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--jewellery.jpg",
           "downloadedSize": "2K",
           "assetName": "Rose Gold Square Halo Studs"
         },
@@ -1431,7 +1458,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/071789c5-fe3e-4445-b9da-de17c27e80fa",
-          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--wig.jpeg",
+          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Wavy Ponytail"
         },
@@ -1441,7 +1468,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f01ff9f9-a6ac-440a-a530-787c5103f262",
-          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--nails.jpeg",
+          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black embossed coffin nails"
         },
@@ -1451,9 +1478,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f75ec63e-4726-4877-8033-257619668211",
-          "localFile": "temp-image-45884af6-a183-4969-8c89-e23b2--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Raspberry seamless"
+          "assetName": "Raspberry seamless",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1476,7 +1504,7 @@
           "recolour": "sage green and ivory",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/bb7eba91-a117-4ccd-a794-080774c5390a",
-          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--outfit-sage-green-and-ivory.jpeg",
+          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--outfit-sage-green-and-ivory.JPEG",
           "downloadedSize": "2K",
           "assetName": "Sage ribbed wrap top"
         },
@@ -1486,7 +1514,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/856e6553-d159-4466-a366-7fcc4dae68c1",
-          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--wig.jpeg",
+          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Dark Brown Straight Middle Part"
         },
@@ -1496,7 +1524,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/aa75f2c2-3d49-4e6d-bb54-b877a8a7e204",
-          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--shoes.jpeg",
+          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Pale blue crystal pumps"
         },
@@ -1506,7 +1534,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9e8a4326-c3e7-455e-9123-0d3986a5b0b2",
-          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--bag.jpeg",
+          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--bag.JPEG",
           "downloadedSize": "2K",
           "assetName": "Light blue quilted C bag"
         },
@@ -1516,7 +1544,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9338ec56-112a-4176-831d-506c8292c827",
-          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--jewellery.jpeg",
+          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold intricate pendant necklace"
         },
@@ -1526,9 +1554,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/b625b13c-c964-46af-a769-4e56178a7e54",
-          "localFile": "temp-image-527046f5-adc8-433e-acd9-fe0c7--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Silver Organic Mirror"
+          "assetName": "Silver Organic Mirror",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1551,7 +1580,7 @@
           "recolour": "sky blue",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0d5ef2d4-d330-4dcf-b7cd-922d389df738",
-          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--outfit-sky-blue.jpeg",
+          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--outfit-sky-blue.JPEG",
           "downloadedSize": "2K",
           "assetName": "Light blue ribbed polo set"
         },
@@ -1561,7 +1590,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1d72522c-fbfb-44e5-91c5-9c71c04ed753",
-          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--wig.jpeg",
+          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown Straight Center Part"
         },
@@ -1571,7 +1600,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/28461e50-685b-4d96-bf9e-eb63f617b0b1",
-          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--shoes.jpeg",
+          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "White pointed toe pumps"
         },
@@ -1581,7 +1610,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4e5d3a28-ca4f-4e96-ba35-28280926729a",
-          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--bag.jpeg",
+          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--bag.JPEG",
           "downloadedSize": "2K",
           "assetName": "Mint Green Gold Clasp Bag"
         },
@@ -1591,7 +1620,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c613e229-9287-4813-864a-7a7e4fa952eb",
-          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--jewellery.jpeg",
+          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold watch, bracelet, necklace"
         },
@@ -1601,9 +1630,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2e2c9ad8-d4e9-48a7-abd7-6496a8691d77",
-          "localFile": "temp-image-576a360b-a4da-4ff9-bcdd-659f3--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Silver Wavy Mirror"
+          "assetName": "Silver Wavy Mirror",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1626,9 +1656,10 @@
           "recolour": "Burnt orange",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c35d5911-f87d-42c4-8e48-48cf1bc3d975",
-          "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--outfit-burnt-orange.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Orange patterned cargo set"
+          "assetName": "Orange patterned cargo set",
+          "rejected": true
         },
         {
           "kind": "shoes",
@@ -1636,9 +1667,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a7fb76ca-e78d-49cf-8e7e-d5e2fdc83ec3",
-          "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black white penny loafers"
+          "assetName": "Black white penny loafers",
+          "rejected": true
         },
         {
           "kind": "headwear",
@@ -1646,9 +1678,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/b6e4d41e-4b67-44a3-8db3-4b1cf90d1b93",
-          "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--headwear.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black White Sox cap"
+          "assetName": "Black White Sox cap",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1656,7 +1689,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/235bf77a-761b-44a0-a039-5d3294cef844",
-          "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--jewellery.jpeg",
+          "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver octagonal watch"
         },
@@ -1666,9 +1699,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ac53fd00-efc3-4740-b18d-ea0ba6d4350e",
-          "localFile": "temp-image-6a97b07c-492d-471e-8944-e52ed--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Neutral textured collage"
+          "assetName": "Neutral textured collage",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1691,7 +1725,7 @@
           "recolour": "Cobalt Blue",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/96a2daef-3303-4bc0-a2de-c0c4092b858a",
-          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--gown-cobalt-blue.jpeg",
+          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--gown-cobalt-blue.jpg",
           "downloadedSize": "2K",
           "assetName": "Royal Blue Asymmetric Dress"
         },
@@ -1701,7 +1735,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ad66b238-00ad-4027-ae47-2438687cc0e9",
-          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--shoes.jpeg",
+          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Gold Knot Pumps"
         },
@@ -1711,7 +1745,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/dade80bf-a805-4745-80d5-390e49eb2449",
-          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--jewellery.jpeg",
+          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold band ring"
         },
@@ -1721,9 +1755,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eddd5796-dbf1-46d6-8dd8-58a97627b291",
-          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--nails.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Burgundy Square Nails"
+          "assetName": "Burgundy Square Nails",
+          "rejected": true
         },
         {
           "kind": "wig",
@@ -1731,7 +1766,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f742e439-dcdf-48ab-a647-1fef676595f1",
-          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--wig.jpeg",
+          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black wavy lace front"
         },
@@ -1741,9 +1776,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/7db040e4-3e32-460e-bbf4-575d7759557a",
-          "localFile": "temp-image-7736796a-9d20-4eef-a227-1afb2--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Grey textured wall"
+          "assetName": "Grey textured wall",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1766,7 +1802,7 @@
           "recolour": "Jet Black",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a6f90a9a-edde-438d-b0b9-1e81e41e40ae",
-          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--gown-jet-black.jpeg",
+          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--gown-jet-black.jpg",
           "downloadedSize": "2K",
           "assetName": "Black Beaded Strapless"
         },
@@ -1776,9 +1812,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6db889a0-bd38-4fce-881f-15f72a9a4c99",
-          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Red jeweled strappy sandals"
+          "assetName": "Red jeweled strappy sandals",
+          "rejected": true
         },
         {
           "kind": "bag",
@@ -1786,9 +1823,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a5486847-76a4-4c63-8bcf-25f323e82d2f",
-          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black Pebbled Chain Tote"
+          "assetName": "Black Pebbled Chain Tote",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1796,7 +1834,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fc3d319e-ad11-4df3-90b4-853b885981dc",
-          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--jewellery.jpeg",
+          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--jewellery.jpg",
           "downloadedSize": "2K",
           "assetName": "Mixed Gold Silver Jewellery"
         },
@@ -1806,7 +1844,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/aa1c9abe-eec9-417a-8586-a56c211900c9",
-          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--nails.jpeg",
+          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Sheer white striped nails"
         },
@@ -1816,9 +1854,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e66afae7-3e28-46b9-bd48-6ddbdc17d01b",
-          "localFile": "temp-image-81f827db-4130-429a-837a-a0428--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Earthy neutral walls"
+          "assetName": "Earthy neutral walls",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1841,7 +1880,7 @@
           "recolour": "Marigold yellow",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9d3c4a30-10e5-4055-9d68-c7ece62c9a9d",
-          "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--gown-marigold-yellow.jpeg",
+          "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--gown-marigold-yellow.jpg",
           "downloadedSize": "2K",
           "assetName": "Mustard Yellow Ruffled Cape Gown"
         },
@@ -1851,9 +1890,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/d240fb82-b61f-474a-a9e2-ff1c60021aa0",
-          "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "White Pearl Clutch"
+          "assetName": "White Pearl Clutch",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1861,7 +1901,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2bdfc998-5b3b-4e0c-b42c-bcbd9fd18fa4",
-          "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--jewellery.jpeg",
+          "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--jewellery.jpg",
           "downloadedSize": "2K",
           "assetName": "Gold Solitaire Cluster Drop Set"
         },
@@ -1871,9 +1911,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5d05cc78-6b1f-4b26-b7b8-24cb94d467fb",
-          "localFile": "temp-image-93624056-c43f-4c55-ab2e-6e6b1--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Gold arched curtain backdrop"
+          "assetName": "Gold arched curtain backdrop",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1896,9 +1937,10 @@
           "recolour": "Forest Green",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1c614bcb-c34f-4c16-bb09-6d194db90bb5",
-          "localFile": "temp-image-943a83d8-c44d-4aa4-8126-230f1--outfit-forest-green.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Green Sweater Vest Set\nGreen Striped Cro"
+          "assetName": "Green Sweater Vest Set\nGreen Striped Cro",
+          "rejected": true
         },
         {
           "kind": "shoes",
@@ -1906,9 +1948,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/43355100-67b5-4600-8cd9-2246c094c974",
-          "localFile": "temp-image-943a83d8-c44d-4aa4-8126-230f1--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black lug sole loafers"
+          "assetName": "Black lug sole loafers",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1916,7 +1959,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/051d904c-25db-47a8-b106-c466f2e57311",
-          "localFile": "temp-image-943a83d8-c44d-4aa4-8126-230f1--jewellery.jpeg",
+          "localFile": "temp-image-943a83d8-c44d-4aa4-8126-230f1--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Silver diamond bezel watch"
         },
@@ -1926,9 +1969,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e2e2fa5e-6528-4596-9bf3-2babed50548b",
-          "localFile": "temp-image-943a83d8-c44d-4aa4-8126-230f1--headwear.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black NY logo cap"
+          "assetName": "Black NY logo cap",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -1951,9 +1995,10 @@
           "recolour": "Periwinkle blue polo and dark crimson trousers",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/057d9c9e-72b0-4760-ad1d-c535bb55d111",
-          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--outfit-periwinkle-blue-polo-and-dark-crimson-tr.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Periwinkle Polo Burgundy Pleated Trouser"
+          "assetName": "Periwinkle Polo Burgundy Pleated Trouser",
+          "rejected": true
         },
         {
           "kind": "shoes",
@@ -1961,9 +2006,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e79e046d-fbeb-4bac-adc6-89095b5af043",
-          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black horsebit lug sole loafers"
+          "assetName": "Black horsebit lug sole loafers",
+          "rejected": true
         },
         {
           "kind": "bag",
@@ -1971,9 +2017,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/f9a2b495-56ad-4e6d-8b6b-8454fe6fcfb9",
-          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black wavy tote"
+          "assetName": "Black wavy tote",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -1981,7 +2028,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9dbdcfd2-7837-488f-a506-d89ce5c3a061",
-          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--jewellery.jpeg",
+          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--jewellery.jpg",
           "downloadedSize": "2K",
           "assetName": "Silver wide bangle"
         },
@@ -1991,7 +2038,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/aaddb98e-327e-4c48-be64-c17d9adbb72a",
-          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--belt.jpeg",
+          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--belt.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black smooth leather belt"
         },
@@ -2001,9 +2048,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fdac7ea2-3246-4d28-804d-5780f4f2d16e",
-          "localFile": "temp-image-97c8882b-2e4b-45c5-83d2-bc590--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Stone varied settings"
+          "assetName": "Stone varied settings",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -2026,7 +2074,7 @@
           "recolour": "Fuchsia",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/0cc68fb0-1f1b-4da4-a69e-3e7dd4b81974",
-          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--gown-fuchsia.jpeg",
+          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--gown-fuchsia.JPEG",
           "downloadedSize": "2K",
           "assetName": "Fuchsia Off-shoulder Beaded Gown"
         },
@@ -2036,7 +2084,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/04f1b8ec-9a17-4174-983c-109fb247a72f",
-          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--wig.jpeg",
+          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black Loose Wavy Long"
         },
@@ -2046,7 +2094,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/3e2e6449-37a4-4f76-8a0b-ab3b863cd459",
-          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--jewellery.jpeg",
+          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "White display forms"
         },
@@ -2056,7 +2104,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c411cf63-d22a-4552-87aa-68d3c5e6de63",
-          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--nails.jpeg",
+          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--nails.JPEG",
           "downloadedSize": "2K",
           "assetName": "Red beaded nails"
         },
@@ -2066,7 +2114,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ae0938c7-a8e4-4a50-af29-5f9cdd94904f",
-          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--backdrop.jpeg",
+          "localFile": "temp-image-9c085956-9ceb-47c8-a7d3-45b58--backdrop.PNG",
           "downloadedSize": "2K",
           "assetName": "Golden Liquid Light"
         }
@@ -2096,7 +2144,7 @@
           "recolour": "Powder blue denim jacket, soft cream shirt, pewter grey tie, and umber brown trousers.",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/2f9dea9c-7e85-451d-8470-3632b3a694be",
-          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--outfit-powder-blue-denim-jacket-soft-cream-shir.jpeg",
+          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--outfit-powder-blue-denim-jacket-soft-cream-shir.jpg",
           "downloadedSize": "2K",
           "assetName": "Light Blue Denim Jacket"
         },
@@ -2106,9 +2154,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/4e98ec67-57de-4380-b888-14a0b181534c",
-          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black patent Oxfords"
+          "assetName": "Black patent Oxfords",
+          "rejected": true
         },
         {
           "kind": "belt",
@@ -2116,7 +2165,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/1aeac7b1-b9a6-42b7-a43e-83136b6913d3",
-          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--belt.jpeg",
+          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--belt.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black brushed buckle belt"
         },
@@ -2126,7 +2175,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/80c6030a-9196-4cc6-b808-acfda0cbf517",
-          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--jewellery.jpeg",
+          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold pendant necklace"
         },
@@ -2136,9 +2185,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/9869be11-9d14-4b3f-9cc2-950ae5764010",
-          "localFile": "temp-image-a90d63bd-5d03-43fc-a27f-08c59--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Neutral modern apartment"
+          "assetName": "Neutral modern apartment",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -2161,9 +2211,10 @@
           "recolour": "Cerulean blue",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/02953a37-94a4-419f-86c1-d63a6f4b89d8",
-          "localFile": "temp-image-ac5410ac-852c-46f9-83b9-e9adf--gown-cerulean-blue.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Blue Strapless Tiered Gown"
+          "assetName": "Blue Strapless Tiered Gown",
+          "rejected": true
         },
         {
           "kind": "wig",
@@ -2171,7 +2222,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/6f21db0d-31e9-44b0-8b4f-181a13e80139",
-          "localFile": "temp-image-ac5410ac-852c-46f9-83b9-e9adf--wig.jpeg",
+          "localFile": "temp-image-ac5410ac-852c-46f9-83b9-e9adf--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Black long wavy lace front"
         },
@@ -2181,9 +2232,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/eb8252eb-6871-4f1f-90aa-b27915c71c80",
-          "localFile": "temp-image-ac5410ac-852c-46f9-83b9-e9adf--jewellery.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Gold flat bangle\nSilver diamond bangles\n"
+          "assetName": "Gold flat bangle\nSilver diamond bangles\n",
+          "rejected": true
         },
         {
           "kind": "backdrop",
@@ -2191,9 +2243,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/e3e6ec2f-5d02-459c-9e05-d9b32ecd6d9e",
-          "localFile": "temp-image-ac5410ac-852c-46f9-83b9-e9adf--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Chocolate seamless backdrop"
+          "assetName": "Chocolate seamless backdrop",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -2216,7 +2269,7 @@
           "recolour": "Oxblood",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/74a96080-cbd4-47fa-abdc-2c9a188e4839",
-          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--outfit-oxblood.jpeg",
+          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--outfit-oxblood.JPEG",
           "downloadedSize": "2K",
           "assetName": "Burgundy Gold Button Set"
         },
@@ -2226,7 +2279,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a9adb716-d8c0-4222-98ae-16111bdc1875",
-          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--wig.jpeg",
+          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown Straight Bangs Bob"
         },
@@ -2236,7 +2289,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/05efd33d-b772-495d-9d9a-4541a2d03cb6",
-          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--shoes.jpeg",
+          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--shoes.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown monogram flats"
         },
@@ -2246,7 +2299,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/a8a2e73b-cf65-43bb-b317-3f18ccdefde3",
-          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--bag.jpeg",
+          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--bag.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown gold lock top handle"
         },
@@ -2256,7 +2309,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c3e1bf64-e988-461b-9515-106120d42e68",
-          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--jewellery.jpeg",
+          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold stacked blush bracelets"
         },
@@ -2266,9 +2319,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/78fbc1e9-805d-4231-aa74-6037c2cdcb34",
-          "localFile": "temp-image-ad140266-d4bd-43e5-9b09-3441d--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Silver Wavy Mirror"
+          "assetName": "Silver Wavy Mirror",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -2291,7 +2345,7 @@
           "recolour": "Turquoise",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/afe91fe4-3589-4ffb-8e3d-7fc80e6003ad",
-          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--gown-turquoise.jpeg",
+          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--gown-turquoise.JPEG",
           "downloadedSize": "2K",
           "assetName": "Aqua Feather Gown"
         },
@@ -2301,7 +2355,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/7ffd97d3-7b39-4188-a97e-68d0fc5509a4",
-          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--wig.jpeg",
+          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Auburn Loose Wave Lace Front"
         },
@@ -2311,9 +2365,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/07a0c9f2-a754-4a71-a172-44976fe2ee09",
-          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Nude Clear Crystal Pumps"
+          "assetName": "Nude Clear Crystal Pumps",
+          "rejected": true
         },
         {
           "kind": "bag",
@@ -2321,9 +2376,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/ee3e1ff0-11c4-4ad3-a319-07f10aae9abd",
-          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Black ostrich feather handbag"
+          "assetName": "Black ostrich feather handbag",
+          "rejected": true
         },
         {
           "kind": "jewellery",
@@ -2331,7 +2387,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/fd92d1c7-35db-4d6c-86c0-27730a4d4506",
-          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--jewellery.jpeg",
+          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--jewellery.JPEG",
           "downloadedSize": "2K",
           "assetName": "Gold ruffled earrings"
         },
@@ -2341,9 +2397,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/defa8c2e-7b9a-4fad-ace2-d7cb486ab334",
-          "localFile": "temp-image-b401a03f-51ae-413f-bb14-024d3--backdrop.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Amber Luxe Interior"
+          "assetName": "Amber Luxe Interior",
+          "rejected": true
         }
       ],
       "uploaded": true
@@ -2366,7 +2423,7 @@
           "recolour": "Dusty rose top and light dove grey trousers",
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/15dba3b7-bffe-41fd-b54e-8193494b9a00",
-          "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--outfit-dusty-rose-top-and-light-dove-grey-trous.jpeg",
+          "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--outfit-dusty-rose-top-and-light-dove-grey-trous.JPEG",
           "downloadedSize": "2K",
           "assetName": "Dusty Pink collared tie-waist set"
         },
@@ -2376,7 +2433,7 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/84da07a3-0095-484b-a5ca-e4c6c08da3a5",
-          "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--wig.jpeg",
+          "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--wig.JPEG",
           "downloadedSize": "2K",
           "assetName": "Brown straight bob bangs"
         },
@@ -2386,9 +2443,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/c1a9edb5-baef-4f4d-9057-8843079244eb",
-          "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--shoes.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Brown strappy heels"
+          "assetName": "Brown strappy heels",
+          "rejected": true
         },
         {
           "kind": "bag",
@@ -2396,9 +2454,10 @@
           "recolour": null,
           "done": true,
           "flowAsset": "/fx/tools/flow/project/3a3736de-c199-46e6-b58e-ad0ff1418ff9/edit/5324b9d8-2049-4f3e-8cf7-4abda69c7ce5",
-          "localFile": "temp-image-bbe33be7-9272-4887-984f-7ffb4--bag.jpeg",
+          "localFile": null,
           "downloadedSize": "2K",
-          "assetName": "Brown pearl handle bag"
+          "assetName": "Brown pearl handle bag",
+          "rejected": true
         },
         {
           "kind": "jewellery",
