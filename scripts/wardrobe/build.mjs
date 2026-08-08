@@ -102,6 +102,28 @@ async function upload() {
   const { createHash } = await import("node:crypto");
   const hashOf = (buf) => createHash("sha256").update(buf).digest("hex").slice(0, 16);
 
+  // Deleting a file from .wardrobe-assets is how an asset is rejected — some
+  // extractions still contain a person, some backdrops came out badly. Removing
+  // the file has to be enough on its own, so anything now missing is dropped
+  // from the manifest and unmarked in the queue. Otherwise the template build
+  // would keep using the copy already in R2 and the deletion would do nothing.
+  let removed = 0;
+  for (const p of q.photos.filter(x => x.usable)) {
+    for (const j of p.jobs) {
+      if (!j.localFile) continue;
+      if (existsSync(join(ASSET_DIR, j.localFile))) continue;
+      delete manifest.uploads[`${fileKey(p.file)}::${j.kind}`];
+      j.rejected = true;
+      j.localFile = null;
+      removed++;
+    }
+  }
+  if (removed) {
+    writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
+    writeFileSync(QUEUE_FILE, JSON.stringify(q, null, 2));
+    log(`${removed} asset(s) removed from the folder — dropped from the manifest, they will not appear in any template`);
+  }
+
   const todo = [];
   let replaced = 0;
   for (const p of q.photos.filter(x => x.usable)) {
@@ -129,7 +151,12 @@ async function upload() {
     const local = join(ASSET_DIR, j.localFile);
     if (!existsSync(local)) { log(`✗ missing on disk: ${j.localFile}`); continue; }
     const body = readFileSync(local);
-    const storagePath = `${ownerId}/${randomUUID()}-${j.localFile}`;
+    // Re-upload an edited asset to the SAME path. A fresh uuid each time would
+    // orphan the previous object in R2 and change the path every template
+    // already points at, so an edit would quietly break existing templates
+    // instead of updating them.
+    const storagePath = manifest.uploads[key]?.storagePath
+      ?? `${ownerId}/${randomUUID()}-${j.localFile}`;
 
     if (!DRY_RUN) {
       await r2.send(new PutObjectCommand({
