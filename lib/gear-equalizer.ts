@@ -279,7 +279,17 @@ export function buildGearEqualizerPrompt(
   lightingDirectiveOverride?: string
 ): string {
   const lighting = LIGHTING_PRESETS.find((p) => p.id === sel.lighting) ?? LIGHTING_PRESETS[0];
-  const lightingDirective = lightingDirectiveOverride ?? lighting.directive;
+  const rawLightingDirective = lightingDirectiveOverride ?? lighting.directive;
+  // A look describes the studio it was shot in, background included. When the
+  // buyer has ALSO chosen a backdrop, those two instructions contradict each
+  // other and the look wins the parts the swap block does not explicitly claim.
+  // Proven in shoot cbe3af21: the same charcoal plate came back near-black on a
+  // photo whose look said "Background is unlit black" and light grey on one
+  // whose look said "pure white background" — one booking, two different
+  // studios. The buyer's backdrop is the explicit choice; it takes precedence.
+  const lightingDirective = backdropAttached
+    ? stripBackgroundDirection(rawLightingDirective)
+    : rawLightingDirective;
   // Undefined when the buyer was never offered a camera look. Note the absence
   // of a fallback: defaulting to the first preset would silently apply a
   // Hasselblad rendering to a template that no longer advertises one.
@@ -374,7 +384,21 @@ export function buildGearEqualizerPrompt(
         "like a full backdrop plate pasted behind them. Light the backdrop consistently " +
         "with the new lighting (its brightness falls off per the lighting directive). " +
         "Edge transitions (hair, fabric) must be clean. The subject remains exactly as in " +
-        "IMAGE 1."
+        "IMAGE 1. " +
+        // Precedence. Without this, a look that mentions a white or black
+        // background mid-sentence repaints the buyer's chosen backdrop, and two
+        // photos booked together with different looks come back on what appears
+        // to be two different walls.
+        "BACKGROUND AUTHORITY — IMAGE 2 alone decides the background's COLOUR, TONE and " +
+        "TEXTURE. If the lighting description above mentions a background of any colour " +
+        "(white, black, grey, coloured, gradient, or 'unlit'), that describes the studio " +
+        "the look was originally shot in and does NOT apply here: ignore it, keep IMAGE 2's " +
+        "own colour and texture, and take only the DIRECTION, QUALITY, INTENSITY and FALLOFF " +
+        "of the described light onto it. The backdrop may be lit brighter or darker across " +
+        "the frame as the light dictates, but it must remain recognisably the same material " +
+        "and colour as IMAGE 2 — never turned black, never turned white. Several photos in " +
+        "one booking share this backdrop and must come back looking like the same wall in " +
+        "the same room, whatever different lighting each one was given."
       : "BACKGROUND — keep the existing background and environment of IMAGE 1 (same " +
         "location, same objects, same framing), but RE-LIGHT it fully and consistently " +
         "with the new lighting described above — its brightness, shadows, and mood must " +
@@ -391,6 +415,64 @@ export function buildGearEqualizerPrompt(
   ];
 
   return parts.join(" ");
+}
+
+/**
+ * Drop a comma clause that paints the background a colour.
+ *
+ * Half the looks name the background mid-sentence rather than in a sentence of
+ * its own — "The color temperature is neutral (~5500K), with a pure white
+ * background that appears evenly lit, suggesting a clamshell setup". Removing
+ * the whole sentence there would throw away the colour temperature, so only the
+ * offending clause goes.
+ *
+ * A clause survives unless it BOTH names the background AND paints it. A clause
+ * about a background LIGHT ("additional background lighting to eliminate
+ * falloff") is a lighting instruction and is kept — it says where a lamp is,
+ * not what colour the wall must be.
+ */
+function dropBackgroundColourClause(sentence: string): string {
+  if (!/back(ground|drop)/i.test(sentence)) return sentence;
+  const COLOUR = /\b(white|black|grey|gray|dark|bright|deep|red|blue|green|amber|magenta|cyan|orange|purple|warm|cool|neutral|coloured|colored|gradient|unlit|seamless)\b/i;
+  const parts = sentence.split(",");
+  if (parts.length < 2) return sentence;
+  const kept = parts.filter((c) =>
+    !(/back(ground|drop)/i.test(c) && COLOUR.test(c) && !/lighting\b/i.test(c)));
+  // Never let this empty a sentence out; if every clause looked like background
+  // direction, the sentence was background direction and the caller's
+  // sentence-level guard should decide.
+  if (kept.length === 0 || kept.join(",").trim().length < 15) return sentence;
+  return kept.join(",");
+}
+
+/**
+ * Remove background direction from a lighting look.
+ *
+ * Looks are written as descriptions of a complete studio setup, so many of them
+ * end with a sentence about the wall behind the subject: "Background is unlit
+ * black.", "The background is a smooth grey gradient." That sentence is correct
+ * when the buyer keeps their own background and wrong the moment they pick a
+ * backdrop, because it repaints the thing they chose.
+ *
+ * Only sentences ABOUT the background are dropped — where the background is the
+ * subject of the sentence. A sentence that mentions it in passing while
+ * describing the key light keeps its lighting information; the precedence rule
+ * in the BACKGROUND SWAP block covers those.
+ *
+ * A look that turns out to be nothing but background direction is returned
+ * unchanged: delivering the look the buyer picked matters more than winning the
+ * argument, and an empty directive would leave the photo unlit.
+ */
+export function stripBackgroundDirection(directive: string): string {
+  const sentences = directive.match(/[^.!?]+[.!?]*\s*/g);
+  if (!sentences) return directive;
+  const kept = sentences
+    .filter((s) => !/^\s*(the\s+)?back(ground|drop)\b/i.test(s))
+    .map(dropBackgroundColourClause);
+  const out = kept.join("").replace(/\s+/g, " ").replace(/\s+([,.])/g, "$1").trim();
+  // Only bail out when stripping left nothing usable. A higher threshold than
+  // this starts refusing legitimate strips on short directives.
+  return out.length >= 25 ? out : directive;
 }
 
 // Reference-map text appended so the model knows what each attached image is.
