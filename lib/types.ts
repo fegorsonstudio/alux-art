@@ -1,6 +1,11 @@
 export type Currency = "NGN" | "USD";
 export type ShootMode = "fast" | "advanced";
-export type AspectRatio = "3:4" | "4:5" | "1:1" | "16:9" | "9:16" | "2:3";
+export type AspectRatio =
+  | "3:4" | "4:5" | "1:1" | "16:9" | "9:16" | "2:3"
+  // Added for the Gear Equalizer, which routes to nano-banana-2 and accepts
+  // the full Gemini image ratio set. A photographer relighting their own
+  // photos has to be able to keep the shape they actually shot.
+  | "3:2" | "4:3" | "5:4" | "21:9";
 export type ShootStatus =
   | "DRAFT" | "PENDING_PAYMENT" | "QUEUED" | "PROCESSING" | "COMPLETE" | "FAILED"
   | "BASE_LOCKING" | "BASE_REVIEW" | "BASE_REJECTED" | "REFUNDED";
@@ -97,6 +102,10 @@ export const ASPECTS: Record<AspectRatio, AspectConfig> = {
   "16:9": { width: 4096, height: 2304, label: "Landscape 16:9",  falAspect: "landscape_16_9" },
   "9:16": { width: 2304, height: 4096, label: "Vertical 9:16",   falAspect: "portrait_9_16" },
   "2:3":  { width: 2731, height: 4096, label: "Classic 2:3",     falAspect: "portrait_2_3" },
+  "3:2":  { width: 4096, height: 2731, label: "Classic 3:2",     falAspect: "landscape_3_2" },
+  "4:3":  { width: 4096, height: 3072, label: "Landscape 4:3",   falAspect: "landscape_4_3" },
+  "5:4":  { width: 4096, height: 3277, label: "Landscape 5:4",   falAspect: "landscape_5_4" },
+  "21:9": { width: 4096, height: 1755, label: "Cinematic 21:9",  falAspect: "landscape_21_9" },
 };
 
 export const REFERENCE_TAGS: ReferenceTag[] = [

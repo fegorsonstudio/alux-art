@@ -142,6 +142,8 @@ const zh: AppDictionary = {
     aiDecides: "AI 决定",
     pickLooks: "选择风格",
     setLightingMyself: "自行设置灯光",
+    stripMetadata: "清除 EXIF / 元数据",
+    stripMetadataHint: "从你下载的文件中移除相机信息、位置和 AI 内容凭证，让你发布的只有照片本身。它无法移除 Google 隐形的 SynthID 水印。",
     manualLightingHint: "保持关闭，AI 会为每张图片选择灯光。开启后可选择一种或多种风格；它们会分布到你的各张图片中。",
     pickLightingOrOff: "请至少选择一种灯光风格，或关闭手动灯光。",
     perPhotoLightingHint: "开启：为每张照片指定一种灯光风格。关闭：所有照片使用同一种灯光。",

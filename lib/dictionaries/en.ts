@@ -141,6 +141,8 @@ const en = {
     aiDecides: "AI decides",
     pickLooks: "pick looks",
     setLightingMyself: "Set the lighting myself",
+    stripMetadata: "Strip EXIF / metadata",
+    stripMetadataHint: "Removes camera data, location and the AI content credentials from the files you download, so a post shares the picture and nothing else. It cannot remove Google’s invisible SynthID watermark.",
     manualLightingHint: "Leave this off and the AI chooses the lighting for each image. Turn it on to pick one or more looks; they get spread across your images.",
     pickLightingOrOff: "Pick at least one lighting look, or turn manual lighting off.",
     perPhotoLightingHint: "On: assign a lighting look to each photo. Off: one lighting rig for all photos.",

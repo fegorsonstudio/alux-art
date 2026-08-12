@@ -142,6 +142,8 @@ const es: AppDictionary = {
     aiDecides: "La IA decide",
     pickLooks: "elige estilos",
     setLightingMyself: "Configurar la iluminación yo mismo",
+    stripMetadata: "Eliminar EXIF / metadatos",
+    stripMetadataHint: "Elimina los datos de la cámara, la ubicación y las credenciales de contenido de IA de los archivos que descargas, de modo que tu publicación solo comparta la imagen. No elimina la marca de agua invisible SynthID de Google.",
     manualLightingHint: "Déjalo desactivado y la IA elige la iluminación de cada imagen. Actívalo para elegir uno o más estilos; se reparten entre tus imágenes.",
     pickLightingOrOff: "Elige al menos un estilo de iluminación, o desactiva la iluminación manual.",
     perPhotoLightingHint: "Activado: asigna un estilo de iluminación a cada foto. Desactivado: una sola iluminación para todas.",

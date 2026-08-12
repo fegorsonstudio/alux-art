@@ -142,6 +142,8 @@ const pcm: AppDictionary = {
     aiDecides: "AI go decide",
     pickLooks: "pick style",
     setLightingMyself: "Set di lighting myself",
+    stripMetadata: "Comot EXIF / metadata",
+    stripMetadataHint: "E go comot camera data, location and di AI content credentials from di files wey you download, so wetin you post na di picture alone. E no fit comot Google invisible SynthID watermark.",
     manualLightingHint: "If you leave am off, AI go choose di lighting for every image. Turn am on to pick one or plenty style; e go spread dem across your images.",
     pickLightingOrOff: "Pick at least one lighting style, or turn off di manual lighting.",
     perPhotoLightingHint: "On: give each photo im own lighting style. Off: one lighting for all di photos.",

@@ -468,7 +468,9 @@ export default function CheckoutPanel({
   const [defaultLighting, setDefaultLighting] = useState<string | null>(null);
   // Photo upgrades act on the buyer's own photograph, so the output shape is
   // theirs: forcing the template ratio re-crops a picture they already framed.
-  const [upgradeAspect, setUpgradeAspect] = useState<string>(template.aspectRatio ?? "4:5");
+  // 3:4 by default. The buyer supplies the photos here, so the template's own
+  // aspect says nothing about what shape their files are.
+  const [upgradeAspect, setUpgradeAspect] = useState<string>("3:4");
   // Asset Extractor: which items to pull out of each uploaded photo.
   const [assetPicks, setAssetPicks] = useState<Record<string, string[]>>({});
   // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
@@ -505,6 +507,9 @@ export default function CheckoutPanel({
    * without a re-upload.
    */
   const [customBackdrop, setCustomBackdrop] = useState<{ storagePath: string; storageBucket: string; preview: string } | null>(null);
+  // Deliver the files with EXIF/C2PA removed. Off by default — it is a choice
+  // about the buyer's own files, not something to do to everyone silently.
+  const [stripMetadata, setStripMetadata] = useState(false);
   const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
 
   // Buyer opt-out of smile slots — the planner keeps every photo closed-lips.
@@ -1167,6 +1172,7 @@ export default function CheckoutPanel({
                 : {}),
               // Per-photo creator lighting (manual on) — { storagePath: optionId }.
               lightingByPath: perPhotoLightingActive ? lightingByPhoto : undefined,
+              stripMetadata: stripMetadata || undefined,
             }
           : undefined,
         noSmile: noSmile || undefined,
@@ -1348,7 +1354,7 @@ export default function CheckoutPanel({
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("outputSize")}</span>
               <div className={styles.pkgPills}>
-                {(["4:5", "3:4", "1:1", "16:9", "9:16"] as const).map(r => (
+                {(["3:4", "4:5", "2:3", "1:1", "5:4", "4:3", "3:2", "16:9", "9:16", "21:9"] as const).map(r => (
                   <button
                     key={r}
                     type="button"
@@ -1359,6 +1365,23 @@ export default function CheckoutPanel({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Metadata stripping — Gear Equalizer only. These are the buyer's own
+              photographs going back out to their own feed, so what the file
+              declares about itself is theirs to decide. */}
+          {photoUpgradeActive && (
+            <div className={styles.pkgRow}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={stripMetadata}
+                  onChange={e => setStripMetadata(e.target.checked)}
+                />
+                <span className={styles.pkgLabel} style={{ margin: 0 }}>{t("stripMetadata")}</span>
+              </label>
+              <p className={styles.sectionHint}>{t("stripMetadataHint")}</p>
             </div>
           )}
 

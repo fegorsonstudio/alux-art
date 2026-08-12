@@ -9,6 +9,7 @@ import { assetKindById, assetAngleById, buildAssetExtractPrompt, buildAssetRefer
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
+import { stripImageMetadata } from "./strip-metadata";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
 import { getLightingForSlot, buildLightingBriefSection, type LightingPlan } from "./lighting-plan";
 import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups";
@@ -1125,6 +1126,10 @@ const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
     "16:9": "landscape_16_9",
     "9:16": "portrait_16_9",
     "2:3":  { width: 854,  height: 1280 },
+    "3:2":  { width: 1280, height: 854 },
+    "4:3":  { width: 1280, height: 960 },
+    "5:4":  { width: 1280, height: 1024 },
+    "21:9": { width: 1280, height: 549 },
   },
   // Seedream accepts custom dimensions up to 4096 on either side. The old "4K"
   // tier asked for 2048x2560 — 5MP, against the 17MP nano-banana returns for the
@@ -1137,6 +1142,10 @@ const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
     "16:9": { width: 4096, height: 2304 },
     "9:16": { width: 2304, height: 4096 },
     "2:3":  { width: 2730, height: 4096 },
+    "3:2":  { width: 4096, height: 2730 },
+    "4:3":  { width: 4096, height: 3072 },
+    "5:4":  { width: 4096, height: 3276 },
+    "21:9": { width: 4096, height: 1755 },
   },
 };
 
@@ -1597,7 +1606,10 @@ async function saveSlotImage(
   userId: string,
   slot: number,
   imageUrl: string,
-  isTestMode: boolean = false
+  isTestMode: boolean = false,
+  // Gear Equalizer only, and only when the buyer ticked the box. It forces the
+  // buffered path below, so it stays off by default.
+  stripMetadata: boolean = false
 ): Promise<string> {
   const imageRes = await fetch(imageUrl);
   if (!imageRes.ok) throw new Error(`Image fetch failed: ${imageRes.status}`);
@@ -1614,6 +1626,18 @@ async function saveSlotImage(
   // Stream directly from fal.ai CDN → R2 without buffering the full image in memory.
   // A 4K PNG can be 20-50MB; the old arraybuffer approach loaded everything into heap
   // and took 60-120s, frequently hitting Vercel's 300s timeout and orphaning slots.
+  // Stripping needs the whole file in hand to walk its segments, so that path
+  // buffers — accepting the memory cost the streaming comment above warns
+  // about, for the one template that asks for it. Everything else still
+  // streams, untouched.
+  if (stripMetadata) {
+    const original = Buffer.from(await imageRes.arrayBuffer());
+    const cleaned = stripImageMetadata(original);
+    console.log(`[generate] slot ${slot}: metadata stripped, ${original.length} -> ${cleaned.length} bytes`);
+    await r2Upload(bucket, storagePath, cleaned, contentType);
+    return storagePath;
+  }
+
   const contentLength = imageRes.headers.get("content-length");
   await r2StreamUpload(
     bucket,
@@ -3404,7 +3428,7 @@ export async function startGenerationWorker(
       }
 
       // Always save the image to Supabase storage (using "test" bucket in test mode) so signed URLs work
-      let storagePath = await saveSlotImage(shootId, shoot.user_id as string, slot, falUrl, isTestMode);
+      let storagePath = await saveSlotImage(shootId, shoot.user_id as string, slot, falUrl, isTestMode, enhanceSel?.stripMetadata === true);
 
       // Quote card composite: upload to a new path so CDN cache is bypassed
       if (hasQuote && slot === total) {

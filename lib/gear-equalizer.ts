@@ -193,6 +193,15 @@ export interface EnhanceSelection {
   // Manual per-photo lighting: source photo storagePath → creator lighting look.
   // When present, overrides the single rig per photo in generation.
   lightingByPath?: Record<string, EnhanceLightingPick>;
+  /**
+   * Deliver the finished files with their metadata containers removed — EXIF,
+   * XMP, IPTC, and the C2PA box that says the image was AI-generated.
+   *
+   * Read the header of lib/strip-metadata.ts before describing this to a buyer.
+   * It removes what a file SAYS. It cannot remove SynthID, which Google writes
+   * into the pixels themselves, so it does not make an image undetectable.
+   */
+  stripMetadata?: boolean;
 }
 
 export function sanitizeEnhanceSelection(
@@ -253,7 +262,11 @@ export function sanitizeEnhanceSelection(
   // swap, an unused reference would still be attached at generation.
   if (backdropOptionId !== CUSTOM_BACKDROP_ID) customBackdrop = undefined;
 
-  return { lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId, lightingByPath, customBackdrop };
+  return {
+    lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId,
+    lightingByPath, customBackdrop,
+    stripMetadata: o.stripMetadata === true ? true : undefined,
+  };
 }
 
 // ── The deterministic edit prompt ─────────────────────────────────────────────
