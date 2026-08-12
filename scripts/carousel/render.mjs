@@ -82,31 +82,40 @@ const shell = (body, extraCss = "") => `
 <span class="bracket bl"></span><span class="bracket br"></span>
 ${body}</body></html>`;
 
-const footer = (n, total) => `
+/**
+ * The strip along the bottom.
+ *
+ * `brand` exists for REPOSTABLE carousels. Assets we hand creators to share on
+ * their own feeds must not carry our domain: their audience would follow it to
+ * us, book through us, and the creator would earn nothing on a post they made.
+ * Those carousels pass brand: "" and end on "link in bio" instead, so the
+ * traffic lands wherever the person who reposted it points it.
+ */
+const footer = (n, total, brand = "aluxartandframes.shop") => `
   <footer>
-    <span>aluxartandframes.shop</span>
+    <span>${brand}</span>
     <span>${n}/${total}</span>
   </footer>`;
 
 // ── Slide kinds ──────────────────────────────────────────────────────────────
 const SLIDES = {
   /** Opening slide. One idea, as large as it will go. */
-  cover: (s, n, t) => shell(`
+  cover: (s, n, t, b) => shell(`
     <div class="eyebrow">${esc(s.eyebrow ?? "Alux Art")}</div>
     <div class="spacer"></div>
     <h1>${em(s.title)}</h1>
     ${s.body ? `<p class="body">${em(s.body)}</p>` : ""}
     <div class="spacer" style="flex:1.25"></div>
     ${s.kicker ? `<div style="font-size:30px;font-weight:700;color:${CORAL};letter-spacing:.14em;text-transform:uppercase;margin-bottom:30px">${em(s.kicker)}</div>` : ""}
-    ${footer(n, t)}`),
+    ${footer(n, t, b)}`),
 
   /** A statement with supporting text. */
-  text: (s, n, t) => shell(`
+  text: (s, n, t, b) => shell(`
     <div class="rule"></div>
     <h2>${em(s.title)}</h2>
     ${s.body ? `<p class="body">${em(s.body)}</p>` : ""}
     <div class="spacer"></div>
-    ${footer(n, t)}`),
+    ${footer(n, t, b)}`),
 
   /** A screenshot doing the arguing. Caption above so the image can run large. */
   /**
@@ -118,12 +127,12 @@ const SLIDES = {
    * a photo loses a little scenery; cropping a screenshot loses words, and
    * almost every shot here is a screenshot.
    */
-  shot: (s, n, t) => shell(`
+  shot: (s, n, t, b) => shell(`
     <div class="rule"></div>
     <h2 style="font-size:56px">${em(s.title)}</h2>
     ${s.body ? `<p class="body" style="font-size:32px;margin-top:24px">${em(s.body)}</p>` : ""}
     <div class="shotwrap"><img src="${s.image}" alt=""></div>
-    ${footer(n, t)}`, `
+    ${footer(n, t, b)}`, `
     .shotwrap{
       flex:1; margin:44px 0 40px; border-radius:22px; overflow:hidden;
       background:#0b1d15; border:1px solid rgba(67,204,178,.38);
@@ -144,7 +153,7 @@ const SLIDES = {
    * children with a border-radius, and without it a sub-pixel rounding gap shows
    * as a hairline seam in the rasterised JPEG.
    */
-  beforeafter: (s, n, t) => shell(`
+  beforeafter: (s, n, t, b) => shell(`
     <div class="rule"></div>
     <h2 style="font-size:52px">${em(s.title)}</h2>
     ${s.body ? `<p class="body" style="font-size:28px;margin-top:18px">${em(s.body)}</p>` : ""}
@@ -154,7 +163,7 @@ const SLIDES = {
       <div class="pane"><img src="${s.after}" alt=""><span class="tag after">AFTER</span></div>
     </div>
     <div class="spacer"></div>
-    ${footer(n, t)}`, `
+    ${footer(n, t, b)}`, `
     /* The frame HUGS the pair instead of stretching to fill the slide. Two
        portrait panes side by side come to roughly 1.55 wide-to-tall, so pinning
        that ratio makes object-fit contain fit exactly — stretching it instead
@@ -179,14 +188,14 @@ const SLIDES = {
     .tag.after{background:${MINT}; color:#06150f; border-color:transparent}`),
 
   /** Numbered steps. Caps at 5 so the type never has to shrink. */
-  steps: (s, n, t) => shell(`
+  steps: (s, n, t, b) => shell(`
     <div class="rule"></div>
     <h2 style="font-size:60px">${em(s.title)}</h2>
     <ol>${(s.items ?? []).slice(0, 5).map((it, i) => `
       <li><span class="num">${i + 1}</span><span class="txt">${em(it)}</span></li>`).join("")}
     </ol>
     <div class="spacer"></div>
-    ${footer(n, t)}`, `
+    ${footer(n, t, b)}`, `
     ol{list-style:none;margin-top:52px;display:flex;flex-direction:column;gap:34px}
     li{display:flex;gap:28px;align-items:flex-start}
     .num{
@@ -196,14 +205,14 @@ const SLIDES = {
     .txt{font-size:34px;font-weight:300;line-height:1.34;color:#cfdcd7;padding-top:9px}`),
 
   /** Closing slide. One instruction, nothing competing with it. */
-  cta: (s, n, t) => shell(`
+  cta: (s, n, t, b) => shell(`
     <div class="spacer"></div>
     <div class="eyebrow">${esc(s.eyebrow ?? "Start today")}</div>
     <h1 style="font-size:92px">${em(s.title)}</h1>
     ${s.body ? `<p class="body">${em(s.body)}</p>` : ""}
     <div class="link">aluxartandframes.shop</div>
     <div class="spacer"></div>
-    ${footer(n, t)}`, `
+    ${footer(n, t, b)}`, `
     .link{
       margin-top:56px;font-size:40px;font-weight:800;color:#06150f;
       background:${MINT};display:inline-block;padding:26px 42px;border-radius:16px;
@@ -266,7 +275,9 @@ async function main() {
       // Chromium refuses to load local files into it, so the slide rendered
       // with an empty box and no error.
       const slide = await inlineImages(s);
-      await page.setContent(build(slide, i + 1, slides.length), { waitUntil: "networkidle" });
+      // `brand` lets a repostable carousel drop our domain from the footer;
+      // undefined keeps the default stamp on everything else.
+      await page.setContent(build(slide, i + 1, slides.length, c.brand), { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       const broken = await page.evaluate(() =>
         [...document.images].filter((im) => !im.complete || im.naturalWidth === 0).length);

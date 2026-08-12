@@ -103,7 +103,26 @@ const TUTORIALS = [
   { title: "From phone photo\nto portfolio.", note: "The file matters less than the light you put on it." },
 ];
 
+
+/**
+ * A file being PRESENT is not the same as it being whole. A truncated JPEG
+ * still opens and still renders — the decoder fills the missing rows with flat
+ * grey. One shipped into a carousel whose "before" photo was 55% grey block,
+ * and nothing failed. Check the End Of Image marker, not just existence.
+ */
+function assertWhole(rel) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) throw new Error(`missing asset: ${rel}`);
+  const buf = readFileSync(abs);
+  if (buf.length < 1024) throw new Error(`asset far too small, likely truncated: ${rel}`);
+  if (buf[0] === 0xff && buf[1] === 0xd8 &&
+      !(buf[buf.length - 2] === 0xff && buf[buf.length - 1] === 0xd9)) {
+    throw new Error(`TRUNCATED JPEG (no end marker): ${rel}`);
+  }
+}
+
 const picked = JSON.parse(readFileSync(PICKED, "utf8"));
+for (const p of picked) { assertWhole(p.beforeFile); assertWhole(p.afterFile); }
 if (picked.length < 30) throw new Error(`need 30 looks, lighting-picked.json has ${picked.length}`);
 
 const cap = (body, extra = "") =>

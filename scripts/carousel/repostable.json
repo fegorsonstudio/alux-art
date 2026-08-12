@@ -1,0 +1,198 @@
+[
+  {
+    "id": "rp-01",
+    "account": "groups",
+    "brand": "",
+    "caption": "Send me your worst-lit photo.\n\nI'll show you what it should have looked like.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Send me your worst-lit photo.",
+        "body": "I'll show you what it should have looked like.",
+        "before": "scripts/carousel/shots/lighting/smoke-swirl-side-lit-before.jpg",
+        "after": "scripts/carousel/shots/lighting/smoke-swirl-side-lit-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The shot was never the problem.",
+        "body": "Framing was right. Expression was right. The light in that room was working against you, and no amount of editing fixes direction."
+      },
+      {
+        "type": "cta",
+        "title": "Send me one and I'll show you.",
+        "body": "Drop a photo in my DMs. Link in bio.",
+        "link": ""
+      }
+    ]
+  },
+  {
+    "id": "rp-02",
+    "account": "groups",
+    "brand": "",
+    "caption": "Old photo. New light.\n\nNothing about the file changed except the light falling on it.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Old photo. New light.",
+        "body": "Nothing about the file changed except the light falling on it.",
+        "before": "scripts/carousel/shots/lighting/soft-glam-shell-before.jpg",
+        "after": "scripts/carousel/shots/lighting/soft-glam-shell-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Your archive is worth more than you think.",
+        "body": "There is a portfolio sitting in your old shoots, and the only thing wrong with it is the lighting."
+      },
+      {
+        "type": "cta",
+        "title": "Bring me an old favourite.",
+        "body": "One photo, relit properly. Link in bio.",
+        "link": ""
+      }
+    ]
+  },
+  {
+    "id": "rp-03",
+    "account": "groups",
+    "brand": "",
+    "caption": "No studio. No lights. No problem.\n\nShot in a bedroom with one window.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "No studio. No lights.\nNo problem.",
+        "body": "Shot in a bedroom with one window.",
+        "before": "scripts/carousel/shots/lighting/blue-hour-street-before.jpg",
+        "after": "scripts/carousel/shots/lighting/blue-hour-street-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Where you shoot stopped mattering.",
+        "body": "Your client will never know the room. They only ever see the photograph."
+      },
+      {
+        "type": "cta",
+        "title": "Book me anywhere.",
+        "body": "The room is no longer the limit. Link in bio.",
+        "link": ""
+      }
+    ]
+  },
+  {
+    "id": "rp-04",
+    "account": "groups",
+    "brand": "",
+    "caption": "This took four minutes.\n\nNot four hours in front of an editing screen.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "This took four minutes.",
+        "body": "Not four hours in front of an editing screen.",
+        "before": "scripts/carousel/shots/lighting/warm-window-glow-before.jpg",
+        "after": "scripts/carousel/shots/lighting/warm-window-glow-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Fast is part of the service.",
+        "body": "Clients remember how quickly you delivered almost as clearly as how they looked in the photos."
+      },
+      {
+        "type": "cta",
+        "title": "Same-day delivery.",
+        "body": "Shoot today, receive today. Link in bio.",
+        "link": ""
+      }
+    ]
+  },
+  {
+    "id": "rp-05",
+    "account": "groups",
+    "brand": "",
+    "caption": "Studio lighting, without the studio.\n\nSame face, same outfit, same day. Different light.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Studio lighting,\nwithout the studio.",
+        "body": "Same face, same outfit, same day. Different light.",
+        "before": "scripts/carousel/shots/lighting/glacier-rim-before.jpg",
+        "after": "scripts/carousel/shots/lighting/glacier-rim-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "One shoot, several looks.",
+        "body": "Instead of picking one lighting setup and living with it, your set can carry a few and you choose afterwards."
+      },
+      {
+        "type": "cta",
+        "title": "Ask me for options.",
+        "body": "One session, more than one look. Link in bio.",
+        "link": ""
+      }
+    ]
+  },
+  {
+    "id": "rp-06",
+    "account": "groups",
+    "brand": "",
+    "caption": "Which one would you post?\n\nSame photograph. One of them is finished.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Which one would\nyou post?",
+        "body": "Same photograph. One of them is finished.",
+        "before": "scripts/carousel/shots/lighting/bleach-bypass-before.jpg",
+        "after": "scripts/carousel/shots/lighting/bleach-bypass-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The difference is direction.",
+        "body": "Flat light makes a snapshot. Light with a direction makes a portrait. That is the entire gap."
+      },
+      {
+        "type": "cta",
+        "title": "Tell me which and why.",
+        "body": "Then send me one of yours. Link in bio.",
+        "link": ""
+      }
+    ]
+  },
+  {
+    "id": "rp-07",
+    "account": "groups",
+    "brand": "",
+    "caption": "I can fix the light. Not the moment.\n\nSo get the moment right and leave the rest to me.\n\nSave this and post it as your own. Swap the caption for your voice, and point people at your link.",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "I can fix the light.\nNot the moment.",
+        "body": "So get the moment right and leave the rest to me.",
+        "before": "scripts/carousel/shots/lighting/dappled-foliage-before.jpg",
+        "after": "scripts/carousel/shots/lighting/dappled-foliage-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Shoot for the expression.",
+        "body": "Timing, comfort and framing are still yours to get right. Everything after that is fixable now."
+      },
+      {
+        "type": "cta",
+        "title": "Let's shoot.",
+        "body": "You bring the moment. Link in bio.",
+        "link": ""
+      }
+    ]
+  }
+]
