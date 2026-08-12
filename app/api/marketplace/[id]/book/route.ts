@@ -15,7 +15,7 @@ import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, sanitizeNewsSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
 import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
 import { sanitizeInductionSelection, type InductionSelection } from "@/lib/nursing-induction";
-import { sanitizeEnhanceSelection, type EnhanceSelection } from "@/lib/gear-equalizer";
+import { sanitizeEnhanceSelection, CUSTOM_BACKDROP_ID, type EnhanceSelection } from "@/lib/gear-equalizer";
 import { claimFreeBooking, releaseFreeBooking, recordFreeBooking, sponsorshipCovers, grantBalance, type SponsorFields } from "@/lib/free-access";
 
 interface RefInput {
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     manualLighting?: boolean;
     lightingOptionIds?: string[];
     induction?: { name?: string; titles?: string[]; year?: number; cap?: "grad" | "none" };
-    enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null; lightingByPath?: Record<string, string> };
+    enhance?: { lighting?: string; camera?: string; backdropOptionId?: string | null; lightingByPath?: Record<string, string>; customBackdrop?: { storagePath?: string; storageBucket?: string } };
     noSmile?: boolean;
     flagShot?: { enabled?: boolean; text?: string };
     trendSlots?: {
@@ -371,6 +371,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     enhance = sanitizeEnhanceSelection(body.enhance, backdropIds, photoUpgradeLightingLooks);
     if (!enhance) {
       return NextResponse.json({ error: "Pick a lighting style and a camera look for your upgrade" }, { status: 400 });
+    }
+    // A buyer-uploaded backdrop is a buyer-supplied storage path, so it obeys the
+    // same rule as every other one on this route: it must live under their own
+    // prefix. Without this a booking could name someone else's file and have it
+    // rendered into their shoot.
+    if (enhance.customBackdrop && !enhance.customBackdrop.storagePath.startsWith(`${user.id}/`)) {
+      return NextResponse.json({ error: "Invalid backdrop image reference" }, { status: 400 });
     }
   }
 
@@ -691,6 +698,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             storage_bucket: o.imageBucket ?? "template-images", storage_path: o.imagePath!,
             created_at: now,
           }))
+      : []),
+    // A backdrop the BUYER uploaded. Written exactly like a creator's plate so
+    // generation needs no special case: it finds the row by note and attaches it
+    // as IMAGE 2, where the existing per-crop scale rule takes over.
+    ...(enhance?.backdropOptionId === CUSTOM_BACKDROP_ID && enhance.customBackdrop
+      ? [{
+          id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+          purpose: "background_option", tag: "BACKGROUND",
+          custom_name: "Your own backdrop", note: CUSTOM_BACKDROP_ID,
+          name: "enhance-backdrop-custom", type: "image/jpeg", size: 1,
+          storage_bucket: enhance.customBackdrop.storageBucket,
+          storage_path: enhance.customBackdrop.storagePath,
+          created_at: now,
+        }]
       : []),
     // Chosen choice-group photo options become ordinary tagged refs — the existing
     // per-tag consistency locks (OUTFIT, HAIRSTYLE, ...) handle the rest downstream.

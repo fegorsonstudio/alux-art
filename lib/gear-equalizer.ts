@@ -8,6 +8,15 @@
  * relight and upgrade it while preserving the subject pixel-faithfully.
  */
 
+/**
+ * Reserved backdrop id meaning "the buyer uploaded their own plate".
+ *
+ * Deliberately not a UUID: it must never collide with a creator's option id,
+ * and it has to be recognisable in a shoot_references `note` column when
+ * someone is reading rows by hand months from now.
+ */
+export const CUSTOM_BACKDROP_ID = "custom";
+
 export interface GearPreset {
   id: string;
   name: string;   // card title shown to buyers
@@ -165,7 +174,22 @@ export interface EnhanceSelection {
   // template offers lighting only. Bookings made while it was visible still
   // carry one, and still apply it.
   camera?: string;
-  backdropOptionId: string | null; // background_options option id, null = keep own background
+  // background_options option id, null = keep own background, or the reserved
+  // id CUSTOM_BACKDROP_ID when the buyer uploaded their own plate.
+  backdropOptionId: string | null;
+  /**
+   * A backdrop the BUYER uploaded, rather than one the creator published.
+   *
+   * A photographer who shot a set against their own wall, or who owns a plate,
+   * could previously only pick from the creator's list. This carries theirs.
+   * One plate per shoot — it applies to every photo in the booking, which is
+   * how the creator-supplied swap has always worked.
+   *
+   * Nothing downstream treats it specially: the book route writes it as an
+   * ordinary background_option reference and generation attaches it as IMAGE 2,
+   * where the existing scale rule governs how it is rendered per crop.
+   */
+  customBackdrop?: { storagePath: string; storageBucket: string };
   // Manual per-photo lighting: source photo storagePath → creator lighting look.
   // When present, overrides the single rig per photo in generation.
   lightingByPath?: Record<string, EnhanceLightingPick>;
@@ -203,11 +227,33 @@ export function sanitizeEnhanceSelection(
   // Need at least one lighting source: per-photo creator looks OR a legacy rig.
   if (!lightingByPath && !lighting) return null;
 
+  // A buyer-uploaded plate. The path is NOT trusted here — the book route owns
+  // the check that it sits under the buyer's own storage prefix, the same rule
+  // every other uploaded path on that route passes. This only shapes it.
+  let customBackdrop: EnhanceSelection["customBackdrop"];
+  const cb = o.customBackdrop as Record<string, unknown> | undefined;
+  if (cb && typeof cb === "object"
+      && typeof cb.storagePath === "string" && cb.storagePath.trim()
+      && typeof cb.storageBucket === "string" && cb.storageBucket.trim()) {
+    customBackdrop = { storagePath: cb.storagePath.trim(), storageBucket: cb.storageBucket.trim() };
+  }
+
+  // CUSTOM_BACKDROP_ID is valid ONLY when a plate actually came with it.
+  // Accepting the sentinel on its own would produce a booking that asks for a
+  // background swap with no image to swap to, and generation would silently
+  // fall back to keeping the original background.
   const backdropOptionId =
-    typeof o.backdropOptionId === "string" && validBackdropIds.has(o.backdropOptionId)
-      ? o.backdropOptionId
-      : null;
-  return { lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId, lightingByPath };
+    typeof o.backdropOptionId === "string" && o.backdropOptionId === CUSTOM_BACKDROP_ID
+      ? (customBackdrop ? CUSTOM_BACKDROP_ID : null)
+      : (typeof o.backdropOptionId === "string" && validBackdropIds.has(o.backdropOptionId)
+          ? o.backdropOptionId
+          : null);
+
+  // Drop an orphan plate rather than carrying it: if they did not ask for the
+  // swap, an unused reference would still be attached at generation.
+  if (backdropOptionId !== CUSTOM_BACKDROP_ID) customBackdrop = undefined;
+
+  return { lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId, lightingByPath, customBackdrop };
 }
 
 // ── The deterministic edit prompt ─────────────────────────────────────────────

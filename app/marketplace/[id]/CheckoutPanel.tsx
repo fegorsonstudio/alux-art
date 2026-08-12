@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { resizeIfNeeded } from "@/lib/resize-image";
+import { CUSTOM_BACKDROP_ID } from "@/lib/gear-equalizer";
 import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
 import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResumeMarker } from "@/lib/checkout-resume";
@@ -495,6 +496,16 @@ export default function CheckoutPanel({
   const [enhanceLighting, setEnhanceLighting] = useState<string | null>(null);
   const [enhanceCamera, setEnhanceCamera] = useState<string | null>(null);
   const [enhanceBackdrop, setEnhanceBackdrop] = useState<string | null>(null); // null = keep own background
+  /**
+   * A backdrop the buyer uploaded themselves.
+   *
+   * `enhanceBackdrop === CUSTOM_BACKDROP_ID` selects it. Kept separate from the
+   * creator's options because it is not one of them — it has no option id until
+   * the booking is made, and it must survive being deselected and reselected
+   * without a re-upload.
+   */
+  const [customBackdrop, setCustomBackdrop] = useState<{ storagePath: string; storageBucket: string; preview: string } | null>(null);
+  const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
 
   // Buyer opt-out of smile slots — the planner keeps every photo closed-lips.
   const [noSmile, setNoSmile] = useState(false);
@@ -806,6 +817,26 @@ export default function CheckoutPanel({
       : r
     ));
     setReplacingTag(null);
+  };
+
+  /** Upload one backdrop plate of the buyer's own. Same route and 30MB rule as
+   *  every other upload in this panel. */
+  const uploadBackdropFile = async (file: File) => {
+    setUploadingBackdrop(true);
+    try {
+      const localPreview = URL.createObjectURL(file);
+      const f = await resizeIfNeeded(file);
+      const form = new FormData();
+      form.append("file", f, f.name);
+      form.append("bucket", "inspiration-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: form });
+      if (!res.ok) return;
+      const { storagePath } = await res.json();
+      setCustomBackdrop({ storagePath, storageBucket: "inspiration-images", preview: localPreview });
+      setEnhanceBackdrop(CUSTOM_BACKDROP_ID);
+    } finally {
+      setUploadingBackdrop(false);
+    }
   };
 
   // ── Story: co-star uploads ────────────────────────────────────────────────
@@ -1131,6 +1162,9 @@ export default function CheckoutPanel({
               lighting: enhanceLighting ?? undefined,
               camera: enhanceCamera,
               backdropOptionId: enhanceBackdrop,
+              ...(enhanceBackdrop === CUSTOM_BACKDROP_ID && customBackdrop
+                ? { customBackdrop: { storagePath: customBackdrop.storagePath, storageBucket: customBackdrop.storageBucket } }
+                : {}),
               // Per-photo creator lighting (manual on) — { storagePath: optionId }.
               lightingByPath: perPhotoLightingActive ? lightingByPhoto : undefined,
             }
@@ -1647,11 +1681,11 @@ export default function CheckoutPanel({
                   for now. CAMERA_PRESETS and the prompt support are still in place,
                   so restoring it is putting this section back. */}
 
-              {bgOptions.length > 0 && (
+              {(bgOptions.length > 0 || photoUpgradeActive) && (
                 <Collapse
                   icon="🖼"
                   title={t("background")}
-                  status={enhanceBackdrop === null ? t("keepingYours") : (bgOptions.find(o => o.id === enhanceBackdrop)?.name ?? t("swap"))}
+                  status={enhanceBackdrop === null ? t("keepingYours") : enhanceBackdrop === CUSTOM_BACKDROP_ID ? "Your own backdrop" : (bgOptions.find(o => o.id === enhanceBackdrop)?.name ?? t("swap"))}
                   defaultOpen={false}
                 >
                 <div className={styles.pkgRow}>
@@ -1689,7 +1723,47 @@ export default function CheckoutPanel({
                         </button>
                       );
                     })}
+
+                    {/* The buyer's own plate. One per shoot — it is applied to
+                        every photo in the booking, same as a creator's. */}
+                    {customBackdrop ? (
+                      <button
+                        type="button"
+                        onClick={() => setEnhanceBackdrop(enhanceBackdrop === CUSTOM_BACKDROP_ID ? null : CUSTOM_BACKDROP_ID)}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                          background: "none", cursor: "pointer", padding: 4,
+                          border: enhanceBackdrop === CUSTOM_BACKDROP_ID ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                          borderRadius: 8, minWidth: 64,
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={customBackdrop.preview} alt="Your backdrop" className={styles.savedImg} />
+                        <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>Yours</span>
+                        {enhanceBackdrop === CUSTOM_BACKDROP_ID && <span style={{ fontSize: "0.65rem" }}>{t("swapToThis")}</span>}
+                      </button>
+                    ) : (
+                      <label
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          gap: 4, cursor: uploadingBackdrop ? "wait" : "pointer", padding: 4, minWidth: 64, minHeight: 78,
+                          border: "2px dashed rgba(127,127,127,0.4)", borderRadius: 8, fontSize: "0.72rem", textAlign: "center",
+                        }}
+                      >
+                        <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>＋</span>
+                        <span>{uploadingBackdrop ? "Uploading…" : "Upload yours"}</span>
+                        <input
+                          type="file" accept="image/*" style={{ display: "none" }} disabled={uploadingBackdrop}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) uploadBackdropFile(f); e.target.value = ""; }}
+                        />
+                      </label>
+                    )}
                   </div>
+                  <p className={styles.sectionHint} style={{ marginTop: 10 }}>
+                    Upload one background and it is applied to every photo in this shoot —
+                    each one rendered at the right depth for its crop, so a close-up does not
+                    look like a backdrop pasted behind you.
+                  </p>
                 </div>
                 </Collapse>
               )}
