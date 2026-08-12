@@ -1,0 +1,42 @@
+[
+  {
+    "id": "wa-intro-aluxart",
+    "account": "whatsapp-group",
+    "caption": "Something new for this group 👇\n\nYou've been getting photography tutorials here for a while. That continues — but from today I'm also going to show you Alux Art, the studio I've been building.\n\nIt relights and reshoots photos you already took. No gear, no studio booking, no waiting on edits.\n\nAnd the tutorials change too: no more walls of text. Everything comes as a carousel from now on, here and in the Telegram group.\n\nFirst lesson drops this week.",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "SOMETHING NEW HERE",
+        "title": "This group is about\nto get more useful.",
+        "body": "Same tutorials. Better format. Plus the thing I have been building.",
+        "kicker": "SWIPE →"
+      },
+      {
+        "type": "text",
+        "title": "What is Alux Art?",
+        "body": "A studio that runs on the photos you already have. Upload a shot, pick a look, and it comes back relit — or reshot in a whole new setup, with the same face."
+      },
+      {
+        "type": "steps",
+        "title": "What you can do with it.",
+        "items": [
+          "Relight a photo you shot years ago",
+          "Reshoot a client in an outfit they never wore",
+          "Sell your own lighting style as a template",
+          "Deliver a full set without booking a studio"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "No more walls of text.",
+        "body": "Every tutorial from now on comes as a carousel like this one — here on WhatsApp and in the Telegram group. Easier to read on a phone, easier to save, easier to come back to."
+      },
+      {
+        "type": "cta",
+        "title": "First lesson this week.",
+        "body": "Stay in the group. If you want to look around before then, the studio is live.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  }
+]

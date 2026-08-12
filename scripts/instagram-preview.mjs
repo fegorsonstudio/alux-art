@@ -13,6 +13,12 @@
  *
  *   node --env-file=.env.local scripts/instagram-preview.mjs
  *   node --env-file=.env.local scripts/instagram-preview.mjs --account aolivetv
+ *   node --env-file=.env.local scripts/instagram-preview.mjs --id w2-d6-fegorson-buildtemplate
+ *
+ * --id previews ONE named carousel and ignores both the posted list and the
+ * holds list. The scheduled run deliberately skips held posts, so without this
+ * a post that was held to be fixed could never be re-checked after fixing it —
+ * the preview would keep showing whatever came next instead.
  *
  * Holding a post: if something is wrong, run
  *   node --env-file=.env.local scripts/instagram-hold.mjs <carousel-id>
@@ -34,6 +40,7 @@ const TG_ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
 const args = process.argv.slice(2);
 const ONLY = (() => { const i = args.indexOf("--account"); return i >= 0 ? args[i + 1] : null; })();
+const ONLY_ID = (() => { const i = args.indexOf("--id"); return i >= 0 ? args[i + 1] : null; })();
 
 const log = (...a) => console.log(new Date().toISOString(), "[ig-preview]", ...a);
 
@@ -83,21 +90,28 @@ async function main() {
 
   for (const [account, items] of Object.entries(byAccount)) {
     const done = new Set(state.posted?.[account] ?? []);
-    // Exactly what the scheduler will choose: the first not posted and not held.
-    const next = items.find(c => !done.has(c.id) && !held.has(c.id));
-    if (!next) { log(`${account}: nothing queued`); continue; }
+    // --id asks for one named carousel whatever its state; otherwise take
+    // exactly what the scheduler will choose: the first not posted and not held.
+    const next = ONLY_ID
+      ? items.find(c => c.id === ONLY_ID)
+      : items.find(c => !done.has(c.id) && !held.has(c.id));
+    if (!next) { log(`${account}: ${ONLY_ID ? `${ONLY_ID} not in this account's queue` : "nothing queued"}`); continue; }
 
     const dir = path.join(SLIDES, next.id);
     if (!existsSync(dir)) { log(`${account}: slides missing for ${next.id}`); continue; }
     const files = (await readdir(dir)).filter(f => f.endsWith(".jpg")).sort().map(f => path.join(dir, f));
     if (!files.length) { log(`${account}: no slide files for ${next.id}`); continue; }
 
-    const header =
-      `🔍 <b>Posting in 2 hours — @${account}</b>\n` +
-      `<code>${next.id}</code>\n\n` +
-      `<b>Caption:</b>\n${next.caption.replace(/</g, "&lt;")}\n\n` +
-      `Check the photos actually suit the subject.\n` +
-      `To stop it: <code>hold ${next.id}</code>`;
+    const header = ONLY_ID
+      ? `✅ <b>Approve this post — @${account}</b>\n` +
+        `<code>${next.id}</code>${held.has(next.id) ? "  (currently HELD)" : ""}\n\n` +
+        `<b>Caption:</b>\n${next.caption.replace(/</g, "&lt;")}\n\n` +
+        `Reply here to approve or reject. It will not post until released.`
+      : `🔍 <b>Posting in 2 hours — @${account}</b>\n` +
+        `<code>${next.id}</code>\n\n` +
+        `<b>Caption:</b>\n${next.caption.replace(/</g, "&lt;")}\n\n` +
+        `Check the photos actually suit the subject.\n` +
+        `To stop it: <code>hold ${next.id}</code>`;
 
     const res = await sendAlbum(files, header.slice(0, 1024));
     if (res.ok) log(`${account}: previewed ${next.id} (${files.length} slides)`);

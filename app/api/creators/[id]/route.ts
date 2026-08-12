@@ -20,6 +20,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const templates = await sql`
     SELECT id, title, category, price_ngn, price_1_ngn, purchase_count, cover_storage_path, cover_bucket, created_at
+    -- marketplace_hidden is deliberately NOT filtered: an imported template is
+    -- hidden from OUR marketplace but is exactly what the creator sells here.
     FROM templates WHERE creator_id = ${creator.id} AND status = 'published' AND is_private = false ORDER BY created_at DESC
   `;
 

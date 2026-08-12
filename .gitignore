@@ -75,7 +75,16 @@ scratch/
 *.jpeg
 test-payment.mjs
 
-# Chrome profile for the Flow thumbnail runner (holds a Google login)
+# Chrome profiles for the browser automations. Each one holds a LIVE logged-in
+# session — Google for Flow, WhatsApp for the group poster, the site's own
+# login for screenshots. Committing any of them publishes working credentials.
 .flow-profile/
+.whatsapp-profile/
+.site-profile/
+
+# Scratch scripts and screenshot dumps from one-off investigations.
+*-tmp.mjs
+qa-screenshots/
+
 .wardrobe-assets/
 .wardrobe-download.log

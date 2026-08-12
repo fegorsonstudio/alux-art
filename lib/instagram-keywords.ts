@@ -39,6 +39,24 @@ const SITE = "https://aluxartandframes.shop";
 
 export const KEYWORDS: Keyword[] = [
   {
+    // The lighting campaign's call to action. Added with that campaign: without
+    // it every "comment LIGHT" caption matches no keyword and the commenter
+    // silently gets nothing, which looks identical to the automation working.
+    word: "LIGHT",
+    reply:
+      "Here's the relighting tool 👇\n\n" +
+      `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32\n\n` +
+      "Upload a photo you already shot, pick a lighting look, and it comes back relit. " +
+      "₦1,000 for one photo. Nothing to install and no gear to buy.",
+    replyNoLink:
+      "Here's the relighting tool 👇\n\n" +
+      "Tap our name at the top of this chat — the link is in our bio, then open " +
+      "The Gear Equalizer.\n\n" +
+      "Upload a photo you already shot, pick a lighting look, and it comes back relit. " +
+      "₦1,000 for one photo. Nothing to install and no gear to buy.",
+    publicReply: "Sent you a DM 📩",
+  },
+  {
     word: "STUDIO",
     reply:
       "Here you go 👇\n\n" +

@@ -1,5 +1,1175 @@
 [
   {
+    "id": "lw-d1-aluxarta-hook",
+    "account": "aluxartandframes",
+    "caption": "This was shot in 2020. Let's relight it in 2026.\n\nSame file. Same face. Six years of lighting you never had to learn.\n\nThe look: Soft Side Key and Rim. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "This was shot in 2020.\nLet's relight it in 2026.",
+        "body": "Same file. Same face. Six years of lighting you never had to learn.",
+        "before": "scripts/carousel/shots/lighting/soft-side-key-and-rim-before.jpg",
+        "after": "scripts/carousel/shots/lighting/soft-side-key-and-rim-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Soft Side Key and Rim”",
+        "body": "Change nothing else except the lighting. A large, soft key light comes from camera-left, approximately 45° off-axis and slightly above eye level, creating a balanced contrast ratio with soft, feathered shadows "
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d1-aluxarta-howto",
+    "account": "aluxartandframes",
+    "caption": "How to relight a photo you already shot.\n\nFour steps. No gear, no plugins.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "How to relight a photo\nyou already shot.",
+        "sub": "Four steps. No gear, no plugins."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Backlit Haze Beam” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/backlit-haze-beam-before.jpg",
+        "after": "scripts/carousel/shots/lighting/backlit-haze-beam-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d1-aolivetv-hook",
+    "account": "aolivetv",
+    "caption": "What if you never had to buy lighting gear again?\n\nNo softbox. No strobes. No stand collapsing in someone's living room.\n\nThe look: Candlelit Chiaroscuro. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "What if you never had to\nbuy lighting gear again?",
+        "body": "No softbox. No strobes. No stand collapsing in someone's living room.",
+        "before": "scripts/carousel/shots/lighting/candlelit-chiaroscuro-before.jpg",
+        "after": "scripts/carousel/shots/lighting/candlelit-chiaroscuro-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Candlelit Chiaroscuro”",
+        "body": "Change nothing else except the lighting. A single warm candle-temperature source sits low and close at camera-left, roughly at chin height, throwing steep upward-angled shadows across the far cheek and leaving "
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d1-aolivetv-howto",
+    "account": "aolivetv",
+    "caption": "Pick the look before you pick the photo.\n\n195 looks, sorted into 14 families so you're not scrolling forever.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Pick the look before\nyou pick the photo.",
+        "sub": "195 looks, sorted into 14 families so you're not scrolling forever."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Frosted Clamshell” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/frosted-clamshell-before.jpg",
+        "after": "scripts/carousel/shots/lighting/frosted-clamshell-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d1-fegorson-hook",
+    "account": "fegorson_studio",
+    "caption": "What if you never had to learn lighting again?\n\nThe recipe is already written. You just pick the one you want.\n\nThe look: Cyan Orange Split. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "What if you never had to\nlearn lighting again?",
+        "body": "The recipe is already written. You just pick the one you want.",
+        "before": "scripts/carousel/shots/lighting/cyan-orange-split-before.jpg",
+        "after": "scripts/carousel/shots/lighting/cyan-orange-split-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Cyan Orange Split”",
+        "body": "Change nothing else except the lighting. Two hard gelled sources at equal power face each other across the subject: cyan from camera-left at 80 degrees, warm orange from camera-right at 80 degrees, meeting alon"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d1-fegorson-howto",
+    "account": "fegorson_studio",
+    "caption": "Why we ask for the shot size.\n\nA beauty clamshell judged on a full-length frame tells you nothing.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Why we ask for the\nshot size.",
+        "sub": "A beauty clamshell judged on a full-length frame tells you nothing."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Warm Haze Backlit Editorial” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/warm-haze-backlit-editorial-before.jpg",
+        "after": "scripts/carousel/shots/lighting/warm-haze-backlit-editorial-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d2-aluxarta-hook",
+    "account": "aluxartandframes",
+    "caption": "Shot on a Nikon D750. Watch.\n\nThe camera was never the problem. The light in the room was.\n\nThe look: Halation Rim. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "Shot on a Nikon D750.\nWatch.",
+        "body": "The camera was never the problem. The light in the room was.",
+        "before": "scripts/carousel/shots/lighting/halation-rim-before.jpg",
+        "after": "scripts/carousel/shots/lighting/halation-rim-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Halation Rim”",
+        "body": "Change nothing else except the lighting. Keep the existing background exactly as it is. A hard, bright source behind the subject at camera-right draws a strong edge along the hair and shoulder, and that highlig"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d2-aluxarta-howto",
+    "account": "aluxartandframes",
+    "caption": "What 'relight' actually changes.\n\nThe light. Not the face, not the outfit, not the background.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "What 'relight' actually\nchanges.",
+        "sub": "The light. Not the face, not the outfit, not the background."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Prism Refraction Edge” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/prism-refraction-edge-before.jpg",
+        "after": "scripts/carousel/shots/lighting/prism-refraction-edge-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d2-aolivetv-hook",
+    "account": "aolivetv",
+    "caption": "You didn't need a better camera. You needed better light.\n\nSame sensor, same lens, same photo. Relit.\n\nThe look: Window Blind Slats. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "You didn't need a better camera.\nYou needed better light.",
+        "body": "Same sensor, same lens, same photo. Relit.",
+        "before": "scripts/carousel/shots/lighting/window-blind-slats-before.jpg",
+        "after": "scripts/carousel/shots/lighting/window-blind-slats-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Window Blind Slats”",
+        "body": "Change nothing else except the lighting. Keep the existing background and setting exactly as they are and add nothing to the scene. A single hard source at camera-left passes through horizontal slats out of fra"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d2-aolivetv-howto",
+    "account": "aolivetv",
+    "caption": "Match the light to the room you shot in.\n\nThe looks that read as real are the ones the scene could have produced.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Match the light to\nthe room you shot in.",
+        "sub": "The looks that read as real are the ones the scene could have produced."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Teal & Orange” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/teal-orange-before.jpg",
+        "after": "scripts/carousel/shots/lighting/teal-orange-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d2-fegorson-hook",
+    "account": "fegorson_studio",
+    "caption": "Your client will never know where you shot this.\n\nOne window, one bedroom, one afternoon. It doesn't have to look like it.\n\nThe look: Icy Key. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "Your client will never know\nwhere you shot this.",
+        "body": "One window, one bedroom, one afternoon. It doesn't have to look like it.",
+        "before": "scripts/carousel/shots/lighting/icy-key-before.jpg",
+        "after": "scripts/carousel/shots/lighting/icy-key-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Icy Key”",
+        "body": "Change nothing else except the lighting. A large soft source with a cold blue-white cast sits at camera-left, 45 degrees off axis and slightly above, giving clean directional light with soft-edged shadows on th"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d2-fegorson-howto",
+    "account": "fegorson_studio",
+    "caption": "Gels, without owning a single gel.\n\nColour contrast that used to mean two lights and two sheets.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Gels, without owning\na single gel.",
+        "sub": "Colour contrast that used to mean two lights and two sheets."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Golden Hour Backlight” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/golden-hour-backlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/golden-hour-backlight-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d3-aluxarta-hook",
+    "account": "aluxartandframes",
+    "caption": "That shoot you almost deleted.\n\nThe framing was right. The light was wrong. Only one of those is fixable in post.\n\nThe look: Neon Sign Glow. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "That shoot you almost deleted.",
+        "body": "The framing was right. The light was wrong. Only one of those is fixable in post.",
+        "before": "scripts/carousel/shots/lighting/neon-sign-glow-before.jpg",
+        "after": "scripts/carousel/shots/lighting/neon-sign-glow-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Neon Sign Glow”",
+        "body": "Change nothing else except the lighting. Keep the existing background exactly as it is; only the light falling on it changes. A bright magenta-pink source sits just out of frame at camera-left at head height, a"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d3-aluxarta-howto",
+    "account": "aluxartandframes",
+    "caption": "Fix a flat photo in one pass.\n\nFlat usually means no direction. Direction is what you're picking.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Fix a flat photo\nin one pass.",
+        "sub": "Flat usually means no direction. Direction is what you're picking."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Overhead Spotlight Stage” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/overhead-spotlight-stage-before.jpg",
+        "after": "scripts/carousel/shots/lighting/overhead-spotlight-stage-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d3-aolivetv-hook",
+    "account": "aolivetv",
+    "caption": "₦1,000 says this photo isn't finished yet.\n\nOne image, one lighting look, no subscription.\n\nThe look: Hard Split Kicker. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "₦1,000 says this photo\nisn't finished yet.",
+        "body": "One image, one lighting look, no subscription.",
+        "before": "scripts/carousel/shots/lighting/hard-split-kicker-before.jpg",
+        "after": "scripts/carousel/shots/lighting/hard-split-kicker-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Hard Split Kicker”",
+        "body": "Change nothing else except the lighting. A hard, focused key light from camera-right at approximately 45° above eye level creates a distinct highlight on the face and shoulder, producing a high-contrast ratio w"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d3-aolivetv-howto",
+    "account": "aolivetv",
+    "caption": "The section names are the shortcut.\n\nDark Romantic, Golden Hour, Neon — pick the mood, not the physics.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "The section names\nare the shortcut.",
+        "sub": "Dark Romantic, Golden Hour, Neon — pick the mood, not the physics."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Rising Fog” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/rising-fog-before.jpg",
+        "after": "scripts/carousel/shots/lighting/rising-fog-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d3-fegorson-hook",
+    "account": "fegorson_studio",
+    "caption": "The photo was fine. The light was the problem.\n\nYou knew it when you shot it. You just couldn't fix it.\n\nThe look: Plum Noir Wash. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "The photo was fine.\nThe light was the problem.",
+        "body": "You knew it when you shot it. You just couldn't fix it.",
+        "before": "scripts/carousel/shots/lighting/plum-noir-wash-before.jpg",
+        "after": "scripts/carousel/shots/lighting/plum-noir-wash-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Plum Noir Wash”",
+        "body": "Change nothing else except the lighting. A deep plum-violet gelled key comes from camera-left at 45 degrees and slightly above eye level, washing the scene in a dark purple cast, while a cooler magenta rim trac"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d3-fegorson-howto",
+    "account": "fegorson_studio",
+    "caption": "Before you upload: three quick checks.\n\nSharp, correctly framed, and big enough. The rest is the light.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Before you upload:\nthree quick checks.",
+        "sub": "Sharp, correctly framed, and big enough. The rest is the light."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Opalescent Glow” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/opalescent-glow-before.jpg",
+        "after": "scripts/carousel/shots/lighting/opalescent-glow-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d4-aluxarta-hook",
+    "account": "aluxartandframes",
+    "caption": "Every studio look you can't afford to build.\n\n195 of them, and none of them need a stand.\n\nThe look: Purple Teal Split. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "Every studio look you can't\nafford to build.",
+        "body": "195 of them, and none of them need a stand.",
+        "before": "scripts/carousel/shots/lighting/purple-teal-split-before.jpg",
+        "after": "scripts/carousel/shots/lighting/purple-teal-split-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Purple Teal Split”",
+        "body": "Change nothing else except the lighting. A deep purple gelled key at camera-left and a teal gelled source at camera-right, both slightly behind the subject so the colours rake across the cheekbones and shoulder"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d4-aluxarta-howto",
+    "account": "aluxartandframes",
+    "caption": "One photo or ten?\n\nTest a look on one image before you commit an entire set to it.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "One photo or ten?",
+        "sub": "Test a look on one image before you commit an entire set to it."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Dramatic Rim-lit Chiaroscuro” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/dramatic-rim-lit-chiaroscuro-before.jpg",
+        "after": "scripts/carousel/shots/lighting/dramatic-rim-lit-chiaroscuro-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d4-aolivetv-hook",
+    "account": "aolivetv",
+    "caption": "Same photo. Different decade.\n\nNothing about the file changed except the light falling on it.\n\nThe look: Halation Window. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "Same photo.\nDifferent decade.",
+        "body": "Nothing about the file changed except the light falling on it.",
+        "before": "scripts/carousel/shots/lighting/halation-window-before.jpg",
+        "after": "scripts/carousel/shots/lighting/halation-window-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Halation Window”",
+        "body": "Change nothing else except the lighting. Keep the existing background as it is. Bright daylight enters from a window-shaped source at camera-left, blowing out to near-white where it falls, and that bright patch"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d4-aolivetv-howto",
+    "account": "aolivetv",
+    "caption": "What to charge for a relight.\n\nIt costs you ₦1,000. What it's worth to the client is a different number.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "What to charge\nfor a relight.",
+        "sub": "It costs you ₦1,000. What it's worth to the client is a different number."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Anamorphic Blue Flare” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/anamorphic-blue-flare-before.jpg",
+        "after": "scripts/carousel/shots/lighting/anamorphic-blue-flare-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d4-fegorson-hook",
+    "account": "fegorson_studio",
+    "caption": "Your old work is worth more than you think.\n\nThere is a portfolio sitting in your archive, badly lit.\n\nThe look: Dappled Foliage. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "Your old work is worth more\nthan you think.",
+        "body": "There is a portfolio sitting in your archive, badly lit.",
+        "before": "scripts/carousel/shots/lighting/dappled-foliage-before.jpg",
+        "after": "scripts/carousel/shots/lighting/dappled-foliage-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Dappled Foliage”",
+        "body": "Change nothing else except the lighting. Keep the existing background exactly as it is and add nothing to the scene. A hard source from high camera-right passes through leaf-like breakup out of frame, scatterin"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d4-fegorson-howto",
+    "account": "fegorson_studio",
+    "caption": "Relighting an old client gallery.\n\nThe shoot is delivered. The archive is still an asset.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Relighting an old\nclient gallery.",
+        "sub": "The shoot is delivered. The archive is still an asset."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Bleach Bypass” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/bleach-bypass-before.jpg",
+        "after": "scripts/carousel/shots/lighting/bleach-bypass-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d5-aluxarta-hook",
+    "account": "aluxartandframes",
+    "caption": "No stands. No sandbags. No blown fuse.\n\nLighting without carrying any of it up three flights of stairs.\n\nThe look: Glacier Rim. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "No stands. No sandbags.\nNo blown fuse.",
+        "body": "Lighting without carrying any of it up three flights of stairs.",
+        "before": "scripts/carousel/shots/lighting/glacier-rim-before.jpg",
+        "after": "scripts/carousel/shots/lighting/glacier-rim-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Glacier Rim”",
+        "body": "Change nothing else except the lighting. A hard, very cold blue-white source behind camera-right draws a crisp bright edge along the jaw, cheekbone and hair, while the front of the face is lit by a soft neutral"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d5-aluxarta-howto",
+    "account": "aluxartandframes",
+    "caption": "Smoke and haze, without a hazer.\n\nAtmosphere is a look here, not a rental and a fire alarm.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Smoke and haze,\nwithout a hazer.",
+        "sub": "Atmosphere is a look here, not a rental and a fire alarm."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Warm Window Glow” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/warm-window-glow-before.jpg",
+        "after": "scripts/carousel/shots/lighting/warm-window-glow-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d5-aolivetv-hook",
+    "account": "aolivetv",
+    "caption": "The difference between a snapshot and a portrait.\n\nIt was never the pose. It was the light.\n\nThe look: Blue Hour Street. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "The difference between a\nsnapshot and a portrait.",
+        "body": "It was never the pose. It was the light.",
+        "before": "scripts/carousel/shots/lighting/blue-hour-street-before.jpg",
+        "after": "scripts/carousel/shots/lighting/blue-hour-street-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Blue Hour Street”",
+        "body": "Change nothing else except the lighting. Keep the existing background exactly as it is. Deep blue twilight ambient fills the whole frame at low level, while a single warm point source at camera-right adds a sma"
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d5-aolivetv-howto",
+    "account": "aolivetv",
+    "caption": "Reading a lighting recipe.\n\nEvery look ships with the setup written out. Learn it while you use it.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "Reading a lighting\nrecipe.",
+        "sub": "Every look ships with the setup written out. Learn it while you use it."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Theatrical Front Spotlight” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/theatrical-front-spotlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/theatrical-front-spotlight-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d5-fegorson-hook",
+    "account": "fegorson_studio",
+    "caption": "You already took the photo. Finish it.\n\nUpload, pick a look, download. About a minute.\n\nThe look: Soft Glam Shell. One of 195 in The Gear Equalizer — ₦1,000 for a single photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "title": "You already took the photo.\nFinish it.",
+        "body": "Upload, pick a look, download. About a minute.",
+        "before": "scripts/carousel/shots/lighting/soft-glam-shell-before.jpg",
+        "after": "scripts/carousel/shots/lighting/soft-glam-shell-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The file never changed.",
+        "body": "Same frame, same face, same lens. The only thing added was light with a direction."
+      },
+      {
+        "type": "text",
+        "title": "“Soft Glam Shell”",
+        "body": "Change nothing else except the lighting. The key light is a large, very soft source from camera-left at approximately 45°, slightly above eye level, providing a balanced, low-contrast fill with minimal shadows "
+      },
+      {
+        "type": "text",
+        "title": "₦1,000 for one photo.",
+        "body": "No subscription, no gear, nothing to install. Upload, pick a look, download."
+      },
+      {
+        "type": "cta",
+        "title": "Relight your own.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "lw-d5-fegorson-howto",
+    "account": "fegorson_studio",
+    "caption": "From phone photo to portfolio.\n\nThe file matters less than the light you put on it.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "HOW IT WORKS",
+        "title": "From phone photo\nto portfolio.",
+        "sub": "The file matters less than the light you put on it."
+      },
+      {
+        "type": "shot",
+        "title": "Pick your look.",
+        "body": "195 lighting looks, grouped into 14 families so you can find a mood instead of scrolling.",
+        "image": "scripts/carousel/shots/lighting-picker.png",
+        "fit": "contain"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick a lighting look from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "beforeafter",
+        "title": "That's the whole job.",
+        "body": "“Smoke Swirl Side-Lit” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/smoke-swirl-side-lit-before.jpg",
+        "after": "scripts/carousel/shots/lighting/smoke-swirl-side-lit-after.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "Try it on your worst-lit photo.",
+        "body": "Comment LIGHT and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
     "id": "w1-d1-aluxart-results",
     "account": "aluxartandframes",
     "day": 1,
@@ -737,7 +1907,7 @@
         "type": "shot",
         "title": "Then it sits in the marketplace.",
         "body": "Alongside every other photographer's work, earning while you shoot something else.",
-        "image": "scripts/carousel/shots/marketplace-grid.jpg"
+        "image": "scripts/carousel/shots/magenta-template-crop.png"
       },
       {
         "type": "text",

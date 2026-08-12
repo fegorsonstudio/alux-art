@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
     LEFT JOIN creators c ON c.id = t.creator_id
     WHERE t.status = 'published'
       AND t.is_private = false
+      -- Creator-imported resales live in the creator's own store, not ours.
+      AND t.marketplace_hidden = false
       AND t.is_story = ${isStoryFilter}
       ${category && category !== "all" ? sql`AND t.category = ${category}` : sql``}
       ${search ? sql`AND t.title ILIKE ${"%" + search + "%"}` : sql``}

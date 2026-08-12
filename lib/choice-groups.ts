@@ -99,7 +99,14 @@ export const GROUP_TYPES: Record<ChoiceGroupType, { tag: string; defaultLabel: s
 // one JSON object each) and the archive is sold in them, so the cap now sits far
 // above any real template rather than just above the old default set.
 export const MAX_CHOICE_GROUPS = 40;
-export const MAX_OPTIONS_PER_GROUP = 100;
+// Raised from 100. Grouping the lighting archive by shot type puts 104 looks in
+// "Medium shots" alone, and the sanitizer slices to this cap on EVERY save — so
+// at 100 the next person to open that template in the editor would silently and
+// permanently destroy four looks. This has already happened once at the group
+// level: the Gear Equalizer's 13 sections were cut to 6, losing 56 looks, purely
+// by opening and saving. Set far above any real group rather than just above
+// today's largest.
+export const MAX_OPTIONS_PER_GROUP = 300;
 // Hidden generation prompt for "prompt"-kind options (lighting recipes) can be long
 // and detailed. Other option descriptions stay short (see MAX_OPTION_DESCRIPTION).
 export const MAX_PROMPT_DESCRIPTION = 2000;

@@ -10,6 +10,7 @@ import type { InitPaymentParams, InitPaymentResult } from "@/lib/payment-types";
 import { resolveBackgroundPlan, type BackgroundOption } from "@/lib/background-plan";
 import { resolveLightingPlan, type LightingLook } from "@/lib/lighting-plan";
 import { resolveChoiceSelections, type ChoiceGroup } from "@/lib/choice-groups";
+import { resalePlatformFee, resolveResaleSource } from "@/lib/resale";
 import { sanitizeFlagText, type FlagShotConfig } from "@/lib/flag-shot";
 import { sanitizeMugshotSelection, sanitizeBowlSelection, sanitizeNewsSelection, type TrendSlotsConfig, type TrendSlotsSelection } from "@/lib/trend-slots";
 import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
@@ -185,6 +186,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   `;
 
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  // An imported template stores no looks of its own — they live on the source.
+  // Resolve before ANY read of option_groups/background_options below.
+  Object.assign(template, await resolveResaleSource(template, sql));
   const isAdmin = isAdminEmail(user.email);
 
   // Photo upgrades are priced PER IMAGE rather than in 1/5/10 packages: the buyer
@@ -473,9 +477,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     : (price10 ? Math.round(price10 * 0.12) : 0);
 
   // Per-image: the fee and the price both scale with the actual photo count.
-  const platformFeeNgn = perImagePricing
+  //
+  // A RESOLD template overrides all of that. The global fee is a share of a
+  // creator's own pricing; an imported template is the studio's product being
+  // sold on, so the studio takes a fixed amount per image and the creator keeps
+  // what they priced above it. Without the override a ₦1,000 resale would pay
+  // the creator ₦400 instead of the ₦200 the offer promises.
+  const resaleFeeNgn = resalePlatformFee(template, buyerPackageSize);
+  const platformFeeNgn = resaleFeeNgn ?? (perImagePricing
     ? Math.ceil(basePlatformFeeNgn * (buyerPackageSize / 10))
-    : packagePrice(basePlatformFeeNgn, buyerPackageSize as 1 | 5 | 10);
+    : packagePrice(basePlatformFeeNgn, buyerPackageSize as 1 | 5 | 10));
 
   const priceMap: Record<1 | 5 | 10, number | null> = {
     1: unitPriceNgn || null,

@@ -7,6 +7,7 @@ import { TEMPLATE_CATEGORIES, ASPECTS, packagePrice } from "@/lib/types";
 import type { AspectRatio } from "@/lib/types";
 import { THEMES, FONTS } from "@/lib/storefront-themes";
 import styles from "./creator-dashboard.module.css";
+import ImportLightingPanel from "./ImportLightingPanel";
 import ImagePreview from "@/components/ImagePreview";
 import { resizeIfNeeded } from "@/lib/resize-image";
 import { MAX_PROMPT_DESCRIPTION } from "@/lib/choice-groups";
@@ -1754,6 +1755,8 @@ function CreatorDashboard() {
           </div>
         )}
       </div>
+
+      <ImportLightingPanel onImported={() => loadDashboard()} />
 
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>My Templates</h2>

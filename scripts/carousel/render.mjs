@@ -131,6 +131,53 @@ const SLIDES = {
     }
     .shotwrap img{width:100%;height:100%;object-fit:${s.fit === "cover" ? "cover" : "contain"};object-position:top center}`),
 
+  /**
+   * A relight, argued by the pair rather than by the caption.
+   *
+   * SIDE BY SIDE, and `contain` by default. The first version stacked the two
+   * frames, which forced each into a wide letterbox — and since every source
+   * here is a PORTRAIT, that meant cropping the subject to fit. Two portrait
+   * panes side by side match the shape of the photographs, so the whole frame
+   * shows and the eye compares the same thing twice rather than two crops.
+   *
+   * overflow:hidden sits on each pane, not just the wrapper: the panes are flex
+   * children with a border-radius, and without it a sub-pixel rounding gap shows
+   * as a hairline seam in the rasterised JPEG.
+   */
+  beforeafter: (s, n, t) => shell(`
+    <div class="rule"></div>
+    <h2 style="font-size:52px">${em(s.title)}</h2>
+    ${s.body ? `<p class="body" style="font-size:28px;margin-top:18px">${em(s.body)}</p>` : ""}
+    <div class="bawrap">
+      <div class="pane"><img src="${s.before}" alt=""><span class="tag">BEFORE</span></div>
+      <div class="seam"></div>
+      <div class="pane"><img src="${s.after}" alt=""><span class="tag after">AFTER</span></div>
+    </div>
+    <div class="spacer"></div>
+    ${footer(n, t)}`, `
+    /* The frame HUGS the pair instead of stretching to fill the slide. Two
+       portrait panes side by side come to roughly 1.55 wide-to-tall, so pinning
+       that ratio makes object-fit contain fit exactly — stretching it instead
+       left thick empty bands above and below both photographs. */
+    .bawrap{
+      flex:0 0 auto; aspect-ratio:1.55; margin:32px 0 0; border-radius:22px; overflow:hidden;
+      border:1px solid rgba(67,204,178,.38); background:#0b1d15;
+      display:flex; flex-direction:row; min-height:0;
+    }
+    .pane{position:relative; flex:1 1 50%; min-width:0; overflow:hidden}
+    .pane img{
+      width:100%; height:100%; display:block;
+      object-fit:${s.fit === "cover" ? "cover" : "contain"};
+      object-position:${s.focus ?? "center center"};
+    }
+    .seam{flex:0 0 3px; background:${MINT}; opacity:.9}
+    .tag{
+      position:absolute; left:14px; top:14px; padding:6px 13px; border-radius:999px;
+      font-size:19px; font-weight:800; letter-spacing:.14em;
+      background:rgba(6,21,15,.82); color:#cfdcd7; border:1px solid rgba(207,220,215,.28);
+    }
+    .tag.after{background:${MINT}; color:#06150f; border-color:transparent}`),
+
   /** Numbered steps. Caps at 5 so the type never has to shrink. */
   steps: (s, n, t) => shell(`
     <div class="rule"></div>
@@ -168,9 +215,23 @@ const SLIDES = {
 async function dataUri(file) {
   const abs = path.resolve(file);
   const buf = await readFile(abs);
+  if (!buf.length) throw new Error(`${file} is zero bytes`);
   const ext = path.extname(abs).toLowerCase();
   const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
   return `data:${mime};base64,${buf.toString("base64")}`;
+}
+
+/**
+ * Every slide key that names a local image file. `shot` uses one, `beforeafter`
+ * uses two — inlining is keyed off this list so a new image-bearing slide type
+ * only has to add its key here rather than touch the render loop.
+ */
+const IMAGE_KEYS = ["image", "before", "after"];
+
+async function inlineImages(slide) {
+  const out = { ...slide };
+  for (const k of IMAGE_KEYS) if (typeof slide[k] === "string" && slide[k]) out[k] = await dataUri(slide[k]);
+  return out;
 }
 
 async function main() {
@@ -204,7 +265,7 @@ async function main() {
       // dropped here: setContent gives the page an about:blank origin, and
       // Chromium refuses to load local files into it, so the slide rendered
       // with an empty box and no error.
-      const slide = s.image ? { ...s, image: await dataUri(s.image) } : s;
+      const slide = await inlineImages(s);
       await page.setContent(build(slide, i + 1, slides.length), { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       const broken = await page.evaluate(() =>

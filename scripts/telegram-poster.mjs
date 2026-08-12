@@ -62,6 +62,48 @@ async function tgSendPhoto(text, imgPath) {
   return j;
 }
 
+/**
+ * A lesson that ships as a carousel rather than one screenshot.
+ *
+ * sendMediaGroup is ALL OR NOTHING: if any single item in the array fails to
+ * load or breaks a size limit, Telegram rejects the entire batch and the lesson
+ * silently does not post. So every file is checked for existence and non-zero
+ * length BEFORE the request is built, and anything missing aborts early with a
+ * message naming the file — a held lesson the owner can fix beats a batch that
+ * vanishes.
+ */
+async function tgSendAlbum(text, files) {
+  const bad = [];
+  const bufs = [];
+  for (const f of files) {
+    if (!existsSync(f)) { bad.push(`${path.basename(f)} (missing)`); continue; }
+    const buf = await readFile(f);
+    if (!buf.length) { bad.push(`${path.basename(f)} (zero bytes)`); continue; }
+    if (buf.length > 10 * 1024 * 1024) { bad.push(`${path.basename(f)} (over 10MB)`); continue; }
+    bufs.push({ buf, name: path.basename(f) });
+  }
+  if (bad.length) throw new Error(`album not sent, bad slides: ${bad.join(", ")}`);
+  if (!bufs.length) throw new Error("album has no slides");
+
+  // Telegram caps a media group at 10; a carousel is 5, so this only guards
+  // against a future lesson with more.
+  const batch = bufs.slice(0, 10);
+  const captionFits = text.length <= PHOTO_CAPTION_MAX;
+  const fd = new FormData();
+  fd.append("chat_id", String(CHAT));
+  fd.append("media", JSON.stringify(batch.map((b, i) => ({
+    type: "photo", media: `attach://s${i}`,
+    ...(i === 0 && captionFits ? { caption: text, parse_mode: "HTML" } : {}),
+  }))));
+  batch.forEach((b, i) => fd.append(`s${i}`, new Blob([b.buf], { type: "image/jpeg" }), b.name));
+
+  const r = await fetch(API("sendMediaGroup"), { method: "POST", body: fd });
+  const j = await r.json();
+  if (!j.ok) throw new Error("sendMediaGroup failed: " + JSON.stringify(j));
+  if (!captionFits) await tgSendMessage(text);
+  return j;
+}
+
 async function main() {
   await mkdir(SHOTS_DIR, { recursive: true });
   const lessons = JSON.parse(await readFile(LESSONS_FILE, "utf8"));
@@ -110,8 +152,18 @@ async function main() {
     return;
   }
 
-  log(`posting lesson ${next + 1}/${lessons.length}: "${lesson.title || "(untitled)"}"${hasPhoto ? " [with photo]" : ""}`);
-  if (hasPhoto) await tgSendPhoto(lesson.text, img);
+  // A lesson can now ship as a carousel (`slides`), a single screenshot
+  // (`image`, unchanged), or plain text. `image` is checked first only when
+  // there are no slides, so all 21 existing lessons behave exactly as before.
+  const slideFiles = Array.isArray(lesson.slides) && lesson.slides.length
+    ? lesson.slides.map(s => (path.isAbsolute(s) ? s : path.join(SHOTS_DIR, s)))
+    : null;
+
+  log(`posting lesson ${next + 1}/${lessons.length}: "${lesson.title || "(untitled)"}"` +
+      (slideFiles ? ` [carousel, ${slideFiles.length} slides]` : hasPhoto ? " [with photo]" : ""));
+
+  if (slideFiles) await tgSendAlbum(lesson.text, slideFiles);
+  else if (hasPhoto) await tgSendPhoto(lesson.text, img);
   else await tgSendMessage(lesson.text);
 
   state.lastPostedIndex = next;

@@ -1,0 +1,302 @@
+[
+  {
+    "id": "a9512277-e19f-4a60-bd04-f3946e4ecf41",
+    "name": "Backlit Haze Beam",
+    "section": "Atmosphere — smoke, haze & fog",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting and the addition of atmospheric haze. A hard backlight sits behind the subject and slightly camera-right, aimed toward the lens, so a visible beam of light cuts through fine airborne haze and separates the subject from a dark background. The haze is thin and even, densest where the beam is brightest, thinning toward the frame edges. Front fill is minimal, leaving the face in soft shadow with a bright rim along the hair and shoulders. Neutral white light, realistic falloff, subtle film grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are.",
+    "beforeFile": "scripts/carousel/shots/lighting/backlit-haze-beam-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/backlit-haze-beam-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "9e9e9ff6-520c-4620-ada1-463cb5ef018b",
+    "name": "Soft Side Key and Rim",
+    "section": "Lighting",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. A large, soft key light comes from camera-left, approximately 45° off-axis and slightly above eye level, creating a balanced contrast ratio with soft, feathered shadows and a gentle falloff. A subtle rim light from the upper camera-right separates the subject from the background, which features a gradient from dark to light on the right. The color temperature is neutral (~5500K).",
+    "beforeFile": "scripts/carousel/shots/lighting/soft-side-key-and-rim-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/soft-side-key-and-rim-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "0caac51d-de76-40a4-a51f-5e257c8d5a22",
+    "name": "Overhead Spotlight Stage",
+    "section": "Theatrical & Stage — spotlight",
+    "framing": "full",
+    "recipe": "Change nothing else except the lighting. Keep the existing background and setting exactly as they are and add nothing to the scene. A soft frontal key at camera-centre, twelve o'clock and just above eye level, lights the subject evenly with generous fill and a single centred catchlight. Directly overhead, a hard top spotlight drops a tight beam that separates the subject from behind and lays one clean circular pool of light on the floor around their feet, with the subject's soft-edged shadow falling into that pool. Everything beyond the pool receives no light and falls away to black. Neutral 5600K throughout. Theatrical low-key stage lighting, hard-edged floor pool, physically plausible light direction, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/overhead-spotlight-stage-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/overhead-spotlight-stage-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/e1ede09c-602c-479f-8ecf-9edfc404b002-stage-source-full.jpg"
+  },
+  {
+    "id": "eef5db19-7616-4fa8-923f-4c973cf007b8",
+    "name": "Candlelit Chiaroscuro",
+    "section": "Dark Romantic & Gothic Glam",
+    "framing": "head",
+    "recipe": "Change nothing else except the lighting. A single warm candle-temperature source sits low and close at camera-left, roughly at chin height, throwing steep upward-angled shadows across the far cheek and leaving the opposite side of the face in deep shadow. A very low warm bounce keeps detail alive in the shadow side rather than letting it go pure black. The background falls off to near darkness within a short distance. Warm 2000K light, realistic skin texture, natural asymmetry, subtle film grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/candlelit-chiaroscuro-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/candlelit-chiaroscuro-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/bb211fab-dac5-4ce0-9e38-7f6b79285ad1-source-head.jpeg"
+  },
+  {
+    "id": "bbd47e8f-ace1-4944-bcfb-4dc83d611bc3",
+    "name": "Theatrical Front Spotlight",
+    "section": "Theatrical & Stage — spotlight",
+    "framing": "full",
+    "recipe": "Change nothing else except the lighting. Keep the existing background and setting exactly as they are and add nothing to the scene. A soft frontal key at camera-centre, twelve o'clock and just above eye level, gives smooth even illumination with generous fill, gentle soft-edged downward shadows and a centred catchlight. A tight overhead spotlight adds edge separation and its beam is visible in the air as a soft shaft of light descending to the subject. Around their feet a gobo scatters a spread of distinct circular light pools across the floor, sharp-edged and varying in size. The background receives no light and falls immediately to black. Neutral 5600K throughout. Theatrical low-key stage lighting, visible beam, physically plausible light direction, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/theatrical-front-spotlight-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/theatrical-front-spotlight-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/e1ede09c-602c-479f-8ecf-9edfc404b002-stage-source-full.jpg"
+  },
+  {
+    "id": "f573f0dc-5bac-4cc7-abdc-5bc30e3956f5",
+    "name": "Frosted Clamshell",
+    "section": "Luminous Beauty — glow & clamshell",
+    "framing": "head",
+    "recipe": "Change nothing else except the lighting. A large soft source sits directly in front and above the subject angled down, with a second soft source or bright reflector directly below angled up, closing around the face like an open shell. Shadows under the nose and chin are almost eliminated, catchlights appear above and below, and the skin carries a cool frosted sheen on the cheekbones, brow and nose bridge. Neutral to slightly cool temperature, even exposure, realistic skin texture with visible pores, natural asymmetry, subtle film grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/frosted-clamshell-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/frosted-clamshell-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/bb211fab-dac5-4ce0-9e38-7f6b79285ad1-source-head.jpeg"
+  },
+  {
+    "id": "bf31e67c-0937-4b76-9c75-913bc241ced0",
+    "name": "Cyan Orange Split",
+    "section": "Editorial Gels — colour & contrast",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Two hard gelled sources at equal power face each other across the subject: cyan from camera-left at 80 degrees, warm orange from camera-right at 80 degrees, meeting along the centre line of the face and body so one side reads cold and the other warm with a clean seam between them. Background stays unlit and dark so neither colour spills onto it. Saturated complementary colour, hard-edged transition, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/cyan-orange-split-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/cyan-orange-split-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "d904740d-1c83-4e4c-918d-8d0faa1a2da4",
+    "name": "Warm Haze Backlit Editorial",
+    "section": "Signature Looks — hand-picked",
+    "framing": "head",
+    "recipe": "Change nothing else except the lighting.\nThe key light is a warm, soft, large-source light from camera-right at roughly 45° and slightly above eye level, creating a balanced contrast ratio with gentle fill from ambient bounce. A strong, warm backlight from the practical \"LOVE\" sign and the chandelier creates a rim light on the back of the head and shoulders, separating the subject from the background, which is further diffused by atmospheric haze. Shadows are soft and gently feathered, with moderate depth. Catchlights are large and soft at approximately 10 o'clock in the visible eye. The overall color temperature is warm (~3200K) with a hint of gold, and the background falls off into a medium-dark tone, illuminated by the practicals and haze. Keep the existing background, setting and framing exactly as they are and add nothing to the scene — only the light falling on it changes. Keep the subject identity, pose, expression, hairstyle and clothing exactly as they are.",
+    "beforeFile": "scripts/carousel/shots/lighting/warm-haze-backlit-editorial-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/warm-haze-backlit-editorial-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/bb211fab-dac5-4ce0-9e38-7f6b79285ad1-source-head.jpeg"
+  },
+  {
+    "id": "54aabfc0-20ca-4a57-a5f8-53a901f436df",
+    "name": "Halation Rim",
+    "section": "Film & Analog — halation & grain",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Keep the existing background exactly as it is. A hard, bright source behind the subject at camera-right draws a strong edge along the hair and shoulder, and that highlight bleeds a soft red-orange glow outward into the surrounding dark area, as film does when light passes through the emulsion and reflects off the backing. The glow hugs the bright edge closely and fades within a short distance; nothing else in the frame is blurred. Warm halation on a hard rim, deep surrounding shadow, fine grain, realistic skin texture.",
+    "beforeFile": "scripts/carousel/shots/lighting/halation-rim-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/halation-rim-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "a0e617ae-7698-4053-b34c-0c0c618706db",
+    "name": "Prism Refraction Edge",
+    "section": "Optical & Lens — prisms, flare & bloom",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting and an optical refraction along one edge. Keep the existing background as it is and keep the subject sharp. A glass prism held at the edge of the lens splits light entering from camera-left into a band of rainbow colour along that side of the frame, with a faint smeared repetition of nearby highlights inside the band. The centre and right of the frame stay clean and unaffected. Spectral colour confined to one edge, sharp subject, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/prism-refraction-edge-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/prism-refraction-edge-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "7b4a3d09-f5c7-47fa-be99-03af4c882289",
+    "name": "Window Blind Slats",
+    "section": "Projection & Gobo — patterned light",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Keep the existing background and setting exactly as they are and add nothing to the scene. A single hard source at camera-left passes through horizontal slats out of frame, laying a series of parallel bright bands and dark shadows diagonally across the subject and the background behind them. The bands bend as they cross the body and stay sharp-edged. Everything outside the bands sits in low fill. Hard-edged parallel shadows, physically plausible bend over form, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/window-blind-slats-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/window-blind-slats-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "deabad76-6d84-4018-b3b8-f561ff8913a8",
+    "name": "Teal & Orange",
+    "section": "Cinematic Grades — film looks",
+    "framing": "medium",
+    "recipe": "Change nothing else except the colour and tone; keep the existing light direction, shadow shapes and background as they are. Push the shadows and midtone neutrals toward teal-cyan while holding skin tones warm and orange, so the subject separates from a cooler surround. Contrast is moderate with slightly crushed blacks and clean highlights. Skin stays natural and warm rather than sliding orange. Complementary warm-cool separation, moderate contrast, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/teal-orange-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/teal-orange-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "43ad6040-700f-4d03-8114-e5296fef7afe",
+    "name": "Icy Key",
+    "section": "Cool Blue — icy light",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. A large soft source with a cold blue-white cast sits at camera-left, 45 degrees off axis and slightly above, giving clean directional light with soft-edged shadows on the opposite side. The background sits a shade darker in the same cold tone. Skin keeps its own warmth in the midtones so the face reads healthy against the cold light rather than grey. Cool key with warm skin retained, soft shadow edges, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/icy-key-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/icy-key-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "92d39ff5-92c6-4d9f-8495-611fede8285b",
+    "name": "Golden Hour Backlight",
+    "section": "Golden Hour — warm light",
+    "framing": "full",
+    "recipe": "Change nothing else except the lighting. Keep the existing background and setting exactly as they are; only the light falling on them changes. A low, warm sun-like source sits behind the subject near the horizon line, rimming the hair and shoulders with amber and letting warm light spill toward the lens, while a soft warm bounce keeps the front of the subject from going dark. Long, soft-edged shadows fall toward camera. Warm 3000K key, gentle contrast, realistic skin texture, subtle film grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/golden-hour-backlight-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/golden-hour-backlight-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/ceaae2a7-465c-42be-a801-9073ce72a69f-source-full.jpeg"
+  },
+  {
+    "id": "05327266-292f-4b81-bb4b-b464a604e2e3",
+    "name": "Neon Sign Glow",
+    "section": "Neon & Nightlife",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Keep the existing background exactly as it is; only the light falling on it changes. A bright magenta-pink source sits just out of frame at camera-left at head height, as though from a glowing sign, throwing saturated colour across that side of the face and a soft coloured pool onto the nearby background, falling off quickly into darkness. No lettering or shapes are visible anywhere. A faint cyan bounce lifts the shadow side. Saturated colour, rapid falloff, realistic skin texture, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/neon-sign-glow-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/neon-sign-glow-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "8145f3ad-fe9f-475a-a5ba-fd4b88867bd3",
+    "name": "Hard Split Kicker",
+    "section": "Lighting",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. A hard, focused key light from camera-right at approximately 45° above eye level creates a distinct highlight on the face and shoulder, producing a high-contrast ratio with deep, crisp shadows and rapid falloff. A subtle kicker or rim light from camera-left, positioned slightly behind the subject, highlights the back of the head and shoulder, separating the subject from the dark, subtly gradient background. The overall color temperature is neutral, with no visible catchlights.",
+    "beforeFile": "scripts/carousel/shots/lighting/hard-split-kicker-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/hard-split-kicker-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "c831e480-c99d-4406-82cb-ee6517b61c5a",
+    "name": "Rising Fog",
+    "section": "Atmosphere — smoke, haze & fog",
+    "framing": "full",
+    "recipe": "Change nothing else except the lighting and the addition of fog. Dense fog rises around the subject from below the bottom of the frame, thickest at the lower edge and thinning as it climbs past waist height until the head and shoulders are clear of it. A low side light from camera-left skims through the fog so it glows and its drifting texture is visible, while the background sits in darkness above the fog. Cool neutral temperature, physically plausible light scatter through vapour, subtle grain. Keep the subject identity, pose, expression, hairstyle, clothing and the framing exactly as they are.",
+    "beforeFile": "scripts/carousel/shots/lighting/rising-fog-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/rising-fog-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/ceaae2a7-465c-42be-a801-9073ce72a69f-source-full.jpeg"
+  },
+  {
+    "id": "1a081b0e-4750-4857-86aa-d052665a9e71",
+    "name": "Plum Noir Wash",
+    "section": "Dark Romantic & Gothic Glam",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. A deep plum-violet gelled key comes from camera-left at 45 degrees and slightly above eye level, washing the scene in a dark purple cast, while a cooler magenta rim traces the far shoulder and jaw. Shadows stay dense and saturated rather than grey. A restrained neutral fill holds the skin just clear of the colour so the face reads as a face, not a silhouette. Rich saturation, deep blacks, physically plausible falloff.",
+    "beforeFile": "scripts/carousel/shots/lighting/plum-noir-wash-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/plum-noir-wash-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "b55cb998-3c80-4d72-97c4-6b5c37ecac9e",
+    "name": "Opalescent Glow",
+    "section": "Luminous Beauty — glow & clamshell",
+    "framing": "head",
+    "recipe": "Change nothing else except the lighting. Broad, wrapping soft light from a very large frontal source, with faint pearlescent colour shifting across the highlights — cool blue-green on one cheekbone edge, warm pink on the other — as though light is passing through opal. Shadows are open and luminous rather than dark. Background is a clean pale field with a gentle gradient. Low contrast, luminous midtones, realistic skin texture with pores intact, subtle grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/opalescent-glow-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/opalescent-glow-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/bb211fab-dac5-4ce0-9e38-7f6b79285ad1-source-head.jpeg"
+  },
+  {
+    "id": "4b47f2bf-fe65-4097-bd60-79ce5df815e5",
+    "name": "Purple Teal Split",
+    "section": "Editorial Gels — colour & contrast",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. A deep purple gelled key at camera-left and a teal gelled source at camera-right, both slightly behind the subject so the colours rake across the cheekbones and shoulders and leave the centre of the face in a darker neutral. A very low neutral frontal fill keeps the features readable. Background is black with no spill. High saturation, deep blacks, realistic skin texture, natural asymmetry.",
+    "beforeFile": "scripts/carousel/shots/lighting/purple-teal-split-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/purple-teal-split-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "ff138d73-1fbc-43db-916b-d5cd2784adba",
+    "name": "Dramatic Rim-lit Chiaroscuro",
+    "section": "Signature Looks — hand-picked",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting.\nThe key light is a hard, slightly diffused spot from camera-right, high and behind the subject, creating a bright rim on the right side of the head and shoulder, with significant falloff to shadow on the camera-left side of the body. A secondary hard spot from camera-left, high and behind, provides a more subtle rim and separation. The overall contrast is high, with deep, hard-edged shadows and minimal fill, creating a low-key chiaroscuro effect. Catchlights are not visible. The color temperature is warm, approximately ~3200K, with the background illuminated by direct, warm, hard light sources creating visible light shafts in atmospheric haze, resulting in a dark background with bright, dramatic highlights. Keep the existing background, setting and framing exactly as they are and add nothing to the scene — only the light falling on it changes. Keep the subject identity, pose, expression, hairstyle and clothing exactly as they are.",
+    "beforeFile": "scripts/carousel/shots/lighting/dramatic-rim-lit-chiaroscuro-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/dramatic-rim-lit-chiaroscuro-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "353e1b77-2f6a-44c6-8d85-5280c59be0fb",
+    "name": "Halation Window",
+    "section": "Film & Analog — halation & grain",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Keep the existing background as it is. Bright daylight enters from a window-shaped source at camera-left, blowing out to near-white where it falls, and that bright patch bleeds a red-orange halo into the darker wall and shadow beside it. The rest of the frame stays clean and sharp with normal contrast. Highlights roll off gently rather than clipping hard. Warm halation around a blown highlight, gentle roll-off, fine grain, realistic skin texture.",
+    "beforeFile": "scripts/carousel/shots/lighting/halation-window-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/halation-window-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "8f15084c-657e-4c18-a77a-ab24a03baa19",
+    "name": "Anamorphic Blue Flare",
+    "section": "Optical & Lens — prisms, flare & bloom",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting and a lens flare. Keep the existing background as it is and keep the subject sharp. A bright source just outside the frame at camera-right produces a long horizontal streak of cool blue light across the image at roughly the height of the source, thin and sharply defined, in the way an anamorphic lens flares. Contrast lifts slightly where the streak crosses. Nothing else in the frame is blurred. Single horizontal blue streak, otherwise clean rendering, realistic skin texture.",
+    "beforeFile": "scripts/carousel/shots/lighting/anamorphic-blue-flare-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/anamorphic-blue-flare-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "45dd7cbb-ab37-4fd4-a7c0-0c990b36c445",
+    "name": "Dappled Foliage",
+    "section": "Projection & Gobo — patterned light",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Keep the existing background exactly as it is and add nothing to the scene. A hard source from high camera-right passes through leaf-like breakup out of frame, scattering irregular soft-edged patches of light and shadow across the subject and the wall behind. Patch sizes vary and edges are slightly soft, as sunlight through leaves is. Warm colour temperature, irregular organic pattern, realistic falloff, subtle film grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/dappled-foliage-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/dappled-foliage-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "ef248106-e762-442b-9577-c9c64d930107",
+    "name": "Bleach Bypass",
+    "section": "Cinematic Grades — film looks",
+    "framing": "medium",
+    "recipe": "Change nothing else except the colour and tone; keep the existing light direction and shadow shapes. Strip most of the saturation while raising contrast hard, so the image reads as a desaturated high-contrast frame with a silvery cast, deep blacks and bright, slightly blown highlights, as though the bleach step were skipped in development. A trace of colour remains in the skin. Heavy desaturation, raised contrast, retained skin warmth, visible grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/bleach-bypass-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/bleach-bypass-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "63b32aea-c008-4ed4-b066-5e0b08191eba",
+    "name": "Glacier Rim",
+    "section": "Cool Blue — icy light",
+    "framing": "head",
+    "recipe": "Change nothing else except the lighting. A hard, very cold blue-white source behind camera-right draws a crisp bright edge along the jaw, cheekbone and hair, while the front of the face is lit by a soft neutral fill at low power. The contrast between the icy edge and the neutral face is the whole look. Background is dark and takes no colour. Cold hard rim against neutral fill, crisp edge, realistic skin texture, natural asymmetry.",
+    "beforeFile": "scripts/carousel/shots/lighting/glacier-rim-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/glacier-rim-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/bb211fab-dac5-4ce0-9e38-7f6b79285ad1-source-head.jpeg"
+  },
+  {
+    "id": "05380b22-1284-4592-baab-08c5cf008490",
+    "name": "Warm Window Glow",
+    "section": "Golden Hour — warm light",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting. Keep the existing background exactly as it is; only its illumination changes. Warm late-afternoon light enters from a low angle at camera-left as though through a window, falling across the subject with a soft edge and a visible warm-to-cool gradient from the lit side to the shadow side. No fill from the right, so shadows stay deep but retain detail. Warm key against cool ambient shadow, soft-edged transitions, realistic skin texture, natural asymmetry.",
+    "beforeFile": "scripts/carousel/shots/lighting/warm-window-glow-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/warm-window-glow-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  },
+  {
+    "id": "250d137d-0ba1-446f-85a5-be40e48b2978",
+    "name": "Blue Hour Street",
+    "section": "Neon & Nightlife",
+    "framing": "full",
+    "recipe": "Change nothing else except the lighting. Keep the existing background exactly as it is. Deep blue twilight ambient fills the whole frame at low level, while a single warm point source at camera-right adds a small pool of amber on the subject, so a cold overall image carries one warm accent. Shadows are blue rather than neutral and the darkest areas keep detail. Cool ambient against a warm practical, low overall exposure with clean highlights, subtle film grain.",
+    "beforeFile": "scripts/carousel/shots/lighting/blue-hour-street-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/blue-hour-street-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/ceaae2a7-465c-42be-a801-9073ce72a69f-source-full.jpeg"
+  },
+  {
+    "id": "d0ba739a-da81-445e-8ef6-8cd29280c97c",
+    "name": "Soft Glam Shell",
+    "section": "Lighting",
+    "framing": "head",
+    "recipe": "Change nothing else except the lighting. The key light is a large, very soft source from camera-left at approximately 45°, slightly above eye level, providing a balanced, low-contrast fill with minimal shadows and soft edge transitions. A subtle rim light from camera-right separates the subject from the background. Catchlights are large and soft at 10 o'clock in the eyes. The lighting is neutral ~5500K, with the background evenly illuminated and slightly darker than the subject, creating a soft, ethereal high-key portrait.",
+    "beforeFile": "scripts/carousel/shots/lighting/soft-glam-shell-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/soft-glam-shell-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/bb211fab-dac5-4ce0-9e38-7f6b79285ad1-source-head.jpeg"
+  },
+  {
+    "id": "fc0c6a8a-a080-467e-9769-95630774c31e",
+    "name": "Smoke Swirl Side-Lit",
+    "section": "Atmosphere — smoke, haze & fog",
+    "framing": "medium",
+    "recipe": "Change nothing else except the lighting and the addition of drifting smoke. Loose curls of smoke drift through the frame beside and behind the subject, lit from camera-left by a hard source that catches the smoke's edges and leaves its cores dark. The smoke never crosses the face. Contrast is high, the background is near black, and the subject keeps a defined side key with deep shadow on the opposite cheek. Realistic smoke density variation, natural turbulence, subtle grain. Keep the subject's identity, pose, expression, hairstyle, clothing and the framing exactly as they are.",
+    "beforeFile": "scripts/carousel/shots/lighting/smoke-swirl-side-lit-before.jpg",
+    "afterFile": "scripts/carousel/shots/lighting/smoke-swirl-side-lit-after.jpg",
+    "beforeSource": "d80f9e08-014e-48b7-8545-b37652059605/7c634b9b-4796-4230-969b-75961e013f3f-source-medium.jpg"
+  }
+]
