@@ -1,0 +1,47 @@
+[
+  {
+    "id": "grp-creator-offer",
+    "account": "groups",
+    "caption": "There's now a way to earn from photography without shooting anything.\n\nJoin Alux Art as a creator (free), add your bank details, and import our lighting archive into your own store. You get your own link. Every time someone relights a photo through it, ₦200 lands in your account.\n\nNo shoot. No editing. No delivery. No customer service.\n\nStart here: aluxartandframes.shop/become-creator",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "FOR PHOTOGRAPHERS",
+        "title": "Earn from photography\nwithout shooting.",
+        "body": "Free to join. You keep ₦200 on every image sold through your link.",
+        "kicker": "SWIPE →"
+      },
+      {
+        "type": "text",
+        "title": "Here's the offer.",
+        "body": "We built a relighting tool with 195 studio lighting looks. You put it in your own store, at your own price, and keep the margin on everything it sells."
+      },
+      {
+        "type": "steps",
+        "title": "Four steps. About five minutes.",
+        "items": [
+          "Create your free creator account",
+          "Add your bank details for split payment",
+          "Import the lighting archive in one tap",
+          "Share your link and get paid per image"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "₦800 to us. ₦200 to you.",
+        "body": "You set your price between ₦800 and ₦1,000. Your cut is paid straight to your bank through Paystack on every sale, automatically. We email you each time one lands."
+      },
+      {
+        "type": "text",
+        "title": "You do none of the work.",
+        "body": "No shoot to run, no files to edit, no deadline to hit, no client chasing you. The tool does the job and you keep a share of it."
+      },
+      {
+        "type": "cta",
+        "title": "Free to start.",
+        "body": "Create your creator account and import the archive today.",
+        "link": "aluxartandframes.shop/become-creator"
+      }
+    ]
+  }
+]

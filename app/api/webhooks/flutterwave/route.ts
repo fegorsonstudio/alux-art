@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import sql from "@/lib/db";
+import { notifyCreatorOfSale } from "@/lib/creator-sale-email";
 import { verifyFlutterwaveWebhookSignature, verifyFlutterwavePayment } from "@/lib/flutterwave";
 import { SITE_URL } from "@/lib/site-url";
 
@@ -158,6 +159,9 @@ export async function POST(request: NextRequest) {
         WHERE id = ${existingShootId} AND status = 'PENDING_PAYMENT'
       `;
       await sql`UPDATE templates SET purchase_count = purchase_count + 1 WHERE id = ${template_id}`;
+      // Same as the Paystack path: creators paid through Flutterwave must get
+      // the same notification, and it must not delay fulfilment.
+      void notifyCreatorOfSale(purchase_id);
       if (coupon_id) {
         await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
       }
@@ -246,6 +250,9 @@ export async function POST(request: NextRequest) {
       WHERE id = ${purchase_id}
     `;
     await sql`UPDATE templates SET purchase_count = purchase_count + 1 WHERE id = ${template_id}`;
+      // Same as the Paystack path: creators paid through Flutterwave must get
+      // the same notification, and it must not delay fulfilment.
+      void notifyCreatorOfSale(purchase_id);
     if (coupon_id) {
       await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
     }
