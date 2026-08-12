@@ -161,6 +161,7 @@ const pt: AppDictionary = {
     uploadOneToTen: "Envie entre 1 e 10 fotos.",
     pickLookThenUpload: "Escolha um visual agora e ele sera usado em todas as fotos que enviar. Pode alterar cada foto depois.",
     lightingPickedForAll: "Esse visual sera aplicado a todas as fotos que enviar. Pode alterar cada foto depois.",
+    lightingFollowsFirst: "As fotos que não definires seguem o primeiro visual que escolheste. Toca em qualquer foto para lhe dar outro.",
     assignEachPhoto: "Atribua um estilo de iluminação a cada foto.",
     nPicked: "{n} escolhido(s)",
     optionalTap: "opcional — toque para ver",

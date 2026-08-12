@@ -161,6 +161,7 @@ const zh: AppDictionary = {
     uploadOneToTen: "请上传 1 到 10 张照片。",
     pickLookThenUpload: "现在选择一种光效，将应用到你上传的每张照片。之后可以单独更改任意一张。",
     lightingPickedForAll: "该光效将应用到你上传的每张照片。之后可以单独更改任意一张。",
+    lightingFollowsFirst: "你没有单独设置的照片会沿用你选的第一个风格。点按任意照片即可为它单独选择。",
     assignEachPhoto: "为每张照片指定一种灯光风格。",
     nPicked: "已选 {n} 项",
     optionalTap: "可选 — 点按浏览",

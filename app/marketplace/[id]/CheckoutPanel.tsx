@@ -1039,8 +1039,24 @@ export default function CheckoutPanel({
   // has attached looks, those ARE the lighting; the rigs remain only as the
   // fallback for a photo-upgrade template that has none.
   const perPhotoLightingActive = photoUpgradeActive && lightingLooks.length > 0;
+
+  // One look is enough for the whole set. The first photo that has a look
+  // supplies it to every photo left blank, so a buyer who wants the same
+  // lighting throughout picks once instead of ticking the same look ten times.
+  // An explicit per-photo choice always wins, so mixing looks still works.
+  const lightingFallback = sourcePhotos
+    .map(p => lightingByPhoto[p.storagePath])
+    .find(Boolean);
+  const resolvedLightingByPhoto: Record<string, string> = lightingFallback
+    ? Object.fromEntries(sourcePhotos.map(p => [
+        p.storagePath,
+        lightingByPhoto[p.storagePath] || lightingFallback,
+      ]))
+    : {};
+  // Photos left blank are not missing input any more — they follow the first
+  // look — so booking only needs one pick, not one per photo.
   const enhanceLightingValid = perPhotoLightingActive
-    ? sourcePhotos.length > 0 && sourcePhotos.every(p => !!lightingByPhoto[p.storagePath])
+    ? sourcePhotos.length > 0 && !!lightingFallback
     : !!enhanceLighting;
   // Photo upgrades are priced per image: the buyer brings however many photos
   // they have (1-10) and pays the single-image price for each, rather than being
@@ -1171,7 +1187,9 @@ export default function CheckoutPanel({
                 ? { customBackdrop: { storagePath: customBackdrop.storagePath, storageBucket: customBackdrop.storageBucket } }
                 : {}),
               // Per-photo creator lighting (manual on) — { storagePath: optionId }.
-              lightingByPath: perPhotoLightingActive ? lightingByPhoto : undefined,
+              // Resolved, not raw: every photo carries a look, with blanks
+              // filled from the first one the buyer picked.
+              lightingByPath: perPhotoLightingActive ? resolvedLightingByPhoto : undefined,
               stripMetadata: stripMetadata || undefined,
             }
           : undefined,
@@ -1687,7 +1705,7 @@ export default function CheckoutPanel({
                 icon="💡"
                 title={t("lightingRig")}
                 status={perPhotoLightingActive
-                  ? t("nPicked", { n: Object.keys(lightingByPhoto).length })
+                  ? t("nPicked", { n: Object.keys(resolvedLightingByPhoto).length })
                   : (LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? t("pickOneRequired"))}
                 warn={!enhanceLightingValid}
                 defaultOpen
@@ -1743,6 +1761,9 @@ export default function CheckoutPanel({
                       </div>
                     </>
                   )}
+                  {sourcePhotos.length > 1 && lightingFallback && (
+                    <p className={styles.sectionHint}>{t("lightingFollowsFirst")}</p>
+                  )}
                   {sourcePhotos.map((sp, i) => (
                     <div key={sp.storagePath} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(127,127,127,0.15)" : "none" }}>
                       {/* Fixed box. Without it the uploaded photo contributes its
@@ -1762,7 +1783,14 @@ export default function CheckoutPanel({
                             )}
                             <div style={{ display: sectionOpen(section.id) ? "flex" : "none", flexWrap: "wrap", gap: 8 }}>
                               {section.looks.map(o => {
-                                const on = lightingByPhoto[sp.storagePath] === o.id;
+                                // A photo with no pick of its own follows the
+                                // first look. Show that as chosen — dashed
+                                // rather than solid — so the buyer can see what
+                                // every photo will actually get before paying.
+                                const explicit = lightingByPhoto[sp.storagePath] === o.id;
+                                const inherited = !lightingByPhoto[sp.storagePath]
+                                  && resolvedLightingByPhoto[sp.storagePath] === o.id;
+                                const on = explicit || inherited;
                                 return (
                                   <button
                                     key={o.id}
@@ -1773,7 +1801,12 @@ export default function CheckoutPanel({
                                     style={{
                                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                                       background: "none", cursor: "pointer", padding: 4,
-                                      border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                                      border: explicit
+                                        ? "2px solid currentColor"
+                                        : inherited
+                                          ? "2px dashed currentColor"
+                                          : "2px solid rgba(127,127,127,0.25)",
+                                      opacity: inherited ? 0.85 : 1,
                                       borderRadius: 8, minWidth: 58,
                                     }}
                                   >

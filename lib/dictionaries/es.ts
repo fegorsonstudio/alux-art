@@ -161,6 +161,7 @@ const es: AppDictionary = {
     uploadOneToTen: "Sube entre 1 y 10 fotos.",
     pickLookThenUpload: "Elige un estilo ahora y se usara en todas las fotos que subas. Podras cambiar cada foto despues.",
     lightingPickedForAll: "Ese estilo se aplicara a todas las fotos que subas. Podras cambiar cada foto despues.",
+    lightingFollowsFirst: "Las fotos que no configures usarán el primer estilo que elegiste. Toca cualquier foto para darle otro.",
     assignEachPhoto: "Asigna un estilo de iluminación a cada foto.",
     nPicked: "{n} elegido(s)",
     optionalTap: "opcional — toca para ver",

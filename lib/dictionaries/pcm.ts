@@ -161,6 +161,7 @@ const pcm: AppDictionary = {
     uploadOneToTen: "Upload between 1 and 10 photos.",
     pickLookThenUpload: "Pick one look now, e go work for every photo wey you upload. You fit change any photo later.",
     lightingPickedForAll: "Dat look go apply to every photo wey you upload. You fit change any photo later.",
+    lightingFollowsFirst: "Any photo wey you no set go follow di first look wey you pick. Tap any photo to give am different one.",
     assignEachPhoto: "Give each photo im own lighting style.",
     nPicked: "{n} picked",
     optionalTap: "optional — tap make you browse",

@@ -160,6 +160,7 @@ const en = {
     uploadOneToTen: "Upload between 1 and 10 photos.",
     pickLookThenUpload: "Pick a look now and it will be used for every photo you upload. You can change any photo afterwards.",
     lightingPickedForAll: "That look will be applied to every photo you upload. You can change any photo afterwards.",
+    lightingFollowsFirst: "Photos you do not set follow the first look you picked. Tap any photo to give it a different one.",
     assignEachPhoto: "Assign a lighting look to every photo.",
     nPicked: "{n} picked",
     optionalTap: "optional — tap to browse",

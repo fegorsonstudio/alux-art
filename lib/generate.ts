@@ -3011,9 +3011,16 @@ export async function startGenerationWorker(
         // Manual per-photo lighting: this photo's assigned creator look overrides
         // the single rig. Keyed by the source photo's storagePath (stable mapping).
         const upgradeSrc = enhanceSources[slot - 1];
-        const perPhotoLighting = upgradeSrc?.storagePath
-          ? enhanceSel.lightingByPath?.[upgradeSrc.storagePath]?.directive
+        // A photo with no look of its own follows the first look in the booking.
+        // The checkout fills this in before sending, but the rule belongs here
+        // too: one look chosen for a ten-photo set must reach all ten however
+        // the booking was made.
+        const firstPickedLighting = enhanceSel.lightingByPath
+          ? Object.values(enhanceSel.lightingByPath)[0]?.directive
           : undefined;
+        const perPhotoLighting = (upgradeSrc?.storagePath
+          ? enhanceSel.lightingByPath?.[upgradeSrc.storagePath]?.directive
+          : undefined) ?? firstPickedLighting;
         slotPrompt = buildGearEqualizerPrompt(enhanceSel, backdropOk, perPhotoLighting) + buildGearReferenceMapText(backdropOk);
       } else if (hasBase && characterBaseUrl && rawSlotPrompt && typeof rawSlotPrompt === "object") {
         // Locked-base: assemble final prompt from scene fields + base anchor opener

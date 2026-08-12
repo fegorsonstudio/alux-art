@@ -161,6 +161,7 @@ const fr: AppDictionary = {
     uploadOneToTen: "Importez entre 1 et 10 photos.",
     pickLookThenUpload: "Choisissez un rendu maintenant : il sera applique a toutes vos photos. Vous pourrez le changer photo par photo ensuite.",
     lightingPickedForAll: "Ce rendu sera applique a toutes les photos que vous importez. Vous pourrez le changer photo par photo ensuite.",
+    lightingFollowsFirst: "Les photos que vous ne réglez pas reprennent le premier rendu choisi. Touchez une photo pour lui en donner un autre.",
     assignEachPhoto: "Attribuez un style d'éclairage à chaque photo.",
     nPicked: "{n} choisi(s)",
     optionalTap: "optionnel — touchez pour parcourir",
