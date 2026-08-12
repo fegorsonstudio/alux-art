@@ -155,6 +155,7 @@ const es: AppDictionary = {
     nothingPicked: "Nada seleccionado",
     pickSomethingToExtract: "Elige al menos una cosa",
     upgradeHintAny: "Sube el numero de fotos que quieras, de 1 a 10 — pagas por foto.",
+    upgradeCropHint: "Recorta cada foto a {ratio} antes de subirla — la misma forma que elegiste arriba. Una foto con otra forma se recortara para encajar y puedes perder parte del encuadre.",
     uploadOneToTen: "Sube entre 1 y 10 fotos.",
     pickLookThenUpload: "Elige un estilo ahora y se usara en todas las fotos que subas. Podras cambiar cada foto despues.",
     lightingPickedForAll: "Ese estilo se aplicara a todas las fotos que subas. Podras cambiar cada foto despues.",

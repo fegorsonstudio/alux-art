@@ -1361,6 +1361,127 @@ export default function CheckoutPanel({
               </div>
             </div>
           )}
+
+          <div className={styles.divider} />
+
+          {/* Identity photos — deliberately NOT collapsible: this is the one step
+              every buyer must complete, so the upload button is always on screen. */}
+          <div style={{ flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+              <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>
+                📷 {photoUpgradeActive ? t("photosToUpgrade") : t("yourIdentityPhotos")}
+              </span>
+              <span style={{
+                fontSize: "0.72rem",
+                fontWeight: uploadCountBad ? 700 : 500,
+                color: uploadCountBad ? "#c0392b" : undefined,
+                opacity: uploadCountBad ? 1 : 0.65,
+              }}>
+                {allIdentityRefs.length > 0 ? t("nSelected", { n: allIdentityRefs.length }) : t("required")}
+              </span>
+            </div>
+            {photoUpgradeActive ? (
+              <>
+                <p className={styles.sectionHint}>{t("upgradeHintAny")}</p>
+                {/* Names the ratio they actually picked. A generic "crop your
+                    photos" tells them nothing they can act on. */}
+                <p className={styles.sectionHint} style={{ fontWeight: 600 }}>
+                  {t("upgradeCropHint", { ratio: upgradeAspect })}
+                </p>
+                {uploadCountBad && (
+                  <p className={styles.sectionHint} style={{ fontWeight: 600, color: "#c0392b" }}>
+                    {t("uploadOneToTen")}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className={styles.sectionHint}>{t("identityHint1")}</p>
+                <p className={styles.sectionHint}>{t("identityHint2")}</p>
+              </>
+            )}
+
+            {savedRefs.length > 0 && (
+              <>
+                <div className={styles.savedGrid}>
+                  {savedRefs.map(ref => (
+                    <button
+                      key={ref.id}
+                      type="button"
+                      className={`${styles.savedThumb} ${selectedSaved.has(ref.id) ? styles.savedThumbSelected : ""}`}
+                      onClick={() => setSelectedSaved(prev => {
+                        const next = new Set(prev);
+                        if (next.has(ref.id)) next.delete(ref.id); else next.add(ref.id);
+                        return next;
+                      })}
+                    >
+                      <ImagePreview src={ref.url} alt={ref.name} className={styles.savedImg} preferredWidth={120} />
+                      {selectedSaved.has(ref.id) && <div className={styles.selectedTick}>✓</div>}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className={styles.clearBtn}
+                  onClick={clearIdentityImages}
+                  disabled={clearing}
+                >
+                  {clearing ? t("clearing") : t("clearSaved")}
+                </button>
+              </>
+            )}
+
+            <div className={styles.uploadRow}>
+              <button type="button" className={styles.uploadBtn} onClick={() => identityInputRef.current?.click()}>
+                {t("uploadNew")}
+              </button>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                ref={identityInputRef}
+                className={styles.hidden}
+                onChange={e => { if (e.target.files) addIdentityFiles(e.target.files); e.target.value = ""; }}
+              />
+            </div>
+
+            {newUploads.length > 0 && (
+              <div className={styles.uploadGrid}>
+                {newUploads.map(u => (
+                  <div key={u.localId} className={styles.uploadItem}>
+                    <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                    {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
+                    {u.error && <div className={styles.uploadError}>{u.error}</div>}
+                    <button type="button" className={styles.removeBtn} onClick={() => setNewUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!photoUpgradeActive && (
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, cursor: "pointer", fontSize: "0.85rem", lineHeight: 1.4 }}>
+                <input
+                  type="checkbox"
+                  checked={noSmile}
+                  onChange={e => setNoSmile(e.target.checked)}
+                  style={{ marginTop: 2 }}
+                />
+                <span>
+                  <strong>{t("noSmiles")}</strong> {t("noSmilesDesc")}
+                  {noSmile && <span style={{ display: "block", opacity: 0.75 }}>{t("noSmilesNote")}</span>}
+                </span>
+              </label>
+            )}
+
+            {allIdentityRefs.length === 0 && !(signedOut && newUploads.length > 0) && (
+              <p className={styles.identityWarn}>{t("identityWarn")}</p>
+            )}
+            {signedOut && newUploads.length > 0 && (
+              <p className={styles.sectionHint} style={{ color: "#2f8e9a", fontWeight: 600 }}>
+                {newUploads.length === 1 ? t("photosReadyOne") : t("photosReadyMany", { n: newUploads.length })}
+              </p>
+            )}
+          </div>
           {/* Package picker */}
           {!perImagePricing && pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
@@ -2277,121 +2398,6 @@ export default function CheckoutPanel({
           </Collapse>
           )}
 
-          <div className={styles.divider} />
-
-          {/* Identity photos — deliberately NOT collapsible: this is the one step
-              every buyer must complete, so the upload button is always on screen. */}
-          <div style={{ flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>
-                📷 {photoUpgradeActive ? t("photosToUpgrade") : t("yourIdentityPhotos")}
-              </span>
-              <span style={{
-                fontSize: "0.72rem",
-                fontWeight: uploadCountBad ? 700 : 500,
-                color: uploadCountBad ? "#c0392b" : undefined,
-                opacity: uploadCountBad ? 1 : 0.65,
-              }}>
-                {allIdentityRefs.length > 0 ? t("nSelected", { n: allIdentityRefs.length }) : t("required")}
-              </span>
-            </div>
-            {photoUpgradeActive ? (
-              <>
-                <p className={styles.sectionHint}>{t("upgradeHintAny")}</p>
-                {uploadCountBad && (
-                  <p className={styles.sectionHint} style={{ fontWeight: 600, color: "#c0392b" }}>
-                    {t("uploadOneToTen")}
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <p className={styles.sectionHint}>{t("identityHint1")}</p>
-                <p className={styles.sectionHint}>{t("identityHint2")}</p>
-              </>
-            )}
-
-            {savedRefs.length > 0 && (
-              <>
-                <div className={styles.savedGrid}>
-                  {savedRefs.map(ref => (
-                    <button
-                      key={ref.id}
-                      type="button"
-                      className={`${styles.savedThumb} ${selectedSaved.has(ref.id) ? styles.savedThumbSelected : ""}`}
-                      onClick={() => setSelectedSaved(prev => {
-                        const next = new Set(prev);
-                        if (next.has(ref.id)) next.delete(ref.id); else next.add(ref.id);
-                        return next;
-                      })}
-                    >
-                      <ImagePreview src={ref.url} alt={ref.name} className={styles.savedImg} preferredWidth={120} />
-                      {selectedSaved.has(ref.id) && <div className={styles.selectedTick}>✓</div>}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className={styles.clearBtn}
-                  onClick={clearIdentityImages}
-                  disabled={clearing}
-                >
-                  {clearing ? t("clearing") : t("clearSaved")}
-                </button>
-              </>
-            )}
-
-            <div className={styles.uploadRow}>
-              <button type="button" className={styles.uploadBtn} onClick={() => identityInputRef.current?.click()}>
-                {t("uploadNew")}
-              </button>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                ref={identityInputRef}
-                className={styles.hidden}
-                onChange={e => { if (e.target.files) addIdentityFiles(e.target.files); e.target.value = ""; }}
-              />
-            </div>
-
-            {newUploads.length > 0 && (
-              <div className={styles.uploadGrid}>
-                {newUploads.map(u => (
-                  <div key={u.localId} className={styles.uploadItem}>
-                    <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
-                    {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
-                    {u.error && <div className={styles.uploadError}>{u.error}</div>}
-                    <button type="button" className={styles.removeBtn} onClick={() => setNewUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!photoUpgradeActive && (
-              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, cursor: "pointer", fontSize: "0.85rem", lineHeight: 1.4 }}>
-                <input
-                  type="checkbox"
-                  checked={noSmile}
-                  onChange={e => setNoSmile(e.target.checked)}
-                  style={{ marginTop: 2 }}
-                />
-                <span>
-                  <strong>{t("noSmiles")}</strong> {t("noSmilesDesc")}
-                  {noSmile && <span style={{ display: "block", opacity: 0.75 }}>{t("noSmilesNote")}</span>}
-                </span>
-              </label>
-            )}
-
-            {allIdentityRefs.length === 0 && !(signedOut && newUploads.length > 0) && (
-              <p className={styles.identityWarn}>{t("identityWarn")}</p>
-            )}
-            {signedOut && newUploads.length > 0 && (
-              <p className={styles.sectionHint} style={{ color: "#2f8e9a", fontWeight: 600 }}>
-                {newUploads.length === 1 ? t("photosReadyOne") : t("photosReadyMany", { n: newUploads.length })}
-              </p>
-            )}
-          </div>
 
           <div className={styles.divider} />
 

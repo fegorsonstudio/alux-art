@@ -155,6 +155,7 @@ const fr: AppDictionary = {
     nothingPicked: "Rien de selectionne",
     pickSomethingToExtract: "Choisissez au moins un element",
     upgradeHintAny: "Importez de 1 a 10 photos, autant que vous voulez — le prix est par photo.",
+    upgradeCropHint: "Recadrez chaque photo en {ratio} avant l'envoi — le format choisi ci-dessus. Une photo d'un autre format sera recadree et vous risquez de perdre une partie du cadre.",
     uploadOneToTen: "Importez entre 1 et 10 photos.",
     pickLookThenUpload: "Choisissez un rendu maintenant : il sera applique a toutes vos photos. Vous pourrez le changer photo par photo ensuite.",
     lightingPickedForAll: "Ce rendu sera applique a toutes les photos que vous importez. Vous pourrez le changer photo par photo ensuite.",

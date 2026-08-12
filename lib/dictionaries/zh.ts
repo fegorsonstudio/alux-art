@@ -155,6 +155,7 @@ const zh: AppDictionary = {
     nothingPicked: "尚未选择",
     pickSomethingToExtract: "请至少选择一项",
     upgradeHintAny: "上传任意数量的照片，1 到 10 张，按张计费。",
+    upgradeCropHint: "上传前请先把每张照片裁成 {ratio}，与上面选择的比例一致。比例不同的照片会被裁切，可能会丢失部分画面。",
     uploadOneToTen: "请上传 1 到 10 张照片。",
     pickLookThenUpload: "现在选择一种光效，将应用到你上传的每张照片。之后可以单独更改任意一张。",
     lightingPickedForAll: "该光效将应用到你上传的每张照片。之后可以单独更改任意一张。",

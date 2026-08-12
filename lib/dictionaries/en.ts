@@ -154,6 +154,7 @@ const en = {
     nothingPicked: "Nothing picked yet",
     pickSomethingToExtract: "Pick at least one thing to extract",
     upgradeHintAny: "Upload any number of photos from 1 to 10 — you pay per photo.",
+    upgradeCropHint: "Crop every photo to {ratio} first — the same shape you picked above. A photo of a different shape gets cropped to fit, and you can lose part of the frame.",
     uploadOneToTen: "Upload between 1 and 10 photos.",
     pickLookThenUpload: "Pick a look now and it will be used for every photo you upload. You can change any photo afterwards.",
     lightingPickedForAll: "That look will be applied to every photo you upload. You can change any photo afterwards.",

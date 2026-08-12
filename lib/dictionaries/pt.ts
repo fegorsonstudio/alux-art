@@ -155,6 +155,7 @@ const pt: AppDictionary = {
     nothingPicked: "Nada selecionado",
     pickSomethingToExtract: "Escolha pelo menos um item",
     upgradeHintAny: "Envie quantas fotos quiser, de 1 a 10 — paga por foto.",
+    upgradeCropHint: "Corte cada foto para {ratio} antes de enviar — o mesmo formato que escolheu acima. Uma foto com outro formato sera cortada e pode perder parte do enquadramento.",
     uploadOneToTen: "Envie entre 1 e 10 fotos.",
     pickLookThenUpload: "Escolha um visual agora e ele sera usado em todas as fotos que enviar. Pode alterar cada foto depois.",
     lightingPickedForAll: "Esse visual sera aplicado a todas as fotos que enviar. Pode alterar cada foto depois.",

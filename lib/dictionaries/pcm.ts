@@ -155,6 +155,7 @@ const pcm: AppDictionary = {
     nothingPicked: "You never pick anything",
     pickSomethingToExtract: "Pick at least one thing",
     upgradeHintAny: "Upload any number of photo from 1 to 10 — you go pay per photo.",
+    upgradeCropHint: "Crop every photo to {ratio} first — the same shape wey you pick up there. If e no be that shape, e go cut am to fit, and you fit lose part of the picture.",
     uploadOneToTen: "Upload between 1 and 10 photos.",
     pickLookThenUpload: "Pick one look now, e go work for every photo wey you upload. You fit change any photo later.",
     lightingPickedForAll: "Dat look go apply to every photo wey you upload. You fit change any photo later.",
