@@ -98,6 +98,7 @@ const es: AppDictionary = {
     backdrop: "Fondo",
     tapToChoose: "toca para elegir",
     chooseBackdrop: "Elige tu fondo",
+    seeMoreBackdrops: "Ver {n} fondos más",
     backdropSingle: "Tu imagen se tomará con el fondo que elijas.",
     backdropWhole: "Elige un fondo para toda la sesión. Toca otro para cambiar.",
     selectedTick: "✓ seleccionado",

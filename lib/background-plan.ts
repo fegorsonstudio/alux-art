@@ -36,7 +36,16 @@ export function categoryAllowsBackgroundOptions(category: string | null | undefi
 
 // Raised from 6 → 12 so templates can offer canvas backdrops AND a seamless-paper
 // color range (e.g. Nursing Induction: 3 canvases + 6 seamless colors).
-export const MAX_BACKGROUND_OPTIONS = 12;
+//
+// Then 12 → 40: the studio's backdrop library outgrew what one template could
+// hold. The buyer is NOT shown 40 at once — checkout renders the first 12 and
+// hides the rest behind "See more", so the default page stays as short as it
+// was while a creator can still offer their whole range.
+//
+// NOTE: app/creator-dashboard/page.tsx keeps its own MAX_BG_OPTIONS for the
+// editor's cap. The two must agree — this sanitizer slices on every save, so a
+// higher number there would silently discard backdrops the creator had added.
+export const MAX_BACKGROUND_OPTIONS = 40;
 
 // ── Server-side sanitizer (templates POST/PATCH) ─────────────────────────────
 // Returns null for "no options" (stored as SQL NULL). Drops invalid items.

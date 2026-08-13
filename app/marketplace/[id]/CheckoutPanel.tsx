@@ -352,6 +352,13 @@ export default function CheckoutPanel({
   // Custom slots (flag, mugshot, bowl) don't take part in the backdrop distribution:
   // buyers only place their NORMAL portraits across backdrops.
   const bgOptions = template.backgroundOptions ?? [];
+  // A template may now carry up to 40 backdrops. Showing all of them turns
+  // checkout into a scrolling contact sheet, so only the first 12 render until
+  // the buyer asks for the rest.
+  const BG_VISIBLE = 12;
+  const [bgShowAll, setBgShowAll] = useState(false);
+  const bgVisible = (list: typeof bgOptions) => (bgShowAll ? list : list.slice(0, BG_VISIBLE));
+  const bgHiddenCount = (list: typeof bgOptions) => Math.max(0, list.length - BG_VISIBLE);
   const bgExemptCount = (flagShotAvailable && flagShotOn ? 1 : 0)
     + (mugshotAvailable && mugshotOn ? 1 : 0)
     + (bowlAvailable && bowlOn ? 1 : 0)
@@ -1579,7 +1586,7 @@ export default function CheckoutPanel({
                     {bgTarget === 1 ? t("backdropSingle") : t("backdropWhole")}
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                    {bgOptions.map(o => {
+                    {bgVisible(bgOptions).map(o => {
                       const picked = (bgAlloc[o.id] ?? 0) > 0;
                       return (
                         <button
@@ -1607,6 +1614,15 @@ export default function CheckoutPanel({
                       );
                     })}
                   </div>
+                  {!bgShowAll && bgHiddenCount(bgOptions) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setBgShowAll(true)}
+                      style={{ marginTop: 10, background: "none", border: "none", padding: 0, color: "#2f8e9a", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
+                    >
+                      {t("seeMoreBackdrops", { n: bgHiddenCount(bgOptions) })}
+                    </button>
+                  )}
                   {bgTarget >= 2 && (
                     <button
                       type="button"
@@ -1640,7 +1656,7 @@ export default function CheckoutPanel({
                       {bgAllocTotal === bgTarget ? `${bgTarget} / ${bgTarget}` : t("nLeft", { n: bgTarget - bgAllocTotal })}
                     </span>
                   </div>
-                  {bgOptions.map(o => {
+                  {bgVisible(bgOptions).map(o => {
                     const count = bgAlloc[o.id] ?? 0;
                     return (
                       <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
@@ -1680,6 +1696,15 @@ export default function CheckoutPanel({
                       </div>
                     );
                   })}
+                  {!bgShowAll && bgHiddenCount(bgOptions) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setBgShowAll(true)}
+                      style={{ marginTop: 6, background: "none", border: "none", padding: 0, color: "#2f8e9a", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
+                    >
+                      {t("seeMoreBackdrops", { n: bgHiddenCount(bgOptions) })}
+                    </button>
+                  )}
                   {bgAllocTotal !== bgTarget && (
                     <p className={styles.sectionHint} style={{ color: "#e5484d" }}>
                       {t("placeAll", { n: bgTarget })}
@@ -1880,7 +1905,7 @@ export default function CheckoutPanel({
                     >
                       {enhanceBackdrop === null ? "✓ " : ""}{t("keepMyBackground")}
                     </button>
-                    {bgOptions.filter(o => o.imageUrl).map(o => {
+                    {bgVisible(bgOptions.filter(o => o.imageUrl)).map(o => {
                       const on = enhanceBackdrop === o.id;
                       return (
                         <button
@@ -1900,6 +1925,21 @@ export default function CheckoutPanel({
                         </button>
                       );
                     })}
+
+                    {!bgShowAll && bgHiddenCount(bgOptions.filter(o => o.imageUrl)) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setBgShowAll(true)}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          gap: 4, cursor: "pointer", padding: 4, minWidth: 64, minHeight: 78,
+                          border: "2px dashed rgba(127,127,127,0.4)", borderRadius: 8,
+                          fontSize: "0.72rem", textAlign: "center", background: "none", color: "inherit",
+                        }}
+                      >
+                        {t("seeMoreBackdrops", { n: bgHiddenCount(bgOptions.filter(o => o.imageUrl)) })}
+                      </button>
+                    )}
 
                     {/* The buyer's own plate. One per shoot — it is applied to
                         every photo in the booking, same as a creator's. */}

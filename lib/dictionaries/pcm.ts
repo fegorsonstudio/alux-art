@@ -98,6 +98,7 @@ const pcm: AppDictionary = {
     backdrop: "Backdrop",
     tapToChoose: "tap make you choose",
     chooseBackdrop: "Choose your backdrop",
+    seeMoreBackdrops: "See {n} more backdrops",
     backdropSingle: "Na di backdrop wey you pick dem go use shoot your image.",
     backdropWhole: "Pick one backdrop for your whole shoot. Tap anoda one to switch.",
     selectedTick: "✓ selected",

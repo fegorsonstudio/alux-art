@@ -160,7 +160,12 @@ interface BackgroundOptionDraft {
   error?: string;
 }
 
-const MAX_BG_OPTIONS = 12;
+// Must match MAX_BACKGROUND_OPTIONS in lib/background-plan.ts — that sanitizer
+// slices background_options on every save, so a higher number here would let a
+// creator add backdrops the server then silently throws away. Checkout shows
+// the first 12 and hides the rest behind "See more", so a full list does not
+// make the buyer's page longer.
+const MAX_BG_OPTIONS = 40;
 
 // Buyer choice groups — pick-one-per-group styling options (all categories).
 // Props are multi-select: buyers pick as many as they want (or none).

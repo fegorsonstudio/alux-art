@@ -98,6 +98,7 @@ const ar: AppDictionary = {
     backdrop: "الخلفية",
     tapToChoose: "اضغط للاختيار",
     chooseBackdrop: "اختر خلفيتك",
+    seeMoreBackdrops: "عرض {n} خلفيات إضافية",
     backdropSingle: "ستُلتقط صورتك على الخلفية التي تختارها.",
     backdropWhole: "اختر خلفية واحدة لكامل الجلسة. اضغط على أخرى للتبديل.",
     selectedTick: "✓ محدد",

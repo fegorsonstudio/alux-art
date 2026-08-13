@@ -98,6 +98,7 @@ const zh: AppDictionary = {
     backdrop: "背景板",
     tapToChoose: "点按选择",
     chooseBackdrop: "选择你的背景板",
+    seeMoreBackdrops: "查看另外 {n} 个背景",
     backdropSingle: "你的照片将在你选的背景板上拍摄。",
     backdropWhole: "为整场拍摄选一块背景板。点按其他可切换。",
     selectedTick: "✓ 已选",

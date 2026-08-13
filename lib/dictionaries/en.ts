@@ -97,6 +97,7 @@ const en = {
     backdrop: "Backdrop",
     tapToChoose: "tap to choose",
     chooseBackdrop: "Choose your backdrop",
+    seeMoreBackdrops: "See {n} more backdrops",
     backdropSingle: "Your image will be shot on the backdrop you pick.",
     backdropWhole: "Pick one backdrop for your whole shoot. Tap another to switch.",
     selectedTick: "✓ selected",
