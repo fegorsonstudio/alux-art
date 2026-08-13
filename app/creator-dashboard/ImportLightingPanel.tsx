@@ -34,22 +34,49 @@ export default function ImportLightingPanel({ onImported }: { onImported?: () =>
   const [price, setPrice] = useState(1000);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // "" = still loading, "none" = not a creator (stay silent), anything else = show it.
+  const [loadError, setLoadError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // Why this reports instead of vanishing: the panel used to render null on any
+  // failed fetch. The API route then went missing from a deploy for weeks, the
+  // fetch 404'd, and every creator saw an empty space where the offer should be
+  // — no error, nothing in a console anyone was watching, and no way to tell it
+  // apart from "you are not a creator". A feature that fails invisibly is worse
+  // than one that fails loudly.
+  //
+  // 403 is the exception and stays silent: it means the viewer is not a creator,
+  // and there is nothing wrong for them to see.
   useEffect(() => {
     let alive = true;
     fetch("/api/creator-dashboard/import-lighting")
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!alive || !d?.offer) return;
+      .then(async r => {
+        if (!alive) return;
+        if (r.status === 403) { setLoadError("none"); return; }
+        if (!r.ok) { setLoadError(`The lighting offer could not be loaded (error ${r.status}).`); return; }
+        const d = await r.json().catch(() => null);
+        if (!d?.offer) { setLoadError("The lighting offer could not be loaded."); return; }
         setState(d);
         setPrice(d.imported?.priceNgn ?? d.offer.maxPriceNgn);
       })
-      .catch(() => {});
+      .catch(() => { if (alive) setLoadError("The lighting offer could not be loaded. Check your connection."); });
     return () => { alive = false; };
   }, []);
 
-  if (!state) return null;
+  if (!state) {
+    if (!loadError || loadError === "none") return null;
+    return (
+      <section style={{
+        border: "1px solid rgba(229,72,77,.4)", borderRadius: 14, padding: "16px 18px",
+        margin: "18px 0", fontSize: ".9rem", lineHeight: 1.45,
+      }}>
+        <strong>Sell our lighting looks from your own store</strong>
+        <p style={{ margin: "6px 0 0", opacity: .8 }}>
+          {loadError} Nothing is wrong with your account — reload the page, and tell us if it keeps happening.
+        </p>
+      </section>
+    );
+  }
   const { offer, payoutReady, imported } = state;
   const margin = Math.max(0, price - offer.costNgn);
   const shareUrl = imported ? `${typeof window !== "undefined" ? window.location.origin : ""}${imported.link}` : "";
