@@ -397,6 +397,40 @@ export const ASSET_KINDS: AssetKind[] = [
       "room's own lighting and colour rather than replacing it with studio light.",
   },
   {
+    // Sibling of "backdrop", not a replacement for it. Backdrop empties a
+    // scene of PEOPLE; this also strips everything written or printed in it.
+    // They are separate ticks because a buyer photographing their own studio
+    // wall wants the first, and a buyer lifting a venue, shopfront or hall —
+    // where the signage names someone else's business — needs the second.
+    id: "clean_scene",
+    label: "Clear the scene",
+    blurb: "Every person, sign and word removed",
+    tag: "BACKGROUND",
+    output: "image" as const,
+    angles: [A("scene", "Scene",
+      "Show the full setting as an empty space, from the same camera position and lens as the source photograph.")],
+    directive:
+      "Extract the environment as a CLEAN PLATE: keep the setting exactly as " +
+      "photographed — the walls, floor, ceiling, furniture, decor, depth and the " +
+      "light in the room — and remove BOTH of the following, reconstructing " +
+      "whatever each was standing in front of or printed on. " +
+      "(1) EVERY PERSON, including partly visible limbs, reflections of people " +
+      "in mirrors and glass, and any shadow a person casts. " +
+      "(2) EVERY PIECE OF TEXT AND GRAPHIC APPLIED TO THE SCENE: signage, " +
+      "banners, posters, printed backdrops, name boards, price lists, menus, " +
+      "shop fascias, vehicle liveries, logos, brand marks, screen and monitor " +
+      "content, and any watermark, caption or timestamp burned into the " +
+      "photograph. Where text sat on a surface, rebuild that surface as it would " +
+      "look unmarked — the same material, colour, texture, wear and perspective " +
+      "— rather than blurring or smearing it, and never replace it with " +
+      "different or invented lettering. " +
+      "Architecture, perspective, scale and the direction and colour of the " +
+      "existing light must be unchanged. Like the backdrop asset, this one is " +
+      "the environment itself, so the PRESENTATION rule below does not apply " +
+      "here: keep the room's own lighting and colour rather than replacing them " +
+      "with studio light.",
+  },
+  {
     id: "lighting",
     label: "Lighting recipe",
     blurb: "The lighting setup, written as a reusable recipe",
