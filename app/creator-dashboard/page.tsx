@@ -999,9 +999,24 @@ function CreatorDashboard() {
   const libraryAssets: LibraryAsset[] = (() => {
     const seen = new Set<string>();
     const out: LibraryAsset[] = [];
+    // Signed thumbnails from EVERY template, not just the one being scanned.
+    // The same backdrop is reused across several templates but only carries a
+    // template_images row on some of them, and an asset is claimed by the first
+    // template that mentions it. Looking only at that template meant a backdrop
+    // claimed by one without the row was pushed with an empty preview, dropped
+    // by the filter at the end, and — already in `seen` — could never be added
+    // again by a template that did have the thumbnail. 42 of 73 backdrops were
+    // invisible in the picker because of it.
+    const signedByPath = new Map<string, string>();
     for (const t of templates) {
-      const imgs = t.template_images ?? [];
-      const thumb = (p?: string) => (p ? imgs.find(i => i.storage_path === p)?.signed_url ?? "" : "");
+      for (const i of (t.template_images ?? [])) {
+        if (i.storage_path && i.signed_url && !signedByPath.has(i.storage_path)) {
+          signedByPath.set(i.storage_path, i.signed_url);
+        }
+      }
+    }
+    for (const t of templates) {
+      const thumb = (p?: string) => (p ? signedByPath.get(p) ?? "" : "");
       for (const g of (Array.isArray(t.option_groups) ? t.option_groups : [])) {
         for (const o of (g.options ?? [])) {
           if (o.kind !== "photo" || !o.imagePath || seen.has(o.imagePath)) continue;
@@ -1012,7 +1027,12 @@ function CreatorDashboard() {
       for (const o of (Array.isArray(t.background_options) ? t.background_options : [])) {
         if (o.kind !== "photo" || !o.imagePath || seen.has(o.imagePath)) continue;
         seen.add(o.imagePath);
-        out.push({ imagePath: o.imagePath, imageBucket: o.imageBucket ?? "template-images", name: o.name, type: "background", preview: thumb(o.imagePath), sourceTitle: t.title, description: o.description });
+        // Same fallback the plates and poses below rely on: template-images is
+        // a public bucket, so the proxy URL renders without a signed row. 15
+        // backdrops have no template_images row anywhere and were otherwise
+        // dropped by the preview filter.
+        const bucket = o.imageBucket ?? "template-images";
+        out.push({ imagePath: o.imagePath, imageBucket: bucket, name: o.name, type: "background", preview: thumb(o.imagePath) || mediaUrl(bucket, o.imagePath), sourceTitle: t.title, description: o.description });
       }
       // Custom-slot plates and signature poses don't need a template_images row —
       // template-images is a public bucket, so the proxy URL renders directly.
