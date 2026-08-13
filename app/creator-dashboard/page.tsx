@@ -1055,6 +1055,37 @@ function CreatorDashboard() {
     return out.filter(a => a.preview);
   })();
 
+  /**
+   * Every library backdrop onto this template in one click.
+   *
+   * The same idea as the lighting-library import, minus its hard part: those
+   * looks may belong to another creator, so the server copies each image into
+   * the caller's own prefix first. Backdrops in this library are already the
+   * creator's own, so there is nothing to copy and nothing to ask the server —
+   * it is the picker's own add, applied to the whole list at once.
+   *
+   * Stops at MAX_BG_OPTIONS. Returns how many went on and how many did not fit
+   * so the caller can say so rather than silently dropping the rest.
+   */
+  const addAllLibraryBackdrops = (): { added: number; skipped: number } => {
+    const candidates = libraryAssets.filter(a => a.type === "background" && a.imagePath);
+    let added = 0, skipped = 0;
+    setBackgroundOptions(prev => {
+      const have = new Set(prev.map(o => o.imagePath));
+      const fresh = candidates.filter(a => !have.has(a.imagePath));
+      const room = Math.max(0, MAX_BG_OPTIONS - prev.length);
+      added = Math.min(room, fresh.length);
+      skipped = fresh.length - added;
+      if (added === 0) return prev;
+      return [...prev, ...fresh.slice(0, added).map(a => ({
+        id: crypto.randomUUID(), name: a.name, kind: "photo" as const,
+        description: a.description ?? "", imagePath: a.imagePath,
+        preview: a.preview, uploading: false,
+      }))];
+    });
+    return { added, skipped };
+  };
+
   const addLibraryAsset = (asset: LibraryAsset) => {
     if (!libraryPicker) return;
     if (libraryPicker.target === "background") {
@@ -2368,6 +2399,24 @@ function CreatorDashboard() {
                       onClick={() => { setLibraryFilter("background"); setLibraryPicker({ target: "background" }); }}
                     >
                       📚 Add from library
+                    </button>
+                  )}
+                  {/* Bulk version of the button above — adding backdrops one at a
+                      time is the complaint this answers. */}
+                  {backgroundOptions.length < MAX_BG_OPTIONS
+                    && libraryAssets.some(a => a.type === "background"
+                      && !backgroundOptions.some(o => o.imagePath === a.imagePath)) && (
+                    <button
+                      type="button"
+                      className={styles.addSceneBtn}
+                      onClick={() => {
+                        const { added, skipped } = addAllLibraryBackdrops();
+                        setFormError(skipped > 0
+                          ? `Added ${added} backdrop${added === 1 ? "" : "s"}. ${skipped} did not fit — a template can hold ${MAX_BG_OPTIONS}.`
+                          : "");
+                      }}
+                    >
+                      ⚡ Add all backdrops
                     </button>
                   )}
                   {backgroundOptions.length < MAX_BG_OPTIONS && (
