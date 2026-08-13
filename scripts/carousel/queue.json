@@ -427,12 +427,12 @@
   {
     "id": "lw-d2-fegorson-howto",
     "account": "fegorson_studio",
-    "caption": "Gels, without owning a single gel.\n\nColour contrast that used to mean two lights and two sheets.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
+    "caption": "One hard light. That's the whole difference.\n\nThe kind of key that carves a face instead of flattening it.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
     "slides": [
       {
         "type": "cover",
         "eyebrow": "HOW IT WORKS",
-        "title": "Gels, without owning\na single gel.",
+        "title": "One hard light.\nThat's the whole difference.",
         "sub": "Colour contrast that used to mean two lights and two sheets."
       },
       {
@@ -455,9 +455,9 @@
       {
         "type": "beforeafter",
         "title": "That's the whole job.",
-        "body": "“Golden Hour Backlight” applied to a photo that was already taken.",
-        "before": "scripts/carousel/shots/lighting/golden-hour-backlight-before.jpg",
-        "after": "scripts/carousel/shots/lighting/golden-hour-backlight-after.jpg"
+        "body": "“Hard Key” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/hard-split-kicker-before.jpg",
+        "after": "scripts/carousel/shots/lighting/hard-key-after.jpg"
       },
       {
         "type": "cta",
