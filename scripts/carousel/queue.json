@@ -508,6 +508,13 @@
     "caption": "Fix a flat photo in one pass.\n\nFlat usually means no direction. Direction is what you're picking.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
     "slides": [
       {
+        "type": "beforeafter",
+        "title": "Same photo.\nNew light.",
+        "body": "“Overhead Spotlight Stage” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/overhead-spotlight-stage-before.jpg",
+        "after": "scripts/carousel/shots/lighting/overhead-spotlight-stage-after.jpg"
+      },
+      {
         "type": "cover",
         "eyebrow": "HOW IT WORKS",
         "title": "Fix a flat photo\nin one pass.",
@@ -529,13 +536,6 @@
           "Choose the shot size it was framed at",
           "Download it relit"
         ]
-      },
-      {
-        "type": "beforeafter",
-        "title": "That's the whole job.",
-        "body": "“Overhead Spotlight Stage” applied to a photo that was already taken.",
-        "before": "scripts/carousel/shots/lighting/overhead-spotlight-stage-before.jpg",
-        "after": "scripts/carousel/shots/lighting/overhead-spotlight-stage-after.jpg"
       },
       {
         "type": "cta",
@@ -586,6 +586,13 @@
     "caption": "The section names are the shortcut.\n\nDark Romantic, Golden Hour, Neon — pick the mood, not the physics.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
     "slides": [
       {
+        "type": "beforeafter",
+        "title": "Same photo.\nNew light.",
+        "body": "“Rising Fog” applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/rising-fog-before.jpg",
+        "after": "scripts/carousel/shots/lighting/rising-fog-after.jpg"
+      },
+      {
         "type": "cover",
         "eyebrow": "HOW IT WORKS",
         "title": "The section names\nare the shortcut.",
@@ -607,13 +614,6 @@
           "Choose the shot size it was framed at",
           "Download it relit"
         ]
-      },
-      {
-        "type": "beforeafter",
-        "title": "That's the whole job.",
-        "body": "“Rising Fog” applied to a photo that was already taken.",
-        "before": "scripts/carousel/shots/lighting/rising-fog-before.jpg",
-        "after": "scripts/carousel/shots/lighting/rising-fog-after.jpg"
       },
       {
         "type": "cta",
@@ -664,6 +664,13 @@
     "caption": "Before you upload: three quick checks.\n\nSharp, correctly framed, and big enough. The rest is the light.\n\nThe Gear Equalizer relights a photo you already have. ₦1,000 for one image.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #nigerianphotographer #lightroom #portraitphotography #aluxart",
     "slides": [
       {
+        "type": "beforeafter",
+        "title": "Same photo.\nNew light.",
+        "body": "One of 196 looks, applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/hard-split-kicker-before.jpg",
+        "after": "scripts/carousel/shots/lighting/magenta-stage-after.jpg"
+      },
+      {
         "type": "cover",
         "eyebrow": "HOW IT WORKS",
         "title": "Before you upload:\nthree quick checks.",
@@ -685,13 +692,6 @@
           "Choose the shot size it was framed at",
           "Download it relit"
         ]
-      },
-      {
-        "type": "beforeafter",
-        "title": "That's the whole job.",
-        "body": "One of 196 looks, applied to a photo that was already taken.",
-        "before": "scripts/carousel/shots/lighting/hard-split-kicker-before.jpg",
-        "after": "scripts/carousel/shots/lighting/magenta-stage-after.jpg"
       },
       {
         "type": "cta",
