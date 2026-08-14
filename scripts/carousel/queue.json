@@ -689,9 +689,9 @@
       {
         "type": "beforeafter",
         "title": "That's the whole job.",
-        "body": "“Opalescent Glow” applied to a photo that was already taken.",
-        "before": "scripts/carousel/shots/lighting/opalescent-glow-before.jpg",
-        "after": "scripts/carousel/shots/lighting/opalescent-glow-after.jpg"
+        "body": "One of 196 looks, applied to a photo that was already taken.",
+        "before": "scripts/carousel/shots/lighting/hard-split-kicker-before.jpg",
+        "after": "scripts/carousel/shots/lighting/magenta-stage-after.jpg"
       },
       {
         "type": "cta",
