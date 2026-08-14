@@ -1,0 +1,122 @@
+[
+  {
+    "id": "smoke-01-reveal",
+    "account": "fegorson_studio",
+    "caption": "Smoke you never had to buy.\n\nThis photo was already taken. The smoke, the glow behind her and the gold edge down her arm were added afterwards — by light, not by a machine.\n\n“Golden Rim in Smoke.” New in the archive. ₦1,000 for one photo, no subscription.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#nigerianphotographer #portraitphotography #studiolighting #photographylighting #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Smoke you never\nhad to buy.",
+        "body": "The same photograph, relit. Nothing in the frame moved.",
+        "before": "scripts/carousel/shots/lighting/golden-hour-backlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/golden-rim-in-smoke-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The smoke isn't real.",
+        "body": "It was put there after the photo was taken — lit from behind so it glows, and kept off her face so nothing about her changes."
+      },
+      {
+        "type": "text",
+        "title": "No machine.\nNo lights.\nNo prompts.",
+        "body": "And no asking a venue whether you're allowed to fill their room with smoke. Just *Alux Art* — no subscription, no monthly fee. You only pay for the photos you actually make."
+      },
+      {
+        "type": "text",
+        "title": "*₦1,000* for one photo.",
+        "body": "That is the whole price. Not a plan, not a trial, not a credit bundle you have to spend before it expires."
+      },
+      {
+        "type": "cta",
+        "title": "Put smoke in a photo you already took.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "smoke-02-permission",
+    "account": "fegorson_studio",
+    "caption": "Try firing a smoke machine in a hotel lobby.\n\nMost venues won't have it. Fire alarms, other people's events, and somebody has to clear the haze afterwards.\n\nSo put the smoke in later. Same photo, same dress, same moment — “Golden Rim in Smoke”, ₦1,000.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#lagosphotographer #abujaphotographer #portraitphotography #studiolighting #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "Alux Art",
+        "title": "Try firing a smoke\nmachine in a\nhotel lobby.",
+        "body": "Fire alarms. Other people's events. Somebody clearing the haze at midnight.",
+        "kicker": "There is another way"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "So add it afterwards.",
+        "body": "Shot in a normal studio. The smoke arrived later.",
+        "before": "scripts/carousel/shots/lighting/golden-hour-backlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/golden-rim-in-smoke-after.jpg"
+      },
+      {
+        "type": "text",
+        "title": "No machine.\nNo lights.\nNo prompts.",
+        "body": "And no asking a venue whether you're allowed to fill their room with smoke. Just *Alux Art* — no subscription, no monthly fee. You only pay for the photos you actually make."
+      },
+      {
+        "type": "text",
+        "title": "Nothing about her changed.",
+        "body": "Same face, same wrapper, same pose, same moment. Only the air around her is different — which is the only thing you were ever missing."
+      },
+      {
+        "type": "cta",
+        "title": "Put smoke in a photo you already took.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "smoke-03-archive",
+    "account": "fegorson_studio",
+    "caption": "New in the archive: “Golden Rim in Smoke.”\n\nAmber smoke lit from behind, a gold edge down the hair and shoulder, and the floor catching a warm pool of it.\n\nOne of 196 looks. Upload a photo you already shot, pick the look, download it relit. ₦1,000 per photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#photographylighting #portraitphotography #nigerianphotographer #lightroom #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "New in the archive",
+        "title": "Golden Rim\nin Smoke.",
+        "body": "Amber smoke lit from behind. A gold edge down the hair and shoulder. The floor catching a warm pool of it.",
+        "kicker": "One of 196 looks"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Before it existed,\nyou'd have hired a room.",
+        "body": "Now it is a photo you already have, and one choice.",
+        "before": "scripts/carousel/shots/lighting/golden-hour-backlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/golden-rim-in-smoke-after.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "Four steps.",
+        "items": [
+          "Upload the photo you already shot",
+          "Pick “Golden Rim in Smoke” from the list",
+          "Choose the shot size it was framed at",
+          "Download it relit"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "No machine.\nNo lights.\nNo prompts.",
+        "body": "And no asking a venue whether you're allowed to fill their room with smoke. Just *Alux Art* — no subscription, no monthly fee. You only pay for the photos you actually make."
+      },
+      {
+        "type": "cta",
+        "title": "Put smoke in a photo you already took.",
+        "body": "💬 Comment *LIGHT* and I'll send you the link.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  }
+]
