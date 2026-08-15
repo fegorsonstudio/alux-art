@@ -1,0 +1,116 @@
+[
+  {
+    "id": "tutorial-telegram",
+    "account": "telegram",
+    "caption": "HOW TO RELIGHT A PHOTO YOU ALREADY SHOT\n\nThis one was taken against a plain yellow wall. No smoke machine, no gels, no second flash — the wine background and the red edge were added afterwards, by light.\n\nThe five steps are in the images above:\n1. Pick your output size, and crop your photo to it first\n2. Upload the photo (1–10 at a time, you pay per photo)\n3. Pick from 196 looks, grouped by shot size\n4. Press and hold any look to preview it on YOUR photo\n5. Choose a backdrop if you want one, then generate\n\n₦1,000 per photo. No subscription — you pay for the photos you make.\n\n👉 aluxartandframes.shop",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 25%",
+        "title": "How I made this.",
+        "body": "A photo shot against a plain yellow wall, relit as “Wine Dark Backlight”. Step by step 👉",
+        "before": "scripts/carousel/shots/lighting/wine-dark-backlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/wine-dark-backlight-after.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "1. Pick the size first.",
+        "body": "It opens on *3:4*. Whatever you choose, crop your photo to that shape BEFORE you upload — a different shape gets cropped to fit and you can lose part of the frame.",
+        "image": "scripts/carousel/shots/tutorial-wine/step1-size.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "2. Upload the photo.",
+        "body": "One to ten photos, and you pay per photo. The looks are grouped by *headshot*, *waist-up* and *full body*, so you judge each one on the crop you actually shot.",
+        "image": "scripts/carousel/shots/tutorial-wine/step2b-upload.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "3. Pick a look.",
+        "body": "196 of them, each one named. This is where “Wine Dark Backlight” lives — under *Medium shots*, because that is the crop it was built for.",
+        "image": "scripts/carousel/shots/tutorial-wine/step3-look.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "4. Preview before you commit.",
+        "body": "Press and hold any look to see it against the original. *Drag to compare.* You are not guessing from a thumbnail.",
+        "image": "scripts/carousel/shots/tutorial-wine/step4-save.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "5. Backdrop, only if you want one.",
+        "body": "Keep your own background, pick a studio backdrop, or upload your own. Then *Pay & Generate* — ₦1,000 for one photo.",
+        "image": "scripts/carousel/shots/tutorial-wine/step5-result.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "That's the whole thing.",
+        "body": "No smoke machine, no second flash, no subscription. Open it and try one photo: *aluxartandframes.shop*",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  },
+  {
+    "id": "tutorial-whatsapp",
+    "account": "whatsapp",
+    "caption": "*How to relight a photo you already shot* 📸\n\nThe photo above was taken against a plain yellow wall. The wine background and the red edge on her arm were added afterwards — no smoke machine, no gels, no second flash.\n\nFive steps, all in the images:\n\n1️⃣ Pick your output size — crop your photo to that shape first\n2️⃣ Upload the photo (1 to 10, you pay per photo)\n3️⃣ Pick from 196 looks, grouped by headshot / waist-up / full body\n4️⃣ Press and hold a look to preview it on your own photo before choosing\n5️⃣ Add a backdrop if you want one, then generate\n\n*₦1,000 per photo.* No subscription, no monthly fee.\n\nTry it here 👉 https://aluxartandframes.shop",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 25%",
+        "title": "How I made this.",
+        "body": "A photo shot against a plain yellow wall, relit as “Wine Dark Backlight”. Step by step 👉",
+        "before": "scripts/carousel/shots/lighting/wine-dark-backlight-before.jpg",
+        "after": "scripts/carousel/shots/lighting/wine-dark-backlight-after.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "1. Pick the size first.",
+        "body": "It opens on *3:4*. Whatever you choose, crop your photo to that shape BEFORE you upload — a different shape gets cropped to fit and you can lose part of the frame.",
+        "image": "scripts/carousel/shots/tutorial-wine/step1-size.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "2. Upload the photo.",
+        "body": "One to ten photos, and you pay per photo. The looks are grouped by *headshot*, *waist-up* and *full body*, so you judge each one on the crop you actually shot.",
+        "image": "scripts/carousel/shots/tutorial-wine/step2b-upload.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "3. Pick a look.",
+        "body": "196 of them, each one named. This is where “Wine Dark Backlight” lives — under *Medium shots*, because that is the crop it was built for.",
+        "image": "scripts/carousel/shots/tutorial-wine/step3-look.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "4. Preview before you commit.",
+        "body": "Press and hold any look to see it against the original. *Drag to compare.* You are not guessing from a thumbnail.",
+        "image": "scripts/carousel/shots/tutorial-wine/step4-save.jpg"
+      },
+      {
+        "type": "shot",
+        "fit": "contain",
+        "title": "5. Backdrop, only if you want one.",
+        "body": "Keep your own background, pick a studio backdrop, or upload your own. Then *Pay & Generate* — ₦1,000 for one photo.",
+        "image": "scripts/carousel/shots/tutorial-wine/step5-result.jpg"
+      },
+      {
+        "type": "cta",
+        "title": "That's the whole thing.",
+        "body": "No smoke machine, no second flash, no subscription. Open it and try one photo: *aluxartandframes.shop*",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  }
+]
