@@ -123,6 +123,7 @@ const en = {
     pickCamera: "Pick a camera look to continue.",
     background: "Background",
     keepingYours: "keeping yours",
+    keepingYourLight: "keeping your light",
     swap: "swap",
     backgroundHint: "Keep your photo's own background (we relight it), or swap it for a studio backdrop.",
     keepMyBackground: "Keep my background",

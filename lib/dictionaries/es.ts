@@ -124,6 +124,7 @@ const es: AppDictionary = {
     pickCamera: "Elige un estilo de cámara para continuar.",
     background: "Fondo",
     keepingYours: "conservas el tuyo",
+    keepingYourLight: "conservando tu luz",
     swap: "cambiar",
     backgroundHint: "Conserva el fondo de tu foto (lo reiluminamos) o cámbialo por un fondo de estudio.",
     keepMyBackground: "Conservar mi fondo",

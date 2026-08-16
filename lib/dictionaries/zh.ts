@@ -124,6 +124,7 @@ const zh: AppDictionary = {
     pickCamera: "选择一种相机风格后继续。",
     background: "背景",
     keepingYours: "保留你的",
+    keepingYourLight: "保留你原本的光线",
     swap: "更换",
     backgroundHint: "保留照片原有背景（我们会重新打光），或换成棚拍背景板。",
     keepMyBackground: "保留我的背景",

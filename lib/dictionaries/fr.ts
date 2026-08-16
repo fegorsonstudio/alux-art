@@ -124,6 +124,7 @@ const fr: AppDictionary = {
     pickCamera: "Choisissez un rendu d'appareil pour continuer.",
     background: "Arrière-plan",
     keepingYours: "on garde le vôtre",
+    keepingYourLight: "on garde votre lumière",
     swap: "changer",
     backgroundHint: "Gardez l'arrière-plan de votre photo (nous le rééclairons), ou remplacez-le par un fond studio.",
     keepMyBackground: "Garder mon arrière-plan",

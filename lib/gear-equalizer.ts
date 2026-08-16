@@ -233,8 +233,6 @@ export function sanitizeEnhanceSelection(
   }
 
   const lighting = typeof o.lighting === "string" && LIGHTING_PRESET_IDS.has(o.lighting) ? o.lighting : null;
-  // Need at least one lighting source: per-photo creator looks OR a legacy rig.
-  if (!lightingByPath && !lighting) return null;
 
   // A buyer-uploaded plate. The path is NOT trusted here — the book route owns
   // the check that it sits under the buyer's own storage prefix, the same rule
@@ -262,6 +260,16 @@ export function sanitizeEnhanceSelection(
   // swap, an unused reference would still be attached at generation.
   if (backdropOptionId !== CUSTOM_BACKDROP_ID) customBackdrop = undefined;
 
+  // A booking has to ask for SOMETHING, but lighting is no longer the only way
+  // to ask. A buyer who likes the light they already have and only wants the
+  // wall changed was previously forced to relight the photo — changing the one
+  // thing they wanted to keep. Either a lighting source or a backdrop is now
+  // enough; only a selection that requests neither is rejected.
+  //
+  // This check has to sit AFTER the backdrop is resolved, which is why it moved
+  // down the function: run earlier it could not see the backdrop it depends on.
+  if (!lightingByPath && !lighting && !backdropOptionId) return null;
+
   return {
     lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId,
     lightingByPath, customBackdrop,
@@ -278,8 +286,21 @@ export function buildGearEqualizerPrompt(
   // Manual per-photo lighting: the recipe for THIS photo overrides the rig.
   lightingDirectiveOverride?: string
 ): string {
-  const lighting = LIGHTING_PRESETS.find((p) => p.id === sel.lighting) ?? LIGHTING_PRESETS[0];
-  const rawLightingDirective = lightingDirectiveOverride ?? lighting.directive;
+  // A background-only booking: the buyer chose a backdrop and NO lighting look,
+  // because they want to keep the light they already have.
+  //
+  // The old fallback here read `?? LIGHTING_PRESETS[0]`, which meant a booking
+  // with no lighting silently got the first preset applied anyway — relighting
+  // the photo when the whole point was not to. Resolve the preset only when one
+  // was actually chosen, and let the absence of a directive drive the branch.
+  const lighting = sel.lighting ? LIGHTING_PRESETS.find((p) => p.id === sel.lighting) : undefined;
+  const rawLightingDirective = lightingDirectiveOverride ?? lighting?.directive ?? "";
+  // Derived from the TEXT, not from whether an id was present. An id that does
+  // not resolve to a preset would otherwise take the relight branch carrying an
+  // empty directive — "ONLY NOW, THE NEW LIGHTING:" followed by nothing, then an
+  // order to rebuild all illumination to match it. Keeping the original light is
+  // the safe reading of "I could not find the look you asked for".
+  const relight = rawLightingDirective.trim().length > 0;
   // A look describes the studio it was shot in, background included. When the
   // buyer has ALSO chosen a backdrop, those two instructions contradict each
   // other and the look wins the parts the swap block does not explicitly claim.
@@ -319,9 +340,17 @@ export function buildGearEqualizerPrompt(
       "and size, skin tone, expression, gaze, pose, hands and fingers, body proportions, " +
       "clothing and its folds, hair, any other people present, and the " +
       "composition/framing/crop of IMAGE 1. Do not add, remove, move, resize, or " +
-      "re-imagine any person or object. This lock applies to CONTENT and GEOMETRY only — " +
-      "illumination, shadows, highlights, color grade, and background rendering MUST " +
-      "change per the lighting directive.",
+      "re-imagine any person or object. " +
+      (relight
+        ? "This lock applies to CONTENT and GEOMETRY only — " +
+          "illumination, shadows, highlights, color grade, and background rendering MUST " +
+          "change per the lighting directive."
+        // Background-only: the lock has to cover the light as well, or the model
+        // treats "studio relight" in the opening line as licence to relight anyway.
+        : "This lock covers the LIGHT as well: the illumination on the subject — its " +
+          "direction, softness, contrast, highlights, shadows, catchlights and colour " +
+          "temperature — must be reproduced exactly as photographed. ONLY the environment " +
+          "behind and around them changes."),
 
     // 3b. Worn and printed detail, itemised. The generic lock above lists clothing
     //     and hair but named nothing worn ON them, and a child's pearl crown came
@@ -344,11 +373,23 @@ export function buildGearEqualizerPrompt(
     // sat first, the model had already committed to "re-render everything" by
     // the time it reached the lock, and a child's pearl crown came back as a
     // different jewelled tiara. The locks must be read first.
-    "ONLY NOW, THE NEW LIGHTING: " + lightingDirective + " Rebuild ALL illumination from " +
-      "scratch to match: shadow direction and softness, highlight placement, catchlights in " +
-      "the eyes, light falloff on the background, and color temperature must all follow this " +
-      "setup — replacing the original photo's lighting entirely. Changing the light is not a " +
-      "licence to change anything the light falls on.",
+    relight
+      ? "ONLY NOW, THE NEW LIGHTING: " + lightingDirective + " Rebuild ALL illumination from " +
+        "scratch to match: shadow direction and softness, highlight placement, catchlights in " +
+        "the eyes, light falloff on the background, and color temperature must all follow this " +
+        "setup — replacing the original photo's lighting entirely. Changing the light is not a " +
+        "licence to change anything the light falls on."
+      // No look was chosen. The buyer is here for the background and likes the
+      // light they already have, so the instruction is the opposite one: hold it.
+      : "THE LIGHTING DOES NOT CHANGE. Reproduce the illumination of IMAGE 1 exactly as it " +
+        "was photographed: the same key direction and height, the same softness or hardness " +
+        "of the shadow edges, the same contrast ratio, the same highlight placement and " +
+        "specular roll-off on skin and fabric, the same catchlights in the eyes, and the same " +
+        "colour temperature and white balance. Do not brighten, darken, soften, sharpen, " +
+        "warm, cool or re-grade the subject. If the original is flat, it stays flat; if it is " +
+        "contrasty, it stays contrasty. This is a background replacement, not a relight — the " +
+        "only reason the pixels behind the subject change is that the environment behind them " +
+        "has been replaced.",
 
     // 4. Rendering quality. The camera LOOK is optional; the restoration half is
     // not. Dropping the whole block with the picker would have quietly removed
@@ -381,8 +422,16 @@ export function buildGearEqualizerPrompt(
         "full-body shot may show the wall-to-floor transition, placed at the subject's " +
         "feet with correct perspective. The backdrop must look like a real studio wall " +
         "photographed at the subject's actual camera distance and depth of field — never " +
-        "like a full backdrop plate pasted behind them. Light the backdrop consistently " +
-        "with the new lighting (its brightness falls off per the lighting directive). " +
+        "like a full backdrop plate pasted behind them. " +
+        (relight
+          ? "Light the backdrop consistently " +
+            "with the new lighting (its brightness falls off per the lighting directive). "
+          // Background-only: there is no new lighting to match it to, so it has to
+          // sit inside the light already in the photograph or it reads as pasted.
+          : "Light the backdrop to match the light ALREADY IN IMAGE 1 — the same " +
+            "direction, the same softness, the same colour temperature and the same " +
+            "intensity of falloff that is falling on the subject — so the new " +
+            "environment looks like it was there when the shutter fired. ") +
         "Edge transitions (hair, fabric) must be clean. The subject remains exactly as in " +
         "IMAGE 1. " +
         // Precedence. Without this, a look that mentions a white or black

@@ -124,6 +124,7 @@ const ar: AppDictionary = {
     pickCamera: "اختر نمط كاميرا للمتابعة.",
     background: "الخلفية",
     keepingYours: "نُبقي خلفيتك",
+    keepingYourLight: "الإبقاء على إضاءتك",
     swap: "تبديل",
     backgroundHint: "أبقِ خلفية صورتك (نعيد إضاءتها)، أو بدّلها بخلفية استوديو.",
     keepMyBackground: "أبقِ خلفيتي",

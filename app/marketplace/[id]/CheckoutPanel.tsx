@@ -1060,11 +1060,18 @@ export default function CheckoutPanel({
         lightingByPhoto[p.storagePath] || lightingFallback,
       ]))
     : {};
+  // A background swap on its own is a complete job. Someone who likes the light
+  // they already have and only wants the wall changed was previously blocked
+  // here and forced to pick a look — relighting the photo, which is the one
+  // thing they were trying not to do.
+  const backdropChosen = enhanceBackdrop !== null
+    && (enhanceBackdrop !== CUSTOM_BACKDROP_ID || !!customBackdrop);
   // Photos left blank are not missing input any more — they follow the first
   // look — so booking only needs one pick, not one per photo.
-  const enhanceLightingValid = perPhotoLightingActive
+  const lightingChosen = perPhotoLightingActive
     ? sourcePhotos.length > 0 && !!lightingFallback
     : !!enhanceLighting;
+  const enhanceLightingValid = lightingChosen || backdropChosen;
   // Photo upgrades are priced per image: the buyer brings however many photos
   // they have (1-10) and pays the single-image price for each, rather than being
   // forced into a 1/5/10 package and made to upload exactly that many.
@@ -1729,9 +1736,12 @@ export default function CheckoutPanel({
               <Collapse
                 icon="💡"
                 title={t("lightingRig")}
-                status={perPhotoLightingActive
-                  ? t("nPicked", { n: Object.keys(resolvedLightingByPhoto).length })
-                  : (LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? t("pickOneRequired"))}
+                status={!lightingChosen && backdropChosen
+                  // Background-only: show the choice was understood, not missed.
+                  ? t("keepingYourLight")
+                  : perPhotoLightingActive
+                    ? t("nPicked", { n: Object.keys(resolvedLightingByPhoto).length })
+                    : (LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? t("pickOneRequired"))}
                 warn={!enhanceLightingValid}
                 defaultOpen
               >
@@ -1847,7 +1857,7 @@ export default function CheckoutPanel({
                       </div>
                     </div>
                   ))}
-                  {!enhanceLightingValid && sourcePhotos.length > 0 && (
+                  {!lightingChosen && !backdropChosen && sourcePhotos.length > 0 && (
                     <p className={styles.sectionHint} style={{ color: "#c0392b" }}>{t("assignEachPhoto")}</p>
                   )}
                 </div>

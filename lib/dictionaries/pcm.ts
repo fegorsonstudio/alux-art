@@ -124,6 +124,7 @@ const pcm: AppDictionary = {
     pickCamera: "Pick one camera look make you continue.",
     background: "Background",
     keepingYours: "we dey keep your own",
+    keepingYourLight: "we go keep your light",
     swap: "swap",
     backgroundHint: "Keep your photo background (we go relight am), or swap am for studio backdrop.",
     keepMyBackground: "Keep my background",

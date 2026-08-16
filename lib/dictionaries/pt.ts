@@ -124,6 +124,7 @@ const pt: AppDictionary = {
     pickCamera: "Escolha um estilo de câmera para continuar.",
     background: "Plano de fundo",
     keepingYours: "mantendo o seu",
+    keepingYourLight: "a manter a tua luz",
     swap: "trocar",
     backgroundHint: "Mantenha o fundo da sua foto (nós o reiluminamos) ou troque por um fundo de estúdio.",
     keepMyBackground: "Manter meu fundo",
