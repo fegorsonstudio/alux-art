@@ -30,6 +30,10 @@ const MAX_NAME = 40;
 
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
+// --update rewrites the description of a look that is already there. Same file,
+// same guards; the only difference is that a matching name is the target rather
+// than a collision.
+const UPDATE = args.includes("--update");
 const fileArg = args[args.indexOf("--file") + 1];
 if (!fileArg || fileArg.startsWith("--")) { console.error("usage: --file <look.json> [--apply]"); process.exit(2); }
 
@@ -65,6 +69,27 @@ async function main() {
     process.exit(1);
   }
   const clash = target.options.find(o => bare(o.name) === bare(spec.name));
+
+  if (UPDATE) {
+    if (!clash) { console.error(`no look named "${spec.name}" in ${target.label} — nothing to update`); process.exit(1); }
+    const next = groups.map(g => g !== target ? g : {
+      ...g,
+      options: g.options.map(o => o.id === clash.id ? { ...o, description: spec.description } : o),
+    });
+    console.log(`group: ${target.label}`);
+    console.log(`look:  ${clash.name}`);
+    console.log(`description: ${clash.description.length} -> ${spec.description.length} chars`);
+    console.log(`thumbnail: ${clash.imagePath ? "kept" : "still none"}`);
+    if (!APPLY) { console.log("\ndry run. add --apply to write."); return; }
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backup = `/home/aluxart/option-groups-backup-${stamp}.json`;
+    writeFileSync(backup, JSON.stringify(groups, null, 2));
+    await sql`UPDATE templates SET option_groups = ${sql.json(next)}, updated_at = NOW() WHERE id = ${TEMPLATE_ID}`;
+    console.log(`\nwritten. backup: ${backup}`);
+    return;
+  }
+
   if (clash) { console.error(`"${clash.name}" is already in ${target.label} — refusing to duplicate`); process.exit(1); }
 
   const option = {
