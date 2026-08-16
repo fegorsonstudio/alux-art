@@ -1,0 +1,197 @@
+group	framing	proposed	name	evidence
+Headshots & close-ups	head	S	Soft Glam Shell	high-key sweep; rim / kicker rig
+Headshots & close-ups	head	S	Soft Glamour Loop Lighting	rim / kicker rig
+Headshots & close-ups	head	S	High-Key Beauty Clamshell	clamshell / beauty dish; high-key sweep
+Headshots & close-ups	head	S	Chiaroscuro Spot Accent	crisp / frozen
+Headshots & close-ups	head	S	Soft Magenta Clamshell	clamshell / beauty dish; rim / kicker rig; gelled head
+Headshots & close-ups	head	S	Hard Spot Chiaroscuro	tier2: bare bulb / strobe
+Headshots & close-ups	head	S	Hard Chiaroscuro Spotlight	crisp / frozen; gelled head
+Headshots & close-ups	head	S	Soft Clamshell Paramount	clamshell / beauty dish; high-key sweep
+Headshots & close-ups	head	S	Soft Clamshell Portrait	clamshell / beauty dish; high-key sweep
+Headshots & close-ups	head	C	Haze with Hard Rim	visible atmosphere (outranks: crisp / frozen; rim / kicker rig)
+Headshots & close-ups	head	C	Dense Atmospheric Bloom	visible atmosphere
+Headshots & close-ups	head	C	Candlelit Chiaroscuro	flame source
+Headshots & close-ups	head	C	Single Candle Close	flame source
+Headshots & close-ups	head	S	Deep Shadow Half-Face	crisp / frozen
+Headshots & close-ups	head	S	Crimson Underlight	crisp / frozen
+Headshots & close-ups	head	S	Frosted Clamshell	clamshell / beauty dish
+Headshots & close-ups	head	S	Opalescent Glow	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Headshots & close-ups	head	S	Halo Ring Beauty	crisp / frozen
+Headshots & close-ups	head	S	Frosted Rim Halo	tier2: rim / back light
+Headshots & close-ups	head	S	Luminous Bounce	tier2: bounce surface
+Headshots & close-ups	head	S	Two-Tone Rim Only	gelled head
+Headshots & close-ups	head	S	Acid Green Edge	crisp / frozen; gelled head
+Headshots & close-ups	head	C	Warm Haze Backlit Editorial	visible atmosphere (outranks: rim / kicker rig)
+Headshots & close-ups	head	S	Film Noir Blinds Projection	tier2: rim / back light
+Headshots & close-ups	head	S	Hard Spot Chiaroscuro II	crisp / frozen; rim / kicker rig
+Headshots & close-ups	head	S	Hard Theatrical Key	crisp / frozen
+Headshots & close-ups	head	C	Dramatic Rim Light	visible atmosphere (outranks: crisp / frozen; rim / kicker rig)
+Headshots & close-ups	head	S	Dramatic Butterfly Spot	crisp / frozen
+Headshots & close-ups	head	S	Hard Top-Left Chiaroscuro	crisp / frozen; rim / kicker rig
+Headshots & close-ups	head	S	Hard Chiaroscuro Rim-Lit Portrait	crisp / frozen; rim / kicker rig
+Headshots & close-ups	head	C	Soft Window Portrait	tier2: window named
+Headshots & close-ups	head	C	Golden Hour Rim and Key	tier2: sunlight named
+Headshots & close-ups	head	S	Hard Split Rim	tier2: rim / back light
+Headshots & close-ups	head	S	Soft Key Rim-Lit Editorial	rim / kicker rig
+Headshots & close-ups	head	S	Warm Hard Loop	rim / kicker rig
+Headshots & close-ups	head	S	Hard Split Warm Rim	crisp / frozen; rim / kicker rig
+Headshots & close-ups	head	S	Spotlit Head with Red Background	tier2: spot / narrow beam
+Headshots & close-ups	head	S	Hard Warm Editorial	rim / kicker rig
+Headshots & close-ups	head	S	High-Contrast Direct Flash	crisp / frozen
+Headshots & close-ups	head	S	Hard Rembrandt Rim-lit	tier2: rim / back light
+Headshots & close-ups	head	S	Soft Front Key Glamour	rim / kicker rig
+Headshots & close-ups	head	S	Hard Split Backlight	tier2: gelled head
+Headshots & close-ups	head	S	Hard Split Glamour	crisp / frozen; rim / kicker rig
+Headshots & close-ups	head	C	Hard Sunlight GoBo	tier2: sunlight named
+Headshots & close-ups	head	C	Golden Hour Rim-Lit	tier2: sunlight named
+Headshots & close-ups	head	S	Highlight Roll-Off	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Headshots & close-ups	head	-	Diffusion Filter Bloom	tier2: lens diffusion, not a fixture
+Headshots & close-ups	head	C	Mist Filter Glow	visible atmosphere
+Headshots & close-ups	head	S	Venetian Hard Stripe	crisp / frozen
+Headshots & close-ups	head	-	Sepia Archive	tier2: grade only — keeps the existing light
+Headshots & close-ups	head	S	High-Contrast Monochrome	crisp / frozen
+Headshots & close-ups	head	S	Glacier Rim	crisp / frozen
+Headshots & close-ups	head	S	Amber Bounce Fill	tier2: bounce surface
+Headshots & close-ups	head	S	Warm Overhead Canopy	crisp / frozen
+Headshots & close-ups	head	C	Neon Rim Backlight	neon / screen
+Headshots & close-ups	head	C	Screen Glow	neon / screen
+Medium shots — waist up	medium	S	Soft Side Key and Rim	rim / kicker rig
+Medium shots — waist up	medium	S	Hard Split Kicker	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Soft Frontal High-Key	high-key sweep; rim / kicker rig
+Medium shots — waist up	medium	S	Soft Frontal Glamour	rim / kicker rig
+Medium shots — waist up	medium	S	Hard Split Blue Background	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	High-Key Monochromatic Patterned	tier2: gelled head
+Medium shots — waist up	medium	S	Hard Magenta Spot Editorial	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Hard Spot Chiaroscuro 2	crisp / frozen; modifier geometry
+Medium shots — waist up	medium	S	Hard Blue Chiaroscuro	crisp / frozen; gelled head
+Medium shots — waist up	medium	S	Hard Golden Chiaroscuro	crisp / frozen
+Medium shots — waist up	medium	S	Soft Frontal Glamour 2	rim / kicker rig; gelled head
+Medium shots — waist up	medium	S	Green Gelled Glamour	rim / kicker rig; gelled head
+Medium shots — waist up	medium	S	Hard Sunlight High-Key	tier2: bare bulb / strobe
+Medium shots — waist up	medium	S	Hard Profile Edge Light	rim / kicker rig
+Medium shots — waist up	medium	S	Hard Rim Silhouette	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Hard Split Light	tier2: focused head / gobo
+Medium shots — waist up	medium	S	Hard Split Red Rim	crisp / frozen; modifier geometry; rim / kicker rig; gelled head
+Medium shots — waist up	medium	S	High-Contrast Blue Rim	crisp / frozen
+Medium shots — waist up	medium	C	High-Contrast Spot Rim	visible atmosphere (outranks: crisp / frozen; rim / kicker rig)
+Medium shots — waist up	medium	S	Frontal Soft Key with Warm Backlight	rim / kicker rig
+Medium shots — waist up	medium	S	Hard Strip Light Portrait	crisp / frozen
+Medium shots — waist up	medium	C	Soft Window Rim Light	tier2: window named
+Medium shots — waist up	medium	S	Glamour Backlight Array	high-key sweep; rim / kicker rig; gelled head
+Medium shots — waist up	medium	S	Dramatic Hard Rimlight Portrait	clamshell / beauty dish; rim / kicker rig
+Medium shots — waist up	medium	S	Soft Glamour Rim-Lit Portrait	rim / kicker rig
+Medium shots — waist up	medium	S	Soft Glam Studio Portrait	rim / kicker rig; gelled head
+Medium shots — waist up	medium	S	Hard Split Light 2	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Soft Glam Studio	rim / kicker rig; gelled head
+Medium shots — waist up	medium	S	Hard Warm Kicker	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	C	Backlit Haze Beam	visible atmosphere; projected beam
+Medium shots — waist up	medium	C	Smoke Swirl Side-Lit	visible atmosphere
+Medium shots — waist up	medium	C	Warm Smoke Drift	visible atmosphere (outranks: gelled head)
+Medium shots — waist up	medium	C	Cool Smoke Drift	visible atmosphere (outranks: gelled head)
+Medium shots — waist up	medium	S	Plum Noir Wash	gelled head
+Medium shots — waist up	medium	S	Burgundy Gel Key	gelled head
+Medium shots — waist up	medium	S	Blood Red Rim	gelled head
+Medium shots — waist up	medium	S	Wine Dark Backlight	tier2: rim / back light
+Medium shots — waist up	medium	S	Black Velvet Low-Key	tier2: separate background light
+Medium shots — waist up	medium	S	Dewy High-Key	high-key sweep
+Medium shots — waist up	medium	S	Pearl Softbox Wrap	rim / kicker rig
+Medium shots — waist up	medium	C	Silk Diffusion	daylight
+Medium shots — waist up	medium	S	Champagne Soft Key	tier2: bounce surface
+Medium shots — waist up	medium	S	Cyan Orange Split	crisp / frozen; gelled head
+Medium shots — waist up	medium	S	Purple Teal Split	gelled head
+Medium shots — waist up	medium	S	Red Key Blue Rim	gelled head
+Medium shots — waist up	medium	S	Amber Magenta Cross	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	S	Ultraviolet Wash	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	S	Single Colour Drench	gelled head
+Medium shots — waist up	medium	S	Gel Gradient Backdrop	gelled head
+Medium shots — waist up	medium	C	Neon Pink Key	neon / screen
+Medium shots — waist up	medium	S	Cool Key Warm Shadow	tier2: bounce surface
+Medium shots — waist up	medium	S	Hard Editorial White	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	C	Dramatic Rim-lit Chiaroscuro	visible atmosphere (outranks: crisp / frozen)
+Medium shots — waist up	medium	S	Soft Loop Portrait	rim / kicker rig
+Medium shots — waist up	medium	S	Rembrandt Low-Key	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Classic Hollywood Glamour	rim / kicker rig
+Medium shots — waist up	medium	S	Hard Warm Side Key	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Hard Split Shadow	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	High-Contrast Warm Spot	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	C	Warm Backlit Silhouette	visible atmosphere (outranks: crisp / frozen)
+Medium shots — waist up	medium	C	Golden Hour Backlight	tier2: golden hour
+Medium shots — waist up	medium	S	Soft Glamorous Rim-Lit Portrait	rim / kicker rig; gelled head
+Medium shots — waist up	medium	C	Hard Window Shadow Portrait	tier2: window named
+Medium shots — waist up	medium	C	Hard Rim with Gel Backlight	visible atmosphere (outranks: crisp / frozen; rim / kicker rig; gelled head)
+Medium shots — waist up	medium	S	Hard Split Chiaroscuro	crisp / frozen
+Medium shots — waist up	medium	C	Warm Rim-Lit Editorial	visible atmosphere (outranks: rim / kicker rig)
+Medium shots — waist up	medium	S	Hard Rembrandt Editorial	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Warm Backlit Silhouette II	rim / kicker rig
+Medium shots — waist up	medium	S	Soft Frontal High-Key II	high-key sweep
+Medium shots — waist up	medium	S	Warm Low-Key Split	crisp / frozen; rim / kicker rig
+Medium shots — waist up	medium	S	Soft Glamour Loop	tier2: rim / back light
+Medium shots — waist up	medium	C	Halation Rim	ambient fixture
+Medium shots — waist up	medium	C	Halation Window	daylight; ambient fixture
+Medium shots — waist up	medium	S	Faded Black Film	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	C	Push-Processed Grain	tier2: available light
+Medium shots — waist up	medium	C	Warm Analog Daylight	daylight
+Medium shots — waist up	medium	C	Halation Neon Bleed	neon / screen; ambient fixture
+Medium shots — waist up	medium	-	Prism Refraction Edge	tier2: optical effect, not a fixture
+Medium shots — waist up	medium	-	Anamorphic Blue Flare	tier2: lens flare, not a fixture
+Medium shots — waist up	medium	-	Warm Lens Flare	tier2: lens flare, not a fixture
+Medium shots — waist up	medium	-	Foreground Bokeh Veil	tier2: lens effect, not a fixture
+Medium shots — waist up	medium	S	Split Focus Glow	crisp / frozen
+Medium shots — waist up	medium	C	Window Blind Slats	tier2: window named
+Medium shots — waist up	medium	C	Dappled Foliage	daylight
+Medium shots — waist up	medium	S	Lattice Grid	modifier geometry
+Medium shots — waist up	medium	S	Stained Glass Colour Cast	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	S	Broken Glass Shards	crisp / frozen
+Medium shots — waist up	medium	S	Text Shadow Play	crisp / frozen
+Medium shots — waist up	medium	-	Teal & Orange	tier2: grade only — keeps the existing light
+Medium shots — waist up	medium	-	Bleach Bypass	tier2: grade only — keeps the existing light
+Medium shots — waist up	medium	-	Cross Processed	tier2: grade only — keeps the existing light
+Medium shots — waist up	medium	-	Muted Morandi	tier2: grade only — keeps the existing light
+Medium shots — waist up	medium	-	Faded Pastel	tier2: grade only — keeps the existing light
+Medium shots — waist up	medium	S	Icy Key	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	S	Frozen Split	crisp / frozen
+Medium shots — waist up	medium	C	Cold Overcast	daylight
+Medium shots — waist up	medium	S	Steel and Ice	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Medium shots — waist up	medium	C	Warm Window Glow	daylight
+Medium shots — waist up	medium	S	Sunset Rim	tier2: rim / back light
+Medium shots — waist up	medium	C	Golden Haze Flare	visible atmosphere
+Medium shots — waist up	medium	C	Neon Sign Glow	neon / screen
+Medium shots — waist up	medium	C	Split Neon Pink Cyan	neon / screen
+Medium shots — waist up	medium	C	Window Neon Spill	neon / screen; daylight
+Medium shots — waist up	medium	C	LED Panel Wash	tier2: LED panel
+Full body	full	S	Cool Ripple Projection	tier2: separate background light
+Full body	full	C	Hard Sunlight Graphic	tier2: sunlight named
+Full body	full	S	Hard Split Backlight with Gel	crisp / frozen; gelled head
+Full body	full	S	Hard Spot Chiaroscuro 3	tier2: focused head / gobo
+Full body	full	S	Soft Key Rim-Lit Spotlight	crisp / frozen; rim / kicker rig
+Full body	full	C	Dramatic Overhead Spotlight	visible atmosphere (outranks: crisp / frozen; gelled head)
+Full body	full	S	Hard Caustic Key	crisp / frozen
+Full body	full	S	Hard Patterned Chiaroscuro	tier2: gelled head
+Full body	full	S	Hard Patterned Chiaroscuro 2	tier2: bare bulb / strobe
+Full body	full	C	Rising Fog	visible atmosphere
+Full body	full	C	Volumetric Shaft	visible atmosphere; daylight; projected beam
+Full body	full	C	Silhouette Through Smoke	visible atmosphere
+Full body	full	C	Fog with Practical Lamp	visible atmosphere; practical in shot
+Full body	full	C	Victorian Window Gloom	daylight
+Full body	full	C	Cathedral Shaft	visible atmosphere; daylight; projected beam
+Full body	full	S	Moonlit Silver	crisp / frozen
+Full body	full	S	White Cyc Wrap	high-key sweep
+Full body	full	C	Sodium Street Orange	tier2: street lamp
+Full body	full	S	Triadic Three-Colour	gelled head
+Full body	full	S	Hard Warm Rim-lit	tier2: focused head / gobo
+Full body	full	S	Hard Spotlight Glamour	high-key sweep; crisp / frozen
+Full body	full	C	Tungsten Halation Night	ambient fixture
+Full body	full	-	Starburst Highlight	tier2: aperture rendering, not a fixture
+Full body	full	S	Circular Spot Falloff	tier2: focused head / gobo
+Full body	full	S	Palm Frond Shadow	crisp / frozen
+Full body	full	S	Doorway Slash	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Full body	full	C	Day for Night	daylight
+Full body	full	C	Blue Hour Wash	daylight
+Full body	full	C	Golden Hour Backlight	daylight
+Full body	full	S	Low Sun Side Wash	crisp / frozen
+Full body	full	S	Last Light Silhouette	tier2: DEFAULT — studio look, no natural-light or atmosphere cue (judgement, flip if wrong)
+Full body	full	C	Blue Hour Street	practical in shot; daylight
+Full body	full	C	Sodium and Neon Mix	neon / screen; ambient fixture
+Full body	full	S	Overhead Spotlight Stage	crisp / frozen
+Full body	full	C	Theatrical Front Spotlight	projected beam
+Full body	full	C	Golden Rim in Smoke	visible atmosphere (outranks: rim / kicker rig)
