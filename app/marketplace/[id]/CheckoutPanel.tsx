@@ -391,13 +391,35 @@ export default function CheckoutPanel({
     .filter(s => s.looks.length > 0);
   // Only worth showing headings once there is more than one section.
   const showLightingHeadings = lightingSections.length > 1;
+  // Finding one look among 197 meant opening a section and scrolling a wall of
+  // thumbnails. Buyers arrive knowing the name — the carousels sell looks by
+  // name — so the picker can be searched by name.
+  const [lightingQuery, setLightingQuery] = useState("");
+  const lightingSearchable = lightingLooks.length >= 12;
+  const lightingTokens = lightingQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const lightingSearching = lightingSearchable && lightingTokens.length > 0;
+  // Every token must appear, so "night pap" finds it and word order does not
+  // matter. The C/S prefix is stripped first: it is a fixture label, not part of
+  // the name, and leaving it in makes a bare "s" match almost everything.
+  const lightingMatches = (name: string) => {
+    const hay = name.replace(/^[CS]\s+/, "").toLowerCase();
+    return lightingTokens.every(tok => hay.includes(tok));
+  };
+  const visibleLightingSections = !lightingSearching
+    ? lightingSections
+    : lightingSections
+      .map(s => ({ ...s, looks: s.looks.filter(o => lightingMatches(o.name)) }))
+      .filter(s => s.looks.length > 0);
+  const lightingMatchCount = visibleLightingSections.reduce((n, s) => n + s.looks.length, 0);
   // Which lighting sections are expanded. Collapsed by default: 193 looks across
   // 13 sections is a very long scroll to get past on a phone, and a buyer should
   // be able to read the section titles and open only the one they want.
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const toggleSection = (id: string) => setOpenSections(p => ({ ...p, [id]: !p[id] }));
-  // A single section needs no disclosure — it is the whole list.
-  const sectionOpen = (id: string) => !showLightingHeadings || openSections[id] === true;
+  // A single section needs no disclosure — it is the whole list. While a search
+  // is running every section opens: filtering correctly and then leaving the
+  // matches hidden behind a collapsed heading reads as "no results".
+  const sectionOpen = (id: string) => !showLightingHeadings || lightingSearching || openSections[id] === true;
   const SectionToggle = ({ id, label, count }: { id: string; label: string; count: number }) => (
     <button
       type="button"
@@ -1750,6 +1772,38 @@ export default function CheckoutPanel({
                   still governs regular templates further down this file. */}
               {perPhotoLightingActive ? (
                 <div className={styles.pkgRow}>
+                  {/* One box above both renderings below — the pre-upload preview
+                      and the per-photo rows — so a search follows the buyer
+                      through uploading rather than resetting. */}
+                  {lightingSearchable && (
+                    <div style={{ position: "relative", marginBottom: 10 }}>
+                      <input
+                        type="text"
+                        className={styles.flagInput}
+                        placeholder={t("searchLooks", { n: lightingLooks.length })}
+                        value={lightingQuery}
+                        onChange={e => setLightingQuery(e.target.value)}
+                        style={{ paddingRight: 38 }}
+                      />
+                      {lightingQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setLightingQuery("")}
+                          aria-label={t("clearSearch")}
+                          style={{
+                            position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                            background: "none", border: "none", cursor: "pointer",
+                            fontSize: "1rem", lineHeight: 1, color: "#17313a", padding: 6,
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {lightingSearching && lightingMatchCount === 0 && (
+                    <p className={styles.sectionHint}>{t("noLooksMatch", { q: lightingQuery.trim() })}</p>
+                  )}
                   {/* Before any photo is uploaded the per-photo rows below have
                       nothing to render, so ticking the box appeared to do nothing
                       at all. Show the looks themselves: the buyer can see what
@@ -1762,7 +1816,7 @@ export default function CheckoutPanel({
                           : t("pickLookThenUpload")}
                       </p>
                       <div>
-                        {lightingSections.map(section => (
+                        {visibleLightingSections.map(section => (
                           <div key={section.id} style={{ marginBottom: 10 }}>
                             {showLightingHeadings && (
                               <SectionToggle id={section.id} label={section.label} count={section.looks.length} />
@@ -1811,7 +1865,7 @@ export default function CheckoutPanel({
                           style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       </span>
                       <div style={{ flex: "1 1 0", minWidth: 0 }}>
-                        {lightingSections.map(section => (
+                        {visibleLightingSections.map(section => (
                           <div key={section.id} style={{ marginBottom: 10 }}>
                             {showLightingHeadings && (
                               <SectionToggle id={section.id} label={section.label} count={section.looks.length} />

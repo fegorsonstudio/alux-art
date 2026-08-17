@@ -71,15 +71,28 @@ async function main() {
   const clash = target.options.find(o => bare(o.name) === bare(spec.name));
 
   if (UPDATE) {
-    if (!clash) { console.error(`no look named "${spec.name}" in ${target.label} — nothing to update`); process.exit(1); }
+    // With renameFrom set, the look is found under its OLD name and comes out
+    // carrying the new one. Without it, name is both the key and the value.
+    const current = spec.renameFrom
+      ? target.options.find(o => bare(o.name) === bare(spec.renameFrom))
+      : clash;
+    if (!current) {
+      console.error(`no look named "${spec.renameFrom ?? spec.name}" in ${target.label} — nothing to update`);
+      process.exit(1);
+    }
+    if (spec.renameFrom && clash && clash.id !== current.id) {
+      console.error(`"${spec.name}" is already in ${target.label} — refusing to rename onto it`);
+      process.exit(1);
+    }
     const next = groups.map(g => g !== target ? g : {
       ...g,
-      options: g.options.map(o => o.id === clash.id ? { ...o, description: spec.description } : o),
+      options: g.options.map(o => o.id === current.id ? { ...o, name: spec.name, description: spec.description } : o),
     });
     console.log(`group: ${target.label}`);
-    console.log(`look:  ${clash.name}`);
-    console.log(`description: ${clash.description.length} -> ${spec.description.length} chars`);
-    console.log(`thumbnail: ${clash.imagePath ? "kept" : "still none"}`);
+    console.log(`look:  ${current.name}`);
+    if (current.name !== spec.name) console.log(`rename: -> ${spec.name}  (${spec.name.length} chars)`);
+    console.log(`description: ${current.description.length} -> ${spec.description.length} chars`);
+    console.log(`thumbnail: ${current.imagePath ? "kept" : "still none"}`);
     if (!APPLY) { console.log("\ndry run. add --apply to write."); return; }
 
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
