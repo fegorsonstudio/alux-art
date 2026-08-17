@@ -411,6 +411,13 @@ export default function CheckoutPanel({
       .map(s => ({ ...s, looks: s.looks.filter(o => lightingMatches(o.name)) }))
       .filter(s => s.looks.length > 0);
   const lightingMatchCount = visibleLightingSections.reduce((n, s) => n + s.looks.length, 0);
+  // Searching a look by name IS choosing it. Narrow to one and it selects
+  // itself, so the buyer goes search -> upload -> generate instead of searching,
+  // finding the tile, and tapping it. Held as an id rather than the object so
+  // the effect below does not re-fire on every render.
+  const soleMatchId = lightingSearching && lightingMatchCount === 1
+    ? visibleLightingSections[0].looks[0].id
+    : null;
   // Which lighting sections are expanded. Collapsed by default: 193 looks across
   // 13 sections is a very long scroll to get past on a phone, and a buyer should
   // be able to read the section titles and open only the one they want.
@@ -1033,9 +1040,24 @@ export default function CheckoutPanel({
       ]
     : [];
 
-  // Apply the look chosen before uploading to every photo that has no look of
-  // its own, including photos added later. A per-photo choice always wins, so
-  // picking one look for everything and then changing a single photo works.
+  // A search that lands on exactly one look selects it. Depending on soleMatchId
+  // alone is deliberate: if the buyer then taps a different tile while the same
+  // search is still showing, this must not fight them and put it back.
+  useEffect(() => {
+    if (soleMatchId) setDefaultLighting(soleMatchId);
+  }, [soleMatchId]);
+
+  // Which photos hold a look because the whole-shoot choice put it there, rather
+  // than because the buyer tapped that photo. Without this the two are
+  // indistinguishable in lightingByPhoto, and a second search could not replace
+  // the first look without also wiping deliberate per-photo work.
+  const defaultAppliedRef = useRef<Record<string, string>>({});
+
+  // Apply the look chosen for the whole shoot to every photo that has no look of
+  // its own — including photos added later, and including photos still carrying
+  // a previous whole-shoot look. A per-photo choice the buyer actually made
+  // always wins, so picking one look for everything and then changing a single
+  // photo still works.
   const photoPathsKey = sourcePhotos.map(p => p.storagePath).join("|");
   useEffect(() => {
     if (!defaultLighting || !photoPathsKey) return;
@@ -1043,7 +1065,13 @@ export default function CheckoutPanel({
       let changed = false;
       const next = { ...prev };
       for (const path of photoPathsKey.split("|")) {
-        if (path && !next[path]) { next[path] = defaultLighting; changed = true; }
+        if (!path) continue;
+        const untouched = !next[path] || defaultAppliedRef.current[path] === next[path];
+        if (untouched && next[path] !== defaultLighting) {
+          next[path] = defaultLighting;
+          defaultAppliedRef.current[path] = defaultLighting;
+          changed = true;
+        }
       }
       return changed ? next : prev;
     });
@@ -1835,11 +1863,14 @@ export default function CheckoutPanel({
                                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                                       background: "none", cursor: "pointer", padding: 4,
                                       border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
-                                      borderRadius: 8, minWidth: 58,
+                                      borderRadius: 8, minWidth: soleMatchId ? 140 : 58,
                                     }}
                                   >
-                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
-                                    <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                                    {/* A search down to one look shows it big. At
+                                        56px the crossfade is easy to miss, and a
+                                        buyer who searched by name is here to look. */}
+                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={soleMatchId ? 132 : 56} />
+                                    <span style={{ fontSize: "0.68rem", maxWidth: soleMatchId ? 150 : 80, textAlign: "center" }}>{o.name}</span>
                                     {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
                                   </button>
                                 );
@@ -1885,7 +1916,14 @@ export default function CheckoutPanel({
                                     key={o.id}
                                     type="button"
                                     title={o.name}
-                                    onClick={() => { if (consumedByHold()) return; setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id })); }}
+                                    onClick={() => {
+                                      if (consumedByHold()) return;
+                                      // A deliberate choice for this photo. Drop
+                                      // the default marker so a later whole-shoot
+                                      // change leaves this one alone.
+                                      delete defaultAppliedRef.current[sp.storagePath];
+                                      setLightingByPhoto(prev => ({ ...prev, [sp.storagePath]: o.id }));
+                                    }}
                                     {...holdToPreview(o)}
                                     style={{
                                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
@@ -1896,11 +1934,11 @@ export default function CheckoutPanel({
                                           ? "2px dashed currentColor"
                                           : "2px solid rgba(127,127,127,0.25)",
                                       opacity: inherited ? 0.85 : 1,
-                                      borderRadius: 8, minWidth: 58,
+                                      borderRadius: 8, minWidth: soleMatchId ? 140 : 58,
                                     }}
                                   >
-                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={56} />
-                                    <span style={{ fontSize: "0.68rem", maxWidth: 80, textAlign: "center" }}>{o.name}</span>
+                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={soleMatchId ? 132 : 56} />
+                                    <span style={{ fontSize: "0.68rem", maxWidth: soleMatchId ? 150 : 80, textAlign: "center" }}>{o.name}</span>
                                     {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
                                   </button>
                                 );
