@@ -124,7 +124,7 @@ const en = {
     background: "Background",
     keepingYours: "keeping yours",
     keepingYourLight: "keeping your light",
-    searchLooks: "Search {n} looks by name",
+    searchLooks: "Search {n} looks by name or number",
     noLooksMatch: "No look matches “{q}”.",
     clearSearch: "Clear search",
     swap: "swap",

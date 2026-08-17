@@ -125,7 +125,7 @@ const zh: AppDictionary = {
     background: "背景",
     keepingYours: "保留你的",
     keepingYourLight: "保留你原本的光线",
-    searchLooks: "按名称搜索 {n} 种灯光风格",
+    searchLooks: "按名称或编号搜索 {n} 种灯光风格",
     noLooksMatch: "没有匹配「{q}」的灯光风格。",
     clearSearch: "清除搜索",
     swap: "更换",

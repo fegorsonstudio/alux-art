@@ -125,7 +125,7 @@ const pcm: AppDictionary = {
     background: "Background",
     keepingYours: "we dey keep your own",
     keepingYourLight: "we go keep your light",
-    searchLooks: "Find any of {n} looks by name",
+    searchLooks: "Find any of {n} looks by name or number",
     noLooksMatch: "No look match “{q}”.",
     clearSearch: "Clear the search",
     swap: "swap",

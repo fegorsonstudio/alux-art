@@ -398,11 +398,19 @@ export default function CheckoutPanel({
   const lightingSearchable = lightingLooks.length >= 12;
   const lightingTokens = lightingQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const lightingSearching = lightingSearchable && lightingTokens.length > 0;
+  // A digits-only query is someone acting on a recommendation — "use lighting
+  // 47". It has to land on 47 and nothing else, so it compares against the look's
+  // number rather than matching text, where "47" would also hit 147 and 147 · is
+  // a different look entirely.
+  const lightingNumberQuery = /^\d+$/.test(lightingQuery.trim()) ? lightingQuery.trim() : null;
   // Every token must appear, so "night pap" finds it and word order does not
-  // matter. The C/S prefix is stripped first: it is a fixture label, not part of
-  // the name, and leaving it in makes a bare "s" match almost everything.
+  // matter. The number and the C/S letter come off first: they are labels, not
+  // part of the name, and leaving the letter in makes a bare "s" match almost
+  // everything.
   const lightingMatches = (name: string) => {
-    const hay = name.replace(/^[CS]\s+/, "").toLowerCase();
+    const parts = /^(?:(\d+)\s+·\s+)?(?:[CS]\s+)?(.*)$/.exec(name);
+    if (lightingNumberQuery) return (parts?.[1] ?? "") === lightingNumberQuery;
+    const hay = (parts?.[2] ?? name).toLowerCase();
     return lightingTokens.every(tok => hay.includes(tok));
   };
   const visibleLightingSections = !lightingSearching

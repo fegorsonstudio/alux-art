@@ -35,7 +35,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const TSV = join(__dirname, "lighting-cs-draft.tsv");
 const TEMPLATE_ID = process.env.LIGHTING_TEMPLATE_ID || "3d822eb4-9618-4cfc-8d21-25a4627a4d32";
 const MAX_NAME = 40;                 // sanitizeOptionGroups slices names here
-const PREFIXED = /^[CS]\s/;
+// Names now read "47 · S Night Paparazzi G7X". A look counts as already
+// classified when the C/S letter is there, with or without a number in front.
+const PREFIXED = /^(?:\d+\s+·\s+)?[CS]\s/;
 
 const args = process.argv.slice(2);
 const DRAFT = args.includes("--draft");

@@ -108,7 +108,8 @@ async function attach() {
   const png = readFileSync(ATTACH);
   if (png.slice(0, 8).toString("hex") !== "89504e470d0a1a0a") { console.error("not a PNG — refusing"); process.exit(1); }
 
-  const slug = option.name.replace(/^[CS]\s+/, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slug = option.name.replace(/^\d+\s+·\s+/, "").replace(/^[CS]\s+/, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const key = `${group.beforeImagePath.split("/")[0]}/${randomUUID()}-${slug}.png`;
 
   await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: png, ContentType: "image/png" }));

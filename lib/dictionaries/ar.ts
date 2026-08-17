@@ -125,7 +125,7 @@ const ar: AppDictionary = {
     background: "الخلفية",
     keepingYours: "نُبقي خلفيتك",
     keepingYourLight: "الإبقاء على إضاءتك",
-    searchLooks: "ابحث في {n} إضاءة بالاسم",
+    searchLooks: "ابحث في {n} إضاءة بالاسم أو بالرقم",
     noLooksMatch: "لا توجد إضاءة تطابق «{q}».",
     clearSearch: "مسح البحث",
     swap: "تبديل",

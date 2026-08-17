@@ -125,7 +125,7 @@ const fr: AppDictionary = {
     background: "Arrière-plan",
     keepingYours: "on garde le vôtre",
     keepingYourLight: "on garde votre lumière",
-    searchLooks: "Rechercher parmi {n} styles par nom",
+    searchLooks: "Rechercher parmi {n} styles par nom ou numéro",
     noLooksMatch: "Aucun style ne correspond à « {q} ».",
     clearSearch: "Effacer la recherche",
     swap: "changer",

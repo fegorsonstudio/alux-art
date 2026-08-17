@@ -55,7 +55,9 @@ const env = Object.fromEntries(
     .map(l => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1).trim()]));
 const sql = postgres(env.DATABASE_URL, { ssl: false });
 
-const bare = (n) => n.replace(/^[CS]\s+/, "").trim().toLowerCase();
+/** "47 · S Night Paparazzi G7X" -> "night paparazzi g7x". Number and fixture
+ *  letter are labels, so two looks with the same real name still collide. */
+const bare = (n) => n.replace(/^\d+\s+·\s+/, "").replace(/^[CS]\s+/, "").trim().toLowerCase();
 
 async function main() {
   const [row] = await sql`SELECT option_groups FROM templates WHERE id = ${TEMPLATE_ID}`;
