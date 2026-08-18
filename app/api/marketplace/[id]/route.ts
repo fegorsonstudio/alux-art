@@ -148,7 +148,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           ? r2ProxyUrl(o.imageBucket ?? "template-images", o.imagePath)
           : null,
       })),
-      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string; framing?: string }> }) => ({
+      optionGroups: (Array.isArray(template.option_groups) ? template.option_groups : []).map((g: { id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: string; description?: string; imagePath?: string; imageBucket?: string; framing?: string; beforeImagePath?: string; beforeImageBucket?: string }> }) => ({
         id: g.id,
         type: g.type,
         label: g.label,
@@ -182,6 +182,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           // Which shot size this style was previewed on, so the client can pair it
           // with the matching "before".
           framing: o.framing ?? null,
+          // A look that carries its own "before" wins over the group's framing-matched
+          // one on the client. Null for every look rendered from the shared source.
+          beforeImageUrl: o.kind === "prompt" && o.beforeImagePath
+            ? r2ProxyUrl(o.beforeImageBucket ?? "template-images", o.beforeImagePath)
+            : null,
         })),
       })),
       poseOptions: (Array.isArray(template.pose_options) ? template.pose_options : []).map((p: { id: string; name: string; description?: string; imagePath: string; imageBucket?: string }) => ({

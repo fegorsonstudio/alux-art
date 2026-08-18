@@ -193,6 +193,7 @@ interface TemplateDetail {
       imagePath?: string | null;
       imageUrl?: string | null;
       framing?: string | null;
+      beforeImageUrl?: string | null;
     }>;
   }>;
   flagShot?: { enabled: boolean; imageUrl?: string | null } | null;
@@ -464,6 +465,11 @@ export default function CheckoutPanel({
     .find(m => m && Object.keys(m).length > 0) ?? null;
   const beforeUrlFor = (framing?: string | null) =>
     (framing && lightingBeforeByFraming?.[framing]) || lightingBeforeUrl;
+  // A look sold on a real client photo carries its own "before". It has to win
+  // over the group's framing-matched source, or the crossfade compares two
+  // different people. Looks without one are unaffected.
+  const lookBeforeUrl = (o: { framing?: string | null; beforeImageUrl?: string | null }) =>
+    o.beforeImageUrl || beforeUrlFor(o.framing);
 
   // Hold a look to see it big. At 56px a thumbnail cannot show whether a look is
   // worth buying, and the crossfade at that size is easy to miss entirely.
@@ -472,13 +478,13 @@ export default function CheckoutPanel({
   const longPressFired = useRef(false);
   const clearPress = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
   /** Press-and-hold props for a look tile. Spread onto the tile's button. */
-  const holdToPreview = (o: { id: string; name: string; imageUrl?: string | null; framing?: string | null }) => ({
+  const holdToPreview = (o: { id: string; name: string; imageUrl?: string | null; framing?: string | null; beforeImageUrl?: string | null }) => ({
     onPointerDown: () => {
       longPressFired.current = false;
       clearPress();
       pressTimer.current = setTimeout(() => {
         longPressFired.current = true;
-        setLookPreview({ name: o.name, beforeUrl: beforeUrlFor(o.framing) ?? null, afterUrl: o.imageUrl ?? null });
+        setLookPreview({ name: o.name, beforeUrl: lookBeforeUrl(o) ?? null, afterUrl: o.imageUrl ?? null });
       }, 420);
     },
     onPointerUp: clearPress,
@@ -1877,7 +1883,7 @@ export default function CheckoutPanel({
                                     {/* A search down to one look shows it big. At
                                         56px the crossfade is easy to miss, and a
                                         buyer who searched by name is here to look. */}
-                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={soleMatchId ? 132 : 56} />
+                                    <LightingThumb beforeUrl={lookBeforeUrl(o)} afterUrl={o.imageUrl} name={o.name} size={soleMatchId ? 132 : 56} />
                                     <span style={{ fontSize: "0.68rem", maxWidth: soleMatchId ? 150 : 80, textAlign: "center" }}>{o.name}</span>
                                     {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
                                   </button>
@@ -1945,7 +1951,7 @@ export default function CheckoutPanel({
                                       borderRadius: 8, minWidth: soleMatchId ? 140 : 58,
                                     }}
                                   >
-                                    <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={soleMatchId ? 132 : 56} />
+                                    <LightingThumb beforeUrl={lookBeforeUrl(o)} afterUrl={o.imageUrl} name={o.name} size={soleMatchId ? 132 : 56} />
                                     <span style={{ fontSize: "0.68rem", maxWidth: soleMatchId ? 150 : 80, textAlign: "center" }}>{o.name}</span>
                                     {on && <span style={{ fontSize: "0.6rem" }}>✓</span>}
                                   </button>
@@ -2226,7 +2232,7 @@ export default function CheckoutPanel({
                                 borderRadius: 8, minWidth: 64,
                               }}
                             >
-                              <LightingThumb beforeUrl={beforeUrlFor(o.framing)} afterUrl={o.imageUrl} name={o.name} size={72} />
+                              <LightingThumb beforeUrl={lookBeforeUrl(o)} afterUrl={o.imageUrl} name={o.name} size={72} />
                               <span style={{ fontSize: "0.72rem", maxWidth: 90, textAlign: "center" }}>{o.name}</span>
                               {isOn && <span style={{ fontSize: "0.65rem" }}>✓ selected</span>}
                             </button>

@@ -27,6 +27,13 @@ export interface ChoiceOption {
   // clamshell beauty look judged on a full-length shot tells the buyer nothing, so
   // the before/after preview pairs each style with a source photo of this framing.
   framing?: LightingFraming;
+  // Lighting options only: this look's OWN "before", overriding the group's
+  // framing-matched one. A look sold on a real client photo has a before that
+  // belongs to it alone; pairing it with the shared studio source would compare
+  // two different people. Absent on every look that was rendered from the shared
+  // source, which keeps using the group before.
+  beforeImagePath?: string;
+  beforeImageBucket?: string;
 }
 
 export type LightingFraming = "full" | "medium" | "head";
@@ -157,6 +164,13 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
         const imagePath = typeof o.imagePath === "string" && o.imagePath.startsWith(`${userId}/`)
           ? o.imagePath
           : undefined;
+        // This look's own "before", same ownership rule as everything else here.
+        // Without this line it is dropped on every save, so a creator editing
+        // something unrelated would silently wipe the pair (see beforeImages below,
+        // which had exactly this bug).
+        const beforeImagePath = typeof o.beforeImagePath === "string" && o.beforeImagePath.startsWith(`${userId}/`)
+          ? o.beforeImagePath
+          : undefined;
         options.push({
           id: typeof o.id === "string" && o.id ? o.id : crypto.randomUUID(),
           name,
@@ -166,6 +180,7 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
             ? { framing: o.framing as LightingFraming }
             : {}),
           ...(imagePath ? { imagePath, imageBucket: typeof o.imageBucket === "string" && o.imageBucket ? o.imageBucket : "template-images" } : {}),
+          ...(beforeImagePath ? { beforeImagePath, beforeImageBucket: typeof o.beforeImageBucket === "string" && o.beforeImageBucket ? o.beforeImageBucket : "template-images" } : {}),
         });
       } else {
         const description = typeof o.description === "string" ? o.description.trim().slice(0, 300) : "";
