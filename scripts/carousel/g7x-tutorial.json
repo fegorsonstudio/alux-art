@@ -2,7 +2,7 @@
   {
     "id": "g7x-tutorial",
     "account": "fegorson_studio",
-    "caption": "How to do it yourself, step by step.\n\n1. Open The Gear Equalizer on aluxartandframes.shop\n2. Crop your photo to 3:4, then upload it\n3. Type 197 in the search box — it picks the look for you\n4. Leave the background alone\n5. Pay ₦1,000 and download it\n\nThe look is \"197 · S Night Paparazzi G7X\". You do not have to remember the name — the number is enough.\n\nWorks on any photo you already have. Dark club, dim restaurant, bad hall lighting, night shots on your phone.\n\n🔗 aluxartandframes.shop\n\n#photographytutorial #lagosnightlife #nigerianphotographer #phonephotography #aluxart",
+    "caption": "How to do it yourself, step by step.\n\n1. Open The Gear Equalizer on aluxartandframes.shop\n2. Crop your photo to 4:5, then upload it\n3. Type 197 in the search box — it picks the look for you\n4. Leave the background alone\n5. Pay ₦1,000 and download it\n\nThe look is \"197 · S Night Paparazzi G7X\". You do not have to remember the name — the number is enough.\n\nWorks on any photo you already have. Dark club, dim restaurant, bad hall lighting, night shots on your phone.\n\n🔗 aluxartandframes.shop\n\n#photographytutorial #lagosnightlife #nigerianphotographer #phonephotography #aluxart",
     "slides": [
       {
         "type": "beforeafter",
@@ -21,7 +21,7 @@
       },
       {
         "type": "shot",
-        "title": "2. Crop to 3:4, then upload.",
+        "title": "2. Crop to 4:5, then upload.",
         "body": "Do the crop *first*. A photo of another shape gets cropped to fit, and you lose part of your frame.",
         "image": "scripts/carousel/shots/g7x-tutorial/live-step2.jpg"
       },
@@ -41,7 +41,7 @@
         "title": "The whole thing.",
         "items": [
           "Open The Gear Equalizer",
-          "Crop to 3:4 and upload",
+          "Crop to 4:5 and upload",
           "Type *197* in the search box",
           "Leave the background as it is",
           "Pay *₦1,000* and download"

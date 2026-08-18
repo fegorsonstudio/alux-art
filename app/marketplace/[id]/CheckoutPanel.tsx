@@ -518,9 +518,10 @@ export default function CheckoutPanel({
   const [defaultLighting, setDefaultLighting] = useState<string | null>(null);
   // Photo upgrades act on the buyer's own photograph, so the output shape is
   // theirs: forcing the template ratio re-crops a picture they already framed.
-  // 3:4 by default. The buyer supplies the photos here, so the template's own
-  // aspect says nothing about what shape their files are.
-  const [upgradeAspect, setUpgradeAspect] = useState<string>("3:4");
+  // 4:5 by default. The buyer supplies the photos here, so the template's own
+  // aspect says nothing about what shape their files are — and 4:5 is where
+  // these end up, which is the tallest Instagram allows in the feed.
+  const [upgradeAspect, setUpgradeAspect] = useState<string>("4:5");
   // Asset Extractor: which items to pull out of each uploaded photo.
   const [assetPicks, setAssetPicks] = useState<Record<string, string[]>>({});
   // Optional garment recolor per outfit/scrubs group (fixed palette, validated server-side).
