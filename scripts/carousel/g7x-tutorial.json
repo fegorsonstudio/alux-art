@@ -1,0 +1,64 @@
+[
+  {
+    "id": "g7x-tutorial",
+    "account": "fegorson_studio",
+    "caption": "How to do it yourself, step by step.\n\n1. Open The Gear Equalizer on aluxartandframes.shop\n2. Crop your photo to 3:4, then upload it\n3. Type 197 in the search box — it picks the look for you\n4. Leave the background alone\n5. Pay ₦1,000 and download it\n\nThe look is \"197 · S Night Paparazzi G7X\". You do not have to remember the name — the number is enough.\n\nWorks on any photo you already have. Dark club, dim restaurant, bad hall lighting, night shots on your phone.\n\n🔗 aluxartandframes.shop\n\n#photographytutorial #lagosnightlife #nigerianphotographer #phonephotography #aluxart",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 20%",
+        "title": "How this was done.",
+        "body": "Five steps. Two minutes. The photo already existed.",
+        "before": "scripts/carousel/shots/lighting/g7x-paparazzi-before.jpg",
+        "after": "scripts/carousel/shots/lighting/g7x-paparazzi-after.jpg"
+      },
+      {
+        "type": "shot",
+        "title": "1. Open the template.",
+        "body": "*aluxartandframes.shop* → The Gear Equalizer. Tap *Book this look*.",
+        "image": "scripts/carousel/shots/g7x-tutorial/live-step1.jpg"
+      },
+      {
+        "type": "shot",
+        "title": "2. Crop to 3:4, then upload.",
+        "body": "Do the crop *first*. A photo of another shape gets cropped to fit, and you lose part of your frame.",
+        "image": "scripts/carousel/shots/g7x-tutorial/live-step2.jpg"
+      },
+      {
+        "type": "shot",
+        "title": "3. Type *197*.",
+        "body": "One look comes up and it is already chosen. That is the whole search — no scrolling through 197 tiles.",
+        "image": "scripts/carousel/shots/g7x-tutorial/live-step4.jpg"
+      },
+      {
+        "type": "text",
+        "title": "4. Leave the background alone.",
+        "body": "It should say *keeping yours*. The look is about the light on you, not the room — the club, the restaurant, the hallway all stay exactly where you were."
+      },
+      {
+        "type": "steps",
+        "title": "The whole thing.",
+        "items": [
+          "Open The Gear Equalizer",
+          "Crop to 3:4 and upload",
+          "Type *197* in the search box",
+          "Leave the background as it is",
+          "Pay *₦1,000* and download"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "One photo. ₦1,000.",
+        "body": "No subscription and no app to install. Upload up to 10 at once if you have a whole night to fix — you pay per photo."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Try it on yours",
+        "title": "Look 197.",
+        "body": "Send me the one that came out too dark and I'll tell you if it will work.",
+        "link": "aluxartandframes.shop"
+      }
+    ]
+  }
+]
