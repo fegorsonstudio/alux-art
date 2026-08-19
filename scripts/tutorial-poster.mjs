@@ -15,8 +15,9 @@
  * are copied from that renderer so the two read as one family.
  *
  * Content is checked against the live product, not written from memory:
- * both templates are ₦1,000 per image (price_1_ngn), the Gear Equalizer takes
- * 1-10 photos and carries 195 lighting looks grouped by shot type, and the
+ * both templates are ₦2,000 per image (price_1_ngn, raised when every photo
+ * started running through two models), the Gear Equalizer takes 1-10 photos and
+ * carries 197 lighting looks grouped by shot type, and the
  * extractor returns garments as one four-panel sheet and a backdrop as a single
  * emptied setting (lib/asset-extractor.ts).
  */
@@ -118,21 +119,39 @@ const POSTERS = [
     file: "tutorial-background-and-lighting.jpg",
     eyebrow: "Tutorial · The Gear Equalizer",
     title: "Change your\nbackground\nand lighting",
-    sub: "Photos you already shot, relit properly and moved onto a studio backdrop. *₦1,000 per photo*.",
+    sub: "Photos you already shot, relit properly and moved onto a studio backdrop. *₦2,000 per photo*.",
     steps: [
-      "Open *The Gear Equalizer* and pick your output size. It is *3:4* unless you change it — crop your photos to that shape before you upload.",
+      "Open *The Gear Equalizer* and pick your output size. It is *4:5* unless you change it — crop your photos to that shape before you upload.",
       "Upload *1 to 10 photos* you already took. Pay per photo, not per package.",
-      "Pick a lighting look. *195 of them*, sorted into headshots, waist-up and full body so you judge each one on the right crop.",
+      "Pick a lighting look. *197 of them*, sorted into headshots, waist-up and full body so you judge each one on the right crop.",
       "One look covers every photo. Tap a single photo only if you want *that one* lit differently.",
       "Choose the background: keep your own, pick a studio backdrop, or *upload your own plate* and it is applied across the whole set.",
     ],
     kicker: "Same face · same outfit · new light",
   },
   {
+    // One look rather than the whole archive. The night-flash post is what people
+    // actually comment on, and "197 looks, pick one" is a worse instruction than
+    // "type 197" when someone has already decided which one they want.
+    file: "tutorial-g7x-night-flash.jpg",
+    eyebrow: "Tutorial · Look 197",
+    title: "Relight a dark\nnight photo",
+    sub: "The club was too dark for your phone. Put a real flash on it afterwards. *₦2,000 per photo*.",
+    steps: [
+      "Open *The Gear Equalizer* and tap Book This Look.",
+      "Pick *4:5* at the top, and crop your photo to 4:5 so the two match. A different shape gets cropped to fit and you lose part of the frame.",
+      "Upload the night photo you already have — club, dim restaurant, bad hall light, a car at night.",
+      "Type *197* in the search box. One look comes up and it is already chosen: *Night Paparazzi G7X*.",
+      "Leave the background on *keeping yours*. This look is about the light on you, not the room.",
+      "Pay and download.",
+    ],
+    kicker: "Same night · same outfit · real flash",
+  },
+  {
     file: "tutorial-asset-extractor.jpg",
     eyebrow: "Tutorial · The Asset Extractor",
     title: "Pull the outfit\nand backdrop\nout of a photo",
-    sub: "Turn one photograph into reusable assets for your own templates. *₦1,000 per item*.",
+    sub: "Turn one photograph into reusable assets for your own templates. *₦2,000 per item*.",
     steps: [
       "Open *The Asset Extractor* and upload the photo that contains what you want.",
       "Tick what to pull out. *Each tick is one image*, so three ticks is three images.",
