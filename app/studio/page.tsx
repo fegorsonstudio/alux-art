@@ -1525,7 +1525,10 @@ export default function WorkspacePage() {
 
               {galleryImages.some((img) => img.status === "COMPLETE" && (img.download_storage_path || img.preview_storage_path)) && (
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
-                  {currentShoot.status === "COMPLETE" ? t("downloadAllZip", { count: getShootPackageSize(currentShoot) }) : t("downloadCompletedZip")}
+                  {/* Count the files actually in the zip, not the package size.
+                      A per-image shoot returns two versions of every photo, so
+                      "Download All 5" would sit above ten images. */}
+                  {currentShoot.status === "COMPLETE" ? t("downloadAllZip", { count: completedCount || getShootPackageSize(currentShoot) }) : t("downloadCompletedZip")}
                 </button>
               )}
 

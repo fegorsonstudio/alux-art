@@ -591,16 +591,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (!shootRow) return NextResponse.json({ error: "Failed to create shoot" }, { status: 500 });
 
-  const slots = Array.from({ length: buyerPackageSize }, (_, i) => ({
+  const slotRow = (i: number, model: string | null) => ({
     id: crypto.randomUUID(),
     shoot_id: shootId,
     user_id: user.id,
     slot: i + 1,
     kind: i < 8 ? "portrait" : i === 8 ? "mood" : "quote",
     status: "PENDING",
+    configured_model: model,
     created_at: now,
     updated_at: now,
-  }));
+  });
+
+  // Per-image shoots run every photo through BOTH engines on the same prompt and
+  // the same references, and the buyer keeps whichever looks like them. That is
+  // what the per-image price pays for, and it is never explained in the UI — it
+  // is simply what the product does.
+  //
+  // Two rows on the SAME slot number rather than 2N slots: the slot is the source
+  // photo, and photo→slot mapping is what the generator uses to pick which
+  // upload to edit. It also keeps shoots.package_size at what the buyer paid for,
+  // which matters because that column is CHECK-constrained to 1..10 — a 6-photo
+  // booking would fail outright if the doubling were stored there.
+  const slots = perImagePricing
+    ? Array.from({ length: buyerPackageSize }, (_, i) => i)
+        .flatMap(i => [
+          slotRow(i, "fal-ai/nano-banana-2/edit"),
+          slotRow(i, "openai/gpt-image-2/edit"),
+        ])
+    : Array.from({ length: buyerPackageSize }, (_, i) => slotRow(i, null));
   await sql`INSERT INTO shoot_images ${sql(slots)}`;
 
   const allRefs = [
