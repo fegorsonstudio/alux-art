@@ -3531,42 +3531,39 @@
     "id": "w4-d19-fegorson-assets",
     "account": "fegorson_studio",
     "day": 19,
-    "caption": "Build your backdrop library once, reuse it forever.\n\nEvery backdrop, pose and lighting look you add is available to every template you build after it.\n\n💬 Comment CREATOR and I'll send you the link.\n\n#photographerbusiness #workflow #nigerianphotographer #creatoreconomy #aluxart",
+    "caption": "One photo of the piece. A catalogue sheet of the piece.\n\nYou shot the gown on a client, in a room, at one angle. A vendor needs the gown itself — front, three-quarter, side and back, clean, no model. That used to mean booking the outfit back and reshooting it.\n\nThe Asset Extractor lifts it out of the photo you already have. Gowns, suits, wigs, shoes, bags, jewellery, nails, makeup — even the backdrop on its own, or the whole scene cleared of people.\n\n💬 Comment ASSETS and I'll send you the link.\n\n#nigerianphotographer #fashionphotography #ecommercephotography #productphotography #aluxart",
     "slides": [
       {
         "type": "cover",
-        "eyebrow": "Work once",
-        "title": "Build the library once. Reuse it forever.",
-        "body": "Every template after the first gets *faster*.",
-        "kicker": "Swipe →"
-      },
-      {
-        "type": "text",
-        "title": "The first template is the slow one.",
-        "body": "Backdrops, poses, lighting options — all set up from nothing. The second one starts from everything you already built."
-      },
-      {
-        "type": "steps",
-        "title": "What carries over",
-        "items": [
-          "Backdrops you've added",
-          "Signature poses",
-          "Lighting looks",
-          "Extracted outfits and assets"
-        ]
+        "title": "One photo in.\nA catalogue sheet out.",
+        "body": "The piece on its own — *front, three-quarter, side and back*."
       },
       {
         "type": "shot",
-        "title": "And you can extract new assets.",
-        "body": "Pull a gown out of a client photo and it becomes a reusable asset.",
-        "image": "scripts/carousel/shots/asset-extractor.jpg",
-        "fit": "contain"
+        "title": "All four came out of one photo.",
+        "body": "No model, no mannequin, no hanger. The gown, four angles, clean grey.",
+        "image": "scripts/carousel/shots/asset-extractor.jpg"
+      },
+      {
+        "type": "text",
+        "title": "You photographed it once, on a person.",
+        "body": "The piece is in there — but it is on a body, in a room, at one angle. A vendor selling it needs the thing itself, from every side. Until now that meant getting the outfit back and shooting it again."
+      },
+      {
+        "type": "steps",
+        "title": "What it can lift out",
+        "items": [
+          "Gown, suit, outfit, scrubs",
+          "Wig, headwear, nails, makeup",
+          "Shoes, bag, jewellery, belt",
+          "The backdrop alone — or the scene, cleared of people"
+        ]
       },
       {
         "type": "cta",
-        "eyebrow": "Compounding",
-        "title": "Every asset makes the next template cheaper.",
-        "body": "Comment CREATOR below and I'll send you the link."
+        "title": "Comment *ASSETS*.",
+        "body": "I'll send you the link to The Asset Extractor.",
+        "link": "aluxartandframes.shop"
       }
     ]
   },

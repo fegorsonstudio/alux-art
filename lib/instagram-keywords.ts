@@ -22,6 +22,12 @@ export interface Keyword {
   word: string;
   /** The single DM they receive. Instagram strips nothing, but keep it short. */
   reply: string;
+  /**
+   * Near-misses that should count as the same ask: ASSET for ASSETS. Checked
+   * only after every keyword's exact word has failed, so an alias can never
+   * steal a comment from another keyword's real word.
+   */
+  aliases?: string[];
   /** Optional public comment reply, so others see the exchange happened. */
   publicReply?: string;
   /**
@@ -72,6 +78,28 @@ export const KEYWORDS: Keyword[] = [
       "6. Pay ₦1,000 and download\n\n" +
       "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
       "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
+    publicReply: "Sent you a DM 📩",
+  },
+  {
+    // The Asset Extractor's own call to action. CREATOR used to carry this post,
+    // which sent someone who wanted the tool to a sign-up page instead of to the
+    // thing they had just watched work.
+    word: "ASSETS",
+    aliases: ["ASSET", "EXTRACTOR"],
+    reply:
+      "Here's The Asset Extractor 👇\n\n"
+      + `${SITE}/marketplace/a63214fd-c56a-46ae-8056-0407a17d63a1\n\n`
+      + "Upload one photo of the piece — on a client, on a hanger, however you shot it — "
+      + "and it comes back on its own: front, three-quarter, side and back, no model and no mannequin.\n\n"
+      + "It also lifts wigs, shoes, bags, jewellery, nails, makeup, and the backdrop on its own. "
+      + "₦1,000 per photo.",
+    replyNoLink:
+      "Here's The Asset Extractor 👇\n\n"
+      + "Tap our name at the top of this chat — the link is in our bio, then open The Asset Extractor.\n\n"
+      + "Upload one photo of the piece — on a client, on a hanger, however you shot it — "
+      + "and it comes back on its own: front, three-quarter, side and back, no model and no mannequin.\n\n"
+      + "It also lifts wigs, shoes, bags, jewellery, nails, makeup, and the backdrop on its own. "
+      + "₦1,000 per photo.",
     publicReply: "Sent you a DM 📩",
   },
   {
@@ -155,6 +183,10 @@ export function matchKeyword(commentText: string): Keyword | null {
   const words = new Set(normalise(commentText).split(" "));
   for (const k of KEYWORDS) {
     if (words.has(k.word.toLowerCase())) return k;
+    // Near-misses of the asked-for word. Someone who types ASSET instead of
+    // ASSETS gets silence otherwise, and silence is indistinguishable from the
+    // automation working — the same trap that hid the missing LIGHT keyword.
+    if (k.aliases?.some(a => words.has(a.toLowerCase()))) return k;
   }
   return null;
 }
