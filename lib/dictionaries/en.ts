@@ -459,6 +459,8 @@ const en = {
     retouchOfferPrice: "{price} for {count}",
     retouchOfferBody: "Skin, stray hairs, and the small things a model notices — finished by hand on the images you just generated. Your originals stay exactly as they are. Ask now and we'll send them over when they're done; you only pay once you can see the work.",
     retouchOfferBtn: "Yes, retouch my images",
+    retouchPickPrompt: "Pick the images you want retouched",
+    retouchOfferBtnN: "Retouch {count} for {price}",
     retouchRequestedMeta: "Requested",
     retouchRequestedBody: "We're on it. You'll get an email the moment they're ready, and nothing is charged until you've seen them.",
     downloadCompletedZip: "Download Completed Images (ZIP)",

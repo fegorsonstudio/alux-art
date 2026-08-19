@@ -460,6 +460,8 @@ const pt: AppDictionary = {
     retouchOfferPrice: "{price} por {count}",
     retouchOfferBody: "A pele, os cabelos soltos e os pequenos detalhes que uma modelo repara — acabados à mão nas imagens que acabaste de gerar. Os teus originais ficam intactos. Pede agora e avisamos quando estiverem prontas; só pagas depois de veres o trabalho.",
     retouchOfferBtn: "Sim, retoquem as minhas imagens",
+    retouchPickPrompt: "Escolhe as imagens que queres retocar",
+    retouchOfferBtnN: "Retocar {count} por {price}",
     retouchRequestedMeta: "Pedido",
     retouchRequestedBody: "Estamos a tratar disso. Recebes um e-mail assim que estiverem prontas, e nada é cobrado até as veres.",
     downloadCompletedZip: "Baixar imagens concluídas (ZIP)",

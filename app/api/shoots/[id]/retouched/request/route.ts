@@ -15,7 +15,7 @@ import { retouchPriceNgn } from "@/lib/retouch-pricing";
  * RETOUCH_PRICE_PER_IMAGE_NGN can never alter a total the buyer already saw.
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -42,20 +42,45 @@ export async function POST(
     return NextResponse.json({ ok: true, alreadyRequested: true, status: existing.status });
   }
 
-  // Only finished images can be retouched, so they decide the bill.
-  const [{ n: imageCount }] = await sql<{ n: number }[]>`
-    SELECT count(*)::int AS n FROM shoot_images
+  // The buyer names the images they want. Anything they send that is not a
+  // finished image of THIS shoot is dropped rather than trusted, so a hand-made
+  // request cannot bill for — or later unlock — someone else's file.
+  const body = await request.json().catch(() => ({})) as { imageIds?: unknown };
+  const asked = Array.isArray(body.imageIds)
+    ? [...new Set(body.imageIds.filter((v): v is string => typeof v === "string"))]
+    : [];
+
+  const eligible = await sql<{ id: string }[]>`
+    SELECT id FROM shoot_images
     WHERE shoot_id = ${id} AND status = 'COMPLETE'`;
-  if (!imageCount) {
-    return NextResponse.json({ error: "No finished images to retouch" }, { status: 400 });
+  const eligibleIds = new Set(eligible.map(r => r.id));
+
+  // No list means the whole shoot, which is what the offer meant before the
+  // buyer could choose and what the one already-delivered order still means.
+  const chosen = asked.length ? asked.filter(x => eligibleIds.has(x)) : [...eligibleIds];
+
+  if (!chosen.length) {
+    return NextResponse.json(
+      { error: asked.length ? "None of those images belong to this shoot" : "No finished images to retouch" },
+      { status: 400 }
+    );
   }
 
+  const imageCount = chosen.length;
   const price = retouchPriceNgn(imageCount);
+
   await sql`
     INSERT INTO shoot_retouch (shoot_id, status, price_ngn, image_count, created_at, updated_at)
     VALUES (${id}, 'REQUESTED', ${price}, ${imageCount}, NOW(), NOW())
     ON CONFLICT (shoot_id) DO NOTHING`;
 
-  console.log(`[retouch] requested for shoot ${id}: ${imageCount} images, ₦${price}`);
-  return NextResponse.json({ ok: true, status: "REQUESTED", imageCount, priceNgn: price });
+  for (const imageId of chosen) {
+    await sql`
+      INSERT INTO shoot_retouch_items (shoot_id, image_id)
+      VALUES (${id}, ${imageId})
+      ON CONFLICT (shoot_id, image_id) DO NOTHING`;
+  }
+
+  console.log(`[retouch] requested for shoot ${id}: ${imageCount} of ${eligibleIds.size} images, ₦${price}`);
+  return NextResponse.json({ ok: true, status: "REQUESTED", imageCount, priceNgn: price, imageIds: chosen });
 }

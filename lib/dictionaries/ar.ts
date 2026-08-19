@@ -460,6 +460,8 @@ const ar: AppDictionary = {
     retouchOfferPrice: "{price} مقابل {count}",
     retouchOfferBody: "البشرة، والشعر المتناثر، والتفاصيل الصغيرة التي تلاحظها العارضة — تُنجز يدويًا على الصور التي أنشأتها للتو. تبقى نسخك الأصلية كما هي. اطلبها الآن وسنخبرك عند جاهزيتها؛ ولا تدفع إلا بعد أن ترى العمل.",
     retouchOfferBtn: "نعم، نقّحوا صوري",
+    retouchPickPrompt: "اختر الصور التي تريد تنقيحها",
+    retouchOfferBtnN: "تنقيح {count} مقابل {price}",
     retouchRequestedMeta: "تم الطلب",
     retouchRequestedBody: "نحن نعمل عليها. ستصلك رسالة بريد فور جاهزيتها، ولن يُخصم شيء قبل أن تراها.",
     downloadCompletedZip: "تنزيل الصور المكتملة (ZIP)",

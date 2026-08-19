@@ -786,10 +786,21 @@ export default function WorkspacePage() {
   const price = currency === "USD" ? `$${activePrice}` : `NGN ${activePrice.toLocaleString()}`;
   const [retouchBusy, setRetouchBusy] = useState(false);
 
-  const requestRetouch = async (shootId: string) => {
+  // Which finished images the buyer wants retouched. Empty means none picked
+  // yet, so the offer opens with nothing ticked and a disabled button rather
+  // than quietly proposing to bill for the whole shoot.
+  const [retouchPicks, setRetouchPicks] = useState<string[]>([]);
+  const toggleRetouchPick = (imageId: string) =>
+    setRetouchPicks(prev => prev.includes(imageId) ? prev.filter(x => x !== imageId) : [...prev, imageId]);
+
+  const requestRetouch = async (shootId: string, imageIds: string[]) => {
     setRetouchBusy(true);
     try {
-      const res = await fetch(`/api/shoots/${shootId}/retouched/request`, { method: "POST" });
+      const res = await fetch(`/api/shoots/${shootId}/retouched/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageIds }),
+      });
       if (res.ok) {
         const fresh = await fetch(`/api/shoots/${shootId}/retouched`).then(r => r.ok ? r.json() : null);
         if (fresh?.retouch) setRetouch(fresh);
@@ -1601,12 +1612,50 @@ export default function WorkspacePage() {
                     </span>
                   </div>
                   <p className={styles.retouchHint}>{t("retouchOfferBody")}</p>
+
+                  {/* Tick what you want. Nobody should be billed for retouching a
+                      frame they were never going to use — which matters more the
+                      moment a shoot comes back with two versions of every photo. */}
+                  <div className={styles.retouchPickGrid}>
+                    {galleryImages
+                      .filter(img => img.status === "COMPLETE")
+                      .map(img => {
+                        const picked = retouchPicks.includes(img.id);
+                        const thumb = img.previewUrl || img.preview_url;
+                        return (
+                          <button
+                            key={img.id}
+                            type="button"
+                            className={`${styles.retouchPick} ${picked ? styles.retouchPickOn : ""}`}
+                            aria-pressed={picked}
+                            onClick={() => toggleRetouchPick(img.id)}
+                          >
+                            {thumb ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={`${thumb}${String(thumb).includes("?") ? "&" : "?"}width=300&quality=60&format=webp`} alt="" />
+                            ) : null}
+                            <span className={styles.retouchPickMark} aria-hidden>{picked ? "✓" : ""}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
+
                   <button
                     className={styles.zipBtn}
-                    disabled={retouchBusy}
-                    onClick={() => requestRetouch(currentShoot.id)}
+                    disabled={retouchBusy || retouchPicks.length === 0}
+                    onClick={() => requestRetouch(currentShoot.id, retouchPicks)}
                   >
-                    {retouchBusy ? t("retouchSending") : t("retouchOfferBtn")}
+                    {retouchBusy
+                      ? t("retouchSending")
+                      : retouchPicks.length === 0
+                        ? t("retouchPickPrompt")
+                        : t("retouchOfferBtnN", {
+                            count: retouchPicks.length,
+                            // Per-image rate comes from the server's own quote, never
+                            // a number typed here: a price the buyer is shown and a
+                            // price they are charged must not be able to drift apart.
+                            price: `₦${(retouchPicks.length * Math.round(retouch.offer.priceNgn / Math.max(1, retouch.offer.imageCount))).toLocaleString()}`,
+                          })}
                   </button>
                 </div>
               )}

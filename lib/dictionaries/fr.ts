@@ -460,6 +460,8 @@ const fr: AppDictionary = {
     retouchOfferPrice: "{price} pour {count}",
     retouchOfferBody: "La peau, les cheveux rebelles et les petits détails qu'un modèle remarque — finis à la main sur les images que vous venez de générer. Vos originaux restent intacts. Demandez maintenant, nous vous préviendrons dès que c'est prêt ; vous ne payez qu'après avoir vu le travail.",
     retouchOfferBtn: "Oui, retouchez mes images",
+    retouchPickPrompt: "Choisissez les images à retoucher",
+    retouchOfferBtnN: "Retoucher {count} pour {price}",
     retouchRequestedMeta: "Demandé",
     retouchRequestedBody: "C'est en cours. Vous recevrez un e-mail dès que ce sera prêt, et rien n'est facturé avant que vous les ayez vues.",
     downloadCompletedZip: "Télécharger les images terminées (ZIP)",

@@ -460,6 +460,8 @@ const pcm: AppDictionary = {
     retouchOfferPrice: "{price} for {count}",
     retouchOfferBody: "Skin, small small hair wey scatter, and the tiny things wey model dey notice — we go finish am by hand on the images wey you just generate. Your original own no go change. Ask now, we go send am when e ready; you go only pay when you don see the work.",
     retouchOfferBtn: "Yes, retouch my images",
+    retouchPickPrompt: "Pick the images wey you want make we retouch",
+    retouchOfferBtnN: "Retouch {count} for {price}",
     retouchRequestedMeta: "Don request",
     retouchRequestedBody: "We dey on top am. You go get email once e ready, and nothing go collect money until you don see am.",
     downloadCompletedZip: "Download Completed Images (ZIP)",

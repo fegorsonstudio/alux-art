@@ -460,6 +460,8 @@ const zh: AppDictionary = {
     retouchOfferPrice: "{count} 共 {price}",
     retouchOfferBody: "皮肤、碎发，以及模特才会注意到的细节——在你刚生成的图片上手工完成。原片保持不变。现在提出申请，修好后我们会通知你；看到成品之后你才需要付款。",
     retouchOfferBtn: "好，帮我精修",
+    retouchPickPrompt: "选择你想精修的图片",
+    retouchOfferBtnN: "精修 {count} 张，{price}",
     retouchRequestedMeta: "已申请",
     retouchRequestedBody: "我们正在处理。修好后会立刻发邮件给你，在你看到之前不会收取任何费用。",
     downloadCompletedZip: "下载已完成的图像（ZIP）",
