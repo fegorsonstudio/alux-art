@@ -94,6 +94,12 @@ export default function WorkspacePage() {
   // Shoots
   const [shoots, setShoots] = useState<Shoot[]>([]);
   const [currentShoot, setCurrentShoot] = useState<Shoot | null>(null);
+  // Hand-retouched versions of a finished shoot, sold separately. Null means the
+  // shoot has none, which is the normal case and renders nothing at all.
+  const [retouch, setRetouch] = useState<{
+    retouch: { status: string; priceNgn: number; imageCount: number; unlocked: boolean; free: boolean } | null;
+    images: Array<{ id: string; slot: number | null; previewUrl: string; width: number | null; height: number | null }>;
+  } | null>(null);
   // /api/shoots returns 20 at a time plus a cursor. The page used to drop the
   // cursor, so anyone past 20 shoots could not reach their older galleries at
   // all — and with a 7-day retention window, unreachable means lost.
@@ -327,6 +333,20 @@ export default function WorkspacePage() {
   }, [forbiddenSlots]);
 
   // Page-load recovery: derive forbidden state from already-loaded shoot_images
+  // Load the retouched gallery for a finished shoot. Only COMPLETE shoots can
+  // have one, so nothing else pays for the request.
+  useEffect(() => {
+    setRetouch(null);
+    const id = currentShoot?.id;
+    if (!id || currentShoot?.status !== "COMPLETE") return;
+    let cancelled = false;
+    fetch(`/api/shoots/${id}/retouched`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (!cancelled && data?.retouch) setRetouch(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentShoot?.id, currentShoot?.status]);
+
   useEffect(() => {
     if (!currentShoot) return;
     const imgs = getShootImages(currentShoot);
@@ -763,6 +783,17 @@ export default function WorkspacePage() {
   const activePackage = packages.find((pkg) => pkg.imageCount === packageSize) ?? DEFAULT_PACKAGES.find((pkg) => pkg.imageCount === packageSize)!;
   const activePrice = currency === "USD" ? activePackage.usd : activePackage.ngn;
   const price = currency === "USD" ? `$${activePrice}` : `NGN ${activePrice.toLocaleString()}`;
+  const downloadRetouched = (shootId: string, imageId: string, slot: number | null) => {
+    // Same synchronous-navigation trick as downloadImage: build the link in the
+    // tap itself or mobile Safari's user-activation rule kills the download.
+    const a = document.createElement("a");
+    a.href = `/api/shoots/${shootId}/retouched/${imageId}`;
+    a.download = `aluxart-retouched-${slot ?? "image"}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const galleryImages = getShootImages(currentShoot);
   const completedCount = galleryImages.filter((img) => img.status === "COMPLETE").length;
   const failedCount = galleryImages.filter((img) => img.status === "FAILED").length;
@@ -1458,6 +1489,66 @@ export default function WorkspacePage() {
                 <button className={styles.zipBtn} onClick={() => downloadZip(currentShoot)}>
                   {currentShoot.status === "COMPLETE" ? t("downloadAllZip", { count: getShootPackageSize(currentShoot) }) : t("downloadCompletedZip")}
                 </button>
+              )}
+
+              {/* Retouched gallery — a second set of files inside the same shoot,
+                  finished by hand and sold on top. Renders only when this shoot
+                  actually has one, so every other shoot is untouched by it. The
+                  tiles are always visible: the buyer has to see the work to want
+                  it. The download route is what enforces payment, not this. */}
+              {retouch?.retouch && retouch.images.length > 0 && (
+                <div className={styles.retouchBlock}>
+                  <div className={styles.retouchHead}>
+                    <span className={styles.retouchTitle}>{t("retouchedTitle")}</span>
+                    <span className={styles.retouchMeta}>
+                      {retouch.retouch.unlocked
+                        ? t("retouchedReady", { count: retouch.images.length })
+                        : t("retouchedLocked", { price: `₦${retouch.retouch.priceNgn.toLocaleString()}` })}
+                    </span>
+                  </div>
+                  <div className={styles.slotGrid}>
+                    {retouch.images.map((img) => (
+                      <div key={img.id} className={styles.slotCard}>
+                        <div
+                          className={`${styles.slotPreview} ${retouch.retouch?.unlocked ? styles.slotPreviewDl : ""}`}
+                          onClick={retouch.retouch?.unlocked ? () => downloadRetouched(currentShoot.id, img.id, img.slot) : undefined}
+                          role={retouch.retouch?.unlocked ? "button" : undefined}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`${img.previewUrl}${img.previewUrl.includes("?") ? "&" : "?"}width=800&quality=75&format=webp`}
+                            alt={t("retouchedSlotAlt", { slot: String(img.slot ?? "") })}
+                          />
+                          {retouch.retouch?.unlocked && (
+                            <div className={styles.dlOverlay} aria-hidden="true">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className={styles.slotInfo}>
+                          <span className={styles.slotNum}>#{img.slot} {t("retouchedKind")}</span>
+                          {retouch.retouch?.unlocked && (
+                            <span className={styles.slotStatus}>
+                              <div className={styles.downloadActions}>
+                                <button
+                                  className={styles.dlBtn}
+                                  onClick={() => downloadRetouched(currentShoot.id, img.id, img.slot)}
+                                  title={t("downloadImage")}
+                                  aria-label={t("downloadImage")}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </button>
+                              </div>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {!retouch.retouch.unlocked && (
+                    <p className={styles.retouchHint}>{t("retouchedPayHint")}</p>
+                  )}
+                </div>
               )}
 
               {/* Free-regeneration banner — shown when a finished shoot has failed images.

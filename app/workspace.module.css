@@ -714,3 +714,12 @@
   }
 }
 
+
+/* Retouched gallery — a second, paid set of images inside a finished shoot.
+   Set apart from the generated grid above it so the buyer reads them as a
+   different thing they are being offered, not more of what they already own. */
+.retouchBlock { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(67, 159, 169, 0.25); }
+.retouchHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.retouchTitle { font-size: 0.9rem; font-weight: 750; color: #2d727b; letter-spacing: 0.01em; }
+.retouchMeta { font-size: 0.78rem; color: rgba(45, 114, 123, 0.75); }
+.retouchHint { margin: 10px 0 0; font-size: 0.78rem; color: rgba(45, 114, 123, 0.75); line-height: 1.5; }
