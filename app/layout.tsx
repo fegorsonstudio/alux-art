@@ -12,6 +12,12 @@ import { LOCALE_COOKIE, DEFAULT_LOCALE, dirFor, isLocale, type Locale } from "@/
 import { getDictionary } from "@/lib/dictionaries";
 
 const GA_ID = "G-QQP2424C0W";
+// Meta pixel. Unset by default and the tag never loads — no request to
+// facebook.net, nothing to consent to — so this is inert until an ad account is
+// actually running. It exists because retargeting people who opened a template
+// and did not pay is the warmest audience available, and that pool only starts
+// filling from the day the pixel is live, never retroactively.
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -79,6 +85,17 @@ export default async function RootLayout({
           <InstallAppButton />
         </LocaleProvider>
       </body>
+      {META_PIXEL_ID && (
+        <Script id="meta-pixel" strategy="afterInteractive">{`
+          !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+          n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+          document,'script','https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '${META_PIXEL_ID}');
+          fbq('track', 'PageView');
+        `}</Script>
+      )}
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
       <Script id="ga-init" strategy="afterInteractive">{`
         window.dataLayer = window.dataLayer || [];

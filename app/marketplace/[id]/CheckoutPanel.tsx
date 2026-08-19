@@ -395,6 +395,16 @@ export default function CheckoutPanel({
   // Finding one look among 197 meant opening a section and scrolling a wall of
   // thumbnails. Buyers arrive knowing the name — the carousels sell looks by
   // name — so the picker can be searched by name.
+  // Opening the checkout is the strongest buying signal short of paying, and the
+  // people who do it and then leave are the audience worth paying to reach again.
+  // The panel only mounts when the sheet opens, so this fires once per open
+  // whichever button got them here. No-op unless the pixel is configured.
+  useEffect(() => {
+    const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
+    if (typeof fbq !== "function") return;
+    fbq("track", "InitiateCheckout", { content_ids: [templateId], content_type: "product" });
+  }, [templateId]);
+
   const [lightingQuery, setLightingQuery] = useState("");
   const lightingSearchable = lightingLooks.length >= 12;
   const lightingTokens = lightingQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);

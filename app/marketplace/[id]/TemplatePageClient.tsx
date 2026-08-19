@@ -171,6 +171,14 @@ export default function TemplatePage() {
   const [selectedPkg, setSelectedPkg] = useState<1 | 5 | 10>(1);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState<string | null>(null);
+
+  // Someone landing on a template from an ad is the top of the retargeting
+  // funnel. No-op unless the pixel is configured.
+  useEffect(() => {
+    const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
+    if (typeof fbq !== "function") return;
+    fbq("track", "ViewContent", { content_ids: [id], content_type: "product" });
+  }, [id]);
   const [showQR, setShowQR] = useState(false);
   const [showGift, setShowGift] = useState(false);
   const [giftBuying, setGiftBuying] = useState(false);

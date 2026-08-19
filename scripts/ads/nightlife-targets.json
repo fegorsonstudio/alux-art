@@ -1,0 +1,168 @@
+{
+  "_readme": [
+    "Places our buyer is standing when they need look 197: a dark room, a phone that cannot hold it.",
+    "",
+    "kind=district is a pin over a cluster of venues. Meta's smallest radius is about 1km and the",
+    "Victoria Island clubs sit inside one of those circles, so pinning each club separately would",
+    "buy the same people several times over. kind=venue is only used where a place sits away from",
+    "any cluster and would otherwise be missed.",
+    "",
+    "'search' is what to type into Meta's location box. It geocodes as you type, which is the check",
+    "on every address below — if a pin lands in the wrong country it shows up there, not here.",
+    "nights: 1=Mon ... 7=Sun. Empty means every night the ad set runs."
+  ],
+  "priceTiers": {
+    "core": "Lagos + Abuja. Naira pricing, our own city, cheapest CPM.",
+    "secondary": "Other Nigerian cities. Thinner nightlife data, one pin each.",
+    "diaspora": "London, US, Dubai, South Africa. Higher CPM, higher spending power."
+  },
+  "targets": [
+    {
+      "id": "lag-vi-axis",
+      "name": "Victoria Island club axis",
+      "kind": "district",
+      "city": "Lagos", "country": "NG", "tier": "core",
+      "search": "Adeola Odeku Street, Victoria Island, Lagos",
+      "radiusKm": 3,
+      "nights": [3, 5, 6, 7],
+      "covers": [
+        "Club Pablo / Cubana — 1090 Adeola Odeku St",
+        "De Chandelier — 234b Adeola Odeku St",
+        "Club DNA — 76 Adetokunbo Ademola St",
+        "Club Envy — 237 Kofo Abayomi St",
+        "Nitro Club — 14 Adeola Hopewell St",
+        "Rumors — 2 Akin Adesola St",
+        "Quilox — Ozumba Mbadiwe Ave",
+        "Hard Rock Cafe — Landmark Village"
+      ],
+      "note": "The densest nightlife square kilometre in Nigeria. One pin, eight venues."
+    },
+    {
+      "id": "lag-shiro-mon",
+      "name": "Shiro Lagos — Obi's House Mondays",
+      "kind": "venue",
+      "city": "Lagos", "country": "NG", "tier": "core",
+      "search": "Shiro Lagos, Victoria Island",
+      "radiusKm": 2,
+      "nights": [1],
+      "note": "DJ Obi's weekly Monday Afrobeats party. The one Monday night in Lagos worth paying for; runs 6pm-4am."
+    },
+    {
+      "id": "lag-lekki-ph1",
+      "name": "Lekki Phase 1",
+      "kind": "district",
+      "city": "Lagos", "country": "NG", "tier": "core",
+      "search": "Fola Osibo Road, Lekki Phase 1, Lagos",
+      "radiusKm": 4,
+      "nights": [3, 5, 6, 7],
+      "covers": [
+        "Secrets Palace — 60 Fola Osibo Rd",
+        "Bayrock Lifestyle — 7b Adebayo Doherty Rd",
+        "Owens Lounge — Agungi Rd",
+        "MOOD Beach Club"
+      ]
+    },
+    {
+      "id": "lag-oniru",
+      "name": "Oniru",
+      "kind": "district",
+      "city": "Lagos", "country": "NG", "tier": "core",
+      "search": "Oniru, Victoria Island, Lagos",
+      "radiusKm": 2,
+      "nights": [3, 5, 6, 7],
+      "covers": ["Silverfox — 25 Akinogun St, off New Market Rd"]
+    },
+    {
+      "id": "lag-just-ask",
+      "name": "Just Ask Club (Lekki-Epe)",
+      "kind": "venue",
+      "city": "Lagos", "country": "NG", "tier": "core",
+      "search": "Km 35 Lekki-Epe Expressway, Lagos",
+      "radiusKm": 3,
+      "nights": [5, 6, 7],
+      "note": "Sits far down the expressway, outside every other Lagos pin. Own pin or it is missed."
+    },
+    {
+      "id": "lag-ikeja-gra",
+      "name": "Ikeja GRA",
+      "kind": "district",
+      "city": "Lagos", "country": "NG", "tier": "core",
+      "search": "Ikeja GRA, Lagos",
+      "radiusKm": 4,
+      "nights": [5, 6, 7],
+      "note": "Mainland nightlife. Different crowd from the island and much cheaper to reach."
+    },
+    {
+      "id": "abj-wuse2-strip",
+      "name": "Wuse 2 — Adetokunbo Ademola Crescent",
+      "kind": "district",
+      "city": "Abuja", "country": "NG", "tier": "core",
+      "search": "Adetokunbo Ademola Crescent, Wuse 2, Abuja",
+      "radiusKm": 3,
+      "nights": [3, 5, 6, 7],
+      "covers": [
+        "Steam Night Life — 439",
+        "Avatar Hush — Plot 215",
+        "Play Lounge / Play Imperial — 167",
+        "Cubana Bush Bar — 130",
+        "Sofa Lounge — 81",
+        "De Root Underground — Plot 1057",
+        "Xtacy Lounge — 51A Agadez Cres",
+        "606 Lounge — 1145 Aminu Kano Cres",
+        "Hustle & Bustle — 80 Aminu Kano Cres",
+        "Reset Club — 5 Lobito Cres",
+        "Tokyo Nightlife — Atbara St"
+      ],
+      "note": "Abuja's highest concentration of clubs, essentially one street. Eleven venues, one pin."
+    },
+    {
+      "id": "abj-maitama",
+      "name": "Maitama",
+      "kind": "district",
+      "city": "Abuja", "country": "NG", "tier": "core",
+      "search": "Maitama, Abuja",
+      "radiusKm": 3,
+      "nights": [3, 5, 6, 7],
+      "covers": [
+        "The Wine Cave — 8 Missouri St",
+        "Caribbean Lounge — 11 Amazon St",
+        "Safari Nite Club — Transcorp Hilton"
+      ],
+      "note": "Older, wealthier crowd than Wuse 2."
+    },
+    {
+      "id": "abj-jabi-asokoro",
+      "name": "Jabi and Asokoro",
+      "kind": "district",
+      "city": "Abuja", "country": "NG", "tier": "core",
+      "search": "Jabi, Abuja",
+      "radiusKm": 4,
+      "nights": [5, 6, 7]
+    },
+    { "id": "ph-new-gra", "name": "New GRA / Trans Amadi", "kind": "district", "city": "Port Harcourt", "country": "NG", "tier": "secondary", "search": "New GRA, Port Harcourt", "radiusKm": 5, "nights": [5, 6, 7], "note": "Largest concentration of bars and clubs in PH." },
+    { "id": "enugu", "name": "Enugu nightlife", "kind": "district", "city": "Enugu", "country": "NG", "tier": "secondary", "search": "Independence Layout, Enugu", "radiusKm": 5, "nights": [5, 6, 7] },
+    { "id": "asaba", "name": "Asaba nightlife", "kind": "district", "city": "Asaba", "country": "NG", "tier": "secondary", "search": "Asaba, Delta", "radiusKm": 5, "nights": [5, 6, 7] },
+    { "id": "benin", "name": "Benin City nightlife", "kind": "district", "city": "Benin City", "country": "NG", "tier": "secondary", "search": "Benin City, Edo", "radiusKm": 5, "nights": [5, 6, 7] },
+    { "id": "ibadan", "name": "Ibadan nightlife", "kind": "district", "city": "Ibadan", "country": "NG", "tier": "secondary", "search": "Bodija, Ibadan", "radiusKm": 5, "nights": [5, 6, 7] },
+
+    { "id": "ldn-shoreditch", "name": "Shoreditch", "kind": "district", "city": "London", "country": "GB", "tier": "diaspora", "search": "Shoreditch, London", "radiusKm": 2, "nights": [5, 6], "covers": ["Club Aquarium", "The Lighthouse Club"] },
+    { "id": "ldn-peckham", "name": "Peckham", "kind": "district", "city": "London", "country": "GB", "tier": "diaspora", "search": "Peckham, London", "radiusKm": 2, "nights": [5, 6], "covers": ["Jumbi", "Prince of Peckham"] },
+    { "id": "ldn-hackney", "name": "Hackney", "kind": "district", "city": "London", "country": "GB", "tier": "diaspora", "search": "Hackney, London", "radiusKm": 3, "nights": [5, 6], "note": "Warehouse parties." },
+    { "id": "ldn-mos", "name": "Ministry of Sound", "kind": "venue", "city": "London", "country": "GB", "tier": "diaspora", "search": "Ministry of Sound, London", "radiusKm": 2, "nights": [5, 6], "note": "Afrobeats nights Fri and Sat until 5am." },
+
+    { "id": "hou-westheimer", "name": "Westheimer corridor", "kind": "district", "city": "Houston", "country": "US", "tier": "diaspora", "search": "11920 Westheimer Rd, Houston, TX", "radiusKm": 5, "nights": [5, 6, 7], "covers": ["Naija Lounge — 11920 Westheimer Rd"], "note": "Sunday included for the No Wahala weekly." },
+    { "id": "atl-buckhead", "name": "Buckhead and Lindbergh", "kind": "district", "city": "Atlanta", "country": "US", "tier": "diaspora", "search": "Buckhead, Atlanta, GA", "radiusKm": 5, "nights": [5, 6, 7] },
+    { "id": "nyc", "name": "New York Afrobeats scene", "kind": "district", "city": "New York", "country": "US", "tier": "diaspora", "search": "Brooklyn, New York", "radiusKm": 6, "nights": [5, 6] },
+    { "id": "dc", "name": "Washington DC", "kind": "district", "city": "Washington", "country": "US", "tier": "diaspora", "search": "U Street NW, Washington, DC", "radiusKm": 4, "nights": [5, 6] },
+    { "id": "dallas", "name": "Dallas", "kind": "district", "city": "Dallas", "country": "US", "tier": "diaspora", "search": "Deep Ellum, Dallas, TX", "radiusKm": 5, "nights": [5, 6] },
+    { "id": "la", "name": "Los Angeles", "kind": "district", "city": "Los Angeles", "country": "US", "tier": "diaspora", "search": "Hollywood, Los Angeles, CA", "radiusKm": 5, "nights": [5, 6] },
+
+    { "id": "dxb-business-bay", "name": "Business Bay", "kind": "district", "city": "Dubai", "country": "AE", "tier": "diaspora", "search": "Business Bay, Dubai", "radiusKm": 4, "nights": [4, 5, 6] },
+    { "id": "dxb-jbr", "name": "JBR / Dubai Marina", "kind": "district", "city": "Dubai", "country": "AE", "tier": "diaspora", "search": "Jumeirah Beach Residence, Dubai", "radiusKm": 4, "nights": [4, 5, 6], "note": "UAE weekend is Fri-Sat; Thursday night is the big one." },
+    { "id": "dxb-barsha", "name": "Al Barsha", "kind": "district", "city": "Dubai", "country": "AE", "tier": "diaspora", "search": "Al Barsha, Dubai", "radiusKm": 4, "nights": [4, 5, 6] },
+
+    { "id": "jhb-sandton", "name": "Sandton", "kind": "district", "city": "Johannesburg", "country": "ZA", "tier": "diaspora", "search": "Sandton, Johannesburg", "radiusKm": 5, "nights": [5, 6, 7] },
+    { "id": "cpt-district-six", "name": "Long St / District Six", "kind": "district", "city": "Cape Town", "country": "ZA", "tier": "diaspora", "search": "Harrington Street, Cape Town", "radiusKm": 3, "nights": [5, 6, 7], "covers": ["Saint Champagne Bar — 37 Harrington St", "District — 61b Harrington St"] },
+    { "id": "cpt-atlantic", "name": "Atlantic Seaboard", "kind": "district", "city": "Cape Town", "country": "ZA", "tier": "diaspora", "search": "Camps Bay, Cape Town", "radiusKm": 4, "nights": [5, 6, 7] }
+  ]
+}
