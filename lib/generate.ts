@@ -90,7 +90,16 @@ async function probeNearestAspect(url: string): Promise<AspectRatio | null> {
     const buf = Buffer.from(await res.arrayBuffer());
     const meta = await sharp(buf).metadata();
     if (!meta.width || !meta.height) return null;
-    const ratio = meta.width / meta.height;
+    // Phones almost never rotate the pixels — they leave the sensor's landscape
+    // frame alone and write an EXIF orientation tag saying which way is up.
+    // Reading width/height raw therefore calls most portrait phone photos
+    // "landscape", and this value picks the shape we generate at: a customer
+    // uploaded a portrait photo, was quoted 4:5, and got a landscape image back.
+    // Orientation 5-8 are the quarter-turns, where displayed w/h are swapped.
+    const turned = (meta.orientation ?? 1) >= 5;
+    const dispW = turned ? meta.height : meta.width;
+    const dispH = turned ? meta.width : meta.height;
+    const ratio = dispW / dispH;
     let best: AspectRatio | null = null;
     let bestDist = Infinity;
     for (const key of Object.keys(ASPECTS) as AspectRatio[]) {
