@@ -130,22 +130,26 @@ const POSTERS = [
     kicker: "Same face · same outfit · new light",
   },
   {
-    // One look rather than the whole archive. The night-flash post is what people
-    // actually comment on, and "197 looks, pick one" is a worse instruction than
-    // "type 197" when someone has already decided which one they want.
-    file: "tutorial-g7x-night-flash.jpg",
+    // One look rather than the whole archive: "type 197" beats "pick from 197"
+    // for someone who already knows which one they want.
+    //
+    // Deliberately NOT night-only. The look is a direct on-camera flash, and a
+    // flash is just as visible at a pool at five in the afternoon as it is in a
+    // club — writing it as a night look would tell people it does not apply to
+    // the photo in their hand.
+    file: "tutorial-g7x-flash.jpg",
     eyebrow: "Tutorial · Look 197",
-    title: "Relight a dark\nnight photo",
-    sub: "The club was too dark for your phone. Put a real flash on it afterwards. *₦2,000 per photo*.",
+    title: "Put a real flash\non your photo",
+    sub: "Direct on-camera flash, added to a photo you already took. Day or night. *₦2,000 per photo*.",
     steps: [
       "Open *The Gear Equalizer* and tap Book This Look.",
       "Pick *4:5* at the top, and crop your photo to 4:5 so the two match. A different shape gets cropped to fit and you lose part of the frame.",
-      "Upload the night photo you already have — club, dim restaurant, bad hall light, a car at night.",
+      "Upload the photo you already took — poolside in the afternoon, indoors, a night out, anywhere.",
       "Type *197* in the search box. One look comes up and it is already chosen: *Night Paparazzi G7X*.",
-      "Leave the background on *keeping yours*. This look is about the light on you, not the room.",
+      "Leave the background on *keeping yours*. The look changes the light on you; the place you were stays exactly as it was.",
       "Pay and download.",
     ],
-    kicker: "Same night · same outfit · real flash",
+    kicker: "Same place · same outfit · real flash",
   },
   {
     file: "tutorial-asset-extractor.jpg",
