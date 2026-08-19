@@ -212,6 +212,7 @@ async function offerTemplates(creds: WaCreds, creator: Creator, phone: string, s
   const templates = await sql<{ id: string; title: string; category: string | null }[]>`
     SELECT id, title, category FROM templates
     WHERE creator_id = ${creator.id} AND status = 'published'
+      AND category NOT IN ('photo_upgrade', 'asset_extract')
     ORDER BY created_at DESC LIMIT 10`;
 
   if (!templates.length) {
@@ -250,6 +251,7 @@ async function chooseTemplate(
   const templates = await sql<{ id: string; title: string }[]>`
     SELECT id, title FROM templates
     WHERE creator_id = ${creator.id} AND status = 'published'
+      AND category NOT IN ('photo_upgrade', 'asset_extract')
     ORDER BY created_at DESC LIMIT 10`;
 
   let picked: { id: string; title: string } | undefined;
@@ -339,20 +341,39 @@ async function collectPhoto(
 
 /** Step 4 — price and confirmation. */
 async function showQuote(
-  creds: WaCreds, creator: Creator, phone: string, sessionId: string, templateId: string | null
+  creds: WaCreds, creator: Creator, phone: string, sessionId: string, templateId: string | null,
+  packageSize = 5
 ) {
   const [tpl] = await sql<{ title: string }[]>`SELECT title FROM templates WHERE id = ${templateId}`;
-  const price = await priceFor(5, "NGN");
+  const price = await priceFor(templateId, packageSize);
+
+  // A creator can leave a size unpriced. Quoting a guess there would be quoting
+  // a number the booking route will not honour, so the buyer is offered the
+  // sizes that do have a price instead of being given an invented one.
+  if (price === null) {
+    const alt = (await Promise.all([1, 5, 10].map(async (n) => ({ n, p: await priceFor(templateId, n) }))))
+      .filter((x) => x.p !== null);
+    if (!alt.length) {
+      await sendText(creds, phone,
+        "That style isn't set up for booking yet. Reply *menu* and I'll show you the others.");
+      return;
+    }
+    await sendText(creds, phone,
+      "That style comes as " + alt.map((a) => a.n + " photo" + (a.n > 1 ? "s" : "")
+        + " (\u20a6" + a.p!.toLocaleString() + ")").join(" or ")
+      + ".\n\nReply with the number of photos you want.");
+    return;
+  }
 
   await sql`
     UPDATE whatsapp_sessions
-    SET state = 'CONFIRMING', package_size = 5, currency = 'NGN', updated_at = NOW()
+    SET state = 'CONFIRMING', package_size = ${packageSize}, currency = 'NGN', updated_at = NOW()
     WHERE id = ${sessionId}`;
 
   const body =
     `That's everything I need 📸\n\n` +
     `*${tpl?.title ?? "Your shoot"}*\n` +
-    `5 photos — ₦${price.toLocaleString()}\n\n` +
+    `${packageSize} photo${packageSize > 1 ? "s" : ""} — ₦${price.toLocaleString()}\n\n` +
     "Shall I go ahead?";
 
   const r = await sendButtons(creds, phone, {
@@ -489,12 +510,31 @@ async function ensureUser(session: Session, phone: string): Promise<string> {
   return data.user.id;
 }
 
-async function priceFor(packageSize: number, currency: string): Promise<number> {
-  const key = `price_${packageSize}_${currency.toLowerCase()}`;
-  const [row] = await sql<{ value: string }[]>`SELECT value FROM app_config WHERE key = ${key}`;
-  const parsed = row?.value ? parseInt(String(row.value), 10) : NaN;
-  if (Number.isFinite(parsed)) return parsed;
-  return currency === "NGN" ? { 1: 1500, 5: 7500, 10: 15000 }[packageSize] ?? 7500 : packageSize;
+/**
+ * What this template costs, read the way the web checkout reads it.
+ *
+ * This used to read `price_N_ngn` out of app_config — the platform's own
+ * direct-shoot prices, which have nothing to do with what a creator charges for
+ * their template. The buyer was quoted one number in chat and then charged a
+ * different one by the booking route, because that route prices from the
+ * template row. Same source now, so the two cannot disagree.
+ *
+ * The 12% / 60% fallbacks mirror app/api/marketplace/[id]/route.ts, which is
+ * what fills those fields in for a template that only has a 10-image price.
+ */
+async function priceFor(templateId: string | null, packageSize: number): Promise<number | null> {
+  if (!templateId) return null;
+  const [t] = await sql<{
+    price_1_ngn: string | null; price_5_ngn: string | null; price_ngn: string | null;
+  }[]>`SELECT price_1_ngn, price_5_ngn, price_ngn FROM templates WHERE id = ${templateId}`;
+  if (!t) return null;
+
+  const ten = t.price_ngn != null ? Number(t.price_ngn) : null;
+  const one = t.price_1_ngn != null ? Number(t.price_1_ngn) : (ten ? Math.round(ten * 0.12) : null);
+  const five = t.price_5_ngn != null ? Number(t.price_5_ngn) : (ten ? Math.round(ten * 0.60) : null);
+
+  const chosen = packageSize === 1 ? one : packageSize === 10 ? ten : five;
+  return Number.isFinite(chosen) && (chosen ?? 0) > 0 ? Number(chosen) : null;
 }
 
 // ── Payload shapes ───────────────────────────────────────────────────────────
