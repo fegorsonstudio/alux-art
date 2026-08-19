@@ -603,10 +603,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     updated_at: now,
   });
 
-  // Per-image shoots run every photo through BOTH engines on the same prompt and
-  // the same references, and the buyer keeps whichever looks like them. That is
-  // what the per-image price pays for, and it is never explained in the UI — it
-  // is simply what the product does.
+  // Per-image shoots run every photo TWICE on the same prompt and the same
+  // references, and the buyer keeps whichever they prefer. The model is
+  // stochastic, so two passes genuinely differ — which is the point: one bad
+  // take no longer costs somebody their photo. Never explained in the UI; it is
+  // simply what the product does.
+  //
+  // Both passes are nano-banana. A second engine was tried and removed: GPT
+  // Image 2 tops out around 1024px while this pipeline delivers 3072x5504, so
+  // the pair would have been a 4K file beside one with a twelfth of the pixels
+  // at the same price. Upscaling the small one was the obvious patch and was
+  // rejected — the upscaler redraws faces, which is the exact failure this
+  // product keeps having to fight.
   //
   // Two rows on the SAME slot number rather than 2N slots: the slot is the source
   // photo, and photo→slot mapping is what the generator uses to pick which
@@ -615,10 +623,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // booking would fail outright if the doubling were stored there.
   const slots = perImagePricing
     ? Array.from({ length: buyerPackageSize }, (_, i) => i)
-        .flatMap(i => [
-          slotRow(i, "fal-ai/nano-banana-2/edit"),
-          slotRow(i, "openai/gpt-image-2/edit"),
-        ])
+        .flatMap(i => [slotRow(i, null), slotRow(i, null)])
     : Array.from({ length: buyerPackageSize }, (_, i) => slotRow(i, null));
   await sql`INSERT INTO shoot_images ${sql(slots)}`;
 

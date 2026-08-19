@@ -116,7 +116,6 @@ export const FAL_MODELS = [
   "fal-ai/nano-banana-2/edit",
   "fal-ai/flux/dev",
   "fal-ai/flux-pro/v1.1",
-  "openai/gpt-image-2/edit",
 ];
 
 export interface User {

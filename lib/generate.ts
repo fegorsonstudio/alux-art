@@ -264,7 +264,7 @@ async function callFalWithFallback(
   aspectRatio: string,
   resolution: string,
   dbForbiddenWords: Array<{ word: string; replacement: string }> = [],
-  generationModel: "nano-banana" | "seedream" | "gpt-image-2" = "nano-banana",
+  generationModel: "nano-banana" | "seedream" = "nano-banana",
   allowAdult = false,
   soulId: { loraUrl: string; triggerPhrase: string } | null = null
 ): Promise<{ url: string; sanitized: boolean; model: string }> {
@@ -272,17 +272,13 @@ async function callFalWithFallback(
     ? "fal-ai/flux-lora"
     : generationModel === "seedream"
       ? "fal-ai/bytedance/seedream/v4/edit"
-      : generationModel === "gpt-image-2"
-        ? "openai/gpt-image-2/edit"
-        : "fal-ai/nano-banana-2/edit";
+      : "fal-ai/nano-banana-2/edit";
   const generate = (prompt: string) =>
     soulId
       ? generateImageWithFluxLora(prompt, soulId.loraUrl, soulId.triggerPhrase, aspectRatio, resolution)
       : generationModel === "seedream"
         ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution, allowAdult)
-        : generationModel === "gpt-image-2"
-          ? generateImageWithGptImage2(prompt, imageUrls, aspectRatio)
-          : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
+        : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
 
   const isForbidden = (err: unknown) =>
     err instanceof Error && err.message.toLowerCase().includes("forbidden");
@@ -1154,69 +1150,6 @@ const SEEDREAM_SIZES: Record<string, Record<string, unknown>> = {
     "21:9": { width: 4096, height: 1755 },
   },
 };
-
-/**
- * Explicit pixel sizes for GPT Image 2.
- *
- * It has no `aspect_ratio` input. Its presets are square/portrait_4_3/
- * portrait_16_9 and their landscape twins — 4:5, the shape this product sells in,
- * is NOT among them. Passing a preset would silently hand back the wrong shape,
- * and a shape mismatch is precisely what made the model repaint a customer's face
- * and produce "I look totally different". So every ratio is given real numbers.
- */
-const GPT_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
-  "4:5":  { width: 1024, height: 1280 },
-  "3:4":  { width: 1024, height: 1365 },
-  "2:3":  { width: 1024, height: 1536 },
-  "9:16": { width: 864,  height: 1536 },
-  "1:1":  { width: 1024, height: 1024 },
-  "5:4":  { width: 1280, height: 1024 },
-  "4:3":  { width: 1365, height: 1024 },
-  "3:2":  { width: 1536, height: 1024 },
-  "16:9": { width: 1536, height: 864 },
-  "21:9": { width: 1536, height: 658 },
-};
-
-/**
- * The second opinion. Same prompt and same reference images as nano-banana, so
- * the buyer gets two attempts at the same brief and keeps whichever looks like
- * them. Deliberately never told to them — it is just what the product does.
- */
-async function generateImageWithGptImage2(
-  prompt: string,
-  imageUrls: string[],
-  aspectRatio: string
-): Promise<string> {
-  if (USE_MOCK_FAL) return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
-
-  const image_size = GPT_IMAGE_SIZES[aspectRatio] ?? GPT_IMAGE_SIZES["4:5"];
-
-  let response;
-  try {
-    response = await fal.subscribe("openai/gpt-image-2/edit", {
-      input: {
-        prompt,
-        // Same cap as nano-banana, so the reference map built for one fits the other.
-        image_urls: imageUrls.slice(0, NANO_BANANA_MAX_IMAGES),
-        image_size,
-        quality: "high",
-        num_images: 1,
-        output_format: "png",
-      },
-    });
-  } catch (err) {
-    const e = err as { message?: string; status?: number; body?: unknown };
-    const detail = e?.body ? JSON.stringify(e.body).slice(0, 600) : "";
-    console.error("[fal] gpt-image-2/edit failed:", e?.status ?? "", e?.message ?? String(err),
-      detail ? "| detail: " + detail : "", "| images:", imageUrls.length, "| size:", JSON.stringify(image_size));
-    throw new Error(`fal ${e?.status ?? ""} ${e?.message ?? String(err)}${detail ? " — " + detail : ""}`.trim());
-  }
-
-  const output = ((response as Record<string, unknown>).data || response) as FalOutput;
-  const url = output.images?.[0]?.url ?? "";
-  if (!url) throw new Error("gpt-image-2 returned no image URL");
-  return url;
-}
 
 async function generateImageWithSeedream(
   prompt: string,
@@ -3494,12 +3427,7 @@ export async function startGenerationWorker(
         console.error("[airtable] logFalPayload failed:", err);
       }
 
-      // A per-image shoot books two rows per photo, one per engine, and the row
-      // carries which. Anything else keeps the shoot-wide model exactly as before.
-      const slotModel = slotImg.configured_model === "openai/gpt-image-2/edit"
-        ? "gpt-image-2" as const
-        : generationModel;
-      const { url: rawFalUrl, sanitized: promptWasSanitized, model: modelUsed } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, slotModel, allowAdult, soulId);
+      const { url: rawFalUrl, sanitized: promptWasSanitized, model: modelUsed } = await callFalWithFallback(slotPrompt, slotReferenceMap.urls, slotAspect, resolution, dbForbiddenWords, generationModel, allowAdult, soulId);
       if (promptWasSanitized) {
         console.log(`[generate] slot ${slot}: sanitized prompt succeeded after Forbidden rejection`);
       }
