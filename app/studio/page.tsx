@@ -99,6 +99,7 @@ export default function WorkspacePage() {
   const [retouch, setRetouch] = useState<{
     retouch: { status: string; priceNgn: number; imageCount: number; unlocked: boolean; free: boolean } | null;
     images: Array<{ id: string; slot: number | null; previewUrl: string; width: number | null; height: number | null }>;
+    offer?: { imageCount: number; priceNgn: number } | null;
   } | null>(null);
   // /api/shoots returns 20 at a time plus a cursor. The page used to drop the
   // cursor, so anyone past 20 shoots could not reach their older galleries at
@@ -342,7 +343,7 @@ export default function WorkspacePage() {
     let cancelled = false;
     fetch(`/api/shoots/${id}/retouched`)
       .then(r => (r.ok ? r.json() : null))
-      .then(data => { if (!cancelled && data?.retouch) setRetouch(data); })
+      .then(data => { if (!cancelled && (data?.retouch || data?.offer)) setRetouch(data); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [currentShoot?.id, currentShoot?.status]);
@@ -783,6 +784,32 @@ export default function WorkspacePage() {
   const activePackage = packages.find((pkg) => pkg.imageCount === packageSize) ?? DEFAULT_PACKAGES.find((pkg) => pkg.imageCount === packageSize)!;
   const activePrice = currency === "USD" ? activePackage.usd : activePackage.ngn;
   const price = currency === "USD" ? `$${activePrice}` : `NGN ${activePrice.toLocaleString()}`;
+  const [retouchBusy, setRetouchBusy] = useState(false);
+
+  const requestRetouch = async (shootId: string) => {
+    setRetouchBusy(true);
+    try {
+      const res = await fetch(`/api/shoots/${shootId}/retouched/request`, { method: "POST" });
+      if (res.ok) {
+        const fresh = await fetch(`/api/shoots/${shootId}/retouched`).then(r => r.ok ? r.json() : null);
+        if (fresh?.retouch) setRetouch(fresh);
+      }
+    } catch { /* the button re-enables; nothing was charged */ }
+    setRetouchBusy(false);
+  };
+
+  const payForRetouch = async (shootId: string) => {
+    setRetouchBusy(true);
+    try {
+      const res = await fetch(`/api/shoots/${shootId}/retouched/pay`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      // Hand off to the gateway. Nothing local is marked paid — only the webhook
+      // does that, so closing the tab leaves the files locked, correctly.
+      if (data.authorizationUrl) { window.location.href = data.authorizationUrl; return; }
+    } catch { /* fall through */ }
+    setRetouchBusy(false);
+  };
+
   const downloadRetouched = (shootId: string, imageId: string, slot: number | null) => {
     // Same synchronous-navigation trick as downloadImage: build the link in the
     // tap itself or mobile Safari's user-activation rule kills the download.
@@ -1546,8 +1573,52 @@ export default function WorkspacePage() {
                     ))}
                   </div>
                   {!retouch.retouch.unlocked && (
-                    <p className={styles.retouchHint}>{t("retouchedPayHint")}</p>
+                    <>
+                      <p className={styles.retouchHint}>{t("retouchedPayHint")}</p>
+                      <button
+                        className={styles.zipBtn}
+                        disabled={retouchBusy}
+                        onClick={() => payForRetouch(currentShoot.id)}
+                      >
+                        {retouchBusy
+                          ? t("retouchRedirecting")
+                          : t("retouchedPayBtn", { price: `₦${retouch.retouch.priceNgn.toLocaleString()}` })}
+                      </button>
+                    </>
                   )}
+                </div>
+              )}
+
+              {/* The offer. Only on a finished shoot that has never asked, and it
+                  takes no money: the studio retouches by hand afterwards and the
+                  buyer pays to unlock the files once they can see them. */}
+              {currentShoot.status === "COMPLETE" && !retouch?.retouch && retouch?.offer && (
+                <div className={styles.retouchBlock}>
+                  <div className={styles.retouchHead}>
+                    <span className={styles.retouchTitle}>{t("retouchOfferTitle")}</span>
+                    <span className={styles.retouchMeta}>
+                      {t("retouchOfferPrice", { price: `₦${retouch.offer.priceNgn.toLocaleString()}`, count: retouch.offer.imageCount })}
+                    </span>
+                  </div>
+                  <p className={styles.retouchHint}>{t("retouchOfferBody")}</p>
+                  <button
+                    className={styles.zipBtn}
+                    disabled={retouchBusy}
+                    onClick={() => requestRetouch(currentShoot.id)}
+                  >
+                    {retouchBusy ? t("retouchSending") : t("retouchOfferBtn")}
+                  </button>
+                </div>
+              )}
+
+              {/* Asked for, not yet delivered. */}
+              {retouch?.retouch?.status === "REQUESTED" && retouch.images.length === 0 && (
+                <div className={styles.retouchBlock}>
+                  <div className={styles.retouchHead}>
+                    <span className={styles.retouchTitle}>{t("retouchedTitle")}</span>
+                    <span className={styles.retouchMeta}>{t("retouchRequestedMeta")}</span>
+                  </div>
+                  <p className={styles.retouchHint}>{t("retouchRequestedBody")}</p>
                 </div>
               )}
 

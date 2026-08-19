@@ -106,6 +106,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // ── Retouch unlock ───────────────────────────────────────────────────────
+  // The only thing in the system that sets shoot_retouch.paid. The client never
+  // writes it, so an abandoned Paystack tab or a forged callback unlocks
+  // nothing.
+  if (metadata?.type === "retouch_payment") {
+    const { shoot_id: retouchShootId, user_id: retouchUserId } = metadata as Record<string, string>;
+    if (!retouchShootId) return NextResponse.json({ ok: true });
+
+    const unlocked = await sql`
+      UPDATE shoot_retouch
+      SET paid = true, paid_at = ${now}, paystack_reference = ${reference}, updated_at = ${now}
+      WHERE shoot_id = ${retouchShootId} AND paid = false
+      RETURNING shoot_id, price_ngn
+    `;
+    if (!unlocked.length) {
+      // Already unlocked — a duplicate webhook, or comped before payment landed.
+      console.log(`[paystack webhook] retouch ${retouchShootId} already unlocked`);
+      return NextResponse.json({ ok: true });
+    }
+
+    await sql`
+      INSERT INTO payments (id, user_id, shoot_id, provider, provider_reference, amount_ngn, status, paid_at, metadata, created_at)
+      VALUES (
+        ${crypto.randomUUID()}, ${retouchUserId}, ${retouchShootId}, 'paystack',
+        ${reference}, ${Math.round(amount / 100)}, 'success', ${now}, ${JSON.stringify(event.data)}, ${now}
+      )
+    `.catch(() => {});
+
+    console.log(`[paystack webhook] retouch unlocked for shoot ${retouchShootId}`);
+    return NextResponse.json({ ok: true });
+  }
+
   // ── Gift purchase fulfillment ────────────────────────────────────────────
   if (metadata?.type === "gift_purchase") {
     const { gift_id } = metadata as Record<string, string>;

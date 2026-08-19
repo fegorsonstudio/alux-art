@@ -723,3 +723,11 @@
 .retouchTitle { font-size: 0.9rem; font-weight: 750; color: #2d727b; letter-spacing: 0.01em; }
 .retouchMeta { font-size: 0.78rem; color: rgba(45, 114, 123, 0.75); }
 .retouchHint { margin: 10px 0 0; font-size: 0.78rem; color: rgba(45, 114, 123, 0.75); line-height: 1.5; }
+
+/* Dark theme. The block above was written against the light panel and is
+   unreadable on the dark one — dark teal on near-black. Same treatment the
+   gallery header already uses. */
+.app[data-theme="dark"] .retouchBlock { border-top-color: rgba(184, 211, 213, 0.22); }
+.app[data-theme="dark"] .retouchTitle { color: #e2f6f7; }
+.app[data-theme="dark"] .retouchMeta { color: #b8d3d5; }
+.app[data-theme="dark"] .retouchHint { color: #b8d3d5; }

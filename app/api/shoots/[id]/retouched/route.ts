@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { r2ProxyUrl } from "@/lib/r2";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
+import { retouchPriceNgn } from "@/lib/retouch-pricing";
 
 /**
  * The retouched gallery for one shoot.
@@ -33,9 +34,19 @@ export async function GET(
        FROM shoot_retouch WHERE shoot_id = ${id}`;
 
   // No order at all is the normal case for the vast majority of shoots. Say so
-  // plainly rather than 404-ing, so the client can render the offer instead of
-  // treating it as an error.
-  if (!order) return NextResponse.json({ retouch: null, images: [] });
+  // plainly rather than 404-ing, and hand back what the offer would cost — the
+  // client must never multiply the price out itself, or what a buyer is quoted
+  // and what they are charged can drift apart.
+  if (!order) {
+    const [{ n }] = await sql<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM shoot_images
+      WHERE shoot_id = ${id} AND status = 'COMPLETE'`;
+    return NextResponse.json({
+      retouch: null,
+      images: [],
+      offer: n > 0 ? { imageCount: n, priceNgn: retouchPriceNgn(n) } : null,
+    });
+  }
 
   const rows = await sql<{
     id: string; slot: number | null; storage_bucket: string; storage_path: string;
