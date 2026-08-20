@@ -62,6 +62,18 @@ export async function notifyRetouchReady(input: RetouchReadyEmailInput): Promise
       body: JSON.stringify({
         from: `Alux Art <${from}>`,
         to: [to],
+        // A text/plain alternative. An HTML-only message scores worse with spam
+        // filters, and this one had already landed in a buyer's spam folder.
+        text:
+          `Hi ${name},\n\n`
+          + `Your ${count} ${input.imageCount === 1 ? "is" : "are"} finished and waiting in your studio, `
+          + `in a new Retouched gallery inside the same shoot.\n\n`
+          + (input.free
+              ? "These are on us - nothing to pay. Open your studio and download them.\n\n"
+              : `They are ready to download once the retouch is paid for.\n\n`)
+          + `${url}\n\n`
+          + "Retouching is done by hand on the images you generated - skin, stray hairs, "
+          + "and the small things a model notices. Your original files are untouched.\n",
         subject: input.free
           ? `Your retouched images are ready`
           : `Your retouched images are ready to download`,
@@ -74,6 +86,19 @@ export async function notifyRetouchReady(input: RetouchReadyEmailInput): Promise
             <p style="margin:22px 0">
               <a href="${url}" style="background:#1f8f77;color:#fff;text-decoration:none;
                  padding:11px 20px;border-radius:8px;font-size:15px;display:inline-block">Open my studio</a>
+            </p>
+            <!--
+              The address in plain text as well as on the button.
+              A buyer opened this on her phone, the button took her into Gmail's
+              in-app browser, and Google refuses OAuth sign-in inside an embedded
+              webview (disallowed_useragent) — so the button "did not work" and
+              she never reached her images. The link cannot force an external
+              browser, but a visible address can be copied into one.
+            -->
+            <p style="font-size:13px;color:#6d7f78;margin:0 0 18px">
+              Button not working? Some email apps block sign-in. Copy this into your
+              browser instead:<br>
+              <span style="color:#10231b">${url}</span>
             </p>
             <p style="font-size:13px;color:#6d7f78">Retouching is done by hand on the images you generated —
             skin, stray hairs, and the small things a model notices. Your original files are untouched and

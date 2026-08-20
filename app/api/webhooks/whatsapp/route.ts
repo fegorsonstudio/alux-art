@@ -779,10 +779,24 @@ async function confirm(
     body: JSON.stringify({
       packageSize: session.package_size ?? 5,
       currency: session.currency ?? "NGN",
-      // A per-image booking is refused outright without a lighting selection,
-      // and the route re-reads the recipe server-side from this id — the chat
+      // The archive looks travel in lightingByPath, keyed by each photo's
+      // storage path — NOT in `enhance.lighting`, which sanitizeEnhanceSelection
+      // only accepts for the handful of built-in rig presets. Sending a real
+      // look id there was silently discarded and the booking came back "Pick a
+      // lighting look, a background, or both" with a look plainly chosen.
+      //
+      // One look across every photo, which is what the buyer picked in chat.
+      // The route re-reads the recipe server-side from these ids, so the chat
       // never handles prompt text.
-      ...(session.enhance_look_id ? { enhance: { lighting: session.enhance_look_id } } : {}),
+      ...(session.enhance_look_id
+        ? {
+            enhance: {
+              lightingByPath: Object.fromEntries(
+                (paths ?? []).map((p) => [p.storage_path, session.enhance_look_id as string])
+              ),
+            },
+          }
+        : {}),
       ...(session.aspect_ratio ? { aspectRatio: session.aspect_ratio } : {}),
       identityRefs: paths.map((p, i) => ({
         id: crypto.randomUUID(),
