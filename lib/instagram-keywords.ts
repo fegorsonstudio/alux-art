@@ -17,6 +17,15 @@
  * emoji) because people type "studio!!" and "Studio 🙌", not "STUDIO".
  */
 
+/**
+ * The WhatsApp shortcut, with the trigger word pre-filled.
+ *
+ * Tapping it opens a chat with "G7X" already typed; sending it puts the buyer
+ * straight on the Gear Equalizer with look 197 chosen, asking for photos. Six
+ * steps on a website is a lot to ask of somebody reading comments on a phone.
+ */
+const WA_LINK = "https://wa.me/2349076858017?text=G7X";
+
 export interface Keyword {
   /** What the caption asks people to comment. Keep it one word and easy to spell. */
   word: string;
@@ -56,17 +65,20 @@ export const KEYWORDS: Keyword[] = [
     reply:
       "Here's the relighting tool 👇\n\n" +
       `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32\n\n` +
-      "How to use it:\n" +
+      "Or skip all of it — message us on WhatsApp and just send *G7X*:\n" +
+      `${WA_LINK}\n\n` +
+      "How to use it on the website instead:\n" +
       "1. Open the link and tap Book This Look\n" +
       "2. Pick 4:5 at the top, and crop your photo to 4:5 so they match\n" +
       "3. Upload your photo\n" +
       "4. Type 197 in the search box — it picks the look for you\n" +
       "5. Leave the background on \"keeping yours\"\n" +
-      "6. Pay ₦1,000 and download\n\n" +
+      "6. Pay ₦2,000 per photo and download\n\n" +
       "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
       "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
     replyNoLink:
       "Here's the relighting tool 👇\n\n" +
+      "Fastest way: message us on WhatsApp on 0907 685 8017 and send G7X.\n\n" +
       "Tap our name at the top of this chat — the link is in our bio, then open " +
       "The Gear Equalizer.\n\n" +
       "How to use it:\n" +
@@ -75,7 +87,7 @@ export const KEYWORDS: Keyword[] = [
       "3. Upload your photo\n" +
       "4. Type 197 in the search box — it picks the look for you\n" +
       "5. Leave the background on \"keeping yours\"\n" +
-      "6. Pay ₦1,000 and download\n\n" +
+      "6. Pay ₦2,000 per photo and download\n\n" +
       "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
       "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
     publicReply: "Sent you a DM 📩",
@@ -92,14 +104,14 @@ export const KEYWORDS: Keyword[] = [
       + "Upload one photo of the piece — on a client, on a hanger, however you shot it — "
       + "and it comes back on its own: front, three-quarter, side and back, no model and no mannequin.\n\n"
       + "It also lifts wigs, shoes, bags, jewellery, nails, makeup, and the backdrop on its own. "
-      + "₦1,000 per photo.",
+      + "₦2,000 per photo.",
     replyNoLink:
       "Here's The Asset Extractor 👇\n\n"
       + "Tap our name at the top of this chat — the link is in our bio, then open The Asset Extractor.\n\n"
       + "Upload one photo of the piece — on a client, on a hanger, however you shot it — "
       + "and it comes back on its own: front, three-quarter, side and back, no model and no mannequin.\n\n"
       + "It also lifts wigs, shoes, bags, jewellery, nails, makeup, and the backdrop on its own. "
-      + "₦1,000 per photo.",
+      + "₦2,000 per photo.",
     publicReply: "Sent you a DM 📩",
   },
   {

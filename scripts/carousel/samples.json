@@ -1,0 +1,95 @@
+[
+  {
+    "id": "sample-buyers-lighting",
+    "account": "buyers",
+    "caption": "You already took the photo. The lighting just let you down.\n\n195 studio lighting looks. Upload the pictures you already have and relight them like a proper studio shoot — same person, same pose, same moment.\n\nFrom ₦1,000 per photo.\n\naluxartandframes.shop\n\n#lagosphotographer #nigerianphotographer #studiolighting #photoediting #portraitphotography #naijaphotographer #photographytips #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "The Gear Equalizer",
+        "title": "Your photo wasn't the problem.",
+        "body": "The *lighting* was.",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "Every photographer has these shots.",
+        "body": "Good moment. Good outfit. *Flat, ugly light.* They sit in a folder because they are almost right."
+      },
+      {
+        "type": "shot",
+        "title": "195 lighting setups. One tap each.",
+        "body": "Rembrandt, rim light, beauty dish, golden hour, gels, smoke, stage spots.",
+        "image": "C:/Users/FUJITSU/AppData/Local/Temp/claude/c--Users-FUJITSU-Documents-claude-apps/b8b18db7-7d8e-4900-ae1f-77023bdd2393/scratchpad/lighting-library.jpg"
+      },
+      {
+        "type": "steps",
+        "title": "How it works",
+        "items": [
+          "Upload the photos you already took",
+          "Pick a lighting look for each one",
+          "Keep your background or swap in a studio backdrop",
+          "Download, at studio resolution"
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Gear worth millions. Or *₦1,000*.",
+        "body": "Photographers spend years collecting this lighting kit. You pay per photo, one to ten at a time."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "The Gear Equalizer",
+        "title": "Rescue the photos you already have.",
+        "body": "Built by a photographer, for photographers."
+      }
+    ]
+  },
+  {
+    "id": "sample-creators-templates",
+    "account": "creators",
+    "caption": "Photographers: your style can earn while you sleep.\n\nYou already have a signature look. Turn it into a template on Alux Art and get paid every time someone books it. You set the price. You keep listing.\n\nYou're not selling your photos. You're selling your eye.\n\naluxartandframes.shop\n\n#photographerbusiness #nigerianphotographer #lagoscreatives #passiveincome #creatoreconomy #photographytips #aluxart",
+    "slides": [
+      {
+        "type": "cover",
+        "eyebrow": "For photographers",
+        "title": "Get paid for your eye, not your hours.",
+        "body": "Your signature look can earn *while you sleep.*",
+        "kicker": "Swipe →"
+      },
+      {
+        "type": "text",
+        "title": "You already have a style.",
+        "body": "The lighting you always reach for. The way you pose people. Clients book you for it. Right now it only earns when *you* are holding the camera."
+      },
+      {
+        "type": "steps",
+        "title": "Turn it into a template",
+        "items": [
+          "Upload sample images in your style",
+          "Set your lighting, poses and options",
+          "Choose your own price",
+          "Publish it to the marketplace"
+        ]
+      },
+      {
+        "type": "shot",
+        "title": "One photo becomes a catalogue.",
+        "body": "The Asset Extractor lifts a gown out of a client photo as a product sheet — front, three-quarter, side and back.",
+        "image": "C:/Users/FUJITSU/AppData/Local/Temp/claude/c--Users-FUJITSU-Documents-claude-apps/b8b18db7-7d8e-4900-ae1f-77023bdd2393/scratchpad/asset-extractor.jpg",
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "title": "Every booking pays you.",
+        "body": "List as many styles as you like. There is no cap, and the template keeps earning long after you built it."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Become a creator",
+        "title": "Your style. Their shoot. Your money.",
+        "body": "Free to list. Set your own price."
+      }
+    ]
+  }
+]

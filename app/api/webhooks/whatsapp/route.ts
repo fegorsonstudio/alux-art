@@ -5,6 +5,7 @@ import { r2Upload } from "@/lib/r2";
 import { createServiceClient } from "@/lib/supabase-server";
 import { SITE_URL } from "@/lib/site-url";
 import { resolveTrigger } from "@/lib/whatsapp-triggers";
+import { t, languageMenu, parseLanguage } from "@/lib/whatsapp-lang";
 import {
   sendText, sendImage, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
@@ -51,6 +52,7 @@ type Session = {
   user_id: string | null;
   enhance_look_id: string | null;
   aspect_ratio: string | null;
+  locale: string | null;
   idle_seconds: number | null;
 };
 
@@ -164,7 +166,7 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
   // Universal escape hatches, valid in any state.
   if (/^(restart|start over|cancel|reset|menu|styles)$/i.test(text) || choiceId === "restart") {
     await resetSession(session.id);
-    await offerTemplates(creds, creator, phone, session.id);
+    await offerTemplates(creds, creator, phone, session.id, session);
     return;
   }
 
@@ -177,7 +179,7 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
   const stale = (session.idle_seconds ?? 0) > 60 * 60 * 2;
   if (greeted && (session.state === "IDLE" || session.selfie_count === 0 || stale)) {
     await resetSession(session.id);
-    await offerTemplates(creds, creator, phone, session.id);
+    await offerTemplates(creds, creator, phone, session.id, session);
     return;
   }
   if (greeted) {
@@ -199,9 +201,23 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
   // A conversation abandoned days ago should not resume mid-question.
   if (stale && session.state !== "IDLE" && session.selfie_count === 0) {
     await resetSession(session.id);
-    await offerTemplates(creds, creator, phone, session.id);
+    await offerTemplates(creds, creator, phone, session.id, session);
     return;
   }
+  // Language is a property of the person, not of the booking — so it is set
+  // here, works in any state, and deliberately survives restart.
+  if (/^(language|langue|idioma|lingua|\u0644\u063a\u0629|\u8bed\u8a00|pidgin|naija)$/i.test(text)) {
+    const direct = parseLanguage(text);
+    if (direct) {
+      await sql`UPDATE whatsapp_sessions SET locale = ${direct}, updated_at = NOW() WHERE id = ${session.id}`;
+      await sendText(creds, phone, t(direct, "languageSet"));
+      return;
+    }
+    await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_LANGUAGE', updated_at = NOW() WHERE id = ${session.id}`;
+    await sendText(creds, phone, `${t(session?.locale ?? null, "languagePrompt")}\n\n${languageMenu()}`);
+    return;
+  }
+
   if (/^(help|support|human|agent)$/i.test(text)) {
     await sendText(creds, phone,
       "A person will pick this up shortly.\n\n" +
@@ -215,6 +231,8 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
       return chooseTemplate(creds, creator, phone, session, choiceId ?? text);
     case "COLLECTING_PHOTOS":
       return collectPhoto(creds, creator, phone, session, msg);
+    case "CHOOSING_LANGUAGE":
+      return chooseLanguage(creds, creator, phone, session, choiceId ?? text);
     case "CHOOSING_RATIO":
       return chooseRatio(creds, creator, phone, session, choiceId ?? text);
     case "CHOOSING_LOOK":
@@ -230,14 +248,14 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
         "Your shoot is being made now — it usually takes a few minutes. " +
         "I'll send the photos here as soon as they're ready.");
     default:
-      return offerTemplates(creds, creator, phone, session.id);
+      return offerTemplates(creds, creator, phone, session.id, session);
   }
 }
 
 async function loadSession(creatorId: string, phone: string): Promise<Session> {
   const [existing] = await sql<Session[]>`
     SELECT id, creator_id, customer_phone, state, template_id, shoot_id,
-           selfie_count, selfie_paths, package_size, currency, user_id, enhance_look_id, aspect_ratio,
+           selfie_count, selfie_paths, package_size, currency, user_id, enhance_look_id, aspect_ratio, locale,
            EXTRACT(EPOCH FROM (NOW() - COALESCE(last_message_at, updated_at)))::int AS idle_seconds
     FROM whatsapp_sessions
     WHERE creator_id = ${creatorId} AND customer_phone = ${phone}`;
@@ -248,7 +266,7 @@ async function loadSession(creatorId: string, phone: string): Promise<Session> {
     VALUES (${creatorId}, ${phone}, 'IDLE')
     ON CONFLICT (creator_id, customer_phone) DO UPDATE SET updated_at = NOW()
     RETURNING id, creator_id, customer_phone, state, template_id, shoot_id,
-              selfie_count, selfie_paths, package_size, currency, user_id, enhance_look_id, aspect_ratio,
+              selfie_count, selfie_paths, package_size, currency, user_id, enhance_look_id, aspect_ratio, locale,
               0 AS idle_seconds`;
   return created;
 }
@@ -258,6 +276,8 @@ async function resetSession(id: string) {
     UPDATE whatsapp_sessions
     SET state = 'IDLE', template_id = NULL, shoot_id = NULL, selfie_count = 0,
         selfie_paths = '{}', package_size = NULL, payment_reference = NULL, enhance_look_id = NULL, aspect_ratio = NULL,
+        -- locale is deliberately NOT cleared: someone who chose Pidgin should
+        -- not be dropped back into English by starting a new booking.
         delivered_at = NULL, updated_at = NOW()
     WHERE id = ${id}`;
 }
@@ -342,9 +362,10 @@ async function startFromTrigger(
     await sendText(creds, phone,
       `${heading}\n\n` +
       "Send me the photos you want done.\n\n" +
-      "📎 *Send them as files, not as photos.* Tap the paperclip, choose " +
-      "*Document*, and pick your images. WhatsApp squeezes anything sent the " +
-      "normal way, and you paid for the detail.\n\n" +
+      "📸 *Tap HD before you send.* In the photo picker there is an *HD* " +
+      "button at the top right - turn it on so WhatsApp does not shrink them.\n\n" +
+      "Even better: send them as *files* (paperclip, then Document). That keeps " +
+      "them exactly as they are.\n\n" +
       "Up to 10. Reply *done* when you have finished.");
     return;
   }
@@ -353,12 +374,34 @@ async function startFromTrigger(
     `${heading}\n\n` +
     `Send me ${PHOTOS_NEEDED} photos of yourself, one at a time — face, side on, ` +
     "full body, and one smiling.\n\n" +
-    "📎 *Send them as files* (paperclip → Document) so they keep their quality.\n\n" +
+    "📸 *Tap HD before you send* - the button at the top right of the " +
+    "photo picker. Or send them as files (paperclip, then Document) to keep " +
+    "them untouched.\n\n" +
     "No filters and no sunglasses please.");
 }
 
+
+/** They asked to change language and are naming one. */
+async function chooseLanguage(
+  creds: WaCreds, creator: Creator, phone: string, session: Session, answer: string
+) {
+  const picked = parseLanguage(answer);
+  if (!picked) {
+    await sendText(creds, phone, `${t(session?.locale ?? null, "languagePrompt")}\n\n${languageMenu()}`);
+    return;
+  }
+  await sql`
+    UPDATE whatsapp_sessions SET locale = ${picked}, state = 'IDLE', updated_at = NOW()
+    WHERE id = ${session.id}`;
+  await sendText(creds, phone, t(picked, "languageSet"));
+  await offerTemplates(creds, creator, phone, session.id, session);
+}
+
 /** Step 1 — greet and show this creator's styles. */
-async function offerTemplates(creds: WaCreds, creator: Creator, phone: string, sessionId: string) {
+async function offerTemplates(
+  creds: WaCreds, creator: Creator, phone: string, sessionId: string,
+  session?: { locale: string | null }
+) {
   // Per-image templates are included: the Gear Equalizer is the best seller, so
   // leaving it out of the menu hid the main product. The conversation branches
   // later on what it asks for — photos you already shot, rather than selfies.
@@ -385,33 +428,24 @@ async function offerTemplates(creds: WaCreds, creator: Creator, phone: string, s
 
   await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_TEMPLATE', updated_at = NOW() WHERE id = ${sessionId}`;
 
-  // Lead with a picture. A wall of text from an unknown number reads as spam;
-  // the logo makes it look like the business the buyer just messaged.
-  await sendImage(creds, phone, `${SITE_URL}/logo.png`,
-    `Hi 👋 This is ${brandName(creator)}.\n\n` +
-    "I turn photos into proper studio shots — usually in a few minutes.\n\n" +
-    "Here's what we do 👇");
-
-  // Then the styles themselves, as pictures. Choosing from names alone is
-  // guesswork: the buyer cannot tell what any of these look like from a title.
-  const previewable = templates.filter((t) => t.cov && t.bkt).slice(0, 5);
-  for (let i = 0; i < previewable.length; i++) {
-    const t = previewable[i];
-    const perImage = t.category === "photo_upgrade" || t.category === "asset_extract";
-    const price = perImage
-      ? (t.p1 ? `₦${Number(t.p1).toLocaleString()} per photo` : "")
-      : (t.p5 ? `₦${Number(t.p5).toLocaleString()} for 5 photos` : "");
-    await sendImage(
-      creds, phone,
-      `${SITE_URL}/api/media?b=${encodeURIComponent(t.bkt!)}&p=${encodeURIComponent(t.cov!)}`,
-      `*${i + 1}. ${t.title}*${price ? `\n${price}` : ""}`
-    );
-  }
+  // TWO images, not one per style.
+  //
+  // The first version sent a logo and then one picture per template: five
+  // separate messages that arrived as a catalogue being dumped on somebody. A
+  // chat cannot put a thumbnail next to a menu row — the list API has no image
+  // field — so the pictures live inside one sheet instead, which shows more and
+  // can be zoomed like any photo.
+  //
+  // Both are pre-rendered by scripts/build-wa-cards.mjs and served from R2, so
+  // this sends two links rather than building anything per conversation. Rebuild
+  // them when the templates change.
+  const cards = `${SITE_URL}/api/media?b=template-images&p=`;
+  await sendImage(creds, phone, `${cards}${encodeURIComponent("whatsapp/welcome.jpg")}`,
+    t(session?.locale ?? null, "greeting", brandName(creator)));
+  await sendImage(creds, phone, `${cards}${encodeURIComponent("whatsapp/styles.jpg")}`);
 
   const r = await sendList(creds, phone, {
-    body: previewable.length
-      ? "Which one would you like? Tap below, or just reply with its number."
-      : "Which style would you like?",
+    body: t(session?.locale ?? null, "askStyle"),
     button: "See styles",
     rows: templates.map((t) => ({ id: `tpl:${t.id}`, title: t.title.slice(0, 24), description: t.category ?? undefined })),
   });
@@ -506,7 +540,7 @@ async function collectPhoto(
       return askWhereItGoes(creds, creator, phone, session);
     }
     await sendText(creds, phone, perImage
-      ? "Send the photos as pictures, not as text or a file. Reply *done* when you have finished."
+      ? "Send the photos as pictures (tap *HD* first), or as files. Reply *done* when you have finished."
       : `I need photos to work from. Send ${PHOTOS_NEEDED - session.selfie_count} more as pictures, not as text or a file.`);
     return;
   }

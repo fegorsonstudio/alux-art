@@ -1,0 +1,356 @@
+- generic [active] [ref=f87e1]:
+  - generic [ref=f87e3]:
+    - generic [ref=f87e4]:
+      - complementary "Skip links" [ref=f87e5]:
+        - link "Skip to main content" [ref=f87e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f87e7]: Skip to main content
+        - button "Keyboard shortcuts" [ref=f87e8]:
+          - generic [ref=f87e9]: Keyboard shortcuts
+        - link "Accessibility Help external, opens new window" [ref=f87e10] [cursor=pointer]:
+          - /url: https://cloud.google.com/docs/accessibility?hl=en_US
+          - generic [ref=f87e11]:
+            - text: Accessibility Help
+            - generic "external, opens new window" [ref=f87e12]:
+              - img "external, opens new window" [ref=f87e13]:
+                - img [ref=f87e14]
+        - link "Accessibility Feedback external, opens new window" [ref=f87e16] [cursor=pointer]:
+          - /url: https://support.google.com/accessibility/contact/feedback?hl=en_US
+          - generic [ref=f87e17]:
+            - text: Accessibility Feedback
+            - generic "external, opens new window" [ref=f87e18]:
+              - img "external, opens new window" [ref=f87e19]:
+                - img [ref=f87e20]
+      - banner [ref=f87e23]:
+        - generic [ref=f87e24]:
+          - navigation [ref=f87e27]:
+            - button "Navigation menu (.)" [ref=f87e28] [cursor=pointer]:
+              - img [ref=f87e30]
+          - link "Google Cloud Platform Home" [ref=f87e32] [cursor=pointer]:
+            - /url: /
+            - generic:
+              - img
+          - button "You're currently working in Alux art . Hit enter to switch projects, folders, or organizations" [ref=f87e265]:
+            - generic [ref=f87e266]:
+              - img [ref=f87e268]
+              - generic [ref=f87e271]: Alux art
+        - search "Google Cloud Platform" [ref=f87e46]:
+          - combobox [ref=f87e47]:
+            - searchbox "Enter query to search for resources, docs, products, and more" [ref=f87e48]
+          - button "See all search results" [disabled]:
+            - generic:
+              - img
+            - generic: Search
+        - generic [ref=f87e49]:
+          - generic [ref=f87e50]:
+            - button "Open or close Gemini Cloud Assist chat (Alt G)" [ref=f87e275] [cursor=pointer]:
+              - img [ref=f87e277]
+            - button "Activate Cloud Shell (G then S)" [ref=f87e279] [cursor=pointer]:
+              - img [ref=f87e281]
+            - button "Open notifications" [ref=f87e57] [cursor=pointer]:
+              - img [ref=f87e59]
+            - button "Settings and utilities" [ref=f87e65] [cursor=pointer]:
+              - img [ref=f87e67]
+          - 'button "Account: Ebele Charles (fegorsonphotography@gmail.com)" [ref=f87e285]':
+            - img [ref=f87e286]
+    - generic [ref=f87e80]:
+      - navigation "Breadcrumb" [ref=f87e291]:
+        - link "Google Auth Platform" [ref=f87e294] [cursor=pointer]:
+          - /url: /auth?project=alux-art
+          - img [ref=f87e297]
+          - generic [ref=f87e301]: Google Auth Platform
+        - list [ref=f87e302]:
+          - listitem [ref=f87e303]:
+            - generic [ref=f87e304]: /
+            - link "Branding" [ref=f87e307] [cursor=pointer]:
+              - /url: /auth/branding?project=alux-art
+              - generic [ref=f87e309]: Branding
+      - generic [ref=f87e91]:
+        - navigation "Google Auth Platform" [ref=f87e98]:
+          - generic [ref=f87e99]:
+            - list "Overview, 1 of 7 More options Branding, 2 of 7 More options Audience, 3 of 7 More options Clients, 4 of 7 More options Data Access, 5 of 7 More options Verification Center, 6 of 7 More options Settings, 7 of 7 More options" [ref=f87e113]:
+              - listitem [ref=f87e114]:
+                - generic [ref=f87e117]:
+                  - link "Overview, 1 of 7" [ref=f87e118] [cursor=pointer]:
+                    - /url: /auth/overview
+                    - generic [ref=f87e119]:
+                      - img [ref=f87e122]
+                      - generic [ref=f87e124]: Overview
+                  - button "More options" [ref=f87e126] [cursor=pointer]:
+                    - img [ref=f87e128]
+              - listitem [ref=f87e130]:
+                - generic [ref=f87e133]:
+                  - link "Branding, 2 of 7" [ref=f87e134] [cursor=pointer]:
+                    - /url: /auth/branding
+                    - generic [ref=f87e135]:
+                      - img [ref=f87e138]
+                      - generic [ref=f87e144]: Branding
+                  - button "More options" [ref=f87e146] [cursor=pointer]:
+                    - img [ref=f87e148]
+              - listitem [ref=f87e150]:
+                - generic [ref=f87e153]:
+                  - link "Audience, 3 of 7" [ref=f87e154] [cursor=pointer]:
+                    - /url: /auth/audience
+                    - generic [ref=f87e155]:
+                      - img [ref=f87e158]
+                      - generic [ref=f87e160]: Audience
+                  - button "More options" [ref=f87e162] [cursor=pointer]:
+                    - img [ref=f87e164]
+              - listitem [ref=f87e166]:
+                - generic [ref=f87e169]:
+                  - link "Clients, 4 of 7" [ref=f87e170] [cursor=pointer]:
+                    - /url: /auth/clients
+                    - generic [ref=f87e171]:
+                      - img [ref=f87e174]
+                      - generic [ref=f87e176]: Clients
+                  - button "More options" [ref=f87e178] [cursor=pointer]:
+                    - img [ref=f87e180]
+              - listitem [ref=f87e182]:
+                - generic [ref=f87e185]:
+                  - link "Data Access, 5 of 7" [ref=f87e186] [cursor=pointer]:
+                    - /url: /auth/scopes
+                    - generic [ref=f87e187]:
+                      - img [ref=f87e190]
+                      - generic [ref=f87e193]: Data Access
+                  - button "More options" [ref=f87e195] [cursor=pointer]:
+                    - img [ref=f87e197]
+              - listitem [ref=f87e199]:
+                - generic [ref=f87e202]:
+                  - link "Verification Center, 6 of 7" [ref=f87e203] [cursor=pointer]:
+                    - /url: /auth/verification
+                    - generic [ref=f87e204]:
+                      - img [ref=f87e207]
+                      - generic [ref=f87e210]: Verification Center
+                  - button "More options" [ref=f87e212] [cursor=pointer]:
+                    - img [ref=f87e214]
+              - listitem [ref=f87e216]:
+                - generic [ref=f87e219]:
+                  - link "Settings, 7 of 7" [ref=f87e220] [cursor=pointer]:
+                    - /url: /auth/settings
+                    - generic [ref=f87e221]:
+                      - img [ref=f87e224]
+                      - generic [ref=f87e226]: Settings
+                  - button "More options" [ref=f87e228] [cursor=pointer]:
+                    - img [ref=f87e230]
+            - button "Toggle Google Auth Platform navigation menu" [pressed] [ref=f87e233] [cursor=pointer]:
+              - img [ref=f87e236]
+        - main [ref=f87e239]:
+          - generic [ref=f87e320]:
+            - generic [ref=f87e323]:
+              - heading "Branding" [level=1] [ref=f87e326]:
+                - generic [ref=f87e327]: Branding
+              - button "Information and summary" [ref=f87e333] [cursor=pointer]:
+                - img [ref=f87e335]
+            - generic [ref=f87e342]:
+              - generic [ref=f87e344]:
+                - text: App information
+                - paragraph [ref=f87e345]: This shows in the consent screen, and helps end users know who you are and contact you
+                - generic [ref=f87e346]:
+                  - generic [ref=f87e348] [cursor=pointer]:
+                    - generic [ref=f87e349]:
+                      - text: App name
+                      - generic [ref=f87e350]: "*"
+                    - textbox "App name" [ref=f87e352]: Alux Art
+                  - generic [ref=f87e355]: The name of the app asking for consent
+                - generic [ref=f87e357]:
+                  - generic [ref=f87e359] [cursor=pointer]:
+                    - generic [ref=f87e360]:
+                      - text: User support email
+                      - generic [ref=f87e361]: "*"
+                    - combobox "User support email" [ref=f87e363]:
+                      - generic [ref=f87e364]:
+                        - generic [ref=f87e366]: fegorsonphotography@gmail.com
+                        - img [ref=f87e368]
+                  - generic [ref=f87e372]:
+                    - text: For users to contact you with questions about their consent.
+                    - link "Learn more about the user support email external, opens new window" [ref=f87e373] [cursor=pointer]:
+                      - /url: https://support.google.com/cloud/answer/10311615#user-support-email
+                      - text: Learn more
+                      - img "external, opens new window" [ref=f87e374]:
+                        - img [ref=f87e375]
+                - generic [ref=f87e378]:
+                  - heading "App logo" [level=3] [ref=f87e379]
+                  - paragraph [ref=f87e380]:
+                    - text: This is your logo. It helps people recognize your app and is displayed on the OAuth consent screen.
+                    - text: After you upload a logo, you will need to submit your app for verification unless the app is configured for internal use only or has a publishing status of "Testing".
+                    - link "FAQ to learn more about OAuth app verification external, opens new window" [ref=f87e381] [cursor=pointer]:
+                      - /url: https://support.google.com/cloud/answer/9110914
+                      - text: Learn more
+                      - img "external, opens new window" [ref=f87e382]:
+                        - img [ref=f87e383]
+                  - img "Current App logo" [ref=f87e386]
+                  - button "Remove" [ref=f87e387]:
+                    - img [ref=f87e389]:
+                      - img [ref=f87e390]
+                    - generic [ref=f87e392]: Remove
+                  - heading "Change logo" [level=4] [ref=f87e396]:
+                    - button "Change logo" [ref=f87e398]:
+                      - generic [ref=f87e399]:
+                        - img [ref=f87e401]:
+                          - img [ref=f87e402]
+                        - text: Change logo
+                      - img [ref=f87e405]:
+                        - img [ref=f87e406]
+                - text: App domain
+                - paragraph [ref=f87e408]: To protect you and your users, Google only allows apps using OAuth to use Authorized Domains. The following information will be shown to your users on the consent screen.
+                - generic [ref=f87e411]:
+                  - generic [ref=f87e413] [cursor=pointer]:
+                    - generic [ref=f87e414]: Application home page
+                    - textbox "Application home page" [ref=f87e416]: https://aluxartandframes.shop
+                  - generic [ref=f87e419]: Provide users a link to your home page
+                - generic [ref=f87e423]:
+                  - generic [ref=f87e425] [cursor=pointer]:
+                    - generic [ref=f87e426]: Application privacy policy link
+                    - textbox "Application privacy policy link" [ref=f87e428]: https://aluxartandframes.shop/privacy
+                  - generic [ref=f87e431]: Provide users a link to your public privacy policy
+                - generic [ref=f87e435]:
+                  - generic [ref=f87e437] [cursor=pointer]:
+                    - generic [ref=f87e438]: Application terms of service link
+                    - textbox "Application terms of service link" [ref=f87e440]: https://aluxartandframes.shop/terms
+                  - generic [ref=f87e443]: Provide users a link to your public terms of service
+                - group "Authorized domains" [ref=f87e447]:
+                  - generic "Authorized domains" [ref=f87e449]:
+                    - heading "Authorized domains" [level=2] [ref=f87e451]
+                    - button "Help with authorized domains" [ref=f87e453] [cursor=pointer]:
+                      - img [ref=f87e455]
+                  - generic [ref=f87e458]:
+                    - text: When a domain is used on the consent screen or in an OAuth client’s configuration, it must be pre-registered here. If your app needs to go through verification, please go to the
+                    - link "Google Search Console" [ref=f87e459] [cursor=pointer]:
+                      - /url: https://search.google.com/search-console/about
+                    - text: to check if your domains are authorized.
+                    - link "Learn more about the OAuth authorized domain limit external, opens new window" [ref=f87e460] [cursor=pointer]:
+                      - /url: https://support.google.com/cloud/answer/7650096
+                      - text: Learn more
+                      - img "external, opens new window" [ref=f87e461]:
+                        - img [ref=f87e462]
+                    - text: about the authorized domain limit.
+                  - group [ref=f87e465]:
+                    - generic [ref=f87e466]:
+                      - group "Item 1" [ref=f87e467]:
+                        - generic [ref=f87e471] [cursor=pointer]:
+                          - generic [ref=f87e472]:
+                            - generic [ref=f87e473]: Authorized domain 1
+                            - generic [ref=f87e474]: "*"
+                          - textbox "Authorized domain 1" [ref=f87e476]:
+                            - /placeholder: example.com
+                            - text: ais-dev-xn3ord34vtcsfxpjulwji2-55182917983.europe-west2.run.app
+                        - button "Delete item. Item 1" [ref=f87e478] [cursor=pointer]:
+                          - img [ref=f87e480]
+                      - group "Item 2" [ref=f87e482]:
+                        - generic [ref=f87e486] [cursor=pointer]:
+                          - generic [ref=f87e487]:
+                            - generic [ref=f87e488]: Authorized domain 2
+                            - generic [ref=f87e489]: "*"
+                          - textbox "Authorized domain 2" [ref=f87e491]:
+                            - /placeholder: example.com
+                            - text: ais-shared-xn3ord34vtcsfxpjulwji2-55182917983.europe-west2.run.app
+                        - button "Delete item. Item 2" [ref=f87e493] [cursor=pointer]:
+                          - img [ref=f87e495]
+                      - group "Item 3" [ref=f87e497]:
+                        - generic [ref=f87e501] [cursor=pointer]:
+                          - generic [ref=f87e502]:
+                            - generic [ref=f87e503]: Authorized domain 3
+                            - generic [ref=f87e504]: "*"
+                          - textbox "Authorized domain 3" [ref=f87e506]:
+                            - /placeholder: example.com
+                            - text: ais-pre-xn3ord34vtcsfxpjulwji2-55182917983.europe-west2.run.app
+                        - button "Delete item. Item 3" [ref=f87e508] [cursor=pointer]:
+                          - img [ref=f87e510]
+                      - group "Item 4" [ref=f87e512]:
+                        - generic [ref=f87e516] [cursor=pointer]:
+                          - generic [ref=f87e517]:
+                            - generic [ref=f87e518]: Authorized domain 4
+                            - generic [ref=f87e519]: "*"
+                          - textbox "Authorized domain 4" [ref=f87e521]:
+                            - /placeholder: example.com
+                            - text: alux-art-332988128958.us-west1.run.app
+                        - button "Delete item. Item 4" [ref=f87e523] [cursor=pointer]:
+                          - img [ref=f87e525]
+                      - group "Item 5" [ref=f87e527]:
+                        - generic [ref=f87e531] [cursor=pointer]:
+                          - generic [ref=f87e532]:
+                            - generic [ref=f87e533]: Authorized domain 5
+                            - generic [ref=f87e534]: "*"
+                          - textbox "Authorized domain 5" [ref=f87e536]:
+                            - /placeholder: example.com
+                            - text: ais-dev-vcuymrv6b6m5vrvsh2cqfa-55182917983.europe-west2.run.app
+                        - button "Delete item. Item 5" [ref=f87e538] [cursor=pointer]:
+                          - img [ref=f87e540]
+                      - group "Item 6" [ref=f87e542]:
+                        - generic [ref=f87e546] [cursor=pointer]:
+                          - generic [ref=f87e547]:
+                            - generic [ref=f87e548]: Authorized domain 6
+                            - generic [ref=f87e549]: "*"
+                          - textbox "Authorized domain 6" [ref=f87e551]:
+                            - /placeholder: example.com
+                            - text: ais-shared-vcuymrv6b6m5vrvsh2cqfa-55182917983.europe-west2.run.app
+                        - button "Delete item. Item 6" [ref=f87e553] [cursor=pointer]:
+                          - img [ref=f87e555]
+                      - group "Item 7" [ref=f87e557]:
+                        - generic [ref=f87e561] [cursor=pointer]:
+                          - generic [ref=f87e562]:
+                            - generic [ref=f87e563]: Authorized domain 7
+                            - generic [ref=f87e564]: "*"
+                          - textbox "Authorized domain 7" [ref=f87e566]:
+                            - /placeholder: example.com
+                            - text: ais-pre-vcuymrv6b6m5vrvsh2cqfa-55182917983.europe-west2.run.app
+                        - button "Delete item. Item 7" [ref=f87e568] [cursor=pointer]:
+                          - img [ref=f87e570]
+                      - group "Item 8" [ref=f87e572]:
+                        - generic [ref=f87e576] [cursor=pointer]:
+                          - generic [ref=f87e577]:
+                            - generic [ref=f87e578]: Authorized domain 8
+                            - generic [ref=f87e579]: "*"
+                          - textbox "Authorized domain 8" [ref=f87e581]:
+                            - /placeholder: example.com
+                            - text: alux-art.firebaseapp.com
+                        - button "Delete item. Item 8" [ref=f87e583] [cursor=pointer]:
+                          - img [ref=f87e585]
+                      - group "Item 9" [ref=f87e587]:
+                        - generic [ref=f87e591] [cursor=pointer]:
+                          - generic [ref=f87e592]:
+                            - generic [ref=f87e593]: Authorized domain 9
+                            - generic [ref=f87e594]: "*"
+                          - textbox "Authorized domain 9" [ref=f87e596]:
+                            - /placeholder: example.com
+                            - text: owdfoxglbxrqhgqbvkon.supabase.co
+                        - button "Delete item. Item 9" [disabled] [ref=f87e598]:
+                          - img [ref=f87e600]
+                      - group "Item 10" [ref=f87e602]:
+                        - generic [ref=f87e606] [cursor=pointer]:
+                          - generic [ref=f87e607]:
+                            - generic [ref=f87e608]: Authorized domain 10
+                            - generic [ref=f87e609]: "*"
+                          - textbox "Authorized domain 10" [ref=f87e611]:
+                            - /placeholder: example.com
+                            - text: aluxartandframes.shop
+                        - button "Delete item. Item 10" [disabled] [ref=f87e613]:
+                          - img [ref=f87e615]
+                    - button "Add domain" [ref=f87e618]:
+                      - generic [ref=f87e620]:
+                        - img [ref=f87e622]
+                        - text: Add domain
+                - text: Developer contact information
+                - generic [ref=f87e626]:
+                  - generic [ref=f87e628] [cursor=pointer]:
+                    - generic [ref=f87e629]:
+                      - text: Email addresses
+                      - generic [ref=f87e630]: "*"
+                    - grid [ref=f87e632]:
+                      - row "fegorsonphotography@gmail.com Click to remove email" [ref=f87e633]:
+                        - gridcell "fegorsonphotography@gmail.com" [ref=f87e634]:
+                          - generic [ref=f87e635]: fegorsonphotography@gmail.com
+                        - gridcell "Click to remove email" [ref=f87e636]:
+                          - button "Click to remove email" [ref=f87e637]:
+                            - img [ref=f87e638]:
+                              - img [ref=f87e639]
+                      - textbox "Text field for emails" [ref=f87e641]
+                  - generic [ref=f87e644]: These email addresses are for Google to notify you about any changes to your project.
+              - button "Save" [disabled] [ref=f87e648]:
+                - generic [ref=f87e649]: Save
+              - button "Discard changes" [disabled] [ref=f87e650]:
+                - generic [ref=f87e651]: Discard changes
+  - iframe [ref=f87e263]:
+    
+  - iframe [ref=f87e653]:
+    

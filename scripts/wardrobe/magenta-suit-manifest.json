@@ -1,0 +1,45 @@
+{
+  "ownerId": "d80f9e08-014e-48b7-8545-b37652059605",
+  "uploads": {
+    "outfit": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/e5149b12-ef38-44c4-8b50-7dd873e720be-temp-image-106be9fd-eb4d-42df-9618-01c4a--outfit-deep-magenta-top-and-classic-black-trous.JPEG",
+      "bucket": "template-images",
+      "name": "Magenta Waistcoat and Black Wide-Leg Trousers",
+      "type": "outfit",
+      "label": "Outfit",
+      "hash": "f9e312e1d30013f7"
+    },
+    "shoes": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/44f08ab2-b119-452d-bf93-74628395d717-temp-image-106be9fd-eb4d-42df-9618-01c4a--shoes.JPEG",
+      "bucket": "template-images",
+      "name": "Chocolate Leather Pointed Pumps",
+      "type": "shoes",
+      "label": "Shoes",
+      "hash": "e38e7df99ecfdd70"
+    },
+    "jewellery": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/d8047664-9271-4727-8152-44aada7d34ef-temp-image-24cc815e-249d-4017-9386-8ea54--jewellery.JPEG",
+      "bucket": "template-images",
+      "name": "Gold Watch, Bangle Stack and Band Ring",
+      "type": "accessory",
+      "label": "Jewellery",
+      "hash": "14d585cb346e6fef"
+    },
+    "nails": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/41d25682-190d-4948-81b5-594cb4eab732-img-0594--nails.JPEG",
+      "bucket": "template-images",
+      "name": "Dark Chrome Cat-Eye Stiletto Nails",
+      "type": "nails",
+      "label": "Nails",
+      "hash": "ee7d1af4c2c644c9"
+    },
+    "backdrop": {
+      "storagePath": "d80f9e08-014e-48b7-8545-b37652059605/d76f8de8-70b5-486d-8da2-624124c89f77-Changing_lighting_color_palette_2K_202608091820.jpeg",
+      "bucket": "template-images",
+      "name": "Water Caustics on Dark Studio Walls",
+      "type": "backdrop",
+      "label": "Backdrop",
+      "hash": "5a3ffe44141e5c34"
+    }
+  }
+}

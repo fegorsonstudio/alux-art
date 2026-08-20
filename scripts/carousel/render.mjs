@@ -218,6 +218,55 @@ const SLIDES = {
       background:${MINT};display:inline-block;padding:26px 42px;border-radius:16px;
       align-self:flex-start;letter-spacing:-.01em;
     }`),
+
+  /**
+   * A contact sheet of styles, each with the word that summons it.
+   *
+   * Built for the WhatsApp opener. A chat cannot show a picture next to a menu
+   * row — the list API has no image field — so sending one image per style meant
+   * five separate messages that read as a catalogue dump. One sheet shows more
+   * in less space and can be scrolled and zoomed like any photo.
+   *
+   * The TRIGGER is the point of the tile, not decoration: it is what the buyer
+   * types to skip the menu entirely, so it is set in the accent colour and given
+   * its own line rather than tucked under the title.
+   *
+   * FOUR tiles, in a 2x2. Six was tried and the bottom row fell off the frame:
+   * 1080x1350 cannot hold three rows of thumbnail plus caption at a size worth
+   * looking at. Four large tiles beat six where two are invisible.
+   */
+  grid: (s, n, t, b) => shell(`
+    <div class="rule"></div>
+    <h2 style="font-size:46px">${em(s.title)}</h2>
+    ${s.body ? `<p class="body" style="font-size:26px;margin-top:14px;line-height:1.34">${em(s.body)}</p>` : ""}
+    <div class="grid">
+      ${(s.items ?? []).slice(0, 4).map((it) => `
+        <figure class="cell">
+          <div class="thumb"><img src="${it.image}" alt=""></div>
+          <figcaption>
+            <span class="cname">${esc(it.name ?? "")}</span>
+            ${it.trigger ? `<span class="ctrig">${esc(it.trigger)}</span>` : ""}
+          </figcaption>
+        </figure>`).join("")}
+    </div>
+    ${footer(n, t, b)}`, `
+    .grid{
+      /* min-height:0 is load-bearing: a grid inside a flex column defaults to
+         min-height:auto, so it grows to fit its content instead of shrinking
+         into the space left. Without it the bottom row and its captions run off
+         the bottom of the frame, which is exactly what happened. */
+      flex:1; min-height:0; margin:28px 0 26px; display:grid;
+      grid-template-columns:repeat(2, 1fr); grid-template-rows:repeat(2, 1fr); gap:20px;
+    }
+    .cell{margin:0;display:flex;flex-direction:column;min-height:0}
+    .thumb{
+      flex:1; min-height:0; border-radius:16px; overflow:hidden;
+      background:#0b1d15; border:1px solid rgba(67,204,178,.34);
+    }
+    .thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+    figcaption{padding-top:12px;display:flex;flex-direction:column;gap:3px}
+    .cname{font-size:25px;font-weight:700;color:${PAPER};line-height:1.15}
+    .ctrig{font-size:23px;font-weight:800;color:${MINT};letter-spacing:.02em}`),
 };
 
 /** Read a local image into a data: URI so it survives the about:blank origin. */
@@ -240,6 +289,13 @@ const IMAGE_KEYS = ["image", "before", "after"];
 async function inlineImages(slide) {
   const out = { ...slide };
   for (const k of IMAGE_KEYS) if (typeof slide[k] === "string" && slide[k]) out[k] = await dataUri(slide[k]);
+  // `grid` carries its images inside items[] rather than at the top level, so
+  // the key list above cannot reach them.
+  if (Array.isArray(slide.items)) {
+    out.items = await Promise.all(slide.items.map(async (it) => (
+      typeof it?.image === "string" && it.image ? { ...it, image: await dataUri(it.image) } : it
+    )));
+  }
   return out;
 }
 

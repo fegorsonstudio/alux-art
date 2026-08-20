@@ -1,0 +1,486 @@
+- generic [ref=f5e1]:
+  - main [ref=f5e2]:
+    - generic [ref=f5e3]:
+      - generic [ref=f5e5]:
+        - link "← Studio" [ref=f5e6] [cursor=pointer]:
+          - /url: /studio
+        - heading "Creator Dashboard" [level=1] [ref=f5e7]
+        - link "Browse marketplace →" [ref=f5e8] [cursor=pointer]:
+          - /url: /marketplace
+      - generic [ref=f5e9]:
+        - generic [ref=f5e10]:
+          - text: Payout setup incomplete.
+          - link "Complete your bank details →" [ref=f5e11] [cursor=pointer]:
+            - /url: /become-creator
+        - generic [ref=f5e12]:
+          - generic [ref=f5e13]:
+            - generic [ref=f5e14]: "20"
+            - generic [ref=f5e15]: Templates
+          - generic [ref=f5e16]:
+            - generic [ref=f5e17]: "13"
+            - generic [ref=f5e18]: Published
+          - generic [ref=f5e19]:
+            - generic [ref=f5e20]: "16"
+            - generic [ref=f5e21]: Sales
+          - generic [ref=f5e22]:
+            - generic [ref=f5e23]: ₦4,900
+            - generic [ref=f5e24]: Total Earned
+        - generic [ref=f5e25]:
+          - button "Your Profile URL" [ref=f5e26] [cursor=pointer]
+          - generic [ref=f5e29]:
+            - generic [ref=f5e30]: Custom username
+            - paragraph [ref=f5e31]: Set a username so people can find you at a clean URL.
+            - generic [ref=f5e32]:
+              - generic [ref=f5e33]:
+                - generic: "@"
+                - textbox "yourname" [ref=f5e34]
+              - button "Save" [disabled] [ref=f5e35]
+        - button "Storefront Settings ▼" [ref=f5e37] [cursor=pointer]:
+          - generic [ref=f5e38]: Storefront Settings
+          - generic [ref=f5e39]: ▼
+        - heading "My Templates" [level=2] [ref=f5e41]
+        - generic [ref=f5e43]:
+          - generic [ref=f5e44]:
+            - generic [ref=f5e45]:
+              - generic [ref=f5e46]: Shift for Me Guy
+              - generic [ref=f5e47]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e48]:
+              - generic [ref=f5e49]: ₦25,000
+              - generic [ref=f5e50]: 0 sales
+              - generic [ref=f5e51]: published
+              - generic [ref=f5e52]:
+                - generic [ref=f5e53]:
+                  - button "Edit" [ref=f5e54] [cursor=pointer]
+                  - button "Generate images" [ref=f5e55] [cursor=pointer]
+                - generic [ref=f5e56]:
+                  - button "Unpublish" [ref=f5e57] [cursor=pointer]
+                  - button "Delete" [ref=f5e58] [cursor=pointer]
+                  - button "Copy link" [ref=f5e59] [cursor=pointer]
+                  - button "QR Code" [ref=f5e60] [cursor=pointer]
+          - generic [ref=f5e61]:
+            - generic [ref=f5e62]:
+              - generic [ref=f5e63]: Call to Bar — The New Wig (Female)
+              - generic [ref=f5e64]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e65]:
+              - generic [ref=f5e66]: ₦25,000
+              - generic [ref=f5e67]: 152 sales
+              - generic [ref=f5e68]: published
+              - generic [ref=f5e69]:
+                - generic [ref=f5e70]:
+                  - button "Edit" [ref=f5e71] [cursor=pointer]
+                  - button "Generate images" [ref=f5e72] [cursor=pointer]
+                - generic [ref=f5e73]:
+                  - button "Unpublish" [ref=f5e74] [cursor=pointer]
+                  - button "Delete" [ref=f5e75] [cursor=pointer]
+                  - button "Copy link" [ref=f5e76] [cursor=pointer]
+                  - button "QR Code" [ref=f5e77] [cursor=pointer]
+          - generic [ref=f5e78]:
+            - generic [ref=f5e79]:
+              - generic [ref=f5e80]: Call to Bar — The New Wig (Male)
+              - generic [ref=f5e81]: · advanced · 3:4 · 10 images
+            - generic [ref=f5e82]:
+              - generic [ref=f5e83]: ₦25,000
+              - generic [ref=f5e84]: 116 sales
+              - generic [ref=f5e85]: published
+              - generic [ref=f5e86]:
+                - generic [ref=f5e87]:
+                  - button "Edit" [ref=f5e88] [cursor=pointer]
+                  - button "Generate images" [ref=f5e89] [cursor=pointer]
+                - generic [ref=f5e90]:
+                  - button "Unpublish" [ref=f5e91] [cursor=pointer]
+                  - button "Delete" [ref=f5e92] [cursor=pointer]
+                  - button "Copy link" [ref=f5e93] [cursor=pointer]
+                  - button "QR Code" [ref=f5e94] [cursor=pointer]
+          - generic [ref=f5e95]:
+            - generic [ref=f5e96]:
+              - generic [ref=f5e97]: Monochrome Elegance in Champagne
+              - generic [ref=f5e98]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e99]:
+              - generic [ref=f5e100]: ₦25,000
+              - generic [ref=f5e101]: 0 sales
+              - generic [ref=f5e102]: draft
+              - generic [ref=f5e103]:
+                - generic [ref=f5e104]:
+                  - button "Edit" [ref=f5e105] [cursor=pointer]
+                  - button "Generate images" [ref=f5e106] [cursor=pointer]
+                - generic [ref=f5e107]:
+                  - button "Publish" [ref=f5e108] [cursor=pointer]
+                  - button "Delete" [ref=f5e109] [cursor=pointer]
+                  - button "Copy link" [ref=f5e110] [cursor=pointer]
+                  - button "QR Code" [ref=f5e111] [cursor=pointer]
+          - generic [ref=f5e112]:
+            - generic [ref=f5e113]:
+              - generic [ref=f5e114]: MEXICO X SOUTH AFRICA
+              - generic [ref=f5e115]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e116]:
+              - generic [ref=f5e117]: ₦25,000
+              - generic [ref=f5e118]: 0 sales
+              - generic [ref=f5e119]: draft
+              - generic [ref=f5e120]:
+                - generic [ref=f5e121]:
+                  - button "Edit" [ref=f5e122] [cursor=pointer]
+                  - button "Generate images" [ref=f5e123] [cursor=pointer]
+                - generic [ref=f5e124]:
+                  - button "Publish" [ref=f5e125] [cursor=pointer]
+                  - button "Delete" [ref=f5e126] [cursor=pointer]
+                  - button "Copy link" [ref=f5e127] [cursor=pointer]
+                  - button "QR Code" [ref=f5e128] [cursor=pointer]
+          - generic [ref=f5e129]:
+            - generic [ref=f5e130]:
+              - generic [ref=f5e131]: Best Friends Shoot
+              - generic [ref=f5e132]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e133]:
+              - generic [ref=f5e134]: ₦20,000
+              - generic [ref=f5e135]: 0 sales
+              - generic [ref=f5e136]: draft
+              - generic [ref=f5e137]:
+                - generic [ref=f5e138]:
+                  - button "Edit" [ref=f5e139] [cursor=pointer]
+                  - button "Generate images" [ref=f5e140] [cursor=pointer]
+                - generic [ref=f5e141]:
+                  - button "Publish" [ref=f5e142] [cursor=pointer]
+                  - button "Delete" [ref=f5e143] [cursor=pointer]
+                  - button "Copy link" [ref=f5e144] [cursor=pointer]
+                  - button "QR Code" [ref=f5e145] [cursor=pointer]
+          - generic [ref=f5e146]:
+            - generic [ref=f5e147]:
+              - generic [ref=f5e148]: Stadium Day Out
+              - generic [ref=f5e149]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e150]:
+              - generic [ref=f5e151]: ₦25,000
+              - generic [ref=f5e152]: 0 sales
+              - generic [ref=f5e153]: draft
+              - generic [ref=f5e154]:
+                - generic [ref=f5e155]:
+                  - button "Edit" [ref=f5e156] [cursor=pointer]
+                  - button "Generate images" [ref=f5e157] [cursor=pointer]
+                - generic [ref=f5e158]:
+                  - button "Publish" [ref=f5e159] [cursor=pointer]
+                  - button "Delete" [ref=f5e160] [cursor=pointer]
+                  - button "Copy link" [ref=f5e161] [cursor=pointer]
+                  - button "QR Code" [ref=f5e162] [cursor=pointer]
+          - generic [ref=f5e163]:
+            - generic [ref=f5e164]:
+              - generic [ref=f5e165]: Emerald Onyx / Matrix Lux
+              - generic [ref=f5e166]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e167]:
+              - generic [ref=f5e168]: ₦25,000
+              - generic [ref=f5e169]: 0 sales
+              - generic [ref=f5e170]: published
+              - generic [ref=f5e171]:
+                - generic [ref=f5e172]:
+                  - button "Edit" [ref=f5e173] [cursor=pointer]
+                  - button "Generate images" [ref=f5e174] [cursor=pointer]
+                - generic [ref=f5e175]:
+                  - button "Unpublish" [ref=f5e176] [cursor=pointer]
+                  - button "Delete" [ref=f5e177] [cursor=pointer]
+                  - button "Copy link" [ref=f5e178] [cursor=pointer]
+                  - button "QR Code" [ref=f5e179] [cursor=pointer]
+          - generic [ref=f5e180]:
+            - generic [ref=f5e181]:
+              - generic [ref=f5e182]: Noir Director Editorial
+              - generic [ref=f5e183]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e184]:
+              - generic [ref=f5e185]: ₦25,000
+              - generic [ref=f5e186]: 0 sales
+              - generic [ref=f5e187]: published
+              - generic [ref=f5e188]:
+                - generic [ref=f5e189]:
+                  - button "Edit" [ref=f5e190] [cursor=pointer]
+                  - button "Generate images" [ref=f5e191] [cursor=pointer]
+                - generic [ref=f5e192]:
+                  - button "Unpublish" [ref=f5e193] [cursor=pointer]
+                  - button "Delete" [ref=f5e194] [cursor=pointer]
+                  - button "Copy link" [ref=f5e195] [cursor=pointer]
+                  - button "QR Code" [ref=f5e196] [cursor=pointer]
+          - generic [ref=f5e197]:
+            - generic [ref=f5e198]:
+              - generic [ref=f5e199]: "Amethyst Opulence: Embellished Traditional Gown"
+              - generic [ref=f5e200]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e201]:
+              - generic [ref=f5e202]: ₦25,000
+              - generic [ref=f5e203]: 0 sales
+              - generic [ref=f5e204]: published
+              - generic [ref=f5e205]:
+                - generic [ref=f5e206]:
+                  - button "Edit" [ref=f5e207] [cursor=pointer]
+                  - button "Generate images" [ref=f5e208] [cursor=pointer]
+                - generic [ref=f5e209]:
+                  - button "Unpublish" [ref=f5e210] [cursor=pointer]
+                  - button "Delete" [ref=f5e211] [cursor=pointer]
+                  - button "Copy link" [ref=f5e212] [cursor=pointer]
+                  - button "QR Code" [ref=f5e213] [cursor=pointer]
+          - generic [ref=f5e214]:
+            - generic [ref=f5e215]:
+              - generic [ref=f5e216]: "Emerald Empress: Beaded Column Gown with Draped Veil"
+              - generic [ref=f5e217]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e218]:
+              - generic [ref=f5e219]: ₦25,000
+              - generic [ref=f5e220]: 0 sales
+              - generic [ref=f5e221]: published
+              - generic [ref=f5e222]:
+                - generic [ref=f5e223]:
+                  - button "Edit" [ref=f5e224] [cursor=pointer]
+                  - button "Generate images" [ref=f5e225] [cursor=pointer]
+                - generic [ref=f5e226]:
+                  - button "Unpublish" [ref=f5e227] [cursor=pointer]
+                  - button "Delete" [ref=f5e228] [cursor=pointer]
+                  - button "Copy link" [ref=f5e229] [cursor=pointer]
+                  - button "QR Code" [ref=f5e230] [cursor=pointer]
+          - generic [ref=f5e231]:
+            - generic [ref=f5e232]:
+              - generic [ref=f5e233]: Regal Burgundy & Gold Tapestry Ensemble
+              - generic [ref=f5e234]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e235]:
+              - generic [ref=f5e236]: ₦25,000
+              - generic [ref=f5e237]: 0 sales
+              - generic [ref=f5e238]: published
+              - generic [ref=f5e239]:
+                - generic [ref=f5e240]:
+                  - button "Edit" [ref=f5e241] [cursor=pointer]
+                  - button "Generate images" [ref=f5e242] [cursor=pointer]
+                - generic [ref=f5e243]:
+                  - button "Unpublish" [ref=f5e244] [cursor=pointer]
+                  - button "Delete" [ref=f5e245] [cursor=pointer]
+                  - button "Copy link" [ref=f5e246] [cursor=pointer]
+                  - button "QR Code" [ref=f5e247] [cursor=pointer]
+          - generic [ref=f5e248]:
+            - generic [ref=f5e249]:
+              - generic [ref=f5e250]: Navy Regal Gele & structured capes (Color-Shift)
+              - generic [ref=f5e251]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e252]:
+              - generic [ref=f5e253]: ₦25,000
+              - generic [ref=f5e254]: 0 sales
+              - generic [ref=f5e255]: published
+              - generic [ref=f5e256]:
+                - generic [ref=f5e257]:
+                  - button "Edit" [ref=f5e258] [cursor=pointer]
+                  - button "Generate images" [ref=f5e259] [cursor=pointer]
+                - generic [ref=f5e260]:
+                  - button "Unpublish" [ref=f5e261] [cursor=pointer]
+                  - button "Delete" [ref=f5e262] [cursor=pointer]
+                  - button "Copy link" [ref=f5e263] [cursor=pointer]
+                  - button "QR Code" [ref=f5e264] [cursor=pointer]
+          - generic [ref=f5e265]:
+            - generic [ref=f5e266]:
+              - generic [ref=f5e267]: Penthouse Dusk Paparazzi
+              - generic [ref=f5e268]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e269]:
+              - generic [ref=f5e270]: ₦25,000
+              - generic [ref=f5e271]: 0 sales
+              - generic [ref=f5e272]: published
+              - generic [ref=f5e273]:
+                - generic [ref=f5e274]:
+                  - button "Edit" [ref=f5e275] [cursor=pointer]
+                  - button "Generate images" [ref=f5e276] [cursor=pointer]
+                - generic [ref=f5e277]:
+                  - button "Unpublish" [ref=f5e278] [cursor=pointer]
+                  - button "Delete" [ref=f5e279] [cursor=pointer]
+                  - button "Copy link" [ref=f5e280] [cursor=pointer]
+                  - button "QR Code" [ref=f5e281] [cursor=pointer]
+          - generic [ref=f5e282]:
+            - generic [ref=f5e283]:
+              - generic [ref=f5e284]: Asunma / Elite Eid
+              - generic [ref=f5e285]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e286]:
+              - generic [ref=f5e287]: ₦25,000
+              - generic [ref=f5e288]: 0 sales
+              - generic [ref=f5e289]: published
+              - generic [ref=f5e290]:
+                - generic [ref=f5e291]:
+                  - button "Edit" [ref=f5e292] [cursor=pointer]
+                  - button "Generate images" [ref=f5e293] [cursor=pointer]
+                - generic [ref=f5e294]:
+                  - button "Unpublish" [ref=f5e295] [cursor=pointer]
+                  - button "Delete" [ref=f5e296] [cursor=pointer]
+                  - button "Copy link" [ref=f5e297] [cursor=pointer]
+                  - button "QR Code" [ref=f5e298] [cursor=pointer]
+          - generic [ref=f5e299]:
+            - generic [ref=f5e300]:
+              - generic [ref=f5e301]: Luma lux
+              - generic [ref=f5e302]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e303]:
+              - generic [ref=f5e304]: ₦25,000
+              - generic [ref=f5e305]: 0 sales
+              - generic [ref=f5e306]: published
+              - generic [ref=f5e307]:
+                - generic [ref=f5e308]:
+                  - button "Edit" [ref=f5e309] [cursor=pointer]
+                  - button "Generate images" [ref=f5e310] [cursor=pointer]
+                - generic [ref=f5e311]:
+                  - button "Unpublish" [ref=f5e312] [cursor=pointer]
+                  - button "Delete" [ref=f5e313] [cursor=pointer]
+                  - button "Copy link" [ref=f5e314] [cursor=pointer]
+                  - button "QR Code" [ref=f5e315] [cursor=pointer]
+          - generic [ref=f5e316]:
+            - generic [ref=f5e317]:
+              - generic [ref=f5e318]: THE CANON G7x iii
+              - generic [ref=f5e319]: · advanced · 4:5 · 10 images
+            - generic [ref=f5e320]:
+              - generic [ref=f5e321]: ₦25,000
+              - generic [ref=f5e322]: 3 sales
+              - generic [ref=f5e323]: published
+              - generic [ref=f5e324]:
+                - generic [ref=f5e325]:
+                  - button "Edit" [ref=f5e326] [cursor=pointer]
+                  - button "Generate images" [ref=f5e327] [cursor=pointer]
+                - generic [ref=f5e328]:
+                  - button "Unpublish" [ref=f5e329] [cursor=pointer]
+                  - button "Delete" [ref=f5e330] [cursor=pointer]
+                  - button "Copy link" [ref=f5e331] [cursor=pointer]
+                  - button "QR Code" [ref=f5e332] [cursor=pointer]
+          - generic [ref=f5e333]:
+            - generic [ref=f5e334]:
+              - generic [ref=f5e335]: THE CANON G7x iii
+              - generic [ref=f5e336]: · advanced · 4:5 · 1 images
+            - generic [ref=f5e337]:
+              - generic [ref=f5e338]: ₦15,000
+              - generic [ref=f5e339]: 7 sales
+              - generic [ref=f5e340]: draft
+              - generic [ref=f5e341]:
+                - generic [ref=f5e342]:
+                  - button "Edit" [ref=f5e343] [cursor=pointer]
+                  - button "Generate images" [ref=f5e344] [cursor=pointer]
+                - generic [ref=f5e345]:
+                  - button "Publish" [ref=f5e346] [cursor=pointer]
+                  - button "Delete" [ref=f5e347] [cursor=pointer]
+                  - button "Copy link" [ref=f5e348] [cursor=pointer]
+                  - button "QR Code" [ref=f5e349] [cursor=pointer]
+          - generic [ref=f5e350]:
+            - generic [ref=f5e351]:
+              - generic [ref=f5e352]: THE CANON G7x iii
+              - generic [ref=f5e353]: · advanced · 4:5 · 5 images
+            - generic [ref=f5e354]:
+              - generic [ref=f5e355]: ₦15,000
+              - generic [ref=f5e356]: 0 sales
+              - generic [ref=f5e357]: draft
+              - generic [ref=f5e358]:
+                - generic [ref=f5e359]:
+                  - button "Edit" [ref=f5e360] [cursor=pointer]
+                  - button "Generate images" [ref=f5e361] [cursor=pointer]
+                - generic [ref=f5e362]:
+                  - button "Publish" [ref=f5e363] [cursor=pointer]
+                  - button "Delete" [ref=f5e364] [cursor=pointer]
+                  - button "Copy link" [ref=f5e365] [cursor=pointer]
+                  - button "QR Code" [ref=f5e366] [cursor=pointer]
+          - generic [ref=f5e367]:
+            - generic [ref=f5e368]:
+              - generic [ref=f5e369]: Old money
+              - generic [ref=f5e370]: · advanced · 4:5 · 5 images
+            - generic [ref=f5e371]:
+              - generic [ref=f5e372]: ₦16,000
+              - generic [ref=f5e373]: 0 sales
+              - generic [ref=f5e374]: draft
+              - generic [ref=f5e375]:
+                - generic [ref=f5e376]:
+                  - button "Edit" [ref=f5e377] [cursor=pointer]
+                  - button "Generate images" [ref=f5e378] [cursor=pointer]
+                - generic [ref=f5e379]:
+                  - button "Publish" [ref=f5e380] [cursor=pointer]
+                  - button "Delete" [ref=f5e381] [cursor=pointer]
+                  - button "Copy link" [ref=f5e382] [cursor=pointer]
+                  - button "QR Code" [ref=f5e383] [cursor=pointer]
+        - generic [ref=f5e384]:
+          - generic [ref=f5e385]:
+            - heading "New Template" [level=3] [ref=f5e386]
+            - button "✕" [ref=f5e387] [cursor=pointer]
+          - generic [ref=f5e388]:
+            - generic [ref=f5e389]:
+              - generic [ref=f5e390]: Title *
+              - textbox "Title *" [ref=f5e391]:
+                - /placeholder: e.g. Sunset Lagos Editorial
+            - generic [ref=f5e392]:
+              - generic [ref=f5e393]: Category
+              - combobox "Category" [ref=f5e394] [cursor=pointer]:
+                - option "Portrait" [selected]
+                - option "Editorial"
+                - option "Corporate"
+                - option "Glamour"
+                - option "Wedding"
+                - option "Maternity"
+                - option "Fantasy"
+                - option "Boudoir"
+                - option "Street"
+                - option "⚖️ Call to Bar"
+                - option "🔥 Trending"
+                - option "Other"
+          - generic [ref=f5e395]:
+            - generic [ref=f5e396]: Description
+            - textbox "Description" [ref=f5e397]:
+              - /placeholder: Describe the vibe, setting, and aesthetic...
+          - generic [ref=f5e398]:
+            - generic [ref=f5e399]: Tags (comma-separated)
+            - textbox "Tags (comma-separated)" [ref=f5e400]:
+              - /placeholder: lagos, studio, editorial, luxury
+          - generic [ref=f5e401]:
+            - generic [ref=f5e402]:
+              - generic [ref=f5e403]: 10-image price (₦) *
+              - spinbutton "10-image price (₦) *" [ref=f5e404]
+            - generic [ref=f5e405]:
+              - generic [ref=f5e406]: 1-image price (₦) (optional)
+              - spinbutton "1-image price (₦) (optional)" [ref=f5e407]
+          - generic [ref=f5e408]:
+            - generic [ref=f5e409]:
+              - generic [ref=f5e410]: 5-image price (₦) (optional)
+              - spinbutton "5-image price (₦) (optional)" [ref=f5e411]
+            - generic [ref=f5e412]:
+              - generic [ref=f5e413]: Shoot mode
+              - generic [ref=f5e414]:
+                - button "Shoot mode advanced" [ref=f5e415] [cursor=pointer]: fast
+                - button "advanced" [ref=f5e416] [cursor=pointer]
+          - generic [ref=f5e417]:
+            - generic [ref=f5e418]:
+              - generic [ref=f5e419]: Aspect ratio
+              - generic [ref=f5e420]:
+                - button "Aspect ratio 4:5 1:1 16:9 9:16 2:3" [ref=f5e421] [cursor=pointer]: 3:4
+                - button "4:5" [ref=f5e422] [cursor=pointer]
+                - button "1:1" [ref=f5e423] [cursor=pointer]
+                - button "16:9" [ref=f5e424] [cursor=pointer]
+                - button "9:16" [ref=f5e425] [cursor=pointer]
+                - button "2:3" [ref=f5e426] [cursor=pointer]
+            - generic [ref=f5e427]:
+              - generic [ref=f5e428]: Package size
+              - generic [ref=f5e429]:
+                - button "Package size 5 images 10 images" [ref=f5e430] [cursor=pointer]: 1 image
+                - button "5 images" [ref=f5e431] [cursor=pointer]
+                - button "10 images" [ref=f5e432] [cursor=pointer]
+          - generic [ref=f5e433]:
+            - generic [ref=f5e434]: Reference images (1/8)
+            - paragraph [ref=f5e435]: "Advanced mode: add a main inspiration image, then optional override references for specific elements. Buyers' portraits will use these references to match each category."
+            - generic [ref=f5e436]:
+              - generic [ref=f5e437]: Inspiration — main look, outfit & mood (required)
+              - generic [ref=f5e438]:
+                - button "✕" [ref=f5e476] [cursor=pointer]
+                - button "+ Add inspiration" [active] [ref=f5e439] [cursor=pointer]
+            - generic [ref=f5e440]:
+              - generic [ref=f5e441]: Tagged references — upload images and tag each one (optional)
+              - button "+ Add reference" [ref=f5e443] [cursor=pointer]
+          - generic [ref=f5e444]:
+            - generic [ref=f5e445]: Gallery images (0/10)
+            - paragraph [ref=f5e446]: Upload up to 10 images shown in the public gallery. The first image is used as the template thumbnail on the marketplace listing. Workflow reference images are kept private from buyers.
+            - button "+ Add image" [ref=f5e448] [cursor=pointer]
+          - generic [ref=f5e450] [cursor=pointer]:
+            - checkbox "This template is a Story" [ref=f5e451]
+            - generic [ref=f5e452]: This template is a Story
+          - generic [ref=f5e453]:
+            - generic [ref=f5e454]:
+              - generic [ref=f5e455]: Buyer background options (0/6)
+              - generic [ref=f5e456]:
+                - button "📚 Add from library" [ref=f5e457] [cursor=pointer]
+                - button "+ Add option" [ref=f5e458] [cursor=pointer]
+            - paragraph [ref=f5e459]: Add at least 2 options to let buyers split their package across backgrounds (e.g. 5 images on Studio Canvas, 5 in a Law Library). A photo option is replicated exactly; a text option is built by the AI from your description.
+          - generic [ref=f5e460]:
+            - generic [ref=f5e461]:
+              - generic [ref=f5e462]: Buyer choice groups (0/6)
+              - button "+ Add group" [ref=f5e463] [cursor=pointer]
+            - paragraph [ref=f5e464]: Offer multiple outfits, hairstyles, makeup looks, etc. on one template. The buyer picks ONE option per group and it is used consistently across their whole shoot. Groups with a single option apply automatically without showing a picker.
+          - generic [ref=f5e465]:
+            - generic [ref=f5e466]: Signature poses (0/6)
+            - paragraph [ref=f5e467]: Upload named pose/mannerism references (e.g. someone's signature poses). Buyers pick any of these at checkout and their portraits recreate the exact pose, expression, and body language — wardrobe, background, and identity stay theirs.
+            - button "+ Add pose" [ref=f5e469] [cursor=pointer]
+          - generic [ref=f5e470]:
+            - generic [ref=f5e471]:
+              - button "Save as draft" [ref=f5e472] [cursor=pointer]
+              - button "Publish" [ref=f5e473] [cursor=pointer]
+            - button "Create template" [ref=f5e474] [cursor=pointer]
+  - alert [ref=f5e4]
