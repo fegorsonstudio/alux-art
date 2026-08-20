@@ -37,6 +37,25 @@ that; a house number would work with the same code.
 **Current focus:** connect a first WhatsApp number and run one booking end to end before
 opening it to customers.
 
+**Update (2026-08-20): the WhatsApp bot is LIVE and taking real customers.** Number
++234 907 685 8017, verified "Alux Art", CONNECTED. Since going live:
+
+- **Delivery is gated on `shoots.wa_delivered_at`, never on the session.** A session
+  outlives any one booking, and a stale `whatsapp_sessions.delivered_at` made a paying
+  customer's *second* shoot permanently invisible to the poller. A new shoot row starts
+  NULL, so any path attaching a booking to an existing chat is correct by construction.
+  **Do not reintroduce a session-level delivery flag.**
+- **`scripts/whatsapp-watchdog.mjs`** (cron `*/10`) alerts on Telegram when a paid
+  customer is finished but untold, generation stalls, a paid shoot fails, or the delivery
+  cron dies. Alerts fire once per shoot and only for the last 24h.
+- **`support` in chat** answers from the database, delivers undelivered photos on the
+  spot, records to `whatsapp_support_requests`, and alerts the studio. Replying to that
+  Telegram message relays into the customer's WhatsApp (24h window checked first).
+- **Retouching round-trip** works through Telegram: buyer replies `retouch`, files reach
+  the owner, the edited file comes back, buyer pays via Paystack, then the file is sent.
+  Telegram files are **uploaded**, not linked — its URL fetch limit is 20MB and a 4K
+  render exceeds it.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
