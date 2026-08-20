@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { r2Upload } from "@/lib/r2";
-import { signedMediaUrl } from "@/lib/media-url";
 import { tellAdmin } from "@/lib/telegram";
-import { sendText, sendDocument, type WaCreds } from "@/lib/whatsapp";
+import { deliverRetouch, offerRetouchPayment } from "@/lib/whatsapp-retouch";
 
 /**
  * The return leg of retouching.
@@ -11,7 +10,12 @@ import { sendText, sendDocument, type WaCreds } from "@/lib/whatsapp";
  * A buyer asks for a retouch in WhatsApp; the images and the shoot id arrive in
  * the studio owner's Telegram. When the edit is finished they send the file
  * back here — as a REPLY to that job message, or with the shoot id in the
- * caption — and this stores it and delivers it to the buyer on WhatsApp.
+ * caption — and this stores it against the buyer's shoot.
+ *
+ * What the buyer then receives depends on payment. An unpaid order gets a
+ * message saying the work is ready and a Paystack link; the file itself goes out
+ * only once payment is confirmed. That is the website's order of events, and a
+ * chat has no locked tile to show, so the file is what is held.
  *
  * Two rules, both learned elsewhere in this codebase:
  *
@@ -106,50 +110,28 @@ export async function POST(req: NextRequest) {
       UPDATE shoot_retouch SET status = 'DELIVERED', delivered_at = NOW(), updated_at = NOW()
       WHERE shoot_id = ${shootId}`;
 
-    // Straight back to the buyer on WhatsApp, as a document so it arrives at the
-    // quality it was retouched at.
-    const [session] = await sql<{ customer_phone: string; creator_id: string }[]>`
-      SELECT customer_phone, creator_id FROM whatsapp_sessions WHERE shoot_id = ${shootId} LIMIT 1`;
-
-    let sentToBuyer = false;
-    if (session) {
-      const [creator] = await sql<{ whatsapp_phone_number_id: string; whatsapp_access_token: string }[]>`
-        SELECT whatsapp_phone_number_id, whatsapp_access_token FROM creators WHERE id = ${session.creator_id}`;
-      if (creator?.whatsapp_access_token) {
-        const creds: WaCreds = {
-          phoneNumberId: creator.whatsapp_phone_number_id,
-          token: creator.whatsapp_access_token,
-        };
-        const url = await signedMediaUrl("generated-4k", key, { expiresIn: 6 * 3600 }).catch(() => null);
-        if (url) {
-          await sendText(creds, session.customer_phone,
-            "Your retouched image is ready ✨ Sending it now…");
-          const r = await sendDocument(creds, session.customer_phone, url, `alux-art-retouched-${n + 1}.${ext}`);
-          sentToBuyer = r.ok;
-          if (r.ok) {
-            await sendText(creds, session.customer_phone,
-              "That's the retouched version — thank you for choosing Alux Art 🎉");
-          }
-        }
-      }
-    }
-
-    // Whether the buyer has actually paid decides what the gallery does, and the
-    // owner is the one who can act on it.
+    // Paid work goes straight out; unpaid work is announced with a payment link
+    // and held. Same order as the website: the buyer pays once they know the
+    // work is done, and the file is what stays locked until they do.
     const [order] = await sql<{ paid: boolean | null; free: boolean | null; price_ngn: number | null }[]>`
       SELECT paid, free, price_ngn FROM shoot_retouch WHERE shoot_id = ${shootId}`;
-    const settled = order?.paid || order?.free;
+    const settled = Boolean(order?.paid || order?.free);
+
+    const handed = settled
+      ? await deliverRetouch(shootId, key)
+      : await offerRetouchPayment(shootId);
 
     await tellAdmin(
       `<b>Retouched image saved</b>\n` +
       `Shoot <code>${shootId}</code>\n` +
-      `${sentToBuyer ? "Sent to the customer on WhatsApp ✅" : "Saved to their gallery. No WhatsApp session, so not sent in chat."}` +
       (settled
-        ? ""
-        : `
-
-⚠ This retouch is <b>unpaid</b> (${"₦"}${(order?.price_ngn ?? 0).toLocaleString("en-NG")}). ` +
-          `They have the file now, so collect payment yourself or mark it free.`) +
+        ? handed
+          ? "Already paid — sent to the customer on WhatsApp ✅"
+          : "Already paid, but I could not reach them on WhatsApp. It is in their gallery."
+        : handed
+          ? `Payment link sent (${"₦"}${(order?.price_ngn ?? 0).toLocaleString("en-NG")}). ` +
+            "The file goes out the moment they pay."
+          : "Saved to their gallery. No WhatsApp chat for this shoot, so nothing was sent.") +
       (wasCompressed ? "\n\n⚠ That came through as a photo, so Telegram compressed it. Send as a <b>file</b> next time." : "")
     );
   } catch (e) {

@@ -24,7 +24,27 @@ export async function POST(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+
+  // Same internal door as the shoot payment route, for the same reason: the
+  // WhatsApp bot's customer is a phone number with no browser session. The
+  // ownership check below still requires the shoot's user_id to match, so this
+  // cannot pay for someone else's retouch. The email is read from the database,
+  // never asserted by the caller, so an internal call cannot claim admin.
+  let user = sessionUser;
+  if (!user) {
+    const secret = process.env.INTERNAL_API_SECRET;
+    const presented = _request.headers.get("x-internal-secret");
+    const actAs = _request.headers.get("x-act-as-user");
+    if (secret && presented === secret && actAs && /^[0-9a-f-]{36}$/i.test(actAs)) {
+      // profiles, not auth.users — that schema lives in Supabase cloud and is
+      // not reachable from this database.
+      const [row] = await sql<{ id: string; email: string | null; banned: boolean | null }[]>`
+        SELECT id, email, banned FROM profiles WHERE id = ${actAs}`.catch(() => []);
+      if (row && !row.banned) user = { id: row.id, email: row.email ?? undefined } as typeof sessionUser;
+    }
+  }
+
   if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [shoot] = await sql<{ user_id: string; currency: string }[]>`

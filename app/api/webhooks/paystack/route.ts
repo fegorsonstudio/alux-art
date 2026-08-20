@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual, createHash } from "crypto";
 import sql from "@/lib/db";
 import { notifyCreatorOfSale } from "@/lib/creator-sale-email";
 import { SITE_URL } from "@/lib/site-url";
+import { deliverRetouch } from "@/lib/whatsapp-retouch";
 
 /**
  * Compute a deterministic idempotency key from the webhook body.
@@ -135,6 +136,16 @@ export async function POST(request: NextRequest) {
     `.catch(() => {});
 
     console.log(`[paystack webhook] retouch unlocked for shoot ${retouchShootId}`);
+
+    // If this retouch was ordered in WhatsApp, payment is what releases the
+    // files into the chat. Awaited so the buyer gets them now rather than on a
+    // later poll, and caught so a chat failure can never turn a successful
+    // payment into a webhook error and a Paystack retry.
+    await deliverRetouch(retouchShootId).catch((e) => {
+      console.error(`[paystack webhook] whatsapp retouch delivery failed for ${retouchShootId}:`,
+        e instanceof Error ? e.message : e);
+    });
+
     return NextResponse.json({ ok: true });
   }
 

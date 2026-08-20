@@ -455,7 +455,8 @@ async function requestRetouch(creds: WaCreds, creator: Creator, phone: string, s
   await sendText(creds, phone,
     `Nice one 👍 ${images.length} image${images.length === 1 ? "" : "s"} going for retouching — ` +
     `*${"\u20a6" + price.toLocaleString("en-NG")}* in total.\n\n` +
-    "This is done by hand, so it is not instant. I will send them straight back here when they are ready.");
+    "Nothing to pay yet. This is done by hand, so it is not instant — when it's ready " +
+    "I'll tell you here and send a payment link, and the photos come through as soon as you pay.");
 
   // The studio's copy of the job. Sent as documents so the files arrive
   // uncompressed and can actually be worked on.
