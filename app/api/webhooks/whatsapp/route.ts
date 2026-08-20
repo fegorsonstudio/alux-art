@@ -201,6 +201,38 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
     if (hit) return startFromTrigger(creds, creator, phone, session, hit);
   }
 
+  // A bare look number, sent while we are asking about something else.
+  //
+  // A trigger like "g7x" locks look 197 AND skips the "pick a look" question,
+  // so a buyer who then wants a different look has nowhere to say so. Their
+  // number falls into whichever step is open — COLLECTING_PHOTOS answers "send
+  // me a photo", CHOOSING_RATIO answers "reply story or feed" — and the bot
+  // looks like it is ignoring them. It was.
+  //
+  // Deliberately narrow: only the states that are NOT asking a numeric question
+  // (CHOOSING_TEMPLATE picks a menu row by number, CHOOSING_LOOK already handles
+  // this) and only when the digits name a look that really exists, so anything
+  // else falls through to the step that was open.
+  if (/^\d{1,3}$/.test(text) && session.template_id &&
+      ["COLLECTING_PHOTOS", "CHOOSING_RATIO", "CONFIRMING"].includes(session.state)) {
+    const look = await lookByNumber(session.template_id, parseInt(text, 10));
+    if (look) {
+      await sql`UPDATE whatsapp_sessions SET enhance_look_id = ${look.id}, updated_at = NOW() WHERE id = ${session.id}`;
+      const next =
+        session.state === "COLLECTING_PHOTOS"
+          ? "\n\nKeep sending photos, or reply *done* when you have finished."
+        : session.state === "CHOOSING_RATIO"
+          ? "\n\nNow: reply *story* for a tall crop, or *feed* for the square-ish one."
+        : "";
+      await sendText(creds, phone, `Switched to *${look.name}* ✅${next}`);
+      // A quote they have already seen is now out of date, so redo it.
+      if (session.state === "CONFIRMING") {
+        return showQuote(creds, creator, phone, session.id, session.template_id, session.selfie_count);
+      }
+      return;
+    }
+  }
+
   // A conversation abandoned days ago should not resume mid-question.
   if (stale && session.state !== "IDLE" && session.selfie_count === 0) {
     await resetSession(session.id);
@@ -373,7 +405,8 @@ async function startFromTrigger(
       "button at the top right - turn it on so WhatsApp does not shrink them.\n\n" +
       "Even better: send them as *files* (paperclip, then Document). That keeps " +
       "them exactly as they are.\n\n" +
-      "Up to 10. Reply *done* when you have finished.");
+      "Up to 10. Reply *done* when you have finished." +
+      (lookId ? "\n\nWant a different look? Send its number any time." : ""));
     return;
   }
 
