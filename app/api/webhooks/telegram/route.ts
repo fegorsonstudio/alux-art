@@ -3,6 +3,7 @@ import sql from "@/lib/db";
 import { r2Upload } from "@/lib/r2";
 import { tellAdmin } from "@/lib/telegram";
 import { deliverRetouch, offerRetouchPayment } from "@/lib/whatsapp-retouch";
+import { sendText } from "@/lib/whatsapp";
 
 /**
  * The return leg of retouching.
@@ -42,6 +43,51 @@ type TgMessage = {
 };
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+/** The customer's number as the support alert prints it: +2347085867354 */
+const PHONE = /\+(\d{10,15})\b/;
+
+/**
+ * Send the studio's typed reply into a customer's WhatsApp chat.
+ *
+ * WhatsApp refuses free-form messages more than 24 hours after the customer's
+ * last one. That refusal is silent from the studio's point of view, so it is
+ * checked here and reported back plainly — an unanswered customer who thinks
+ * they were answered is the worst outcome available.
+ */
+async function relayToCustomer(phone: string, text: string): Promise<NextResponse> {
+  const [row] = await sql<{
+    phone_number_id: string; access_token: string; hrs: number;
+  }[]>`
+    SELECT c.whatsapp_phone_number_id AS phone_number_id,
+           c.whatsapp_access_token    AS access_token,
+           EXTRACT(EPOCH FROM (NOW() - s.updated_at)) / 3600 AS hrs
+    FROM whatsapp_sessions s
+    JOIN creators c ON c.id = s.creator_id
+    WHERE s.customer_phone = ${phone} AND c.whatsapp_access_token IS NOT NULL
+    ORDER BY s.updated_at DESC LIMIT 1`.catch(() => []);
+
+  if (!row) {
+    await tellAdmin(`No WhatsApp chat found for <code>+${phone}</code>. Nothing was sent.`);
+    return NextResponse.json({ ok: true });
+  }
+  if (Number(row.hrs) >= 24) {
+    await tellAdmin(
+      `⚠ <b>Not sent.</b> <code>+${phone}</code> last wrote ${Math.round(Number(row.hrs))} hours ago, ` +
+      `and WhatsApp only allows a free reply within 24 hours.\n\n` +
+      `They have to message first before we can write to them again.`
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  const r = await sendText(
+    { phoneNumberId: row.phone_number_id, token: row.access_token },
+    phone, text
+  );
+  await tellAdmin(r.ok
+    ? `Sent to <code>+${phone}</code> ✅`
+    : `Could not send to <code>+${phone}</code>. WhatsApp refused it.`);
+  return NextResponse.json({ ok: true });
+}
 
 export async function POST(req: NextRequest) {
   // A shared secret in the header, set when the webhook is registered. Telegram
@@ -66,6 +112,15 @@ export async function POST(req: NextRequest) {
   // otherwise the caption must name one.
   const haystack = `${msg.reply_to_message?.text ?? ""} ${msg.reply_to_message?.caption ?? ""} ${msg.caption ?? ""} ${msg.text ?? ""}`;
   const shootId = haystack.match(UUID)?.[0];
+
+  // Answering a customer. A plain text reply to a message carrying a phone
+  // number goes into that person's WhatsApp chat, so support is handled without
+  // leaving Telegram and without hunting for the conversation.
+  const repliedTo = `${msg.reply_to_message?.text ?? ""} ${msg.reply_to_message?.caption ?? ""}`;
+  const toPhone = repliedTo.match(PHONE)?.[1];
+  if (msg.text && !msg.document && !msg.photo && toPhone) {
+    return relayToCustomer(toPhone, msg.text);
+  }
 
   if (!shootId) {
     if (msg.document || msg.photo) {

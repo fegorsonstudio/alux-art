@@ -25,9 +25,16 @@ const naira = (n: number) => `\u20a6${n.toLocaleString("en-NG")}`;
  *   shoot finished   -> DONE                          the images themselves
  *   shoot failed     -> DONE                          an apology, not silence
  *
- * delivered_at is the idempotency guard: it is set only after the images are
- * actually sent, so a crash halfway re-sends rather than silently dropping a
- * paid customer's shoot.
+ * shoots.wa_delivered_at is the idempotency guard: it is set only after the
+ * images are actually sent, so a crash halfway re-sends rather than silently
+ * dropping a paid customer's shoot.
+ *
+ * It lives on the SHOOT deliberately. It used to live on the session, and a
+ * session outlives any one booking — a customer who had already received one
+ * shoot and started a second with a trigger word carried the old stamp forward
+ * and became permanently invisible to this query. A new shoot row starts NULL,
+ * so every path that attaches a booking to an existing chat is correct with
+ * nothing to remember.
  *
  *   GET /api/whatsapp/deliver   (x-internal-secret, from cron)
  */
@@ -67,7 +74,7 @@ export async function GET(req: NextRequest) {
     JOIN shoots sh ON sh.id = s.shoot_id
     JOIN creators c ON c.id = s.creator_id
     WHERE s.shoot_id IS NOT NULL
-      AND s.delivered_at IS NULL
+      AND sh.wa_delivered_at IS NULL
       AND c.whatsapp_access_token IS NOT NULL
       AND s.state IN ('AWAITING_PAYMENT', 'GENERATING')
     ORDER BY s.updated_at ASC
@@ -95,6 +102,7 @@ export async function GET(req: NextRequest) {
         "I'm sorry — your shoot didn't come out and no photos were produced.\n\n" +
         "You have not lost your money. Reply *help* and a person will sort this out for you today.");
       await sql`UPDATE whatsapp_sessions SET state = 'DONE', delivered_at = NOW(), updated_at = NOW() WHERE id = ${r.session_id}`;
+      await sql`UPDATE shoots SET wa_delivered_at = NOW() WHERE id = ${r.shoot_id}`;
       failed.push(r.session_id);
       continue;
     }
@@ -117,6 +125,7 @@ export async function GET(req: NextRequest) {
         "Your shoot is finished, but the photos have passed their 7-day download window " +
         "and are no longer stored.\n\nReply *help* and we'll sort it out.");
       await sql`UPDATE whatsapp_sessions SET state = 'DONE', delivered_at = NOW(), updated_at = NOW() WHERE id = ${r.session_id}`;
+      await sql`UPDATE shoots SET wa_delivered_at = NOW() WHERE id = ${r.shoot_id}`;
       failed.push(r.session_id);
       continue;
     }
@@ -162,6 +171,10 @@ export async function GET(req: NextRequest) {
     await sql`
       UPDATE whatsapp_sessions SET state = 'DONE', delivered_at = NOW(), updated_at = NOW()
       WHERE id = ${r.session_id}`;
+    // The shoot is what the poller gates on. A session is long-lived and
+    // outlives any one booking, which is exactly how a paid customer's second
+    // shoot became invisible here and was never delivered.
+    await sql`UPDATE shoots SET wa_delivered_at = NOW() WHERE id = ${r.shoot_id}`;
     delivered.push(`${r.session_id} (${sent}/${images.length})`);
   }
 

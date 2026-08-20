@@ -8,9 +8,10 @@ import { resolveTrigger } from "@/lib/whatsapp-triggers";
 import { t, languageMenu, parseLanguage } from "@/lib/whatsapp-lang";
 import { RETOUCH_PRICE_PER_IMAGE_NGN, retouchPriceNgn } from "@/lib/retouch-pricing";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
+import { shootFacts, customerStatusLine, adminStatusBlock } from "@/lib/whatsapp-support";
 import { signedMediaUrl } from "@/lib/media-url";
 import {
-  sendText, sendImage, sendList, sendButtons, downloadMedia, markRead,
+  sendText, sendImage, sendDocument, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
 } from "@/lib/whatsapp";
 
@@ -257,12 +258,8 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
     return requestRetouch(creds, creator, phone, session);
   }
 
-  if (/^(help|support|human|agent)$/i.test(text)) {
-    await sendText(creds, phone,
-      "A person will pick this up shortly.\n\n" +
-      "In the meantime: send *restart* to begin again, or browse everything at " +
-      `${SITE_URL}/marketplace`);
-    return;
+  if (/\b(support|help|human|agent|issue|problem|no response)\b/i.test(text)) {
+    return raiseSupport(creds, creator, phone, session, text);
   }
 
   switch (session.state) {
@@ -390,7 +387,13 @@ async function startFromTrigger(
     UPDATE whatsapp_sessions
     SET template_id = ${hit.templateId}, state = 'COLLECTING_PHOTOS',
         selfie_count = 0, selfie_paths = '{}', package_size = NULL,
-        enhance_look_id = ${lookId}, shoot_id = NULL, updated_at = NOW()
+        enhance_look_id = ${lookId}, shoot_id = NULL,
+        -- Left set, this used to hide the customer's NEXT shoot from the
+        -- delivery poller for good. The poller now gates on the shoot instead,
+        -- so this is no longer load-bearing — but a stale timestamp that says
+        -- "already delivered" about a booking that does not exist yet is a lie
+        -- waiting to mislead whoever reads it next.
+        delivered_at = NULL, updated_at = NOW()
     WHERE id = ${session.id}`;
 
   const heading = hit.kind === "look"
@@ -507,6 +510,96 @@ async function requestRetouch(creds: WaCreds, creator: Creator, phone: string, s
       if (url) await sendAdminImage(url, `Shoot <code>${session.shoot_id}</code>`);
     }
   })().catch((e) => console.error("[wa] telegram notify failed:", e instanceof Error ? e.message : e));
+}
+
+/**
+ * Somebody is stuck and has asked for a person.
+ *
+ * Answers them from the database FIRST. Almost every support message is "where
+ * are my photos", and the chat can answer that truthfully without waking
+ * anybody. The old version of this promised "a person will pick this up
+ * shortly" and notified nobody at all, which is worse than silence: it makes a
+ * promise the system cannot keep.
+ *
+ * If the shoot is finished but was never delivered, this DELIVERS IT on the
+ * spot. That is the exact failure that stranded a paying customer, so the
+ * escape hatch repairs it rather than just reporting it.
+ */
+async function raiseSupport(
+  creds: WaCreds, creator: Creator, phone: string, session: Session, said: string
+) {
+  const facts = await shootFacts(session.shoot_id);
+  let reply = customerStatusLine(facts);
+
+  // Finished and never sent. Fix it now, in front of them.
+  if (facts?.undelivered) {
+    await sendText(creds, phone, `${reply}`);
+    const ok = await deliverShootNow(creds, creator, phone, session);
+    if (!ok) reply += " (I could not send them just now — a person is on it.)";
+  } else {
+    const tail =
+      facts?.status === "PENDING_PAYMENT"
+        ? "\n\nIf you have already paid, tell me and I'll check it myself."
+        : "\n\nA person has been alerted and will reply here. You don't need to do anything.";
+    await sendText(creds, phone, `${reply}${tail}`);
+  }
+
+  // Recorded, because a Telegram message scrolls away and an open issue should not.
+  await sql`
+    INSERT INTO whatsapp_support_requests
+      (customer_phone, session_id, shoot_id, session_state, shoot_status, message, bot_reply)
+    VALUES (${phone}, ${session.id}, ${session.shoot_id}, ${session.state},
+            ${facts?.status ?? null}, ${said.slice(0, 500)}, ${reply.slice(0, 500)})
+  `.catch((e) => console.error("[wa] could not record support request:", e instanceof Error ? e.message : e));
+
+  await tellAdmin(
+    `<b>🆘 Support request</b>\n\n` +
+    `${adminStatusBlock(phone, session.state, facts)}\n\n` +
+    `They said: "${said.slice(0, 200)}"\n` +
+    `I told them: "${reply.slice(0, 200)}"\n\n` +
+    `Reply to THIS message to answer them.`
+  );
+}
+
+/**
+ * Send a finished shoot into the chat immediately, outside the poller.
+ *
+ * The poller owns normal delivery; this exists only for the support path, where
+ * somebody is waiting and two minutes of "it will come" is the wrong answer.
+ * Marks the shoot delivered on success so the poller does not send it twice.
+ */
+async function deliverShootNow(
+  creds: WaCreds, creator: Creator, phone: string, session: Session
+): Promise<boolean> {
+  try {
+    const images = await sql<{ b: string | null; p: string | null; slot: number }[]>`
+      SELECT download_storage_bucket AS b, download_storage_path AS p, slot
+      FROM shoot_images
+      WHERE shoot_id = ${session.shoot_id} AND status = 'COMPLETE' AND download_storage_path IS NOT NULL
+      ORDER BY slot`;
+    if (!images.length) return false;
+
+    let sent = 0;
+    for (const img of images) {
+      if (!img.p) continue;
+      const url = await signedMediaUrl(img.b ?? "generated-4k", img.p, { expiresIn: 6 * 3600 }).catch(() => null);
+      if (!url) continue;
+      const name = `alux-art-${String(session.shoot_id).slice(0, 8)}-${img.slot}.${img.p.split(".").pop() ?? "jpg"}`;
+      let r = await sendDocument(creds, phone, url, name);
+      if (!r.ok) r = await sendImage(creds, phone, url);
+      if (r.ok) sent++;
+    }
+    if (!sent) return false;
+
+    await sql`UPDATE shoots SET wa_delivered_at = NOW() WHERE id = ${session.shoot_id}`;
+    await sql`UPDATE whatsapp_sessions SET state = 'DONE', delivered_at = NOW(), updated_at = NOW() WHERE id = ${session.id}`;
+    await sendText(creds, phone,
+      "There they are — sorry for the wait. Save them now; they're kept for 7 days.");
+    return true;
+  } catch (e) {
+    console.error("[wa] support delivery failed:", e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 /** Step 1 — greet and show this creator's styles. */
