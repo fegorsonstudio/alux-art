@@ -18,16 +18,16 @@
  */
 
 /**
- * The WhatsApp shortcut is NOT offered here yet.
+ * The WhatsApp shortcut.
  *
- * It was added and then taken back out: the bot could not complete a booking end
- * to end, so a comment that trusted the shortcut led to a dead end, while the
- * website path works. One reply per comment is all Instagram allows, so it has
- * to point somewhere that finishes.
+ * A wa.me link with the trigger word pre-typed: tapping it opens the chat with
+ * the word already in the box, so a comment turns into a booking in about three
+ * taps with no menu in between. Taken out once because the bot could not finish
+ * a booking, and restored after one ran start to finish through the chat.
  *
- * Put it back once a booking has run start to finish through the chat:
- *   "Or skip all of it — message us on WhatsApp and send *G7X*:"
- *   https://wa.me/2349076858017?text=G7X
+ * It belongs in `reply` ONLY, never in `replyNoLink`. That fallback exists
+ * because an account under a link restriction has any message containing a link
+ * refused outright, and a wa.me url is a link like any other.
  */
 
 export interface Keyword {
@@ -75,9 +75,11 @@ export const KEYWORDS: Keyword[] = [
       "3. Upload your photo\n" +
       "4. Type 197 in the search box — it picks the look for you\n" +
       "5. Leave the background on \"keeping yours\"\n" +
-      "6. Pay ₦2,000 per photo and download\n\n" +
+      "6. Pay ₦1,000 per photo and download\n\n" +
       "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
-      "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
+      "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.\n\n" +
+      "Or skip all of it — message us on WhatsApp and send *G7X*:\n" +
+      "https://wa.me/2349076858017?text=G7X",
     replyNoLink:
       "Here's the relighting tool 👇\n\n" +
       "Tap our name at the top of this chat — the link is in our bio, then open " +
@@ -88,7 +90,7 @@ export const KEYWORDS: Keyword[] = [
       "3. Upload your photo\n" +
       "4. Type 197 in the search box — it picks the look for you\n" +
       "5. Leave the background on \"keeping yours\"\n" +
-      "6. Pay ₦2,000 per photo and download\n\n" +
+      "6. Pay ₦1,000 per photo and download\n\n" +
       "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
       "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
     publicReply: "Sent you a DM 📩",
@@ -105,14 +107,16 @@ export const KEYWORDS: Keyword[] = [
       + "Upload one photo of the piece — on a client, on a hanger, however you shot it — "
       + "and it comes back on its own: front, three-quarter, side and back, no model and no mannequin.\n\n"
       + "It also lifts wigs, shoes, bags, jewellery, nails, makeup, and the backdrop on its own. "
-      + "₦2,000 per photo.",
+      + "₦1,000 per photo.\n\n"
+      + "Or skip all of it — message us on WhatsApp and send *ASSETS*:\n"
+      + "https://wa.me/2349076858017?text=ASSETS",
     replyNoLink:
       "Here's The Asset Extractor 👇\n\n"
       + "Tap our name at the top of this chat — the link is in our bio, then open The Asset Extractor.\n\n"
       + "Upload one photo of the piece — on a client, on a hanger, however you shot it — "
       + "and it comes back on its own: front, three-quarter, side and back, no model and no mannequin.\n\n"
       + "It also lifts wigs, shoes, bags, jewellery, nails, makeup, and the backdrop on its own. "
-      + "₦2,000 per photo.",
+      + "₦1,000 per photo.",
     publicReply: "Sent you a DM 📩",
   },
   {
@@ -120,8 +124,9 @@ export const KEYWORDS: Keyword[] = [
     reply:
       "Here you go 👇\n\n" +
       `${SITE}\n\n` +
-      "Pick a style, upload a few photos, and your shoot is ready in minutes. " +
-      "Any questions, just reply to this message.",
+      "Pick a style, upload a few photos, and your shoot is ready in minutes.\n\n" +
+      "Prefer WhatsApp? Message us there and we'll book it in the chat:\n" +
+      "https://wa.me/2349076858017?text=HI",
     replyNoLink:
       "Here you go 👇\n\n" +
       "Tap our name at the top of this chat — the link is in our bio.\n\n" +

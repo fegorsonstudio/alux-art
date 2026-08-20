@@ -6,6 +6,9 @@ import { createServiceClient } from "@/lib/supabase-server";
 import { SITE_URL } from "@/lib/site-url";
 import { resolveTrigger } from "@/lib/whatsapp-triggers";
 import { t, languageMenu, parseLanguage } from "@/lib/whatsapp-lang";
+import { RETOUCH_PRICE_PER_IMAGE_NGN, retouchPriceNgn } from "@/lib/retouch-pricing";
+import { tellAdmin, sendAdminImage } from "@/lib/telegram";
+import { signedMediaUrl } from "@/lib/media-url";
 import {
   sendText, sendImage, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
@@ -218,6 +221,10 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
     return;
   }
 
+  if (/^(retouch|retouching|edit|edit my (photos|images))$/i.test(text)) {
+    return requestRetouch(creds, creator, phone, session);
+  }
+
   if (/^(help|support|human|agent)$/i.test(text)) {
     await sendText(creds, phone,
       "A person will pick this up shortly.\n\n" +
@@ -395,6 +402,77 @@ async function chooseLanguage(
     WHERE id = ${session.id}`;
   await sendText(creds, phone, t(picked, "languageSet"));
   await offerTemplates(creds, creator, phone, session.id, session);
+}
+
+
+/**
+ * The buyer wants their delivered images retouched by hand.
+ *
+ * Records the order and puts the actual files in front of the person who does
+ * the work, over Telegram, so nothing depends on anybody watching a dashboard.
+ * Payment is not taken here: retouching happens by hand afterwards, and the
+ * buyer pays to unlock the finished files — charging first would bill for work
+ * that does not exist yet.
+ */
+async function requestRetouch(creds: WaCreds, creator: Creator, phone: string, session: Session) {
+  if (!session.shoot_id) {
+    await sendText(creds, phone,
+      "I can only retouch images from a finished shoot. Send *menu* to start one.");
+    return;
+  }
+
+  const images = await sql<{ id: string; b: string | null; p: string | null }[]>`
+    SELECT id, download_storage_bucket AS b, download_storage_path AS p
+    FROM shoot_images
+    WHERE shoot_id = ${session.shoot_id} AND status = 'COMPLETE' AND download_storage_path IS NOT NULL
+    ORDER BY slot`;
+
+  if (!images.length) {
+    await sendText(creds, phone, "That shoot has no finished images to retouch yet.");
+    return;
+  }
+
+  const price = retouchPriceNgn(images.length);
+
+  const [existing] = await sql<{ status: string }[]>`
+    SELECT status FROM shoot_retouch WHERE shoot_id = ${session.shoot_id}`;
+  if (existing) {
+    await sendText(creds, phone,
+      "You have already asked for these — I am on it. I will send them here when they are done.");
+    return;
+  }
+
+  await sql`
+    INSERT INTO shoot_retouch (shoot_id, status, price_ngn, image_count, created_at, updated_at)
+    VALUES (${session.shoot_id}, 'REQUESTED', ${price}, ${images.length}, NOW(), NOW())
+    ON CONFLICT (shoot_id) DO NOTHING`;
+  for (const img of images) {
+    await sql`
+      INSERT INTO shoot_retouch_items (shoot_id, image_id) VALUES (${session.shoot_id}, ${img.id})
+      ON CONFLICT (shoot_id, image_id) DO NOTHING`;
+  }
+
+  await sendText(creds, phone,
+    `Nice one 👍 ${images.length} image${images.length === 1 ? "" : "s"} going for retouching — ` +
+    `*${"\u20a6" + price.toLocaleString("en-NG")}* in total.\n\n` +
+    "This is done by hand, so it is not instant. I will send them straight back here when they are ready.");
+
+  // The studio's copy of the job. Sent as documents so the files arrive
+  // uncompressed and can actually be worked on.
+  void (async () => {
+    await tellAdmin(
+      `<b>Retouch requested</b>\n` +
+      `${images.length} image(s) — ${"\u20a6"}${price.toLocaleString("en-NG")}\n` +
+      `Customer: ${phone}\n` +
+      `Shoot: <code>${session.shoot_id}</code>\n\n` +
+      `Reply to THIS message with the edited file(s) to send them back.`
+    );
+    for (const img of images) {
+      if (!img.p) continue;
+      const url = await signedMediaUrl(img.b ?? "generated-4k", img.p, { expiresIn: 24 * 3600 }).catch(() => null);
+      if (url) await sendAdminImage(url, `Shoot <code>${session.shoot_id}</code>`);
+    }
+  })().catch((e) => console.error("[wa] telegram notify failed:", e instanceof Error ? e.message : e));
 }
 
 /** Step 1 — greet and show this creator's styles. */
