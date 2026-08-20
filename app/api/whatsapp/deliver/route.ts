@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { r2SignedDownloadUrl } from "@/lib/r2";
-import { sendText, sendImage, type WaCreds } from "@/lib/whatsapp";
+import { sendText, sendImage, sendDocument, type WaCreds } from "@/lib/whatsapp";
 
 /**
  * Sends finished shoots back into the WhatsApp chat that ordered them.
@@ -123,7 +123,17 @@ export async function GET(req: NextRequest) {
     for (const img of images) {
       const url = await publicUrl(img.bucket!, img.path!);
       if (!url) continue;
-      const res = await sendImage(creds, r.customer_phone, url);
+      // As a DOCUMENT, not an image: WhatsApp recompresses images, so a 4K
+      // relight would land as a phone-sized JPEG — the exact quality the buyer
+      // paid to avoid. Documents arrive byte for byte.
+      const filename = `alux-art-${String(img.slot).padStart(2, "0")}.jpg`;
+      let res = await sendDocument(creds, r.customer_phone, url, filename);
+      if (!res.ok) {
+        // Fall back rather than deliver nothing. A compressed photo is a poor
+        // outcome; silence after payment is a worse one.
+        console.warn(`[wa deliver] document ${img.slot} failed, retrying as image:`, res.error);
+        res = await sendImage(creds, r.customer_phone, url);
+      }
       if (res.ok) sent++;
       else console.error(`[wa deliver] image ${img.slot} failed:`, res.error);
     }

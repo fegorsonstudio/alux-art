@@ -71,6 +71,30 @@ export function sendImage(creds: WaCreds, to: string, url: string, caption?: str
 }
 
 /**
+ * Send a file rather than a picture.
+ *
+ * WhatsApp recompresses anything sent as an image — a 4K relight arrives as a
+ * phone-sized JPEG, which is the whole thing the buyer paid to avoid. Sent as a
+ * document it arrives byte for byte.
+ *
+ * The filename is what the buyer sees and saves, so it is worth setting to
+ * something meaningful rather than a bare id.
+ */
+export function sendDocument(
+  creds: WaCreds, to: string, url: string, filename: string, caption?: string
+): Promise<SendResult> {
+  return post(creds, {
+    to,
+    type: "document",
+    document: {
+      link: url,
+      filename: filename.slice(0, 100),
+      ...(caption ? { caption: caption.slice(0, 1000) } : {}),
+    },
+  });
+}
+
+/**
  * An interactive list. Used for choosing a style, because typing a number is
  * where a chat flow usually goes wrong: people reply "the second one", "2)",
  * or the style's name. A list gives back a stable id instead.

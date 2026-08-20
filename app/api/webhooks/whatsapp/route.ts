@@ -4,8 +4,9 @@ import sql from "@/lib/db";
 import { r2Upload } from "@/lib/r2";
 import { createServiceClient } from "@/lib/supabase-server";
 import { SITE_URL } from "@/lib/site-url";
+import { resolveTrigger } from "@/lib/whatsapp-triggers";
 import {
-  sendText, sendList, sendButtons, downloadMedia, markRead,
+  sendText, sendImage, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
 } from "@/lib/whatsapp";
 
@@ -48,6 +49,9 @@ type Session = {
   package_size: number | null;
   currency: string | null;
   user_id: string | null;
+  enhance_look_id: string | null;
+  aspect_ratio: string | null;
+  idle_seconds: number | null;
 };
 
 // ── Webhook verification ─────────────────────────────────────────────────────
@@ -64,13 +68,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const raw = await req.text();
 
-  const secret = process.env.IG_APP_SECRET;
-  if (!secret) {
-    console.error("[wa] IG_APP_SECRET not set — refusing unsigned payloads");
+  // WhatsApp and Instagram live on DIFFERENT Meta apps, each signing with its
+  // own secret. Checking only IG_APP_SECRET threw away every real WhatsApp
+  // message with "bad signature" — the pipeline was fine, the key was wrong.
+  //
+  // Both are accepted rather than one replacing the other: the Instagram
+  // comment-to-DM automation runs on the old app and is working, so swapping the
+  // secret would fix WhatsApp by breaking Instagram. A payload only has to match
+  // one of them, and a payload matching neither is still refused.
+  const secrets = [process.env.WHATSAPP_APP_SECRET, process.env.IG_APP_SECRET]
+    .filter((x): x is string => !!x);
+  if (!secrets.length) {
+    console.error("[wa] no app secret set — refusing unsigned payloads");
     return NextResponse.json({ ok: true });
   }
-  if (!verifySignature(raw, req.headers.get("x-hub-signature-256"), secret)) {
-    console.warn("[wa] bad signature — ignoring");
+  const signature = req.headers.get("x-hub-signature-256");
+  if (!secrets.some(sec => verifySignature(raw, signature, sec))) {
+    console.warn(`[wa] bad signature — ignoring (checked ${secrets.length} secret(s))`);
     return NextResponse.json({ ok: true });
   }
 
@@ -148,7 +162,42 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
     WHERE id = ${session.id}`;
 
   // Universal escape hatches, valid in any state.
-  if (/^(restart|start over|cancel|reset)$/i.test(text) || choiceId === "restart") {
+  if (/^(restart|start over|cancel|reset|menu|styles)$/i.test(text) || choiceId === "restart") {
+    await resetSession(session.id);
+    await offerTemplates(creds, creator, phone, session.id);
+    return;
+  }
+
+  // Somebody saying hello is starting a conversation, not answering a question
+  // asked hours ago. Without this, a returning buyer gets "send 4 more photos"
+  // as a reply to "hi" — the bot answering a question they no longer remember
+  // being asked. Mid-upload it does NOT reset, because losing photos already
+  // sent to a stray greeting would be worse.
+  const greeted = /^(hi|hey|hello+|good (morning|afternoon|evening)|how far|abeg)\b/i.test(text);
+  const stale = (session.idle_seconds ?? 0) > 60 * 60 * 2;
+  if (greeted && (session.state === "IDLE" || session.selfie_count === 0 || stale)) {
+    await resetSession(session.id);
+    await offerTemplates(creds, creator, phone, session.id);
+    return;
+  }
+  if (greeted) {
+    await sendText(creds, phone,
+      `Hi 👋 We're partway through — I have ${session.selfie_count} of your photos.\n\n` +
+      "Keep sending photos, or reply *menu* to start again.");
+    return;
+  }
+
+  // A trigger word beats whatever question is on the table. Someone typing
+  // "g7x" mid-menu is telling us what they want, not answering us — and the
+  // Instagram handoff sends them here with the word already typed. Skipped
+  // while photos are in flight, so a filename-ish caption cannot wipe an upload.
+  if (text && session.selfie_count === 0) {
+    const hit = await resolveTrigger(creator.id, text);
+    if (hit) return startFromTrigger(creds, creator, phone, session, hit);
+  }
+
+  // A conversation abandoned days ago should not resume mid-question.
+  if (stale && session.state !== "IDLE" && session.selfie_count === 0) {
     await resetSession(session.id);
     await offerTemplates(creds, creator, phone, session.id);
     return;
@@ -166,6 +215,10 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
       return chooseTemplate(creds, creator, phone, session, choiceId ?? text);
     case "COLLECTING_PHOTOS":
       return collectPhoto(creds, creator, phone, session, msg);
+    case "CHOOSING_RATIO":
+      return chooseRatio(creds, creator, phone, session, choiceId ?? text);
+    case "CHOOSING_LOOK":
+      return chooseLook(creds, creator, phone, session, choiceId ?? text);
     case "CONFIRMING":
       return confirm(creds, creator, phone, session, choiceId ?? text);
     case "AWAITING_PAYMENT":
@@ -184,7 +237,8 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
 async function loadSession(creatorId: string, phone: string): Promise<Session> {
   const [existing] = await sql<Session[]>`
     SELECT id, creator_id, customer_phone, state, template_id, shoot_id,
-           selfie_count, selfie_paths, package_size, currency, user_id
+           selfie_count, selfie_paths, package_size, currency, user_id, enhance_look_id, aspect_ratio,
+           EXTRACT(EPOCH FROM (NOW() - COALESCE(last_message_at, updated_at)))::int AS idle_seconds
     FROM whatsapp_sessions
     WHERE creator_id = ${creatorId} AND customer_phone = ${phone}`;
   if (existing) return existing;
@@ -194,7 +248,8 @@ async function loadSession(creatorId: string, phone: string): Promise<Session> {
     VALUES (${creatorId}, ${phone}, 'IDLE')
     ON CONFLICT (creator_id, customer_phone) DO UPDATE SET updated_at = NOW()
     RETURNING id, creator_id, customer_phone, state, template_id, shoot_id,
-              selfie_count, selfie_paths, package_size, currency, user_id`;
+              selfie_count, selfie_paths, package_size, currency, user_id, enhance_look_id, aspect_ratio,
+              0 AS idle_seconds`;
   return created;
 }
 
@@ -202,35 +257,163 @@ async function resetSession(id: string) {
   await sql`
     UPDATE whatsapp_sessions
     SET state = 'IDLE', template_id = NULL, shoot_id = NULL, selfie_count = 0,
-        selfie_paths = '{}', package_size = NULL, payment_reference = NULL,
+        selfie_paths = '{}', package_size = NULL, payment_reference = NULL, enhance_look_id = NULL, aspect_ratio = NULL,
         delivered_at = NULL, updated_at = NOW()
     WHERE id = ${id}`;
 }
 
+/**
+ * The name the buyer sees. NOT creator.display_name: that is the internal
+ * studio name ("Fegorson Studio") shown in the dashboard, while the number is
+ * registered with WhatsApp as "Alux Art" and that is what appears at the top of
+ * their chat. Greeting them as a different name reads like a wrong number.
+ */
+function brandName(creator: Creator): string {
+  return process.env.WHATSAPP_BUSINESS_NAME || creator.display_name || "Alux Art";
+}
+
+
+/**
+ * Per-image templates (the Gear Equalizer, the Asset Extractor) work on photos
+ * the buyer already shot, not on selfies of them. Same booking route, different
+ * question — so the conversation has to know which kind it is dealing with.
+ */
+async function isPerImage(templateId: string | null): Promise<boolean> {
+  if (!templateId) return false;
+  const [t] = await sql<{ category: string | null }[]>`
+    SELECT category FROM templates WHERE id = ${templateId}`;
+  return t?.category === "photo_upgrade" || t?.category === "asset_extract";
+}
+
+/**
+ * Find a lighting look by the number printed in front of its name.
+ *
+ * The archive holds 197 looks — unlistable in a chat, and unguessable by name.
+ * They were numbered for exactly this reason: a buyer can be told "reply 197"
+ * and a friend can pass a number along. The name is the source of truth, since
+ * that is what the picker and the shoot record both show.
+ */
+async function lookByNumber(templateId: string | null, n: number): Promise<{ id: string; name: string } | null> {
+  if (!templateId) return null;
+  const [row] = await sql<{ option_groups: unknown }[]>`
+    SELECT option_groups FROM templates WHERE id = ${templateId}`;
+  const groups = (Array.isArray(row?.option_groups) ? row!.option_groups : []) as Array<{
+    type?: string; options?: Array<{ id: string; name: string; kind?: string }>;
+  }>;
+  for (const g of groups) {
+    if (g.type !== "lighting") continue;
+    for (const o of g.options ?? []) {
+      if (o.kind !== "prompt") continue;
+      const m = /^(\d+)\s+·\s+/.exec(o.name);
+      if (m && Number(m[1]) === n) return { id: o.id, name: o.name };
+    }
+  }
+  return null;
+}
+
+
+/**
+ * A trigger word landed. Set the template (and the look, if they named one) and
+ * go straight to asking for photos.
+ *
+ * The reply names back everything it decided. A trigger is a guess on the
+ * buyer's behalf, and a wrong guess has to be visible now rather than after they
+ * have paid for the wrong look.
+ */
+async function startFromTrigger(
+  creds: WaCreds, creator: Creator, phone: string, session: Session,
+  hit: Awaited<ReturnType<typeof resolveTrigger>> & object
+) {
+  const perImage = await isPerImage(hit.templateId);
+  const lookId = hit.kind === "look" ? hit.lookId : null;
+
+  await sql`
+    UPDATE whatsapp_sessions
+    SET template_id = ${hit.templateId}, state = 'COLLECTING_PHOTOS',
+        selfie_count = 0, selfie_paths = '{}', package_size = NULL,
+        enhance_look_id = ${lookId}, shoot_id = NULL, updated_at = NOW()
+    WHERE id = ${session.id}`;
+
+  const heading = hit.kind === "look"
+    ? `*${hit.title}*\n${hit.lookName}`
+    : `*${hit.title}*`;
+
+  if (perImage) {
+    await sendText(creds, phone,
+      `${heading}\n\n` +
+      "Send me the photos you want done.\n\n" +
+      "📎 *Send them as files, not as photos.* Tap the paperclip, choose " +
+      "*Document*, and pick your images. WhatsApp squeezes anything sent the " +
+      "normal way, and you paid for the detail.\n\n" +
+      "Up to 10. Reply *done* when you have finished.");
+    return;
+  }
+
+  await sendText(creds, phone,
+    `${heading}\n\n` +
+    `Send me ${PHOTOS_NEEDED} photos of yourself, one at a time — face, side on, ` +
+    "full body, and one smiling.\n\n" +
+    "📎 *Send them as files* (paperclip → Document) so they keep their quality.\n\n" +
+    "No filters and no sunglasses please.");
+}
+
 /** Step 1 — greet and show this creator's styles. */
 async function offerTemplates(creds: WaCreds, creator: Creator, phone: string, sessionId: string) {
-  const templates = await sql<{ id: string; title: string; category: string | null }[]>`
-    SELECT id, title, category FROM templates
+  // Per-image templates are included: the Gear Equalizer is the best seller, so
+  // leaving it out of the menu hid the main product. The conversation branches
+  // later on what it asks for — photos you already shot, rather than selfies.
+  const templates = await sql<{
+    id: string; title: string; category: string | null;
+    p1: number | null; p5: number | null; cov: string | null; bkt: string | null;
+  }[]>`
+    SELECT id, title, category, price_1_ngn AS p1, price_5_ngn AS p5,
+           cover_storage_path AS cov, cover_bucket AS bkt
+    FROM templates
     WHERE creator_id = ${creator.id} AND status = 'published'
-      AND category NOT IN ('photo_upgrade', 'asset_extract')
-    ORDER BY created_at DESC LIMIT 10`;
+      -- Private templates are link-only client work. The marketplace filters
+      -- them (app/api/marketplace/route.ts) and so must this: listing them here
+      -- offers someone else's private template to anyone who says hello.
+      AND is_private = false
+    ORDER BY created_at DESC LIMIT 8`;
 
   if (!templates.length) {
     await sendText(creds, phone,
-      `Thanks for messaging ${creator.display_name ?? "us"}. ` +
+      `Thanks for messaging ${brandName(creator)}. ` +
       `There are no styles available on this number yet — have a look at ${SITE_URL}/marketplace instead.`);
     return;
   }
 
   await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_TEMPLATE', updated_at = NOW() WHERE id = ${sessionId}`;
 
+  // Lead with a picture. A wall of text from an unknown number reads as spam;
+  // the logo makes it look like the business the buyer just messaged.
+  await sendImage(creds, phone, `${SITE_URL}/logo.png`,
+    `Hi 👋 This is ${brandName(creator)}.\n\n` +
+    "I turn photos into proper studio shots — usually in a few minutes.\n\n" +
+    "Here's what we do 👇");
+
+  // Then the styles themselves, as pictures. Choosing from names alone is
+  // guesswork: the buyer cannot tell what any of these look like from a title.
+  const previewable = templates.filter((t) => t.cov && t.bkt).slice(0, 5);
+  for (let i = 0; i < previewable.length; i++) {
+    const t = previewable[i];
+    const perImage = t.category === "photo_upgrade" || t.category === "asset_extract";
+    const price = perImage
+      ? (t.p1 ? `₦${Number(t.p1).toLocaleString()} per photo` : "")
+      : (t.p5 ? `₦${Number(t.p5).toLocaleString()} for 5 photos` : "");
+    await sendImage(
+      creds, phone,
+      `${SITE_URL}/api/media?b=${encodeURIComponent(t.bkt!)}&p=${encodeURIComponent(t.cov!)}`,
+      `*${i + 1}. ${t.title}*${price ? `\n${price}` : ""}`
+    );
+  }
+
   const r = await sendList(creds, phone, {
-    body:
-      `Hi 👋 This is ${creator.display_name ?? "Alux Art"}.\n\n` +
-      "I can turn a few photos of you into a proper photoshoot, usually in a few minutes.\n\n" +
-      "Which style would you like?",
+    body: previewable.length
+      ? "Which one would you like? Tap below, or just reply with its number."
+      : "Which style would you like?",
     button: "See styles",
-    rows: templates.map((t) => ({ id: `tpl:${t.id}`, title: t.title, description: t.category ?? undefined })),
+    rows: templates.map((t) => ({ id: `tpl:${t.id}`, title: t.title.slice(0, 24), description: t.category ?? undefined })),
   });
 
   // A list can fail (an unverified number, a stale token). Falling back to a
@@ -238,7 +421,7 @@ async function offerTemplates(creds: WaCreds, creator: Creator, phone: string, s
   if (!r.ok) {
     console.warn("[wa] list failed, falling back to text:", r.error);
     await sendText(creds, phone,
-      `Hi 👋 This is ${creator.display_name ?? "Alux Art"}.\n\n` +
+      `Hi 👋 This is ${brandName(creator)}.\n\n` +
       "Reply with the number of the style you want:\n\n" +
       templates.map((t, i) => `${i + 1}. ${t.title}`).join("\n"));
   }
@@ -251,7 +434,7 @@ async function chooseTemplate(
   const templates = await sql<{ id: string; title: string }[]>`
     SELECT id, title FROM templates
     WHERE creator_id = ${creator.id} AND status = 'published'
-      AND category NOT IN ('photo_upgrade', 'asset_extract')
+      AND is_private = false
     ORDER BY created_at DESC LIMIT 10`;
 
   let picked: { id: string; title: string } | undefined;
@@ -279,6 +462,15 @@ async function chooseTemplate(
         selfie_count = 0, selfie_paths = '{}', updated_at = NOW()
     WHERE id = ${session.id}`;
 
+  if (await isPerImage(picked.id)) {
+    await sendText(creds, phone,
+      `*${picked.title}* — good choice.\n\n` +
+      "Send me the photos you want upgraded, one at a time. These are photos you " +
+      "already took — a night out, an event, anything lit badly.\n\n" +
+      "Send as many as you like, up to 10. Reply *done* when you have finished.");
+    return;
+  }
+
   await sendText(creds, phone,
     `*${picked.title}* — good choice.\n\n` +
     `Now send me ${PHOTOS_NEEDED} photos of yourself, one at a time:\n\n` +
@@ -293,13 +485,38 @@ async function chooseTemplate(
 async function collectPhoto(
   creds: WaCreds, creator: Creator, phone: string, session: Session, msg: WaMessage
 ) {
-  if (msg.type !== "image" || !msg.image?.id) {
-    await sendText(creds, phone,
-      `I need photos to work from. Send ${PHOTOS_NEEDED - session.selfie_count} more as pictures, not as text or a file.`);
+  const perImage = await isPerImage(session.template_id);
+
+  // A document carrying an image is the PREFERRED path: WhatsApp recompresses
+  // anything sent as a photo, and this product sells detail. Both are accepted
+  // so nobody is blocked for sending it the ordinary way.
+  const asDocument = msg.type === "document" && msg.document?.id
+    && (msg.document.mime_type ?? "").startsWith("image/");
+  const mediaId = asDocument ? msg.document!.id! : (msg.type === "image" ? msg.image?.id : undefined);
+
+  if (!mediaId) {
+    const said = (msg.text?.body ?? "").trim().toLowerCase();
+    // "done" only means anything for a per-image shoot, where the buyer decides
+    // how many photos to send. A fixed-size shoot ends when it has its four.
+    if (perImage && /^(done|finish|finished|that's all|thats all)$/.test(said)) {
+      if (session.selfie_count < 1) {
+        await sendText(creds, phone, "Send me at least one photo first.");
+        return;
+      }
+      return askWhereItGoes(creds, creator, phone, session);
+    }
+    await sendText(creds, phone, perImage
+      ? "Send the photos as pictures, not as text or a file. Reply *done* when you have finished."
+      : `I need photos to work from. Send ${PHOTOS_NEEDED - session.selfie_count} more as pictures, not as text or a file.`);
     return;
   }
 
-  const media = await downloadMedia(creds, msg.image.id);
+  if (perImage && session.selfie_count >= 10) {
+    await sendText(creds, phone, "That's the maximum of 10 photos. Reply *done* to carry on.");
+    return;
+  }
+
+  const media = await downloadMedia(creds, mediaId);
   if (!media) {
     await sendText(creds, phone, "That photo didn't come through. Could you send it again?");
     return;
@@ -330,6 +547,14 @@ async function collectPhoto(
     RETURNING selfie_count`;
 
   const have = updated?.selfie_count ?? session.selfie_count + 1;
+
+  if (perImage) {
+    await sendText(creds, phone,
+      `Got it — that's ${have} photo${have === 1 ? "" : "s"}. ` +
+      "Send another, or reply *done* when you have finished.");
+    return;
+  }
+
   if (have < PHOTOS_NEEDED) {
     const left = PHOTOS_NEEDED - have;
     await sendText(creds, phone, `Got it (${have}/${PHOTOS_NEEDED}). ${left} more to go.`);
@@ -339,17 +564,124 @@ async function collectPhoto(
   await showQuote(creds, creator, phone, session.id, session.template_id);
 }
 
+
+/**
+ * Per-image step — what shape should these come back?
+ *
+ * Asked BEFORE payment because it decides what gets generated, not how it is
+ * cropped afterwards. A story posted from a 4:5 file gets bars or a bad crop,
+ * and re-running it costs another generation.
+ *
+ * Only per-image templates ask. A portrait template was composed at the shape
+ * its creator chose and its marketplace samples were shot that way; overriding
+ * it would deliver something that does not match what the buyer was shown.
+ */
+async function askWhereItGoes(creds: WaCreds, creator: Creator, phone: string, session: Session) {
+  await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_RATIO', updated_at = NOW() WHERE id = ${session.id}`;
+  const r = await sendButtons(creds, phone, {
+    body:
+      `Got ${session.selfie_count} photo${session.selfie_count === 1 ? "" : "s"} 👍\n\n` +
+      "Where are you posting these?",
+    buttons: [
+      { id: "ratio:9:16", title: "Story" },
+      { id: "ratio:4:5", title: "Feed" },
+    ],
+  });
+  if (!r.ok) {
+    await sendText(creds, phone,
+      "Where are you posting these? Reply *story* or *feed*.");
+  }
+}
+
+/** Per-image step — they answered story or feed. */
+async function chooseRatio(
+  creds: WaCreds, creator: Creator, phone: string, session: Session, answer: string
+) {
+  const said = (answer || "").trim().toLowerCase();
+  const ratio =
+    said.startsWith("ratio:") ? said.slice(6)
+    : /story|reel|status|9.?16/.test(said) ? "9:16"
+    : /feed|post|grid|4.?5/.test(said) ? "4:5"
+    : null;
+
+  if (ratio !== "9:16" && ratio !== "4:5") {
+    await sendText(creds, phone, "Reply *story* for a tall crop, or *feed* for the square-ish one.");
+    return;
+  }
+
+  await sql`UPDATE whatsapp_sessions SET currency = COALESCE(currency, 'NGN'), updated_at = NOW() WHERE id = ${session.id}`;
+  await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_LOOK', updated_at = NOW() WHERE id = ${session.id}`;
+  // Stashed on the session so the booking call can pass it through.
+  await sql`UPDATE whatsapp_sessions SET aspect_ratio = ${ratio}, updated_at = NOW() WHERE id = ${session.id}`;
+
+  await sendText(creds, phone, ratio === "9:16" ? "Story it is — tall crop." : "Feed it is.");
+
+  // A trigger word may already have chosen the look, in which case there is
+  // nothing left to ask.
+  if (session.enhance_look_id) {
+    await showQuote(creds, creator, phone, session.id, session.template_id, session.selfie_count);
+    return;
+  }
+  await askForLook(creds, creator, phone, { ...session });
+}
+
+/** Per-image step — which of the 197 looks. */
+async function askForLook(creds: WaCreds, creator: Creator, phone: string, session: Session) {
+  await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_LOOK', updated_at = NOW() WHERE id = ${session.id}`;
+  await sendText(creds, phone,
+    "Now pick the lighting look.\n\n" +
+    "There are 197 of them, each with a number. If someone sent you a number, reply with it now.\n\n" +
+    `Otherwise browse them here and send me the number:\n${SITE_URL}/marketplace/${session.template_id}\n\n` +
+    "A popular one is *197* — Night Paparazzi G7X, the direct-flash night look.");
+}
+
+/** Per-image step — they replied with a look number. */
+async function chooseLook(
+  creds: WaCreds, creator: Creator, phone: string, session: Session, answer: string
+) {
+  const n = parseInt((answer || "").trim(), 10);
+  if (!Number.isFinite(n)) {
+    await sendText(creds, phone, "Reply with the look's number — just the digits, like *197*.");
+    return;
+  }
+  const look = await lookByNumber(session.template_id, n);
+  if (!look) {
+    await sendText(creds, phone,
+      `I couldn't find look ${n}. The numbers run from 1 to 197 — check it and send it again.`);
+    return;
+  }
+  await sql`
+    UPDATE whatsapp_sessions SET enhance_look_id = ${look.id}, updated_at = NOW()
+    WHERE id = ${session.id}`;
+  await sendText(creds, phone, `*${look.name}* it is.`);
+  await showQuote(creds, creator, phone, session.id, session.template_id, session.selfie_count);
+}
+
 /** Step 4 — price and confirmation. */
 async function showQuote(
   creds: WaCreds, creator: Creator, phone: string, sessionId: string, templateId: string | null,
   packageSize = 5
 ) {
-  const [tpl] = await sql<{ title: string }[]>`SELECT title FROM templates WHERE id = ${templateId}`;
-  const price = await priceFor(templateId, packageSize);
+  const [tpl] = await sql<{ title: string; category: string | null; p1: string | null }[]>`
+    SELECT title, category, price_1_ngn AS p1 FROM templates WHERE id = ${templateId}`;
+  const perImage = tpl?.category === "photo_upgrade" || tpl?.category === "asset_extract";
+
+  // A per-image template has no packages. The bill is simply the per-photo rate
+  // times however many photos the buyer sent, which is what the web checkout
+  // charges and therefore what the booking route will charge.
+  const price = perImage
+    ? (tpl?.p1 ? Number(tpl.p1) * packageSize : null)
+    : await priceFor(templateId, packageSize);
 
   // A creator can leave a size unpriced. Quoting a guess there would be quoting
   // a number the booking route will not honour, so the buyer is offered the
   // sizes that do have a price instead of being given an invented one.
+  if (price === null && perImage) {
+    await sendText(creds, phone,
+      "That style isn't priced for booking yet. Reply *menu* and I'll show you the others.");
+    return;
+  }
+
   if (price === null) {
     const alt = (await Promise.all([1, 5, 10].map(async (n) => ({ n, p: await priceFor(templateId, n) }))))
       .filter((x) => x.p !== null);
@@ -373,7 +705,7 @@ async function showQuote(
   const body =
     `That's everything I need 📸\n\n` +
     `*${tpl?.title ?? "Your shoot"}*\n` +
-    `${packageSize} photo${packageSize > 1 ? "s" : ""} — ₦${price.toLocaleString()}\n\n` +
+    `${packageSize} photo${packageSize > 1 ? "s" : ""}${perImage ? " upgraded" : ""} — ₦${price!.toLocaleString()}\n\n` +
     "Shall I go ahead?";
 
   const r = await sendButtons(creds, phone, {
@@ -413,6 +745,11 @@ async function confirm(
     body: JSON.stringify({
       packageSize: session.package_size ?? 5,
       currency: session.currency ?? "NGN",
+      // A per-image booking is refused outright without a lighting selection,
+      // and the route re-reads the recipe server-side from this id — the chat
+      // never handles prompt text.
+      ...(session.enhance_look_id ? { enhance: { lighting: session.enhance_look_id } } : {}),
+      ...(session.aspect_ratio ? { aspectRatio: session.aspect_ratio } : {}),
       identityRefs: paths.map((p, i) => ({
         id: crypto.randomUUID(),
         name: `WhatsApp ${i + 1}`,
@@ -545,6 +882,7 @@ type WaMessage = {
   type: string;
   text?: { body?: string };
   image?: { id?: string };
+  document?: { id?: string; mime_type?: string; filename?: string };
   interactive?: {
     list_reply?: { id?: string };
     button_reply?: { id?: string };
