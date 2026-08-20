@@ -155,6 +155,8 @@ const pcm: AppDictionary = {
     uploadPhotosFirst: "Upload your photos first, den give each one im own lighting style.",
     uploadPhotosFirstExtract: "Upload your photos first, then tick wetin you wan comot from each one.",
     perPhotoPrice: "each one",
+    twoTakesLabel: "Two versions of each photo",
+    twoTakesHint: "We go run every photo two times, you pick the one wey you like pass. E go double the price.",
     outputSize: "Output size",
     whatToExtract: "Wetin you wan extract",
     extractHint: "Tick wetin you wan comot from each photo. Each tick na one image, with all di angles inside am.",

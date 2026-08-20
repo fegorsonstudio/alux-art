@@ -72,6 +72,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     poseRefs?: RefInput[];
     shotType?: string;
     aspectRatio?: string;   // photo upgrades only — the buyer keeps their own shape
+    twoTakes?: boolean;     // photo upgrades only — pay double for a second version to choose from
     assetPicks?: Record<string, string[]>;   // asset extractor: photo path -> kind ids
     couponCode?: string;
     packageSize?: number;
@@ -493,6 +494,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // sold on, so the studio takes a fixed amount per image and the creator keeps
   // what they priced above it. Without the override a ₦1,000 resale would pay
   // the creator ₦400 instead of the ₦200 the offer promises.
+  // A SECOND take of every photo, for double the money.
+  //
+  // Two takes were briefly the only option at N2,000 a photo and customers said
+  // so: the price had doubled without them choosing it. It is a genuine upsell,
+  // not a default — the model is stochastic, so a second pass on the same prompt
+  // gives a real alternative and one bad take stops costing somebody their
+  // photo. But it has to be asked for.
+  const twoTakes = perImagePricing && body.twoTakes === true;
+  const takesPerPhoto = twoTakes ? 2 : 1;
+
   const resaleFeeNgn = resalePlatformFee(template, buyerPackageSize);
   const platformFeeNgn = resaleFeeNgn ?? (perImagePricing
     ? Math.ceil(basePlatformFeeNgn * (buyerPackageSize / 10))
@@ -504,7 +515,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     10: price10 || null,
   };
   const buyerAmountNgn: number | null = perImagePricing
-    ? (unitPriceNgn ? unitPriceNgn * buyerPackageSize : null)
+    ? (unitPriceNgn ? unitPriceNgn * buyerPackageSize * takesPerPhoto : null)
     : priceMap[buyerPackageSize as 1 | 5 | 10];
   if (!buyerAmountNgn) {
     return NextResponse.json({ error: "This package is not available for this template" }, { status: 422 });
@@ -603,11 +614,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     updated_at: now,
   });
 
-  // Per-image shoots run every photo TWICE on the same prompt and the same
-  // references, and the buyer keeps whichever they prefer. The model is
-  // stochastic, so two passes genuinely differ — which is the point: one bad
-  // take no longer costs somebody their photo. Never explained in the UI; it is
-  // simply what the product does.
+  // One row per take. A second take repeats the same prompt and the same
+  // references; the model is stochastic, so the two genuinely differ and the
+  // buyer keeps whichever they prefer. Opt-in, and priced as such.
   //
   // Both passes are nano-banana. A second engine was tried and removed: GPT
   // Image 2 tops out around 1024px while this pipeline delivers 3072x5504, so
@@ -623,7 +632,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // booking would fail outright if the doubling were stored there.
   const slots = perImagePricing
     ? Array.from({ length: buyerPackageSize }, (_, i) => i)
-        .flatMap(i => [slotRow(i, null), slotRow(i, null)])
+        .flatMap(i => Array.from({ length: takesPerPhoto }, () => slotRow(i, null)))
     : Array.from({ length: buyerPackageSize }, (_, i) => slotRow(i, null));
   await sql`INSERT INTO shoot_images ${sql(slots)}`;
 

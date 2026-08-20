@@ -154,6 +154,8 @@ const en = {
     uploadPhotosFirst: "Upload your photos first, then assign a lighting look to each.",
     uploadPhotosFirstExtract: "Upload your photos first, then tick what to pull out of each one.",
     perPhotoPrice: "each",
+    twoTakesLabel: "Two versions of each photo",
+    twoTakesHint: "We run every photo twice and you keep whichever you prefer. Doubles the price.",
     outputSize: "Output size",
     whatToExtract: "What to extract",
     extractHint: "Tick what to pull out of each photo. Each tick is one image, with every angle inside it.",

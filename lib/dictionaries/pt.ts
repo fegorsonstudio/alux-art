@@ -155,6 +155,8 @@ const pt: AppDictionary = {
     uploadPhotosFirst: "Envie suas fotos primeiro e depois atribua um estilo de iluminação a cada uma.",
     uploadPhotosFirstExtract: "Envie suas fotos primeiro, depois marque o que tirar de cada uma.",
     perPhotoPrice: "cada",
+    twoTakesLabel: "Duas versões de cada foto",
+    twoTakesHint: "Processamos cada foto duas vezes e fica com a que preferir. Duplica o preço.",
     outputSize: "Tamanho de saida",
     whatToExtract: "O que extrair",
     extractHint: "Marque o que tirar de cada foto. Cada marca da uma imagem, com todos os angulos dentro.",

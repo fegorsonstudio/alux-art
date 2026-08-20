@@ -155,6 +155,8 @@ const es: AppDictionary = {
     uploadPhotosFirst: "Sube tus fotos primero y luego asigna un estilo de iluminación a cada una.",
     uploadPhotosFirstExtract: "Sube tus fotos primero, luego marca que sacar de cada una.",
     perPhotoPrice: "cada una",
+    twoTakesLabel: "Dos versiones de cada foto",
+    twoTakesHint: "Procesamos cada foto dos veces y te quedas con la que prefieras. Duplica el precio.",
     outputSize: "Tamano de salida",
     whatToExtract: "Que extraer",
     extractHint: "Marca que sacar de cada foto. Cada marca es una imagen, con todos los angulos dentro.",

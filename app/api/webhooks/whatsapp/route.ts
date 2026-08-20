@@ -809,19 +809,36 @@ async function confirm(
     }),
   }).then((r) => r.json()).catch((e) => ({ error: String(e) }));
 
-  if (booking?.error || !booking?.shoot?.id) {
+  // The route answers { authorizationUrl, shootId }. This used to look for
+  // booking.shoot.id, which never exists, so a booking that had SUCCEEDED — real
+  // shoot, live Paystack link — was reported to the customer as "something went
+  // wrong" and abandoned. Both shapes are accepted now so neither spelling can
+  // strand a paying customer again.
+  const shootId = (booking?.shootId ?? booking?.shoot?.id) as string | undefined;
+
+  if (booking?.error || !shootId) {
     console.error("[wa] booking failed:", JSON.stringify(booking).slice(0, 300));
     await sendText(creds, phone,
       "Something went wrong setting up your shoot. Nothing has been charged.\n\n" +
       `You can finish it here instead: ${SITE_URL}/marketplace/${session.template_id}`);
     return;
   }
-
-  const shootId = booking.shoot.id as string;
   await sql`
     UPDATE whatsapp_sessions
     SET shoot_id = ${shootId}, state = 'AWAITING_PAYMENT', user_id = ${userId}, updated_at = NOW()
     WHERE id = ${session.id}`;
+
+  // Reuse the link the booking already produced. Calling /pay as well would
+  // start a second Paystack transaction for one shoot — two references, two
+  // rows in payments, and a webhook that can fire against either.
+  if (typeof booking?.authorizationUrl === "string" && booking.authorizationUrl) {
+    await sendText(creds, phone,
+      "Here's your secure checkout 👇\n\n" +
+      `${booking.authorizationUrl}\n\n` +
+      "Pay with card or bank transfer. Your photos are already uploaded, so this is the last step — " +
+      "I'll send the finished shoot straight back here.");
+    return;
+  }
 
   const pay = await fetch(`${SITE_URL}/api/shoots/${shootId}/pay`, {
     method: "POST",

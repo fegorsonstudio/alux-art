@@ -155,6 +155,8 @@ const zh: AppDictionary = {
     uploadPhotosFirst: "请先上传照片，然后为每张照片指定一种灯光风格。",
     uploadPhotosFirstExtract: "请先上传照片，然后勾选每张照片要提取的内容。",
     perPhotoPrice: "每张",
+    twoTakesLabel: "每张照片两个版本",
+    twoTakesHint: "每张照片生成两次，您保留更满意的一张。价格翻倍。",
     outputSize: "输出尺寸",
     whatToExtract: "要提取什么",
     extractHint: "勾选每张照片要提取的内容。每勾选一项生成一张图，所有角度都在同一张里。",

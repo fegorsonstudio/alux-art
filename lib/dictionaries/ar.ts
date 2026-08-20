@@ -155,6 +155,8 @@ const ar: AppDictionary = {
     uploadPhotosFirst: "ارفع صورك أولًا، ثم خصّص نمط إضاءة لكل صورة.",
     uploadPhotosFirstExtract: "ارفع صورك أولا، ثم حدد ما تريد استخراجه من كل صورة.",
     perPhotoPrice: "لكل صورة",
+    twoTakesLabel: "نسختان من كل صورة",
+    twoTakesHint: "نعالج كل صورة مرتين وتحتفظ بالنسخة التي تفضلها. يضاعف السعر.",
     outputSize: "مقاس الإخراج",
     whatToExtract: "ما الذي تريد استخراجه",
     extractHint: "حدد ما تريد استخراجه من كل صورة. كل اختيار يعطي صورة واحدة تضم كل الزوايا.",

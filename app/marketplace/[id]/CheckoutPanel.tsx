@@ -1159,6 +1159,10 @@ export default function CheckoutPanel({
     0
   );
   const perImagePricing = photoUpgradeActive || assetExtractActive;
+  // A second version of every photo, for double the money. Off by default:
+  // buyers complained when two takes were the only option and the price had
+  // doubled without them asking for it.
+  const [twoTakes, setTwoTakes] = useState(false);
   const unitPriceNgn = pkgOptions.find(o => o.n === 1)?.price ?? 0;
   const uploadedCount = Math.min(10, allIdentityRefs.length);
   const effectivePkg = assetExtractActive
@@ -1246,7 +1250,7 @@ export default function CheckoutPanel({
         shotType: selectedPkg === 1 ? shotType : undefined,
         couponCode: couponResult?.valid ? couponCode : undefined,
         packageSize: effectivePkg,
-        ...(perImagePricing ? { aspectRatio: upgradeAspect } : {}),
+        ...(perImagePricing ? { aspectRatio: upgradeAspect, twoTakes } : {}),
         ...(assetExtractActive ? { assetPicks } : {}),
         currency,
         rolePrompt: template.isStory && rolePrompt.trim() ? rolePrompt.trim() : undefined,
@@ -1330,7 +1334,7 @@ export default function CheckoutPanel({
   const pkgPrice = assetExtractActive
     ? unitPriceNgn * assetPlanCount
     : perImagePricing
-      ? unitPriceNgn * Math.max(1, uploadedCount)
+      ? unitPriceNgn * Math.max(1, uploadedCount) * (twoTakes ? 2 : 1)
       : (activePkg?.price ?? 0);
   const displayedPrice = couponResult?.valid && couponResult.discountNgn
     ? pkgPrice - couponResult.discountNgn
@@ -1385,9 +1389,27 @@ export default function CheckoutPanel({
               <p className={styles.sectionHint} style={{ margin: 0 }}>
                 {formatPrice(unitPriceNgn)} {t("perPhotoPrice")}{" "}
                 {uploadedCount > 0
-                  ? `— ${uploadedCount} ${imagesWord(uploadedCount)} = ${formatPrice(unitPriceNgn * uploadedCount)}`
+                  ? `— ${uploadedCount} ${imagesWord(uploadedCount)} = ${formatPrice(unitPriceNgn * uploadedCount * (twoTakes ? 2 : 1))}`
                   : ""}
               </p>
+
+              {/* The upsell, stated plainly rather than applied silently. */}
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", marginTop: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={twoTakes}
+                  onChange={(e) => setTwoTakes(e.target.checked)}
+                  style={{ marginTop: 3 }}
+                />
+                <span>
+                  <span className={styles.pkgLabel} style={{ margin: 0, display: "block" }}>
+                    {t("twoTakesLabel")}
+                  </span>
+                  <span className={styles.sectionHint} style={{ margin: 0 }}>
+                    {t("twoTakesHint")}
+                  </span>
+                </span>
+              </label>
             </div>
           )}
           {/* Asset Extractor — tick what to pull out of each uploaded photo. */}

@@ -18,13 +18,17 @@
  */
 
 /**
- * The WhatsApp shortcut, with the trigger word pre-filled.
+ * The WhatsApp shortcut is NOT offered here yet.
  *
- * Tapping it opens a chat with "G7X" already typed; sending it puts the buyer
- * straight on the Gear Equalizer with look 197 chosen, asking for photos. Six
- * steps on a website is a lot to ask of somebody reading comments on a phone.
+ * It was added and then taken back out: the bot could not complete a booking end
+ * to end, so a comment that trusted the shortcut led to a dead end, while the
+ * website path works. One reply per comment is all Instagram allows, so it has
+ * to point somewhere that finishes.
+ *
+ * Put it back once a booking has run start to finish through the chat:
+ *   "Or skip all of it — message us on WhatsApp and send *G7X*:"
+ *   https://wa.me/2349076858017?text=G7X
  */
-const WA_LINK = "https://wa.me/2349076858017?text=G7X";
 
 export interface Keyword {
   /** What the caption asks people to comment. Keep it one word and easy to spell. */
@@ -65,9 +69,7 @@ export const KEYWORDS: Keyword[] = [
     reply:
       "Here's the relighting tool 👇\n\n" +
       `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32\n\n` +
-      "Or skip all of it — message us on WhatsApp and just send *G7X*:\n" +
-      `${WA_LINK}\n\n` +
-      "How to use it on the website instead:\n" +
+      "How to use it:\n" +
       "1. Open the link and tap Book This Look\n" +
       "2. Pick 4:5 at the top, and crop your photo to 4:5 so they match\n" +
       "3. Upload your photo\n" +
@@ -78,7 +80,6 @@ export const KEYWORDS: Keyword[] = [
       "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
     replyNoLink:
       "Here's the relighting tool 👇\n\n" +
-      "Fastest way: message us on WhatsApp on 0907 685 8017 and send G7X.\n\n" +
       "Tap our name at the top of this chat — the link is in our bio, then open " +
       "The Gear Equalizer.\n\n" +
       "How to use it:\n" +
