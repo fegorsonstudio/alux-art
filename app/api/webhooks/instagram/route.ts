@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
-import { matchKeyword } from "@/lib/instagram-keywords";
+import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
+import { findLookByNumber } from "@/lib/whatsapp-triggers";
 
 /**
  * Instagram comment webhook — the "comment STUDIO and I'll send you the link" bot.
@@ -121,7 +122,26 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const keyword = matchKeyword(text);
+      // A bare lighting look number, from a carousel slide that asked for one.
+      //
+      // Strict on purpose: ONLY a comment that is nothing but digits. Matching
+      // any comment CONTAINING a number would fire on "I have 2 kids" and DM a
+      // stranger about lighting look 2. A number naming no real look falls
+      // through to the word matching below and then to silence, exactly as now.
+      let keyword = /^\s*\d{1,3}\s*$/.test(text)
+        ? await (async () => {
+            const n = Number(text.trim());
+            const look = await findLookByNumber(n).catch(() => null);
+            if (!look) {
+              console.log(`[ig webhook] @${from.username ?? from.id} commented ${n} — no look with that number`);
+              return null;
+            }
+            console.log(`[ig webhook] @${from.username ?? from.id} asked for look ${n}: ${look.lookName}`);
+            return lookNumberReply(n, look.lookName);
+          })()
+        : null;
+
+      keyword ??= matchKeyword(text);
       if (!keyword) {
         console.log(`[ig webhook] comment from @${from.username ?? from.id} matched no keyword: ${text.slice(0, 60)}`);
         continue;

@@ -213,3 +213,42 @@ export function matchKeyword(commentText: string): Keyword | null {
 export function callToAction(word: string): string {
   return `💬 Comment ${word.toUpperCase()} and I'll send you the link.`;
 }
+
+/**
+ * The DM for a comment that is just a lighting look number.
+ *
+ * The carousel puts a number on every slide and asks people to comment the one
+ * they want. That number is already a working WhatsApp trigger, so the reply
+ * hands over a wa.me link with it pre-typed: the buyer sends it, the bot picks
+ * the template and the look, and asks for their photo. Comment to booking with
+ * no menu in between.
+ *
+ * Built rather than listed, because the looks live in the database — all 197 of
+ * them — and hardcoding even a handful here would guarantee the copy and the
+ * looks drift apart.
+ */
+export function lookNumberReply(n: number, lookName: string): Keyword {
+  // "197 · S Night Paparazzi G7X" -> "Night Paparazzi G7X". The number is
+  // already in the sentence and the C/S letter is studio shorthand.
+  const pretty = lookName.replace(/^\d+\s*·\s*/, "").replace(/^[CS]\s+/, "");
+
+  const body =
+    `That's *${pretty}* — look ${n}. 👇\n\n` +
+    "Send that number to us on WhatsApp and we'll apply it to your own photo. " +
+    "No sign-up, no app to install:\n";
+
+  const tail =
+    `\n\n₦1,000 for one photo. Works on a picture you already have — the dark club, ` +
+    `the dim restaurant, the badly lit hall.`;
+
+  return {
+    word: String(n),
+    reply: `${body}https://wa.me/2349076858017?text=${n}${tail}`,
+    replyNoLink:
+      `That's *${pretty}* — look ${n}. 👇\n\n` +
+      `Message us on WhatsApp and send just the number *${n}* — we'll apply that exact ` +
+      `light to your own photo. Our number is in our bio, at the top of this chat.` +
+      tail,
+    publicReply: "Sent you a DM 📩",
+  };
+}

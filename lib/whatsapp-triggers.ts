@@ -142,3 +142,40 @@ export async function resolveTrigger(creatorId: string, message: string): Promis
 
   return null;
 }
+
+/**
+ * One lighting look, by its number, across every published template.
+ *
+ * Exists so Instagram can answer a comment of "197" with the same look the bot
+ * would apply. Writing a second lookup there would let the two drift, and the
+ * failure would be silent and expensive: a commenter promised one light and
+ * charged for another.
+ *
+ * Not scoped by creator, unlike `resolveTrigger`. The Instagram webhook knows an
+ * Instagram account, and no mapping from that to a creator exists — every
+ * published template belongs to the same studio today, so searching all of them
+ * returns the same answer that scoping would. The day a second creator publishes
+ * lighting looks, this needs the mapping rather than a guess.
+ *
+ * Keeps the is_private filter every query in this file carries: a number must
+ * never reach into link-only client work.
+ */
+export async function findLookByNumber(n: number): Promise<
+  { templateId: string; title: string; lookId: string; lookName: string } | null
+> {
+  if (!Number.isInteger(n) || n < 1 || n > 999) return null;
+
+  const rows = await sql<Row[]>`
+    SELECT id, title, category, trigger_words, option_groups
+    FROM templates
+    WHERE status = 'published' AND is_private = false`.catch(() => [] as Row[]);
+
+  for (const r of rows) {
+    for (const o of lightingOptions(r.option_groups)) {
+      if (parseLookName(o.name).n === n) {
+        return { templateId: r.id, title: r.title, lookId: o.id, lookName: o.name };
+      }
+    }
+  }
+  return null;
+}
