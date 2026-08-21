@@ -181,10 +181,22 @@ export const KEYWORDS: Keyword[] = [
   },
 ];
 
-/** Strip punctuation, emoji and case so real comments match. */
+/**
+ * Strip punctuation, emoji and case so real comments match.
+ *
+ * @mentions are removed BEFORE the punctuation pass, and that order is the
+ * whole point. Our own handle is @fegorson_studio, so stripping the @ first
+ * turned every comment that tagged us into the words "fegorson studio" — and
+ * STUDIO is a keyword. A customer who wrote "@fegorson_studio I haven't seen it
+ * yet" was answered with a sales pitch for the thing she was chasing.
+ *
+ * People tag the account constantly, so this fires far more often than it looks.
+ * A handle is who someone is talking TO, never what they are asking for.
+ */
 function normalise(text: string): string {
   return text
     .toLowerCase()
+    .replace(/@[\w.]+/g, " ")
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
