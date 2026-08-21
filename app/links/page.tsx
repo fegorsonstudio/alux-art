@@ -68,14 +68,20 @@ type LinkItem = {
 };
 
 // Edit this list to add/change links. `external` opens in a new tab.
-// NOTE: Instagram / WhatsApp / TikTok URLs are placeholders — swap in the real
-// handle/number once provided.
+//
+// The WhatsApp number is the BOT (+234 907 685 8017, verified "Alux Art"), not
+// a personal line. It used to point at the owner's own number, which meant the
+// busiest link in the bio reached a human phone instead of the booking flow.
+// `?text=Hi` matters: the bot's greeting handler matches it and opens the style
+// menu, so the chat starts with something to choose rather than silence.
+//
+// NOTE: the TikTok URL is still a placeholder — swap in the real handle.
 const LINKS: LinkItem[] = [
   { label: "Enter the Studio", sub: "Book your AI photoshoot", href: "https://aluxartandframes.shop/marketplace", icon: IconStudio, primary: true },
+  { label: "Book on WhatsApp", sub: "No signup — send a photo and pay in chat", href: "https://wa.me/2349076858017?text=Hi", icon: IconWhatsApp, primary: true, external: true },
   { label: "Install the App", sub: "Add Alux Art to your home screen", href: "/install", icon: IconInstall },
   { label: "Alux Art Academy", sub: "Free daily tutorials on Telegram", href: "https://t.me/AluxArtAcademy", icon: IconTelegram, external: true },
   { label: "Instagram", sub: "@aluxartandframes", href: "https://instagram.com/aluxartandframes", icon: IconInstagram, external: true },
-  { label: "WhatsApp", sub: "Chat with us", href: "https://wa.me/2348137861670?text=Hi%20Alux%20Art%2C%20I%27d%20like%20to%20book%20a%20shoot", icon: IconWhatsApp, external: true },
   { label: "TikTok", sub: "@aluxartandframes", href: "https://tiktok.com/@aluxartandframes", icon: IconTikTok, external: true },
   { label: "Email us", sub: "support@aluxartandframes.shop", href: "mailto:support@aluxartandframes.shop", icon: IconEmail },
 ];
