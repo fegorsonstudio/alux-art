@@ -130,13 +130,26 @@ for (const r of stalled) {
 }
 
 // ── 3. Failed, with money against it ────────────────────────────────────────
+// Money for a marketplace booking lives in template_purchases, not payments —
+// that is the only table carrying the creator payout split, and every WhatsApp
+// shoot is a marketplace booking. An inner join on payments alone made this,
+// the most important alert here, blind to the entire revenue path it exists to
+// protect.
 const failedPaid = await sql`
-  SELECT sh.id, s.customer_phone, p.provider_reference AS ref,
+  SELECT sh.id, s.customer_phone,
+         COALESCE(tp.paystack_reference, p.provider_reference) AS ref,
+         COALESCE(tp.amount_ngn, p.amount_ngn) AS amount,
          round(EXTRACT(EPOCH FROM (NOW() - sh.updated_at)) / 60) AS mins
   FROM shoots sh
-  JOIN payments p ON p.shoot_id = sh.id AND p.status = 'success'
-  LEFT JOIN whatsapp_sessions s ON s.shoot_id = sh.id
+  LEFT JOIN template_purchases tp ON tp.shoot_id = sh.id AND tp.status = 'success'
+  LEFT JOIN payments p           ON p.shoot_id  = sh.id AND p.status  = 'success'
+  LEFT JOIN whatsapp_sessions s  ON s.shoot_id  = sh.id
   WHERE sh.status = 'FAILED'
+    AND (tp.id IS NOT NULL OR p.id IS NOT NULL)
+    -- A comped shoot failing is a bug to fix, not money to give back. This
+    -- alert says "refund them today", so it must only fire when there is
+    -- something to refund.
+    AND COALESCE(tp.amount_ngn, p.amount_ngn, 0) > 0
     AND sh.updated_at > NOW() - interval '7 days'`;
 
 for (const r of failedPaid) {
@@ -144,7 +157,7 @@ for (const r of failedPaid) {
     `🔴 <b>Someone paid and got nothing</b>\n\n` +
     (r.customer_phone ? `Customer: <code>+${r.customer_phone}</code>\n` : "") +
     `Shoot: <code>${r.id}</code>\n` +
-    `Payment: <code>${r.ref}</code>\n` +
+    `Paid: ₦${Number(r.amount ?? 0).toLocaleString("en-NG")} — <code>${r.ref}</code>\n` +
     `Failed ${r.mins} minutes ago.\n\n` +
     `They need a refund or a re-run today.`);
 }

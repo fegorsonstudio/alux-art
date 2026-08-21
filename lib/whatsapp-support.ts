@@ -39,8 +39,19 @@ export async function shootFacts(shootId: string | null): Promise<ShootFacts | n
            t.title,
            (SELECT count(*)::int FROM shoot_images i WHERE i.shoot_id = sh.id AND i.status = 'COMPLETE') AS done,
            (SELECT count(*)::int FROM shoot_images i WHERE i.shoot_id = sh.id) AS total,
-           (SELECT p.provider_reference FROM payments p
-             WHERE p.shoot_id = sh.id AND p.status = 'success' ORDER BY p.created_at DESC LIMIT 1) AS paid_ref
+           -- Two tables, two products. A marketplace booking — which is every
+           -- WhatsApp shoot — records its money in template_purchases, because
+           -- that is the only table carrying the creator payout split. Only
+           -- direct studio shoots, showcases and retouches land in payments.
+           -- Reading just one of them reports a paying customer as unpaid.
+           COALESCE(
+             (SELECT tp.paystack_reference FROM template_purchases tp
+               WHERE tp.shoot_id = sh.id AND tp.status = 'success'
+               ORDER BY tp.created_at DESC LIMIT 1),
+             (SELECT p.provider_reference FROM payments p
+               WHERE p.shoot_id = sh.id AND p.status = 'success'
+               ORDER BY p.created_at DESC LIMIT 1)
+           ) AS paid_ref
     FROM shoots sh
     LEFT JOIN templates t ON t.id = sh.template_id
     WHERE sh.id = ${shootId}`.catch(() => []);
