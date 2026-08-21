@@ -187,14 +187,26 @@ export default function WorkspacePage() {
           const shootList: Shoot[] = shootsJson.shoots ?? [];
           setShoots(shootList);
           setShootsCursor(shootsJson.nextCursor ?? null);
-          if (shootList.length > 0) {
-            const enrichRes = await fetch(`/api/shoots/${shootList[0].id}`);
+          // A buyer arriving from checkout is sent here with their shoot id and
+          // wants THAT shoot's gallery, not whichever happens to be newest.
+          // Booking twice in one sitting would otherwise open the wrong one.
+          // Read off the URL rather than useSearchParams: this component has no
+          // Suspense boundary, and the effect is client-side already.
+          const wantedId = new URLSearchParams(window.location.search).get("shoot_id");
+          const target = (wantedId ? shootList.find(sh => sh.id === wantedId) : null) ?? shootList[0];
+          if (target) {
+            const enrichRes = await fetch(`/api/shoots/${target.id}`);
             if (enrichRes.ok) {
               const enrichData = await enrichRes.json();
               if (enrichData.shoot) {
                 setCurrentShoot(enrichData.shoot);
                 setShoots(prev => prev.map(p => p.id === enrichData.shoot.id ? enrichData.shoot : p));
               }
+            }
+            // Straight past the booking form to the photos. Only when a shoot was
+            // named, so an ordinary studio visit still opens at the top.
+            if (wantedId) {
+              setTimeout(() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
             }
           }
         }
