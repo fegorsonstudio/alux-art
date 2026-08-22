@@ -48,7 +48,7 @@ interface TemplateRow {
   role_chips?: string[];
   scenes?: StoryScene[];
   background_options?: Array<{ id: string; name: string; kind: "photo" | "text"; description?: string; imagePath?: string; imageBucket?: string }> | null;
-  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; imagePath?: string; imageBucket?: string; framing?: string }> }> | null;
+  option_groups?: Array<{ id: string; type: string; label: string; beforeImagePath?: string; beforeImageBucket?: string; beforeImages?: Record<string, string>; options: Array<{ id: string; name: string; kind: "photo" | "text" | "prompt"; description?: string; beforeImagePath?: string; beforeImageBucket?: string; imagePath?: string; imageBucket?: string; framing?: string }> }> | null;
   flag_shot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
   trend_slots?: {
     mugshot?: { enabled?: boolean; imagePath?: string; imageBucket?: string } | null;
@@ -199,6 +199,11 @@ interface ChoiceOptionDraft {
   // editor untouched: publishing the template used to drop it, which silently
   // broke the framing-matched before/after on all 47 styles.
   framing?: string;
+  // This look's OWN "before", set from the lighting workbench. Exactly the same
+  // hazard as `framing` above and fixed the same way: the sanitizer preserves
+  // it, but if the editor does not send it back, saving the template wipes it.
+  beforeImagePath?: string;
+  beforeImageBucket?: string;
 }
 
 // The three shot sizes a lighting style can be previewed on. A style is paired
@@ -553,6 +558,8 @@ function CreatorDashboard() {
         id: o.id,
         name: o.name ?? "",
         framing: o.framing,
+        beforeImagePath: o.beforeImagePath,
+        beforeImageBucket: o.beforeImageBucket,
         kind: o.kind === "text" ? "text" as const : o.kind === "prompt" ? "prompt" as const : "photo" as const,
         description: o.description ?? "",
         imagePath: o.imagePath ?? "",
@@ -1317,6 +1324,9 @@ function CreatorDashboard() {
             description: o.description.trim() || undefined,
             imagePath: (kind === "photo" || kind === "prompt") ? o.imagePath : undefined,
             ...(o.framing ? { framing: o.framing } : {}),
+            ...(o.beforeImagePath
+              ? { beforeImagePath: o.beforeImagePath, beforeImageBucket: o.beforeImageBucket ?? "template-images" }
+              : {}),
           };
         }),
       })),
@@ -1649,7 +1659,9 @@ function CreatorDashboard() {
       <header className={styles.header}>
         <Link href="/studio" className={styles.back}>← Studio</Link>
         <h1 className={styles.title}>Creator Dashboard</h1>
-        <Link href="/marketplace" className={styles.marketplaceLink}>Browse marketplace →</Link>
+        {/* The lighting archive is edited on its own page. Saving here rewrites
+            every look at once; that page changes one at a time. */}
+        <Link href="/creator-dashboard/lighting" className={styles.marketplaceLink}>Lighting workbench →</Link>
       </header>
 
       <div className={styles.main}>
