@@ -244,22 +244,29 @@ export function lookNumberReply(n: number, lookName: string): Keyword {
   // already in the sentence and the C/S letter is studio shorthand.
   const pretty = lookName.replace(/^\d+\s*·\s*/, "").replace(/^[CS]\s+/, "");
 
-  const body =
-    `That's *${pretty}* — look ${n}. 👇\n\n` +
-    "Send that number to us on WhatsApp and we'll apply it to your own photo. " +
-    "No sign-up, no app to install:\n";
+  const head = `That's *${pretty}* — look ${n}. 👇\n\n`;
 
   const tail =
     `\n\n₦1,000 for one photo. Works on a picture you already have — the dark club, ` +
     `the dim restaurant, the badly lit hall.`;
 
+  // Both doors, every time. WhatsApp is first because it is three taps and needs
+  // no account, but somebody reading on a laptop — or who simply does not want
+  // to chat — was being handed no way in at all.
   return {
     word: String(n),
-    reply: `${body}https://wa.me/2349076858017?text=${n}${tail}`,
+    reply:
+      head +
+      `*On WhatsApp* — fastest, no sign-up:\n` +
+      `https://wa.me/2349076858017?text=${n}\n\n` +
+      `*Or on the website* — same look, pay by card:\n` +
+      `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32` +
+      tail,
     replyNoLink:
-      `That's *${pretty}* — look ${n}. 👇\n\n` +
+      head +
       `Message us on WhatsApp and send just the number *${n}* — we'll apply that exact ` +
-      `light to your own photo. Our number is in our bio, at the top of this chat.` +
+      `light to your own photo. Our number is in our bio, at the top of this chat.\n\n` +
+      `Prefer the website? The link in our bio has the same looks.` +
       tail,
     publicReply: "Sent you a DM 📩",
   };

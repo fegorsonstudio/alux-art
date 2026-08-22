@@ -36,12 +36,14 @@ export type BotKey =
   | "languagePrompt"
   | "noCashOut"
   | "walletIs"
-  | "topUpLink";
+  | "topUpLink"
+  | "botDisclosure";
 
 type Phrasebook = Record<BotKey, string>;
 
 const en: Phrasebook = {
   greeting: "Hi 👋 This is {brand}.",
+  botDisclosure: "I'm an automated assistant 🤖 — reply *support* any time to reach a real person, or *commands* to see everything I can do.",
   askStyle: "Which one would you like? Tap below, or reply with its number.",
   sendPhotos: "Send me the photos you want done.",
   hdTip: "📸 *Tap HD before you send* — the button at the top right of the photo picker. Or send them as files to keep them untouched.",
@@ -62,6 +64,7 @@ const en: Phrasebook = {
 
 const pcm: Phrasebook = {
   greeting: "How far 👋 Na {brand} be this.",
+  botDisclosure: "Na automated assistant dey talk with you 🤖 — type *support* if you wan talk to person, or *commands* make you see everything wey I fit do.",
   askStyle: "Which one you want? Tap below, or send the number.",
   sendPhotos: "Send me the photos wey you want make I work on.",
   hdTip: "📸 *Press HD before you send* — the button for top right of the photo picker. Or send dem as files so dem no go lose quality.",
@@ -82,6 +85,7 @@ const pcm: Phrasebook = {
 
 const fr: Phrasebook = {
   greeting: "Bonjour 👋 Ici {brand}.",
+  botDisclosure: "Je suis un assistant automatisé 🤖 — répondez *support* pour parler à une personne, ou *commands* pour voir tout ce que je peux faire.",
   askStyle: "Lequel voulez-vous ? Touchez ci-dessous, ou répondez avec son numéro.",
   sendPhotos: "Envoyez-moi les photos à traiter.",
   hdTip: "📸 *Activez HD avant d'envoyer* — le bouton en haut à droite. Ou envoyez-les en fichiers pour garder toute la qualité.",
@@ -102,6 +106,7 @@ const fr: Phrasebook = {
 
 const es: Phrasebook = {
   greeting: "Hola 👋 Somos {brand}.",
+  botDisclosure: "Soy un asistente automático 🤖 — responde *support* para hablar con una persona, o *commands* para ver todo lo que puedo hacer.",
   askStyle: "¿Cuál quieres? Toca abajo, o responde con su número.",
   sendPhotos: "Envíame las fotos que quieres trabajar.",
   hdTip: "📸 *Activa HD antes de enviar* — el botón arriba a la derecha. O envíalas como archivos para conservar la calidad.",
@@ -122,6 +127,7 @@ const es: Phrasebook = {
 
 const pt: Phrasebook = {
   greeting: "Olá 👋 Aqui é a {brand}.",
+  botDisclosure: "Sou um assistente automático 🤖 — responda *support* para falar com uma pessoa, ou *commands* para ver tudo o que posso fazer.",
   askStyle: "Qual você quer? Toque abaixo, ou responda com o número.",
   sendPhotos: "Envie-me as fotos que quer trabalhar.",
   hdTip: "📸 *Ative o HD antes de enviar* — o botão no canto superior direito. Ou envie como ficheiros para manter a qualidade.",
@@ -142,6 +148,7 @@ const pt: Phrasebook = {
 
 const ar: Phrasebook = {
   greeting: "مرحبا 👋 معك {brand}.",
+  botDisclosure: "أنا مساعد آلي 🤖 — اكتب *support* للتحدث إلى شخص حقيقي، أو *commands* لرؤية كل ما يمكنني فعله.",
   askStyle: "أي واحد تريد؟ اضغط أدناه، أو أرسل رقمه.",
   sendPhotos: "أرسل لي الصور التي تريد العمل عليها.",
   hdTip: "📸 *فعّل HD قبل الإرسال* — الزر في أعلى اليمين. أو أرسلها كملفات للحفاظ على الجودة.",
@@ -162,6 +169,7 @@ const ar: Phrasebook = {
 
 const zh: Phrasebook = {
   greeting: "你好 👋 这里是 {brand}。",
+  botDisclosure: "我是自动助手 🤖 — 回复 *support* 可联系真人，回复 *commands* 查看我能做的一切。",
   askStyle: "您想要哪一个？点击下方，或回复编号。",
   sendPhotos: "请把要处理的照片发给我。",
   hdTip: "📸 *发送前请开启 HD* — 相册右上角的按钮。或以文件方式发送以保留画质。",

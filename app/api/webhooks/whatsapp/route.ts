@@ -10,6 +10,9 @@ import { RETOUCH_PRICE_PER_IMAGE_NGN, retouchPriceNgn } from "@/lib/retouch-pric
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import { shootFacts, customerStatusLine, adminStatusBlock } from "@/lib/whatsapp-support";
 import { signedMediaUrl } from "@/lib/media-url";
+import { matchCommand, manualText } from "@/lib/whatsapp-commands";
+import { walletBalance, naira } from "@/lib/wallet";
+import { requestEmailLink, confirmEmailLink, hasPendingLink } from "@/lib/whatsapp-email-link";
 import {
   sendText, sendImage, sendDocument, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
@@ -167,6 +170,12 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
     SET last_inbound = ${text || choiceId || msg.type}, last_message_at = NOW(), updated_at = NOW()
     WHERE id = ${session.id}`;
 
+  // Meta requires an unsubscribe that actually works, so it is checked before
+  // anything else and works from inside any state. `start` is matched exactly,
+  // which leaves "start over" meaning restart exactly as it always has.
+  if (matchCommand(text)?.name === "stop") return optOut(creds, phone);
+  if (text.trim().toLowerCase() === "start") return optIn(creds, phone);
+
   // Universal escape hatches, valid in any state.
   if (/^(restart|start over|cancel|reset|menu|styles)$/i.test(text) || choiceId === "restart") {
     await resetSession(session.id);
@@ -252,6 +261,28 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
     await sql`UPDATE whatsapp_sessions SET state = 'CHOOSING_LANGUAGE', updated_at = NOW() WHERE id = ${session.id}`;
     await sendText(creds, phone, `${t(session?.locale ?? null, "languagePrompt")}\n\n${languageMenu()}`);
     return;
+  }
+
+  // Commands that work in any state. Deliberately placed AFTER the branches
+  // above, so a word one of those already owns — menu, language, retouch,
+  // support — still reaches the handler that has always had it.
+  const cmd = matchCommand(text);
+  if (cmd) {
+    switch (cmd.name) {
+      case "commands": return sendManual(creds, phone, session);
+      case "status":   return sendStatus(creds, phone, session);
+      case "balance":  return sendBalance(creds, phone, session);
+      case "fund 5000":
+        return startTopUp(creds, phone, session, cmd.pattern.exec(text.trim())?.[2] ?? "");
+      case "email you@example.com":
+        return beginEmailLink(creds, phone, session, cmd.pattern.exec(text.trim())?.[1] ?? "");
+    }
+  }
+
+  // Six digits while a link is pending is the emailed code, not an answer to
+  // whatever step happens to be open.
+  if (/^\d{6}$/.test(text.trim()) && await hasPendingLink(phone)) {
+    return finishEmailLink(creds, phone, session, text.trim());
   }
 
   if (/^(retouch|retouching|edit|edit my (photos|images))$/i.test(text)) {
@@ -645,8 +676,12 @@ async function offerTemplates(
   // this sends two links rather than building anything per conversation. Rebuild
   // them when the templates change.
   const cards = `${SITE_URL}/api/media?b=template-images&p=`;
+  // The disclosure travels with the greeting, which is the first thing anybody
+  // sees. Meta has required it since 15 Jan 2026, and naming *commands* here is
+  // the only place most people will ever learn the manual exists.
   await sendImage(creds, phone, `${cards}${encodeURIComponent("whatsapp/welcome.jpg")}`,
-    t(session?.locale ?? null, "greeting", brandName(creator)));
+    `${t(session?.locale ?? null, "greeting", brandName(creator))}\n\n` +
+    t(session?.locale ?? null, "botDisclosure"));
   await sendImage(creds, phone, `${cards}${encodeURIComponent("whatsapp/styles.jpg")}`);
 
   const r = await sendList(creds, phone, {
@@ -691,7 +726,10 @@ async function chooseTemplate(
   if (!picked) {
     await sendText(creds, phone,
       "I didn't catch which style you meant. Reply with its number:\n\n" +
-      templates.map((t, i) => `${i + 1}. ${t.title}`).join("\n"));
+      templates.map((t, i) => `${i + 1}. ${t.title}`).join("\n") +
+      // Somebody typing a real question — "do you shoot kids' birthdays?" —
+      // lands here, and used to be shown the same list again with no way out.
+      "\n\n*support* reaches a person, *commands* shows everything I can do.");
     return;
   }
 
@@ -1169,3 +1207,143 @@ type WaWebhook = {
     }>;
   }>;
 };
+
+// ── Manual, wallet and opt-out ———————————————————————————──
+
+/**
+ * Stop means stop, everywhere.
+ *
+ * The gate itself lives in `post()` in lib/whatsapp.ts rather than here, so this
+ * one row also silences the delivery poller, the watchdog relay and retouch
+ * delivery. An unsubscribe that only covers the chat handler is not one.
+ */
+async function optOut(creds: WaCreds, phone: string) {
+  await sql`
+    INSERT INTO whatsapp_optouts (phone, source) VALUES (${phone}, 'chat')
+    ON CONFLICT (phone) DO NOTHING`;
+  // ignoreOptOut, or the row just written would block its own confirmation.
+  await sendText(creds, phone,
+    "You're unsubscribed. I won't message this number again.\n\n" +
+    "If a shoot of yours is still being made, this also stops its photos being " +
+    "delivered here — send *start* to turn messages back on.",
+    { ignoreOptOut: true });
+}
+
+async function optIn(creds: WaCreds, phone: string) {
+  await sql`DELETE FROM whatsapp_optouts WHERE phone = ${phone}`;
+  await sendText(creds, phone,
+    "Welcome back \u{1f44b} Messages are on again.\n\n" +
+    "Reply *menu* to book, or *commands* to see everything I can do.");
+}
+
+async function sendManual(creds: WaCreds, phone: string, session: Session) {
+  await sendText(creds, phone, manualText({ noCashOut: t(session.locale, "noCashOut") }));
+}
+
+async function sendStatus(creds: WaCreds, phone: string, session: Session) {
+  const facts = await shootFacts(session.shoot_id);
+  await sendText(creds, phone,
+    customerStatusLine(facts) +
+    "\n\nIf that isn't right, send *support* and a person will pick it up.");
+}
+
+async function sendBalance(creds: WaCreds, phone: string, session: Session) {
+  const balance = session.user_id ? await walletBalance(session.user_id) : 0;
+  await sendText(creds, phone,
+    t(session.locale, "walletIs").replace("{amount}", naira(balance)) + "\n\n" +
+    (balance > 0
+      ? "This comes off your next shoot on its own — no card needed."
+      : "Send *fund 5000* (or any amount) to add money.") +
+    "\n\n" + t(session.locale, "noCashOut"));
+}
+
+/**
+ * Top up from the chat.
+ *
+ * The no-cash-out rule sits ABOVE the link in the same message, because that is
+ * the last thing between the customer and their card details. Paystack's own
+ * checkout page does not display it — that was checked in a browser, not
+ * assumed — so this message is the only place it can be said in time.
+ */
+async function startTopUp(creds: WaCreds, phone: string, session: Session, raw: string) {
+  const amount = Math.round(Number(String(raw).replace(/,/g, "")));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    await sendText(creds, phone, "Tell me how much — for example *fund 5000*.");
+    return;
+  }
+
+  const userId = await ensureUser(session, phone);
+  if (userId !== session.user_id) {
+    await sql`UPDATE whatsapp_sessions SET user_id = ${userId}, updated_at = NOW() WHERE id = ${session.id}`;
+  }
+
+  const res = await fetch(`${SITE_URL}/api/wallet/topup`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
+      "x-act-as-user": userId,
+    },
+    body: JSON.stringify({ amountNgn: amount }),
+  }).catch(() => null);
+
+  const data = (await res?.json().catch(() => null)) as
+    { authorizationUrl?: string; error?: string } | null;
+
+  if (!res?.ok || !data?.authorizationUrl) {
+    await sendText(creds, phone,
+      data?.error ?? "I couldn't start that top-up. Send *support* and a person will sort it out.");
+    return;
+  }
+
+  await sendText(creds, phone,
+    `\u{1f4b3} ${t(session.locale, "noCashOut")}\n\n` +
+    `${t(session.locale, "topUpLink").replace("{amount}", naira(amount))}\n` +
+    data.authorizationUrl);
+}
+
+/** Ask for the code. Nothing is joined until it comes back. */
+async function beginEmailLink(creds: WaCreds, phone: string, session: Session, email: string) {
+  const r = await requestEmailLink(phone, email);
+  if (r.ok) {
+    await sendText(creds, phone,
+      `I've emailed a 6-digit code to *${r.email}*.\n\n` +
+      "Send it back here and this chat joins that account — one wallet in both " +
+      "places. The code lasts 15 minutes.");
+    return;
+  }
+  if (r.reason === "already-linked") {
+    await sendText(creds, phone,
+      "This chat is already joined to that account \u{2705} Send *balance* to see your wallet.");
+    return;
+  }
+  if (r.reason === "no-account") {
+    await sendText(creds, phone,
+      "I couldn't find an account with that email.\n\n" +
+      `Sign up at ${SITE_URL} with it first, then send *email your@address.com* here again.`);
+    return;
+  }
+  await sendText(creds, phone,
+    "I couldn't send that email just now. Send *support* and a person will join it for you.");
+}
+
+/** The code came back. Move the chat, and any balance, onto the real account. */
+async function finishEmailLink(creds: WaCreds, phone: string, session: Session, code: string) {
+  const r = await confirmEmailLink(phone, code, session.id);
+  if (!r.ok) {
+    const say =
+      r.reason === "wrong-code" ? "That code doesn't match. Check the email and try again."
+      : r.reason === "expired"  ? "That code has expired. Send *email your@address.com* for a new one."
+      : r.reason === "too-many" ? "Too many wrong tries. Send *email your@address.com* to start again."
+      : "I'm not waiting on a code. Send *email your@address.com* to begin.";
+    await sendText(creds, phone, say);
+    return;
+  }
+
+  const balance = await walletBalance(r.userId);
+  await sendText(creds, phone,
+    `Joined \u{2705} This chat and *${r.email}* now share one account.\n\n` +
+    (r.moved > 0 ? "Your wallet came with it.\n" : "") +
+    t(session.locale, "walletIs").replace("{amount}", naira(balance)));
+}
+
