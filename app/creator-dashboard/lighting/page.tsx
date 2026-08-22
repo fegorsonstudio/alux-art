@@ -79,8 +79,11 @@ export default function LightingWorkbench() {
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ name: string; description: string; framing: string }>({ name: "", description: "", framing: "" });
-  const [adding, setAdding] = useState<string | null>(null);
-  const [newLook, setNewLook] = useState({ name: "", description: "", framing: "medium", imagePath: "", beforeImagePath: "" });
+  // Adding lives at the top of the page with its own section picker, rather than
+  // inside each section. On a phone the sections are collapsed, so an add button
+  // buried inside one is invisible until you already know where to look.
+  const [adding, setAdding] = useState(false);
+  const [newLook, setNewLook] = useState({ groupId: "", name: "", description: "", framing: "medium", imagePath: "", beforeImagePath: "" });
 
   const flash = useCallback((msg: string) => { setNote(msg); setError(null); window.setTimeout(() => setNote(null), 4000); }, []);
 
@@ -195,6 +198,113 @@ export default function LightingWorkbench() {
 
           {note && <p className={styles.helperText} style={{ color: "#2f7d6b", margin: "6px 0 0", fontWeight: 700 }}>{note}</p>}
           {error && <p className={styles.helperText} style={{ color: "#c0392b", margin: "6px 0 0", fontWeight: 700 }}>{error}</p>}
+
+          <button
+            className={styles.payBtn}
+            style={{ padding: "12px", fontSize: "0.92rem", marginTop: 6 }}
+            onClick={() => {
+              setAdding(v => !v);
+              setNewLook(v => ({ ...v, groupId: v.groupId || groups[0]?.id || "" }));
+            }}
+          >
+            {adding ? "Cancel" : "+ Add a new lighting style"}
+          </button>
+
+          {adding && (
+            <div style={{ border: "1px dashed rgba(127,127,127,0.45)", borderRadius: 10, padding: 12, display: "grid", gap: 10, marginTop: 4 }}>
+              <p className={styles.helperText} style={{ margin: 0 }}>
+                The prompt must come from the studio gem — paste it exactly as the gem returned it,
+                without rewording it.
+              </p>
+
+              <label style={{ display: "grid", gap: 4, fontSize: "0.76rem", fontWeight: 700 }}>
+                Which section
+                <select
+                  value={newLook.groupId}
+                  onChange={e => setNewLook(v => ({ ...v, groupId: e.target.value }))}
+                  style={{ padding: "10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit", fontWeight: 400 }}
+                >
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.label} ({g.options.length})</option>)}
+                </select>
+              </label>
+
+              <label style={{ display: "grid", gap: 4, fontSize: "0.76rem", fontWeight: 700 }}>
+                Name buyers will see
+                <input
+                  type="text" placeholder="e.g. 198 · S Warm Window Light" maxLength={40}
+                  value={newLook.name} onChange={e => setNewLook(v => ({ ...v, name: e.target.value }))}
+                  style={{ padding: "10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit", fontWeight: 400 }}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 4, fontSize: "0.76rem", fontWeight: 700 }}>
+                Shot size this look was made for
+                <select
+                  value={newLook.framing} onChange={e => setNewLook(v => ({ ...v, framing: e.target.value }))}
+                  style={{ padding: "10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit", fontWeight: 400 }}
+                >
+                  {FRAMINGS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                </select>
+              </label>
+
+              <label style={{ display: "grid", gap: 4, fontSize: "0.76rem", fontWeight: 700 }}>
+                The prompt from the gem
+                <textarea
+                  placeholder="Paste it here…" rows={8}
+                  value={newLook.description} onChange={e => setNewLook(v => ({ ...v, description: e.target.value }))}
+                  style={{ padding: "10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit", fontFamily: "inherit", fontWeight: 400, resize: "vertical", lineHeight: 1.5 }}
+                />
+              </label>
+
+              {/* Full-width tap targets: on a phone these are the two steps most
+                  likely to be missed, and a small underlined label is not enough. */}
+              {([["beforeImagePath", "Before photo (the un-lit original)"], ["imagePath", "After thumbnail (what buyers see)"]] as const).map(([key, label]) => (
+                <label
+                  key={key}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                    padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: "0.78rem",
+                    border: `1px solid ${newLook[key] ? "rgba(47,125,107,0.5)" : "rgba(127,127,127,0.35)"}`,
+                    background: newLook[key] ? "rgba(47,125,107,0.08)" : "transparent",
+                  }}
+                >
+                  <span style={{ fontWeight: 700 }}>{label}</span>
+                  <span style={{ opacity: 0.75, flexShrink: 0 }}>{newLook[key] ? "✓ added" : "Upload"}</span>
+                  <input type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={async e => {
+                      const f = e.target.files?.[0]; e.target.value = "";
+                      if (!f) return;
+                      const path = await upload(f);
+                      if (path) setNewLook(v => ({ ...v, [key]: path }));
+                    }} />
+                </label>
+              ))}
+
+              <button
+                className={styles.payBtn}
+                style={{ padding: "12px", fontSize: "0.92rem" }}
+                disabled={busy === "new"}
+                onClick={async () => {
+                  setBusy("new"); setError(null);
+                  const res = await fetch("/api/creator-dashboard/lighting-looks", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ templateId, ...newLook }),
+                  });
+                  setBusy(null);
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) { setError(data.error ?? "Could not add the look."); return; }
+                  const section = groups.find(g => g.id === newLook.groupId)?.label ?? "the section";
+                  setNewLook({ groupId: newLook.groupId, name: "", description: "", framing: "medium", imagePath: "", beforeImagePath: "" });
+                  setAdding(false);
+                  await load(templateId);
+                  flash(`Added to ${section}. This template now has ${data.looks} looks.`);
+                }}
+              >
+                {busy === "new" ? "Saving…" : "Save this lighting style"}
+              </button>
+            </div>
+          )}
         </div>
 
         {loading && <div className={styles.panel}><p className={styles.helperText}>Loading…</p></div>}
@@ -212,73 +322,6 @@ export default function LightingWorkbench() {
 
               {open && (
                 <div style={{ display: "grid", gap: 14 }}>
-                  <div>
-                    <button className={styles.clearLibBtn} onClick={() => setAdding(adding === group.id ? null : group.id)}>
-                      {adding === group.id ? "Cancel" : "+ Add a new look to this section"}
-                    </button>
-                  </div>
-
-                  {adding === group.id && (
-                    <div style={{ border: "1px dashed rgba(127,127,127,0.45)", borderRadius: 10, padding: 12, display: "grid", gap: 8 }}>
-                      <p className={styles.helperText} style={{ margin: 0 }}>
-                        The prompt must come from the studio gem — paste it here exactly as the gem returned it.
-                      </p>
-                      <input
-                        type="text" placeholder="Name shown to buyers (max 40 characters)" maxLength={40}
-                        value={newLook.name} onChange={e => setNewLook(v => ({ ...v, name: e.target.value }))}
-                        style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit" }}
-                      />
-                      <select
-                        value={newLook.framing} onChange={e => setNewLook(v => ({ ...v, framing: e.target.value }))}
-                        style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit" }}
-                      >
-                        {FRAMINGS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                      </select>
-                      <textarea
-                        placeholder="Paste the prompt from the gem…" rows={6}
-                        value={newLook.description} onChange={e => setNewLook(v => ({ ...v, description: e.target.value }))}
-                        style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(127,127,127,0.35)", background: "transparent", color: "inherit", fontFamily: "inherit", resize: "vertical" }}
-                      />
-                      <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                        {([["beforeImagePath", "Before photo"], ["imagePath", "After thumbnail"]] as const).map(([key, label]) => (
-                          <label key={key} style={{ display: "grid", gap: 4, cursor: "pointer", fontSize: "0.74rem" }}>
-                            <span style={{ fontWeight: 700 }}>{label}</span>
-                            <span style={{ opacity: 0.7 }}>{newLook[key] ? "✓ uploaded — tap to replace" : "Tap to upload"}</span>
-                            <input type="file" accept="image/*" style={{ display: "none" }}
-                              onChange={async e => {
-                                const f = e.target.files?.[0]; e.target.value = "";
-                                if (!f) return;
-                                const path = await upload(f);
-                                if (path) setNewLook(v => ({ ...v, [key]: path }));
-                              }} />
-                          </label>
-                        ))}
-                      </div>
-                      <button
-                        className={styles.payBtn}
-                        style={{ padding: "10px", fontSize: "0.9rem" }}
-                        disabled={busy === "new"}
-                        onClick={async () => {
-                          setBusy("new"); setError(null);
-                          const res = await fetch("/api/creator-dashboard/lighting-looks", {
-                            method: "POST",
-                            headers: { "content-type": "application/json" },
-                            body: JSON.stringify({ templateId, groupId: group.id, ...newLook }),
-                          });
-                          setBusy(null);
-                          const data = await res.json().catch(() => ({}));
-                          if (!res.ok) { setError(data.error ?? "Could not add the look."); return; }
-                          setNewLook({ name: "", description: "", framing: "medium", imagePath: "", beforeImagePath: "" });
-                          setAdding(null);
-                          await load(templateId);
-                          flash(`Added. The section now has ${data.looks} looks in total across the template.`);
-                        }}
-                      >
-                        {busy === "new" ? "Saving…" : "Add this look"}
-                      </button>
-                    </div>
-                  )}
-
                   {group.options.map(look => {
                     const before = beforeFor(group, look);
                     const isEditing = editing === look.id;

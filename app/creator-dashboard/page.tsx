@@ -1659,9 +1659,7 @@ function CreatorDashboard() {
       <header className={styles.header}>
         <Link href="/studio" className={styles.back}>← Studio</Link>
         <h1 className={styles.title}>Creator Dashboard</h1>
-        {/* The lighting archive is edited on its own page. Saving here rewrites
-            every look at once; that page changes one at a time. */}
-        <Link href="/creator-dashboard/lighting" className={styles.marketplaceLink}>Lighting workbench →</Link>
+        <Link href="/marketplace" className={styles.marketplaceLink}>Browse marketplace →</Link>
       </header>
 
       <div className={styles.main}>
@@ -1683,6 +1681,29 @@ function CreatorDashboard() {
           <div className={styles.stat}><span className={styles.statVal}>₦{stats.totalEarnedNgn.toLocaleString()}</span><span className={styles.statLabel}>Total Earned</span></div>
         </div>
       )}
+
+      {/* Entry point to the lighting workbench.
+          It lived only in the header, where a phone wraps it onto a second row
+          below the title and it reads as chrome rather than a place to go — the
+          owner could not find it at all on mobile. A full-width row in the body
+          is the first thing under the stats on a narrow screen. */}
+      <Link
+        href="/creator-dashboard/lighting"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          padding: "14px 16px", marginBottom: 16, borderRadius: 10, textDecoration: "none",
+          border: "1px solid rgba(67, 159, 169, 0.28)", background: "rgba(67, 159, 169, 0.07)",
+          color: "#2f8e9a",
+        }}
+      >
+        <span style={{ display: "grid", gap: 2 }}>
+          <span style={{ fontWeight: 800, fontSize: "0.95rem" }}>💡 Lighting workbench</span>
+          <span style={{ fontSize: "0.76rem", opacity: 0.85, lineHeight: 1.45, color: "#3f6166" }}>
+            Add a new lighting style, swap a before/after picture, or copy a look&apos;s prompt to test it in Flow.
+          </span>
+        </span>
+        <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>→</span>
+      </Link>
 
       <WhatsAppPanel />
 
