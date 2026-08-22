@@ -222,6 +222,30 @@ function sanitizeForFal(
   return p;
 }
 
+/**
+ * Did the provider refuse this on content grounds?
+ *
+ * Matched on the shape of the refusal, never on one vendor's word. This used to
+ * be `message.includes("forbidden")`, and fal's actual error reads "The content
+ * could not be processed because it contained material flagged by a content
+ * checker", type content_policy_violation — "forbidden" appears nowhere in it.
+ *
+ * So the whole rewrite below silently stopped running. A paying customer hit it
+ * twice and spent her one free regeneration each time on an identical prompt,
+ * which against a deterministic checker could only fail again. The feature was
+ * built, wired and tested; it was gated behind a string that stopped matching.
+ *
+ * That string will change again, which is why this looks for several.
+ */
+function isContentRefusal(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes("forbidden")
+    || m.includes("content_policy_violation")
+    || m.includes("content policy")
+    || m.includes("content checker")
+    || m.includes("flagged by");
+}
+
 // When callFalWithFallback exhausts all options, ask Gemini which word triggered the rejection
 async function identifyForbiddenWord(prompt: string): Promise<{
   flaggedWord: string;
@@ -3515,7 +3539,7 @@ export async function startGenerationWorker(
       console.error(`[generate] slot ${slot} failed:`, message);
       failedCount++;
 
-      if (message.toLowerCase().includes("forbidden")) {
+      if (isContentRefusal(message)) {
         // Ask Gemini to identify the specific trigger word and suggest a replacement
         let analysis: { flaggedWord: string; replacement: string; sanitizedPrompt: string } | null = null;
         try { analysis = await identifyForbiddenWord(slotPrompt); } catch {}
@@ -3550,7 +3574,18 @@ export async function startGenerationWorker(
           } catch { /* non-fatal */ }
 
           // d) Store structured error — used for page-reload recovery in the frontend
-          await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Failed: content filter — "${analysis.flaggedWord}" flagged`}, provider_error = ${JSON.stringify({ forbidden: true, flaggedWord: analysis.flaggedWord, replacement: analysis.replacement })}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
+          // The provider's own words are kept alongside our reading of them.
+          // This used to store only the flagged word, so when the rewrite
+          // stopped running there was nothing left to show WHY — the original
+          // refusal, the one string that would have revealed the broken
+          // condition, had been thrown away.
+          await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Failed: content filter — "${analysis.flaggedWord}" flagged`}, provider_error = ${JSON.stringify({
+            forbidden: true,
+            flaggedWord: analysis.flaggedWord,
+            replacement: analysis.replacement,
+            providerMessage: message.slice(0, 1500),
+            promptSent: slotPrompt.slice(0, 1500),
+          })}, updated_at = ${ts()} WHERE id = ${slotImg.id}`;
 
         } else {
           // Gemini couldn't identify a specific word — log raw prompt for passive learning
