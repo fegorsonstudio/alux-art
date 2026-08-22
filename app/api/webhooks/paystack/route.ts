@@ -4,6 +4,8 @@ import sql from "@/lib/db";
 import { notifyCreatorOfSale } from "@/lib/creator-sale-email";
 import { SITE_URL } from "@/lib/site-url";
 import { deliverRetouch } from "@/lib/whatsapp-retouch";
+import { creditWallet } from "@/lib/wallet";
+import { notifyWalletTopUp } from "@/lib/wallet-notify";
 
 /**
  * Compute a deterministic idempotency key from the webhook body.
@@ -145,6 +147,39 @@ export async function POST(request: NextRequest) {
       console.error(`[paystack webhook] whatsapp retouch delivery failed for ${retouchShootId}:`,
         e instanceof Error ? e.message : e);
     });
+
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Wallet top-up ───────────────────────────────────────────
+  // The only thing that puts funded money in a wallet. The client never writes
+  // a balance, so an abandoned Paystack tab or a forged callback credits nothing.
+  if (metadata?.type === "wallet_topup") {
+    const { user_id: topupUserId } = metadata as Record<string, string>;
+    if (!topupUserId) return NextResponse.json({ ok: true });
+
+    // amount arrives in kobo. creditWallet carries a unique index on reference,
+    // so a replayed webhook adds nothing the second time.
+    const credited = await creditWallet({
+      userId: topupUserId,
+      amountNgn: Math.round(amount / 100),
+      reason: "topup",
+      reference,
+      note: "Paystack top-up",
+    });
+
+    console.log(credited
+      ? `[paystack webhook] wallet topped up for ${topupUserId}: ₦${Math.round(amount / 100)}`
+      : `[paystack webhook] wallet top-up ${reference} already credited — skipping`);
+
+    // Tell them in the chat it landed, if this came from WhatsApp. Caught, so a
+    // messaging failure can never turn a successful payment into a webhook error
+    // and a Paystack retry.
+    if (credited) {
+      await notifyWalletTopUp(topupUserId, Math.round(amount / 100)).catch((e) =>
+        console.error("[paystack webhook] top-up notice failed:",
+          e instanceof Error ? e.message : e));
+    }
 
     return NextResponse.json({ ok: true });
   }
