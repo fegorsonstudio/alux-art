@@ -26,6 +26,10 @@ import postgres from "postgres";
 
 const STATE = "/home/aluxart/watchdog-state.json";
 const DELIVER_LOG = "/home/aluxart/whatsapp-deliver.log";
+// Touched on EVERY poller run, unlike the log, which only records runs that
+// had work. Reading the log's age instead cried "dead" the first time work
+// appeared after a quiet spell, because the log was stale by definition.
+const HEARTBEAT = "/home/aluxart/whatsapp-deliver.heartbeat";
 
 // Generation is quoted to buyers as "up to 60 minutes". Ninety is past any
 // honest reading of that, so it means stuck, not slow.
@@ -179,8 +183,10 @@ const pollerWork = await sql`
     AND s.state IN ('AWAITING_PAYMENT', 'GENERATING')`;
 
 try {
-  if (existsSync(DELIVER_LOG) && Number(pollerWork[0].n) > 0) {
-    const idleMins = (Date.now() - statSync(DELIVER_LOG).mtimeMs) / 60000;
+  // Fall back to the log only until the first heartbeat exists.
+  const beat = existsSync(HEARTBEAT) ? HEARTBEAT : DELIVER_LOG;
+  if (existsSync(beat) && Number(pollerWork[0].n) > 0) {
+    const idleMins = (Date.now() - statSync(beat).mtimeMs) / 60000;
     if (idleMins > POLLER_SILENT_MINUTES) {
       once(`poller:${new Date().toISOString().slice(0, 13)}`,
         `🔴 <b>The delivery poller looks dead</b>\n\n` +
