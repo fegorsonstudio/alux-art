@@ -317,6 +317,41 @@ Avoid hype words:
 
 ---
 
+## Lighting Capture Rule — Always Through the Gem
+
+**Hard rule. No exceptions, no judgement calls.**
+
+When the owner supplies photographs and asks for that lighting to be copied into
+the lighting styles, the look **must** be produced by the studio's custom Gemini
+gem, and the prompt written into `templates.option_groups` is the prompt the gem
+returns:
+
+```text
+https://gemini.google.com/gem/cad1a9c9275a
+```
+
+The gem is the studio's tuned lighting analyser. A recipe written by eye is a
+different instrument, and the archive has to stay consistent across 197 looks in
+The Gear Equalizer.
+
+**In practice:** an agent cannot open a Gemini gem — it needs the owner's account
+and is interactive. So on any "copy this lighting" request, **stop and ask the
+owner to run the image through the gem and paste the output back.** Never draft
+the lighting recipe yourself, and never paraphrase, trim or "improve" what the
+gem returns on its way into the database.
+
+This governs **capturing a new look from a photograph**. Repairing an existing
+look that misbehaves in production — a phone flash firing in a mirror selfie,
+skin coming back glassy, the background being rebuilt instead of relit — is
+ordinary prompt debugging and does not need the gem.
+
+Write those looks back with `sql.json()`. `JSON.stringify(...)::jsonb` stores a
+JSON *string* and replaces every look in the template with one quoted blob; it
+has already happened once. Back up `option_groups` to a file first, then re-read
+after writing and assert the option count.
+
+---
+
 ## Security Rules
 
 - All API keys live only in `.env.local` or deployment provider env vars.
