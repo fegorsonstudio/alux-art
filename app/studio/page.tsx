@@ -9,6 +9,7 @@ import { resizeIfNeeded } from "@/lib/resize-image";
 import { useT } from "@/lib/useLocale";
 import styles from "../workspace.module.css";
 import SoulIdPanel from "./SoulIdPanel";
+import WalletPanel from "./WalletPanel";
 
 // Maps a shoot status to its studio-dictionary key (translated at the point of use).
 const STATUS_KEY: Record<string, "statusComplete" | "statusFailed" | "statusAwaitingPayment" | "statusLocking" | "statusReviewNeeded" | "statusRejected" | "statusQueued" | "statusGenerating"> = {
@@ -881,6 +882,10 @@ export default function WorkspacePage() {
       <div className={styles.main}>
         {/* LEFT: Controls */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Wallet. Renders nothing until /api/wallet answers, so a signed-out
+              or offline page looks exactly as it did before. */}
+          <WalletPanel />
 
           {/* Saved character bases */}
           {characterBases.length > 0 && (
