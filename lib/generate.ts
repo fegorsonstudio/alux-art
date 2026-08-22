@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { creditWallet } from "@/lib/wallet";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
@@ -3629,6 +3630,52 @@ export async function startGenerationWorker(
     completed_at = ${done ? ts() : null},
     updated_at = ${ts()}
     WHERE id = ${shootId}`;
+
+  // Refund the naira value of whatever did not arrive.
+  //
+  // The promise is that a buyer either gets what they paid for or gets the money
+  // back to spend on something else — without having to notice, complain, or
+  // know the word "refund". A content refusal, a provider error, a timeout: the
+  // cause does not change what they are owed.
+  //
+  // Naira rather than a count of images, because a ₦3,500 portrait image and a
+  // ₦1,000 relight are not worth the same and crediting "one image" for either
+  // would quietly sell the dearer work at the cheaper price.
+  if (hasFailures && totalComplete < total) {
+    try {
+      const [paid] = await sql<{ amount_ngn: number; user_id: string }[]>`
+        SELECT tp.amount_ngn, tp.user_id
+        FROM template_purchases tp
+        WHERE tp.shoot_id = ${shootId} AND tp.status = 'success' AND tp.amount_ngn > 0
+        ORDER BY tp.created_at DESC LIMIT 1`;
+
+      // Free and comped shoots have nothing to give back.
+      if (paid && total > 0) {
+        // Per delivered image, from what was actually charged — never from
+        // package_size. A two-takes booking pays for 5 and receives 10, and
+        // dividing by the label would refund twice what an image cost.
+        const perImage = Math.round(paid.amount_ngn / total);
+        const owed = perImage * (total - totalComplete);
+        if (owed > 0) {
+          const credited = await creditWallet({
+            userId: paid.user_id,
+            amountNgn: owed,
+            reason: "shortfall",
+            shootId,
+            note: `${total - totalComplete} of ${total} image(s) did not generate`,
+          });
+          if (credited) {
+            logEvent('wallet_credited', { amountNgn: owed, missing: total - totalComplete });
+            console.log(`[generate] refunded ₦${owed} to ${paid.user_id} for ${shootId}`);
+          }
+        }
+      }
+    } catch (e) {
+      // A refund that fails must never fail the shoot on top of it.
+      console.error("[generate] shortfall refund failed:",
+        e instanceof Error ? e.message : e);
+    }
+  }
 
   // Grant the complimentary regeneration only when currently 'none' — so a
   // previously-consumed regeneration is never re-granted (prevents infinite free retries).

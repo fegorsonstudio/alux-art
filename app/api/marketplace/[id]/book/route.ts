@@ -17,6 +17,7 @@ import { pickRandomPoseOptions, type PoseOption } from "@/lib/pose-options";
 import { sanitizeInductionSelection, type InductionSelection } from "@/lib/nursing-induction";
 import { sanitizeEnhanceSelection, CUSTOM_BACKDROP_ID, type EnhanceSelection } from "@/lib/gear-equalizer";
 import { claimFreeBooking, releaseFreeBooking, recordFreeBooking, sponsorshipCovers, grantBalance, type SponsorFields } from "@/lib/free-access";
+import { spendWallet, refundWalletSpend } from "@/lib/wallet";
 
 interface RefInput {
   name?: string;
@@ -881,6 +882,68 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       freeRemaining: freeClaim.remaining ?? null,
       callbackUrl: `/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
     });
+  }
+
+  // ── Paying from the wallet ────────────────────────────────────
+  //
+  // Sits after the free claim and before the gateway, so a comped booking still
+  // costs nothing and a buyer with no balance still reaches Paystack untouched.
+  //
+  // NGN only. The wallet holds naira, and charging the naira figure for a
+  // dollar-priced booking would silently pick an exchange rate on the buyer's
+  // behalf at a moment they are not looking.
+  if (payCurrency === "NGN" && amountNgn > 0) {
+    const remaining = await spendWallet({
+      userId: user.id,
+      amountNgn,
+      shootId,
+      note: `Booking — ${String(template?.title ?? "shoot").slice(0, 60)}`,
+    });
+
+    // null means the balance did not cover it, which is ordinary: fall through
+    // to the card. It never part-charges.
+    if (remaining !== null) {
+      const queued = await sql`
+        UPDATE shoots SET status = 'QUEUED', updated_at = NOW()
+        WHERE id = ${shootId} AND status = 'PENDING_PAYMENT' RETURNING id
+      `;
+      if (queued.length === 0) {
+        // Somebody else already moved this shoot. Hand the money straight back
+        // rather than leaving a buyer charged for a booking that never started.
+        await refundWalletSpend({
+          userId: user.id, amountNgn, shootId, note: "booking could not be started",
+        });
+        return NextResponse.json({ error: "Booking could not be started" }, { status: 409 });
+      }
+
+      // A wallet booking is a real sale: the creator earns exactly as they would
+      // on a card payment, and it counts in revenue. Only the tender differs.
+      await sql`
+        INSERT INTO template_purchases
+          (id, template_id, shoot_id, user_id, amount_ngn, platform_fee_ngn, creator_payout_ngn,
+           coupon_id, coupon_discount_ngn, currency, amount_usd,
+           payment_provider, status, created_at)
+        VALUES (
+          ${crypto.randomUUID()}, ${templateId}, ${shootId}, ${user.id}, ${amountNgn},
+          ${platformFeeNgn}, ${safeCreatorPayoutNgn}, ${couponId}, ${couponDiscountNgn},
+          ${payCurrency}, null, 'wallet', 'success', ${now}
+        )
+      `.catch((err) => console.error("[book] wallet purchase row failed:", err));
+
+      fetch(`${SITE_URL}/api/shoots/${shootId}/start`, {
+        method: "POST",
+        headers: process.env.INTERNAL_API_SECRET ? { "x-internal-secret": process.env.INTERNAL_API_SECRET } : {},
+        cache: "no-store",
+      }).catch(console.error);
+
+      return NextResponse.json({
+        bypass: true,
+        shootId,
+        paidFromWallet: true,
+        walletRemainingNgn: remaining,
+        callbackUrl: `/marketplace/${templateId}/book/success?shoot_id=${shootId}`,
+      });
+    }
   }
 
   const purchaseId = crypto.randomUUID();
