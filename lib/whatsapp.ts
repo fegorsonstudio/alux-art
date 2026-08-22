@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import sql from "@/lib/db";
 
 /**
  * WhatsApp Cloud API client.
@@ -23,7 +24,42 @@ const MAX_TEXT = 4000;
 
 type SendResult = { ok: true; id?: string } | { ok: false; error: string };
 
-async function post(creds: WaCreds, body: unknown): Promise<SendResult> {
+/**
+ * Has this number told us to stop?
+ *
+ * Checked inside `post`, which every send funnels through, so no caller can
+ * forget — not the delivery poller, not the watchdog relay, not a retouch going
+ * out days later. Meta has required businesses to honour an opt-out since
+ * 15 January 2026, and the penalty lands on the number, which is currently
+ * taking real bookings.
+ *
+ * A lookup failure returns false, so a database wobble delays nobody's photos.
+ * The risk of one message too many is smaller than the risk of silently
+ * breaking delivery for everyone.
+ */
+async function hasOptedOut(to: string): Promise<boolean> {
+  try {
+    const rows = await sql<{ phone: string }[]>`
+      SELECT phone FROM whatsapp_optouts WHERE phone = ${normalisePhone(to)} LIMIT 1`;
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function post(
+  creds: WaCreds,
+  body: unknown,
+  opts: { ignoreOptOut?: boolean } = {}
+): Promise<SendResult> {
+  // `ignoreOptOut` exists for exactly one message: confirming the opt-out
+  // itself. Meta permits that acknowledgement, and a STOP that answers with
+  // silence reads as a bot that did not hear you.
+  const to = (body as { to?: string })?.to;
+  if (to && !opts.ignoreOptOut && await hasOptedOut(to)) {
+    console.log(`[wa] ${to} has opted out — not sending`);
+    return { ok: false, error: "recipient opted out" };
+  }
   try {
     const r = await fetch(`${GRAPH}/${creds.phoneNumberId}/messages`, {
       method: "POST",
@@ -47,14 +83,17 @@ async function post(creds: WaCreds, body: unknown): Promise<SendResult> {
   }
 }
 
-export function sendText(creds: WaCreds, to: string, text: string): Promise<SendResult> {
+export function sendText(
+  creds: WaCreds, to: string, text: string,
+  opts: { ignoreOptOut?: boolean } = {}
+): Promise<SendResult> {
   return post(creds, {
     to,
     type: "text",
     // preview_url off: a link preview turns a tidy reply into a big card, and
     // the customer is being asked to tap, not to read a preview.
     text: { body: text.slice(0, MAX_TEXT), preview_url: false },
-  });
+  }, opts);
 }
 
 /**

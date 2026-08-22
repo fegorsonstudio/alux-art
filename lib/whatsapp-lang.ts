@@ -33,7 +33,10 @@ export type BotKey =
   | "yes"
   | "startOver"
   | "languageSet"
-  | "languagePrompt";
+  | "languagePrompt"
+  | "noCashOut"
+  | "walletIs"
+  | "topUpLink";
 
 type Phrasebook = Record<BotKey, string>;
 
@@ -52,6 +55,9 @@ const en: Phrasebook = {
   startOver: "Start over",
   languageSet: "Done — I'll speak English from now on.",
   languagePrompt: "Which language would you like? Reply with the number.",
+  noCashOut: "Wallet funds pay for shoots only and cannot be withdrawn as cash. They do not expire.",
+  walletIs: "Your wallet: *{amount}*",
+  topUpLink: "Tap to add {amount} to your wallet:",
 };
 
 const pcm: Phrasebook = {
@@ -69,6 +75,9 @@ const pcm: Phrasebook = {
   startOver: "Start again",
   languageSet: "Correct — na Pidgin I go dey talk from now.",
   languagePrompt: "Which language you want? Send the number.",
+  noCashOut: "Wallet money na for shoots only — you no fit collect am back as cash. E no dey expire.",
+  walletIs: "Your wallet get *{amount}*",
+  topUpLink: "Tap here make you put {amount} inside your wallet:",
 };
 
 const fr: Phrasebook = {
@@ -86,6 +95,9 @@ const fr: Phrasebook = {
   startOver: "Recommencer",
   languageSet: "Parfait — je continue en français.",
   languagePrompt: "Quelle langue préférez-vous ? Répondez avec le numéro.",
+  noCashOut: "Les fonds du portefeuille servent uniquement aux séances et ne peuvent pas être retirés en espèces. Ils n'expirent pas.",
+  walletIs: "Votre portefeuille : *{amount}*",
+  topUpLink: "Appuyez pour ajouter {amount} à votre portefeuille :",
 };
 
 const es: Phrasebook = {
@@ -103,6 +115,9 @@ const es: Phrasebook = {
   startOver: "Empezar de nuevo",
   languageSet: "Listo — seguiré en español.",
   languagePrompt: "¿Qué idioma prefieres? Responde con el número.",
+  noCashOut: "El saldo del monedero solo sirve para sesiones y no se puede retirar en efectivo. No caduca.",
+  walletIs: "Tu monedero: *{amount}*",
+  topUpLink: "Toca para añadir {amount} a tu monedero:",
 };
 
 const pt: Phrasebook = {
@@ -120,6 +135,9 @@ const pt: Phrasebook = {
   startOver: "Começar de novo",
   languageSet: "Pronto — continuo em português.",
   languagePrompt: "Que idioma prefere? Responda com o número.",
+  noCashOut: "O saldo da carteira serve apenas para sessões e não pode ser levantado em dinheiro. Não expira.",
+  walletIs: "A sua carteira: *{amount}*",
+  topUpLink: "Toque para adicionar {amount} à sua carteira:",
 };
 
 const ar: Phrasebook = {
@@ -137,6 +155,9 @@ const ar: Phrasebook = {
   startOver: "ابدأ من جديد",
   languageSet: "تم — سأتحدث بالعربية من الآن.",
   languagePrompt: "ما اللغة التي تفضلها؟ أرسل الرقم.",
+  noCashOut: "رصيد المحفظة مخصص للجلسات فقط ولا يمكن سحبه نقدًا. ولا تنتهي صلاحيته.",
+  walletIs: "محفظتك: *{amount}*",
+  topUpLink: "اضغط لإضافة {amount} إلى محفظتك:",
 };
 
 const zh: Phrasebook = {
@@ -154,6 +175,9 @@ const zh: Phrasebook = {
   startOver: "重新开始",
   languageSet: "好的 — 我会用中文继续。",
   languagePrompt: "您想用哪种语言？请回复编号。",
+  noCashOut: "钱包余额仅可用于拍摄，不能提现。余额不会过期。",
+  walletIs: "您的钱包：*{amount}*",
+  topUpLink: "点击为钱包充值 {amount}：",
 };
 
 const BOOKS: Record<Locale, Phrasebook> = { en, pcm, fr, es, pt, ar, zh };
