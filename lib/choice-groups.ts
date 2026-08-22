@@ -116,7 +116,16 @@ export const MAX_CHOICE_GROUPS = 40;
 export const MAX_OPTIONS_PER_GROUP = 300;
 // Hidden generation prompt for "prompt"-kind options (lighting recipes) can be long
 // and detailed. Other option descriptions stay short (see MAX_OPTION_DESCRIPTION).
-export const MAX_PROMPT_DESCRIPTION = 2000;
+//
+// Raised from 2000, and this is the same silent-destruction bug as the two caps
+// above. The sanitizer slices on EVERY save, so a look longer than the cap is
+// permanently truncated by a creator opening the editor and pressing save while
+// changing something unrelated. Looks 39 and 197 in the Gear Equalizer had grown
+// to 4,759 and 6,279 characters as their flash, skin-texture and background rules
+// were tightened against real failures; at 2000 the next save would have cut all
+// of that off mid-sentence. Set far above any real recipe rather than just above
+// today's longest.
+export const MAX_PROMPT_DESCRIPTION = 12000;
 export const MAX_OPTION_DESCRIPTION = 300;
 
 // ── Server-side sanitizer (templates POST/PATCH) ─────────────────────────────

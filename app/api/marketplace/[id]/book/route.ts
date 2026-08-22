@@ -372,10 +372,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
     enhance = sanitizeEnhanceSelection(body.enhance, backdropIds, photoUpgradeLightingLooks);
     if (!enhance) {
-      // Reached only when the selection asks for nothing at all: a background
-      // swap on its own is now a complete job, so the message must not claim
-      // lighting is mandatory.
-      return NextResponse.json({ error: "Pick a lighting look, a background, or both for your upgrade" }, { status: 400 });
+      // Reached only when the selection asks for nothing at all. A background
+      // swap on its own is a complete job, and so is a camera look on its own,
+      // so the message must not claim lighting is mandatory.
+      return NextResponse.json(
+        { error: "Pick a lighting look, a camera look, or a background for your upgrade" },
+        { status: 400 });
     }
     // A buyer-uploaded backdrop is a buyer-supplied storage path, so it obeys the
     // same rule as every other one on this route: it must live under their own

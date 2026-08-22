@@ -263,12 +263,17 @@ export function sanitizeEnhanceSelection(
   // A booking has to ask for SOMETHING, but lighting is no longer the only way
   // to ask. A buyer who likes the light they already have and only wants the
   // wall changed was previously forced to relight the photo — changing the one
-  // thing they wanted to keep. Either a lighting source or a backdrop is now
-  // enough; only a selection that requests neither is rejected.
+  // thing they wanted to keep. A lighting source, a backdrop OR a camera look is
+  // enough; only a selection that requests none of the three is rejected.
+  //
+  // Camera counts on its own because that is the whole job for a brand shooting
+  // its own product on a phone: keep my light, keep my background, render it on
+  // real gear. Rejecting it forced a relight nobody asked for, which is the same
+  // mistake the backdrop-only case fixed.
   //
   // This check has to sit AFTER the backdrop is resolved, which is why it moved
   // down the function: run earlier it could not see the backdrop it depends on.
-  if (!lightingByPath && !lighting && !backdropOptionId) return null;
+  if (!lightingByPath && !lighting && !backdropOptionId && !camera) return null;
 
   return {
     lighting: lighting ?? undefined, camera: camera ?? undefined, backdropOptionId,
@@ -325,22 +330,49 @@ export function buildGearEqualizerPrompt(
     //    redesigned a child's pearl crown into a different jewelled tiara and
     //    drifted her face. What must change dramatically is the LIGHT. What must
     //    not change at all is WHAT IS IN THE FRAME. Say both, in that order.
+    //    Test (a) follows `relight` rather than being fixed. It used to assert the
+    //    lighting MUST change even on a booking that asked for no relight, which
+    //    told a camera-only or backdrop-only job to do the one thing its buyer was
+    //    paying to avoid.
+    //
+    //    It also no longer asserts people are present. Brands upgrading their own
+    //    phone photography send garments on hangers, mannequins and flat lays, and
+    //    a mission statement claiming "real people" on a flat lay invites the model
+    //    to supply some.
     "STUDIO RELIGHT AND RESTORATION of the attached photograph (IMAGE 1). This is a real " +
-      "photograph of real people. The output must be unmistakably the SAME photograph of " +
-      "the SAME people and the SAME objects — recognisable at a glance, side by side with " +
-      "the original — but lit by a professional studio setup and rendered on professional " +
-      "gear. Two separate tests apply and BOTH must pass: (a) the LIGHTING must visibly and " +
-      "clearly change to the setup described below; (b) NOTHING that is physically in the " +
+      "photograph of real things: it may show people, a garment or product on its own, or " +
+      "both. The output must be unmistakably the SAME photograph of the SAME subjects and " +
+      "the SAME objects — recognisable at a glance, side by side with the original — but " +
+      (relight
+        ? "lit by a professional studio setup and rendered on professional gear. "
+        : "rendered on professional gear. ") +
+      "Two separate tests apply and BOTH must pass: (a) " +
+      (relight
+        ? "the LIGHTING must visibly and clearly change to the setup described below"
+        : "the RENDERING must visibly improve to the gear described below — sharper, " +
+          "cleaner and better resolved than the source — while the ORIGINAL LIGHTING of " +
+          "IMAGE 1 is kept exactly as it is") +
+      "; (b) NOTHING that is physically in the " +
       "photograph may change. Re-imagining, restyling or replacing any person, garment or " +
       "object is a FAILED result, no matter how good it looks.",
 
     // 3. Preservation lock — scoped to WHAT is in the frame, not how it is lit.
-    "SUBJECT LOCK — while transforming the light, preserve faithfully: the subject's " +
-      "identity, facial structure, exact facial features and their proportions, eye shape " +
-      "and size, skin tone, expression, gaze, pose, hands and fingers, body proportions, " +
-      "clothing and its folds, hair, any other people present, and the " +
-      "composition/framing/crop of IMAGE 1. Do not add, remove, move, resize, or " +
-      "re-imagine any person or object. " +
+    // The person clauses are conditioned rather than deleted — they are
+    // load-bearing for the portrait case, which is most of this template's work.
+    // What is added is the garment-on-its-own case, held to the same standard, and
+    // an explicit bar on inventing a model into a photograph that has none.
+    "SUBJECT LOCK — preserve faithfully everything that is " +
+      "in IMAGE 1. If people are present: their identity, facial structure, exact facial " +
+      "features and their proportions, eye shape and size, skin tone, expression, gaze, " +
+      "pose, hands and fingers, body proportions, hair, clothing and its folds, and every " +
+      "other person in the frame. Whether or not anyone is present: every garment, product " +
+      "and object exactly as it is — its shape, cut, drape and folds, its colour, fabric " +
+      "and material, and its position in the frame. A photograph of a garment on its own, " +
+      "on a hanger, on a mannequin or laid flat, is held to exactly the same standard as a " +
+      "portrait: the piece that comes out must be the same piece that went in, not a " +
+      "tidier or better-made version of it. Preserve the composition/framing/crop of " +
+      "IMAGE 1. Do not add, remove, move, resize, or re-imagine any person or object, and " +
+      "never place a person into a photograph that does not already have one. " +
       (relight
         ? "This lock applies to CONTENT and GEOMETRY only — " +
           "illumination, shadows, highlights, color grade, and background rendering MUST " +

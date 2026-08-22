@@ -1146,7 +1146,29 @@ export default function CheckoutPanel({
   const lightingChosen = perPhotoLightingActive
     ? sourcePhotos.length > 0 && !!lightingFallback
     : !!enhanceLighting;
-  const enhanceLightingValid = lightingChosen || backdropChosen;
+  // The three upgrades stack, and any ONE of them is a complete job. A camera
+  // look on its own is the brand-photography case: keep my light, keep my
+  // background, render it on real gear.
+  const cameraChosen = !!enhanceCamera;
+  const enhanceLightingValid = lightingChosen || backdropChosen || cameraChosen;
+  // Named for the summary shown beside the pay button. Only what was actually
+  // chosen appears, so "Modern Mirrorless" alone reads as a complete order rather
+  // than an unfinished one.
+  const stackedUpgrades: string[] = [
+    ...(lightingChosen
+      ? [perPhotoLightingActive
+          // lightingFallback is an option id, not the option itself.
+          ? (lightingLooks.find(o => o.id === lightingFallback)?.name
+              ?? t("nPicked", { n: Object.keys(resolvedLightingByPhoto).length }))
+          : (LIGHTING_PRESETS.find(p => p.id === enhanceLighting)?.name ?? "")]
+      : []),
+    ...(cameraChosen ? [CAMERA_PRESETS.find(p => p.id === enhanceCamera)?.name ?? ""] : []),
+    ...(backdropChosen
+      ? [enhanceBackdrop === CUSTOM_BACKDROP_ID
+          ? "Your own backdrop"
+          : (bgOptions.find(o => o.id === enhanceBackdrop)?.name ?? t("swap"))]
+      : []),
+  ].filter(Boolean);
   // Photo upgrades are priced per image: the buyer brings however many photos
   // they have (1-10) and pays the single-image price for each, rather than being
   // forced into a 1/5/10 package and made to upload exactly that many.
@@ -1271,7 +1293,11 @@ export default function CheckoutPanel({
         induction: inductionActive
           ? { name: inductionName.trim(), titles: inductionTitles, year: inductionYear, cap: inductionCap }
           : undefined,
-        enhance: photoUpgradeActive && (perPhotoLightingActive || enhanceLighting)
+        // Send the selection whenever ANY of the three upgrades was chosen. The
+        // old condition only looked at lighting, so a buyer who picked just a
+        // backdrop passed client validation and then got a 400 from the book
+        // route, which had already been taught to accept backdrop-only.
+        enhance: photoUpgradeActive && (perPhotoLightingActive || enhanceLighting || cameraChosen || backdropChosen)
           ? {
               lighting: enhanceLighting ?? undefined,
               camera: enhanceCamera,
@@ -2028,9 +2054,48 @@ export default function CheckoutPanel({
                 </div>
               )}
               </Collapse>
-              {/* Camera look picker hidden — this template offers lighting only
-                  for now. CAMERA_PRESETS and the prompt support are still in place,
-                  so restoring it is putting this section back. */}
+              {/* Camera look. Restored after brands began asking how to turn the
+                  phone photos they shoot for themselves into studio-quality ones,
+                  which is exactly what this does.
+
+                  Optional this time. It was hidden because it sat beside the
+                  lighting archive as a SECOND REQUIRED choice, so nobody could
+                  book a relight without also picking a camera. Nothing here warns
+                  or blocks: the three upgrades stack, and any one of them alone is
+                  a complete job. */}
+              {photoUpgradeActive && (
+                <Collapse
+                  icon="📷"
+                  title={t("yourCamera")}
+                  status={CAMERA_PRESETS.find(p => p.id === enhanceCamera)?.name ?? t("keepingYours")}
+                  defaultOpen={false}
+                >
+                  <div className={styles.pkgRow}>
+                    <p className={styles.sectionHint}>{t("cameraHint")}</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                      {CAMERA_PRESETS.map(p => {
+                        const on = enhanceCamera === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setEnhanceCamera(on ? null : p.id)}
+                            style={{
+                              display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3,
+                              background: on ? "rgba(127,127,127,0.12)" : "none", cursor: "pointer",
+                              padding: "10px 12px", borderRadius: 10, width: 168, textAlign: "left",
+                              border: on ? "2px solid currentColor" : "2px solid rgba(127,127,127,0.25)",
+                            }}
+                          >
+                            <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>{on ? "✓ " : ""}{p.name}</span>
+                            <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>{p.blurb}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Collapse>
+              )}
 
               {(bgOptions.length > 0 || photoUpgradeActive) && (
                 <Collapse
@@ -2929,6 +2994,14 @@ export default function CheckoutPanel({
               <span className={styles.priceFinal}>{formatPrice(pkgPrice)}</span>
             )}
           </div>
+          {/* What is actually stacked on this booking. The three upgrades each
+              live in their own collapsed section, so a buyer who set them minutes
+              apart has no way to see all three together at the moment they pay. */}
+          {photoUpgradeActive && stackedUpgrades.length > 0 && (
+            <p className={styles.sectionHint} style={{ margin: "0 0 8px" }}>
+              {stackedUpgrades.join(" · ")}
+            </p>
+          )}
           {error && <p className={styles.bookError}>{error}</p>}
           {signedOut ? (
             <button type="button" className={styles.payBtn} onClick={goSignIn} disabled={resuming}>
