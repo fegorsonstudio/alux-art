@@ -1,0 +1,168 @@
+import { NextRequest, NextResponse } from "next/server";
+import sql from "@/lib/db";
+import { signedMediaUrl } from "@/lib/media-url";
+import { r2SignedDownloadUrl } from "@/lib/r2";
+import { sendText, sendImage, windowOpen, credsForAccount, type IgCreds } from "@/lib/instagram";
+import { tellAdmin } from "@/lib/telegram";
+
+/**
+ * Sends finished shoots back into the Instagram chat that ordered them.
+ *
+ * Sibling of /api/whatsapp/deliver and a poller for the same reasons: nothing
+ * in lib/generate.ts is touched, delivery survives a restart mid-shoot, and it
+ * retries by itself where a call at completion would not.
+ *
+ * shoots.ig_delivered_at is the idempotency guard, on the SHOOT and never on
+ * the session — a session outlives any one booking, and a session-level flag is
+ * what once made a paying customer's second shoot permanently invisible.
+ *
+ * One thing here has no WhatsApp equivalent: Instagram closes the conversation
+ * 24 hours after the customer's last message. A shoot that finishes outside
+ * that window cannot be delivered at all, so the window is checked BEFORE
+ * trying, and the studio is told to reach the customer another way rather than
+ * the send failing silently.
+ */
+
+export const dynamic = "force-dynamic";
+
+type Row = {
+  session_id: string;
+  ig_account_id: string;
+  ig_user_id: string;
+  ig_username: string | null;
+  state: string;
+  shoot_id: string;
+  shoot_status: string;
+  last_inbound_at: Date;
+};
+
+/** A URL Instagram's own servers can fetch — no session, no cookies. */
+async function publicUrl(bucket: string, path: string): Promise<string | null> {
+  const signed = await signedMediaUrl(bucket, path, { expiresIn: 6 * 3600 }).catch(() => null);
+  if (signed) return signed;
+  return r2SignedDownloadUrl(bucket, path, 6 * 3600).catch(() => null);
+}
+
+const finish = (sessionId: string, shootId: string) => Promise.all([
+  sql`UPDATE instagram_sessions SET state = 'DONE', updated_at = NOW() WHERE id = ${sessionId}`,
+  sql`UPDATE shoots SET ig_delivered_at = NOW() WHERE id = ${shootId}`,
+]);
+
+export async function GET(req: NextRequest) {
+  if (!process.env.INTERNAL_API_SECRET ||
+      req.headers.get("x-internal-secret") !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rows = await sql<Row[]>`
+    SELECT s.id AS session_id, s.ig_account_id, s.ig_user_id, s.ig_username,
+           s.state, s.shoot_id, s.last_inbound_at,
+           sh.status AS shoot_status
+    FROM instagram_sessions s
+    JOIN shoots sh ON sh.id = s.shoot_id
+    WHERE s.shoot_id IS NOT NULL
+      AND sh.ig_delivered_at IS NULL
+      AND s.state IN ('AWAITING_PAYMENT', 'GENERATING')
+    ORDER BY s.updated_at ASC
+    LIMIT 25`;
+
+  const started: string[] = [], delivered: string[] = [], failed: string[] = [], stranded: string[] = [];
+
+  for (const r of rows) {
+    const creds = credsForAccount(r.ig_account_id);
+    if (!creds) { console.warn("[ig deliver] no credentials for", r.ig_account_id); continue; }
+    const to = r.ig_user_id;
+
+    // Payment landed and generation began.
+    if (r.state === "AWAITING_PAYMENT") {
+      if (["QUEUED", "PROCESSING", "BASE_LOCKING", "COMPLETE"].includes(r.shoot_status)) {
+        await sql`UPDATE instagram_sessions SET state = 'GENERATING', updated_at = NOW() WHERE id = ${r.session_id}`;
+        await sendText(creds, to,
+          "Payment received, thank you ✅\n\nI'm relighting your photo now — usually a couple of " +
+          "minutes. I'll send it here the moment it's ready.");
+        started.push(r.session_id);
+      }
+      continue;
+    }
+
+    // The window has closed. Nothing can be sent, so escalate instead of
+    // burning the attempt and marking it delivered.
+    if (!windowOpen(r.last_inbound_at)) {
+      const hours = Math.round((Date.now() - new Date(r.last_inbound_at).getTime()) / 3_600_000);
+      console.warn(`[ig deliver] window closed (${hours}h) for @${r.ig_username ?? to} — cannot send`);
+      if (r.shoot_status === "COMPLETE") {
+        await tellAdmin(
+          `⚠️ Instagram delivery blocked — the 24h window closed.\n\n` +
+          `Customer: @${r.ig_username ?? to}\nShoot: ${r.shoot_id.slice(0, 8)}\n` +
+          `Last heard from them ${hours}h ago. Their photo is finished and paid for but ` +
+          `Instagram will not accept a message. Reach them another way.`
+        ).catch(() => {});
+        stranded.push(r.session_id);
+      }
+      continue;
+    }
+
+    if (r.shoot_status === "FAILED") {
+      await sendText(creds, to,
+        "I'm sorry — your photo didn't come out.\n\n" +
+        "You have not lost your money. Send *support* and a person will sort this out for you today.");
+      await finish(r.session_id, r.shoot_id);
+      failed.push(r.session_id);
+      continue;
+    }
+
+    if (r.shoot_status !== "COMPLETE") continue;   // still working
+
+    const images = await sql<{ slot: number; bucket: string | null; path: string | null }[]>`
+      SELECT slot,
+             COALESCE(download_storage_bucket, preview_storage_bucket) AS bucket,
+             COALESCE(download_storage_path, preview_storage_path)     AS path
+      FROM shoot_images
+      WHERE shoot_id = ${r.shoot_id} AND status = 'COMPLETE'
+        AND COALESCE(download_storage_path, preview_storage_path) IS NOT NULL
+      ORDER BY slot`;
+
+    if (!images.length) {
+      await sendText(creds, to,
+        "Your photo is finished, but it has passed its 7-day download window and is no longer " +
+        "stored.\n\nSend *support* and we'll sort it out.");
+      await finish(r.session_id, r.shoot_id);
+      failed.push(r.session_id);
+      continue;
+    }
+
+    let sent = 0;
+    for (const img of images) {
+      const url = await publicUrl(img.bucket!, img.path!);
+      if (!url) continue;
+      const res = await sendImage(creds, to, url);
+      if (res.ok) sent++;
+      else console.error("[ig deliver] send failed:", res.error.slice(0, 200));
+    }
+
+    if (sent === 0) {
+      // Nothing arrived. Leaving ig_delivered_at NULL means the next run tries
+      // again rather than marking a customer served who received nothing.
+      console.error(`[ig deliver] delivered 0 of ${images.length} to @${r.ig_username ?? to} — will retry`);
+      continue;
+    }
+
+    // Instagram recompresses images, so what lands is not the 4K file. Say so
+    // and point at the full-quality copy rather than letting the buyer assume
+    // this is what they paid for.
+    await sendText(creds, to,
+      `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
+      `Instagram squashes pictures on the way through, so this is the preview. ` +
+      `The full-size file is on aluxartandframes.shop under your shoots.\n\n` +
+      `Want another? Send me a new number and a photo.`);
+
+    await finish(r.session_id, r.shoot_id);
+    delivered.push(r.session_id);
+  }
+
+  return NextResponse.json({
+    ok: true, checked: rows.length,
+    started: started.length, delivered: delivered.length,
+    failed: failed.length, stranded: stranded.length,
+  });
+}

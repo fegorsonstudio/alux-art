@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
+import { sendText, credsForAccount } from "@/lib/instagram";
+import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession } from "@/lib/instagram-bot";
+import { tellAdmin } from "@/lib/telegram";
 
 /**
  * Instagram comment webhook — the "comment STUDIO and I'll send you the link" bot.
@@ -92,7 +95,24 @@ export async function POST(request: NextRequest) {
   }
 
   let body: {
-    entry?: Array<{ id?: string; changes?: Array<{ field?: string; value?: Record<string, unknown> }> }>;
+    entry?: Array<{
+      id?: string;
+      changes?: Array<{ field?: string; value?: Record<string, unknown> }>;
+      // Direct messages arrive on `messaging`, not `changes`. Same webhook, same
+      // signature, different shape — a handler that only walks `changes` sees
+      // nothing at all when someone replies to the DM it just sent.
+      messaging?: Array<{
+        sender?: { id?: string };
+        recipient?: { id?: string };
+        timestamp?: number;
+        message?: {
+          mid?: string;
+          text?: string;
+          is_echo?: boolean;
+          attachments?: Array<{ type?: string; payload?: { url?: string } }>;
+        };
+      }>;
+    }>;
   };
   try { body = JSON.parse(raw); } catch { return NextResponse.json({ ok: true }); }
 
@@ -105,6 +125,39 @@ export async function POST(request: NextRequest) {
 
   for (const entry of body.entry ?? []) {
     const igUserId = String(entry.id ?? "");
+
+    // ── Direct messages ──────────────────────────────────────────────────────
+    // The booking conversation. Runs before comments so a reply to our own DM
+    // is never mistaken for anything else.
+    for (const m of entry.messaging ?? []) {
+      // Echoes are our own outbound messages coming back. Handling one would
+      // have the bot answer itself in a loop.
+      if (m.message?.is_echo) continue;
+
+      // Read receipts, reactions and delivery confirmations arrive on the same
+      // `messaging` array with NO message body. They must not be treated as the
+      // customer speaking: `last_inbound_at` is what decides whether Instagram
+      // will still accept a reply, so a ❤️ on an old message would make a
+      // closed 24-hour window look open and the delivery would fail with the
+      // customer none the wiser. Only real content counts.
+      const hasContent = Boolean(
+        m.message && (m.message.text || (m.message.attachments?.length ?? 0) > 0)
+      );
+      if (!hasContent) continue;
+
+      const senderId = String(m.sender?.id ?? "");
+      if (!senderId || senderId === igUserId) continue;
+
+      try {
+        await handleDirectMessage(igUserId, senderId, {
+          text: m.message?.text,
+          imageUrl: m.message?.attachments?.find(a => a.type === "image")?.payload?.url,
+        });
+      } catch (e) {
+        console.error("[ig webhook] DM handling failed:", (e as Error).message);
+      }
+    }
+
     for (const change of entry.changes ?? []) {
       if (change.field !== "comments") continue;
       const v = change.value ?? {};
@@ -128,6 +181,9 @@ export async function POST(request: NextRequest) {
       // any comment CONTAINING a number would fire on "I have 2 kids" and DM a
       // stranger about lighting look 2. A number naming no real look falls
       // through to the word matching below and then to silence, exactly as now.
+      // Remembered so the session can be armed with this look after the reply
+      // lands, which is what lets their next message be just a photo.
+      let numberAsked: number | null = null;
       let keyword = /^\s*\d{1,3}\s*$/.test(text)
         ? await (async () => {
             const n = Number(text.trim());
@@ -137,6 +193,7 @@ export async function POST(request: NextRequest) {
               return null;
             }
             console.log(`[ig webhook] @${from.username ?? from.id} asked for look ${n}: ${look.lookName}`);
+            numberAsked = n;
             return lookNumberReply(n, look.lookName);
           })()
         : null;
@@ -193,6 +250,18 @@ export async function POST(request: NextRequest) {
           );
         } else {
           console.log(`[ig webhook] sent "${keyword.word}" to @${from.username ?? from.id}`);
+
+          // Arm the conversation with the look they asked for, so the photo they
+          // send next is relit with it rather than answered by "which light?".
+          //
+          // Best effort by design: the comment author's id is not guaranteed to
+          // be the same scoped id the messaging API uses, and if it is not, the
+          // DM handler simply asks for the number. Nothing here can break the
+          // reply that has already been sent.
+          if (numberAsked && from.id) {
+            await armLookSession(igUserId, String(from.id), from.username, numberAsked)
+              .catch(e => console.warn("[ig webhook] could not arm session:", (e as Error).message));
+          }
           // A public acknowledgement so other readers see it worked. Best effort:
           // the DM is the product, this is decoration.
           if (keyword.publicReply) {
@@ -211,4 +280,85 @@ export async function POST(request: NextRequest) {
   // Always 200. Meta retries non-200 responses, and a retry here means a second
   // DM to someone who already got one.
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * One inbound direct message.
+ *
+ * The whole booking lives here: pick a look by number, send the photo, pay, and
+ * the finished picture comes back to this same chat. Nobody is handed off to
+ * WhatsApp unless Instagram itself refuses to carry the payment link.
+ *
+ * Kept deliberately forgiving about what a person types. Someone arriving from
+ * a carousel comment is mid-scroll, not filling in a form.
+ */
+async function handleDirectMessage(
+  igAccountId: string,
+  senderId: string,
+  msg: { text?: string; imageUrl?: string },
+): Promise<void> {
+  const creds = credsForAccount(igAccountId);
+  if (!creds) { console.warn("[ig bot] no credentials for account", igAccountId); return; }
+
+  const session = await loadSession(igAccountId, senderId);
+  await markInbound(session.id, msg.text ?? (msg.imageUrl ? "[photo]" : null));
+
+  // A photo is an instruction on its own — it means "do the look we agreed".
+  if (msg.imageUrl) {
+    await handlePhoto(creds, session, msg.imageUrl);
+    return;
+  }
+
+  const text = (msg.text ?? "").trim();
+  if (!text) return;
+
+  // A bare number is a look. Matched strictly so "I have 2 kids" cannot book
+  // anything — the same guard the comment path already carries.
+  const asNumber = /^\s*(\d{1,3})\s*$/.exec(text);
+  if (asNumber) {
+    const n = Number(asNumber[1]);
+    if (await offerLook(creds, session, n)) return;
+    await sendText(creds, senderId,
+      `I couldn't find look ${n}. The number is on the picture in the post — ` +
+      `send me that and I'll set it up.`);
+    return;
+  }
+
+  if (/^(support|help|human)$/i.test(text)) {
+    await sendText(creds, senderId,
+      "I've passed this to the studio — a person will reply here shortly. " +
+      "If it's urgent, WhatsApp 2349076858017.");
+    await tellAdmin(
+      `📸 Instagram support request from @${session.ig_username ?? senderId}\n` +
+      `State: ${session.state}${session.shoot_id ? ` · shoot ${session.shoot_id.slice(0, 8)}` : ""}`
+    ).catch(() => {});
+    return;
+  }
+
+  // Waiting on a photo: say so rather than restating the whole offer, which is
+  // what made the WhatsApp bot loop at a customer who asked a question.
+  if (session.state === "COLLECTING_PHOTO") {
+    await sendText(creds, senderId,
+      `Send the photo you want relit as a picture in this chat and I'll apply ` +
+      `*${session.look_name ? prettyLook(session.look_name) : "that look"}* to it.`);
+    return;
+  }
+
+  if (session.state === "AWAITING_PAYMENT") {
+    await sendText(creds, senderId,
+      "Your photo is ready to go as soon as the payment lands — the link is just above. " +
+      "Send *support* if you'd rather a person helped.");
+    return;
+  }
+
+  if (session.state === "GENERATING") {
+    await sendText(creds, senderId, "Still working on it — it'll land here in a couple of minutes.");
+    return;
+  }
+
+  await sendText(creds, senderId,
+    "Hello 👋 I'm an automated assistant for Alux Art.\n\n" +
+    "Send me the number of any lighting look from our posts (for example *69*) and " +
+    "I'll relight a photo of your own with it — ₦1,000, right here in this chat.\n\n" +
+    "Type *support* to reach a person.");
 }

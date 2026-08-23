@@ -246,27 +246,34 @@ export function lookNumberReply(n: number, lookName: string): Keyword {
 
   const head = `That's *${pretty}* — look ${n}. 👇\n\n`;
 
+  // The price used to live here as well as in the offer above, so every reply
+  // said ₦1,000 twice in six lines.
   const tail =
-    `\n\n₦1,000 for one photo. Works on a picture you already have — the dark club, ` +
-    `the dim restaurant, the badly lit hall.`;
+    `\n\nWorks on a picture you already have - the dark club, the dim restaurant, ` +
+    `the badly lit hall.`;
 
-  // Both doors, every time. WhatsApp is first because it is three taps and needs
-  // no account, but somebody reading on a laptop — or who simply does not want
-  // to chat — was being handed no way in at all.
+  // The reply now STARTS the job instead of forwarding it. Instagram can carry
+  // the whole booking - send a photo, pay, receive the finished picture - so
+  // handing a commenter a WhatsApp link was sending them somewhere else to do
+  // the thing they could already do here. The links stay underneath: somebody
+  // on a laptop, or who simply prefers to pay by card, still needs a door.
+  const here =
+    `Send me the photo you want relit *right here in this chat* and I'll apply this exact ` +
+    `light to it. ₦1,000 for one photo, and it comes straight back to you here.\n\n`;
+
   return {
     word: String(n),
     reply:
       head +
-      `*On WhatsApp* — fastest, no sign-up:\n` +
-      `https://wa.me/2349076858017?text=${n}\n\n` +
-      `*Or on the website* — same look, pay by card:\n` +
-      `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32` +
+      here +
+      `Rather do it somewhere else?\n` +
+      `WhatsApp: https://wa.me/2349076858017?text=${n}\n` +
+      `Website: ${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32` +
       tail,
     replyNoLink:
       head +
-      `Message us on WhatsApp and send just the number *${n}* — we'll apply that exact ` +
-      `light to your own photo. Our number is in our bio, at the top of this chat.\n\n` +
-      `Prefer the website? The link in our bio has the same looks.` +
+      here +
+      `Prefer WhatsApp? Our number is in our bio - send just the number *${n}* when you get there.` +
       tail,
     publicReply: "Sent you a DM 📩",
   };
