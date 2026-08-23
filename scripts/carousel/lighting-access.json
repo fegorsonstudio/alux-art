@@ -1,0 +1,80 @@
+[
+  {
+    "id": "lighting-access",
+    "account": "fegorson_studio",
+    "caption": "Gone are the days when only photographers had access to professional lighting.\n\nFor most of the last century, good light was not something you could buy. It was somewhere you had to go. A room with a door, a day rate, and someone else's diary deciding when you were allowed in. The lights alone cost more than the camera. That is why studio portraits looked expensive: because they were.\n\nSo two people could stand in the same hotel lobby, wearing the same clothes, with the same face — and one of them went home with a portrait and the other went home with a snapshot. The difference was never talent. It was access.\n\nThis photo was taken on a phone, in a lounge, with the lights that happened to be on the ceiling. The second one is the same photo. Nothing was reshot, nothing was restyled, nobody went anywhere. One hard key from camera-right, minimal fill, the background pushed to white — a setup that used to need a studio, a stand and someone to hold it.\n\nSlide 8 is a photo from 2022 taken on an iPhone 13, run through the same tool. Because the point was never that you need better gear. The point is that the door is gone.\n\n💬 Every light in this post has a number. Comment the number you want and I'll send that exact setup straight to you.\n\n#phonephotography #nigerianphotographer #lagosphotographer #studiolighting #iphonephotography #portraitlighting #lightingsetup #aluxart #contentcreatornigeria",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*69* · Hard Sunlight High-Key",
+        "body": "Same phone, same lounge, same afternoon. The only thing that changed was the light. Comment *69*.",
+        "before": "scripts/carousel/shots/lighting-69/before-1428.jpg",
+        "after": "scripts/carousel/shots/lighting-69/after-69-hard-sunlight-high-key.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Good light used to live behind a door.",
+        "body": "A room you had to book. A day rate. Lights that cost more than the camera, and someone else's diary deciding when you were allowed in. That is why studio portraits looked expensive — because they were."
+      },
+      {
+        "type": "text",
+        "title": "It was never talent. It was access.",
+        "body": "Two people stand in the same lobby, same clothes, same face. One goes home with a portrait. The other goes home with a snapshot. The difference was a door, and most people were on the wrong side of it."
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*197* · Night Paparazzi G7X",
+        "body": "Hard flash on the lens axis, room going warm behind. Comment *197*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-197-night-paparazzi-g7x.jpg"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*23* · Warm Haze Backlit Editorial",
+        "body": "Sun behind you, haze in the air, warm all the way through. Comment *23*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-023-warm-haze-backlit-editorial.jpg"
+      },
+      {
+        "type": "text",
+        "title": "The door is gone.",
+        "body": "The lights moved to after the photo. You do not book a room, you do not hire a stand, you do not wait for a Saturday. You pick the setup you want and it is applied to a picture you already have."
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*196* · Golden Rim in Smoke",
+        "body": "Rim light through haze, gold along every edge. Comment *196*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-196-golden-rim-in-smoke.jpg"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Shot in *2022*. iPhone 13.",
+        "body": "Four year old photo, four year old phone, same tool. Look *23*. You were never behind — you were just outside.",
+        "before": "scripts/carousel/shots/lighting-power/before-1496.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-1496-023-warm-haze-backlit-editorial.jpg"
+      },
+      {
+        "type": "text",
+        "title": "197 setups. Every one of them yours.",
+        "body": "Hard sun, soft window, night flash, smoke and rim light, chiaroscuro, high-key white. The looks photographers build rooms to make — on the photos already sitting in your camera roll."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Start today",
+        "title": "Comment the number.",
+        "body": "Every light in this post has a number. Comment it and I'll send you that exact setup for your own photo. ₦1,000 per photo. No app, no sign-up, no gear."
+      }
+    ]
+  }
+]
