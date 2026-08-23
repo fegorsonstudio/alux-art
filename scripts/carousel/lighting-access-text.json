@@ -1,0 +1,38 @@
+[
+  {
+    "id": "lighting-access-text",
+    "account": "fegorson_studio",
+    "caption": "text slides for the hand-assembled access carousel — numbers match the final order",
+    "slides": [
+      {
+        "type": "text",
+        "no": 2,
+        "of": 10,
+        "title": "Good light used to live behind a door.",
+        "body": "A room you had to book. A day rate. Lights that cost more than the camera, and someone else's diary deciding when you were allowed in. That is why studio portraits looked expensive — because they *were*."
+      },
+      {
+        "type": "text",
+        "no": 4,
+        "of": 10,
+        "title": "It was never talent. It was access.",
+        "body": "Two people stand in the same lobby. Same clothes, same face, same afternoon. One goes home with a portrait, the other goes home with a snapshot. The difference was a door — and most of us were on the wrong side of it."
+      },
+      {
+        "type": "text",
+        "no": 7,
+        "of": 10,
+        "title": "The door is gone.",
+        "body": "The lights moved to *after* the photo. No room to book, no stand to hire, nobody's Saturday to wait for. You pick the setup you want and it lands on a picture already sitting in your camera roll."
+      },
+      {
+        "type": "cta",
+        "no": 10,
+        "of": 10,
+        "eyebrow": "Start today",
+        "title": "Comment the number.",
+        "body": "Every light in this post has a number. Comment it and I'll send you that exact setup for your own photo. *₦1,000* per photo. No app, no sign-up, no gear."
+      }
+    ]
+  }
+]

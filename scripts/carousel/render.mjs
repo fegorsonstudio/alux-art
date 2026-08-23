@@ -333,7 +333,14 @@ async function main() {
       const slide = await inlineImages(s);
       // `brand` lets a repostable carousel drop our domain from the footer;
       // undefined keeps the default stamp on everything else.
-      await page.setContent(build(slide, i + 1, slides.length, c.brand), { waitUntil: "networkidle" });
+      // `no` and `of` let a slide state its own position in the footer. Needed
+      // when a slide is rendered on its own to be dropped into a carousel that
+      // is assembled by hand — without them a standalone render stamps "1/1",
+      // which reads as broken sitting second in a ten-slide post. Both default
+      // to the real position, so every existing spec is unaffected.
+      const no = Number.isFinite(slide.no) ? slide.no : i + 1;
+      const of = Number.isFinite(slide.of) ? slide.of : slides.length;
+      await page.setContent(build(slide, no, of, c.brand), { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       const broken = await page.evaluate(() =>
         [...document.images].filter((im) => !im.complete || im.naturalWidth === 0).length);

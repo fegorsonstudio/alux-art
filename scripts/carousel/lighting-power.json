@@ -1,0 +1,84 @@
+[
+  {
+    "id": "lighting-power-01",
+    "account": "fegorson_studio",
+    "caption": "Every photo in this post was taken on a phone. Not one of them was taken in a studio.\n\nHere is the part nobody says out loud: your phone's camera has not been the weak link for years. A phone from 2019 already out-resolves anything Instagram will ever show you. The sensor is fine. The lens is fine.\n\nWhat you never had was light.\n\nA studio is not a room. It is a set of lights placed on purpose — one to shape the face, one to separate you from the background, one to open the shadows. That is the whole difference between a snapshot and a portrait, and it is the one thing a phone physically cannot add. There is no hot shoe. There is nowhere to mount a strobe. The shape of the phone decided that for you at the factory.\n\nSo we moved the lights to after the photo.\n\nOne picture, five setups. Slide 8 is a photo from 2022 shot on an iPhone 13, run through the same tool — because the point was never that you need a new phone. The point is that you never did.\n\n💬 Every light has a number. Comment the number you want and I'll send that exact setup straight to you.\n\n#phonephotography #nigerianphotographer #lagosphotographer #studiolighting #iphonephotography #portraitlighting #canong7x #aluxart #contentcreatornigeria",
+    "slides": [
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*197* · Night Paparazzi G7X",
+        "body": "Same phone, same photo. The only thing that changed was the light. Comment *197*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-197-night-paparazzi-g7x.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Your phone was never the problem.",
+        "body": "A 2019 phone already captures more detail than Instagram will ever display. The sensor stopped being the bottleneck years ago. Something else was missing the whole time."
+      },
+      {
+        "type": "text",
+        "title": "A phone cannot hold a light.",
+        "body": "There is no hot shoe. Nowhere to mount a strobe, no trigger, no way to fire a light off camera. That is not a flaw in your phone — it is the shape of it, and it was decided for you at the factory. So we moved the lights to after the photo."
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*6* · Hard Spot Chiaroscuro",
+        "body": "One hard source, deep shadow, everything else falls away. Comment *6*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-006-hard-spot-chiaroscuro.jpg"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*23* · Warm Haze Backlit Editorial",
+        "body": "Sun behind you, haze in the air, warm all the way through. Comment *23*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-023-warm-haze-backlit-editorial.jpg"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*65* · Hard Blue Chiaroscuro",
+        "body": "Cold key, hard edge, night without the noise. Comment *65*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-065-hard-blue-chiaroscuro.jpg"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "*196* · Golden Rim in Smoke",
+        "body": "Rim light through haze, gold along every edge. Comment *196*.",
+        "before": "scripts/carousel/shots/lighting-power/before-1476.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-196-golden-rim-in-smoke.jpg"
+      },
+      {
+        "type": "beforeafter",
+        "fit": "cover",
+        "focus": "center 30%",
+        "title": "Shot in *2022*. iPhone 13.",
+        "body": "Four year old photo, four year old phone, same tool. Look *23*. Your phone was always enough.",
+        "before": "scripts/carousel/shots/lighting-power/before-1496.jpg",
+        "after": "scripts/carousel/shots/lighting-power/after-1496-023-warm-haze-backlit-editorial.jpg"
+      },
+      {
+        "type": "text",
+        "title": "Shooting on a Canon G7X?",
+        "body": "Then you already know its one look — and so does everyone else who owns one. This gives you 197 lighting setups on the photos you have already taken, so your work stops looking like every other G7X on the timeline."
+      },
+      {
+        "type": "cta",
+        "eyebrow": "Start today",
+        "title": "Comment the number.",
+        "body": "Every light in this post has a number. Comment it and I'll send you that exact setup for your own photo. ₦1,000 per photo. No app, no sign-up, no gear."
+      }
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "slide-02-iphone",
+    "account": "fegorson_studio",
+    "caption": "standalone slide, dropped into the carousel by hand",
+    "slides": [
+      {
+        "type": "text",
+        "no": 2,
+        "of": 10,
+        "title": "Every photo here was shot on an *iPhone 17 Pro Max*.",
+        "body": "Not a digital camera. Not a studio. I want to prove something to you: the phone already in your hand is a powerhouse. The only thing it was ever missing is *professional studio lighting*."
+      }
+    ]
+  }
+]

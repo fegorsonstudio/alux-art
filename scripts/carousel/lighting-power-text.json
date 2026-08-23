@@ -1,0 +1,24 @@
+[
+  {
+    "id": "lighting-power-text",
+    "account": "fegorson_studio",
+    "caption": "text slides for the hand-assembled carousel",
+    "slides": [
+      {
+        "type": "text",
+        "no": 4,
+        "of": 10,
+        "title": "There is nowhere to mount a light.",
+        "body": "No hot shoe. No trigger. No way to fire a strobe off camera. That is not a flaw in your phone — it is the *shape* of it, decided for you at the factory. So we moved the lights to *after* the photo."
+      },
+      {
+        "type": "cta",
+        "no": 10,
+        "of": 10,
+        "eyebrow": "Start today",
+        "title": "Comment the number.",
+        "body": "Every light here has a number — comment it and I'll send you that exact setup for your own photo. ₦1,000. Shooting on a *Canon G7X*? You already know its one look, and so does everyone else. Here are *197*."
+      }
+    ]
+  }
+]
