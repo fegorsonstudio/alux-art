@@ -4,6 +4,7 @@ import { r2Upload } from "@/lib/r2";
 import { createServiceClient } from "@/lib/supabase-server";
 import { SITE_URL } from "@/lib/site-url";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
+import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 import {
   sendText, sendImage, downloadAttachment, credsForAccount, handleForAccount,
   type IgCreds, type IgSendResult,
@@ -158,10 +159,113 @@ export async function sendWithLinkFallback(
 // ── The conversation ─────────────────────────────────────────────────────────
 
 /**
+ * Store the photo and start the shoot.
+ *
+ * Split out so it can be reached from either direction: the photo arriving
+ * after the look, or the look arriving after the photo. The booking goes
+ * through the marketplace route with the internal secret, the same door the
+ * WhatsApp bot uses, so price, fees and template rules cannot drift from the
+ * web checkout.
+ */
+async function bookIt(
+  creds: IgCreds,
+  session: IgSession,
+  path: string,
+  contentType: string,
+  bytes: number,
+): Promise<void> {
+  const to = session.ig_user_id;
+  const userId = await ensureUser(session);
+
+  await sendText(creds, to, "Got it. Setting that up now, one moment\u2026");
+
+  const booking = await fetch(`${SITE_URL}/api/marketplace/${session.template_id}/book`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
+      "x-act-as-user": userId,
+    },
+    body: JSON.stringify({
+      packageSize: 1,
+      currency: "NGN",
+      // The look travels in lightingByPath keyed by the photo's storage path.
+      // Putting a real look id in `enhance.lighting` is silently discarded --
+      // that field only accepts the built-in rig presets -- and the booking
+      // comes back "Pick a lighting look" with one plainly chosen.
+      enhance: { lightingByPath: { [path]: session.look_option_id } },
+      identityRefs: [{
+        id: crypto.randomUUID(),
+        name: "Instagram 1",
+        type: contentType || "image/jpeg",
+        size: bytes || 1,
+        storageBucket: "identity-images",
+        storagePath: path,
+      }],
+    }),
+  }).then(r => r.json()).catch(e => ({ error: String(e) }));
+
+  // Both spellings of the id are accepted: looking for only one of them once
+  // reported a booking that had SUCCEEDED as a failure and abandoned a paying
+  // customer.
+  const shootId = (booking?.shootId ?? booking?.shoot?.id) as string | undefined;
+  const payUrl = booking?.authorizationUrl as string | undefined;
+
+  if (!shootId) {
+    console.error("[ig bot] booking failed:", JSON.stringify(booking).slice(0, 400));
+    await sendText(creds, to,
+      "Something went wrong setting that up. Send *support* and a human will pick it up.");
+    return;
+  }
+
+  // The recipient goes on the SHOOT, not just the session. A customer who sends
+  // a second photo while the first is generating would otherwise overwrite
+  // session.shoot_id and orphan the first one - paid for, finished, and
+  // invisible to the poller forever.
+  await sql`
+    UPDATE shoots SET ig_user_id = ${session.ig_user_id}, ig_account_id = ${session.ig_account_id}
+    WHERE id = ${shootId}`;
+
+  await patchSession(session.id, {
+    state: payUrl ? "AWAITING_PAYMENT" : "GENERATING",
+    shoot_id: shootId,
+    source_paths: [path],
+  });
+
+  // Asked BEFORE they pay, not after.
+  //
+  // It used to ride on the payment-landed message, so a customer who paid and
+  // closed the app was never asked at all - and they are exactly the person a
+  // failed shoot leaves unreachable. Asking here also puts it in front of them
+  // while they are deciding, which is when the reason makes sense.
+  const askEmail = await needsContactEmail(userId).catch(() => false);
+
+  if (!payUrl) {
+    await sendText(creds, to, "Paid from your balance \u2705 Making your photo now \u2014 about two minutes.");
+    if (askEmail) await sendText(creds, to, CONTACT_EMAIL_ASK);
+    return;
+  }
+
+  await sendWithLinkFallback(creds, to,
+    `Ready. ${naira(RELIGHT_PRICE_NGN)} for this photo:\n\n${payUrl}\n\n` +
+    `Pay and I'll send the finished picture straight back here.`,
+    // Link-blocked: Instagram will not carry a URL for this account right now,
+    // so the customer is given the number rather than left with nothing.
+    `Ready \u2014 ${naira(RELIGHT_PRICE_NGN)} for this photo.\n\n` +
+    `Instagram won't let me send payment links right now, so message me on ` +
+    `WhatsApp on ${WA_NUMBER} and send *${session.look_name?.match(/^\d+/)?.[0] ?? "the number"}* \u2014 ` +
+    `I'll pick it straight up there and you'll have it in a couple of minutes.`
+  );
+
+  if (askEmail) await sendText(creds, to, CONTACT_EMAIL_ASK);
+}
+
+/**
  * Someone picked a look, by commenting a number or typing one in the chat.
  *
- * The reply asks for the photo rather than handing over a link, because the
- * whole point of this bot is that the job finishes here.
+ * If a photo is already waiting -- they sent the picture first, which is what
+ * anyone who arrived through LIGHT does -- the shoot starts immediately instead
+ * of asking for it again.
  */
 export async function offerLook(
   creds: IgCreds,
@@ -177,22 +281,37 @@ export async function offerLook(
     look_option_id: look.lookId,
     look_name: look.lookName,
   });
+  const armed: IgSession = {
+    ...session,
+    template_id: look.templateId,
+    look_option_id: look.lookId,
+    look_name: look.lookName,
+  };
+
+  // A photo is already in hand from before the look was chosen.
+  const waiting = session.state === "COLLECTING_LOOK" ? session.source_paths?.[0] : undefined;
+  if (waiting) {
+    await sendText(creds, session.ig_user_id,
+      `*${prettyLook(look.lookName)}* it is \u2014 look ${n}. Working on the photo you sent\u2026`);
+    await bookIt(creds, armed, waiting, "image/jpeg", 1);
+    return true;
+  }
 
   await sendText(creds, session.ig_user_id,
-    `That's *${prettyLook(look.lookName)}* — look ${n}. 👇\n\n` +
+    `That's *${prettyLook(look.lookName)}* \u2014 look ${n}. \ud83d\udc47\n\n` +
     `Send me the photo you want relit, right here in this chat. ` +
-    `Any picture you already have — the dark club, the dim restaurant, the badly lit hall.\n\n` +
+    `Any picture you already have \u2014 the dark club, the dim restaurant, the badly lit hall.\n\n` +
     `${naira(RELIGHT_PRICE_NGN)} for one photo. I'll send it back to you here when it's done.`
   );
   return true;
 }
 
 /**
- * A photo arrived. Store it, book the shoot, and ask for payment.
+ * A photo arrived.
  *
- * The booking goes through the marketplace route with the internal secret, the
- * same door the WhatsApp bot uses, so price, fees and template rules cannot
- * drift from the web checkout.
+ * If a look is already chosen the shoot starts. If not, the photo is KEPT and
+ * the number asked for -- it used to be discarded, so a customer who sent the
+ * picture first was asked for a look, then asked for the picture again.
  */
 export async function handlePhoto(
   creds: IgCreds,
@@ -200,13 +319,6 @@ export async function handlePhoto(
   attachmentUrl: string,
 ): Promise<void> {
   const to = session.ig_user_id;
-
-  if (!session.look_option_id || !session.template_id) {
-    await sendText(creds, to,
-      "Lovely photo — which light do you want on it? Send me the number from the post " +
-      "(for example *69*) and I'll get started.");
-    return;
-  }
 
   const media = await downloadAttachment(attachmentUrl);
   if (!media) {
@@ -222,69 +334,15 @@ export async function handlePhoto(
     VALUES (${userId}, ${"Instagram photo"}, ${media.contentType},
             ${media.buffer.byteLength}, 'identity-images', ${path}, NOW(), NOW())`;
 
-  await sendText(creds, to, "Got it. Setting that up now, one moment…");
-
-  const booking = await fetch(`${SITE_URL}/api/marketplace/${session.template_id}/book`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
-      "x-act-as-user": userId,
-    },
-    body: JSON.stringify({
-      packageSize: 1,
-      currency: "NGN",
-      // The look travels in lightingByPath keyed by the photo's storage path.
-      // Putting a real look id in `enhance.lighting` is silently discarded —
-      // that field only accepts the handful of built-in rig presets — and the
-      // booking comes back "Pick a lighting look" with one plainly chosen.
-      enhance: { lightingByPath: { [path]: session.look_option_id } },
-      identityRefs: [{
-        id: crypto.randomUUID(),
-        name: "Instagram 1",
-        type: media.contentType || "image/jpeg",
-        size: media.buffer.byteLength || 1,
-        storageBucket: "identity-images",
-        storagePath: path,
-      }],
-    }),
-  }).then(r => r.json()).catch(e => ({ error: String(e) }));
-
-  // The route answers { authorizationUrl, shootId }. Both spellings of the id
-  // are accepted because looking for only one of them once reported a booking
-  // that had SUCCEEDED as a failure and abandoned a paying customer.
-  const shootId = (booking?.shootId ?? booking?.shoot?.id) as string | undefined;
-  const payUrl = booking?.authorizationUrl as string | undefined;
-
-  if (!shootId) {
-    console.error("[ig bot] booking failed:", JSON.stringify(booking).slice(0, 400));
+  if (!session.look_option_id || !session.template_id) {
+    await patchSession(session.id, { state: "COLLECTING_LOOK", source_paths: [path] });
     await sendText(creds, to,
-      "Something went wrong setting that up. Send *support* and a human will pick it up.");
+      `Lovely \u2014 I've got your photo. Which light do you want on it?\n\n` +
+      `Send me the number from the post (for example *69* or *197*) and I'll get started.`);
     return;
   }
 
-  await patchSession(session.id, {
-    state: payUrl ? "AWAITING_PAYMENT" : "GENERATING",
-    shoot_id: shootId,
-    source_paths: [path],
-  });
-
-  // Already paid for — a wallet balance or a free grant covered it.
-  if (!payUrl) {
-    await sendText(creds, to, "Paid from your balance ✅ Making your photo now — about two minutes.");
-    return;
-  }
-
-  await sendWithLinkFallback(creds, to,
-    `Ready. ${naira(RELIGHT_PRICE_NGN)} for this photo:\n\n${payUrl}\n\n` +
-    `Pay and I'll send the finished picture straight back here.`,
-    // Link-blocked: Instagram will not carry a URL for this account right now,
-    // so the customer is given the number rather than left with nothing.
-    `Ready — ${naira(RELIGHT_PRICE_NGN)} for this photo.\n\n` +
-    `Instagram won't let me send payment links right now, so message me on ` +
-    `WhatsApp on ${WA_NUMBER} and send *${session.look_name?.match(/^\d+/)?.[0] ?? "the number"}* — ` +
-    `I'll pick it straight up there and you'll have it in a couple of minutes.`
-  );
+  await bookIt(creds, session, path, media.contentType, media.buffer.byteLength);
 }
 
 /** The finished pictures, into the same chat that ordered them. */

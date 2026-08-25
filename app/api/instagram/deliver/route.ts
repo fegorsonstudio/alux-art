@@ -30,15 +30,15 @@ import { sendWithLinkFallback } from "@/lib/instagram-bot";
 export const dynamic = "force-dynamic";
 
 type Row = {
-  session_id: string;
-  ig_account_id: string;
-  ig_user_id: string;
-  ig_username: string | null;
-  state: string;
   shoot_id: string;
   shoot_status: string;
-  last_inbound_at: Date;
+  ig_user_id: string;
+  ig_account_id: string;
   ig_stranded_alerted_at: Date | null;
+  ig_started_notified_at: Date | null;
+  session_id: string | null;
+  ig_username: string | null;
+  last_inbound_at: Date | null;
   user_id: string | null;
 };
 
@@ -74,8 +74,10 @@ async function downloadLink(shootId: string): Promise<string | null> {
   return token ? `${SITE_URL}/d/${token}` : null;
 }
 
-const finish = (sessionId: string, shootId: string) => Promise.all([
-  sql`UPDATE instagram_sessions SET state = 'DONE', updated_at = NOW() WHERE id = ${sessionId}`,
+const finish = (sessionId: string | null, shootId: string) => Promise.all([
+  sessionId
+    ? sql`UPDATE instagram_sessions SET state = 'DONE', updated_at = NOW() WHERE id = ${sessionId}`
+    : Promise.resolve(),
   sql`UPDATE shoots SET ig_delivered_at = NOW() WHERE id = ${shootId}`,
 ]);
 
@@ -85,16 +87,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Driven off SHOOTS, not sessions. A session holds one shoot_id, so a second
+  // photo sent while the first was generating used to hide the first from this
+  // query entirely. The session is joined only for the things that belong to the
+  // conversation: the 24-hour window and who the person is.
   const rows = await sql<Row[]>`
-    SELECT s.id AS session_id, s.ig_account_id, s.ig_user_id, s.ig_username,
-           s.state, s.shoot_id, s.last_inbound_at, s.user_id,
-           sh.status AS shoot_status, sh.ig_stranded_alerted_at
-    FROM instagram_sessions s
-    JOIN shoots sh ON sh.id = s.shoot_id
-    WHERE s.shoot_id IS NOT NULL
+    SELECT sh.id AS shoot_id, sh.status AS shoot_status,
+           sh.ig_user_id, sh.ig_account_id,
+           sh.ig_stranded_alerted_at, sh.ig_started_notified_at,
+           s.id AS session_id, s.ig_username, s.last_inbound_at, s.user_id
+    FROM shoots sh
+    LEFT JOIN instagram_sessions s
+      ON s.ig_user_id = sh.ig_user_id AND s.ig_account_id = sh.ig_account_id
+    WHERE sh.ig_user_id IS NOT NULL
       AND sh.ig_delivered_at IS NULL
-      AND s.state IN ('AWAITING_PAYMENT', 'GENERATING')
-    ORDER BY s.updated_at ASC
+    ORDER BY sh.created_at ASC
     LIMIT 25`;
 
   const started: string[] = [], delivered: string[] = [], failed: string[] = [], stranded: string[] = [];
@@ -105,9 +112,12 @@ export async function GET(req: NextRequest) {
     const to = r.ig_user_id;
 
     // Payment landed and generation began.
-    if (r.state === "AWAITING_PAYMENT") {
+    if (!r.ig_started_notified_at) {
       if (["QUEUED", "PROCESSING", "BASE_LOCKING", "COMPLETE"].includes(r.shoot_status)) {
-        await sql`UPDATE instagram_sessions SET state = 'GENERATING', updated_at = NOW() WHERE id = ${r.session_id}`;
+        await sql`UPDATE shoots SET ig_started_notified_at = NOW() WHERE id = ${r.shoot_id}`;
+        if (r.session_id) {
+          await sql`UPDATE instagram_sessions SET state = 'GENERATING', updated_at = NOW() WHERE id = ${r.session_id}`;
+        }
         await sendText(creds, to,
           "Payment received, thank you ✅\n\nI'm relighting your photo now — usually a couple of " +
           "minutes. I'll send it here the moment it's ready.");
@@ -116,15 +126,20 @@ export async function GET(req: NextRequest) {
         if (await needsContactEmail(r.user_id)) {
           await sendText(creds, to, CONTACT_EMAIL_ASK);
         }
-        started.push(r.session_id);
+        started.push(r.shoot_id);
       }
-      continue;
+      if (r.shoot_status !== "COMPLETE") continue;
     }
 
     // The window has closed. Nothing can be sent, so escalate instead of
     // burning the attempt and marking it delivered.
     if (!windowOpen(r.last_inbound_at)) {
-      const hours = Math.round((Date.now() - new Date(r.last_inbound_at).getTime()) / 3_600_000);
+      // No session row at all means the conversation was deleted — treat it the
+      // same as a long-closed window rather than crashing the whole poller run
+      // and stranding everyone else queued behind it.
+      const hours = r.last_inbound_at
+        ? Math.round((Date.now() - new Date(r.last_inbound_at).getTime()) / 3_600_000)
+        : 999;
       console.warn(`[ig deliver] window closed (${hours}h) for @${r.ig_username ?? to} — cannot send`);
       // Alert ONCE per shoot. This used to fire on every poll: 276 identical
       // Telegram messages for one customer, two minutes apart, until it was
@@ -141,7 +156,7 @@ export async function GET(req: NextRequest) {
           // just reporting the problem.
           (link ? `\n\nSend them this - it needs no login:\n${link}` : "")
         ).catch(() => {});
-        stranded.push(r.session_id);
+        stranded.push(r.shoot_id);
       }
       continue;
     }
@@ -151,7 +166,7 @@ export async function GET(req: NextRequest) {
         "I'm sorry — your photo didn't come out.\n\n" +
         "You have not lost your money. Send *support* and a person will sort this out for you today.");
       await finish(r.session_id, r.shoot_id);
-      failed.push(r.session_id);
+      failed.push(r.shoot_id);
       continue;
     }
 
@@ -171,7 +186,7 @@ export async function GET(req: NextRequest) {
         "Your photo is finished, but it has passed its 7-day download window and is no longer " +
         "stored.\n\nSend *support* and we'll sort it out.");
       await finish(r.session_id, r.shoot_id);
-      failed.push(r.session_id);
+      failed.push(r.shoot_id);
       continue;
     }
 
@@ -214,7 +229,7 @@ export async function GET(req: NextRequest) {
       `Want another? Send me a new number and a photo.`);
 
     await finish(r.session_id, r.shoot_id);
-    delivered.push(r.session_id);
+    delivered.push(r.shoot_id);
   }
 
   return NextResponse.json({

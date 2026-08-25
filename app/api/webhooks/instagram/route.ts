@@ -29,6 +29,9 @@ export const dynamic = "force-dynamic";
 
 const GRAPH = "https://graph.instagram.com/v23.0";
 
+/** The look the promoted post is selling. Commenting LIGHT chooses it. */
+const LIGHT_LOOK_NUMBER = 197;
+
 /** Handles come from IG_ACCOUNTS so the bot never answers itself. */
 function ourHandles(): Set<string> {
   return new Set(
@@ -259,8 +262,12 @@ export async function POST(request: NextRequest) {
           // be the same scoped id the messaging API uses, and if it is not, the
           // DM handler simply asks for the number. Nothing here can break the
           // reply that has already been sent.
-          if (numberAsked && from.id) {
-            await armLookSession(igUserId, String(from.id), from.username, numberAsked)
+          // LIGHT is the promoted post's keyword and that post is look 197, so
+          // it arms the same way a number does. Without this the reply says
+          // "send me your photo" and the photo is met with "which light?".
+          const armWith = numberAsked ?? (keyword.word === "LIGHT" ? LIGHT_LOOK_NUMBER : null);
+          if (armWith && from.id) {
+            await armLookSession(igUserId, String(from.id), from.username, armWith)
               .catch(e => console.warn("[ig webhook] could not arm session:", (e as Error).message));
           }
           // A public acknowledgement so other readers see it worked. Best effort:
@@ -358,6 +365,11 @@ async function handleDirectMessage(
       await sendText(creds, senderId, "I couldn't save that one — could you check it and send it again?");
     }
     return;
+  }
+
+  // LIGHT typed in the chat, not just commented on the post.
+  if (/^light$/i.test(text)) {
+    if (await offerLook(creds, session, LIGHT_LOOK_NUMBER)) return;
   }
 
   if (/^(support|help|human)$/i.test(text)) {

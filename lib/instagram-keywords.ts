@@ -62,37 +62,21 @@ export const KEYWORDS: Keyword[] = [
     // it every "comment LIGHT" caption matches no keyword and the commenter
     // silently gets nothing, which looks identical to the automation working.
     word: "LIGHT",
-    // The steps are in the message itself rather than promised as a follow-up.
-    // One reply is all Instagram gives, and people who commented on the launch
-    // post had the link already and still asked how to use it — the link was
-    // never the missing part.
+    // LIGHT is the promoted post, and that post is look 197. So it does not ask
+    // which light they want - commenting it already answered that. The only
+    // thing still missing is the photograph.
     reply:
-      "Here's the relighting tool 👇\n\n" +
-      `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32\n\n` +
-      "How to use it:\n" +
-      "1. Open the link and tap Book This Look\n" +
-      "2. Pick 4:5 at the top, and crop your photo to 4:5 so they match\n" +
-      "3. Upload your photo\n" +
-      "4. Type 197 in the search box — it picks the look for you\n" +
-      "5. Leave the background on \"keeping yours\"\n" +
-      "6. Pay ₦1,000 per photo and download\n\n" +
-      "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
-      "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.\n\n" +
-      "Or skip all of it — message us on WhatsApp and send *G7X*:\n" +
-      "https://wa.me/2349076858017?text=G7X",
+      "Yes - I can do that for you right here in this chat. 👇" +
+      "\n\nJust send me the photo you want relit and I'll apply this exact look to " +
+      "it. Send a few if you like - ₦1,000 each, one at a time." +
+      "\n\nIt comes straight back to you here, plus a download link for the " +
+      "full-size file." +
+      "\n\nPrefer to do it yourself on the website?\n" +
+      `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32`,
     replyNoLink:
-      "Here's the relighting tool 👇\n\n" +
-      "Tap our name at the top of this chat — the link is in our bio, then open " +
-      "The Gear Equalizer.\n\n" +
-      "How to use it:\n" +
-      "1. Tap Book This Look\n" +
-      "2. Pick 4:5 at the top, and crop your photo to 4:5 so they match\n" +
-      "3. Upload your photo\n" +
-      "4. Type 197 in the search box — it picks the look for you\n" +
-      "5. Leave the background on \"keeping yours\"\n" +
-      "6. Pay ₦1,000 per photo and download\n\n" +
-      "That's look 197, Night Paparazzi G7X. It works on a photo you already have — " +
-      "dark club, dim restaurant, bad hall lighting. Nothing to install, no gear to buy.",
+      "Yes - I can do that for you right here in this chat. 👇" +
+      "\n\nJust send me the photo you want relit and I'll apply this exact look to " +
+      "it. ₦1,000 per photo, sent straight back to you here.",
     publicReply: "Sent you a DM 📩",
   },
   {
