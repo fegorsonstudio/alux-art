@@ -35,52 +35,45 @@ type Job = {
   id: string;
   before: string;
   after: string;
-  caption: string;
-  label: string[];
+  headline: string;
+  kicker: string;
 };
 
 const JOBS: Job[] = [
   {
-    id: "197", label: ["Look 197", "Night Paparazzi G7X"],
-    before: `${SHOTS}/lighting-power/before-1476.jpg`,
+    id: "197", before: `${SHOTS}/lighting-power/before-1476.jpg`,
     after: `${SHOTS}/lighting-power/after-197-night-paparazzi-g7x.jpg`,
-    caption: "Same room. Same phone. *One light* moved.",
+    headline: "One light changed this", kicker: "Look 197 · shot on a phone",
   },
   {
-    id: "069", label: ["Look 69", "Hard Sunlight High-Key"],
-    before: `${SHOTS}/lighting-69/before-1428.jpg`,
+    id: "069", before: `${SHOTS}/lighting-69/before-1428.jpg`,
     after: `${SHOTS}/lighting-69/after-69-hard-sunlight-high-key.jpg`,
-    caption: "Your phone was never the *problem*.",
+    headline: "Your phone was fine", kicker: "Look 69 · you just had no light",
   },
   {
-    id: "023", label: ["Look 23", "Warm Haze Backlit"],
-    before: `${SHOTS}/lighting-power/before-1476.jpg`,
+    id: "023", before: `${SHOTS}/lighting-power/before-1476.jpg`,
     after: `${SHOTS}/lighting-power/after-023-warm-haze-backlit-editorial.jpg`,
-    caption: "A studio is not a room. It is *lights*, placed on purpose.",
+    headline: "A studio is not a room", kicker: "Look 23 · it is lights",
   },
   {
-    id: "196", label: ["Look 196", "Golden Rim in Smoke"],
-    before: `${SHOTS}/lighting-power/before-1476.jpg`,
+    id: "196", before: `${SHOTS}/lighting-power/before-1476.jpg`,
     after: `${SHOTS}/lighting-power/after-196-golden-rim-in-smoke.jpg`,
-    caption: "There is nowhere on a phone to *mount* a light.",
+    headline: "No phone holds a light", kicker: "Look 196 · so we moved it",
   },
   {
-    id: "065", label: ["Look 65", "Hard Blue Chiaroscuro"],
-    before: `${SHOTS}/lighting-power/before-1476.jpg`,
+    id: "065", before: `${SHOTS}/lighting-power/before-1476.jpg`,
     after: `${SHOTS}/lighting-power/after-065-hard-blue-chiaroscuro.jpg`,
-    caption: "A snapshot and a portrait differ by *one light*.",
+    headline: "Snapshot or portrait", kicker: "Look 65 · one light apart",
   },
   {
-    id: "006", label: ["Look 6", "Hard Spot Chiaroscuro"],
-    before: `${SHOTS}/lighting-power/before-1476.jpg`,
+    id: "006", before: `${SHOTS}/lighting-power/before-1476.jpg`,
     after: `${SHOTS}/lighting-power/after-006-hard-spot-chiaroscuro.jpg`,
-    caption: "Shot on the phone already in your *pocket*.",
+    headline: "Shot on your own phone", kicker: "Look 6 · nothing else",
   },
   {
-    id: "2022", label: ["Look 23", "iPhone 13 · 2022"],
-    before: `${SHOTS}/lighting-power/before-1496.jpg`,
+    id: "2022", before: `${SHOTS}/lighting-power/before-1496.jpg`,
     after: `${SHOTS}/lighting-power/after-1496-023-warm-haze-backlit-editorial.jpg`,
-    caption: "Shot in *2022*. On an iPhone 13.",
+    headline: "Four years old", kicker: "iPhone 13 · shot in 2022",
   },
 ];
 
@@ -97,8 +90,8 @@ async function main() {
     const { frames, fps } = await renderArFrames({
       before: await readFile(j.before),
       after: await readFile(j.after),
-      caption: j.caption,
-      label: j.label,
+      headline: j.headline,
+      kicker: j.kicker,
       endCard: SITE,          // studio set only; customer output passes none
     });
 
