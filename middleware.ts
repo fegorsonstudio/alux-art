@@ -113,5 +113,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // `d` is the full-size download link, and it must never see this middleware.
+  //
+  // A buyer who ordered through Instagram or WhatsApp has a synthetic account
+  // with no password, so a redirect to /login is a dead end for the one person
+  // the link exists for — they cannot sign in, and the file they paid for
+  // becomes unreachable. The token in the path is the authorisation, and it
+  // grants exactly one photograph.
+  matcher: ["/((?!api|d/|_next/static|_next/image|favicon.ico).*)"],
 };

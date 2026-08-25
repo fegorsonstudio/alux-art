@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
-import { sendText, credsForAccount } from "@/lib/instagram";
-import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession } from "@/lib/instagram-bot";
+import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
+import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession, patchSession } from "@/lib/instagram-bot";
 import { tellAdmin } from "@/lib/telegram";
 
 /**
@@ -300,7 +300,29 @@ async function handleDirectMessage(
   const creds = credsForAccount(igAccountId);
   if (!creds) { console.warn("[ig bot] no credentials for account", igAccountId); return; }
 
-  const session = await loadSession(igAccountId, senderId);
+  let session = await loadSession(igAccountId, senderId);
+
+  // Never answer one of our own accounts.
+  //
+  // @aluxartandframes messaged @fegorson_studio, each bot replied to the other,
+  // and the loop only stopped when one account blocked the other. The DM
+  // payload carries a scoped id and no username, so the handle check the
+  // comment path uses is no help — the name has to be looked up.
+  //
+  // Resolved once and cached on the session, so this costs one API call per
+  // person rather than one per message.
+  if (!session.ig_username) {
+    const username = await usernameForScopedId(creds, senderId);
+    if (username) {
+      await patchSession(session.id, { ig_username: username });
+      session = { ...session, ig_username: username };
+    }
+  }
+  if (session.ig_username && ourIgHandles().has(session.ig_username.toLowerCase())) {
+    console.log(`[ig bot] ignoring @${session.ig_username} — that is one of our own accounts`);
+    return;
+  }
+
   await markInbound(session.id, msg.text ?? (msg.imageUrl ? "[photo]" : null));
 
   // A photo is an instruction on its own — it means "do the look we agreed".

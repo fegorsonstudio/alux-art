@@ -159,3 +159,33 @@ export function windowOpen(lastInboundAt: Date | string | null | undefined): boo
   const at = lastInboundAt instanceof Date ? lastInboundAt : new Date(lastInboundAt);
   return Date.now() - at.getTime() < 24 * 60 * 60 * 1000;
 }
+
+/**
+ * Who is this scoped id?
+ *
+ * The DM webhook carries `sender.id` and no username, so there is nothing in
+ * the payload to compare against our own accounts. Without this lookup the bot
+ * cannot tell a customer from another one of our bots — which is exactly how
+ * @aluxartandframes and @fegorson_studio ended up answering each other until
+ * one had to block the other.
+ *
+ * Returns null when Instagram will not say, which is treated as "not ours".
+ */
+export async function usernameForScopedId(creds: IgCreds, scopedId: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${GRAPH}/${scopedId}?fields=username&access_token=${encodeURIComponent(creds.token)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    return typeof data.username === "string" ? data.username : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Every handle in IG_ACCOUNTS, lowercased — the accounts we must never answer. */
+export function ourHandles(): Set<string> {
+  return new Set(
+    (process.env.IG_ACCOUNTS ?? "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean)
+  );
+}

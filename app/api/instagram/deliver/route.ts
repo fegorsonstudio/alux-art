@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { r2SignedDownloadUrl } from "@/lib/r2";
+import { SITE_URL } from "@/lib/site-url";
 import { sendText, sendImage, windowOpen, credsForAccount, type IgCreds } from "@/lib/instagram";
 import { tellAdmin } from "@/lib/telegram";
+import { instagramReadyCopy } from "@/lib/instagram-image";
+import { sendWithLinkFallback } from "@/lib/instagram-bot";
 
 /**
  * Sends finished shoots back into the Instagram chat that ordered them.
@@ -34,6 +37,7 @@ type Row = {
   shoot_id: string;
   shoot_status: string;
   last_inbound_at: Date;
+  ig_stranded_alerted_at: Date | null;
 };
 
 /** A URL Instagram's own servers can fetch — no session, no cookies. */
@@ -41,6 +45,31 @@ async function publicUrl(bucket: string, path: string): Promise<string | null> {
   const signed = await signedMediaUrl(bucket, path, { expiresIn: 6 * 3600 }).catch(() => null);
   if (signed) return signed;
   return r2SignedDownloadUrl(bucket, path, 6 * 3600).catch(() => null);
+}
+
+
+/**
+ * A login-free link to the full-size file.
+ *
+ * Minted on first use and kept, so the same link works if it is sent twice. An
+ * Instagram or WhatsApp buyer has a synthetic account with no password, so this
+ * is the only way they can reach the 4K file they paid for.
+ */
+async function downloadLink(shootId: string): Promise<string | null> {
+  const [img] = await sql<{ id: string; token: string | null }[]>`
+    SELECT id, download_token AS token FROM shoot_images
+    WHERE shoot_id = ${shootId} AND status = 'COMPLETE'
+      AND COALESCE(download_storage_path, preview_storage_path) IS NOT NULL
+    ORDER BY slot LIMIT 1`.catch(() => []);
+  if (!img) return null;
+
+  let token = img.token;
+  if (!token) {
+    token = crypto.randomUUID().replace(/-/g, "");
+    await sql`UPDATE shoot_images SET download_token = ${token} WHERE id = ${img.id}`
+      .catch(() => { token = null; });
+  }
+  return token ? `${SITE_URL}/d/${token}` : null;
 }
 
 const finish = (sessionId: string, shootId: string) => Promise.all([
@@ -57,7 +86,7 @@ export async function GET(req: NextRequest) {
   const rows = await sql<Row[]>`
     SELECT s.id AS session_id, s.ig_account_id, s.ig_user_id, s.ig_username,
            s.state, s.shoot_id, s.last_inbound_at,
-           sh.status AS shoot_status
+           sh.status AS shoot_status, sh.ig_stranded_alerted_at
     FROM instagram_sessions s
     JOIN shoots sh ON sh.id = s.shoot_id
     WHERE s.shoot_id IS NOT NULL
@@ -90,12 +119,20 @@ export async function GET(req: NextRequest) {
     if (!windowOpen(r.last_inbound_at)) {
       const hours = Math.round((Date.now() - new Date(r.last_inbound_at).getTime()) / 3_600_000);
       console.warn(`[ig deliver] window closed (${hours}h) for @${r.ig_username ?? to} — cannot send`);
-      if (r.shoot_status === "COMPLETE") {
+      // Alert ONCE per shoot. This used to fire on every poll: 276 identical
+      // Telegram messages for one customer, two minutes apart, until it was
+      // muted — which also mutes the next real one.
+      if (r.shoot_status === "COMPLETE" && !r.ig_stranded_alerted_at) {
+        await sql`UPDATE shoots SET ig_stranded_alerted_at = NOW() WHERE id = ${r.shoot_id}`;
+        const link = await downloadLink(r.shoot_id);
         await tellAdmin(
           `⚠️ Instagram delivery blocked — the 24h window closed.\n\n` +
           `Customer: @${r.ig_username ?? to}\nShoot: ${r.shoot_id.slice(0, 8)}\n` +
           `Last heard from them ${hours}h ago. Their photo is finished and paid for but ` +
-          `Instagram will not accept a message. Reach them another way.`
+          `Instagram will not accept a message.` +
+          // The owner cannot help without the file, so hand it over rather than
+          // just reporting the problem.
+          (link ? `\n\nSend them this - it needs no login:\n${link}` : "")
         ).catch(() => {});
         stranded.push(r.session_id);
       }
@@ -113,8 +150,8 @@ export async function GET(req: NextRequest) {
 
     if (r.shoot_status !== "COMPLETE") continue;   // still working
 
-    const images = await sql<{ slot: number; bucket: string | null; path: string | null }[]>`
-      SELECT slot,
+    const images = await sql<{ id: string; slot: number; bucket: string | null; path: string | null }[]>`
+      SELECT id, slot,
              COALESCE(download_storage_bucket, preview_storage_bucket) AS bucket,
              COALESCE(download_storage_path, preview_storage_path)     AS path
       FROM shoot_images
@@ -133,7 +170,13 @@ export async function GET(req: NextRequest) {
 
     let sent = 0;
     for (const img of images) {
-      const url = await publicUrl(img.bucket!, img.path!);
+      // Instagram refuses anything over 8MB with a subcode that mentions
+      // nothing about size, so send a JPEG cut to fit rather than the 21MB 4K
+      // PNG. There is no document fallback the way there is on WhatsApp:
+      // Instagram takes image, audio and video attachments only.
+      const ready = await instagramReadyCopy(img.id, img.bucket!, img.path!);
+      const target = ready ?? { bucket: img.bucket!, path: img.path! };
+      const url = await publicUrl(target.bucket, target.path);
       if (!url) continue;
       const res = await sendImage(creds, to, url);
       if (res.ok) sent++;
@@ -150,10 +193,17 @@ export async function GET(req: NextRequest) {
     // Instagram recompresses images, so what lands is not the 4K file. Say so
     // and point at the full-quality copy rather than letting the buyer assume
     // this is what they paid for.
-    await sendText(creds, to,
+    // The 4K file cannot pass through a DM at all, so name where it is rather
+    // than let the buyer assume the compressed copy is what they paid for.
+    const fullSize = await downloadLink(r.shoot_id);
+    await sendWithLinkFallback(creds, to,
       `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
-      `Instagram squashes pictures on the way through, so this is the preview. ` +
-      `The full-size file is on aluxartandframes.shop under your shoots.\n\n` +
+      `Instagram compresses pictures in chat. Your full-size 4K file is here:\n` +
+      `${fullSize ?? `${SITE_URL}/studio`}\n\n` +
+      `Want another? Send me a new number and a photo.`,
+      `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
+      `Instagram compresses pictures in chat. The full-size 4K file is waiting on ` +
+      `aluxartandframes.shop under your shoots.\n\n` +
       `Want another? Send me a new number and a photo.`);
 
     await finish(r.session_id, r.shoot_id);
