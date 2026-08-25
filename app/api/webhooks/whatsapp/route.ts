@@ -13,6 +13,7 @@ import { signedMediaUrl } from "@/lib/media-url";
 import { matchCommand, manualText } from "@/lib/whatsapp-commands";
 import { walletBalance, naira } from "@/lib/wallet";
 import { requestEmailLink, confirmEmailLink, hasPendingLink } from "@/lib/whatsapp-email-link";
+import { saveContactEmail, contactEmailSaved } from "@/lib/chat-contact-email";
 import {
   sendText, sendImage, sendDocument, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
@@ -1318,9 +1319,21 @@ async function beginEmailLink(creds: WaCreds, phone: string, session: Session, e
     return;
   }
   if (r.reason === "no-account") {
+    // No website account with that address — but that is not a failure. Most
+    // chat customers have never used the site, and the reason they were asked
+    // for an email is so a failed shoot can be refunded and explained. Keep it
+    // as a contact detail rather than sending them away to sign up first, which
+    // is a dead end for the person the ask exists for.
+    const userId = await ensureUser(session, phone).catch(() => null);
+    if (userId && await saveContactEmail(userId, email)) {
+      await sendText(creds, phone,
+        contactEmailSaved(email.trim().toLowerCase()) +
+        `\n\nIf you'd also like this chat joined to a website account, sign up at ` +
+        `${SITE_URL} with that address and send *email* here again.`);
+      return;
+    }
     await sendText(creds, phone,
-      "I couldn't find an account with that email.\n\n" +
-      `Sign up at ${SITE_URL} with it first, then send *email your@address.com* here again.`);
+      "That doesn't look like an email address — could you check it and send it again?");
     return;
   }
   await sendText(creds, phone,

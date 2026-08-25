@@ -3,8 +3,9 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
 import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
-import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession, patchSession } from "@/lib/instagram-bot";
+import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession, patchSession, ensureUser } from "@/lib/instagram-bot";
 import { tellAdmin } from "@/lib/telegram";
+import { isEmailish, saveContactEmail, contactEmailSaved } from "@/lib/chat-contact-email";
 
 /**
  * Instagram comment webhook — the "comment STUDIO and I'll send you the link" bot.
@@ -346,6 +347,19 @@ async function handleDirectMessage(
     return;
   }
 
+  // An address, typed bare or after "email". Accepted in any state, because it
+  // is asked for mid-booking and must not derail whatever they were doing.
+  const emailed = /^(?:email\s+)?(\S+@\S+\.\S+)$/i.exec(text);
+  if (emailed && isEmailish(emailed[1])) {
+    const userId = session.user_id ?? await ensureUser(session).catch(() => null);
+    if (userId && await saveContactEmail(userId, emailed[1])) {
+      await sendText(creds, senderId, contactEmailSaved(emailed[1].trim().toLowerCase()));
+    } else {
+      await sendText(creds, senderId, "I couldn't save that one — could you check it and send it again?");
+    }
+    return;
+  }
+
   if (/^(support|help|human)$/i.test(text)) {
     await sendText(creds, senderId,
       "I've passed this to the studio — a person will reply here shortly. " +
@@ -382,5 +396,6 @@ async function handleDirectMessage(
     "Hello 👋 I'm an automated assistant for Alux Art.\n\n" +
     "Send me the number of any lighting look from our posts (for example *69*) and " +
     "I'll relight a photo of your own with it — ₦1,000, right here in this chat.\n\n" +
+    "Send your email any time and I'll use it to sort out anything that goes wrong.\n" +
     "Type *support* to reach a person.");
 }

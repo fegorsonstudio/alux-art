@@ -4,6 +4,7 @@ import { signedMediaUrl } from "@/lib/media-url";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import { sendText, sendImage, sendDocument, type WaCreds } from "@/lib/whatsapp";
 import { RETOUCH_PRICE_PER_IMAGE_NGN } from "@/lib/retouch-pricing";
+import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 
 /** Naira, with separators. */
 const naira = (n: number) => `\u20a6${n.toLocaleString("en-NG")}`;
@@ -45,6 +46,7 @@ export const maxDuration = 300;
 type Row = {
   session_id: string;
   customer_phone: string;
+  user_id: string | null;
   state: string;
   shoot_id: string;
   shoot_status: string;
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
   }
 
   const rows = await sql<Row[]>`
-    SELECT s.id AS session_id, s.customer_phone, s.state, s.shoot_id,
+    SELECT s.id AS session_id, s.customer_phone, s.state, s.shoot_id, s.user_id,
            sh.status AS shoot_status,
            c.whatsapp_phone_number_id AS phone_number_id,
            c.whatsapp_access_token AS access_token
@@ -92,6 +94,12 @@ export async function GET(req: NextRequest) {
         await sendText(creds, r.customer_phone,
           "Payment received, thank you ✅\n\nI'm making your photos now — usually a few minutes. " +
           "I'll send them here the moment they're ready.");
+        // Asked at the moment money is actually at stake, and only once. A
+        // synthetic wa-<phone>@ address reaches nobody, so without this a failed
+        // shoot can only be resolved if the customer happens to come back.
+        if (await needsContactEmail(r.user_id)) {
+          await sendText(creds, r.customer_phone, CONTACT_EMAIL_ASK);
+        }
         started.push(r.session_id);
       }
       continue;   // nothing to deliver yet

@@ -5,6 +5,7 @@ import { r2SignedDownloadUrl } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
 import { sendText, sendImage, windowOpen, credsForAccount, type IgCreds } from "@/lib/instagram";
 import { tellAdmin } from "@/lib/telegram";
+import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 import { instagramReadyCopy } from "@/lib/instagram-image";
 import { sendWithLinkFallback } from "@/lib/instagram-bot";
 
@@ -38,6 +39,7 @@ type Row = {
   shoot_status: string;
   last_inbound_at: Date;
   ig_stranded_alerted_at: Date | null;
+  user_id: string | null;
 };
 
 /** A URL Instagram's own servers can fetch — no session, no cookies. */
@@ -85,7 +87,7 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql<Row[]>`
     SELECT s.id AS session_id, s.ig_account_id, s.ig_user_id, s.ig_username,
-           s.state, s.shoot_id, s.last_inbound_at,
+           s.state, s.shoot_id, s.last_inbound_at, s.user_id,
            sh.status AS shoot_status, sh.ig_stranded_alerted_at
     FROM instagram_sessions s
     JOIN shoots sh ON sh.id = s.shoot_id
@@ -109,6 +111,11 @@ export async function GET(req: NextRequest) {
         await sendText(creds, to,
           "Payment received, thank you ✅\n\nI'm relighting your photo now — usually a couple of " +
           "minutes. I'll send it here the moment it's ready.");
+        // Asked at the moment money is actually at stake, and only once — this
+        // is the point where a customer can see why it matters.
+        if (await needsContactEmail(r.user_id)) {
+          await sendText(creds, to, CONTACT_EMAIL_ASK);
+        }
         started.push(r.session_id);
       }
       continue;
