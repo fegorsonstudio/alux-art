@@ -196,7 +196,13 @@ export async function GET(req: NextRequest) {
       // nothing about size, so send a JPEG cut to fit rather than the 21MB 4K
       // PNG. There is no document fallback the way there is on WhatsApp:
       // Instagram takes image, audio and video attachments only.
-      const ready = await instagramReadyCopy(img.id, img.bucket!, img.path!);
+      // NEVER re-encode a GIF. instagramReadyCopy flattens to JPEG to get under
+      // Instagram's 8MB cap, which for an animation means delivering a single
+      // still frame — a failure that looks exactly like a success. GIFs are sent
+      // as they are; if one is too large that is a job for the compositor, not
+      // for a converter at the door.
+      const isGif = /\.gif$/i.test(img.path ?? "");
+      const ready = isGif ? null : await instagramReadyCopy(img.id, img.bucket!, img.path!);
       const target = ready ?? { bucket: img.bucket!, path: img.path! };
       const url = await publicUrl(target.bucket, target.path);
       if (!url) continue;

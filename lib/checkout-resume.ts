@@ -74,6 +74,9 @@ export interface PendingConfig {
   lightingByPhoto?: Record<string, string>;
   // Buyer opt-out of smile slots
   noSmile?: boolean;
+  // gif_loop (before/after loop) — the words; the pictures ride in gifFiles.
+  gifHeadline?: string;
+  gifKicker?: string;
 }
 
 export interface PendingFile {
@@ -82,11 +85,19 @@ export interface PendingFile {
   blob: Blob;
 }
 
+/** gif_loop's three pictures, kept apart from the identity `files` array. */
+export interface PendingGifFiles {
+  before?: PendingFile | null;
+  after?: PendingFile | null;
+  logo?: PendingFile | null;
+}
+
 interface PendingRecord {
   templateId: string;
   config: PendingConfig;
   files: PendingFile[];
   bowlFile?: PendingFile | null;
+  gifFiles?: PendingGifFiles | null;
   savedAt: number;
 }
 
@@ -107,13 +118,14 @@ export async function savePendingCheckout(
   templateId: string,
   config: PendingConfig,
   files: PendingFile[],
-  bowlFile?: PendingFile | null
+  bowlFile?: PendingFile | null,
+  gifFiles?: PendingGifFiles | null
 ): Promise<void> {
   try {
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
-      tx.objectStore(STORE).put({ templateId, config, files, bowlFile: bowlFile ?? null, savedAt: Date.now() } as PendingRecord);
+      tx.objectStore(STORE).put({ templateId, config, files, bowlFile: bowlFile ?? null, gifFiles: gifFiles ?? null, savedAt: Date.now() } as PendingRecord);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -123,7 +135,7 @@ export async function savePendingCheckout(
 
 export async function loadPendingCheckout(
   templateId: string
-): Promise<{ config: PendingConfig; files: PendingFile[]; bowlFile?: PendingFile | null } | null> {
+): Promise<{ config: PendingConfig; files: PendingFile[]; bowlFile?: PendingFile | null; gifFiles?: PendingGifFiles | null } | null> {
   try {
     const db = await openDb();
     const rec = await new Promise<PendingRecord | undefined>((resolve, reject) => {
@@ -138,7 +150,7 @@ export async function loadPendingCheckout(
       await clearPendingCheckout(templateId);
       return null;
     }
-    return { config: rec.config, files: rec.files, bowlFile: rec.bowlFile ?? null };
+    return { config: rec.config, files: rec.files, bowlFile: rec.bowlFile ?? null, gifFiles: rec.gifFiles ?? null };
   } catch {
     return null;
   }

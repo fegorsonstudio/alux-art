@@ -51,19 +51,39 @@ const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /**
+ * Rough advance width of uppercase text, in em.
+ *
+ * Counting characters is not good enough. "SAME ROOM." and "ONE LIGHT." are
+ * both ten characters, so an average-per-character estimate gives them the same
+ * width and the same type size — and then the first one loses its full stop off
+ * the edge of the panel, because M, O and A are half again as wide as I, L and
+ * T. These are eyeballed advances for a heavy grotesque at weight 900; they do
+ * not need to be exact, only to rank a wide line above a narrow one.
+ */
+const EM: Record<string, number> = {
+  I: 0.30, J: 0.46, L: 0.52, T: 0.56, F: 0.54, E: 0.56, "1": 0.42,
+  M: 0.88, W: 0.92, O: 0.76, Q: 0.79, G: 0.76, D: 0.73, C: 0.71,
+  N: 0.75, U: 0.73, H: 0.75, A: 0.69, R: 0.69, B: 0.68, K: 0.69,
+  P: 0.64, S: 0.65, V: 0.69, X: 0.67, Y: 0.64, Z: 0.61,
+  " ": 0.28, ".": 0.29, ",": 0.29, "!": 0.31, "?": 0.55, "'": 0.22, "-": 0.36, "·": 0.33,
+};
+const widthEm = (text: string) =>
+  [...text.toUpperCase()].reduce((w, ch) => w + (EM[ch] ?? 0.62), 0);
+
+/**
  * Break a headline into lines that fill the panel.
  *
- * Balanced by character count rather than measured: without font metrics an
- * estimate is all that is available, and three or four short words are
- * forgiving. Longer input shrinks the type rather than overflowing the box.
+ * Measured with widthEm rather than counted, so a line of wide letters wraps
+ * sooner than a line of narrow ones. Longer input shrinks the type rather than
+ * overflowing the box.
  */
-function layoutHeadline(text: string, maxChars: number): string[] {
+function layoutHeadline(text: string, maxEm: number): string[] {
   const words = text.trim().split(/\s+/);
   const lines: string[] = [];
   let line = "";
   for (const w of words) {
     const next = line ? `${line} ${w}` : w;
-    if (next.length > maxChars && line) { lines.push(line); line = w; }
+    if (widthEm(next) > maxEm && line) { lines.push(line); line = w; }
     else line = next;
   }
   if (line) lines.push(line);
@@ -82,15 +102,23 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
     const m = await sharp(buf).metadata();
     return Math.round(H * ((m.width ?? 1) / (m.height ?? 1)));
   };
-  const photoW = Math.min(await widthOf(opts.before), await widthOf(opts.after), Math.round(W * 0.5));
+  // The WIDER of the two decides the column, and the cap is generous: a customer
+  // may upload a landscape product shot, and half the frame would slice it in
+  // two. The panel still keeps a third of the width, which is what the type
+  // needs to stay large.
+  const photoW = Math.min(
+    Math.max(await widthOf(opts.before), await widthOf(opts.after)),
+    Math.round(W * 0.66),
+  );
   const panelW = W - photoW;
 
-  // Both sources are already the same shape to within a pixel or two, so this
-  // reconciles that difference and loses nothing. A genuinely different aspect
-  // would need letterboxing instead.
+  // `contain`, never `cover`. NOTHING IS EVER CROPPED — that is the brief, and
+  // `cover` is the reflex that breaks it. A picture wider than its column gets
+  // ink above and below instead of losing its edges. Both frames land at exactly
+  // the same size, which the dissolve depends on.
   const norm = (buf: Buffer) =>
     sharp(buf).rotate()
-      .resize({ width: photoW, height: H, fit: "cover", position: "centre" })
+      .resize({ width: photoW, height: H, fit: "contain", background: INK })
       .toBuffer();
   const before = await norm(opts.before);
   const after = await norm(opts.after);
@@ -100,15 +128,16 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // one that still reads when the whole thing is 200px wide.
   const pad = Math.round(panelW * 0.09);
   const inner = panelW - pad * 2;
-  const lines = layoutHeadline(opts.headline, 11);
-  // Sized from the LONGEST line's character count, never a fixed fraction of the
-  // panel. A fixed fraction clipped "YOUR PHONE" to "YOUR PHON" — the type has
-  // to know how much text it is actually carrying. 0.6em per character is a fair
-  // average for uppercase at weight 900; the height cap stops a one-word
-  // headline growing taller than the panel.
-  const longest = Math.max(...lines.map(l => l.length), 1);
+  const lines = layoutHeadline(opts.headline, 6.6);
+  // Sized from the WIDEST line, measured, never a fixed fraction of the panel.
+  // A fixed fraction clipped "YOUR PHONE" to "YOUR PHON"; counting characters
+  // instead clipped the full stop off "SAME ROOM." while "ONE LIGHT." — the same
+  // ten characters — sat comfortably inside. The 0.97 keeps a hair of air at the
+  // right edge; the height cap stops a one-word headline growing taller than the
+  // panel.
+  const widest = Math.max(...lines.map(widthEm), 0.1);
   const size = Math.min(
-    Math.round(inner / (longest * 0.6)),
+    Math.round((inner * 0.97) / widest),
     Math.round((H * 0.66) / lines.length),
   );
   const lead = Math.round(size * 1.02);
@@ -121,7 +150,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       // one clipped "aluxartandframes.shop" off both edges of the panel.
       // 0.56em per character is a fair average for this weight of sans.
       const s2 = Math.min(
-        Math.round(inner / Math.max(1, endText.length * 0.56)),
+        Math.round((inner * 0.97) / Math.max(0.1, widthEm(endText) * 0.86)),
         Math.round(H * 0.09),
       );
       return `<svg width="${panelW}" height="${H}" xmlns="http://www.w3.org/2000/svg">
@@ -137,8 +166,10 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       ? (() => {
           // Same rule as the headline: the kicker is long and was running off
           // the panel. Letter-spacing widens it, so 0.66em per character.
+          // The 1.12 pays for the letter-spacing added below, which widens the
+          // line by about a tenth of an em per character.
           const ks = Math.min(
-            Math.round(inner / (opts.kicker!.length * 0.66)),
+            Math.round((inner * 0.97) / (widthEm(opts.kicker!) * 1.12)),
             Math.round(size * 0.26),
           );
           return `<text x="${pad}" y="${H - pad}" font-family="${FONT}"
@@ -221,3 +252,55 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
 export const gifDuration = (fps = DEFAULT_FPS, hasEndCard = false) =>
   (Math.round(fps * 0.85) + Math.round(fps * 0.55) + Math.round(fps * 1.5) +
    Math.round(fps * 0.3) + (hasEndCard ? Math.round(fps * 0.9) : 0)) / fps;
+
+/**
+ * Frames to an animated GIF.
+ *
+ * Shells to ffmpeg with a generated palette. sharp composites well but cannot
+ * WRITE an animated GIF on this version — constructor pageHeight,
+ * gif({pageHeight}) and withMetadata all come back pages=1, so the first
+ * attempt produced a single very tall still that looked like a success.
+ *
+ * ffmpeg was installed on the VPS for this. The two-pass palette matters more
+ * than it sounds: the default 216-colour web palette bands skin tones and dark
+ * amber backgrounds badly, which is most of what these pictures are.
+ *
+ * Writes to a temp directory rather than piping, because ffmpeg's image2
+ * demuxer wants numbered files and the frame count here is small.
+ */
+export async function encodeGif(frames: Buffer[], fps: number): Promise<Buffer> {
+  const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const run = promisify(execFile);
+
+  const dir = await mkdtemp(join(tmpdir(), "gifloop-"));
+  try {
+    await Promise.all(frames.map((f, i) =>
+      writeFile(join(dir, `f${String(i).padStart(4, "0")}.png`), f)));
+
+    const pattern = join(dir, "f%04d.png");
+    const palette = join(dir, "pal.png");
+    const out = join(dir, "out.gif");
+
+    await run("ffmpeg", ["-y", "-v", "error", "-framerate", String(fps),
+      "-i", pattern, "-vf", "palettegen=stats_mode=diff", palette]);
+    await run("ffmpeg", ["-y", "-v", "error", "-framerate", String(fps),
+      "-i", pattern, "-i", palette,
+      "-lavfi", "paletteuse=dither=sierra2_4a", "-loop", "0", out]);
+
+    return await readFile(out);
+  } finally {
+    // Always, even on failure: these are ~50 PNGs at 960x540 and a server that
+    // leaks them fills its disk quietly.
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+/** Compose and encode in one call — what the server fork uses. */
+export async function renderGif(opts: ArGifOptions): Promise<Buffer> {
+  const { frames, fps } = await renderArFrames(opts);
+  return encodeGif(frames, fps);
+}

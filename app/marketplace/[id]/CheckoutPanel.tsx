@@ -345,6 +345,15 @@ export default function CheckoutPanel({
   const [bowlOn, setBowlOn] = useState(false);
   const [bowlMode, setBowlMode] = useState<"product" | "logo">("product");
   const [bowlUpload, setBowlUpload] = useState<NewIdentityUpload | null>(null);
+  // gif_loop - a business's own before/after, sold as an animated file. Two
+  // pictures, a headline and their logo; no face anywhere in it, which is why
+  // the identity section is hidden for this category rather than merely
+  // optional.
+  const [gifHeadline, setGifHeadline] = useState("");
+  const [gifKicker, setGifKicker] = useState("");
+  const [gifBefore, setGifBefore] = useState<NewIdentityUpload | null>(null);
+  const [gifAfter, setGifAfter] = useState<NewIdentityUpload | null>(null);
+  const [gifLogo, setGifLogo] = useState<NewIdentityUpload | null>(null);
   const [newsHeadline, setNewsHeadline] = useState("");
   const [newsSubtitle, setNewsSubtitle] = useState("");
   const [newsCaption, setNewsCaption] = useState("");
@@ -552,6 +561,7 @@ export default function CheckoutPanel({
   // Gear Equalizer (photo_upgrade) — the buyer's uploads ARE the photos to upgrade;
   // they tap one lighting rig + one camera look, and optionally swap the background.
   const photoUpgradeActive = template.category === "photo_upgrade";
+  const gifLoopActive = template.category === "gif_loop";
   const t = useT("checkout");
   const tc = useT("common");
   // Plural-aware "image(s)" word used inside interpolated sentences.
@@ -746,6 +756,20 @@ export default function CheckoutPanel({
         const item: NewIdentityUpload = { localId: crypto.randomUUID(), file, preview: URL.createObjectURL(bf.blob), storagePath: "", storageBucket: "identity-images", uploading: true };
         setBowlUpload(item);
         uploadBowlFile(file, item.localId);
+      }
+      // gif_loop: the words come back with the config, the pictures with the
+      // record. They were staged rather than uploaded because a signed-out
+      // buyer has no folder to upload into yet.
+      if (c.gifHeadline) setGifHeadline(c.gifHeadline);
+      if (c.gifKicker) setGifKicker(c.gifKicker);
+      const gf = pending.gifFiles;
+      if (gf) {
+        ([["before", setGifBefore], ["after", setGifAfter], ["logo", setGifLogo]] as const)
+          .forEach(([key, set]) => {
+            const pf = gf[key];
+            if (!pf) return;
+            setGifSlot(set)(new File([pf.blob], pf.name, { type: pf.type || "image/jpeg" }));
+          });
       }
       await clearPendingCheckout(templateId);
       setDefaultsReady(true);
@@ -988,6 +1012,33 @@ export default function CheckoutPanel({
     if (!signedOut) uploadBowlFile(file, item.localId);
   };
 
+  // ── gif_loop: before, after, logo ─────────────────────────────────────────
+  // One uploader for all three slots - they behave identically and differ only
+  // in which piece of state they land in.
+  type SlotSetter = React.Dispatch<React.SetStateAction<NewIdentityUpload | null>>;
+  const setGifSlot = (set: SlotSetter) => async (file: File) => {
+    const localId = crypto.randomUUID();
+    set({
+      localId, file, preview: URL.createObjectURL(file),
+      storagePath: "", storageBucket: "identity-images", uploading: !signedOut,
+    });
+    if (signedOut) return;   // staged locally; uploaded after sign-in
+    const f = await resizeIfNeeded(file);
+    const form = new FormData();
+    form.append("file", f, f.name);
+    form.append("bucket", "identity-images");
+    const res = await fetch("/api/upload/file", { method: "POST", body: form });
+    if (!res.ok) {
+      if (res.status === 401) setNeedsLogin(true);
+      set(prev => prev && prev.localId === localId
+        ? { ...prev, uploading: false, error: res.status === 401 ? tc("signInFirst") : tc("uploadFailed") } : prev);
+      return;
+    }
+    const { storagePath } = await res.json();
+    set(prev => prev && prev.localId === localId
+      ? { ...prev, uploading: false, storagePath, storageBucket: "identity-images" } : prev);
+  };
+
   // ── Story: brand / logo upload ────────────────────────────────────────────
 
   const uploadBrandFile = async (file: File, localId: string) => {
@@ -1197,7 +1248,13 @@ export default function CheckoutPanel({
     : (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0);
   const enhanceValid = !photoUpgradeActive
     || (enhanceLightingValid && uploadedCount >= 1 && uploadedCount <= 10);
-  const canPay = allIdentityRefs.length > 0
+  const gifValid = !!gifBefore?.storagePath && !!gifAfter?.storagePath && !!gifHeadline.trim();
+  const gifBusy = !!gifBefore?.uploading || !!gifAfter?.uploading || !!gifLogo?.uploading;
+
+  // A loop carries no identity photograph at all, so that requirement is
+  // replaced rather than relaxed: its own two pictures and headline are what
+  // must be present before the button does anything.
+  const canPay = (gifLoopActive ? gifValid && !gifBusy : allIdentityRefs.length > 0)
     && !anyUploading
     && !newUploads.some(u => u.error)
     && !buying
@@ -1221,6 +1278,8 @@ export default function CheckoutPanel({
       selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
       newsHeadline, newsSubtitle, newsCaption,
+      gifHeadline: gifHeadline || undefined,
+      gifKicker: gifKicker || undefined,
       groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
@@ -1233,10 +1292,16 @@ export default function CheckoutPanel({
     const files = newUploads
       .filter(u => u.file)
       .map(u => ({ name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }));
+    const asPending = (u: NewIdentityUpload | null) => u?.file
+      ? { name: u.file.name, type: u.file.type || "image/jpeg", blob: u.file as Blob }
+      : null;
+    const gifFiles = gifLoopActive
+      ? { before: asPending(gifBefore), after: asPending(gifAfter), logo: asPending(gifLogo) }
+      : null;
     const bowlFile = bowlUpload?.file
       ? { name: bowlUpload.file.name, type: bowlUpload.file.type || "image/jpeg", blob: bowlUpload.file as Blob }
       : null;
-    await savePendingCheckout(templateId, config, files, bowlFile);
+    await savePendingCheckout(templateId, config, files, bowlFile, gifFiles);
     // Marker (cookie + localStorage) drives the post-login redirect back here even if the
     // OAuth `next` is dropped to the home page.
     setResumeMarker(templateId);
@@ -1331,6 +1396,15 @@ export default function CheckoutPanel({
           : undefined,
         bowlContentRef: bowlAvailable && bowlOn && bowlUpload?.storagePath
           ? { storagePath: bowlUpload.storagePath, storageBucket: bowlUpload.storageBucket }
+          : undefined,
+        gifLoop: gifLoopActive
+          ? {
+              headline: gifHeadline.trim(),
+              kicker: gifKicker.trim() || undefined,
+              beforeRef: { storagePath: gifBefore?.storagePath },
+              afterRef: { storagePath: gifAfter?.storagePath },
+              logoRef: gifLogo?.storagePath ? { storagePath: gifLogo.storagePath } : undefined,
+            }
           : undefined,
       }),
     });
@@ -1543,7 +1617,9 @@ export default function CheckoutPanel({
           <div className={styles.divider} />
 
           {/* Identity photos — deliberately NOT collapsible: this is the one step
-              every buyer must complete, so the upload button is always on screen. */}
+              every buyer must complete, so the upload button is always on screen.
+              Hidden entirely for a loop, which has no subject to recognise. */}
+          {!gifLoopActive && (
           <div style={{ flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
               <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>
@@ -1660,6 +1736,72 @@ export default function CheckoutPanel({
               </p>
             )}
           </div>
+          )}
+
+          {/* gif_loop — the two pictures, the words, and the customer's mark */}
+          {gifLoopActive && (
+            <div style={{ flexShrink: 0 }}>
+              <p className={styles.sectionTitle}>{t("gifLoopTitle")}</p>
+              <p className={styles.sectionHint}>{t("gifLoopHint")}</p>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                {([[t("gifBeforeLabel"), gifBefore, setGifBefore],
+                   [t("gifAfterLabel"), gifAfter, setGifAfter]] as const).map(([label, up, set]) => (
+                  <div key={label} style={{ flex: 1, minWidth: 0 }}>
+                    <p className={styles.pkgLabel} style={{ marginBottom: 4 }}>{label}</p>
+                    {up ? (
+                      <div className={styles.uploadItem}>
+                        <ImagePreview src={up.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                        {up.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
+                        {up.error && <div className={styles.uploadError}>{up.error}</div>}
+                        <button type="button" className={styles.removeBtn} onClick={() => set(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <label className={styles.uploadBtn} style={{ cursor: "pointer", display: "block", textAlign: "center" }}>
+                        {t("gifUploadBtn")}
+                        <input type="file" accept="image/*" style={{ display: "none" }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) setGifSlot(set)(f); e.target.value = ""; }} />
+                      </label>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("gifHeadlineLabel")}</p>
+              <input className={styles.flagInput} value={gifHeadline} maxLength={60}
+                placeholder={t("gifHeadlinePh")} onChange={e => setGifHeadline(e.target.value)} />
+
+              <p className={styles.pkgLabel} style={{ marginTop: 10, marginBottom: 4 }}>
+                {t("gifKickerLabel")} <span className={styles.optionalTag}>{t("optionalParen")}</span>
+              </p>
+              <input className={styles.flagInput} value={gifKicker} maxLength={60}
+                placeholder={t("gifKickerPh")} onChange={e => setGifKicker(e.target.value)} />
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>
+                {t("gifLogoLabel")} <span className={styles.optionalTag}>{t("optionalParen")}</span>
+              </p>
+              <p className={styles.sectionHint}>{t("gifLogoHint")}</p>
+              {gifLogo ? (
+                <div className={styles.uploadGrid}>
+                  <div className={styles.uploadItem}>
+                    <ImagePreview src={gifLogo.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                    {gifLogo.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
+                    {gifLogo.error && <div className={styles.uploadError}>{gifLogo.error}</div>}
+                    <button type="button" className={styles.removeBtn} onClick={() => setGifLogo(null)}>✕</button>
+                  </div>
+                </div>
+              ) : (
+                <label className={styles.uploadBtn} style={{ cursor: "pointer", alignSelf: "flex-start" }}>
+                  {t("uploadLogo")}
+                  <input type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setGifSlot(setGifLogo)(f); e.target.value = ""; }} />
+                </label>
+              )}
+
+              {!gifValid && <p className={styles.identityWarn}>{t("gifWarn")}</p>}
+            </div>
+          )}
+
           {/* Package picker */}
           {!perImagePricing && pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>

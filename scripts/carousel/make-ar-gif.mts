@@ -31,6 +31,16 @@ const SITE = "aluxartandframes.shop";
 const arg = (n: string) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : undefined; };
 const ONLY = arg("--only");
 
+// Ad-hoc pair: render any two files on disk without editing this list.
+//
+//   npx tsx scripts/carousel/make-ar-gif.mts //     --pair "before.jpg" "after.jpg" --headline "Same room. One light." //     --kicker "Look 197" --id g7x-1 --out "C:/Users/FUJITSU/Desktop/loops"
+//
+// Sources stay wherever they are — nothing is copied into the repo, which is
+// the point: these are large photographs and they do not belong in git.
+const PAIR = arg("--pair");
+const PAIR_AFTER = PAIR ? process.argv[process.argv.indexOf("--pair") + 2] : undefined;
+const OUT_DIR = arg("--out");
+
 type Job = {
   id: string;
   before: string;
@@ -78,8 +88,16 @@ const JOBS: Job[] = [
 ];
 
 async function main() {
-  await mkdir(OUT, { recursive: true });
-  const jobs = ONLY ? JOBS.filter(j => j.id === ONLY) : JOBS;
+  const outDir = OUT_DIR ?? OUT;
+  await mkdir(outDir, { recursive: true });
+  const jobs: Job[] = PAIR && PAIR_AFTER
+    ? [{
+        id: arg("--id") ?? "pair",
+        before: PAIR, after: PAIR_AFTER,
+        headline: arg("--headline") ?? "Before and after",
+        kicker: arg("--kicker") ?? "",
+      }]
+    : (ONLY ? JOBS.filter(j => j.id === ONLY) : JOBS);
   if (!jobs.length) { console.error("no job matches --only", ONLY); process.exit(1); }
 
   for (const j of jobs) {
@@ -91,7 +109,7 @@ async function main() {
       before: await readFile(j.before),
       after: await readFile(j.after),
       headline: j.headline,
-      kicker: j.kicker,
+      kicker: j.kicker || undefined,
       endCard: SITE,          // studio set only; customer output passes none
     });
 
@@ -99,13 +117,13 @@ async function main() {
     // far better palette than anything else to hand. sharp composites the
     // frames but cannot WRITE an animated GIF on this version — checked, not
     // assumed — so the server fork will need its own encoder.
-    const tmp = path.join(OUT, `.frames-${j.id}`);
+    const tmp = path.join(outDir, `.frames-${j.id}`);
     await rm(tmp, { recursive: true, force: true });
     await mkdir(tmp, { recursive: true });
     await Promise.all(frames.map((f, i) =>
       writeFile(path.join(tmp, `f${String(i).padStart(4, "0")}.png`), f)));
 
-    const file = path.join(OUT, `ar-relight-${j.id}.gif`);
+    const file = path.join(outDir, `ar-relight-${j.id}.gif`);
     const pal = path.join(tmp, "pal.png");
     await run("ffmpeg", ["-y", "-v", "error", "-framerate", String(fps),
       "-i", path.join(tmp, "f%04d.png"), "-vf", "palettegen=stats_mode=diff", pal]);

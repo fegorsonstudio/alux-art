@@ -96,11 +96,19 @@ export async function POST(
   // Guard: block generation if no identity references are attached.
   // This prevents wasting fal.ai credits on shoots that can never succeed.
   if (shoot.status !== "PROCESSING") {
+    // The category rides along on the same round trip. A gif_loop booking is two
+    // product photographs and a caption — there is no face anywhere in it — so
+    // the identity guard would fail every one of them before it started.
     const [identityCheck] = await sql`
-      SELECT COUNT(*)::int AS count FROM shoot_references
-      WHERE shoot_id = ${id} AND purpose = 'identity'
+      SELECT COUNT(r.id)::int AS count,
+             (SELECT t.category FROM templates t
+                JOIN shoots s2 ON s2.template_id = t.id
+               WHERE s2.id = ${id}) AS category
+      FROM shoot_references r
+      WHERE r.shoot_id = ${id} AND r.purpose = 'identity'
     `;
-    if (!shoot.character_base_id && (identityCheck?.count ?? 0) === 0) {
+    if (identityCheck?.category !== "gif_loop"
+        && !shoot.character_base_id && (identityCheck?.count ?? 0) === 0) {
       await sql`UPDATE shoots SET status = 'FAILED', pipeline_stage = 'No identity images — please start a new shoot and upload identity photos', updated_at = ${now} WHERE id = ${id}`;
       return NextResponse.json({ ok: false, error: "No identity images attached to this shoot. Start a new shoot and upload your identity photos first." }, { status: 400 });
     }

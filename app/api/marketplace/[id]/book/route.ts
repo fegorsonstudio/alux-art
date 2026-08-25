@@ -109,7 +109,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const SERVER_ONLY_TAGS = new Set(["FLAG_SCENE", "MUGSHOT_BOARD", "BOWL_PROP", "BOWL_CONTENT", "VIRAL_LOOK", "CO_STAR", "NEWS_FRAME"]);
   const taggedRefs: TaggedRefInput[] = (body.taggedRefs ?? []).filter((r) => !SERVER_ONLY_TAGS.has(r.tag));
 
-  if (!Array.isArray(identityRefs) || identityRefs.length === 0) {
+  // Deferred for a loop booking, and only for a loop booking: the template row
+  // has not been read yet at this point, so a body claiming to be one is taken
+  // on trust here and checked against the real category below. Every other
+  // category is refused exactly where it always was.
+  const claimsGifLoop = !!(body as { gifLoop?: unknown }).gifLoop;
+  if (!claimsGifLoop && (!Array.isArray(identityRefs) || identityRefs.length === 0)) {
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
   }
 
@@ -349,6 +354,42 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // The extraction plan rides the same column — generate.ts reads it back per
   // category — so slot N is plan[N-1] no matter how the shoot is retried.
   let assetEnhance: { plan: typeof assetPlan } | null = isAssetExtract ? { plan: assetPlan } : null;
+
+  // The trust extended above ends here: if the body claimed to be a loop and the
+  // template is anything else, it is an ordinary booking with no identity photo.
+  if (claimsGifLoop && template.category !== "gif_loop"
+      && (!Array.isArray(identityRefs) || identityRefs.length === 0)) {
+    return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
+  }
+
+  // ── gif_loop ────────────────────────────────────────────────────────────────
+  // Two pictures, a headline and the customer's own logo. Every uploaded path is
+  // checked against `${user.id}/` exactly as bowlContentRef is — that check is
+  // the only thing stopping a booking naming somebody else's file.
+  const gifBody = (body as { gifLoop?: {
+    headline?: string; kicker?: string;
+    beforeRef?: { storagePath?: string }; afterRef?: { storagePath?: string };
+    logoRef?: { storagePath?: string };
+  } }).gifLoop;
+  const mine = (p?: string) => (typeof p === "string" && p.startsWith(`${user.id}/`) ? p : undefined);
+  const gifLoop = template.category === "gif_loop" && gifBody ? {
+    headline: (gifBody.headline ?? "").trim().slice(0, 60),
+    kicker: (gifBody.kicker ?? "").trim().slice(0, 60) || undefined,
+    beforePath: mine(gifBody.beforeRef?.storagePath),
+    afterPath: mine(gifBody.afterRef?.storagePath),
+    logoPath: mine(gifBody.logoRef?.storagePath),
+  } : null;
+
+  if (template.category === "gif_loop") {
+    if (!gifLoop?.beforePath || !gifLoop?.afterPath) {
+      return NextResponse.json(
+        { error: "Upload both a before and an after image for your loop." }, { status: 400 });
+    }
+    if (!gifLoop.headline) {
+      return NextResponse.json(
+        { error: "Add a headline — three or four words is what reads best." }, { status: 400 });
+    }
+  }
   if (template.category === "photo_upgrade") {
     if (identityRefs.length !== buyerPackageSize) {
       return NextResponse.json(
@@ -596,7 +637,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
       ${induction ? sql.json(induction as unknown as Parameters<typeof sql.json>[0]) : null},
-      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : (assetEnhance ? sql.json(assetEnhance as unknown as Parameters<typeof sql.json>[0]) : null)},
+      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : (assetEnhance ? sql.json(assetEnhance as unknown as Parameters<typeof sql.json>[0]) : (gifLoop ? sql.json(gifLoop as unknown as Parameters<typeof sql.json>[0]) : null))},
       ${body.noSmile === true},
       ${now}, ${now}
     )
@@ -808,6 +849,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       storage_bucket: templateTrendSlots.news.imageBucket ?? "template-images",
       storage_path: templateTrendSlots.news.imagePath, created_at: now,
     }] : []),
+    ...(gifLoop ? ([
+      ["GIF_BEFORE", gifLoop.beforePath, "Loop before"],
+      ["GIF_AFTER", gifLoop.afterPath, "Loop after"],
+      ["BRAND_LOGO", gifLoop.logoPath, "Brand logo"],
+    ] as const).filter(([, p]) => !!p).map(([tag, p, label]) => ({
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag, custom_name: label, note: null,
+      name: String(tag).toLowerCase(), type: "image/png", size: 1,
+      storage_bucket: "identity-images", storage_path: p as string, created_at: now,
+    })) : []),
     ...(trendBowl && bowlRefValid ? [{
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
       purpose: "tagged", tag: "BOWL_CONTENT",

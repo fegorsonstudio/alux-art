@@ -2121,6 +2121,27 @@ export async function startGenerationWorker(
   // setting, decides what generates it.
   const shootImages = await sql`SELECT id, slot, status, configured_model FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
 
+  // ── gif_loop ───────────────────────────────────────────────────────────────
+  // Handled entirely elsewhere and returned before any of the photograph
+  // machinery runs: no identity analysis, no planner, no brief, no fal call.
+  // Placed here rather than branched inside the slot loop so nothing about the
+  // path that renders paid photographs changes shape.
+  if (shoot.category === "gif_loop") {
+    const { runGifLoop } = await import("@/lib/gif-loop-worker");
+    const sel = (shoot.enhance && typeof shoot.enhance === "object" ? shoot.enhance : {}) as Record<string, string>;
+    const res = await runGifLoop(shootId, shoot.user_id as string, sel, rawRefs as never);
+    if (!res.ok) {
+      console.error(`[gif-loop] ${shootId.slice(0, 8)} failed: ${res.error}`);
+      await sql`UPDATE shoot_images SET status = 'FAILED', stage = ${`Loop failed: ${res.error}`.slice(0, 200)}, provider_error = ${res.error}, updated_at = ${ts()} WHERE shoot_id = ${shootId}`;
+      await sql`UPDATE shoots SET status = 'FAILED', updated_at = NOW() WHERE id = ${shootId}`;
+      return { done: true, completed: 0, failed: 1, remaining: 0, total: 1 };
+    }
+    await sql`UPDATE shoots SET status = 'COMPLETE', progress = 100,
+        pipeline_stage = 'Loop ready', completed_at = NOW(), updated_at = NOW()
+      WHERE id = ${shootId}`;
+    return { done: true, completed: 1, failed: 0, remaining: 0, total: 1 };
+  }
+
   const total = normalizePackageSize(shoot.package_size);
   const hasQuote = !!(shoot.quote as { text?: string } | null)?.text && total === 10;
 
