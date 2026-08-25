@@ -498,6 +498,7 @@ const pcm: AppDictionary = {
     nursing_induction: "🩺 Nursing Induction",
     photo_upgrade: "📸 Photo Upgrade",
     trending: "🔥 Trending",
+    gif_loop: "🎞️ Before / After Loop",
     other: "Others",
   },
 };

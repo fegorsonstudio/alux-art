@@ -497,6 +497,7 @@ const en = {
     nursing_induction: "🩺 Nursing Induction",
     photo_upgrade: "📸 Photo Upgrade",
     trending: "🔥 Trending",
+    gif_loop: "🎞️ Before / After Loop",
     other: "Other",
   },
 };
