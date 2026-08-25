@@ -225,6 +225,7 @@ const pcm: AppDictionary = {
     gifLogoHint: "PNG wey im background clear na di best. Logo wey sidon for white square go show im box.",
     gifUploadBtn: "+ Upload",
     gifWarn: "Add di two pictures and headline make you continue.",
+    gifRetry: "Try am again",
     uploading: "E dey upload...",
     yourIdentityPhotos: "Your identity photos",
     photosToUpgrade: "Your photos wey you wan upgrade",

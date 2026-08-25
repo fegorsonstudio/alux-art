@@ -225,6 +225,7 @@ const pt: AppDictionary = {
     gifLogoHint: "Um PNG com fundo transparente funciona melhor. Um logótipo num quadrado branco mostra a caixa.",
     gifUploadBtn: "+ Carregar",
     gifWarn: "Adicione as duas fotos e um título para continuar.",
+    gifRetry: "Tentar de novo",
     uploading: "Enviando...",
     yourIdentityPhotos: "Suas fotos de identidade",
     photosToUpgrade: "Suas fotos para melhorar",

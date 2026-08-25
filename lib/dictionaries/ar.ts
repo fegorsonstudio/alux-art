@@ -225,6 +225,7 @@ const ar: AppDictionary = {
     gifLogoHint: "ملف PNG بخلفية شفافة هو الأفضل. الشعار على مربع أبيض سيظهر إطاره.",
     gifUploadBtn: "+ رفع",
     gifWarn: "أضف الصورتين والعنوان للمتابعة.",
+    gifRetry: "أعد المحاولة",
     uploading: "جارٍ الرفع...",
     yourIdentityPhotos: "صور هويتك",
     photosToUpgrade: "صورك المراد تحسينها",

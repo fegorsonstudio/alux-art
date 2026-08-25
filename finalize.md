@@ -1,0 +1,174 @@
+- generic [ref=f8e2]:
+  - generic [ref=f8e7]:
+    - generic [ref=f8e8] [cursor=pointer]
+    - generic [ref=f8e21]:
+      - generic [ref=f8e22] [cursor=pointer]:
+        - generic [ref=f8e24]: fegosocially
+        - generic [ref=f8e25]: 
+      - text: ▾
+  - generic [ref=f8e347]:
+    - link "Privacy" [ref=f8e348] [cursor=pointer]:
+      - /url: /privacy
+    - link "Terms" [ref=f8e349] [cursor=pointer]:
+      - /url: /terms
+  - generic [ref=f8e74]:
+    - generic [ref=f8e76]:
+      - generic [ref=f8e77]:
+        - generic [ref=f8e78] [cursor=pointer]: Back
+        - generic [ref=f8e84]:
+          - generic [ref=f8e85] [cursor=pointer]:
+            - generic [ref=f8e86]: +
+            - generic [ref=f8e87]: Add More GIFs
+          - button "Choose File" [ref=f8e88] [cursor=pointer]
+      - generic [ref=f8e90]:
+        - button "ar-relight-197.gif  Edit …  Add Tags 🌎 Source URL" [ref=f8e91]:
+          - generic [ref=f8e92]:
+            - generic [ref=f8e93]:
+              - generic [ref=f8e96] [cursor=pointer]
+              - generic [ref=f8e101]:
+                - generic [ref=f8e102] [cursor=pointer]
+                - generic [ref=f8e103]:
+                  - generic: ar-relight-197.gif
+                  - generic [ref=f8e104]: 
+            - generic [ref=f8e114] [cursor=pointer]:
+              - text: Edit
+              - generic [ref=f8e115]: …
+            - generic [ref=f8e116]:
+              - generic [ref=f8e117]:
+                - generic [ref=f8e119] [cursor=pointer]:
+                  - generic [ref=f8e120]: 
+                  - text: Add Tags
+                - generic [ref=f8e125]:
+                  - textbox "Add tags" [ref=f8e126]
+                  - button [ref=f8e127] [cursor=pointer]
+              - generic [ref=f8e128]:
+                - generic [ref=f8e130] [cursor=pointer]:
+                  - generic [ref=f8e131]: 🌎
+                  - text: Source URL
+                - textbox "Add a source URL" [ref=f8e138]
+        - button "ar-relight-069.gif " [ref=f8e139]:
+          - generic [ref=f8e141]:
+            - generic [ref=f8e144] [cursor=pointer]
+            - generic [ref=f8e149]:
+              - generic [ref=f8e150] [cursor=pointer]
+              - generic [ref=f8e151]:
+                - generic: ar-relight-069.gif
+                - generic [ref=f8e152]: 
+        - button "ar-relight-023.gif " [ref=f8e155]:
+          - generic [ref=f8e157]:
+            - generic [ref=f8e160] [cursor=pointer]
+            - generic [ref=f8e165]:
+              - generic [ref=f8e166] [cursor=pointer]
+              - generic [ref=f8e167]:
+                - generic: ar-relight-023.gif
+                - generic [ref=f8e168]: 
+        - button "ar-relight-196.gif " [ref=f8e171]:
+          - generic [ref=f8e173]:
+            - generic [ref=f8e176] [cursor=pointer]
+            - generic [ref=f8e181]:
+              - generic [ref=f8e182] [cursor=pointer]
+              - generic [ref=f8e183]:
+                - generic: ar-relight-196.gif
+                - generic [ref=f8e184]: 
+        - button "ar-relight-065.gif " [ref=f8e187]:
+          - generic [ref=f8e189]:
+            - generic [ref=f8e192] [cursor=pointer]
+            - generic [ref=f8e197]:
+              - generic [ref=f8e198] [cursor=pointer]
+              - generic [ref=f8e199]:
+                - generic: ar-relight-065.gif
+                - generic [ref=f8e200]: 
+        - button "ar-relight-006.gif " [ref=f8e203]:
+          - generic [ref=f8e205]:
+            - generic [ref=f8e208] [cursor=pointer]
+            - generic [ref=f8e213]:
+              - generic [ref=f8e214] [cursor=pointer]
+              - generic [ref=f8e215]:
+                - generic: ar-relight-006.gif
+                - generic [ref=f8e216]: 
+        - button "ar-relight-2022.gif " [ref=f8e219]:
+          - generic [ref=f8e221]:
+            - generic [ref=f8e224] [cursor=pointer]
+            - generic [ref=f8e229]:
+              - generic [ref=f8e230] [cursor=pointer]
+              - generic [ref=f8e231]:
+                - generic: ar-relight-2022.gif
+                - generic [ref=f8e232]: 
+        - button "ar-relight-g7x-clutch.gif " [ref=f8e235]:
+          - generic [ref=f8e237]:
+            - generic [ref=f8e240] [cursor=pointer]
+            - generic [ref=f8e245]:
+              - generic [ref=f8e246] [cursor=pointer]
+              - generic [ref=f8e247]:
+                - generic: ar-relight-g7x-clutch.gif
+                - generic [ref=f8e248]: 
+        - button "ar-relight-g7x-twohand.gif " [ref=f8e251]:
+          - generic [ref=f8e253]:
+            - generic [ref=f8e256] [cursor=pointer]
+            - generic [ref=f8e261]:
+              - generic [ref=f8e262] [cursor=pointer]
+              - generic [ref=f8e263]:
+                - generic: ar-relight-g7x-twohand.gif
+                - generic [ref=f8e264]: 
+    - generic [ref=f8e267]:
+      - generic [ref=f8e268]:
+        - generic [ref=f8e269]: Add Info
+        - generic [ref=f8e271]:
+          - generic [ref=f8e272]:
+            - generic [ref=f8e274] [cursor=pointer]:
+              - generic [ref=f8e275]: 🔒
+              - text: Visibility
+            - generic [ref=f8e278]:
+              - button "Public Private" [ref=f8e279] [cursor=pointer]:
+                - generic [ref=f8e281]: Public
+                - generic [ref=f8e282]: Private
+              - paragraph [ref=f8e283]:
+                - text: Anyone can see this.
+                - link "Learn More" [ref=f8e284] [cursor=pointer]:
+                  - /url: https://support.giphy.com/hc/en-us/articles/360020233051-Get-Your-GIFs-Stickers-Into-GIPHY-s-Search-
+          - generic [ref=f8e285]:
+            - generic [ref=f8e287] [cursor=pointer]:
+              - generic [ref=f8e288]: 
+              - text: Add Tags
+            - generic [ref=f8e291]:
+              - generic [ref=f8e292]:
+                - generic [ref=f8e293]:
+                  - generic [ref=f8e294]: Tagging Help
+                  - generic [ref=f8e295]: ❓
+                - generic [ref=f8e298]:
+                  - textbox "Add tags" [active] [ref=f8e299]
+                  - button [ref=f8e300] [cursor=pointer]
+              - generic [ref=f8e351]:
+                - text: "#before and after"
+                - generic [ref=f8e352] [cursor=pointer]: ␡
+          - generic [ref=f8e301]:
+            - generic [ref=f8e303] [cursor=pointer]:
+              - generic [ref=f8e304]: 🌎
+              - text: Source URL
+            - generic [ref=f8e309]:
+              - textbox "Add a source URL" [ref=f8e311]: https://aluxartandframes.shop
+              - button "Save" [ref=f8e355] [cursor=pointer]
+          - generic [ref=f8e312]:
+            - generic [ref=f8e313] [cursor=pointer]: Add to Collection
+            - generic [ref=f8e322]:
+              - generic [ref=f8e356]:
+                - generic [ref=f8e357] [cursor=pointer]: Choose a Collection
+                - generic [ref=f8e360] [cursor=pointer]: 
+              - generic [ref=f8e330]:
+                - button [ref=f8e331] [cursor=pointer]
+                - generic [ref=f8e336]:
+                  - text: No Collections Yet
+                  - paragraph [ref=f8e337]: Create your first collection!
+              - status [ref=f8e338]
+        - paragraph [ref=f8e339]:
+          - text: By clicking "Upload to GIPHY" you agree to our
+          - link "Terms of Service" [ref=f8e340] [cursor=pointer]:
+            - /url: /terms
+          - text: ","
+          - link "Community Guidelines" [ref=f8e341] [cursor=pointer]:
+            - /url: /community-guidelines
+          - text: ", and our"
+          - link "Privacy Policy" [ref=f8e342] [cursor=pointer]:
+            - /url: /privacy
+          - text: .
+      - generic [ref=f8e343]: Upload to GIPHY

@@ -57,3 +57,46 @@ export async function resizeIfNeeded(file: File): Promise<File> {
     img.src = objectUrl;
   });
 }
+
+/**
+ * Downscale for a destination that is NOT a reference photograph.
+ *
+ * The hard rule above governs identity and reference images, which fal reads
+ * back at native resolution — shrinking those is permanent damage. A
+ * before/after loop is a different animal: it is composited at 960x540, so a
+ * 12MB studio export carries about twenty times more pixels than the output can
+ * ever show, and pushing that up a phone's mobile connection is exactly how the
+ * upload dies. Every 400 in the access log came from one 12.6MB file on
+ * Nigerian mobile data; the same picture at 2000px went up first time.
+ *
+ * Deliberately a separate export rather than a flag on resizeIfNeeded: the two
+ * have opposite defaults, and one must never quietly acquire the other's.
+ */
+export async function downscaleForDisplay(
+  file: File, maxEdge = 2000, quality = 0.92,
+): Promise<File> {
+  // Small already, and not a format worth re-encoding — leave it alone.
+  if (file.size <= 1_500_000) return file;
+
+  return new Promise<File>((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = async () => {
+      URL.revokeObjectURL(objectUrl);
+      const longest = Math.max(img.width, img.height);
+      const scale = longest > maxEdge ? maxEdge / longest : 1;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(file); return; }
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await toBlob(canvas, quality);
+      // Never make it worse, and never block the upload on a failure here.
+      if (!blob || blob.size >= file.size) { resolve(file); return; }
+      resolve(new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }));
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+    img.src = objectUrl;
+  });
+}

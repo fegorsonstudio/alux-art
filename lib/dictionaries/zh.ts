@@ -225,6 +225,7 @@ const zh: AppDictionary = {
     gifLogoHint: "背景透明的 PNG 效果最好。白底方块上的标志会露出方框。",
     gifUploadBtn: "+ 上传",
     gifWarn: "添加两张照片和标题后继续。",
+    gifRetry: "重试",
     uploading: "上传中...",
     yourIdentityPhotos: "你的身份照片",
     photosToUpgrade: "待升级的照片",

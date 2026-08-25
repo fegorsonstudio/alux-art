@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { resizeIfNeeded } from "@/lib/resize-image";
+import { resizeIfNeeded, downscaleForDisplay } from "@/lib/resize-image";
 import { CUSTOM_BACKDROP_ID } from "@/lib/gear-equalizer";
 import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
@@ -1023,20 +1023,37 @@ export default function CheckoutPanel({
       storagePath: "", storageBucket: "identity-images", uploading: !signedOut,
     });
     if (signedOut) return;   // staged locally; uploaded after sign-in
-    const f = await resizeIfNeeded(file);
-    const form = new FormData();
-    form.append("file", f, f.name);
-    form.append("bucket", "identity-images");
-    const res = await fetch("/api/upload/file", { method: "POST", body: form });
-    if (!res.ok) {
-      if (res.status === 401) setNeedsLogin(true);
+
+    // Downscaled, not sent whole. A loop renders at 960x540 — a 12MB studio
+    // export is twenty times more than it can use, and every failed upload in
+    // the log was one such file going up a phone's mobile connection.
+    // resizeIfNeeded is the wrong tool here: it deliberately leaves anything
+    // under 30MB alone, which is right for identity photos and wrong for this.
+    const fail = (msg: string) => set(prev => prev && prev.localId === localId
+      // The file is KEPT on failure. Dropping it makes the buyer hunt through
+      // their camera roll again for a picture they already chose.
+      ? { ...prev, uploading: false, error: msg } : prev);
+
+    try {
+      const f = await downscaleForDisplay(file);
+      const form = new FormData();
+      form.append("file", f, f.name);
+      form.append("bucket", "identity-images");
+      const res = await fetch("/api/upload/file", { method: "POST", body: form });
+      if (!res.ok) {
+        if (res.status === 401) setNeedsLogin(true);
+        fail(res.status === 401 ? tc("signInFirst") : tc("uploadFailed"));
+        return;
+      }
+      const { storagePath } = await res.json();
       set(prev => prev && prev.localId === localId
-        ? { ...prev, uploading: false, error: res.status === 401 ? tc("signInFirst") : tc("uploadFailed") } : prev);
-      return;
+        ? { ...prev, uploading: false, storagePath, storageBucket: "identity-images" } : prev);
+    } catch {
+      // A dropped connection rejects the fetch rather than returning a status.
+      // Without this the slot span "Uploading..." for ever, with nothing to
+      // click and nothing to read — which is what it did.
+      fail(tc("uploadFailed"));
     }
-    const { storagePath } = await res.json();
-    set(prev => prev && prev.localId === localId
-      ? { ...prev, uploading: false, storagePath, storageBucket: "identity-images" } : prev);
   };
 
   // ── Story: brand / logo upload ────────────────────────────────────────────
@@ -1755,6 +1772,16 @@ export default function CheckoutPanel({
                         {up.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                         {up.error && <div className={styles.uploadError}>{up.error}</div>}
                         <button type="button" className={styles.removeBtn} onClick={() => set(null)}>✕</button>
+                        {/* A failed upload keeps its picture, so the retry is one
+                            tap on the same thumbnail rather than a second trip
+                            through the camera roll. */}
+                        {up.error && !up.uploading && (
+                          <label className={styles.uploadBtn} style={{ cursor: "pointer", display: "block", textAlign: "center", marginTop: 4 }}>
+                            {t("gifRetry")}
+                            <input type="file" accept="image/*" style={{ display: "none" }}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) setGifSlot(set)(f); e.target.value = ""; }} />
+                          </label>
+                        )}
                       </div>
                     ) : (
                       <label className={styles.uploadBtn} style={{ cursor: "pointer", display: "block", textAlign: "center" }}>
@@ -1802,8 +1829,8 @@ export default function CheckoutPanel({
             </div>
           )}
 
-          {/* Package picker */}
-          {!perImagePricing && pkgOptions.length > 1 && (
+          {/* Package picker — a loop is always one file, so there is nothing to pick */}
+          {!perImagePricing && !gifLoopActive && pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("images")}</span>
               <div className={styles.pkgPills}>
@@ -1822,8 +1849,9 @@ export default function CheckoutPanel({
             </div>
           )}
 
-          {/* Shot type (1-image package only) */}
-          {!perImagePricing && selectedPkg === 1 && (
+          {/* Shot type (1-image package only) — meaningless for a loop: the buyer
+              brings their own two pictures already framed. */}
+          {!perImagePricing && !gifLoopActive && selectedPkg === 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("shotType")}</span>
               <div className={styles.shotTypeRow}>

@@ -224,6 +224,7 @@ const en = {
     gifLogoHint: "A PNG with a see-through background works best. A logo on a white square will show its box.",
     gifUploadBtn: "+ Upload",
     gifWarn: "Add both pictures and a headline to continue.",
+    gifRetry: "Try again",
     uploading: "Uploading...",
     yourIdentityPhotos: "Your identity photos",
     photosToUpgrade: "Your photos to upgrade",
