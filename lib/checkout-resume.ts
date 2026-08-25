@@ -77,6 +77,7 @@ export interface PendingConfig {
   // gif_loop (before/after loop) — the words; the pictures ride in gifFiles.
   gifHeadline?: string;
   gifKicker?: string;
+  gifWebsite?: string;
 }
 
 export interface PendingFile {

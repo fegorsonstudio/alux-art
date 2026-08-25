@@ -129,6 +129,27 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   const pad = Math.round(panelW * 0.09);
   const inner = panelW - pad * 2;
   const lines = layoutHeadline(opts.headline, 6.6);
+
+  // THREE BANDS, and the headline only gets what is left.
+  //
+  // The logo and the kicker were both pinned to the bottom-left corner and drew
+  // straight through each other — a customer's own mark printed over their own
+  // caption. The logo owns the top band now, the kicker owns the bottom band,
+  // and the headline is centred in the gap between them.
+  const logoH = Math.round(H * 0.09);
+  const logoBand = opts.logo ? logoH + Math.round(pad * 0.7) : 0;
+  // Measured on its own terms rather than as a fraction of a headline size that
+  // has not been decided yet.
+  const kickerSize = opts.kicker
+    ? Math.min(
+        Math.round((inner * 0.97) / (widthEm(opts.kicker) * 1.12)),
+        Math.round(H * 0.052),
+      )
+    : 0;
+  const kickerBand = opts.kicker ? kickerSize + Math.round(pad * 0.8) : 0;
+  // The floor stops a tall logo plus a long kicker from squeezing the headline
+  // out of existence on a narrow panel.
+  const bandH = Math.max(Math.round(H * 0.25), H - logoBand - kickerBand - pad * 2);
   // Sized from the WIDEST line, measured, never a fixed fraction of the panel.
   // A fixed fraction clipped "YOUR PHONE" to "YOUR PHON"; counting characters
   // instead clipped the full stop off "SAME ROOM." while "ONE LIGHT." — the same
@@ -138,11 +159,12 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   const widest = Math.max(...lines.map(widthEm), 0.1);
   const size = Math.min(
     Math.round((inner * 0.97) / widest),
-    Math.round((H * 0.66) / lines.length),
+    Math.round((bandH * 0.98) / lines.length),
   );
   const lead = Math.round(size * 1.02);
   const blockH = lead * lines.length;
-  const top = Math.round((H - blockH) / 2) + Math.round(size * 0.78);
+  // Centred in the band, not in the panel.
+  const top = logoBand + pad + Math.round((bandH - blockH) / 2) + Math.round(size * 0.78);
 
   const panelSvg = (endText?: string) => {
     if (endText) {
@@ -163,19 +185,10 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       `<text x="${pad}" y="${top + i * lead}" font-family="${FONT}" font-size="${size}"
          font-weight="900" fill="${INK}" letter-spacing="-0.03em">${esc(l.toUpperCase())}</text>`).join("");
     const kick = opts.kicker
-      ? (() => {
-          // Same rule as the headline: the kicker is long and was running off
-          // the panel. Letter-spacing widens it, so 0.66em per character.
-          // The 1.12 pays for the letter-spacing added below, which widens the
-          // line by about a tenth of an em per character.
-          const ks = Math.min(
-            Math.round((inner * 0.97) / (widthEm(opts.kicker!) * 1.12)),
-            Math.round(size * 0.26),
-          );
-          return `<text x="${pad}" y="${H - pad}" font-family="${FONT}"
-           font-size="${ks}" font-weight="800" fill="${INK}" opacity="0.72"
-           letter-spacing="0.1em">${esc(opts.kicker!.toUpperCase())}</text>`;
-        })() : "";
+      ? `<text x="${pad}" y="${H - pad}" font-family="${FONT}"
+           font-size="${kickerSize}" font-weight="800" fill="${INK}" opacity="0.72"
+           letter-spacing="0.1em">${esc(opts.kicker.toUpperCase())}</text>`
+      : "";
     return `<svg width="${panelW}" height="${H}" xmlns="http://www.w3.org/2000/svg">
       <rect width="${panelW}" height="${H}" fill="${MINT}"/>
       ${body}${kick}
@@ -185,7 +198,6 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   const panel = Buffer.from(panelSvg());
   const endPanel = opts.endCard ? Buffer.from(panelSvg(opts.endCard)) : null;
 
-  const logoH = Math.round(H * 0.09);
   const logo = opts.logo
     ? await sharp(opts.logo).resize({ height: logoH, fit: "inside" }).png().toBuffer()
     : null;
@@ -197,7 +209,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       { input: thisPanel, left: 0, top: 0 },
       { input: photo, left: panelW, top: 0 },
     ];
-    if (logo) layers.push({ input: logo, left: pad, top: H - logoH - pad });
+    if (logo) layers.push({ input: logo, left: pad, top: pad });
     return base().composite(layers).png({ compressionLevel: 6 }).toBuffer();
   };
 

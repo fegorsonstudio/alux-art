@@ -351,6 +351,7 @@ export default function CheckoutPanel({
   // optional.
   const [gifHeadline, setGifHeadline] = useState("");
   const [gifKicker, setGifKicker] = useState("");
+  const [gifWebsite, setGifWebsite] = useState("");
   const [gifBefore, setGifBefore] = useState<NewIdentityUpload | null>(null);
   const [gifAfter, setGifAfter] = useState<NewIdentityUpload | null>(null);
   const [gifLogo, setGifLogo] = useState<NewIdentityUpload | null>(null);
@@ -762,6 +763,7 @@ export default function CheckoutPanel({
       // buyer has no folder to upload into yet.
       if (c.gifHeadline) setGifHeadline(c.gifHeadline);
       if (c.gifKicker) setGifKicker(c.gifKicker);
+      if (c.gifWebsite) setGifWebsite(c.gifWebsite);
       const gf = pending.gifFiles;
       if (gf) {
         ([["before", setGifBefore], ["after", setGifAfter], ["logo", setGifLogo]] as const)
@@ -1297,6 +1299,7 @@ export default function CheckoutPanel({
       newsHeadline, newsSubtitle, newsCaption,
       gifHeadline: gifHeadline || undefined,
       gifKicker: gifKicker || undefined,
+      gifWebsite: gifWebsite || undefined,
       groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
@@ -1418,6 +1421,7 @@ export default function CheckoutPanel({
           ? {
               headline: gifHeadline.trim(),
               kicker: gifKicker.trim() || undefined,
+              website: gifWebsite.trim() || undefined,
               beforeRef: { storagePath: gifBefore?.storagePath },
               afterRef: { storagePath: gifAfter?.storagePath },
               logoRef: gifLogo?.storagePath ? { storagePath: gifLogo.storagePath } : undefined,
@@ -1803,6 +1807,13 @@ export default function CheckoutPanel({
               </p>
               <input className={styles.flagInput} value={gifKicker} maxLength={60}
                 placeholder={t("gifKickerPh")} onChange={e => setGifKicker(e.target.value)} />
+
+              <p className={styles.pkgLabel} style={{ marginTop: 10, marginBottom: 4 }}>
+                {t("gifWebsiteLabel")} <span className={styles.optionalTag}>{t("optionalParen")}</span>
+              </p>
+              <input className={styles.flagInput} value={gifWebsite} maxLength={40}
+                placeholder={t("gifWebsitePh")} onChange={e => setGifWebsite(e.target.value)} />
+              <p className={styles.sectionHint}>{t("gifWebsiteHint")}</p>
 
               <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>
                 {t("gifLogoLabel")} <span className={styles.optionalTag}>{t("optionalParen")}</span>

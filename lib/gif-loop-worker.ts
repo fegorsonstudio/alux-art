@@ -29,6 +29,8 @@ export type GifLoopResult = { ok: true; bytes: number } | { ok: false; error: st
 export type GifLoopSelection = {
   headline?: string;
   kicker?: string;
+  /** The buyer's own address, held on screen after the reveal. */
+  website?: string;
   beforePath?: string;
   afterPath?: string;
   logoPath?: string;
@@ -89,8 +91,11 @@ export async function runGifLoop(
       headline: (selection.headline ?? "Before and after").slice(0, 60),
       kicker: selection.kicker?.slice(0, 60),
       logo: logo ?? undefined,
-      // No endCard, ever. This is the customer's asset and it carries only
-      // their brand — the decision that makes it worth buying.
+      // The end card carries the BUYER's website and nothing else. Alux Art's
+      // name never appears in a file somebody paid for — that is the decision
+      // that makes this worth buying — but their own address, said once after
+      // the transformation has landed, is the whole point of posting it.
+      endCard: selection.website?.trim() || undefined,
     });
   } catch (e) {
     return { ok: false, error: (e as Error).message.slice(0, 300) };

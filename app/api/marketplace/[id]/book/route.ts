@@ -367,7 +367,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // checked against `${user.id}/` exactly as bowlContentRef is — that check is
   // the only thing stopping a booking naming somebody else's file.
   const gifBody = (body as { gifLoop?: {
-    headline?: string; kicker?: string;
+    headline?: string; kicker?: string; website?: string;
     beforeRef?: { storagePath?: string }; afterRef?: { storagePath?: string };
     logoRef?: { storagePath?: string };
   } }).gifLoop;
@@ -375,6 +375,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const gifLoop = template.category === "gif_loop" && gifBody ? {
     headline: (gifBody.headline ?? "").trim().slice(0, 60),
     kicker: (gifBody.kicker ?? "").trim().slice(0, 60) || undefined,
+    // Shown alone on the panel for the last beat. Stripped of scheme and any
+    // trailing slash: "https://theirshop.com/" is a URL, "theirshop.com" is
+    // what a person reads off a phone screen.
+    website: (gifBody.website ?? "").trim().replace(/^https?:\/\//i, "")
+      .replace(/\/+$/, "").slice(0, 40) || undefined,
     beforePath: mine(gifBody.beforeRef?.storagePath),
     afterPath: mine(gifBody.afterRef?.storagePath),
     logoPath: mine(gifBody.logoRef?.storagePath),

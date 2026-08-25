@@ -6,6 +6,12 @@ import { isAdminEmail } from "@/lib/auth";
 // Buckets that are publicly viewable (marketplace browse, template previews).
 const PUBLIC_BUCKETS = new Set(["template-images"]);
 
+/** GIF87a / GIF89a, read from the bytes rather than trusted from the path. */
+function isGif(buf: ArrayBuffer): boolean {
+  const head = new Uint8Array(buf.slice(0, 6));
+  return head[0] === 0x47 && head[1] === 0x49 && head[2] === 0x46;   // "GIF"
+}
+
 async function processImage(
   rawBuffer: ArrayBuffer,
   widthParam: string | null,
@@ -13,6 +19,11 @@ async function processImage(
   formatParam: string | null,
 ): Promise<{ data: ArrayBuffer; contentType: string } | null> {
   if (!widthParam && !formatParam) return null;
+  // An animated GIF is not a still, and sharp's default pipeline keeps only the
+  // first frame. Re-encoding one to WebP here is how a finished loop reached the
+  // studio page as a motionless picture — and how it got SAVED as one, because
+  // what the browser holds is what this route returned. Serve GIFs untouched.
+  if (isGif(rawBuffer)) return null;
   try {
     const sharp = (await import("sharp")).default;
     let pipeline = sharp(Buffer.from(rawBuffer));
