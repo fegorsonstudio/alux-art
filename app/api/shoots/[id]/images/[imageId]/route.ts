@@ -32,7 +32,11 @@ export async function GET(
   if (!storagePath) return NextResponse.json({ error: "No file" }, { status: 404 });
 
   const isDownload = request.nextUrl.searchParams.get("download") === "1";
-  const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
+  // Extension follows the bytes. A .png name on a GIF is why a finished loop
+  // "did not save as a GIF" — the file was right, the name sent it to a
+  // still-image viewer. Unchanged for every PNG, which is all of them until now.
+  const ext = /\.(gif|jpe?g|webp|png)$/i.exec(storagePath)?.[1]?.toLowerCase() ?? "png";
+  const filename = `aluxart-slot${img.slot}-${img.kind}.${ext}`;
 
   if (isDownload) {
     // 1. R2 (new files saved by r2StreamUpload): redirect to a signed URL so the

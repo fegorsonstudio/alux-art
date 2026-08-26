@@ -711,7 +711,9 @@ export default function WorkspacePage() {
   };
 
   const downloadImage = (shoot: Shoot, img: ShootImage) => {
-    const filename = `aluxart-slot${img.slot}-${img.kind}.png`;
+    // Only a hint: the redirect to R2 makes the response cross-origin, so the
+    // browser takes the server's Content-Disposition name instead of this one.
+    const filename = `aluxart-slot${img.slot}-${img.kind}`;
     // Navigate straight to the server endpoint, which responds with
     // Content-Disposition: attachment. Doing this synchronously inside the tap
     // preserves the user gesture — an `await fetch()` first would break iOS

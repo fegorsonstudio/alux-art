@@ -32,6 +32,18 @@ export async function GET(
 
   try {
     const { buffer } = await r2Download(row.bucket, row.path);
+
+    // An animated GIF is served whole. sharp keeps only the first frame of an
+    // animation, so resizing one here turns a loop into a photograph — and the
+    // customer then saves the still, because a still is what the page gave them.
+    // The size argument above does not apply either: a loop is ~1.5MB, which is
+    // already the size this route is trying to produce.
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: { 'content-type': 'image/gif', 'cache-control': 'public, max-age=86400' },
+      });
+    }
+
     const out = await sharp(buffer).rotate().resize({ width: 900, withoutEnlargement: true })
       .jpeg({ quality: 80 }).toBuffer();
     return new NextResponse(new Uint8Array(out), {
