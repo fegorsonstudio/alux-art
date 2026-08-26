@@ -513,7 +513,14 @@ async function handleDirectMessage(
   }
 
   // LIGHT typed in the chat, not just commented on the post.
-  if (/^light$/i.test(text)) {
+  //
+  // Matched as a WORD ANYWHERE in the message, not as the whole message. A paid
+  // ad drops people into this chat with the word pre-filled by Meta's chat
+  // template, and what actually arrives is not always the bare word: it can be
+  // padded, punctuated, or typed by hand as "light please". An exact match sent
+  // all of those to silence, and silence on a click that cost money is the
+  // worst outcome this bot has.
+  if (/\blight\b/i.test(text)) {
     if (await offerLook(creds, session, LIGHT_LOOK_NUMBER)) return;
     // It used to fall through to the greeting, which at least said something.
     // Now it would fall through to silence, so the studio is told instead: the
