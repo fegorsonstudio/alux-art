@@ -299,11 +299,30 @@ export async function offerLook(
     return true;
   }
 
-  await sendText(creds, session.ig_user_id,
+  // THREE WAYS TO BUY, every time a look is offered.
+  //
+  // The chat is the fastest and stays first, but not everyone wants to send a
+  // photograph to an Instagram account they met through an advert: some would
+  // rather use WhatsApp, and some would rather pay on a website they can see.
+  // Naming all three costs one message and removes the reason to stop.
+  //
+  // Sent through sendWithLinkFallback because the third option is a URL, and a
+  // DM carrying a link is refused outright while the account is under a link
+  // restriction (error 2534122). The fallback keeps the other two routes rather
+  // than losing the whole reply.
+  const opening =
     `That's *${prettyLook(look.lookName)}* \u2014 look ${n}. \ud83d\udc47\n\n` +
-    `Send me the photo you want relit, right here in this chat. ` +
-    `Any picture you already have \u2014 the dark club, the dim restaurant, the badly lit hall.\n\n` +
-    `${naira(RELIGHT_PRICE_NGN)} for one photo. I'll send it back to you here when it's done.`
+    `${naira(RELIGHT_PRICE_NGN)} for one photo. Three ways to do it \u2014 ` +
+    `whichever suits you:\n\n` +
+    `1\ufe0f\u20e3 *Right here* \u2014 send me the photo in this chat.\n` +
+    `2\ufe0f\u20e3 *WhatsApp* \u2014 message ${WA_NUMBER} and send *${n}*.\n`;
+  const closing =
+    `\n\nQuickest is right here: send the picture \u2014 the dark club, the dim ` +
+    `restaurant, the badly lit hall \u2014 and I'll take it from there.`;
+
+  await sendWithLinkFallback(creds, session.ig_user_id,
+    opening + `3\ufe0f\u20e3 *Online* \u2014 ${SITE_URL}` + closing,
+    opening + `3\ufe0f\u20e3 *Online* \u2014 aluxartandframes.shop` + closing,
   );
   return true;
 }
