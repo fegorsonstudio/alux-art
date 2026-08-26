@@ -35,7 +35,7 @@ export async function GET(
   // Extension follows the bytes. A .png name on a GIF is why a finished loop
   // "did not save as a GIF" — the file was right, the name sent it to a
   // still-image viewer. Unchanged for every PNG, which is all of them until now.
-  const ext = /\.(gif|jpe?g|webp|png)$/i.exec(storagePath)?.[1]?.toLowerCase() ?? "png";
+  const ext = /\.(gif|mp4|webm|mov|jpe?g|webp|png)$/i.exec(storagePath)?.[1]?.toLowerCase() ?? "png";
   const filename = `aluxart-slot${img.slot}-${img.kind}.${ext}`;
 
   if (isDownload) {

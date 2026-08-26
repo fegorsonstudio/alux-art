@@ -44,6 +44,17 @@ export async function GET(
       });
     }
 
+    // Video is not sharp's business at all: handing it an MP4 throws, and the
+    // catch below would turn the whole page into a 503. These are a few hundred
+    // kilobytes — smaller than the JPEG this route makes for a photograph.
+    if (/\.(mp4|webm|mov)$/i.test(row.path)) {
+      const type = /\.webm$/i.test(row.path) ? 'video/webm'
+        : /\.mov$/i.test(row.path) ? 'video/quicktime' : 'video/mp4';
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: { 'content-type': type, 'cache-control': 'public, max-age=86400' },
+      });
+    }
+
     const out = await sharp(buffer).rotate().resize({ width: 900, withoutEnlargement: true })
       .jpeg({ quality: 80 }).toBuffer();
     return new NextResponse(new Uint8Array(out), {

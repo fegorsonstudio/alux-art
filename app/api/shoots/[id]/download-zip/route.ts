@@ -17,7 +17,7 @@ export async function GET(
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const completedImages = await sql`
-    SELECT slot, download_storage_bucket, download_storage_path, fal_url FROM shoot_images
+    SELECT slot, kind, download_storage_bucket, download_storage_path, fal_url FROM shoot_images
     WHERE shoot_id = ${id} AND status = 'COMPLETE' AND download_storage_path IS NOT NULL
   `;
 
@@ -55,8 +55,14 @@ export async function GET(
     }
 
     if (buffer) {
-      const ext = path.endsWith(".png") ? "png" : "jpg";
-      zip.file(`portrait-${img.slot}.${ext}`, buffer);
+      // Extension and name both follow the file. A loop bundles four items —
+      // landscape and portrait, GIF and MP4 — and calling an MP4
+      // "portrait-2.jpg" inside the zip makes all four unopenable.
+      const ext = /\.(gif|mp4|png|jpe?g|webp)$/i.exec(path)?.[1]?.toLowerCase() ?? "jpg";
+      const stem = img.kind && /^(landscape|portrait)-(gif|mp4)$/.test(img.kind)
+        ? `loop-${img.kind}`
+        : `portrait-${img.slot}`;
+      zip.file(`${stem}.${ext}`, buffer);
     } else {
       console.error("[download-zip] not found in R2, fal.ai, or Supabase:", path);
     }

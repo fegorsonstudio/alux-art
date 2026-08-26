@@ -42,6 +42,15 @@ export type ArGifOptions = {
   logo?: Buffer;
   width?: number;
   fps?: number;
+  /**
+   * "16:9" for a feed or a comment, "9:16" for a story or a reel.
+   *
+   * Not a crop of one another — the furniture moves. Landscape stands the panel
+   * and the photograph side by side; portrait puts the photograph on top and
+   * the words underneath, because a panel down one side of a phone screen is a
+   * column two words wide.
+   */
+  ratio?: "16:9" | "9:16";
 };
 
 const DEFAULT_WIDTH = 960;
@@ -91,8 +100,12 @@ function layoutHeadline(text: string, maxEm: number): string[] {
 }
 
 export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
-  const W = opts.width ?? DEFAULT_WIDTH;
-  const H = Math.round((W / 16) * 9);
+  const portrait = opts.ratio === "9:16";
+  // Even numbers, always: H.264 chroma subsampling cannot encode an odd
+  // dimension, and a one-pixel rounding error here fails the MP4 outright.
+  const even = (n: number) => (n % 2 === 0 ? n : n + 1);
+  const W = even(opts.width ?? (portrait ? 720 : DEFAULT_WIDTH));
+  const H = even(portrait ? Math.round((W / 9) * 16) : Math.round((W / 16) * 9));
   const FPS = opts.fps ?? DEFAULT_FPS;
 
   // The photograph is full height and never cropped, so its width falls out of
@@ -102,15 +115,34 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
     const m = await sharp(buf).metadata();
     return Math.round(H * ((m.width ?? 1) / (m.height ?? 1)));
   };
+  // How tall the photograph would be if it filled the width — used by portrait,
+  // where the picture takes the top of the frame rather than the side.
+  const heightOf = async (buf: Buffer) => {
+    const m = await sharp(buf).metadata();
+    return Math.round(W * ((m.height ?? 1) / (m.width ?? 1)));
+  };
   // The WIDER of the two decides the column, and the cap is generous: a customer
   // may upload a landscape product shot, and half the frame would slice it in
   // two. The panel still keeps a third of the width, which is what the type
   // needs to stay large.
-  const photoW = Math.min(
-    Math.max(await widthOf(opts.before), await widthOf(opts.after)),
-    Math.round(W * 0.66),
-  );
-  const panelW = W - photoW;
+  // Landscape: the photograph owns a column on the right, the panel takes what
+  // is left. Portrait: the photograph owns a band across the top and the panel
+  // is the full width beneath it. Both are capped so neither can crowd out the
+  // other, and both hold the photograph whole.
+  const photoW = portrait
+    ? W
+    : Math.min(
+        Math.max(await widthOf(opts.before), await widthOf(opts.after)),
+        Math.round(W * 0.66),
+      );
+  const photoH = portrait
+    ? Math.min(
+        Math.max(await heightOf(opts.before), await heightOf(opts.after)),
+        Math.round(H * 0.68),
+      )
+    : H;
+  const panelW = portrait ? W : W - photoW;
+  const panelH = portrait ? H - photoH : H;
 
   // `contain`, never `cover`. NOTHING IS EVER CROPPED — that is the brief, and
   // `cover` is the reflex that breaks it. A picture wider than its column gets
@@ -118,7 +150,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // the same size, which the dissolve depends on.
   const norm = (buf: Buffer) =>
     sharp(buf).rotate()
-      .resize({ width: photoW, height: H, fit: "contain", background: INK })
+      .resize({ width: photoW, height: photoH, fit: "contain", background: INK })
       .toBuffer();
   const before = await norm(opts.before);
   const after = await norm(opts.after);
@@ -126,9 +158,9 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // ── The panel ──────────────────────────────────────────────────────────────
   // Mint ground, ink type: the highest-contrast pairing in the brand, and the
   // one that still reads when the whole thing is 200px wide.
-  const pad = Math.round(panelW * 0.09);
+  const pad = Math.round(Math.min(panelW, panelH) * 0.09);
   const inner = panelW - pad * 2;
-  const lines = layoutHeadline(opts.headline, 6.6);
+  const lines = layoutHeadline(opts.headline, portrait ? 11 : 6.6);
 
   // THREE BANDS, and the headline only gets what is left.
   //
@@ -136,20 +168,23 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // straight through each other — a customer's own mark printed over their own
   // caption. The logo owns the top band now, the kicker owns the bottom band,
   // and the headline is centred in the gap between them.
-  const logoH = Math.round(H * 0.09);
+  // Was H * 0.09 — 48 pixels on a 540 frame, which made "ALUX ART" a smudge.
+  // Sized off the panel now, and generously: a mark nobody can read is not a
+  // mark. The width cap stops a long horizontal wordmark eating the band.
+  const logoH = Math.round(Math.min(panelH * 0.17, panelW * 0.3));
   const logoBand = opts.logo ? logoH + Math.round(pad * 0.7) : 0;
   // Measured on its own terms rather than as a fraction of a headline size that
   // has not been decided yet.
   const kickerSize = opts.kicker
     ? Math.min(
         Math.round((inner * 0.97) / (widthEm(opts.kicker) * 1.12)),
-        Math.round(H * 0.052),
+        Math.round(panelH * 0.09),
       )
     : 0;
   const kickerBand = opts.kicker ? kickerSize + Math.round(pad * 0.8) : 0;
   // The floor stops a tall logo plus a long kicker from squeezing the headline
   // out of existence on a narrow panel.
-  const bandH = Math.max(Math.round(H * 0.25), H - logoBand - kickerBand - pad * 2);
+  const bandH = Math.max(Math.round(panelH * 0.25), panelH - logoBand - kickerBand - pad * 2);
   // Sized from the WIDEST line, measured, never a fixed fraction of the panel.
   // A fixed fraction clipped "YOUR PHONE" to "YOUR PHON"; counting characters
   // instead clipped the full stop off "SAME ROOM." while "ONE LIGHT." — the same
@@ -168,16 +203,15 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
 
   const panelSvg = (endText?: string) => {
     if (endText) {
-      // Sized from the actual character count, not a fixed fraction: a fixed
-      // one clipped "aluxartandframes.shop" off both edges of the panel.
-      // 0.56em per character is a fair average for this weight of sans.
+      // Sized from the measured width, not a fixed fraction: a fixed one clipped
+      // "aluxartandframes.shop" off both edges of the panel.
       const s2 = Math.min(
         Math.round((inner * 0.97) / Math.max(0.1, widthEm(endText) * 0.86)),
-        Math.round(H * 0.09),
+        Math.round(panelH * 0.16),
       );
-      return `<svg width="${panelW}" height="${H}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${panelW}" height="${H}" fill="${MINT}"/>
-        <text x="${panelW / 2}" y="${H / 2 + s2 / 3}" text-anchor="middle" font-family="${FONT}"
+      return `<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${panelW}" height="${panelH}" fill="${MINT}"/>
+        <text x="${panelW / 2}" y="${panelH / 2 + s2 / 3}" text-anchor="middle" font-family="${FONT}"
           font-size="${s2}" font-weight="900" fill="${INK}">${esc(endText)}</text>
       </svg>`;
     }
@@ -185,12 +219,12 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       `<text x="${pad}" y="${top + i * lead}" font-family="${FONT}" font-size="${size}"
          font-weight="900" fill="${INK}" letter-spacing="-0.03em">${esc(l.toUpperCase())}</text>`).join("");
     const kick = opts.kicker
-      ? `<text x="${pad}" y="${H - pad}" font-family="${FONT}"
+      ? `<text x="${pad}" y="${panelH - pad}" font-family="${FONT}"
            font-size="${kickerSize}" font-weight="800" fill="${INK}" opacity="0.72"
            letter-spacing="0.1em">${esc(opts.kicker.toUpperCase())}</text>`
       : "";
-    return `<svg width="${panelW}" height="${H}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${panelW}" height="${H}" fill="${MINT}"/>
+    return `<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${panelW}" height="${panelH}" fill="${MINT}"/>
       ${body}${kick}
     </svg>`;
   };
@@ -198,18 +232,41 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   const panel = Buffer.from(panelSvg());
   const endPanel = opts.endCard ? Buffer.from(panelSvg(opts.endCard)) : null;
 
-  const logo = opts.logo
-    ? await sharp(opts.logo).resize({ height: logoH, fit: "inside" }).png().toBuffer()
+  // Trimmed, then resampled properly. Two separate faults were visible in the
+  // first renders: the mark was too small to read, and it was surrounded by its
+  // own file's flat padding, which shrank the part that carries the meaning and
+  // showed as a hard rectangle against the mint. trim() removes a uniform
+  // border; lanczos3 keeps fine gold lettering legible where the default kernel
+  // smears it. A trim that fails (a logo with no flat border, or a gradient to
+  // the very edge) falls back to the original rather than dropping the logo.
+  const logoSrc = opts.logo
+    ? await sharp(opts.logo).trim({ threshold: 12 }).toBuffer().catch(() => opts.logo!)
+    : null;
+  const logo = logoSrc
+    ? await sharp(logoSrc)
+        .resize({
+          height: logoH, width: Math.round(panelW - pad * 2),
+          fit: "inside", withoutEnlargement: false, kernel: "lanczos3",
+        })
+        .png({ compressionLevel: 6 }).toBuffer()
     : null;
 
   const base = () => sharp({ create: { width: W, height: H, channels: 3, background: INK } });
 
   const compose = async (photo: Buffer, thisPanel: Buffer) => {
+    // Portrait stacks: picture on top, words beneath. Landscape sits them side
+    // by side with the panel on the left.
+    const panelX = 0;
+    const panelY = portrait ? photoH : 0;
+    const photoX = portrait ? 0 : panelW;
+    const photoY = 0;
     const layers: sharp.OverlayOptions[] = [
-      { input: thisPanel, left: 0, top: 0 },
-      { input: photo, left: panelW, top: 0 },
+      { input: thisPanel, left: panelX, top: panelY },
+      { input: photo, left: photoX, top: photoY },
     ];
-    if (logo) layers.push({ input: logo, left: pad, top: pad });
+    // Top-left of the PANEL, wherever the panel happens to be. The bottom-left
+    // corner belongs to the kicker.
+    if (logo) layers.push({ input: logo, left: panelX + pad, top: panelY + pad });
     return base().composite(layers).png({ compressionLevel: 6 }).toBuffer();
   };
 
@@ -280,39 +337,115 @@ export const gifDuration = (fps = DEFAULT_FPS, hasEndCard = false) =>
  * Writes to a temp directory rather than piping, because ffmpeg's image2
  * demuxer wants numbered files and the frame count here is small.
  */
-export async function encodeGif(frames: Buffer[], fps: number): Promise<Buffer> {
-  const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
+async function withFrameDir<T>(
+  frames: Buffer[],
+  fn: (pattern: string, run: (args: string[]) => Promise<unknown>) => Promise<T>,
+): Promise<T> {
+  const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
-  const run = promisify(execFile);
+  const exec = promisify(execFile);
 
   const dir = await mkdtemp(join(tmpdir(), "gifloop-"));
   try {
     await Promise.all(frames.map((f, i) =>
       writeFile(join(dir, `f${String(i).padStart(4, "0")}.png`), f)));
-
-    const pattern = join(dir, "f%04d.png");
-    const palette = join(dir, "pal.png");
-    const out = join(dir, "out.gif");
-
-    await run("ffmpeg", ["-y", "-v", "error", "-framerate", String(fps),
-      "-i", pattern, "-vf", "palettegen=stats_mode=diff", palette]);
-    await run("ffmpeg", ["-y", "-v", "error", "-framerate", String(fps),
-      "-i", pattern, "-i", palette,
-      "-lavfi", "paletteuse=dither=sierra2_4a", "-loop", "0", out]);
-
-    return await readFile(out);
+    return await fn(join(dir, "f%04d.png"),
+      (args) => exec("ffmpeg", ["-y", "-v", "error", ...args]));
   } finally {
-    // Always, even on failure: these are ~50 PNGs at 960x540 and a server that
-    // leaks them fills its disk quietly.
+    // Always, even on failure: these are ~50 PNGs at up to 1280x720 and a
+    // server that leaks them fills its disk quietly.
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+export async function encodeGif(frames: Buffer[], fps: number, maxWidth?: number): Promise<Buffer> {
+  const { readFile } = await import("node:fs/promises");
+  const { dirname, join } = await import("node:path");
+
+  return withFrameDir(frames, async (pattern, run) => {
+    const dir = dirname(pattern);
+    const palette = join(dir, "pal.png");
+    const out = join(dir, "out.gif");
+    // Frames are composited at video resolution; the GIF is the small copy.
+    // -2 keeps the height even and lets ffmpeg pick it from the aspect.
+    const scale = maxWidth ? `scale=${maxWidth}:-2:flags=lanczos,` : "";
+
+    await run(["-framerate", String(fps), "-i", pattern,
+      "-vf", `${scale}palettegen=stats_mode=diff`, palette]);
+    // bayer, not sierra2_4a. Error-diffusion scatters visible speckle across
+    // large flat areas, and this frame is mostly one flat mint panel with a
+    // dark gradient logo on it — exactly the case it handles worst. An ordered
+    // dither leaves those regions clean.
+    const use = "paletteuse=dither=bayer:bayer_scale=4";
+    await run(["-framerate", String(fps), "-i", pattern, "-i", palette,
+      "-lavfi", scale
+        ? `[0:v]${scale.replace(/,$/, "")}[x];[x][1:v]${use}`
+        : `[0:v][1:v]${use}`,
+      "-loop", "0", out]);
+
+    return readFile(out);
+  });
+}
+
+/**
+ * The same loop as an MP4.
+ *
+ * Worth having beside the GIF rather than instead of it. A GIF is what pastes
+ * into a comment and what GIPHY takes; an MP4 is what a feed, a story and a
+ * reel want, it carries no 256-colour palette so gradients and a logo stay
+ * clean, and it is several times smaller.
+ *
+ * yuv420p and +faststart are not optional: without the pixel format Safari and
+ * most Android players show nothing at all, and without faststart the file has
+ * to download completely before it starts.
+ */
+export async function encodeMp4(frames: Buffer[], fps: number): Promise<Buffer> {
+  const { readFile } = await import("node:fs/promises");
+  const { dirname, join } = await import("node:path");
+
+  return withFrameDir(frames, async (pattern, run) => {
+    const out = join(dirname(pattern), "out.mp4");
+    // EVERY input first, then the codecs. ffmpeg reads options positionally:
+    // a -c:v before the next -i is a request for a DECODER of that name, and
+    // "Unknown decoder libx264" is what that mistake says out loud.
+    await run([
+      "-framerate", String(fps), "-i", pattern,
+      // Silent, but with a track: some players and some upload validators
+      // refuse a video that has no audio stream at all.
+      "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+      "-c:v", "libx264", "-preset", "slow", "-crf", "20",
+      "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+      "-c:a", "aac", "-shortest",
+      out,
+    ]);
+    return readFile(out);
+  });
 }
 
 /** Compose and encode in one call — what the server fork uses. */
 export async function renderGif(opts: ArGifOptions): Promise<Buffer> {
   const { frames, fps } = await renderArFrames(opts);
   return encodeGif(frames, fps);
+}
+
+/**
+ * One composition, both formats.
+ *
+ * The frames are the expensive part — every one is a full sharp composite — so
+ * they are built once and handed to both encoders rather than rendering the
+ * same loop twice.
+ */
+export async function renderLoop(
+  opts: ArGifOptions,
+  gifWidth = 960,
+): Promise<{ gif: Buffer; mp4: Buffer; width: number; height: number }> {
+  const { frames, fps, width, height } = await renderArFrames(opts);
+  const [gif, mp4] = await Promise.all([
+    encodeGif(frames, fps, width > gifWidth ? gifWidth : undefined),
+    encodeMp4(frames, fps),
+  ]);
+  return { gif, mp4, width, height };
 }

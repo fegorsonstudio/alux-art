@@ -40,7 +40,7 @@ export async function GET(
   // phone and the desktop both open it in a still-image viewer and the customer
   // reasonably concludes it did not save as a GIF. Taken from the stored path,
   // which is what R2 actually holds.
-  const ext = /\.(gif|jpe?g|webp|png)$/i.exec(row.path)?.[1]?.toLowerCase() ?? "png";
+  const ext = /\.(gif|mp4|webm|mov|jpe?g|webp|png)$/i.exec(row.path)?.[1]?.toLowerCase() ?? "png";
   const filename = `alux-art-${row.shoot_id.slice(0, 8)}-${String(row.slot).padStart(2, "0")}.${ext}`;
   const url = await r2SignedDownloadUrl(row.bucket, row.path, 3600, filename).catch(() => null);
   if (!url) return new NextResponse("Temporarily unavailable", { status: 503 });

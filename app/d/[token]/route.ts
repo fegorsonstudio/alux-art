@@ -22,11 +22,11 @@ import sql from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const page = (token: string, mb: string) => `<!doctype html>
+const page = (token: string, mb: string, isVideo: boolean) => `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Your photo — Alux Art</title>
+<title>Your ${isVideo ? "video" : "photo"} — Alux Art</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:#0d2620;color:#eaf5f1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -34,21 +34,29 @@ const page = (token: string, mb: string) => `<!doctype html>
   .card{width:100%;max-width:460px;text-align:center}
   h1{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
   p{font-size:.9rem;line-height:1.5;opacity:.8;margin-bottom:18px}
-  img{width:100%;border-radius:12px;display:block;margin-bottom:18px;background:#123}
+  img,video{width:100%;border-radius:12px;display:block;margin-bottom:18px;background:#123}
   a.btn{display:block;background:#43ccb2;color:#06150f;font-weight:800;font-size:1.05rem;
         padding:16px;border-radius:12px;text-decoration:none;margin-bottom:12px}
   .hint{font-size:.78rem;opacity:.6;line-height:1.5}
   .foot{margin-top:22px;font-size:.75rem;opacity:.45}
 </style></head>
 <body><div class="card">
-  <h1>Your photo is ready</h1>
+  <h1>${isVideo ? "Your video is ready" : "Your photo is ready"}</h1>
   <p>Full size, full quality &mdash; ${mb}</p>
-  <img src="/d/${token}/preview" alt="Your relit photo">
-  <a class="btn" href="/d/${token}/file">Download the full-size photo</a>
+  ${isVideo
+    // Muted and playsinline or iOS refuses to autoplay at all; loop because
+    // that is what the file is.
+    ? `<video src="/d/${token}/preview" autoplay loop muted playsinline controls></video>`
+    : `<img src="/d/${token}/preview" alt="Your relit photo">`}
+  <a class="btn" href="/d/${token}/file">Download the full-size ${isVideo ? "video" : "photo"}</a>
   <p class="hint">
-    If it opens in a viewer instead of saving, press and hold the picture above
-    and choose <strong>Save to Photos</strong>. On a computer, right-click and
-    choose <strong>Save image as</strong>.
+    ${isVideo
+      ? `If it opens in a player instead of saving, press and hold the video above
+         and choose <strong>Save to Photos</strong>. On a computer, right-click and
+         choose <strong>Save video as</strong>.`
+      : `If it opens in a viewer instead of saving, press and hold the picture above
+         and choose <strong>Save to Photos</strong>. On a computer, right-click and
+         choose <strong>Save image as</strong>.`}
   </p>
   <p class="foot">This link works for 7 days &middot; aluxartandframes.shop</p>
 </div></body></html>`;
@@ -76,7 +84,10 @@ export async function GET(
   }
 
   const mb = row.bytes ? `${(row.bytes / 1048576).toFixed(1)} MB` : "original quality";
-  return new NextResponse(page(token, mb), {
+  // An MP4 cannot go in an <img>, and a loop bought as video is half the
+  // files this template now produces.
+  const isVideo = /\.(mp4|webm|mov)$/i.test(row.path);
+  return new NextResponse(page(token, mb, isVideo), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }

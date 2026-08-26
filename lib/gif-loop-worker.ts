@@ -1,7 +1,7 @@
 import "server-only";
 import sql from "@/lib/db";
 import { r2Download, r2Upload } from "@/lib/r2";
-import { renderGif } from "@/lib/gif-loop";
+import { renderLoop } from "@/lib/gif-loop";
 
 /**
  * The `gif_loop` generation fork.
@@ -83,45 +83,95 @@ export async function runGifLoop(
     (await grab(logoRef?.storage_bucket ?? null, logoRef?.storage_path ?? null)) ??
     undefined;
 
-  let gif: Buffer;
+  // FOUR FILES, from two compositions.
+  //
+  // Landscape for a feed, a comment and GIPHY; portrait for a story and a reel.
+  // Each shape is composited once and encoded twice, because the frames are the
+  // expensive half and the two encoders can share them. A buyer who has paid
+  // for a loop should not have to crop it themselves to post it in the place
+  // they were always going to post it.
+  const common = {
+    before,
+    after,
+    headline: (selection.headline ?? "Before and after").slice(0, 60),
+    kicker: selection.kicker?.slice(0, 60),
+    logo: logo ?? undefined,
+    // The end card carries the BUYER's website and nothing else. Alux Art's
+    // name never appears in a file somebody paid for — that is the decision
+    // that makes this worth buying — but their own address, said once after
+    // the transformation has landed, is the whole point of posting it.
+    endCard: selection.website?.trim() || undefined,
+  };
+
+  type Output = { ratio: "16:9" | "9:16"; ext: "gif" | "mp4"; type: string; bytes: Buffer };
+  const outputs: Output[] = [];
   try {
-    gif = await renderGif({
-      before,
-      after,
-      headline: (selection.headline ?? "Before and after").slice(0, 60),
-      kicker: selection.kicker?.slice(0, 60),
-      logo: logo ?? undefined,
-      // The end card carries the BUYER's website and nothing else. Alux Art's
-      // name never appears in a file somebody paid for — that is the decision
-      // that makes this worth buying — but their own address, said once after
-      // the transformation has landed, is the whole point of posting it.
-      endCard: selection.website?.trim() || undefined,
-    });
+    for (const ratio of ["16:9", "9:16"] as const) {
+      // Composited at video resolution; encodeGif scales its own copy down.
+      // The MP4 keeps the full frame; the GIF is cut down, harder in portrait
+      // because a tall 720-wide GIF lands at ~3MB and a comment thumbnail shows
+      // it at a couple of hundred pixels either way.
+      const { gif, mp4 } = await renderLoop(
+        { ...common, ratio, width: ratio === "16:9" ? 1280 : 720 },
+        ratio === "16:9" ? 960 : 540,
+      );
+      outputs.push({ ratio, ext: "mp4", type: "video/mp4", bytes: mp4 });
+      outputs.push({ ratio, ext: "gif", type: "image/gif", bytes: gif });
+    }
   } catch (e) {
     return { ok: false, error: (e as Error).message.slice(0, 300) };
   }
 
-  const path = `${userId}/${shootId}/loop.gif`;
+  // Slot 1 is the landscape GIF: it is what the download page previews, what
+  // the chat pollers send, and what the studio grid leads with. The rest follow
+  // in slots of their own so each gets its own download token and its own row
+  // in the ZIP.
+  const order = ["16:9-gif", "16:9-mp4", "9:16-mp4", "9:16-gif"];
+  outputs.sort((a, b) => order.indexOf(`${a.ratio}-${a.ext}`) - order.indexOf(`${b.ratio}-${b.ext}`));
+
+  const label = (o: Output) => `${o.ratio === "16:9" ? "landscape" : "portrait"}-${o.ext}`;
+  const paths: string[] = [];
   try {
-    await r2Upload("generated-4k", path, gif, "image/gif");
+    for (const o of outputs) {
+      const p = `${userId}/${shootId}/loop-${label(o)}.${o.ext}`;
+      await r2Upload("generated-4k", p, o.bytes, o.type);
+      paths.push(p);
+    }
   } catch (e) {
     return { ok: false, error: `upload failed: ${(e as Error).message}`.slice(0, 300) };
   }
 
-  await sql`UPDATE shoot_images SET
-    status = 'COMPLETE',
-    file_size = ${gif.byteLength},
-    download_file_size = ${gif.byteLength},
-    stage = 'Loop rendered',
-    provider = 'gif-loop',
-    configured_model = 'sharp+ffmpeg',
-    preview_storage_bucket = 'generated-4k',
-    preview_storage_path = ${path},
-    download_storage_bucket = 'generated-4k',
-    download_storage_path = ${path},
-    updated_at = NOW()
-    WHERE id = ${slot.id}`;
+  // The booking created one slot. The other three are made here, because only
+  // the renderer knows how many files a loop turns out to be.
+  const rows = await sql<{ id: string; slot: number }[]>`
+    SELECT id, slot FROM shoot_images WHERE shoot_id = ${shootId} ORDER BY slot`;
+  for (let i = rows.length; i < outputs.length; i++) {
+    const [made] = await sql<{ id: string; slot: number }[]>`
+      INSERT INTO shoot_images (id, shoot_id, user_id, slot, status, created_at, updated_at)
+      VALUES (${crypto.randomUUID()}, ${shootId}, ${userId}, ${i + 1}, 'PENDING', NOW(), NOW())
+      RETURNING id, slot`;
+    rows.push(made);
+  }
 
-  console.log(`[gif-loop] ${shootId.slice(0, 8)} rendered ${(gif.byteLength / 1048576).toFixed(2)}MB`);
-  return { ok: true, bytes: gif.byteLength };
+  for (let i = 0; i < outputs.length; i++) {
+    const o = outputs[i];
+    await sql`UPDATE shoot_images SET
+      status = 'COMPLETE',
+      kind = ${label(o)},
+      file_size = ${o.bytes.byteLength},
+      download_file_size = ${o.bytes.byteLength},
+      stage = ${`Loop rendered (${label(o)})`},
+      provider = 'gif-loop',
+      configured_model = 'sharp+ffmpeg',
+      preview_storage_bucket = 'generated-4k',
+      preview_storage_path = ${paths[i]},
+      download_storage_bucket = 'generated-4k',
+      download_storage_path = ${paths[i]},
+      updated_at = NOW()
+      WHERE id = ${rows[i].id}`;
+  }
+
+  const total = outputs.reduce((n, o) => n + o.bytes.byteLength, 0);
+  console.log(`[gif-loop] ${shootId.slice(0, 8)} rendered ${outputs.length} files, ${(total / 1048576).toFixed(2)}MB: ${outputs.map(label).join(", ")}`);
+  return { ok: true, bytes: total };
 }
