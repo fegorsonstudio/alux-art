@@ -382,6 +382,53 @@ async function requestRetouch(creds: IgCreds, session: IgSession, senderId: stri
   })().catch((e) => console.error("[ig] telegram notify failed:", e instanceof Error ? e.message : e));
 }
 
+/**
+ * A message this bot has nothing to say to.
+ *
+ * The bot used to answer EVERY direct message: anything it did not recognise
+ * fell through to "Hello 👋 I'm an automated assistant", sent again and again to
+ * the same person for ever. On an account that runs ads and receives ordinary
+ * conversation that reads as spam, and the reputation being spent is the
+ * business's own.
+ *
+ * So it says nothing. The studio is told instead, because a real question from
+ * a real customer must not simply vanish — silence towards the sender is the
+ * feature, silence towards the owner would be a bug.
+ *
+ * THROTTLED TO ONE NOTE PER PERSON PER HOUR, and that is not decoration. An
+ * earlier version of this bot sent 276 identical Telegram alerts about one
+ * customer until the chat was muted, which also mutes the next real one.
+ * Someone typing "hi", then "hello", then "are you there" is one note.
+ */
+const IGNORE_ALERT_GAP_MS = 60 * 60 * 1000;
+
+async function ignoreQuietly(
+  session: IgSession,
+  what: string,
+  opts: { failedTrigger?: boolean } = {},
+): Promise<void> {
+  const who = session.ig_username ? `@${session.ig_username}` : session.ig_user_id;
+  console.log(`[ig bot] ignored ${who} (${session.state}): ${what.slice(0, 120)}`);
+
+  const last = session.last_ignored_alert_at ? new Date(session.last_ignored_alert_at).getTime() : 0;
+  // A trigger that broke is always worth waking someone for — it means a
+  // customer typed the right thing and got nothing back.
+  if (!opts.failedTrigger && Date.now() - last < IGNORE_ALERT_GAP_MS) return;
+
+  await patchSession(session.id, { last_ignored_alert_at: new Date() }).catch(() => {});
+  await tellAdmin(
+    (opts.failedTrigger
+      ? `⚠️ <b>Instagram — a trigger did not work</b>\n`
+      : `💬 <b>Instagram DM the bot ignored</b>\n`) +
+    `From: ${who}\n` +
+    `State: ${session.state}\n` +
+    `Said: ${what.slice(0, 300)}\n\n` +
+    (opts.failedTrigger
+      ? `They typed something the bot should have handled. Worth answering by hand.`
+      : `No reply was sent. Answer in Instagram if it deserves one.`)
+  ).catch(() => {});
+}
+
 async function handleDirectMessage(
   igAccountId: string,
   senderId: string,
@@ -415,8 +462,24 @@ async function handleDirectMessage(
 
   await markInbound(session.id, msg.text ?? (msg.imageUrl ? "[photo]" : null));
 
-  // A photo is an instruction on its own — it means "do the look we agreed".
+  // Engaged: they have chosen a look, or are mid-booking, or have bought before.
+  // The comment webhook arms a session with a look BEFORE the chat is ever
+  // opened, so anyone arriving through the real funnel is engaged by the time
+  // they reach here.
+  const engaged = session.state !== "IDLE"
+    || session.look_option_id !== null
+    || session.shoot_id !== null;
+
+  // A photo is an instruction on its own — it means "do the look we agreed" —
+  // but only from someone we are already in a conversation with. Checked BEFORE
+  // handlePhoto, which downloads the attachment, uploads it to R2, creates a
+  // profile and writes an identity_images row: none of which should happen
+  // because a stranger sent an unsolicited picture.
   if (msg.imageUrl) {
+    if (!engaged) {
+      await ignoreQuietly(session, "[sent a photo, no look chosen]");
+      return;
+    }
     await handlePhoto(creds, session, msg.imageUrl);
     return;
   }
@@ -452,6 +515,11 @@ async function handleDirectMessage(
   // LIGHT typed in the chat, not just commented on the post.
   if (/^light$/i.test(text)) {
     if (await offerLook(creds, session, LIGHT_LOOK_NUMBER)) return;
+    // It used to fall through to the greeting, which at least said something.
+    // Now it would fall through to silence, so the studio is told instead: the
+    // customer typed the right word and the look could not be found.
+    await ignoreQuietly(session, text, { failedTrigger: true });
+    return;
   }
 
   // Same words the WhatsApp bot accepts, because a customer who has used both
@@ -493,10 +561,9 @@ async function handleDirectMessage(
     return;
   }
 
-  await sendText(creds, senderId,
-    "Hello 👋 I'm an automated assistant for Alux Art.\n\n" +
-    "Send me the number of any lighting look from our posts (for example *69*) and " +
-    "I'll relight a photo of your own with it — ₦1,000, right here in this chat.\n\n" +
-    "Send your email any time and I'll use it to sort out anything that goes wrong.\n" +
-    "Type *support* to reach a person.");
+  // Nothing matched, and this is where the bot used to pitch at everybody.
+  // It says nothing now. The funnel does not depend on it: a person arrives by
+  // commenting a look number on a post, and the comment webhook sends them one
+  // private reply carrying the instructions. A cold DM is not the way in.
+  await ignoreQuietly(session, text);
 }

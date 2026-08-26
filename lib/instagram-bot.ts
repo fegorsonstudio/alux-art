@@ -46,6 +46,8 @@ export type IgSession = {
   user_id: string | null;
   payment_reference: string | null;
   last_inbound_at: Date;
+  /** When the studio was last told about a message this bot ignored. */
+  last_ignored_alert_at: Date | null;
 };
 
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
