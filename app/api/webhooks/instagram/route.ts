@@ -4,7 +4,12 @@ import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
 import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
 import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession, patchSession, ensureUser } from "@/lib/instagram-bot";
-import { tellAdmin } from "@/lib/telegram";
+import { tellAdmin, sendAdminImage } from "@/lib/telegram";
+import sql from "@/lib/db";
+import { signedMediaUrl } from "@/lib/media-url";
+import { retouchPriceNgn } from "@/lib/retouch-pricing";
+import type { IgCreds } from "@/lib/instagram";
+import type { IgSession } from "@/lib/instagram-bot";
 import { isEmailish, saveContactEmail, contactEmailSaved } from "@/lib/chat-contact-email";
 
 /**
@@ -300,6 +305,83 @@ export async function POST(request: NextRequest) {
  * Kept deliberately forgiving about what a person types. Someone arriving from
  * a carousel comment is mid-scroll, not filling in a form.
  */
+/**
+ * The buyer wants the photo we just made them retouched by hand.
+ *
+ * Deliberately the same shape as the WhatsApp handler: record the order, put
+ * the actual files in front of the person who does the work over Telegram, and
+ * charge NOTHING yet. Retouching happens by hand afterwards and the buyer pays
+ * to unlock the finished files; billing first would take money for work that
+ * does not exist.
+ *
+ * The shoot comes from the session, and a session that has moved on to another
+ * booking is the normal case rather than an error — so it says which shoot it
+ * is acting on rather than assuming the customer knows.
+ */
+async function requestRetouch(creds: IgCreds, session: IgSession, senderId: string) {
+  if (!session.shoot_id) {
+    await sendText(creds, senderId,
+      "I can only retouch a photo from a finished shoot. Send a look number and a " +
+      "photo to start one.");
+    return;
+  }
+
+  const images = await sql<{ id: string; b: string | null; p: string | null }[]>`
+    SELECT id, download_storage_bucket AS b, download_storage_path AS p
+    FROM shoot_images
+    WHERE shoot_id = ${session.shoot_id} AND status = 'COMPLETE' AND download_storage_path IS NOT NULL
+    ORDER BY slot`;
+
+  if (!images.length) {
+    await sendText(creds, senderId, "That shoot has no finished photo to retouch yet.");
+    return;
+  }
+
+  const price = retouchPriceNgn(images.length);
+
+  const [existing] = await sql<{ status: string }[]>`
+    SELECT status FROM shoot_retouch WHERE shoot_id = ${session.shoot_id}`;
+  if (existing) {
+    await sendText(creds, senderId,
+      "You have already asked for that one — I'm on it. I'll send it here when it's done.");
+    return;
+  }
+
+  await sql`
+    INSERT INTO shoot_retouch (shoot_id, status, price_ngn, image_count, created_at, updated_at)
+    VALUES (${session.shoot_id}, 'REQUESTED', ${price}, ${images.length}, NOW(), NOW())
+    ON CONFLICT (shoot_id) DO NOTHING`;
+  for (const img of images) {
+    await sql`
+      INSERT INTO shoot_retouch_items (shoot_id, image_id) VALUES (${session.shoot_id}, ${img.id})
+      ON CONFLICT (shoot_id, image_id) DO NOTHING`;
+  }
+
+  await sendText(creds, senderId,
+    `Nice one 👍 ${images.length} image${images.length === 1 ? "" : "s"} going for retouching — ` +
+    `*₦${price.toLocaleString("en-NG")}* in total.\n\n` +
+    "Nothing to pay yet. This is done by hand, so it isn't instant — when it's ready " +
+    "I'll tell you here and send a payment link, and the photo comes through as soon as you pay.\n\n" +
+    "Instagram closes a chat 24 hours after your last message, so send me your email " +
+    "and I can reach you either way.");
+
+  // The studio's copy of the job.
+  void (async () => {
+    await tellAdmin(
+      `<b>Retouch requested (Instagram)</b>\n` +
+      `${images.length} image(s) — ₦${price.toLocaleString("en-NG")}\n` +
+      `Customer: @${session.ig_username ?? senderId}\n` +
+      `Shoot: <code>${session.shoot_id}</code>\n\n` +
+      `Reply to THIS message with the edited file(s) to send them back.`
+    );
+    for (const img of images) {
+      if (!img.p) continue;
+      const url = await signedMediaUrl(img.b ?? "generated-4k", img.p, { expiresIn: 24 * 3600 }).catch(() => null);
+      if (url) await sendAdminImage(url, `Shoot <code>${session.shoot_id}</code>`);
+    }
+  })().catch((e) => console.error("[ig] telegram notify failed:", e instanceof Error ? e.message : e));
+}
+
 async function handleDirectMessage(
   igAccountId: string,
   senderId: string,
@@ -370,6 +452,13 @@ async function handleDirectMessage(
   // LIGHT typed in the chat, not just commented on the post.
   if (/^light$/i.test(text)) {
     if (await offerLook(creds, session, LIGHT_LOOK_NUMBER)) return;
+  }
+
+  // Same words the WhatsApp bot accepts, because a customer who has used both
+  // should not have to learn two vocabularies.
+  if (/^(retouch|retouching|edit|edit my (photos|images))$/i.test(text)) {
+    await requestRetouch(creds, session, senderId);
+    return;
   }
 
   if (/^(support|help|human)$/i.test(text)) {

@@ -3,6 +3,8 @@ import sql from "@/lib/db";
 import { r2Upload } from "@/lib/r2";
 import { tellAdmin } from "@/lib/telegram";
 import { deliverRetouch, offerRetouchPayment } from "@/lib/whatsapp-retouch";
+import { deliverRetouch as deliverRetouchIg, offerRetouchPayment as offerRetouchPaymentIg }
+  from "@/lib/instagram-retouch";
 import { sendText } from "@/lib/whatsapp";
 
 /**
@@ -172,17 +174,18 @@ export async function POST(req: NextRequest) {
       SELECT paid, free, price_ngn FROM shoot_retouch WHERE shoot_id = ${shootId}`;
     const settled = Boolean(order?.paid || order?.free);
 
+    // WhatsApp first, then Instagram — see the note in the Paystack webhook.
     const handed = settled
-      ? await deliverRetouch(shootId, key)
-      : await offerRetouchPayment(shootId);
+      ? (await deliverRetouch(shootId, key)) || (await deliverRetouchIg(shootId, key))
+      : (await offerRetouchPayment(shootId)) || (await offerRetouchPaymentIg(shootId));
 
     await tellAdmin(
       `<b>Retouched image saved</b>\n` +
       `Shoot <code>${shootId}</code>\n` +
       (settled
         ? handed
-          ? "Already paid — sent to the customer on WhatsApp ✅"
-          : "Already paid, but I could not reach them on WhatsApp. It is in their gallery."
+          ? "Already paid — sent to the customer in their chat ✅"
+          : "Already paid, but I could not reach them in chat. It is in their gallery."
         : handed
           ? `Payment link sent (${"₦"}${(order?.price_ngn ?? 0).toLocaleString("en-NG")}). ` +
             "The file goes out the moment they pay."

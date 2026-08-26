@@ -8,6 +8,7 @@ import { tellAdmin } from "@/lib/telegram";
 import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 import { instagramReadyCopy } from "@/lib/instagram-image";
 import { sendWithLinkFallback } from "@/lib/instagram-bot";
+import { RETOUCH_PRICE_PER_IMAGE_NGN } from "@/lib/retouch-pricing";
 
 /**
  * Sends finished shoots back into the Instagram chat that ordered them.
@@ -28,6 +29,9 @@ import { sendWithLinkFallback } from "@/lib/instagram-bot";
  */
 
 export const dynamic = "force-dynamic";
+
+/** Naira, with separators. */
+const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
 type Row = {
   shoot_id: string;
@@ -224,15 +228,20 @@ export async function GET(req: NextRequest) {
     // The 4K file cannot pass through a DM at all, so name where it is rather
     // than let the buyer assume the compressed copy is what they paid for.
     const fullSize = await downloadLink(r.shoot_id);
+    // The retouch is offered HERE and nowhere else, the same as on WhatsApp:
+    // the buyer has just seen the picture, and that is the only moment they can
+    // judge whether a hand pass is worth paying for.
+    const upsell =
+      `\n\nWant it hand-retouched? Skin, stray hairs, and the small things a ` +
+      `model notices. *${naira(RETOUCH_PRICE_PER_IMAGE_NGN)} per image* — reply ` +
+      `*retouch* and I'll take it from here.`;
     await sendWithLinkFallback(creds, to,
       `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
       `Instagram compresses pictures in chat. Your full-size 4K file is here:\n` +
-      `${fullSize ?? `${SITE_URL}/studio`}\n\n` +
-      `Want another? Send me a new number and a photo.`,
+      `${fullSize ?? `${SITE_URL}/studio`}` + upsell,
       `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
       `Instagram compresses pictures in chat. The full-size 4K file is waiting on ` +
-      `aluxartandframes.shop under your shoots.\n\n` +
-      `Want another? Send me a new number and a photo.`);
+      `aluxartandframes.shop under your shoots.` + upsell);
 
     await finish(r.session_id, r.shoot_id);
     delivered.push(r.shoot_id);

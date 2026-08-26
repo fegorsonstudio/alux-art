@@ -4,6 +4,7 @@ import sql from "@/lib/db";
 import { notifyCreatorOfSale } from "@/lib/creator-sale-email";
 import { SITE_URL } from "@/lib/site-url";
 import { deliverRetouch } from "@/lib/whatsapp-retouch";
+import { deliverRetouch as deliverRetouchIg } from "@/lib/instagram-retouch";
 import { creditWallet } from "@/lib/wallet";
 import { notifyWalletTopUp } from "@/lib/wallet-notify";
 
@@ -139,14 +140,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`[paystack webhook] retouch unlocked for shoot ${retouchShootId}`);
 
-    // If this retouch was ordered in WhatsApp, payment is what releases the
-    // files into the chat. Awaited so the buyer gets them now rather than on a
-    // later poll, and caught so a chat failure can never turn a successful
-    // payment into a webhook error and a Paystack retry.
-    await deliverRetouch(retouchShootId).catch((e) => {
-      console.error(`[paystack webhook] whatsapp retouch delivery failed for ${retouchShootId}:`,
-        e instanceof Error ? e.message : e);
-    });
+    // If this retouch was ordered in a chat, payment is what releases the files
+    // into it. Awaited so the buyer gets them now rather than on a later poll,
+    // and caught so a chat failure can never turn a successful payment into a
+    // webhook error and a Paystack retry.
+    //
+    // WhatsApp first, then Instagram. Each returns false rather than throwing
+    // when the shoot did not come from it, so trying both in turn is how the
+    // right one is found — and a shoot that came from the website matches
+    // neither and correctly does nothing here.
+    await deliverRetouch(retouchShootId)
+      .then((done) => done || deliverRetouchIg(retouchShootId))
+      .catch((e) => {
+        console.error(`[paystack webhook] chat retouch delivery failed for ${retouchShootId}:`,
+          e instanceof Error ? e.message : e);
+      });
 
     return NextResponse.json({ ok: true });
   }
