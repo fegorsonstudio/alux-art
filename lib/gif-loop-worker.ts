@@ -34,6 +34,20 @@ export type GifLoopSelection = {
   beforePath?: string;
   afterPath?: string;
   logoPath?: string;
+  /**
+   * The story, one line per beat, in order.
+   *
+   * When present this replaces `headline` — a single line held for four seconds
+   * could not explain what was being sold, which is the whole reason this
+   * exists. `headline` is kept so bookings taken before this shipped still
+   * render, and so a buyer who writes only one line still works.
+   */
+  lines?: string[];
+  /**
+   * A picture per line, by index, where the buyer attached one. Sparse: most
+   * entries are empty and inherit the before/after.
+   */
+  linePaths?: (string | null)[];
 };
 
 const grab = async (bucket: string | null, path: string | null): Promise<Buffer | null> => {
@@ -90,11 +104,27 @@ export async function runGifLoop(
   // expensive half and the two encoders can share them. A buyer who has paid
   // for a loop should not have to crop it themselves to post it in the place
   // they were always going to post it.
+  // The buyer's sequence, with the website as its closing beat. A line that
+  // carries its own picture gets it loaded here; the rest inherit.
+  const lines = (selection.lines ?? []).map(l => (l ?? "").trim()).filter(Boolean);
+  const linePaths = selection.linePaths ?? [];
+  const beats = lines.length
+    ? [
+        ...(await Promise.all(lines.map(async (text, i) => {
+          const p = linePaths[i];
+          const image = p ? await grab("identity-images", p) : null;
+          return image ? { text, image } : { text };
+        }))),
+        ...(selection.website?.trim() ? [{ text: selection.website.trim() }] : []),
+      ]
+    : undefined;
+
   const common = {
     before,
     after,
-    headline: (selection.headline ?? "Before and after").slice(0, 60),
+    headline: (selection.headline ?? lines[0] ?? "Before and after").slice(0, 60),
     kicker: selection.kicker?.slice(0, 60),
+    beats,
     logo: logo ?? undefined,
     // The end card carries the BUYER's website and nothing else. Alux Art's
     // name never appears in a file somebody paid for — that is the decision

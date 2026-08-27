@@ -78,6 +78,7 @@ export interface PendingConfig {
   gifHeadline?: string;
   gifKicker?: string;
   gifWebsite?: string;
+  gifLines?: string[];
 }
 
 export interface PendingFile {

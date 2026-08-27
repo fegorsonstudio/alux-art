@@ -368,6 +368,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // the only thing stopping a booking naming somebody else's file.
   const gifBody = (body as { gifLoop?: {
     headline?: string; kicker?: string; website?: string;
+    lines?: string[]; lineRefs?: ({ storagePath?: string } | null)[];
     beforeRef?: { storagePath?: string }; afterRef?: { storagePath?: string };
     logoRef?: { storagePath?: string };
   } }).gifLoop;
@@ -380,6 +381,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // what a person reads off a phone screen.
     website: (gifBody.website ?? "").trim().replace(/^https?:\/\//i, "")
       .replace(/\/+$/, "").slice(0, 40) || undefined,
+    // Six is the cap. Past that the loop runs long enough that people scroll
+    // before the reveal, which defeats the point of the sequence.
+    lines: (gifBody.lines ?? []).map(l => (l ?? "").trim().slice(0, 60))
+      .filter(Boolean).slice(0, 6),
+    // Per-line pictures, ownership-checked exactly like the before and after.
+    // A line without one stays null so the indexes still line up.
+    linePaths: (gifBody.lineRefs ?? []).slice(0, 6)
+      .map(r => mine(r?.storagePath) ?? null),
     beforePath: mine(gifBody.beforeRef?.storagePath),
     afterPath: mine(gifBody.afterRef?.storagePath),
     logoPath: mine(gifBody.logoRef?.storagePath),
@@ -390,9 +399,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json(
         { error: "Upload both a before and an after image for your loop." }, { status: 400 });
     }
-    if (!gifLoop.headline) {
+    if (!gifLoop.headline && !gifLoop.lines.length) {
       return NextResponse.json(
-        { error: "Add a headline — three or four words is what reads best." }, { status: 400 });
+        { error: "Add at least one line — three or four words is what reads best." },
+        { status: 400 });
     }
   }
   if (template.category === "photo_upgrade") {

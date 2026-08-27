@@ -349,7 +349,20 @@ export default function CheckoutPanel({
   // pictures, a headline and their logo; no face anywhere in it, which is why
   // the identity section is hidden for this category rather than merely
   // optional.
-  const [gifHeadline, setGifHeadline] = useState("");
+  // The story, one line per beat. Starts as a single empty line so the field
+  // looks like the old one until the buyer adds to it.
+  const [gifLines, setGifLines] = useState<string[]>([""]);
+  const [gifLineShots, setGifLineShots] = useState<(NewIdentityUpload | null)[]>([null]);
+
+  /** A setter scoped to one line, so the shared uploader can fill any slot. */
+  const lineShotSetter = (i: number): React.Dispatch<React.SetStateAction<NewIdentityUpload | null>> =>
+    (v) => setGifLineShots(prev => {
+      const n = [...prev];
+      n[i] = typeof v === "function"
+        ? (v as (p: NewIdentityUpload | null) => NewIdentityUpload | null)(n[i])
+        : v;
+      return n;
+    });
   const [gifKicker, setGifKicker] = useState("");
   const [gifWebsite, setGifWebsite] = useState("");
   const [gifBefore, setGifBefore] = useState<NewIdentityUpload | null>(null);
@@ -761,7 +774,10 @@ export default function CheckoutPanel({
       // gif_loop: the words come back with the config, the pictures with the
       // record. They were staged rather than uploaded because a signed-out
       // buyer has no folder to upload into yet.
-      if (c.gifHeadline) setGifHeadline(c.gifHeadline);
+      if (c.gifLines?.length) {
+        setGifLines(c.gifLines);
+        setGifLineShots(c.gifLines.map(() => null));
+      }
       if (c.gifKicker) setGifKicker(c.gifKicker);
       if (c.gifWebsite) setGifWebsite(c.gifWebsite);
       const gf = pending.gifFiles;
@@ -1267,7 +1283,8 @@ export default function CheckoutPanel({
     : (photoUpgradeActive ? allIdentityRefs.length !== selectedPkg : allIdentityRefs.length === 0);
   const enhanceValid = !photoUpgradeActive
     || (enhanceLightingValid && uploadedCount >= 1 && uploadedCount <= 10);
-  const gifValid = !!gifBefore?.storagePath && !!gifAfter?.storagePath && !!gifHeadline.trim();
+  const gifValid = !!gifBefore?.storagePath && !!gifAfter?.storagePath
+    && gifLines.some(l => l.trim());
   const gifBusy = !!gifBefore?.uploading || !!gifAfter?.uploading || !!gifLogo?.uploading;
 
   // A loop carries no identity photograph at all, so that requirement is
@@ -1297,7 +1314,7 @@ export default function CheckoutPanel({
       selectedPkg, shotType, flagShotOn, flagText, groupPicks, multiPicks, bgAlloc, bgSplitMode, rolePrompt, brandPlacement,
       mugshotOn, mugshotName, mugshotOffense, mugshotDate, bowlOn, bowlMode,
       newsHeadline, newsSubtitle, newsCaption,
-      gifHeadline: gifHeadline || undefined,
+      gifLines: gifLines.some(l => l.trim()) ? gifLines : undefined,
       gifKicker: gifKicker || undefined,
       gifWebsite: gifWebsite || undefined,
       groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
@@ -1419,7 +1436,14 @@ export default function CheckoutPanel({
           : undefined,
         gifLoop: gifLoopActive
           ? {
-              headline: gifHeadline.trim(),
+              // headline stays for anything reading the old shape; lines is
+              // what actually drives the render.
+              headline: gifLines.find(l => l.trim())?.trim() ?? "",
+              lines: gifLines.map(l => l.trim()).filter(Boolean),
+              lineRefs: gifLines.map((l, i) =>
+                l.trim() && gifLineShots[i]?.storagePath
+                  ? { storagePath: gifLineShots[i]!.storagePath }
+                  : null),
               kicker: gifKicker.trim() || undefined,
               website: gifWebsite.trim() || undefined,
               beforeRef: { storagePath: gifBefore?.storagePath },
@@ -1798,9 +1822,60 @@ export default function CheckoutPanel({
                 ))}
               </div>
 
-              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("gifHeadlineLabel")}</p>
-              <input className={styles.flagInput} value={gifHeadline} maxLength={60}
-                placeholder={t("gifHeadlinePh")} onChange={e => setGifHeadline(e.target.value)} />
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>
+                {t("gifLinesLabel")}
+              </p>
+              <p className={styles.sectionHint}>{t("gifLinesHint")}</p>
+
+              {gifLines.map((line, i) => (
+                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+                  <span className={styles.pkgLabel} style={{ width: 18, opacity: 0.5 }}>{i + 1}</span>
+                  <input className={styles.flagInput} value={line} maxLength={60}
+                    style={{ flex: 1, minWidth: 0 }}
+                    placeholder={i === 0 ? t("gifHeadlinePh") : t("gifLineNextPh")}
+                    onChange={e => {
+                      const next = [...gifLines]; next[i] = e.target.value; setGifLines(next);
+                    }} />
+                  {/* A picture for this line only. Most lines have none and
+                      inherit the before or after, which is what makes the
+                      reveal land where it should. */}
+                  {gifLineShots[i] ? (
+                    <div className={styles.uploadItem} style={{ width: 42, flex: "0 0 42px" }}>
+                      <ImagePreview src={gifLineShots[i]!.preview} alt="" className={styles.uploadImg} preferredWidth={84} />
+                      {gifLineShots[i]!.uploading && <div className={styles.uploadOverlay} />}
+                      <button type="button" className={styles.removeBtn}
+                        onClick={() => { const n = [...gifLineShots]; n[i] = null; setGifLineShots(n); }}>✕</button>
+                    </div>
+                  ) : (
+                    <label className={styles.uploadBtn}
+                      style={{ cursor: "pointer", flex: "0 0 42px", textAlign: "center", padding: "6px 0" }}
+                      title={t("gifLinePhotoHint")}>
+                      +
+                      <input type="file" accept="image/*" style={{ display: "none" }}
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f) setGifSlot(lineShotSetter(i))(f);
+                          e.target.value = "";
+                        }} />
+                    </label>
+                  )}
+                  {gifLines.length > 1 && (
+                    <button type="button" className={styles.removeBtn} style={{ position: "static" }}
+                      onClick={() => {
+                        setGifLines(gifLines.filter((_, x) => x !== i));
+                        setGifLineShots(gifLineShots.filter((_, x) => x !== i));
+                      }}>✕</button>
+                  )}
+                </div>
+              ))}
+
+              {gifLines.length < 6 && (
+                <button type="button" className={styles.uploadBtn}
+                  style={{ cursor: "pointer", alignSelf: "flex-start", marginBottom: 4 }}
+                  onClick={() => { setGifLines([...gifLines, ""]); setGifLineShots([...gifLineShots, null]); }}>
+                  {t("gifAddLine")}
+                </button>
+              )}
 
               <p className={styles.pkgLabel} style={{ marginTop: 10, marginBottom: 4 }}>
                 {t("gifKickerLabel")} <span className={styles.optionalTag}>{t("optionalParen")}</span>
