@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import AccountingPanel from "./AccountingPanel";
 import Link from "next/link";
 import styles from "./admin.module.css";
 
@@ -107,12 +108,13 @@ interface AdminData {
   topTemplates?: Array<{ id: string; title: string; category: string; sales: number }>;
 }
 
-type AdminTab = "overview" | "shoots" | "people" | "marketplace" | "settings";
+type AdminTab = "overview" | "shoots" | "people" | "marketplace" | "accounting" | "settings";
 const ADMIN_TABS: Array<{ id: AdminTab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "shoots", label: "Shoots" },
   { id: "people", label: "People" },
   { id: "marketplace", label: "Marketplace" },
+  { id: "accounting", label: "Accounting" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -963,6 +965,8 @@ export default function AdminPage() {
         </div>
       )}
       </>)}
+
+      {tab === "accounting" && <AccountingPanel />}
 
       {tab === "settings" && (<>
       {/* ---- AI Model Config ---- */}
