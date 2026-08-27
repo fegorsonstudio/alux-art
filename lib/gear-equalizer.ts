@@ -435,7 +435,10 @@ export function buildGearEqualizerPrompt(
       "artifacts; correct white balance and exposure. Enhancement means REVEALING what is " +
       "already in the photograph at a resolution the original could not hold. It never means " +
       "adding, redesigning or embellishing anything, and never alters geometry, proportions " +
-      "or features.",
+      "or features. ON A FACE THIS IS A HARD LIMIT: sharpen and clarify the features that are " +
+      "there, and NEVER reconstruct, re-draw or re-proportion them. If a feature is soft or " +
+      "blurred in IMAGE 1, it stays that shape and only becomes sharper — a blurred jaw is a " +
+      "blurred version of THAT jaw, not permission to draw a better one.",
 
     // 5. Background.
     backdropAttached
@@ -491,8 +494,46 @@ export function buildGearEqualizerPrompt(
       "without changing any shape, proportion, or feature. The result must look like the " +
       "same photograph captured on far better gear — recognizably identical, dramatically " +
       "better lit and rendered. Realistic skin texture, subtle film grain, physically " +
-      "plausible light. No beautification, no face slimming, no body reshaping, and no "+
-      "upgrading of garments, jewellery or accessories.",
+      "plausible light.",
+
+    // 7. IDENTITY. Last, and unconditional.
+    //
+    // This used to be one clause at the end of the SOURCE RESTORATION paragraph
+    // above, which opens "if IMAGE 1 is low-resolution, noisy, soft or poorly
+    // compressed". A customer sent a clean 4284x5712 photograph and got back a
+    // slimmer jaw, a narrower nose, smaller cheeks, a slimmer body and a closed
+    // mouth where she had been smiling. The rule against exactly that was sitting
+    // inside a conditional her photograph did not satisfy, so the model was free to
+    // read it as not applying to her. It applies to everyone now, it is
+    // unconditional, and it is LAST so it is the final thing read.
+    //
+    // Stated as prohibitions with named failure modes rather than as "preserve
+    // identity". A model asked to preserve identity while also making a picture
+    // better will do both, and its idea of better is a more conventionally
+    // attractive face. It has to be told which specific changes are failures.
+    "IDENTITY IS THE WHOLE JOB — this overrides every other instruction above, and it " +
+      "applies to EVERY photograph, sharp or blurred, well lit or badly lit. The person " +
+      "who comes out must be the same person who went in, recognisable instantly by " +
+      "someone who knows them. The following are FAILURES, not improvements, and each one " +
+      "on its own means the result is rejected:\n" +
+      "- Slimming, narrowing or reshaping the face, jaw, chin or cheeks.\n" +
+      "- Narrowing, straightening or resizing the nose. Changing the lips or mouth shape.\n" +
+      "- Changing eye shape, size, spacing or angle.\n" +
+      "- Making the face more symmetrical. Real faces are asymmetric; keep the asymmetry.\n" +
+      "- Slimming, lengthening or reshaping the body, waist, arms, shoulders or legs.\n" +
+      "- Changing the expression. A smile with teeth showing stays a smile with teeth " +
+      "showing; a closed mouth stays closed. Do not calm, soften or neutralise a face.\n" +
+      "- Smoothing, lightening or evening out skin. Keep texture, pores, marks, moles, " +
+      "scars, tattoos, stretch marks and uneven tone exactly as photographed. Relighting " +
+      "changes how light falls ON skin, never the skin itself.\n" +
+      "- Changing hairline, hair length, braid or loc placement, or how the hair sits.\n" +
+      "- Changing apparent age, weight or ethnicity.\n" +
+      "THE TEST: place the output beside IMAGE 1. Every difference must be explainable " +
+      "by the lights having been moved. If any difference is explainable only by the " +
+      "PERSON having been changed, the result has failed. Making someone look better is " +
+      "not the service; making their photograph look better is. No beautification, no " +
+      "face slimming, no body reshaping, and no upgrading of garments, jewellery or " +
+      "accessories.",
   ];
 
   return parts.join(" ");
