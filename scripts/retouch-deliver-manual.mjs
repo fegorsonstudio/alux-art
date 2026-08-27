@@ -84,10 +84,14 @@ const main = async () => {
     await sql`INSERT INTO shoot_retouch_items (shoot_id, image_id) VALUES (${shootId}, ${slot.id})
               ON CONFLICT (shoot_id, image_id) DO NOTHING`;
   }
+  // Idempotent: a run that uploads and then fails later must be safe to repeat.
+  // storage_path carries a unique index, so a bare ON CONFLICT DO NOTHING covers
+  // it without needing to name which index caught it.
   await sql`
     INSERT INTO shoot_retouched_images (id, shoot_id, user_id, slot, storage_bucket, storage_path, file_size, created_at)
     VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id}, ${slot?.slot ?? 1},
-            'generated-4k', ${key}, ${bytes.length}, NOW())`;
+            'generated-4k', ${key}, ${bytes.length}, NOW())
+    ON CONFLICT DO NOTHING`;
   console.log("order recorded, unpaid");
 
   // ── the payment link, from the ordinary route ─────────────────────────────
