@@ -5,6 +5,7 @@ import { r2SignedDownloadUrl } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
 import { sendText, sendImage, windowOpen, credsForAccount, type IgCreds } from "@/lib/instagram";
 import { tellAdmin } from "@/lib/telegram";
+import { sendWithLinkFallback } from "@/lib/instagram-bot";
 
 /**
  * Paying for a retouch, and receiving it, inside an Instagram chat.
@@ -28,6 +29,33 @@ import { tellAdmin } from "@/lib/telegram";
  */
 
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
+
+/**
+ * A login-free link to the full-quality retouched file.
+ *
+ * Minted here, at delivery: payment has already cleared by the time this runs,
+ * and the routes behind /d/ refuse a retouched token whose order is unpaid
+ * anyway. Kept once minted, so sending the same link twice works.
+ *
+ * This exists because a chat compresses pictures. Without it the customer paid
+ * extra for a hand retouch and received a squeezed copy of it, which is the one
+ * thing this service must not do.
+ */
+async function retouchDownloadLink(shootId: string, path?: string): Promise<string | null> {
+  const [img] = await sql<{ id: string; token: string | null }[]>`
+    SELECT id, download_token AS token FROM shoot_retouched_images
+    WHERE shoot_id = ${shootId} ${path ? sql`AND storage_path = ${path}` : sql``}
+    ORDER BY slot LIMIT 1`.catch(() => []);
+  if (!img) return null;
+
+  let token = img.token;
+  if (!token) {
+    token = crypto.randomUUID().replace(/-/g, "");
+    await sql`UPDATE shoot_retouched_images SET download_token = ${token} WHERE id = ${img.id}`
+      .catch(() => { token = null; });
+  }
+  return token ? `${SITE_URL}/d/${token}` : null;
+}
 
 type Chat = {
   ig_user_id: string;
@@ -205,7 +233,11 @@ export async function deliverRetouch(shootId: string, onlyPath?: string): Promis
       return false;
     }
 
-    await sendText(chat.creds, chat.ig_user_id,
+    // The chat copy is the preview; the link is the thing they paid for.
+    const link = await retouchDownloadLink(shootId, onlyPath);
+    await sendWithLinkFallback(chat.creds, chat.ig_user_id,
+      `That's your retouched photo${sent === 1 ? "" : "s"} — thank you for choosing Alux Art 🎉\n\n` +
+      `Instagram compresses pictures in chat. Full quality here:\n${link ?? `${SITE_URL}/studio`}`,
       `That's your retouched photo${sent === 1 ? "" : "s"} — thank you for choosing Alux Art 🎉\n\n` +
       `Instagram compresses pictures in chat. The full-quality file is on ` +
       `aluxartandframes.shop under your shoots.`);

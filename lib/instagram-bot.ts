@@ -310,19 +310,33 @@ export async function offerLook(
   // DM carrying a link is refused outright while the account is under a link
   // restriction (error 2534122). The fallback keeps the other two routes rather
   // than losing the whole reply.
+  // wa.me carries the look number in the URL, so WhatsApp opens with "197"
+  // already typed. Without it the customer arrives in a second bot having lost
+  // the only piece of context that matters and has to start again.
+  const waLink = `https://wa.me/${WA_NUMBER}?text=${n}`;
   const opening =
     `That's *${prettyLook(look.lookName)}* \u2014 look ${n}. \ud83d\udc47\n\n` +
     `${naira(RELIGHT_PRICE_NGN)} for one photo. Three ways to do it \u2014 ` +
     `whichever suits you:\n\n` +
     `1\ufe0f\u20e3 *Right here* \u2014 send me the photo in this chat.\n` +
-    `2\ufe0f\u20e3 *WhatsApp* \u2014 message ${WA_NUMBER} and send *${n}*.\n`;
+    `2\ufe0f\u20e3 *WhatsApp* \u2014 ${waLink}\n`;
   const closing =
     `\n\nQuickest is right here: send the picture \u2014 the dark club, the dim ` +
     `restaurant, the badly lit hall \u2014 and I'll take it from there.`;
 
+  // The no-link version rebuilds BOTH options as plain text: option 2 is a
+  // wa.me URL now, so reusing `opening` in the fallback would smuggle a link
+  // into the message that exists precisely because links were refused.
+  const openingNoLink =
+    `That's *${prettyLook(look.lookName)}* \u2014 look ${n}. \ud83d\udc47\n\n` +
+    `${naira(RELIGHT_PRICE_NGN)} for one photo. Three ways to do it \u2014 ` +
+    `whichever suits you:\n\n` +
+    `1\ufe0f\u20e3 *Right here* \u2014 send me the photo in this chat.\n` +
+    `2\ufe0f\u20e3 *WhatsApp* \u2014 message ${WA_NUMBER} and send *${n}*.\n`;
+
   await sendWithLinkFallback(creds, session.ig_user_id,
     opening + `3\ufe0f\u20e3 *Online* \u2014 ${SITE_URL}` + closing,
-    opening + `3\ufe0f\u20e3 *Online* \u2014 aluxartandframes.shop` + closing,
+    openingNoLink + `3\ufe0f\u20e3 *Online* \u2014 aluxartandframes.shop` + closing,
   );
   return true;
 }

@@ -29,6 +29,33 @@ type Session = {
 /** Naira, with separators. */
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
+/**
+ * A login-free link to the full-quality retouched file.
+ *
+ * Minted here, at delivery: payment has already cleared by the time this runs,
+ * and the routes behind /d/ refuse a retouched token whose order is unpaid
+ * anyway. Kept once minted, so sending the same link twice works.
+ *
+ * This exists because a chat compresses pictures. Without it the customer paid
+ * extra for a hand retouch and received a squeezed copy of it, which is the one
+ * thing this service must not do.
+ */
+async function retouchDownloadLink(shootId: string, path?: string): Promise<string | null> {
+  const [img] = await sql<{ id: string; token: string | null }[]>`
+    SELECT id, download_token AS token FROM shoot_retouched_images
+    WHERE shoot_id = ${shootId} ${path ? sql`AND storage_path = ${path}` : sql``}
+    ORDER BY slot LIMIT 1`.catch(() => []);
+  if (!img) return null;
+
+  let token = img.token;
+  if (!token) {
+    token = crypto.randomUUID().replace(/-/g, "");
+    await sql`UPDATE shoot_retouched_images SET download_token = ${token} WHERE id = ${img.id}`
+      .catch(() => { token = null; });
+  }
+  return token ? `${SITE_URL}/d/${token}` : null;
+}
+
 /** WhatsApp fetches file links from its own servers, so they must need no session. */
 async function publicUrl(bucket: string, path: string): Promise<string | null> {
   const signed = await signedMediaUrl(bucket, path, { expiresIn: 6 * 3600 }).catch(() => null);
@@ -150,8 +177,13 @@ export async function deliverRetouch(shootId: string, onlyPath?: string): Promis
 
     if (!sent) return false;
 
+    // WhatsApp takes documents, so the file itself arrives uncompressed — but
+    // the link goes too, because a document in a chat is easy to lose and a
+    // link can be opened again later on a laptop.
+    const link = await retouchDownloadLink(shootId, onlyPath);
     await sendText(creds, session.customer_phone,
-      `That's your retouched photo${sent === 1 ? "" : "s"} — thank you for choosing Alux Art 🎉`);
+      `That's your retouched photo${sent === 1 ? "" : "s"} — thank you for choosing Alux Art 🎉` +
+      (link ? `\n\nFull quality, any time:\n${link}` : ""));
     return true;
   } catch (e) {
     console.error("[wa retouch] delivery failed:", e instanceof Error ? e.message : e);

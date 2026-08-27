@@ -531,7 +531,15 @@ async function handleDirectMessage(
 
   // Same words the WhatsApp bot accepts, because a customer who has used both
   // should not have to learn two vocabularies.
-  if (/^(retouch|retouching|edit|edit my (photos|images))$/i.test(text)) {
+  // STEM, not exact word. A customer typed "Retouched" and the anchored version
+  // did not match, so quiet mode swallowed it and she got silence on a request
+  // to spend money — the studio had to answer her by hand. Nothing reached
+  // Telegram either, because the handler never ran at all.
+  //
+  // "edit" stays anchored: it is a common word and matching it loosely would
+  // hijack "I need to edit my caption".
+  if (/\bretouch(ed|ing)?\b/i.test(text)
+      || /^edit( my (photos?|images?))?$/i.test(text)) {
     await requestRetouch(creds, session, senderId);
     return;
   }
