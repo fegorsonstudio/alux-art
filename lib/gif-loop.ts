@@ -38,6 +38,28 @@ export type ArGifOptions = {
   kicker?: string;
   /** Shown on the panel at the end. Omitted entirely for white-label output. */
   endCard?: string;
+  /**
+   * The story, one line per beat, cut fast.
+   *
+   * A single headline held for four seconds does not explain anything — people
+   * saw the loop and could not tell what was being sold. A sequence can:
+   * "RELIGHT YOUR PHONE PHOTOS" / "SAME ROOM" / "SAME OUTFIT" / "DIFFERENT
+   * LIGHT" / "aluxartandframes.shop". Each line lands, cuts, and the next
+   * arrives before attention moves on.
+   *
+   * Cuts, not dissolves, between lines. At this speed a cross-fade reads as
+   * mush; a hard cut reads as deliberate. The one dissolve left in the film is
+   * the before/after itself, which is the product and has to be seen happening.
+   *
+   * A beat may carry its own picture. When it does not, it inherits: the BEFORE
+   * photograph until the reveal, the AFTER photograph from the reveal onward.
+   */
+  beats?: Array<{ text: string; image?: Buffer }>;
+  /**
+   * Which beat the picture changes on. Defaults to the second from last, since
+   * the last line is usually an address rather than part of the argument.
+   */
+  revealAt?: number;
   /** Customer's mark, on the panel. Transparent PNG expected. */
   logo?: Buffer;
   width?: number;
@@ -160,21 +182,13 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // one that still reads when the whole thing is 200px wide.
   const pad = Math.round(Math.min(panelW, panelH) * 0.09);
   const inner = panelW - pad * 2;
-  const lines = layoutHeadline(opts.headline, portrait ? 11 : 6.6);
-
-  // THREE BANDS, and the headline only gets what is left.
+  // THREE BANDS: logo on top, kicker at the bottom, words in the gap.
   //
   // The logo and the kicker were both pinned to the bottom-left corner and drew
   // straight through each other — a customer's own mark printed over their own
-  // caption. The logo owns the top band now, the kicker owns the bottom band,
-  // and the headline is centred in the gap between them.
-  // Was H * 0.09 — 48 pixels on a 540 frame, which made "ALUX ART" a smudge.
-  // Sized off the panel now, and generously: a mark nobody can read is not a
-  // mark. The width cap stops a long horizontal wordmark eating the band.
+  // caption. Separating them is what fixed it.
   const logoH = Math.round(Math.min(panelH * 0.17, panelW * 0.3));
   const logoBand = opts.logo ? logoH + Math.round(pad * 0.7) : 0;
-  // Measured on its own terms rather than as a fraction of a headline size that
-  // has not been decided yet.
   const kickerSize = opts.kicker
     ? Math.min(
         Math.round((inner * 0.97) / (widthEm(opts.kicker) * 1.12)),
@@ -182,55 +196,66 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       )
     : 0;
   const kickerBand = opts.kicker ? kickerSize + Math.round(pad * 0.8) : 0;
-  // The floor stops a tall logo plus a long kicker from squeezing the headline
-  // out of existence on a narrow panel.
-  const bandH = Math.max(Math.round(panelH * 0.25), panelH - logoBand - kickerBand - pad * 2);
-  // Sized from the WIDEST line, measured, never a fixed fraction of the panel.
-  // A fixed fraction clipped "YOUR PHONE" to "YOUR PHON"; counting characters
-  // instead clipped the full stop off "SAME ROOM." while "ONE LIGHT." — the same
-  // ten characters — sat comfortably inside. The 0.97 keeps a hair of air at the
-  // right edge; the height cap stops a one-word headline growing taller than the
-  // panel.
-  const widest = Math.max(...lines.map(widthEm), 0.1);
-  const size = Math.min(
-    Math.round((inner * 0.97) / widest),
-    Math.round((bandH * 0.98) / lines.length),
-  );
-  const lead = Math.round(size * 1.02);
-  const blockH = lead * lines.length;
-  // Centred in the band, not in the panel.
-  const top = logoBand + pad + Math.round((bandH - blockH) / 2) + Math.round(size * 0.78);
 
-  const panelSvg = (endText?: string) => {
-    if (endText) {
-      // Sized from the measured width, not a fixed fraction: a fixed one clipped
+  /**
+   * One panel, sized for the words it actually carries.
+   *
+   * This used to be computed once for a single headline. With a sequence of
+   * beats every line is a different length — "SAME ROOM" and "RELIGHT YOUR
+   * PHONE PHOTOS" cannot share a type size without one of them being wrong — so
+   * the wrap, the size and the vertical centring are all worked out per beat.
+   *
+   * `address` styles a line that is a web address: centred and a little smaller,
+   * because a URL set in the same huge weight as a headline reads as shouting
+   * and wraps horribly.
+   */
+  const panelFor = (text: string, opts2: { address?: boolean; kicker?: boolean } = {}): Buffer => {
+    const showKicker = opts2.kicker !== false && !!opts.kicker && !opts2.address;
+    const kBand = showKicker ? kickerBand : 0;
+    const bandH = Math.max(Math.round(panelH * 0.25), panelH - logoBand - kBand - pad * 2);
+
+    if (opts2.address) {
+      // Sized from the measured width: a fixed fraction clipped
       // "aluxartandframes.shop" off both edges of the panel.
       const s2 = Math.min(
-        Math.round((inner * 0.97) / Math.max(0.1, widthEm(endText) * 0.86)),
+        Math.round((inner * 0.97) / Math.max(0.1, widthEm(text) * 0.86)),
         Math.round(panelH * 0.16),
       );
-      return `<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
+      return Buffer.from(`<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${panelW}" height="${panelH}" fill="${MINT}"/>
         <text x="${panelW / 2}" y="${panelH / 2 + s2 / 3}" text-anchor="middle" font-family="${FONT}"
-          font-size="${s2}" font-weight="900" fill="${INK}">${esc(endText)}</text>
-      </svg>`;
+          font-size="${s2}" font-weight="900" fill="${INK}">${esc(text)}</text>
+      </svg>`);
     }
+
+    const lines = layoutHeadline(text, portrait ? 11 : 6.6);
+    // Sized from the WIDEST line, measured, never a fixed fraction of the panel.
+    // A fixed fraction clipped "YOUR PHONE" to "YOUR PHON"; counting characters
+    // instead clipped the full stop off "SAME ROOM." while "ONE LIGHT." — the
+    // same ten characters — sat comfortably inside.
+    const widest = Math.max(...lines.map(widthEm), 0.1);
+    const size = Math.min(
+      Math.round((inner * 0.97) / widest),
+      Math.round((bandH * 0.98) / lines.length),
+    );
+    const lead = Math.round(size * 1.02);
+    const blockH = lead * lines.length;
+    const top = logoBand + pad + Math.round((bandH - blockH) / 2) + Math.round(size * 0.78);
+
     const body = lines.map((l, i) =>
       `<text x="${pad}" y="${top + i * lead}" font-family="${FONT}" font-size="${size}"
          font-weight="900" fill="${INK}" letter-spacing="-0.03em">${esc(l.toUpperCase())}</text>`).join("");
-    const kick = opts.kicker
+    const kick = showKicker
       ? `<text x="${pad}" y="${panelH - pad}" font-family="${FONT}"
            font-size="${kickerSize}" font-weight="800" fill="${INK}" opacity="0.72"
-           letter-spacing="0.1em">${esc(opts.kicker.toUpperCase())}</text>`
+           letter-spacing="0.1em">${esc(opts.kicker!.toUpperCase())}</text>`
       : "";
-    return `<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
+    return Buffer.from(`<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
       <rect width="${panelW}" height="${panelH}" fill="${MINT}"/>
       ${body}${kick}
-    </svg>`;
+    </svg>`);
   };
 
-  const panel = Buffer.from(panelSvg());
-  const endPanel = opts.endCard ? Buffer.from(panelSvg(opts.endCard)) : null;
 
   // Trimmed, then resampled properly. Two separate faults were visible in the
   // first renders: the mark was too small to read, and it was surrounded by its
@@ -280,39 +305,86 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   const fade = (buf: Buffer, alpha: number) =>
     sharp(buf).ensureAlpha(Math.max(0, Math.min(1, alpha))).png().toBuffer();
 
-  const holdBefore = Math.round(FPS * 0.85);
-  const dissolve = Math.round(FPS * 0.55);   // quick: at this size a slow fade reads as a stall
-  const holdAfter = Math.round(FPS * 1.5);
-  const back = Math.round(FPS * 0.3);
-  const endBeat = endPanel ? Math.round(FPS * 0.9) : 0;
+  // ── THE STORY, AS BEATS ───────────────────────────────────────────────────
+  //
+  // Callers who pass no beats get the original film: one headline, a
+  // before/after dissolve, an optional address at the end. Everything below
+  // treats that as a two-beat sequence so there is one timeline, not two.
+  const looksLikeAddress = (t: string) => /\.[a-z]{2,}(\/|$)/i.test(t.trim()) && !/\s/.test(t.trim());
+
+  const beats = (opts.beats && opts.beats.length)
+    ? opts.beats.filter(b => b.text?.trim())
+    : [
+        { text: opts.headline },
+        ...(opts.endCard ? [{ text: opts.endCard }] : []),
+      ];
+
+  // Where the photograph changes. The last line is usually an address rather
+  // than part of the argument, so the reveal lands on the one before it — which
+  // for "…/ SAME OUTFIT / DIFFERENT LIGHT / theirsite.com" is exactly the beat
+  // that says the light changed.
+  const revealAt = opts.revealAt !== undefined
+    ? Math.max(0, Math.min(beats.length - 1, opts.revealAt))
+    : (beats.length >= 3 && looksLikeAddress(beats[beats.length - 1].text)
+        ? beats.length - 2
+        : beats.length - 1);
+
+  // Fast. Each line is short and the reader only has to take in one idea, so
+  // holding longer just invites a scroll. The reveal beat is the exception:
+  // that is the payoff and it needs time to be seen.
+  const BEAT = Math.max(2, Math.round(FPS * 0.62));
+  const REVEAL_HOLD = Math.max(3, Math.round(FPS * 1.25));
+  const DISSOLVE = Math.max(2, Math.round(FPS * 0.32));
+
+  /** Normalise a per-beat picture to the same box the others occupy. */
+  const normalised = new Map<number, Buffer>();
+  for (let i = 0; i < beats.length; i++) {
+    const img = beats[i].image;
+    if (img) normalised.set(i, await norm(img));
+  }
+  const photoFor = (i: number) => normalised.get(i) ?? (i < revealAt ? before : after);
 
   const frames: Buffer[] = [];
-  const beforeFrame = await compose(before, panel);
-  const afterFrame = await compose(after, panel);
 
-  for (let i = 0; i < holdBefore; i++) frames.push(beforeFrame);
+  for (let i = 0; i < beats.length; i++) {
+    const isAddress = looksLikeAddress(beats[i].text);
+    const panel = panelFor(beats[i].text, { address: isAddress });
+    const photo = photoFor(i);
 
-  for (let i = 1; i <= dissolve; i++) {
-    const t = i / dissolve;
-    const eased = t * t * (3 - 2 * t);
-    const blended = await sharp(before).composite([{ input: await fade(after, eased) }]).toBuffer();
-    frames.push(await compose(blended, panel));
+    // The one dissolve in the film. It happens ON the reveal beat, so the words
+    // that explain the change and the change itself are the same moment.
+    if (i === revealAt && !normalised.has(i)) {
+      const from = i > 0 ? photoFor(i - 1) : before;
+      if (from !== photo) {
+        for (let d = 1; d <= DISSOLVE; d++) {
+          const t = d / DISSOLVE;
+          const eased = t * t * (3 - 2 * t);
+          const blended = await sharp(from).composite([{ input: await fade(photo, eased) }]).toBuffer();
+          frames.push(await compose(blended, panel));
+        }
+      }
+    }
+
+    // Everything else is a hard cut. At this speed a cross-fade between two
+    // lines of text reads as a smear rather than as a change.
+    const hold = i === revealAt ? REVEAL_HOLD : BEAT;
+    const still = await compose(photo, panel);
+    for (let f = 0; f < hold; f++) frames.push(still);
   }
 
-  for (let i = 0; i < holdAfter; i++) frames.push(afterFrame);
-
-  // The end card swaps the PANEL, not the picture: the photograph is the proof
-  // and it stays on screen while the name is said.
-  if (endPanel) {
-    const endFrame = await compose(after, endPanel);
-    for (let i = 0; i < endBeat; i++) frames.push(endFrame);
-  }
-
-  for (let i = 1; i <= back; i++) {
-    const t = i / back;
-    const eased = t * t * (3 - 2 * t);
-    const blended = await sharp(after).composite([{ input: await fade(before, eased) }]).toBuffer();
-    frames.push(await compose(blended, panel));
+  // Back to the top, so the loop does not jump. Only needed when the last beat
+  // is not already showing the opening picture.
+  const lastPhoto = photoFor(beats.length - 1);
+  const firstPhoto = photoFor(0);
+  if (lastPhoto !== firstPhoto) {
+    const backPanel = panelFor(beats[0].text, { address: looksLikeAddress(beats[0].text) });
+    const back = Math.max(2, Math.round(FPS * 0.3));
+    for (let d = 1; d <= back; d++) {
+      const t = d / back;
+      const eased = t * t * (3 - 2 * t);
+      const blended = await sharp(lastPhoto).composite([{ input: await fade(firstPhoto, eased) }]).toBuffer();
+      frames.push(await compose(blended, backPanel));
+    }
   }
 
   return { frames, width: W, height: H, fps: FPS };
