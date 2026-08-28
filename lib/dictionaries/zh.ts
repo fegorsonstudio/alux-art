@@ -509,7 +509,7 @@ const zh: AppDictionary = {
     nursing_induction: "🩺 护士授帽礼",
     photo_upgrade: "📸 照片升级",
     trending: "🔥 热门",
-    gif_loop: "🎞️ 前后对比循环",
+    gif_loop: "🎞️ Instagram 动图",
     other: "其他",
   },
 };

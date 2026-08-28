@@ -509,7 +509,7 @@ const ar: AppDictionary = {
     nursing_induction: "🩺 تخرّج التمريض",
     photo_upgrade: "📸 تحسين الصور",
     trending: "🔥 رائج",
-    gif_loop: "🎞️ حلقة قبل / بعد",
+    gif_loop: "🎞️ صورة متحركة لإنستغرام",
     other: "أخرى",
   },
 };

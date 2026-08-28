@@ -508,7 +508,7 @@ const en = {
     nursing_induction: "🩺 Nursing Induction",
     photo_upgrade: "📸 Photo Upgrade",
     trending: "🔥 Trending",
-    gif_loop: "🎞️ Before / After Loop",
+    gif_loop: "🎞️ Instagram GIF",
     other: "Other",
   },
 };

@@ -509,7 +509,7 @@ const pt: AppDictionary = {
     nursing_induction: "🩺 Indução de enfermagem",
     photo_upgrade: "📸 Upgrade de foto",
     trending: "🔥 Em alta",
-    gif_loop: "🎞️ Loop antes / depois",
+    gif_loop: "🎞️ GIF do Instagram",
     other: "Outros",
   },
 };
