@@ -61,7 +61,7 @@ async function resolveToken(token: string): Promise<
 }
 
 
-const page = (token: string, mb: string, isVideo: boolean) => `<!doctype html>
+const page = (token: string, mb: string, isVideo: boolean, sticker?: { tag: string; url: string } | null) => `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -78,6 +78,12 @@ const page = (token: string, mb: string, isVideo: boolean) => `<!doctype html>
         padding:16px;border-radius:12px;text-decoration:none;margin-bottom:12px}
   .hint{font-size:.78rem;opacity:.6;line-height:1.5}
   .foot{margin-top:22px;font-size:.75rem;opacity:.45}
+  .sticker{margin-top:18px;padding:14px;border-radius:12px;background:rgba(67,204,178,.12);
+           text-align:left;font-size:.84rem;line-height:1.5}
+  .sticker strong{display:block;margin-bottom:5px}
+  .sticker p{margin:0;opacity:.85;font-size:.82rem}
+  .sticker .tiny{margin-top:6px;opacity:.6;font-size:.74rem}
+  .sticker code{background:rgba(0,0,0,.3);padding:2px 7px;border-radius:5px;font-size:.86rem}
 </style></head>
 <body><div class="card">
   <h1>${isVideo ? "Your video is ready" : "Your photo is ready"}</h1>
@@ -97,6 +103,12 @@ const page = (token: string, mb: string, isVideo: boolean) => `<!doctype html>
          and choose <strong>Save to Photos</strong>. On a computer, right-click and
          choose <strong>Save image as</strong>.`}
   </p>
+  ${sticker ? `<div class="sticker">
+    <strong>Your sticker is live on Instagram</strong>
+    <p>Open any story or post, tap the sticker button, choose GIF, and search
+       <code>${sticker.tag}</code> — yours is the one that comes up.</p>
+    <p class="tiny">It can take a few hours to appear while Instagram indexes it.</p>
+  </div>` : ""}
   <p class="foot">This link works for 7 days &middot; aluxartandframes.shop</p>
 </div></body></html>`;
 
@@ -129,7 +141,17 @@ export async function GET(
   // An MP4 cannot go in an <img>, and a loop bought as video is half the
   // files this template now produces.
   const isVideo = /\.(mp4|webm|mov)$/i.test(row.path);
-  return new NextResponse(page(token, mb, isVideo), {
+
+  // Only set when the buyer ticked the box and the upload actually succeeded,
+  // so the page never promises a sticker that is not there.
+  const [shoot] = await sql<{ giphy_tag: string | null; giphy_url: string | null }[]>`
+    SELECT enhance->>'giphyTag' AS giphy_tag, enhance->>'giphyUrl' AS giphy_url
+    FROM shoots WHERE id = ${resolved?.shootId ?? null}`.catch(() => []);
+  const sticker = shoot?.giphy_tag
+    ? { tag: shoot.giphy_tag, url: shoot.giphy_url ?? "" }
+    : null;
+
+  return new NextResponse(page(token, mb, isVideo, sticker), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }

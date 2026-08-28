@@ -234,6 +234,8 @@ const ar: AppDictionary = {
     gifLineNextPh: "السطر التالي",
     gifAddLine: "+ أضف سطرًا",
     gifLinePhotoHint: "أضف صورة لهذا السطر (اختياري)",
+    gifShareLabel: "أريد استخدامه كملصق على إنستغرام",
+    gifShareHint: "ننشر مقطعك على قناة Alux Art على GIPHY ليظهر في بحث الصور المتحركة داخل إنستغرام. يمكن لأي شخص أن يجده ويستخدمه، لذا لا تفعّل هذا إلا إذا وافقت على أن تكون الصورة عامة.",
     uploading: "جارٍ الرفع...",
     yourIdentityPhotos: "صور هويتك",
     photosToUpgrade: "صورك المراد تحسينها",

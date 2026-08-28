@@ -233,6 +233,8 @@ const en = {
     gifLineNextPh: "Next line",
     gifAddLine: "+ Add a line",
     gifLinePhotoHint: "Add a picture for this line (optional)",
+    gifShareLabel: "Let me use this as a sticker on Instagram",
+    gifShareHint: "We publish your loop to the Alux Art GIPHY channel so it turns up in Instagram's GIF search. Anyone can find and use it there, so only tick this if you are happy for the picture to be public.",
     uploading: "Uploading...",
     yourIdentityPhotos: "Your identity photos",
     photosToUpgrade: "Your photos to upgrade",

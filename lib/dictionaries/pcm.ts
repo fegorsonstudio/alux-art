@@ -234,6 +234,8 @@ const pcm: AppDictionary = {
     gifLineNextPh: "Next line",
     gifAddLine: "+ Add a line",
     gifLinePhotoHint: "Add picture for dis line (optional)",
+    gifShareLabel: "Make I fit use am as sticker for Instagram",
+    gifShareHint: "We go publish your loop for di Alux Art GIPHY channel so e go show for Instagram GIF search. Anybody fit find am and use am, so only tick am if you okay make di picture be public.",
     uploading: "E dey upload...",
     yourIdentityPhotos: "Your identity photos",
     photosToUpgrade: "Your photos wey you wan upgrade",

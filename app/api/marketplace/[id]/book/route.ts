@@ -369,6 +369,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const gifBody = (body as { gifLoop?: {
     headline?: string; kicker?: string; website?: string;
     lines?: string[]; lineRefs?: ({ storagePath?: string } | null)[];
+    shareToGiphy?: boolean;
     beforeRef?: { storagePath?: string }; afterRef?: { storagePath?: string };
     logoRef?: { storagePath?: string };
   } }).gifLoop;
@@ -389,6 +390,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // A line without one stays null so the indexes still line up.
     linePaths: (gifBody.lineRefs ?? []).slice(0, 6)
       .map(r => mine(r?.storagePath) ?? null),
+    // Publishing puts the buyer's photograph on a public channel, so this is
+    // recorded exactly as they set it and defaults to off.
+    shareToGiphy: gifBody.shareToGiphy === true,
     beforePath: mine(gifBody.beforeRef?.storagePath),
     afterPath: mine(gifBody.afterRef?.storagePath),
     logoPath: mine(gifBody.logoRef?.storagePath),

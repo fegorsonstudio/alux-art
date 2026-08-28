@@ -234,6 +234,8 @@ const es: AppDictionary = {
     gifLineNextPh: "Siguiente línea",
     gifAddLine: "+ Añadir línea",
     gifLinePhotoHint: "Añadir una foto para esta línea (opcional)",
+    gifShareLabel: "Quiero usarlo como sticker en Instagram",
+    gifShareHint: "Publicamos tu bucle en el canal de GIPHY de Alux Art para que aparezca en la búsqueda de GIF de Instagram. Cualquiera podrá encontrarlo y usarlo, así que marca esto solo si aceptas que la foto sea pública.",
     uploading: "Subiendo...",
     yourIdentityPhotos: "Tus fotos de identidad",
     photosToUpgrade: "Tus fotos a mejorar",

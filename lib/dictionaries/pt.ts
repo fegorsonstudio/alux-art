@@ -234,6 +234,8 @@ const pt: AppDictionary = {
     gifLineNextPh: "Linha seguinte",
     gifAddLine: "+ Adicionar linha",
     gifLinePhotoHint: "Adicionar uma foto para esta linha (opcional)",
+    gifShareLabel: "Quero usar isto como sticker no Instagram",
+    gifShareHint: "Publicamos o seu loop no canal GIPHY da Alux Art para aparecer na pesquisa de GIF do Instagram. Qualquer pessoa poderá encontrá-lo e usá-lo, por isso marque apenas se aceitar que a foto seja pública.",
     uploading: "Enviando...",
     yourIdentityPhotos: "Suas fotos de identidade",
     photosToUpgrade: "Suas fotos para melhorar",

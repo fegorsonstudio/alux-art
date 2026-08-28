@@ -234,6 +234,8 @@ const zh: AppDictionary = {
     gifLineNextPh: "下一行",
     gifAddLine: "+ 添加一行",
     gifLinePhotoHint: "为这一行添加图片（可选）",
+    gifShareLabel: "我想把它当作 Instagram 贴纸使用",
+    gifShareHint: "我们会把你的循环发布到 Alux Art 的 GIPHY 频道，让它出现在 Instagram 的 GIF 搜索里。任何人都能找到并使用它，所以请只在你同意这张照片公开时才勾选。",
     uploading: "上传中...",
     yourIdentityPhotos: "你的身份照片",
     photosToUpgrade: "待升级的照片",
