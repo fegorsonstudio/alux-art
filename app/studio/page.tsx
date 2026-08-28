@@ -102,6 +102,18 @@ export default function WorkspacePage() {
     images: Array<{ id: string; slot: number | null; previewUrl: string; width: number | null; height: number | null }>;
     offer?: { imageCount: number; priceNgn: number } | null;
   } | null>(null);
+  // Whether this finished shoot is a loop that can go on the GIPHY channel, and
+  // whether it already has. Null means "not a loop, or not asked yet" and
+  // renders nothing — the same shape as `retouch` above.
+  const [giphy, setGiphy] = useState<{
+    eligible: boolean;
+    published: { id: string; url: string; tag: string } | null;
+    autoTags: string[];
+  } | null>(null);
+  const [giphyTags, setGiphyTags] = useState("");
+  const [giphyBusy, setGiphyBusy] = useState(false);
+  const [giphyError, setGiphyError] = useState<string | null>(null);
+
   // /api/shoots returns 20 at a time plus a cursor. The page used to drop the
   // cursor, so anyone past 20 shoots could not reach their older galleries at
   // all — and with a 7-day retention window, unreachable means lost.
@@ -360,6 +372,25 @@ export default function WorkspacePage() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [currentShoot?.id, currentShoot?.status]);
+
+  // Whether this shoot can be put on GIPHY. Only asked for a finished shoot
+  // that actually produced a loop; the route answers `eligible: false` for
+  // everything else, which renders nothing.
+  useEffect(() => {
+    setGiphy(null);
+    setGiphyTags("");
+    setGiphyError(null);
+    const id = currentShoot?.id;
+    if (!id || currentShoot?.status !== "COMPLETE") return;
+    const isLoop = getShootImages(currentShoot).some(i => String(i.kind ?? "").endsWith("-gif"));
+    if (!isLoop) return;
+    let cancelled = false;
+    fetch(`/api/shoots/${id}/giphy`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (!cancelled && data?.eligible) setGiphy(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentShoot?.id, currentShoot?.status, currentShoot]);
 
   useEffect(() => {
     if (!currentShoot) return;
@@ -807,6 +838,31 @@ export default function WorkspacePage() {
   const [retouchPicks, setRetouchPicks] = useState<string[]>([]);
   const toggleRetouchPick = (imageId: string) =>
     setRetouchPicks(prev => prev.includes(imageId) ? prev.filter(x => x !== imageId) : [...prev, imageId]);
+
+  /**
+   * Put this loop on the GIPHY channel, with whatever tags the customer typed.
+   *
+   * Deliberately a thing they do AFTER seeing the file. The route refuses a
+   * second publish, so a double tap cannot put the same loop on the channel
+   * twice — there is no way to merge two stickers afterwards.
+   */
+  const publishToGiphy = async (shootId: string) => {
+    setGiphyBusy(true);
+    setGiphyError(null);
+    try {
+      const res = await fetch(`/api/shoots/${shootId}/giphy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: giphyTags.split(",") }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.published) setGiphy(g => (g ? { ...g, published: data.published } : g));
+      else setGiphyError(data?.error || t("giphyFailed"));
+    } catch {
+      setGiphyError(t("giphyFailed"));
+    }
+    setGiphyBusy(false);
+  };
 
   const requestRetouch = async (shootId: string, imageIds: string[]) => {
     setRetouchBusy(true);
@@ -1617,6 +1673,57 @@ export default function WorkspacePage() {
                           ? t("retouchRedirecting")
                           : t("retouchedPayBtn", { price: `₦${retouch.retouch.priceNgn.toLocaleString()}` })}
                       </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Put this loop on Instagram's sticker search.
+                  Shown only once the loop exists and the customer has had a
+                  chance to look at it. It used to be a tickbox at checkout, and
+                  the channel filled with loops nobody had seen — a sticker is
+                  public and cannot be taken back once people are using it. */}
+              {giphy?.eligible && (
+                <div className={styles.retouchBlock}>
+                  <div className={styles.retouchHead}>
+                    <span className={styles.retouchTitle}>{t("giphyTitle")}</span>
+                  </div>
+
+                  {giphy.published ? (
+                    <>
+                      <p className={styles.retouchHint}>{t("giphyDoneBody")}</p>
+                      <p className={styles.giphyTagOut}>
+                        {t("giphySearchFor")} <code>{giphy.published.tag}</code>
+                      </p>
+                      {giphy.published.url && (
+                        <a className={styles.giphyLink} href={giphy.published.url}
+                           target="_blank" rel="noopener noreferrer">{t("giphyViewOnGiphy")}</a>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className={styles.retouchHint}>{t("giphyBody")}</p>
+                      <label className={styles.giphyTagLabel} htmlFor="giphy-tags">
+                        {t("giphyTagsLabel")}
+                      </label>
+                      <input
+                        id="giphy-tags"
+                        className={styles.giphyTagInput}
+                        value={giphyTags}
+                        onChange={e => setGiphyTags(e.target.value)}
+                        placeholder={t("giphyTagsPlaceholder")}
+                        disabled={giphyBusy}
+                      />
+                      <p className={styles.retouchHint}>{t("giphyTagsHint")}</p>
+                      <button
+                        type="button"
+                        className={styles.giphyBtn}
+                        disabled={giphyBusy}
+                        onClick={() => publishToGiphy(currentShoot.id)}
+                      >
+                        {giphyBusy ? t("giphyPublishing") : t("giphyPublish")}
+                      </button>
+                      {giphyError && <p className={styles.identityWarn}>{giphyError}</p>}
                     </>
                   )}
                 </div>

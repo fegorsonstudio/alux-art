@@ -365,9 +365,6 @@ export default function CheckoutPanel({
     });
   const [gifKicker, setGifKicker] = useState("");
   const [gifWebsite, setGifWebsite] = useState("");
-  // Off by default, and it stays off unless the buyer ticks it: this puts
-  // their own photograph on a public channel.
-  const [gifShare, setGifShare] = useState(false);
   const [gifBefore, setGifBefore] = useState<NewIdentityUpload | null>(null);
   const [gifAfter, setGifAfter] = useState<NewIdentityUpload | null>(null);
   const [gifLogo, setGifLogo] = useState<NewIdentityUpload | null>(null);
@@ -1449,7 +1446,6 @@ export default function CheckoutPanel({
                   : null),
               kicker: gifKicker.trim() || undefined,
               website: gifWebsite.trim() || undefined,
-              shareToGiphy: gifShare,
               beforeRef: { storagePath: gifBefore?.storagePath },
               afterRef: { storagePath: gifAfter?.storagePath },
               logoRef: gifLogo?.storagePath ? { storagePath: gifLogo.storagePath } : undefined,
@@ -1914,18 +1910,6 @@ export default function CheckoutPanel({
                     onChange={e => { const f = e.target.files?.[0]; if (f) setGifSlot(setGifLogo)(f); e.target.value = ""; }} />
                 </label>
               )}
-
-              <label style={{ display: "flex", gap: 8, alignItems: "flex-start",
-                              marginTop: 14, fontSize: ".84rem", cursor: "pointer" }}>
-                <input type="checkbox" checked={gifShare} style={{ marginTop: 3 }}
-                  onChange={e => setGifShare(e.target.checked)} />
-                <span>
-                  {t("gifShareLabel")}
-                  <span style={{ display: "block", opacity: 0.7, marginTop: 2 }}>
-                    {t("gifShareHint")}
-                  </span>
-                </span>
-              </label>
 
               {!gifValid && <p className={styles.identityWarn}>{t("gifWarn")}</p>}
             </div>

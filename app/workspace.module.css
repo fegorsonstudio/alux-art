@@ -742,3 +742,22 @@
 .retouchPickOn img { opacity: 1; }
 .retouchPickMark { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: #1f8f77; color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; opacity: 0; }
 .retouchPickOn .retouchPickMark { opacity: 1; }
+
+/* Publishing a finished loop to the GIPHY channel. Sits inside .retouchBlock,
+   so it inherits that block's separation from the gallery and only needs the
+   bits the retouch offer has no equivalent of: a tag field and its button. */
+.giphyTagLabel { display: block; margin: 12px 0 6px; font-size: 0.78rem; font-weight: 650; color: #2d727b; }
+.giphyTagInput { width: 100%; padding: 9px 11px; border: 1px solid rgba(67, 159, 169, 0.35); border-radius: 8px; background: rgba(255, 255, 255, 0.7); font: inherit; font-size: 0.85rem; color: inherit; }
+.giphyTagInput:focus { outline: 2px solid #1f8f77; outline-offset: 1px; border-color: transparent; }
+.giphyBtn { margin-top: 12px; padding: 9px 16px; border: none; border-radius: 999px; background: #1f8f77; color: #fff; font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.giphyBtn:disabled { opacity: 0.55; cursor: default; }
+.giphyTagOut { margin: 10px 0 0; font-size: 0.82rem; color: #2d727b; }
+.giphyTagOut code { padding: 2px 7px; border-radius: 5px; background: rgba(31, 143, 119, 0.14); font-size: 0.85em; font-weight: 700; }
+.giphyLink { display: inline-block; margin-top: 8px; font-size: 0.8rem; font-weight: 650; color: #1f8f77; }
+
+/* Dark theme, same reason the retouch block needs one: these were written
+   against the light panel and the teal is unreadable on the dark one. */
+.app[data-theme="dark"] .giphyTagLabel { color: #e2f6f7; }
+.app[data-theme="dark"] .giphyTagInput { background: rgba(255, 255, 255, 0.06); border-color: rgba(184, 211, 213, 0.28); }
+.app[data-theme="dark"] .giphyTagOut { color: #b8d3d5; }
+.app[data-theme="dark"] .giphyTagOut code { background: rgba(31, 143, 119, 0.28); color: #e2f6f7; }

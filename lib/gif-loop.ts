@@ -92,7 +92,12 @@ const esc = (s: string) =>
  * not need to be exact, only to rank a wide line above a narrow one.
  */
 const EM: Record<string, number> = {
-  I: 0.30, J: 0.46, L: 0.52, T: 0.56, F: 0.54, E: 0.56, "1": 0.42,
+  I: 0.30, J: 0.46, L: 0.52, T: 0.56, F: 0.54, E: 0.56,
+  // Figures are TABULAR in this face — every one occupies the same wide slot,
+  // including the 1. Giving "1" a narrow proportional width is what let
+  // "N1,000" overflow the panel.
+  "0": 0.70, "1": 0.70, "2": 0.70, "3": 0.70, "4": 0.70,
+  "5": 0.70, "6": 0.70, "7": 0.70, "8": 0.70, "9": 0.70,
   M: 0.88, W: 0.92, O: 0.76, Q: 0.79, G: 0.76, D: 0.73, C: 0.71,
   N: 0.75, U: 0.73, H: 0.75, A: 0.69, R: 0.69, B: 0.68, K: 0.69,
   P: 0.64, S: 0.65, V: 0.69, X: 0.67, Y: 0.64, Z: 0.61,
@@ -100,6 +105,65 @@ const EM: Record<string, number> = {
 };
 const widthEm = (text: string) =>
   [...text.toUpperCase()].reduce((w, ch) => w + (EM[ch] ?? 0.62), 0);
+
+/**
+ * The true drawn width of one line, in pixels at `size`.
+ *
+ * The table above is an estimate, and estimating this has now been wrong three
+ * separate times in customers' finished files: "YOUR PHONE" lost its E, "SAME
+ * ROOM." lost its full stop, and "N1,000" lost its last nought — the last one
+ * because the table has no entry for a digit, so every price fell back to an
+ * average far too narrow for this face's figures, which are uniform width and
+ * wide. Prices are exactly what people type.
+ *
+ * So this stops guessing and draws the line to measure the ink. It is exact,
+ * it costs one small raster per line, and it cannot drift out of agreement
+ * with the renderer because it IS the renderer.
+ *
+ * Returns null if the line leaves no ink at all (empty, or all spaces), which
+ * the caller reads as "nothing to fit".
+ */
+const PROBE = 100;
+const probeCache = new Map<string, number>();
+async function inkWidth(text: string, weight: number, tracking: number): Promise<number | null> {
+  const key = `${weight}|${tracking}|${text}`;
+  const hit = probeCache.get(key);
+  if (hit !== undefined) return hit || null;
+  // Generous canvas: the probe only has to contain the line, and a line that
+  // overflows the box is exactly the case being measured.
+  const w = Math.ceil(widthEm(text) * PROBE * 2 + PROBE * 4);
+  const svg = Buffer.from(`<svg width="${w}" height="${PROBE * 3}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${w}" height="${PROBE * 3}" fill="#fff"/>
+    <text x="${PROBE}" y="${PROBE * 2}" font-family="${FONT}" font-size="${PROBE}"
+      font-weight="${weight}" fill="#000" letter-spacing="${tracking}em">${esc(text)}</text>
+  </svg>`);
+  try {
+    const { info } = await sharp(svg).trim({ threshold: 10 }).toBuffer({ resolveWithObject: true });
+    probeCache.set(key, info.width);
+    return info.width || null;
+  } catch {
+    // trim() throws when the image is one flat colour, i.e. the line drew
+    // nothing. Fall back to the estimate rather than failing the render.
+    const est = widthEm(text) * PROBE * (1 + tracking);
+    probeCache.set(key, est);
+    return est || null;
+  }
+}
+
+/**
+ * The largest font size at which every one of `lines` fits inside `target` px.
+ * Width scales linearly with size for a fixed face and tracking, so one
+ * measurement per line is enough — no search.
+ */
+async function fitWidth(lines: string[], target: number, weight: number, tracking: number): Promise<number> {
+  let size = Number.MAX_SAFE_INTEGER;
+  for (const line of lines) {
+    const ink = await inkWidth(line, weight, tracking);
+    if (!ink) continue;
+    size = Math.min(size, Math.floor((target * PROBE) / ink));
+  }
+  return size === Number.MAX_SAFE_INTEGER ? Math.round(target / 4) : Math.max(6, size);
+}
 
 /**
  * Break a headline into lines that fill the panel.
@@ -189,9 +253,12 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // caption. Separating them is what fixed it.
   const logoH = Math.round(Math.min(panelH * 0.17, panelW * 0.3));
   const logoBand = opts.logo ? logoH + Math.round(pad * 0.7) : 0;
+  // Measured. The old form guessed the 0.1em tracking as a flat 1.12 multiplier,
+  // which under-counted a long caption and ran it off the edge of the panel —
+  // "…BECAUSE OF BAD LIGHT" arrived as "…BECAUSE OF BAD LIG".
   const kickerSize = opts.kicker
     ? Math.min(
-        Math.round((inner * 0.97) / (widthEm(opts.kicker) * 1.12)),
+        await fitWidth([opts.kicker.toUpperCase()], inner * 0.97, 800, 0.1),
         Math.round(panelH * 0.09),
       )
     : 0;
@@ -209,7 +276,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
    * because a URL set in the same huge weight as a headline reads as shouting
    * and wraps horribly.
    */
-  const panelFor = (text: string, opts2: { address?: boolean; kicker?: boolean } = {}): Buffer => {
+  const panelFor = async (text: string, opts2: { address?: boolean; kicker?: boolean } = {}): Promise<Buffer> => {
     const showKicker = opts2.kicker !== false && !!opts.kicker && !opts2.address;
     const kBand = showKicker ? kickerBand : 0;
     const bandH = Math.max(Math.round(panelH * 0.25), panelH - logoBand - kBand - pad * 2);
@@ -218,7 +285,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
       // Sized from the measured width: a fixed fraction clipped
       // "aluxartandframes.shop" off both edges of the panel.
       const s2 = Math.min(
-        Math.round((inner * 0.97) / Math.max(0.1, widthEm(text) * 0.86)),
+        await fitWidth([text], inner * 0.97, 900, 0),
         Math.round(panelH * 0.16),
       );
       return Buffer.from(`<svg width="${panelW}" height="${panelH}" xmlns="http://www.w3.org/2000/svg">
@@ -233,9 +300,10 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
     // A fixed fraction clipped "YOUR PHONE" to "YOUR PHON"; counting characters
     // instead clipped the full stop off "SAME ROOM." while "ONE LIGHT." — the
     // same ten characters — sat comfortably inside.
-    const widest = Math.max(...lines.map(widthEm), 0.1);
+    // The wrap still ranks lines with the estimate — it only has to decide where
+    // to break — but the SIZE is measured, because that is what clips.
     const size = Math.min(
-      Math.round((inner * 0.97) / widest),
+      await fitWidth(lines.map(l => l.toUpperCase()), inner * 0.97, 900, -0.03),
       Math.round((bandH * 0.98) / lines.length),
     );
     const lead = Math.round(size * 1.02);
@@ -332,7 +400,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // Fast. Each line is short and the reader only has to take in one idea, so
   // holding longer just invites a scroll. The reveal beat is the exception:
   // that is the payoff and it needs time to be seen.
-  const BEAT = Math.max(2, Math.round(FPS * 0.62));
+  const BEAT = Math.max(2, Math.round(FPS * 0.45));
   const REVEAL_HOLD = Math.max(3, Math.round(FPS * 1.25));
   const DISSOLVE = Math.max(2, Math.round(FPS * 0.32));
 
@@ -348,7 +416,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
 
   for (let i = 0; i < beats.length; i++) {
     const isAddress = looksLikeAddress(beats[i].text);
-    const panel = panelFor(beats[i].text, { address: isAddress });
+    const panel = await panelFor(beats[i].text, { address: isAddress });
     const photo = photoFor(i);
 
     // The one dissolve in the film. It happens ON the reveal beat, so the words
@@ -377,7 +445,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   const lastPhoto = photoFor(beats.length - 1);
   const firstPhoto = photoFor(0);
   if (lastPhoto !== firstPhoto) {
-    const backPanel = panelFor(beats[0].text, { address: looksLikeAddress(beats[0].text) });
+    const backPanel = await panelFor(beats[0].text, { address: looksLikeAddress(beats[0].text) });
     const back = Math.max(2, Math.round(FPS * 0.3));
     for (let d = 1; d <= back; d++) {
       const t = d / back;

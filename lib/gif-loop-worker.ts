@@ -2,8 +2,6 @@ import "server-only";
 import sql from "@/lib/db";
 import { r2Download, r2Upload } from "@/lib/r2";
 import { renderLoop } from "@/lib/gif-loop";
-import { publishLoop } from "@/lib/giphy";
-import { tellAdmin } from "@/lib/telegram";
 
 /**
  * The `gif_loop` generation fork.
@@ -50,12 +48,6 @@ export type GifLoopSelection = {
    * entries are empty and inherit the before/after.
    */
   linePaths?: (string | null)[];
-  /**
-   * The buyer asked for their loop to be published to the Alux Art GIPHY
-   * channel, so they can use it as a sticker on Instagram. Off unless ticked:
-   * the channel is public, and this is their photograph.
-   */
-  shareToGiphy?: boolean;
 };
 
 const grab = async (bucket: string | null, path: string | null): Promise<Buffer | null> => {
@@ -210,30 +202,12 @@ export async function runGifLoop(
   }
 
   const total = outputs.reduce((n, o) => n + o.bytes.byteLength, 0);
-  // ── Published as a sticker, but only if asked ─────────────────────────────
-  // After the files are safely stored, never before: a GIPHY failure must not
-  // cost the customer the loop they paid for.
-  if (selection.shareToGiphy) {
-    const landscapeGif = outputs.find(o => o.ratio === "16:9" && o.ext === "gif");
-    if (landscapeGif) {
-      const pub = await publishLoop(landscapeGif.bytes, { shootId });
-      if (pub.ok) {
-        // Kept on the shoot so the download page can tell the customer the tag
-        // to search for. Without that they have a sticker they cannot find.
-        await sql`UPDATE shoots SET enhance = enhance || ${sql.json({
-          giphyId: pub.id, giphyUrl: pub.url, giphyTag: pub.tag,
-        } as never)} WHERE id = ${shootId}`.catch(() => {});
-        console.log(`[gif-loop] ${shootId.slice(0, 8)} published to GIPHY as ${pub.tag}`);
-      } else {
-        console.error(`[gif-loop] GIPHY publish failed for ${shootId.slice(0, 8)}: ${pub.error}`);
-        await tellAdmin(
-          `\u26a0\ufe0f A customer asked for their loop on GIPHY and the upload failed.\n\n` +
-          `Shoot: <code>${shootId.slice(0, 8)}</code>\nReason: ${pub.error}\n\n` +
-          `They still have their files. Only the sticker is missing.`
-        ).catch(() => {});
-      }
-    }
-  }
+  // NOT published to GIPHY here, on purpose. Publishing used to happen the
+  // moment the file existed, from a tickbox ticked at checkout — before anyone
+  // had seen the result — and the channel filled with loops their own owners
+  // would never have posted. A sticker is public and cannot be un-seen, so the
+  // decision belongs after delivery, in POST /api/shoots/[id]/giphy, where the
+  // customer has looked at the loop and can attach their own tags.
 
   console.log(`[gif-loop] ${shootId.slice(0, 8)} rendered ${outputs.length} files, ${(total / 1048576).toFixed(2)}MB: ${outputs.map(label).join(", ")}`);
   return { ok: true, bytes: total };
