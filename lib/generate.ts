@@ -719,7 +719,7 @@ II. THE MANDATORY PROMPT PREFIX (For Prompts 1 through 9)
 
 To lock in the image generator's behavioral constraints and protect the subject's identity, every editorial subject prompt must begin with this exact text block, word-for-word, without deviation. Replace [IDENTITY_RANGE] with the exact image range stated in the GROUP A label (e.g. "IMAGES 1 through 3", or "IMAGE 1" if only one identity image was provided):
 
-"Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, height, stature, build, and overall body proportions, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. The subject's height and proportions come ONLY from these identity references — never infer them from a garment, outfit, mannequin, or product reference. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
+"Act as an elite fashion photographer. REFERENCE [IDENTITY_RANGE] ARE THE SUBJECT — use [IDENTITY_RANGE] as the identity references. The subject's exact face, skin tone, body structure, height, stature, build, and overall body proportions, facial features, and likeness must be taken directly from [IDENTITY_RANGE] and faithfully replicated in the output. The subject's height, body size, build, frame, fullness, and silhouette width come ONLY from these identity references — never infer any of them from a garment, outfit, mannequin, or product reference. Render her at her true size as photographed in the identity references: do not slim, narrow, lengthen, or otherwise reshape her body toward the shape of any clothing, mannequin, or model in another reference. If a garment appears to be a different size from her body, the GARMENT is resized to fit her — never the other way round. Do not use the face or body of any person from any other reference image. Do not alter the subject's identity, face shape, eye spacing, nose shape, jawline, or skin tone under any circumstances. This is a professional high-end editorial fashion photograph."
 
 III. CORE ART DIRECTION & SAFETY SAFEGUARDS
 
@@ -2828,7 +2828,7 @@ export async function startGenerationWorker(
         const name = r.customName || r.tag || "REFERENCE";
         // Garment references are ghost-mannequin product shots — the guard stops
         // the model copying the mannequin's hollow form instead of the buyer's body.
-        const mannequinGuard = " (this is a ghost-mannequin product shot: extract ONLY the garment — color, cut, fabric, trim — and fit it naturally to the subject's actual body shape and proportions from the identity references; never reproduce the mannequin's hollow form, stance, or proportions. Do NOT take the subject's height, stature, leg length, torso length, or overall body proportions from this garment image — the subject's height and build come exclusively from the identity references)";
+        const mannequinGuard = " (this is a ghost-mannequin product shot: extract ONLY the garment — color, cut, fabric, trim — and fit it naturally to the subject's actual body shape and proportions from the identity references; never reproduce the mannequin's hollow form, stance, or proportions. Do NOT take the subject's height, stature, leg length, torso length, body size, build, frame, fullness, silhouette width, or overall body proportions from this garment image — every one of those comes exclusively from the identity references. The mannequin's slimness is a property of the mannequin, not of the subject: fit and drape this garment onto her real body at her real size, letting it fall as the fabric would on her, rather than shrinking her to the shape shown here)";
         const directive =
           r.tag === "BACKGROUND"
             ? "BACKGROUND reference — the environment/backdrop in the output MUST replicate this image exactly (surface, color, floor, texture); match its perspective, camera height, and floor line exactly so the subject appears photographed within this space. Override any conflicting environment description"
@@ -2846,7 +2846,28 @@ export async function startGenerationWorker(
                         ? `${name} reference — whenever the prompt describes this garment, reproduce EVERY design element from this image exactly: its prints, patterns, graphics, logos, embroidery, beadwork, seams, pleats, hemline, neckline, collar, sleeve shape, buttons, zippers, hardware, straps, and trims, with the exact placement and color of each. Add nothing, remove nothing, restyle nothing${mannequinGuard}`
                         : r.tag === "ACCESSORY"
                           ? `${name} reference — reproduce this EXACT accessory ("${name}") on the subject: its precise shape, design, color, materials, and every detail come from this image. This image is authoritative — do NOT substitute a different brand, model, style, dial, band, frame, lens, or color, even if the written prompt names a specific product.`
-                          : `${name} reference — whenever the prompt describes this item, replicate its exact design, fabric, color, and construction from this image`;
+                          // GOWN and COLLAR_MALE are garments and get the garment
+                          // treatment, mannequin guard included. They were falling
+                          // through to the generic line below and losing their
+                          // detail whenever the prompt did not name them.
+                          : r.tag === "GOWN" || r.tag === "COLLAR_MALE"
+                            ? `${name} reference — whenever the prompt describes this garment, reproduce EVERY design element from this image exactly: its prints, patterns, graphics, logos, embroidery, beadwork, seams, pleats, hemline, neckline, collar, sleeve shape, buttons, zippers, hardware, straps, and trims, with the exact placement and color of each. Add nothing, remove nothing, restyle nothing${mannequinGuard}`
+                            // Hair is UNCONDITIONAL. The planner's styling text
+                            // frequently says nothing about hair at all, and a
+                            // conditional instruction then never fires — which is
+                            // exactly how a silver finger-wave reference produced
+                            // four slots of the subject's own dark hair.
+                            : r.tag === "HAIRSTYLE" || r.tag === "WIG"
+                              ? `${name} reference — the subject's hair in EVERY output is this exact hairstyle: its silhouette, shape, parting, length, texture, wave pattern, and color all come from this image. Apply it whether or not the written prompt mentions hair. This OVERRIDES the hair in the identity references, which is incidental capture context only. Do not substitute a different cut, length, or color, do not blend it with the subject's own hair, and do not restyle it to suit the pose.`
+                              : r.tag === "NAIL_DESIGN"
+                                ? `${name} reference — the subject's nails are this exact design: their shape, length, color, gradient, finish, and any art come from this image. Apply it to every visible hand whether or not the written prompt mentions nails.`
+                                : r.tag === "MAKEUP"
+                                  ? `${name} reference — the subject's makeup is this exact look: brow shape, eye color and shadow placement, lash, liner, blush, lip color, and finish all come from this image. Apply it whether or not the written prompt mentions makeup. Never alter the subject's own facial structure to resemble the face in this reference — it supplies the makeup, nothing else.`
+                                  // The generic line, now unconditional too. The
+                                  // condition was the whole defect: a reference the
+                                  // buyer deliberately attached must not depend on
+                                  // the planner happening to mention it.
+                                  : `${name} reference — reproduce this exactly in the output: its shape, design, color, materials, texture, and every detail come from this image. Apply it whether or not the written prompt mentions it, and never substitute an alternative.`;
         return { url: r.url, label: directive };
       });
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
