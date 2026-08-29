@@ -228,16 +228,26 @@ export async function POST(request: NextRequest) {
 
       // A bare lighting look number, from a carousel slide that asked for one.
       //
-      // Strict on purpose: ONLY a comment that is nothing but digits. Matching
-      // any comment CONTAINING a number would fire on "I have 2 kids" and DM a
-      // stranger about lighting look 2. A number naming no real look falls
-      // through to the word matching below and then to silence, exactly as now.
+      // Strict on purpose: once the @handles are removed, ONLY a comment that is
+      // nothing but digits. Matching any comment CONTAINING a number would fire
+      // on "I have 2 kids" and DM a stranger about lighting look 2. A number
+      // naming no real look falls through to the word matching below and then to
+      // silence, exactly as now.
+      //
+      // The @handles are stripped first because tagging us by name and then
+      // saying what you want is the commonest shape a real request takes —
+      // "@fegorson_studio 197" — and demanding a bare number threw every one of
+      // those away. Seen live: @nvidia_studio asked exactly that and got silence.
+      // Stripping handles cannot loosen the guard, because what is left still
+      // has to be digits and nothing else.
+      //
       // Remembered so the session can be armed with this look after the reply
       // lands, which is what lets their next message be just a photo.
+      const bare = text.replace(/@[A-Za-z0-9._]+/g, " ").trim();
       let numberAsked: number | null = null;
-      let keyword = /^\s*\d{1,3}\s*$/.test(text)
+      let keyword = /^\s*\d{1,3}\s*$/.test(bare)
         ? await (async () => {
-            const n = Number(text.trim());
+            const n = Number(bare);
             const look = await findLookByNumber(n).catch(() => null);
             if (!look) {
               console.log(`[ig webhook] @${from.username ?? from.id} commented ${n} — no look with that number`);
