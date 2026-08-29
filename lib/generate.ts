@@ -2824,6 +2824,8 @@ export async function startGenerationWorker(
     const taggedRefEntries = refs
       // Slot plates are attached to THEIR slot only (below), never the shared per-slot list.
       .filter((r) => r.purpose === "tagged" && r.url && !SLOT_ONLY_TAGS.has(r.tag ?? ""))
+      .slice()
+      .sort((a, b) => tagRank(a) - tagRank(b))
       .map((r) => {
         const name = r.customName || r.tag || "REFERENCE";
         // Garment references are ghost-mannequin product shots — the guard stops
@@ -2870,12 +2872,27 @@ export async function startGenerationWorker(
                                   : `${name} reference — reproduce this exactly in the output: its shape, design, color, materials, texture, and every detail come from this image. Apply it whether or not the written prompt mentions it, and never substitute an alternative.`;
         return { url: r.url, label: directive };
       });
+    // Most consequential first. The cap that trims this list is a real limit,
+    // so the order decides what survives it — and a buyer who attached a
+    // garment cares about that garment far more than about a prop.
+    const TAG_PRIORITY: Record<string, number> = {
+      OUTFIT: 0, GOWN: 0, SUIT: 0, SCRUBS: 0, COLLAR_MALE: 0,   // what she wears
+      HAIRSTYLE: 1, WIG: 1, MAKEUP: 1, NAIL_DESIGN: 1,          // how she is groomed
+      BACKGROUND: 2,                                            // where she stands
+      LIGHTING: 3, COLOR_GRADE: 3,                              // how it is lit and graded
+      SASH: 4,                                                  // personalised pieces
+    };
+    // Everything unlisted — props, accessories — sorts last but keeps its own
+    // relative order, so a stable sort is required, which Array#sort is.
+    const tagRank = (r: { tag?: string | null }) =>
+      TAG_PRIORITY[r.tag ?? ""] ?? 5;
+
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
     // With a background plan, cap identity at 4 so the per-slot background image
     // survives nano-banana's 9-image cap alongside the wardrobe refs.
     imageEntries = [
       ...allIdentityEntries.slice(0, backgroundPlan ? 4 : 6).map(({ url, label }) => ({ url, label })),
-      ...taggedRefEntries,
+      ...taggedRefEntries,   // already ordered by tagRank below
       ...inspirationUrls.slice(0, 1).map((u) => ({ url: u, label: "INSPIRATION — mood and style context only; do not copy the person, outfit, or background from it unless no dedicated reference exists" })),
     ];
   }
