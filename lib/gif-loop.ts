@@ -400,9 +400,47 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
   // Fast. Each line is short and the reader only has to take in one idea, so
   // holding longer just invites a scroll. The reveal beat is the exception:
   // that is the payoff and it needs time to be seen.
-  const BEAT = Math.max(2, Math.round(FPS * 0.45));
-  const REVEAL_HOLD = Math.max(3, Math.round(FPS * 1.25));
-  const DISSOLVE = Math.max(2, Math.round(FPS * 0.32));
+  /**
+   * How long one line stays on screen, in frames.
+   *
+   * Reading time is roughly linear in characters, so that is what this counts:
+   * a single long word costs about as much as two short ones, which counting
+   * words would miss. The floor keeps a two-word line from flashing past; the
+   * ceiling stops somebody's whole sentence stalling the loop.
+   */
+  const holdFor = (text: string) => {
+    const chars = text.trim().length;
+    const seconds = Math.min(1.6, Math.max(0.62, 0.36 + chars * 0.048));
+    return Math.max(2, Math.round(FPS * seconds));
+  };
+  // The reveal is the payoff — the moment the picture changes — so it gets the
+  // longest of its own reading time and a fixed beat, never less.
+  const REVEAL_MIN = Math.max(3, Math.round(FPS * 1.35));
+  const DISSOLVE = Math.max(2, Math.round(FPS * 0.38));
+
+  // ── Length, kept inside what GIPHY will take ──────────────────────────────
+  // 15s is GIPHY's hard maximum; 14 leaves room for the dissolves and the
+  // return to the top. Their guidance is 6s, which is right for a wordless
+  // sticker and wrong for a loop the buyer has written five lines on — so this
+  // is the refusal boundary, not the recommendation.
+  const MAX_SECONDS = 14;
+  const rawHolds = beats.map((b, i) =>
+    i === revealAt ? Math.max(REVEAL_MIN, holdFor(b.text)) : holdFor(b.text));
+  const extraFrames = DISSOLVE + Math.max(2, Math.round(FPS * 0.3));   // dissolve + loop-back
+  const rawTotal = rawHolds.reduce((n, h) => n + h, 0) + extraFrames;
+  const budget = Math.round(FPS * MAX_SECONDS);
+  const FLOOR = Math.max(2, Math.round(FPS * 0.4));
+  const holds = rawTotal <= budget
+    ? rawHolds
+    : (() => {
+        const scale = (budget - extraFrames) / (rawTotal - extraFrames);
+        const scaled = rawHolds.map(h => Math.max(FLOOR, Math.round(h * scale)));
+        console.warn(
+          `[gif-loop] ${(rawTotal / FPS).toFixed(1)}s would exceed GIPHY's 15s limit — ` +
+          `scenes scaled to ${(scaled.reduce((n, h) => n + h, 0) + extraFrames) / FPS}s`
+        );
+        return scaled;
+      })();
 
   /** Normalise a per-beat picture to the same box the others occupy. */
   const normalised = new Map<number, Buffer>();
@@ -435,7 +473,7 @@ export async function renderArFrames(opts: ArGifOptions): Promise<ArFrames> {
 
     // Everything else is a hard cut. At this speed a cross-fade between two
     // lines of text reads as a smear rather than as a change.
-    const hold = i === revealAt ? REVEAL_HOLD : BEAT;
+    const hold = holds[i];
     const still = await compose(photo, panel);
     for (let f = 0; f < hold; f++) frames.push(still);
   }
