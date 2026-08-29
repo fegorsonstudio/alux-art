@@ -366,9 +366,11 @@ export async function handleGifPublish(
     : "";
   await sendText(creds, to,
     (result.already ? "That one is already up ✅\n\n" : "Done ✅ It's on the Alux Art GIPHY channel.\n\n") +
-    `To find it, open any Instagram story, tap the GIF button and search *${result.tag}*.\n` +
+    `*Give it about 24 hours*, then open any Instagram story, tap the GIF button ` +
+    `and search *${result.tag}*.\n` +
     tagLine +
-    `\nIt can take a while before Instagram's search picks up something new — that wait is on their side, not ours.`);
+    `\nIt won't be there before then — GIPHY has to index it first, and that wait ` +
+    `is on their side. Nothing has gone wrong if you can't find it today.`);
 }
 
 /**
@@ -381,7 +383,7 @@ export async function handleGifPublish(
 export function gifPublishOffer(): string {
   return (
     "\n\nLike it? Reply *post* and I'll put it in Instagram's GIF search so you can " +
-    "use it as a sticker.\n\n" +
+    "use it as a sticker. It takes about a day to show up there.\n\n" +
     "Add your own words after it to make it easy to find later — for example " +
     "*post lagos, birthday, glow up*."
   );
