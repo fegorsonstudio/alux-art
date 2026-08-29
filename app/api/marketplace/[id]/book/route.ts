@@ -30,6 +30,12 @@ interface RefInput {
 interface TaggedRefInput extends RefInput {
   tag: string;
   note?: string;
+  /**
+   * How many of the shoot's images this reference should appear in.
+   * Absent or >= the package size means all of them, which is every reference
+   * except a prop the buyer deliberately limited.
+   */
+  appearsIn?: number;
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -511,6 +517,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   );
 
   const seenTaggedPaths = new Set<string>();
+  // Props the buyer limited to some of their images, collected while the rows
+  // are built and written straight after the insert.
+  const propLimits: Array<{ id: string; appearsIn: number }> = [];
+
   const deduplicatedTaggedRefs = taggedRefs.filter((ref) => {
     if (seenTaggedPaths.has(ref.storagePath)) return false;
     seenTaggedPaths.add(ref.storagePath);
@@ -707,8 +717,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const creatorNote = creatorNoteMap.get(ref.storagePath) ?? null;
       const buyerNote = ref.note?.trim() || null;
       const combinedNote = [creatorNote, buyerNote].filter(Boolean).join(". ") || null;
+      const rowId = crypto.randomUUID();
+      // Only a real limit is recorded. A number at or above the package size is
+      // "all of them", which is the default and needs no row of its own.
+      const wanted = Number(ref.appearsIn);
+      if (Number.isFinite(wanted) && wanted > 0 && wanted < buyerPackageSize) {
+        propLimits.push({ id: rowId, appearsIn: Math.floor(wanted) });
+      }
       return {
-        id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+        id: rowId, shoot_id: shootId, user_id: user.id,
         purpose: "tagged", tag: ref.tag, custom_name: null, note: combinedNote,
         name: ref.name ?? `ref-${i + 1}`, type: ref.type ?? "image/jpeg",
         size: ref.size ?? 1, storage_bucket: ref.storageBucket, storage_path: ref.storagePath,
@@ -890,6 +907,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await sql`DELETE FROM shoot_images WHERE shoot_id = ${shootId}`;
       await sql`DELETE FROM shoots WHERE id = ${shootId}`;
       return NextResponse.json({ error: "Failed to save references" }, { status: 500 });
+    }
+    // Per-prop image limits. Deliberately not part of the insert above: allRefs
+    // is assembled from a dozen literal shapes and postgres.js infers columns
+    // from the first one, so adding a key to a single shape would make what
+    // gets written depend on which shape sorted first.
+    for (const limit of propLimits) {
+      await sql`
+        UPDATE shoot_references
+        SET metadata = COALESCE(metadata, '{}'::jsonb) || ${sql.json({ appearsIn: limit.appearsIn } as never)}
+        WHERE id = ${limit.id}`.catch((e) => {
+        // Non-fatal: the shoot is booked and the prop simply appears in every
+        // image, which is the old behaviour rather than a broken order.
+        console.error("[book] could not save prop image limit:", (e as Error).message);
+      });
     }
   }
 

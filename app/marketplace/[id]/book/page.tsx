@@ -64,6 +64,11 @@ interface TaggedRefState {
   isReplaced: boolean;
   note: string;
   noteHidden: boolean;
+  /**
+   * How many of the shoot's images this should appear in. Null means all of
+   * them, which is the default and what every reference did before.
+   */
+  appearsIn: number | null;
 }
 
 interface PoseUpload {
@@ -154,7 +159,7 @@ export default function BookPage() {
           url: img.url ?? "",
           isReplaced: false,
           note: img.noteHidden ? "" : (img.note ?? ""),
-          noteHidden: img.noteHidden ?? false,
+          appearsIn: null, noteHidden: img.noteHidden ?? false,
         })));
       }
       if (idData.refs) setSavedRefs(idData.refs);
@@ -292,7 +297,7 @@ export default function BookPage() {
       url: URL.createObjectURL(file),
       isReplaced: true,
       note: addRefNote.trim(),
-      noteHidden: false,
+      appearsIn: null, noteHidden: false,
     }]);
     setAddingRef(false);
     setAddRefNote("");
@@ -339,7 +344,11 @@ export default function BookPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         identityRefs: allIdentityRefs,
-        taggedRefs: taggedRefs.map(r => ({ tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket, note: r.note.trim() || undefined })),
+        taggedRefs: taggedRefs.map(r => ({
+          tag: r.tag, storagePath: r.storagePath, storageBucket: r.storageBucket,
+          note: r.note.trim() || undefined,
+          appearsIn: r.appearsIn ?? undefined,
+        })),
         poseRefs: poseUploads.filter(u => u.storagePath).map(u => ({
           name: u.file.name, type: u.file.type, size: u.file.size,
           storageBucket: u.storageBucket, storagePath: u.storagePath,
@@ -546,6 +555,26 @@ export default function BookPage() {
                       value={ref.note}
                       onChange={e => setTaggedRefs(prev => prev.map(r => r.id === ref.id ? { ...r, note: e.target.value } : r))}
                     />
+                  )}
+                  {/* Props only. An outfit, a hairstyle or the background is
+                      meant to hold across the whole shoot, so offering a limit
+                      there would only invite someone to break their own set. */}
+                  {(ref.tag === "ACCESSORY" || ref.tag === "PROP") && selectedPkg > 1 && (
+                    <select
+                      className={styles.addRefSelect}
+                      value={ref.appearsIn ?? 0}
+                      title="How many of your images should this prop appear in?"
+                      onChange={e => {
+                        const v = Number(e.target.value);
+                        setTaggedRefs(prev => prev.map(r =>
+                          r.id === ref.id ? { ...r, appearsIn: v === 0 ? null : v } : r));
+                      }}
+                    >
+                      <option value={0}>In all {selectedPkg} images</option>
+                      {Array.from({ length: selectedPkg - 1 }, (_, i) => i + 1).map(n => (
+                        <option key={n} value={n}>In {n} image{n === 1 ? "" : "s"} only</option>
+                      ))}
+                    </select>
                   )}
                   <div className={styles.refListActions}>
                     <button type="button" className={styles.refBtn} onClick={() => startReplace(ref.id)}>

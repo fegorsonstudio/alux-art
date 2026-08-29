@@ -168,6 +168,34 @@ async function toGeminiImagePart(url: string): Promise<GeminiImagePart | null> {
 // Uses GET with Range:bytes=0-0 because R2 presigned URLs are signed for GET — sending HEAD
 // returns 403 SignatureDoesNotMatch and would incorrectly mark every URL as unreachable.
 // Called once per shoot so every slot reuses the validated list.
+/**
+ * Which slots carry a prop the buyer limited to `appearsIn` of `total` images.
+ *
+ * Spread, not front-loaded: two of five lands on slots 2 and 4, so the prop
+ * reads as an occasional part of the shoot rather than something that stops
+ * halfway through. Pure arithmetic on the slot numbers, so every slot computes
+ * the same answer without sharing state.
+ */
+function slotsForProp(appearsIn: number, total: number): Set<number> {
+  if (!Number.isFinite(appearsIn) || appearsIn <= 0) return new Set();
+  if (appearsIn >= total) return new Set(Array.from({ length: total }, (_, i) => i + 1));
+  // One appearance sits in the middle of the shoot; several are spread from the
+  // first image to the last. Dividing the interval rather than the count is
+  // what keeps three-of-five at 1, 3, 5 instead of clumping at 1, 3, 4.
+  const picked = new Set<number>();
+  if (appearsIn === 1) {
+    picked.add(Math.round((total + 1) / 2));
+  } else {
+    for (let k = 0; k < appearsIn; k++) {
+      picked.add(Math.min(total, Math.max(1, Math.round(1 + (k * (total - 1)) / (appearsIn - 1)))));
+    }
+  }
+  // Rounding can collide on small counts; fill forward so the buyer always gets
+  // the number of appearances they asked and paid attention to.
+  for (let n = 1; picked.size < appearsIn && n <= total; n++) picked.add(n);
+  return picked;
+}
+
 async function filterReachableUrls(urls: string[]): Promise<string[]> {
   const results = await Promise.allSettled(
     urls.map(async (url) => {
@@ -366,6 +394,8 @@ type ShootRefRow = {
   name: string;
   storage_bucket: string;
   storage_path: string;
+  /** Per-reference options. Currently { appearsIn } — how many images a prop is wanted in. */
+  metadata?: Record<string, unknown> | null;
 };
 
 type SignedRef = {
@@ -376,6 +406,7 @@ type SignedRef = {
   name: string;
   url: string;
   storagePath: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 type SlotRow = {
@@ -412,6 +443,7 @@ async function signRefs(
         name: ref.name,
         url,
         storagePath: ref.storage_path,
+        metadata: ref.metadata ?? null,
       };
     })
   );
@@ -2130,7 +2162,7 @@ export async function startGenerationWorker(
   if (!shoot) throw new Error("Shoot not found");
   // ORDER BY keeps photo→slot mapping stable across worker invocations and retries
   // (photo_upgrade maps source photo i → slot i; unordered reads made that random).
-  const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path FROM shoot_references WHERE shoot_id = ${shootId} ORDER BY created_at ASC, id ASC` as unknown as ShootRefRow[];
+  const rawRefs = await sql`SELECT purpose, tag, custom_name, note, name, storage_bucket, storage_path, metadata FROM shoot_references WHERE shoot_id = ${shootId} ORDER BY created_at ASC, id ASC` as unknown as ShootRefRow[];
   // configured_model is how a slot says which engine it belongs to. Per-image
   // shoots book two rows per photo — one per model — so the row, not a global
   // setting, decides what generates it.
@@ -2906,7 +2938,14 @@ export async function startGenerationWorker(
                                   // buyer deliberately attached must not depend on
                                   // the planner happening to mention it.
                                   : `${name} reference — reproduce this exactly in the output: its shape, design, color, materials, texture, and every detail come from this image. Apply it whether or not the written prompt mentions it, and never substitute an alternative.`;
-        return { url: r.url, label: directive };
+        // How many images the buyer wants this reference in. Absent means all
+        // of them, which is every reference except a deliberately limited prop.
+        const appearsIn = (() => {
+          const raw = (r.metadata as { appearsIn?: unknown } | null)?.appearsIn;
+          const n = typeof raw === "number" ? raw : Number(raw);
+          return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+        })();
+        return { url: r.url, label: directive, appearsIn, propName: name };
       });
     const inspirationUrls = refs.filter((r) => r.purpose === "inspiration").map((r) => r.url).filter(Boolean);
     // With a background plan, cap identity at 4 so the per-slot background image
@@ -2917,6 +2956,24 @@ export async function startGenerationWorker(
       ...inspirationUrls.slice(0, 1).map((u) => ({ url: u, label: "INSPIRATION — mood and style context only; do not copy the person, outfit, or background from it unless no dedicated reference exists" })),
     ];
   }
+  // Props the buyer limited to some of the images. Worked out once: the set is
+  // pure arithmetic on the slot count, so it cannot drift between slots.
+  const propSlots = new Map<string, { slots: Set<number>; name: string; appearsIn: number }>();
+  for (const e of imageEntries as Array<{ url: string; label: string; appearsIn?: number | null; propName?: string }>) {
+    if (e.appearsIn && e.appearsIn > 0 && e.appearsIn < total) {
+      propSlots.set(e.url, {
+        slots: slotsForProp(e.appearsIn, total),
+        name: e.propName || "this prop",
+        appearsIn: e.appearsIn,
+      });
+    }
+  }
+  if (propSlots.size > 0) {
+    for (const [, v] of propSlots) {
+      console.log(`[generate] prop "${v.name}" limited to ${v.appearsIn} image(s): slots ${[...v.slots].join(", ")}`);
+    }
+  }
+
   let imageUrls: string[] = imageEntries.map((e) => e.url);
   // Per-slot routing may select identity images beyond the shared-list cap —
   // include them in the reachability check so buildReferenceMap keeps them.
@@ -3470,6 +3527,37 @@ export async function startGenerationWorker(
           ? " FRAMING LOCK FOR THIS IMAGE: this is a medium shot framed from the waist up. Crop the frame at or just below the waist. Only the head, torso, and arms are visible. Do NOT show the hips, legs, knees, or feet. This is a hard crop requirement, not a stylistic suggestion."
           : "";
 
+      // A prop the buyer limited to some images: withhold its picture from every
+      // other slot, and tell those slots to leave it out. Done after all the
+      // slot-specific maps above are chosen, so it applies whichever branch
+      // built this slot's list.
+      let propExclusion = "";
+      if (propSlots.size > 0) {
+        const absent: string[] = [];
+        for (const [url, v] of propSlots) {
+          if (!v.slots.has(slot) && slotReferenceMap.urls.includes(url)) absent.push(v.name);
+        }
+        if (absent.length > 0) {
+          const keptUrls = slotReferenceMap.urls.filter(
+            (u) => !propSlots.has(u) || propSlots.get(u)!.slots.has(slot)
+          );
+          // Rebuild the map from the surviving entries so the IMAGE numbers in
+          // the text match the images actually attached. Renumbering matters:
+          // a map that says IMAGE 7 when only six are sent is worse than none.
+          const keptSet = new Set(keptUrls);
+          const sourceEntries = (imageEntries as Array<{ url: string; label: string }>)
+            .filter((e) => keptSet.has(e.url));
+          const rebuilt = buildReferenceMap(sourceEntries);
+          if (rebuilt.urls.length > 0) slotReferenceMap = rebuilt;
+          propExclusion =
+            ` PROP EXCLUSION FOR THIS IMAGE: ${absent.map((n) => `"${n}"`).join(", ")} ` +
+            `${absent.length === 1 ? "is" : "are"} NOT part of this shot. ` +
+            `Do not show ${absent.length === 1 ? "it" : "them"} anywhere in the frame — not held, not worn, ` +
+            `not on a surface, not in the background, not reflected. The buyer asked for ` +
+            `${absent.length === 1 ? "it" : "them"} in only some of their images and this is not one of them.`;
+        }
+      }
+
       // Append the reference image map + positive anatomical constraints to every fal call.
       // Smile slots get the real-teeth variant; back-view slots drop face requirements.
       // Gear Equalizer prompts are already fully assembled — nothing is appended.
@@ -3484,7 +3572,7 @@ export async function startGenerationWorker(
         const slotRealism = isQuoteSlot
           ? ""
           : " Photographic realism: realistic fabric texture with visible weave and stitching, sharp material and accessory detail, natural fabric folds, crisp focus on the garment, true-to-life color, editorial lens feel.";
-        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${lightingLock}${framingCropLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
+        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${lightingLock}${framingCropLock}${propExclusion}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
       }
 
       // Gear Equalizer: every photo keeps its own crop — probe the source's real
