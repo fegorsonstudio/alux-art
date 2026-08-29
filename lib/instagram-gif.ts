@@ -8,21 +8,33 @@ import { publishShootLoop, cleanTags } from "@/lib/giphy-publish";
 /**
  * Making an Instagram GIF without leaving the Instagram chat.
  *
- * Someone comments or types GIF and the whole thing happens here: two photos,
- * their own words, pay, and the finished loop comes back in the same thread.
- * If they like it they say POST and it goes up as a sticker in Instagram's GIF
- * search, with tags they choose.
+ * Someone comments or types GIF and the whole thing happens here: up to three
+ * pictures, their own words, pay, and the finished loop comes back in the same
+ * thread. If they like it they say POST and it goes up as a sticker in
+ * Instagram's GIF search, with tags they choose.
+ *
+ * THREE SCENES, NOT A BEFORE AND AN AFTER. A pair is one idea — here is a
+ * photo, here it is relit — which reads as an advert, and an advert is the
+ * wrong thing to leave under somebody else's post. Three scenes let the first
+ * one earn its place and the pitch follow behind it.
+ *
+ * Scene one is the cover. A GIF's first frame is what every static preview
+ * shows, so whatever is in scene one is what people see before anything moves.
+ * Autoplay is not ours to control; the first frame is.
  *
  * WHY IT IS ITS OWN FILE. The relight flow in instagram-bot.ts is one photo and
- * one look. This is two photos, an ordered list of lines and a publish step
+ * one look. This is several photos, an ordered list of lines and a publish step
  * afterwards — a different conversation with different states. Folding it into
  * the existing handler would put the live, paid relight flow at risk to save a
  * file.
  *
- * The states, in order:
+ * The states, in order. The first two are named for the before/after pair they
+ * used to collect; they are internal, and renaming them would strand any
+ * session sitting in one mid-conversation.
  *
- *   GIF_BEFORE  waiting for the "before" picture
- *   GIF_AFTER   waiting for the "after" picture
+ *   GIF_BEFORE  waiting for scene 1, the cover
+ *   GIF_AFTER   waiting for scene 2
+ *   GIF_THIRD   waiting for scene 3, or SKIP
  *   GIF_WORDS   collecting lines, one message or several, until they say DONE
  *   AWAITING_PAYMENT / GENERATING   the ordinary booking states
  *   GIF_PUBLISH the loop has been delivered and POST will put it on GIPHY
@@ -33,7 +45,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aluxartandframes.s
 /** Six lines is the cap the renderer enforces; past that people scroll before the reveal. */
 const MAX_LINES = 6;
 
-export const GIF_STATES = ["GIF_BEFORE", "GIF_AFTER", "GIF_WORDS", "GIF_PUBLISH"];
+export const GIF_STATES = ["GIF_BEFORE", "GIF_AFTER", "GIF_THIRD", "GIF_WORDS", "GIF_PUBLISH"];
+
+/** Skipping the optional third scene. */
+const SKIP_WORDS = /^(skip|no|none|nope|that'?s all|thats all|done|2|two)\b/i;
+export const isGifSkip = (text: string) => SKIP_WORDS.test(text.trim());
 
 /** Words that end the line-collecting step. */
 const DONE_WORDS = /^(done|finish|finished|that'?s all|thats all|ok|okay|go|ready)\b/i;
@@ -97,9 +113,11 @@ export async function startGifFlow(creds: IgCreds, session: IgSession): Promise<
 
   await sendText(creds, session.ig_user_id,
     "Let's make your GIF 🎬\n\n" +
-    "It's a short before/after loop with your words on it — the kind people " +
-    "post as an Instagram sticker.\n\n" +
-    `*Send me the BEFORE picture first.* Just the photo, nothing else.`);
+    "It's a short loop of up to three scenes with your words on each one — the " +
+    "kind people post as an Instagram sticker.\n\n" +
+    "*Send me the picture for scene 1 first.* That one matters most: it is the " +
+    "cover, the frame people see before the GIF moves.\n\n" +
+    "Just the photo, nothing else.");
 }
 
 /**
@@ -147,7 +165,7 @@ export async function handleGifPhoto(
   session: IgSession,
   attachmentUrl: string,
 ): Promise<boolean> {
-  if (session.state !== "GIF_BEFORE" && session.state !== "GIF_AFTER") return false;
+  if (!["GIF_BEFORE", "GIF_AFTER", "GIF_THIRD"].includes(session.state)) return false;
   const to = session.ig_user_id;
 
   const media = await downloadAttachment(attachmentUrl);
@@ -162,35 +180,73 @@ export async function handleGifPhoto(
   const path = `${userId}/${crypto.randomUUID()}-instagram-gif.jpg`;
   await r2Upload("identity-images", path, media.buffer, media.contentType);
 
+  const so_far = session.source_paths ?? [];
+
   if (session.state === "GIF_BEFORE") {
     await patchSession(session.id, { state: "GIF_AFTER", source_paths: [path] });
     await sendText(creds, to,
-      "Got the before 👍\n\n*Now send the AFTER picture* — the same scene once it's been relit, " +
-      "or whatever you want it to change into.");
+      "Got scene 1 👍 That's your cover.\n\n*Now send the picture for scene 2.*");
     return true;
   }
 
-  // The after. Both pictures are in hand, so ask for the words.
-  const before = session.source_paths?.[0];
-  if (!before) {
-    // Only reachable if the before was lost between messages. Ask again rather
-    // than book a loop with one picture, which the route would refuse anyway.
-    await patchSession(session.id, { state: "GIF_BEFORE", source_paths: [] });
-    await sendText(creds, to, "I've lost the first picture. Send me the BEFORE one again and we'll go from there.");
+  if (session.state === "GIF_AFTER") {
+    const first = so_far[0];
+    if (!first) {
+      // Only reachable if scene 1 was lost between messages. Ask again rather
+      // than book a loop with one picture, which the route would refuse anyway.
+      await patchSession(session.id, { state: "GIF_BEFORE", source_paths: [] });
+      await sendText(creds, to, "I've lost the first picture. Send scene 1 again and we'll go from there.");
+      return true;
+    }
+    await patchSession(session.id, { state: "GIF_THIRD", source_paths: [first, path] });
+    await sendText(creds, to,
+      "Got scene 2 ✅\n\n*Send a third picture if you want one*, or reply *skip* and we'll " +
+      "make it with two.");
     return true;
   }
 
-  await patchSession(session.id, { state: "GIF_WORDS", source_paths: [before, path] });
-  await sendText(creds, to,
-    "Both pictures in ✅\n\n" +
-    "*Now your words.* One short line per message — three or four words each reads best.\n\n" +
-    "For example:\n" +
-    "Relight your phone photos\n" +
-    "Same room\n" +
-    "Same outfit\n" +
-    "Different light\n\n" +
-    `Send them one at a time (up to ${MAX_LINES}), then send *done* when you've finished.`);
+  // The third, which is optional. Whatever is in hand goes forward.
+  await patchSession(session.id, { state: "GIF_WORDS", source_paths: [...so_far, path] });
+  await askForWords(creds, to, so_far.length + 1);
   return true;
+}
+
+/**
+ * Ask for the words, once the pictures are in.
+ *
+ * Says how many scenes there are so the customer knows how many lines they are
+ * writing — the words and the pictures pair up in order, so a line and a scene
+ * are the same thing.
+ */
+async function askForWords(creds: IgCreds, to: string, scenes: number): Promise<void> {
+  await sendText(creds, to,
+    `${scenes} scene${scenes === 1 ? "" : "s"} in ✅\n\n` +
+    "*Now your words — one short line per scene, in order.* Three or four words each reads best.\n\n" +
+    "The first line goes on your cover, so make that one the hook.\n\n" +
+    "For example:\n" +
+    "You won't believe this\n" +
+    "Same room, same phone\n" +
+    "One light moved\n\n" +
+    `Send them one at a time (up to ${MAX_LINES}), then send *done* when you've finished.`);
+}
+
+/**
+ * Move a conversation on from pictures to words.
+ *
+ * Exported because SKIP is answered in the webhook, which has the text but not
+ * the prompt — and the prompt has to say how many scenes there are, so the
+ * customer knows how many lines they are writing.
+ */
+export async function askGifWords(creds: IgCreds, session: IgSession): Promise<void> {
+  const shots = session.source_paths ?? [];
+  if (!shots.length) {
+    await patchSession(session.id, { state: "GIF_BEFORE", source_paths: [] });
+    await sendText(creds, session.ig_user_id,
+      "I've lost your pictures. Send scene 1 again and we'll go from there.");
+    return;
+  }
+  await patchSession(session.id, { state: "GIF_WORDS" });
+  await askForWords(creds, session.ig_user_id, shots.length);
 }
 
 /**
@@ -255,7 +311,8 @@ export async function handleGifWords(
  */
 async function bookGifLoop(creds: IgCreds, session: IgSession, lines: string[]): Promise<void> {
   const to = session.ig_user_id;
-  const [before, after] = session.source_paths ?? [];
+  const shots = session.source_paths ?? [];
+  const [before, after] = shots;
   if (!before || !after) {
     await sendText(creds, to, "I've lost one of your pictures. Send *gif* and we'll start again.");
     return;
@@ -278,8 +335,15 @@ async function bookGifLoop(creds: IgCreds, session: IgSession, lines: string[]):
         headline: lines[0],
         lines,
         website: session.gif_website ?? undefined,
+        // Scene by scene: line 1 shows picture 1, line 2 picture 2, and so on.
+        // A line past the last picture has none of its own and falls back to
+        // the before/after pair below, which is what keeps a four-line loop
+        // built from two pictures looking deliberate.
+        lineRefs: lines.map((_, i) => (shots[i] ? { storagePath: shots[i] } : null)),
         beforeRef: { storagePath: before },
-        afterRef: { storagePath: after },
+        // The last picture supplied, so the closing beats settle on the end of
+        // the story rather than back on scene 2.
+        afterRef: { storagePath: shots[shots.length - 1] ?? after },
       },
     }),
   }).then(r => r.json()).catch(e => ({ error: String(e) }));

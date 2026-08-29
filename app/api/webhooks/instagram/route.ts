@@ -7,7 +7,7 @@ import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSe
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
   startGifFlow, handleGifPhoto, handleGifWords, handleGifPublish, isPostRequest,
-  isGifCreateRequest, armGifSession,
+  isGifCreateRequest, isGifSkip, askGifWords, armGifSession,
 } from "@/lib/instagram-gif";
 import { handleMention, mentionTooOld } from "@/lib/instagram-mentions";
 import sql from "@/lib/db";
@@ -570,14 +570,21 @@ async function handleDirectMessage(
     await handleGifPublish(creds, session, text);
     return;
   }
-  if (session.state === "GIF_BEFORE" || session.state === "GIF_AFTER") {
+  // The third scene is optional, so a word can end the picture-collecting step.
+  if (session.state === "GIF_THIRD" && isGifSkip(text)) {
+    await askGifWords(creds, session);
+    return;
+  }
+  if (["GIF_BEFORE", "GIF_AFTER", "GIF_THIRD"].includes(session.state)) {
     // Anything but a picture at this point, except the trigger word itself
     // which restarts cleanly below.
     if (!/\bgif\b/i.test(text)) {
       await sendText(creds, senderId,
         session.state === "GIF_BEFORE"
-          ? "Send me the BEFORE picture as a photo in this chat and we'll carry on."
-          : "Send me the AFTER picture as a photo in this chat and we'll carry on.");
+          ? "Send the picture for scene 1 as a photo in this chat and we'll carry on."
+          : session.state === "GIF_AFTER"
+            ? "Send the picture for scene 2 as a photo in this chat and we'll carry on."
+            : "Send a third picture as a photo in this chat, or reply *skip* to make it with two.");
       return;
     }
   }
