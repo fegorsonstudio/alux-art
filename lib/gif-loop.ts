@@ -25,7 +25,20 @@ import sharp from "sharp";
 
 export const MINT = "#43ccb2";
 export const INK = "#06150f";
-const FONT = "Outfit, 'Segoe UI', Roboto, Arial, sans-serif";
+/**
+ * The panel face, with an explicit emoji fallback.
+ *
+ * Without a font carrying emoji, a line ending in a siren rendered its
+ * codepoint as text — a box reading 01F6A8 sitting in the middle of the
+ * buyer's own words. fonts-noto-color-emoji is installed on the server for
+ * this; naming it here rather than leaning on fontconfig's implicit fallback
+ * means the intent survives a change in that configuration.
+ *
+ * It draws as a monochrome silhouette, not in colour: librsvg composites glyph
+ * outlines and does not paint the bitmap colour layers these fonts carry. On
+ * ink-on-mint that reads as deliberate rather than broken.
+ */
+const FONT = "Outfit, 'Segoe UI', Roboto, Arial, 'Noto Color Emoji', sans-serif";
 
 export type ArFrames = { frames: Buffer[]; width: number; height: number; fps: number };
 
