@@ -71,6 +71,12 @@ export interface ChoiceSelection extends ChoiceOption {
   tag: string;                 // the reference tag this selection fills
   label: string;               // group label
   colorOverride?: string;      // RECOLOR_PALETTE value — outfit/scrubs picks only
+  /**
+   * How many of the shoot's images this prop should appear in. Absent means
+   * all of them. Only ever set for props and accessories — an outfit or a
+   * hairstyle is meant to hold across the whole shoot.
+   */
+  appearsIn?: number;
 }
 
 export interface ChoiceSelections {
@@ -244,12 +250,13 @@ export function sanitizeOptionGroups(raw: unknown, userId: string): ChoiceGroup[
 // automatically. Multi-select groups (props) keep every pick.
 export function resolveChoiceSelections(
   groups: ChoiceGroup[],
-  buyerPicks: Array<{ groupId: string; optionId: string; colorOverride?: string }> | undefined
+  buyerPicks: Array<{ groupId: string; optionId: string; colorOverride?: string; appearsIn?: number }> | undefined
 ): { selections: ChoiceSelections | null; error?: string } {
   if (!Array.isArray(groups) || groups.length === 0) return { selections: null };
 
   const validColors = new Set<string>(RECOLOR_PALETTE);
   const picksByGroup = new Map<string, string[]>();
+  const appearsByOption = new Map<string, number>();
   const colorByGroup = new Map<string, string>();
   for (const p of buyerPicks ?? []) {
     if (!p || typeof p.groupId !== "string" || typeof p.optionId !== "string") {
@@ -258,6 +265,11 @@ export function resolveChoiceSelections(
     const list = picksByGroup.get(p.groupId) ?? [];
     if (!list.includes(p.optionId)) list.push(p.optionId);
     picksByGroup.set(p.groupId, list);
+    // Kept per OPTION, not per group: roses and a chandelier come from the same
+    // Props list and may want different numbers of appearances.
+    if (typeof p.appearsIn === "number" && Number.isFinite(p.appearsIn) && p.appearsIn > 0) {
+      appearsByOption.set(p.optionId, Math.floor(p.appearsIn));
+    }
     if (typeof p.colorOverride === "string" && validColors.has(p.colorOverride)) {
       colorByGroup.set(p.groupId, p.colorOverride);
     }
@@ -308,6 +320,13 @@ export function resolveChoiceSelections(
         label: group.label,
         name: meta.namePrefix ? `${meta.namePrefix}${option.name}` : option.name,
         ...(colorOverride ? { colorOverride } : {}),
+        // Only props and accessories may be limited. Letting an outfit or a
+        // hairstyle appear in some images and not others would break the
+        // continuity the rest of the pipeline works to hold.
+        ...((group.type === "props" || group.type === "accessory" || group.type === "shoes")
+             && appearsByOption.has(option.id)
+              ? { appearsIn: appearsByOption.get(option.id)! }
+              : {}),
       });
     }
   }

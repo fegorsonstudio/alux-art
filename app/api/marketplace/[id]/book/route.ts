@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     currency?: string;
     rolePrompt?: string;
     backgroundAllocations?: Array<{ optionId: string; count: number }>;
-    choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string }>;
+    choiceSelections?: Array<{ groupId: string; optionId: string; colorOverride?: string; appearsIn?: number }>;
     // Manual lighting toggle (regular templates): buyer ticks one or more
     // lighting looks from the template's "lighting" choice group; they get
     // spread across the images. Absent/empty = AI-described lighting.
@@ -834,14 +834,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           // Single-instance tags defer to a buyer's own uploaded replacement;
           // ACCESSORY refs can coexist (e.g. chosen shoes + buyer's own jewelry).
           .filter((s) => s.tag === "ACCESSORY" || !deduplicatedTaggedRefs.some((r) => r.tag === s.tag))
-          .map((s, i) => ({
-            id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
-            purpose: "tagged", tag: s.tag, custom_name: s.name,
-            note: s.description ?? null,
-            name: `choice-${i + 1}`, type: "image/jpeg", size: 1,
-            storage_bucket: s.imageBucket ?? "template-images", storage_path: s.imagePath!,
-            created_at: now,
-          }))
+          .map((s, i) => {
+            const rowId = crypto.randomUUID();
+            const wanted = Number(s.appearsIn);
+            if (Number.isFinite(wanted) && wanted > 0 && wanted < buyerPackageSize) {
+              propLimits.push({ id: rowId, appearsIn: Math.floor(wanted) });
+            }
+            return {
+              id: rowId, shoot_id: shootId, user_id: user.id,
+              purpose: "tagged", tag: s.tag, custom_name: s.name,
+              note: s.description ?? null,
+              name: `choice-${i + 1}`, type: "image/jpeg", size: 1,
+              storage_bucket: s.imageBucket ?? "template-images", storage_path: s.imagePath!,
+              created_at: now,
+            };
+          })
       : []),
     // Flag-shot plate — the empty-flag scene the model composites the subject onto.
     // Only attached when the buyer opted in and the template has a configured plate.

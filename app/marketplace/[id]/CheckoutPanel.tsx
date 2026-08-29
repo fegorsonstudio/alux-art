@@ -536,6 +536,9 @@ export default function CheckoutPanel({
   const multiGroups = choiceGroups.filter(g => g.type !== "lighting" && MULTI_SELECT_TYPES.has(g.type) && (g.options?.length ?? 0) >= 1);
   const [groupPicks, setGroupPicks] = useState<Record<string, string>>({});
   const [multiPicks, setMultiPicks] = useState<Record<string, string[]>>({});
+  // How many images each picked prop should appear in, keyed by option id.
+  // Absent means every image, which is the default and the old behaviour.
+  const [propAppears, setPropAppears] = useState<Record<string, number>>({});
   // Manual lighting toggle: off by default. Regular templates → AI describes
   // lighting (on = buyer ticks looks, spread across images). photo_upgrade → the
   // existing single rig (on = a creator lighting look assigned per source photo).
@@ -1385,7 +1388,10 @@ export default function CheckoutPanel({
         choiceSelections: (pickableGroups.length > 0 || multiGroups.length > 0)
           ? [
               ...Object.entries(groupPicks).map(([groupId, optionId]) => ({ groupId, optionId, colorOverride: groupColors[groupId] || undefined })),
-              ...Object.entries(multiPicks).flatMap(([groupId, ids]) => ids.map(optionId => ({ groupId, optionId }))),
+              ...Object.entries(multiPicks).flatMap(([groupId, ids]) => ids.map(optionId => ({
+                groupId, optionId,
+                ...(propAppears[optionId] ? { appearsIn: propAppears[optionId] } : {}),
+              }))),
             ]
           : undefined,
         // Manual lighting (regular templates): only sent when the buyer turned it on
@@ -2741,6 +2747,43 @@ export default function CheckoutPanel({
                     );
                   })}
                 </div>
+
+                {/* How many images each picked prop belongs in. Only for props
+                    and accessories, and only once something is picked: a prop
+                    nobody chose has nothing to limit. */}
+                {picked.length > 0 && selectedPkg > 1 && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                    {picked.map(id => {
+                      const opt = group.options.find(o => o.id === id);
+                      if (!opt) return null;
+                      return (
+                        <label key={id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.78rem" }}>
+                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {opt.name}
+                          </span>
+                          <select
+                            className={styles.flagInput}
+                            style={{ width: "auto", flex: "0 0 auto", padding: "4px 8px", fontSize: "0.78rem" }}
+                            value={propAppears[id] ?? 0}
+                            onChange={e => {
+                              const v = Number(e.target.value);
+                              setPropAppears(prev => {
+                                const next = { ...prev };
+                                if (v === 0) delete next[id]; else next[id] = v;
+                                return next;
+                              });
+                            }}
+                          >
+                            <option value={0}>{t("propInAll", { count: String(selectedPkg) })}</option>
+                            {Array.from({ length: selectedPkg - 1 }, (_, i) => i + 1).map(n => (
+                              <option key={n} value={n}>{n === 1 ? t("propInOne") : t("propInSome", { count: String(n) })}</option>
+                            ))}
+                          </select>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
