@@ -55,7 +55,7 @@ const GLOBAL_ANATOMICAL_CONSTRAINTS = "Exactly two hands with five natural finge
 
 // Variant for designated smile slots — the smiling identity reference is attached,
 // so real teeth are copied instead of invented.
-const GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. A genuine warm smile with naturally rendered visible teeth taken directly from the smiling identity reference — same tooth shape, spacing, and color; never invented, idealized, or veneer-perfect teeth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
+const GLOBAL_ANATOMICAL_CONSTRAINTS_SMILE = "Exactly two hands with five natural fingers each. Natural eyes with clear catchlights. A genuine warm smile with naturally rendered visible teeth taken directly from the smiling identity reference AND from the Teeth line of the identity profile — same tooth shape, spacing, alignment and color. If the profile or the reference shows a gap between the front teeth, that gap MUST appear, at the same width; closing it makes the subject a different person. Never invented, idealized, straightened, or veneer-perfect teeth. Candid facial micro-movements that convey the subject is alive and present in a moment, not posed. Symmetrical natural facial anatomy.";
 
 // Variant for back-view slots — the face is not visible, so eye/lip requirements
 // would fight the pose; the back-view identity reference anchors the figure instead.
@@ -449,7 +449,7 @@ async function signRefs(
   );
 }
 
-const IDENTITY_PROFILE_FIELDS = ["Face:", "Skin:", "Eyes:", "Hair:", "Build:", "Distinctive:"];
+const IDENTITY_PROFILE_FIELDS = ["Face:", "Skin:", "Eyes:", "Teeth:", "Hair:", "Build:", "Distinctive:"];
 
 // Group picture mode: the identity photo(s) contain more than one person. This block is
 // injected into the brief-builder input to override the default single-subject mandatory
@@ -472,7 +472,7 @@ async function analyzeIdentityImages(imageUrls: string[], groupMode = false): Pr
   const imageParts = allParts.filter((p): p is GeminiImagePart => p !== null);
   if (imageParts.length === 0) {
     console.warn("[generate] analyzeIdentityImages: no identity images available — returning placeholder profile");
-    return "IDENTITY PROFILE:\nFace: Unknown — no reference images available\nSkin: Unknown\nEyes: Unknown\nHair: Unknown\nBuild: Unknown\nDistinctive: No reference images available";
+    return "IDENTITY PROFILE:\nFace: Unknown — no reference images available\nSkin: Unknown\nEyes: Unknown\nTeeth: Unknown\nHair: Unknown\nBuild: Unknown\nDistinctive: No reference images available";
   }
 
   const model = genai.getGenerativeModel({
@@ -484,12 +484,13 @@ async function analyzeIdentityImages(imageUrls: string[], groupMode = false): Pr
   const basePrompt = groupMode
     ? `These reference photos show MORE THAN ONE person (e.g. a couple or group). For EACH person visible, extract a precise identity profile for AI image generation.
 
-Describe the people left-to-right as they appear. Return ONLY this format, repeating the block for every person (Person 1, Person 2, ...). ALL 6 fields are MANDATORY for EVERY person:
+Describe the people left-to-right as they appear. Return ONLY this format, repeating the block for every person (Person 1, Person 2, ...). ALL 7 fields are MANDATORY for EVERY person:
 IDENTITY PROFILE:
 Person 1:
 Face: [facial structure — shape, proportions, bone structure]
 Skin: [exact tone — depth and undertone, e.g. deep ebony with cool undertones, rich dark brown with warm undertones]
 Eyes: [color, shape, spacing]
+Teeth: [dentition, whenever any reference shows them — alignment, spacing, and ANY gap between the front teeth (a diastema), plus relative size, edge shape and shade. A gap is one of the most recognisable things about a face and must never be left out or closed up. Write "not visible in the references" only if no photograph shows them]
 Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
 Build: [body type, height impression, proportions]
 Distinctive: [any notable stable features]
@@ -497,6 +498,7 @@ Person 2:
 Face: [...]
 Skin: [...]
 Eyes: [...]
+Teeth: [...]
 Hair: [...]
 Build: [...]
 Distinctive: [...]
@@ -506,11 +508,12 @@ CRITICAL: Skin tone accuracy is essential for identity preservation. Dark skin m
 Clinical and precise. No subjective judgments. Stable biometric features only.`
     : `Analyze these identity reference photos and extract a precise identity profile for AI image generation.
 
-Return ONLY this format — ALL 6 fields are MANDATORY. Do not stop until all 6 are written:
+Return ONLY this format — ALL 7 fields are MANDATORY. Do not stop until all 7 are written:
 IDENTITY PROFILE:
 Face: [facial structure — shape, proportions, bone structure]
 Skin: [exact tone — e.g. deep ebony, rich dark brown, warm medium brown, cool fair. Be specific about depth and undertone]
 Eyes: [color, shape, spacing]
+Teeth: [dentition, whenever any reference shows them — alignment, spacing, and ANY gap between the front teeth (a diastema), plus relative size, edge shape and shade. A gap is one of the most recognisable things about a face and must never be left out or closed up. Write "not visible in the references" only if no photograph shows them]
 Hair: [color, texture, length, style — if bald/shaved, state that explicitly]
 Build: [body type, height impression, proportions]
 Distinctive: [any notable stable features]
@@ -533,7 +536,7 @@ Clinical and precise. No subjective judgments. Stable biometric features only.`;
     const missing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
     if (missing.length === 0) break;
     console.warn(`[generate] identity profile missing fields (attempt ${attempt + 1}):`, missing);
-    text = (await run(`\n\nCRITICAL: Your previous response was missing these required fields: ${missing.join(", ")}. You MUST include ALL 6 fields. Start fresh and write all 6.`)).response.text();
+    text = (await run(`\n\nCRITICAL: Your previous response was missing these required fields: ${missing.join(", ")}. You MUST include ALL 7 fields. Start fresh and write all 7.`)).response.text();
   }
 
   const stillMissing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
