@@ -3561,6 +3561,17 @@ export async function startGenerationWorker(
         }
       }
 
+      // The subject's own teeth, straight from the identity profile.
+      //
+      // Appended rather than left to the planner, which condenses the profile
+      // into its own sentence and dropped this line on every slot of the redo.
+      // A gap between the front teeth is as recognisable as a jawline, and
+      // there is no recovering it once the model has invented a neat set.
+      const teethLine = (/^Teeth:\s*(.+)$/m.exec(identityProfile)?.[1] ?? "").trim();
+      const dentitionLock = teethLine && !/not visible|unknown/i.test(teethLine)
+        ? ` DENTITION: the subject's teeth are — ${teethLine} Whenever teeth are visible, even slightly, reproduce exactly that: same alignment, spacing, proportions and shade. If a gap between the front teeth is described, it MUST be present at the same width. Never straighten, close a gap, resize, or whiten toward an idealised or veneer-perfect set — that makes the output a different person.`
+        : "";
+
       // Append the reference image map + positive anatomical constraints to every fal call.
       // Smile slots get the real-teeth variant; back-view slots drop face requirements.
       // Gear Equalizer prompts are already fully assembled — nothing is appended.
@@ -3575,7 +3586,7 @@ export async function startGenerationWorker(
         const slotRealism = isQuoteSlot
           ? ""
           : " Photographic realism: realistic fabric texture with visible weave and stitching, sharp material and accessory detail, natural fabric folds, crisp focus on the garment, true-to-life color, editorial lens feel.";
-        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${lightingLock}${framingCropLock}${propExclusion}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
+        slotPrompt = `${slotPrompt}${telephotoText}${textBgLock}${lightingLock}${framingCropLock}${propExclusion}${dentitionLock}${slotReferenceMap.text}${slotRealism} ${slotAnatomicalConstraints}`.trim();
       }
 
       // Gear Equalizer: every photo keeps its own crop — probe the source's real
