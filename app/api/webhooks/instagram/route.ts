@@ -9,6 +9,7 @@ import {
   startGifFlow, handleGifPhoto, handleGifWords, handleGifPublish, isPostRequest,
   isGifCreateRequest, armGifSession,
 } from "@/lib/instagram-gif";
+import { handleMention, mentionTooOld } from "@/lib/instagram-mentions";
 import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { retouchPriceNgn } from "@/lib/retouch-pricing";
@@ -172,6 +173,40 @@ export async function POST(request: NextRequest) {
     }
 
     for (const change of entry.changes ?? []) {
+      // ── @mentions on media we do NOT own ──────────────────────────────────
+      // A different field with a different value shape, so it has to be taken
+      // before the comments branch, which returns early on anything else.
+      //
+      // This is the only way we hear about our GIFs being used under other
+      // accounts' posts. We can answer publicly and nothing more: Instagram's
+      // private replies are scoped to comments on our own media, so there is no
+      // DM to send here. The reply has to carry the instruction.
+      if (change.field === "mentions") {
+        const v = change.value ?? {};
+        const mediaId = v.media_id ? String(v.media_id) : null;
+        const commentId = v.comment_id ? String(v.comment_id) : null;
+        const mText = String(v.text ?? "");
+        const mFrom = ((v.from ?? {}) as { username?: string }).username ?? null;
+
+        if (mentionTooOld(v.timestamp as number | undefined)) {
+          console.log("[ig mentions] too old to answer, skipping");
+          continue;
+        }
+        const token = tokenForAccountId(igUserId);
+        if (!token) { console.warn("[ig mentions] no token for account", igUserId); continue; }
+
+        try {
+          await handleMention(
+            { igAccountId: igUserId, mediaId, commentId, text: mText, fromUsername: mFrom },
+            token,
+            mine,
+          );
+        } catch (e) {
+          console.error("[ig mentions] handling failed:", (e as Error).message);
+        }
+        continue;
+      }
+
       if (change.field !== "comments") continue;
       const v = change.value ?? {};
       const commentId = String(v.id ?? "");
