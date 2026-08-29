@@ -37,8 +37,16 @@ export const INK = "#06150f";
  * It draws as a monochrome silhouette, not in colour: librsvg composites glyph
  * outlines and does not paint the bitmap colour layers these fonts carry. On
  * ink-on-mint that reads as deliberate rather than broken.
+ *
+ * IT MUST COME LAST, after sans-serif. Outfit, Segoe UI, Roboto and Arial are
+ * none of them installed on the server, so naming the emoji font before the
+ * generic family made it the first family that actually exists — and it
+ * carries digit glyphs, for keycap sequences. Every number in the film then
+ * came from it: "N1,000" rendered as "N 1 , 0 0 0", wide and spaced, while the
+ * letters fell through to DejaVu. Last in the list, it is reached only for
+ * characters nothing before it can draw, which is exactly the emoji.
  */
-const FONT = "Outfit, 'Segoe UI', Roboto, Arial, 'Noto Color Emoji', sans-serif";
+const FONT = "Outfit, 'Segoe UI', Roboto, Arial, sans-serif, 'Noto Color Emoji'";
 
 export type ArFrames = { frames: Buffer[]; width: number; height: number; fps: number };
 
