@@ -172,12 +172,27 @@ async function filterReachableUrls(urls: string[]): Promise<string[]> {
   const results = await Promise.allSettled(
     urls.map(async (url) => {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      // Fifteen seconds, not five. A reference can be 20MB, and storage having
+      // a slow moment must not be read as the file being gone.
+      const timeout = setTimeout(() => controller.abort(), 15000);
       try {
+        // A ranged GET, not HEAD: these are presigned URLs signed for GET, and
+        // they answer HEAD with 403 — measured, not assumed.
         const res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-0" }, signal: controller.signal });
-        return (res.ok || res.status === 206) ? url : null;
-      } catch {
+        if (res.ok || res.status === 206) return url;
+        // A definite refusal: the object really is not there. Drop it.
+        console.warn(`[generate] reference refused with HTTP ${res.status}, dropping: ${url.split("?")[0].slice(-70)}`);
         return null;
+      } catch (e) {
+        // A timeout or a network error is NOT evidence of a missing file, and
+        // dropping a reference the buyer deliberately attached is far worse
+        // than passing a URL fal may reject: the shoot then completes, looks
+        // finished, and is quietly wrong. Keep it and say so loudly.
+        console.warn(
+          `[generate] reference probe failed (${(e as Error).name}) — KEEPING it rather than dropping: ` +
+          url.split("?")[0].slice(-70)
+        );
+        return url;
       } finally {
         clearTimeout(timeout);
       }
@@ -2663,7 +2678,13 @@ export async function startGenerationWorker(
             .map(async (p: NewPromptObject) => {
               const slotRow = allSlotRows.find(s => s.slot === p.prompt_index);
               if (!slotRow) return;
-              await sql`UPDATE shoot_images SET prompt = ${p.fully_consolidated_prompt!}, updated_at = ${ts()} WHERE id = ${slotRow.id}`;
+              // Never over a slot that has already run. This is a draft for the
+              // gallery to show while the shoot works; the real prompt, with
+              // its reference map and locks, is written just before the fal
+              // call and must survive. Without this guard a finished slot could
+              // be left holding a draft it was never sent.
+              await sql`UPDATE shoot_images SET prompt = ${p.fully_consolidated_prompt!}, updated_at = ${ts()}
+                        WHERE id = ${slotRow.id} AND status <> 'COMPLETE'`;
             })
         );
       }
