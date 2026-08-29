@@ -104,6 +104,31 @@ export const KEYWORDS: Keyword[] = [
     publicReply: "Sent you a DM 📩",
   },
   {
+    // The in-chat GIF maker.
+    //
+    // The only keyword whose reply is not a link. Everything happens in this
+    // thread: two pictures, their own words, and the finished loop comes back
+    // here. So the private reply opens the conversation rather than sending
+    // them somewhere else to start it.
+    //
+    // The webhook arms the session when this matches, so the picture they send
+    // next is already understood as the "before".
+    word: "GIF",
+    aliases: ["GIFF", "STICKER", "LOOP"],
+    reply:
+      "Let's make your GIF \ud83c\udfac\n\n" +
+      "It's a short before/after loop with your words on it \u2014 the kind people post " +
+      "as an Instagram sticker. We do the whole thing right here in this chat.\n\n" +
+      "*Send me the BEFORE picture to start.* Just the photo, nothing else.",
+    // Identical: there is no link in it to lose.
+    replyNoLink:
+      "Let's make your GIF \ud83c\udfac\n\n" +
+      "It's a short before/after loop with your words on it \u2014 the kind people post " +
+      "as an Instagram sticker. We do the whole thing right here in this chat.\n\n" +
+      "*Send me the BEFORE picture to start.* Just the photo, nothing else.",
+    publicReply: "Sent you a DM \ud83d\udce9",
+  },
+  {
     word: "STUDIO",
     reply:
       "Here you go 👇\n\n" +

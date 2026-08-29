@@ -5,6 +5,10 @@ import { findLookByNumber } from "@/lib/whatsapp-triggers";
 import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
 import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession, patchSession, ensureUser } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
+import {
+  startGifFlow, handleGifPhoto, handleGifWords, handleGifPublish, isPostRequest,
+  isGifCreateRequest, armGifSession,
+} from "@/lib/instagram-gif";
 import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { retouchPriceNgn } from "@/lib/retouch-pricing";
@@ -275,6 +279,12 @@ export async function POST(request: NextRequest) {
             await armLookSession(igUserId, String(from.id), from.username, armWith)
               .catch(e => console.warn("[ig webhook] could not arm session:", (e as Error).message));
           }
+          // GIF is armed the same way, but into its own flow: the reply just
+          // asked for the before picture, so the session has to be expecting it.
+          if (keyword.word === "GIF" && from.id) {
+            await armGifSession(igUserId, String(from.id), from.username)
+              .catch(e => console.warn("[ig webhook] could not arm gif session:", (e as Error).message));
+          }
           // A public acknowledgement so other readers see it worked. Best effort:
           // the DM is the product, this is decoration.
           if (keyword.publicReply) {
@@ -480,12 +490,55 @@ async function handleDirectMessage(
       await ignoreQuietly(session, "[sent a photo, no look chosen]");
       return;
     }
+    // Mid-GIF, a picture is the before or the after rather than something to
+    // relight. Returns false when this session is not making a GIF, so the
+    // relight path below is untouched.
+    if (await handleGifPhoto(creds, session, msg.imageUrl)) return;
     await handlePhoto(creds, session, msg.imageUrl);
     return;
   }
 
   const text = (msg.text ?? "").trim();
   if (!text) return;
+
+  // ── The in-chat GIF maker ─────────────────────────────────────────────────
+  // Checked first, and only while that conversation is actually running. While
+  // someone is typing the words for their own GIF, their lines are theirs: a
+  // line reading "different light" must become a caption, not a booking for
+  // look 197, and "done" must end the list rather than mean nothing.
+  if (session.state === "GIF_WORDS") {
+    await handleGifWords(creds, session, text);
+    return;
+  }
+  // "upload my gif" reaches here in the publish state and means a NEW one, so
+  // it is taken out of the publish branch's way before that branch runs.
+  if (session.state === "GIF_PUBLISH" && !isGifCreateRequest(text) && isPostRequest(text)) {
+    await handleGifPublish(creds, session, text);
+    return;
+  }
+  if (session.state === "GIF_BEFORE" || session.state === "GIF_AFTER") {
+    // Anything but a picture at this point, except the trigger word itself
+    // which restarts cleanly below.
+    if (!/\bgif\b/i.test(text)) {
+      await sendText(creds, senderId,
+        session.state === "GIF_BEFORE"
+          ? "Send me the BEFORE picture as a photo in this chat and we'll carry on."
+          : "Send me the AFTER picture as a photo in this chat and we'll carry on.");
+      return;
+    }
+  }
+
+  // The trigger word, anywhere in the message.
+  //
+  // Matched loosely for the same reason LIGHT is: an ad or a comment reply
+  // drops people here with the word pre-filled, and what arrives is not always
+  // the bare word. It is checked before the look matchers so "gif" cannot be
+  // swallowed by something else.
+  if (/\bgifs?\b/i.test(text) || /\bsticker\b/i.test(text)) {
+    await startGifFlow(creds, session);
+    return;
+  }
+
 
   // A bare number is a look. Matched strictly so "I have 2 kids" cannot book
   // anything — the same guard the comment path already carries.
@@ -573,6 +626,15 @@ async function handleDirectMessage(
 
   if (session.state === "GENERATING") {
     await sendText(creds, senderId, "Still working on it — it'll land here in a couple of minutes.");
+    return;
+  }
+
+  // Delivered, and they were asked whether they want it as a sticker. Anything
+  // that is not a yes leaves the offer standing rather than nagging.
+  if (session.state === "GIF_PUBLISH") {
+    await sendText(creds, senderId,
+      "Your GIF is above. Reply *post* if you want it in Instagram's GIF search, " +
+      "or *gif* to make another one.");
     return;
   }
 

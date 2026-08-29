@@ -9,6 +9,7 @@ import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 import { instagramReadyCopy } from "@/lib/instagram-image";
 import { sendWithLinkFallback } from "@/lib/instagram-bot";
 import { RETOUCH_PRICE_PER_IMAGE_NGN } from "@/lib/retouch-pricing";
+import { gifPublishOffer } from "@/lib/instagram-gif";
 
 /**
  * Sends finished shoots back into the Instagram chat that ordered them.
@@ -176,8 +177,8 @@ export async function GET(req: NextRequest) {
 
     if (r.shoot_status !== "COMPLETE") continue;   // still working
 
-    const images = await sql<{ id: string; slot: number; bucket: string | null; path: string | null }[]>`
-      SELECT id, slot,
+    const images = await sql<{ id: string; slot: number; kind: string | null; bucket: string | null; path: string | null }[]>`
+      SELECT id, slot, kind,
              COALESCE(download_storage_bucket, preview_storage_bucket) AS bucket,
              COALESCE(download_storage_path, preview_storage_path)     AS path
       FROM shoot_images
@@ -194,8 +195,15 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // A loop shoot: GIF and MP4, wide and upright. Only the GIFs go into the
+    // chat — an MP4 is not an image attachment as far as Instagram is
+    // concerned, and four files in a row reads as spam. The download link below
+    // carries all four.
+    const isLoop = images.some(i => (i.kind ?? "").endsWith("-gif"));
+    const toSend = isLoop ? images.filter(i => (i.kind ?? "").endsWith("-gif")) : images;
+
     let sent = 0;
-    for (const img of images) {
+    for (const img of toSend) {
       // Instagram refuses anything over 8MB with a subcode that mentions
       // nothing about size, so send a JPEG cut to fit rather than the 21MB 4K
       // PNG. There is no document fallback the way there is on WhatsApp:
@@ -218,7 +226,7 @@ export async function GET(req: NextRequest) {
     if (sent === 0) {
       // Nothing arrived. Leaving ig_delivered_at NULL means the next run tries
       // again rather than marking a customer served who received nothing.
-      console.error(`[ig deliver] delivered 0 of ${images.length} to @${r.ig_username ?? to} — will retry`);
+      console.error(`[ig deliver] delivered 0 of ${toSend.length} to @${r.ig_username ?? to} — will retry`);
       continue;
     }
 
@@ -228,6 +236,28 @@ export async function GET(req: NextRequest) {
     // The 4K file cannot pass through a DM at all, so name where it is rather
     // than let the buyer assume the compressed copy is what they paid for.
     const fullSize = await downloadLink(r.shoot_id);
+
+    // A loop is finished work, not a photograph to retouch. The customer has
+    // just watched it, which is the only moment they can judge whether they
+    // want it public — so that is where the sticker offer goes.
+    if (isLoop) {
+      await sendWithLinkFallback(creds, to,
+        `Here's your GIF ✨\n\n` +
+        `You also have it as an MP4, and both upright and wide, here:\n` +
+        `${fullSize ?? `${SITE_URL}/studio`}` + gifPublishOffer(),
+        `Here's your GIF ✨\n\n` +
+        `The MP4 and the upright version are waiting on aluxartandframes.shop ` +
+        `under your shoots.` + gifPublishOffer());
+      // Left in GIF_PUBLISH rather than DONE, so *post* means something for as
+      // long as they take to decide.
+      if (r.session_id) {
+        await sql`UPDATE instagram_sessions SET state = 'GIF_PUBLISH', updated_at = NOW()
+                  WHERE id = ${r.session_id}`;
+      }
+      await sql`UPDATE shoots SET ig_delivered_at = NOW() WHERE id = ${r.shoot_id}`;
+      delivered.push(r.shoot_id);
+      continue;
+    }
     // The retouch is offered HERE and nowhere else, the same as on WhatsApp:
     // the buyer has just seen the picture, and that is the only moment they can
     // judge whether a hand pass is worth paying for.

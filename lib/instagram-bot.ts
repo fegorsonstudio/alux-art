@@ -43,6 +43,10 @@ export type IgSession = {
   look_name: string | null;
   shoot_id: string | null;
   source_paths: string[];
+  /** The lines of an in-chat GIF, in the order they appear in the film. */
+  gif_lines: string[];
+  /** The address beat of an in-chat GIF, when they gave one. */
+  gif_website: string | null;
   user_id: string | null;
   payment_reference: string | null;
   last_inbound_at: Date;
