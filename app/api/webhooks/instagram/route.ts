@@ -212,9 +212,6 @@ export async function POST(request: NextRequest) {
       const commentId = String(v.id ?? "");
       const text = String(v.text ?? "");
       const from = (v.from ?? {}) as { id?: string; username?: string };
-      // The post the comment sits on. Needed only for the mention fallback
-      // below, which has to name the media it is replying under.
-      const mediaId = ((v.media ?? {}) as { id?: string }).id ?? null;
 
       if (!commentId || !text) continue;
       // Never answer ourselves. Worth logging: testing the automation by
@@ -310,20 +307,14 @@ export async function POST(request: NextRequest) {
             "| commentId used:", commentId
           );
 
-          // A refused private reply on a comment that names one of our handles
-          // is what a mention on someone else's post looks like from here.
-          // Instagram scopes private replies to our OWN media, so this is not a
-          // fault to retry — it is a different kind of event, and a public reply
-          // is the only channel it has.
-          const namesUs = [...mine].some(h => new RegExp(`@${h}\\b`, "i").test(text));
-          if (namesUs && mediaId) {
-            console.log(`[ig webhook] treating ${commentId} as a mention on media we do not own`);
-            await handleMention(
-              { igAccountId: igUserId, mediaId, commentId, text, fromUsername: from.username ?? null },
-              token,
-              mine,
-            ).catch(e => console.error("[ig mentions] fallback failed:", (e as Error).message));
-          }
+          // No mention fallback here, deliberately. Probed against the live
+          // token, this app subscribes to ["comments","messages"] and has no
+          // /mentions, /mentioned_comment or /mentioned_media edge at all — they
+          // are Facebook-login only. A comment naming us on a third party's post
+          // produces no webhook and could not be answered if it did, so a
+          // fallback would only fire on our OWN media when a private reply
+          // failed for an unrelated reason, and alert about a mention that never
+          // happened.
         } else {
           console.log(`[ig webhook] sent "${keyword.word}" to @${from.username ?? from.id}`);
 

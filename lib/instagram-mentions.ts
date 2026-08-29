@@ -18,6 +18,14 @@ import { tellAdmin } from "@/lib/telegram";
  * on our own posts, reels, stories, live and ads — there is no mechanism to
  * open a thread with someone who named us somewhere else.
  *
+ * NOT REACHABLE ON THIS APP AS IT STANDS. Probed against the live token, an
+ * Instagram-Login app has no /mentions, /mentioned_comment or /mentioned_media
+ * edge — they are Facebook-login only — and subscribes to ["comments",
+ * "messages"] with no `mentions` field on offer. A comment naming us on a third
+ * party's post delivered no webhook at all when tested. This module is kept,
+ * unwired, because it is the whole of the work needed the day those accounts
+ * move to Instagram API with Facebook Login; nothing calls it until then.
+ *
  * So the public reply IS the funnel. It has to carry the instruction, not a
  * link: they read it, they DM us the word, and the moment they do that their
  * message opens the 24-hour window and the ordinary bot takes over.
