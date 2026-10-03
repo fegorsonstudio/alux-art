@@ -109,6 +109,30 @@ export async function markInbound(id: string, text: string | null): Promise<void
  * — it is not the person's Instagram handle and cannot be used to contact them
  * anywhere else. `email <address>` in chat joins them to a real account.
  */
+
+/**
+ * The photographs still part of the batch being built.
+ *
+ * Anything older than the window belonged to an earlier visit and is dropped.
+ * Silently: the customer is told the running count on the very next line, and
+ * a number they recognise is the confirmation that matters.
+ */
+const BATCH_WINDOW_MS = 2 * 60 * 60 * 1000;
+async function freshHeld(paths: string[]): Promise<string[]> {
+  const held = (paths ?? []).filter(Boolean);
+  if (held.length === 0) return [];
+  const rows = await sql<{ storage_path: string; created_at: Date }[]>`
+    SELECT storage_path, created_at FROM identity_images
+    WHERE storage_path = ANY(${held})`.catch(() => [] as { storage_path: string; created_at: Date }[]);
+  const uploadedAt = new Map(rows.map(r => [r.storage_path, new Date(r.created_at).getTime()]));
+  const cutoff = Date.now() - BATCH_WINDOW_MS;
+  const keep = held.filter(p => (uploadedAt.get(p) ?? 0) >= cutoff);
+  if (keep.length !== held.length) {
+    console.log(`[ig bot] dropped ${held.length - keep.length} stale photo(s) from an earlier visit`);
+  }
+  return keep;
+}
+
 export async function ensureUser(session: IgSession): Promise<string> {
   if (session.user_id) return session.user_id;
 
@@ -331,7 +355,7 @@ export async function offerLook(
   // Photographs already in hand from before the look was chosen — every one of
   // them, not just the first. Somebody who sends three pictures and then the
   // look number means all three.
-  const waiting = session.state === "COLLECTING_LOOK" ? (session.source_paths ?? []).filter(Boolean) : [];
+  const waiting = session.state === "COLLECTING_LOOK" ? await freshHeld(session.source_paths ?? []) : [];
   if (waiting.length > 0) {
     await patchSession(session.id, { state: "CONFIRMING_BATCH" });
     await sendText(creds, session.ig_user_id,
@@ -417,7 +441,7 @@ export async function handlePhoto(
   // previous one is already priced and waiting to be paid, and quietly adding
   // to it would make the amount they were quoted wrong.
   const closed = session.state === "AWAITING_PAYMENT" || session.state === "GENERATING";
-  const held = closed ? [] : (session.source_paths ?? []);
+  const held = closed ? [] : await freshHeld(session.source_paths ?? []);
 
   if (!session.look_option_id || !session.template_id) {
     await patchSession(session.id, { state: "COLLECTING_LOOK", source_paths: [...held, path] });
@@ -459,7 +483,7 @@ export async function confirmBatch(
   session: IgSession,
   yes: boolean,
 ): Promise<void> {
-  const batch = (session.source_paths ?? []).filter(Boolean);
+  const batch = await freshHeld(session.source_paths ?? []);
   if (batch.length === 0) {
     await patchSession(session.id, { state: "COLLECTING_PHOTO" });
     await sendText(creds, session.ig_user_id,
