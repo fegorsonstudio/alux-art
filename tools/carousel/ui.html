@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carousel Studio</title>
+<style>
+  :root {
+    --ground: #0b2018; --ink: #06150f; --mint: #43ccb2;
+    --paper: #f3f8f6; --muted: #9fb8ae; --line: rgba(67,204,178,.22);
+    --warn: #e9a23b; --bad: #e8705f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--paper);
+    font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  header {
+    padding: 18px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 1.1rem; letter-spacing: .02em; }
+  header .hint { color: var(--muted); font-size: .82rem; }
+  .wrap { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0; align-items: start; }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+  .pane { padding: 22px 24px; }
+  .pane + .pane { border-left: 1px solid var(--line); }
+  @media (max-width: 900px) { .pane + .pane { border-left: 0; border-top: 1px solid var(--line); } }
+  label { display: block; font-size: .78rem; color: var(--mint); letter-spacing: .1em;
+          text-transform: uppercase; margin: 16px 0 6px; font-weight: 700; }
+  input[type=text], input[type=datetime-local], textarea, select {
+    width: 100%; padding: 10px 12px; border-radius: 8px; font: inherit;
+    background: rgba(255,255,255,.05); color: var(--paper);
+    border: 1px solid var(--line);
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  button {
+    font: inherit; font-weight: 700; border: 0; border-radius: 999px;
+    padding: 10px 20px; cursor: pointer; background: var(--mint); color: var(--ink);
+  }
+  button.ghost { background: transparent; color: var(--mint); border: 1px solid var(--line); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 12px 0;
+    background: rgba(255,255,255,.03);
+  }
+  .card h3 { margin: 0 0 4px; font-size: .82rem; color: var(--mint); letter-spacing: .08em; }
+  .drop {
+    border: 2px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center;
+    color: var(--muted); cursor: pointer; font-size: .86rem;
+  }
+  .drop.has { border-style: solid; color: var(--paper); }
+  .drop img { max-width: 100%; max-height: 190px; border-radius: 8px; display: block; margin: 8px auto 0; }
+  .slides { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
+  .slides figure { margin: 0; }
+  .slides img { width: 100%; border-radius: 8px; display: block; border: 1px solid var(--line); }
+  .slides figcaption { font-size: .72rem; color: var(--muted); text-align: center; margin-top: 4px; }
+  .msg { padding: 10px 12px; border-radius: 8px; margin: 12px 0; font-size: .86rem; }
+  .msg.ok { background: rgba(67,204,178,.14); color: var(--mint); }
+  .msg.err { background: rgba(232,112,95,.16); color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; margin-top: 10px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--mint); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+  .pill { font-size: .7rem; padding: 2px 9px; border-radius: 999px; background: rgba(255,255,255,.08); }
+  .pill.scheduled { background: rgba(67,204,178,.2); color: var(--mint); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Carousel Studio</h1>
+  <span class="hint">Runs on this laptop &middot; slide 1 is always a photograph</span>
+</header>
+
+<div class="wrap">
+  <div class="pane">
+    <label>Post name (just for you)</label>
+    <input type="text" id="title" placeholder="Phone to studio — birthday dress">
+
+    <label>Account</label>
+    <select id="account">
+      <option value="fegorson_studio">@fegorson_studio</option>
+      <option value="aluxartandframes">@aluxartandframes</option>
+      <option value="aolivetv">@aolivetv</option>
+    </select>
+
+    <label>Before photo — this becomes slide 1</label>
+    <div class="drop" id="dropBefore">Click or drop the phone photo here
+      <input type="file" accept="image/*" hidden id="fileBefore">
+    </div>
+
+    <label>After photo — slide 2, the payoff</label>
+    <div class="drop" id="dropAfter">Click or drop the finished photo here
+      <input type="file" accept="image/*" hidden id="fileAfter">
+    </div>
+
+    <label>The cards</label>
+    <div id="cards"></div>
+    <button class="ghost" id="addCard">+ Add a card</button>
+
+    <label>Button on the last card</label>
+    <input type="text" id="buttonText" value="aluxartandframes.shop">
+
+    <label>Caption</label>
+    <textarea id="caption" placeholder="The hook, the mechanism, the price, then: Comment LIGHT and I'll send you the link."></textarea>
+
+    <label>Post at</label>
+    <input type="datetime-local" id="scheduledFor">
+
+    <div class="row" style="margin-top:18px">
+      <button id="preview">Preview slides</button>
+      <button class="ghost" id="save">Save to folder</button>
+      <button class="ghost" id="schedule">Send to server &amp; schedule</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="pane">
+    <label>Preview</label>
+    <div class="slides" id="out"><span class="hint" style="color:var(--muted)">Nothing yet — press Preview.</span></div>
+
+    <label style="margin-top:26px">Queue</label>
+    <table id="queue"><thead><tr><th>Post</th><th>When</th><th>Slides</th><th>Status</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { beforeImage: null, afterImage: null, cards: [] };
+
+function say(text, bad) {
+  $("msg").innerHTML = text ? `<div class="msg ${bad ? "err" : "ok"}">${text}</div>` : "";
+}
+
+// ---- image drops -----------------------------------------------------------
+function wireDrop(dropId, fileId, key) {
+  const drop = $(dropId), file = $(fileId);
+  const take = (f) => {
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      state[key] = r.result;
+      drop.classList.add("has");
+      drop.innerHTML = `${key === "beforeImage" ? "Before" : "After"} — click to change<img src="${r.result}">`;
+      drop.appendChild(file);
+    };
+    r.readAsDataURL(f);
+  };
+  drop.addEventListener("click", () => file.click());
+  file.addEventListener("change", (e) => take(e.target.files[0]));
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); });
+  drop.addEventListener("drop", (e) => { e.preventDefault(); take(e.dataTransfer.files[0]); });
+}
+wireDrop("dropBefore", "fileBefore", "beforeImage");
+wireDrop("dropAfter", "fileAfter", "afterImage");
+
+// ---- cards -----------------------------------------------------------------
+function drawCards() {
+  $("cards").innerHTML = "";
+  state.cards.forEach((c, i) => {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
+      <h3>Card ${i + 1}${i === 0 && state.beforeImage && state.afterImage ? " — shows the pair" : ""}</h3>
+      <input type="text" placeholder="Eyebrow (optional)" value="${c.eyebrow || ""}" data-k="eyebrow" data-i="${i}">
+      <input type="text" placeholder="Headline" value="${c.headline || ""}" data-k="headline" data-i="${i}" style="margin-top:6px">
+      <textarea placeholder="Body (optional)" data-k="body" data-i="${i}" style="margin-top:6px">${c.body || ""}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" data-del="${i}">Remove</button>
+      </div>`;
+    $("cards").appendChild(el);
+  });
+  $("cards").querySelectorAll("[data-k]").forEach((inp) => {
+    inp.addEventListener("input", (e) => {
+      state.cards[+e.target.dataset.i][e.target.dataset.k] = e.target.value;
+    });
+  });
+  $("cards").querySelectorAll("[data-del]").forEach((b) => {
+    b.addEventListener("click", (e) => {
+      state.cards.splice(+e.target.dataset.del, 1); drawCards();
+    });
+  });
+}
+$("addCard").addEventListener("click", () => { state.cards.push({}); drawCards(); });
+// The deck the winning post used, as a starting point.
+state.cards = [
+  { headline: "Too dark for your phone.", body: "Same photo. The light arrived afterwards." },
+  { headline: "It was never your phone's fault.", body: "A small sensor in a dark room can hold the shutter open or turn up the gain. One gives you blur, the other noise." },
+  { headline: "The only cure for a dark room is more light.", body: "Nobody carries a flash to a club. So the light arrives after — same night, same dress, lit like you brought one." },
+  { headline: "No camera. No flash. No reshoot.", body: "₦1,000 for one photo. You pay for the photos you actually fix." },
+  { eyebrow: "Start today", headline: "Send me a dark one.", body: "Comment LIGHT and I'll send you the link." },
+];
+drawCards();
+
+const collect = () => ({
+  title: $("title").value, account: $("account").value,
+  beforeImage: state.beforeImage, afterImage: state.afterImage,
+  cards: state.cards, buttonText: $("buttonText").value,
+  caption: $("caption").value, scheduledFor: $("scheduledFor").value || null,
+  id: state.id || null,
+});
+
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Error ${r.status}`);
+  return j;
+}
+
+$("preview").addEventListener("click", async () => {
+  say("Rendering…");
+  try {
+    const { slides } = await post("/api/preview", collect());
+    $("out").innerHTML = slides.map((s, i) =>
+      `<figure><img src="${s}"><figcaption>Slide ${i + 1}</figcaption></figure>`).join("");
+    say(`${slides.length} slides ready.`);
+  } catch (e) { say(e.message, true); }
+});
+
+$("save").addEventListener("click", async () => {
+  say("Saving…");
+  try {
+    const r = await post("/api/save", collect());
+    state.id = r.id;
+    say(`Saved ${r.slides} slides to <code>${r.folder}</code>`);
+    loadQueue();
+  } catch (e) { say(e.message, true); }
+});
+
+$("schedule").addEventListener("click", async () => {
+  if (!state.id) return say("Save the post first.", true);
+  say("Sending to the server…");
+  try {
+    await post("/api/schedule", { id: state.id });
+    say("Scheduled. The server will post it even if this laptop is off.");
+    loadQueue();
+  } catch (e) { say(e.message, true); }
+});
+
+async function loadQueue() {
+  const r = await fetch("/api/queue").then((x) => x.json()).catch(() => ({ queue: [] }));
+  const tb = $("queue").querySelector("tbody");
+  tb.innerHTML = (r.queue || []).slice().reverse().map((q) => `
+    <tr><td>${q.title || q.id}</td>
+    <td>${q.scheduledFor ? new Date(q.scheduledFor).toLocaleString() : "—"}</td>
+    <td>${q.slides}</td>
+    <td><span class="pill ${q.status}">${q.status}</span></td></tr>`).join("")
+    || `<tr><td colspan="4" style="color:var(--muted)">Nothing saved yet.</td></tr>`;
+}
+loadQueue();
+</script>
+</body>
+</html>

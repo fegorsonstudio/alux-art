@@ -88,3 +88,6 @@ qa-screenshots/
 
 .wardrobe-assets/
 .wardrobe-download.log
+
+# Carousel Studio keeps the owner's posts and photographs locally.
+tools/carousel/data/
