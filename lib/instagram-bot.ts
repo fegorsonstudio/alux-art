@@ -31,6 +31,15 @@ import {
 
 const WA_NUMBER = "2349076858017";
 const RELIGHT_PRICE_NGN = 1000;
+/**
+ * Most photographs in one order.
+ *
+ * The booking route caps this template at 10 and trims anything above it
+ * without saying so, which would lose a customer's picture — the exact fault
+ * this batching exists to fix. So the bot stops at the same number and says
+ * why.
+ */
+const MAX_BATCH = 10;
 
 export type IgSession = {
   id: string;
@@ -176,14 +185,21 @@ export async function sendWithLinkFallback(
 async function bookIt(
   creds: IgCreds,
   session: IgSession,
-  path: string,
+  paths: string[],
   contentType: string,
   bytes: number,
 ): Promise<void> {
   const to = session.ig_user_id;
   const userId = await ensureUser(session);
+  // Ten is the booking route's ceiling for this template. Anything past it
+  // would be silently trimmed there, and silently losing a customer's
+  // photograph is the whole fault being fixed.
+  const shots = paths.filter(Boolean).slice(0, MAX_BATCH);
+  if (shots.length === 0) return;
 
-  await sendText(creds, to, "Got it. Setting that up now, one moment\u2026");
+  await sendText(creds, to, shots.length === 1
+    ? "Got it. Setting that up now, one moment\u2026"
+    : `Got all ${shots.length}. Setting them up now, one moment\u2026`);
 
   const booking = await fetch(`${SITE_URL}/api/marketplace/${session.template_id}/book`, {
     method: "POST",
@@ -193,21 +209,29 @@ async function bookIt(
       "x-act-as-user": userId,
     },
     body: JSON.stringify({
-      packageSize: 1,
+      // One order covering every photograph they sent. This template prices per
+      // photo, so the route works the total out itself — the bot never
+      // multiplies anything, which is how the charge and the count stay in
+      // agreement.
+      packageSize: shots.length,
       currency: "NGN",
       // The look travels in lightingByPath keyed by the photo's storage path.
       // Putting a real look id in `enhance.lighting` is silently discarded --
       // that field only accepts the built-in rig presets -- and the booking
       // comes back "Pick a lighting look" with one plainly chosen.
-      enhance: { lightingByPath: { [path]: session.look_option_id } },
-      identityRefs: [{
+      // Every photo in the batch gets the same look: it is the look they asked
+      // for in the comment or the chat, and nothing has offered them a second.
+      enhance: {
+        lightingByPath: Object.fromEntries(shots.map(p => [p, session.look_option_id])),
+      },
+      identityRefs: shots.map((p, i) => ({
         id: crypto.randomUUID(),
-        name: "Instagram 1",
+        name: `Instagram ${i + 1}`,
         type: contentType || "image/jpeg",
         size: bytes || 1,
         storageBucket: "identity-images",
-        storagePath: path,
-      }],
+        storagePath: p,
+      })),
     }),
   }).then(r => r.json()).catch(e => ({ error: String(e) }));
 
@@ -235,7 +259,10 @@ async function bookIt(
   await patchSession(session.id, {
     state: payUrl ? "AWAITING_PAYMENT" : "GENERATING",
     shoot_id: shootId,
-    source_paths: [path],
+    // Emptied, not kept. The batch is closed the moment its link goes out, so
+    // the next photograph starts a fresh one instead of being quietly added to
+    // an order the customer has already been quoted a price for.
+    source_paths: [],
   });
 
   // Asked BEFORE they pay, not after.
@@ -252,12 +279,19 @@ async function bookIt(
     return;
   }
 
+  // What they are paying, and for how many. The total comes from the booking
+  // route, never multiplied here — a price the bot works out itself is a price
+  // that can disagree with the one actually charged.
+  const n = shots.length;
+  const total = Number(booking?.amountNgn ?? booking?.amount ?? 0) || RELIGHT_PRICE_NGN * n;
+  const forWhat = n === 1 ? "this photo" : `these ${n} photos`;
+
   await sendWithLinkFallback(creds, to,
-    `Ready. ${naira(RELIGHT_PRICE_NGN)} for this photo:\n\n${payUrl}\n\n` +
-    `Pay and I'll send the finished picture straight back here.`,
+    `Ready. ${naira(total)} for ${forWhat}:\n\n${payUrl}\n\n` +
+    `Pay and I'll send ${n === 1 ? "the finished picture" : "all of them"} straight back here.`,
     // Link-blocked: Instagram will not carry a URL for this account right now,
     // so the customer is given the number rather than left with nothing.
-    `Ready \u2014 ${naira(RELIGHT_PRICE_NGN)} for this photo.\n\n` +
+    `Ready \u2014 ${naira(total)} for ${forWhat}.\n\n` +
     `Instagram won't let me send payment links right now, so message me on ` +
     `WhatsApp on ${WA_NUMBER} and send *${session.look_name?.match(/^\d+/)?.[0] ?? "the number"}* \u2014 ` +
     `I'll pick it straight up there and you'll have it in a couple of minutes.`
@@ -294,12 +328,18 @@ export async function offerLook(
     look_name: look.lookName,
   };
 
-  // A photo is already in hand from before the look was chosen.
-  const waiting = session.state === "COLLECTING_LOOK" ? session.source_paths?.[0] : undefined;
-  if (waiting) {
+  // Photographs already in hand from before the look was chosen — every one of
+  // them, not just the first. Somebody who sends three pictures and then the
+  // look number means all three.
+  const waiting = session.state === "COLLECTING_LOOK" ? (session.source_paths ?? []).filter(Boolean) : [];
+  if (waiting.length > 0) {
+    await patchSession(session.id, { state: "CONFIRMING_BATCH" });
     await sendText(creds, session.ig_user_id,
-      `*${prettyLook(look.lookName)}* it is \u2014 look ${n}. Working on the photo you sent\u2026`);
-    await bookIt(creds, armed, waiting, "image/jpeg", 1);
+      `*${prettyLook(look.lookName)}* it is \u2014 look ${n}. I have ` +
+      `*${waiting.length} photo${waiting.length === 1 ? "" : "s"}* ` +
+      `(${naira(RELIGHT_PRICE_NGN * waiting.length)}).\n\n` +
+      `Are these all the pictures you want relit? Reply *yes* and I'll send one payment ` +
+      `link for all of them, or just send the rest.`);
     return true;
   }
 
@@ -373,15 +413,65 @@ export async function handlePhoto(
     VALUES (${userId}, ${"Instagram photo"}, ${media.contentType},
             ${media.buffer.byteLength}, 'identity-images', ${path}, NOW(), NOW())`;
 
+  // A photograph arriving after a link has gone out belongs to a NEW order. The
+  // previous one is already priced and waiting to be paid, and quietly adding
+  // to it would make the amount they were quoted wrong.
+  const closed = session.state === "AWAITING_PAYMENT" || session.state === "GENERATING";
+  const held = closed ? [] : (session.source_paths ?? []);
+
   if (!session.look_option_id || !session.template_id) {
-    await patchSession(session.id, { state: "COLLECTING_LOOK", source_paths: [path] });
+    await patchSession(session.id, { state: "COLLECTING_LOOK", source_paths: [...held, path] });
     await sendText(creds, to,
       `Lovely \u2014 I've got your photo. Which light do you want on it?\n\n` +
       `Send me the number from the post (for example *69* or *197*) and I'll get started.`);
     return;
   }
 
-  await bookIt(creds, session, path, media.contentType, media.buffer.byteLength);
+  const batch = [...held, path].slice(0, MAX_BATCH);
+  await patchSession(session.id, { state: "CONFIRMING_BATCH", source_paths: batch, shoot_id: null });
+
+  if (batch.length >= MAX_BATCH) {
+    await sendText(creds, to,
+      `That's ${MAX_BATCH} photos \u2014 the most I can do in one go. Setting them up now\u2026`);
+    await bookIt(creds, { ...session, source_paths: batch }, batch,
+                 media.contentType, media.buffer.byteLength);
+    return;
+  }
+
+  // The count is said out loud every time on purpose. Photographs were being
+  // dropped silently, and a running total is how a customer notices one of
+  // theirs never arrived.
+  await sendText(creds, to,
+    `Got it \u2014 that's *${batch.length} photo${batch.length === 1 ? "" : "s"}* so far ` +
+    `(${naira(RELIGHT_PRICE_NGN * batch.length)}).\n\n` +
+    `Are these all the pictures you want relit? Reply *yes* and I'll send one payment link ` +
+    `for all of them, or just send the rest.`);
+}
+
+/**
+ * They answered the "are these all?" question.
+ *
+ * Yes books the whole batch as one order. Anything else leaves the batch alone
+ * and invites the rest — nothing is charged, so there is no harm in waiting.
+ */
+export async function confirmBatch(
+  creds: IgCreds,
+  session: IgSession,
+  yes: boolean,
+): Promise<void> {
+  const batch = (session.source_paths ?? []).filter(Boolean);
+  if (batch.length === 0) {
+    await patchSession(session.id, { state: "COLLECTING_PHOTO" });
+    await sendText(creds, session.ig_user_id,
+      "I don't have any photos held for you. Send the picture you want relit and I'll get started.");
+    return;
+  }
+  if (!yes) {
+    await sendText(creds, session.ig_user_id,
+      "No problem \u2014 send the rest, and tell me when you're done.");
+    return;
+  }
+  await bookIt(creds, session, batch, "image/jpeg", 1);
 }
 
 /** The finished pictures, into the same chat that ordered them. */

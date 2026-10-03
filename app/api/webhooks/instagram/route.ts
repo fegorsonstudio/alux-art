@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
 import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
-import { loadSession, markInbound, offerLook, handlePhoto, prettyLook, armLookSession, patchSession, ensureUser } from "@/lib/instagram-bot";
+import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
   startGifFlow, handleGifPhoto, handleGifWords, handleGifPublish, isPostRequest,
@@ -165,7 +165,11 @@ export async function POST(request: NextRequest) {
       try {
         await handleDirectMessage(igUserId, senderId, {
           text: m.message?.text,
-          imageUrl: m.message?.attachments?.find(a => a.type === "image")?.payload?.url,
+          // EVERY image in the message. `find` returned one, so somebody who
+          // attached three pictures at once had two of them silently discarded.
+          imageUrls: (m.message?.attachments ?? [])
+            .filter(a => a.type === "image" && a.payload?.url)
+            .map(a => a.payload!.url as string),
         });
       } catch (e) {
         console.error("[ig webhook] DM handling failed:", (e as Error).message);
@@ -496,7 +500,7 @@ async function ignoreQuietly(
 async function handleDirectMessage(
   igAccountId: string,
   senderId: string,
-  msg: { text?: string; imageUrl?: string },
+  msg: { text?: string; imageUrls?: string[] },
 ): Promise<void> {
   const creds = credsForAccount(igAccountId);
   if (!creds) { console.warn("[ig bot] no credentials for account", igAccountId); return; }
@@ -524,7 +528,8 @@ async function handleDirectMessage(
     return;
   }
 
-  await markInbound(session.id, msg.text ?? (msg.imageUrl ? "[photo]" : null));
+  const photos = msg.imageUrls ?? [];
+  await markInbound(session.id, msg.text ?? (photos.length ? `[${photos.length} photo(s)]` : null));
 
   // Engaged: they have chosen a look, or are mid-booking, or have bought before.
   // The comment webhook arms a session with a look BEFORE the chat is ever
@@ -539,16 +544,23 @@ async function handleDirectMessage(
   // handlePhoto, which downloads the attachment, uploads it to R2, creates a
   // profile and writes an identity_images row: none of which should happen
   // because a stranger sent an unsolicited picture.
-  if (msg.imageUrl) {
+  if (photos.length > 0) {
     if (!engaged) {
       await ignoreQuietly(session, "[sent a photo, no look chosen]");
       return;
     }
-    // Mid-GIF, a picture is the before or the after rather than something to
-    // relight. Returns false when this session is not making a GIF, so the
-    // relight path below is untouched.
-    if (await handleGifPhoto(creds, session, msg.imageUrl)) return;
-    await handlePhoto(creds, session, msg.imageUrl);
+    // One at a time, in the order they were attached. Each call re-reads the
+    // session so the running count is right — handlePhoto appends to
+    // source_paths, and a stale copy would overwrite the previous photograph
+    // instead of adding to it, which is the bug in a different costume.
+    for (const url of photos) {
+      const fresh = await loadSession(igAccountId, senderId);
+      // Mid-GIF, a picture is a scene rather than something to relight.
+      // Returns false when this session is not making a GIF, so the relight
+      // path below is untouched.
+      if (await handleGifPhoto(creds, fresh, url)) continue;
+      await handlePhoto(creds, fresh, url);
+    }
     return;
   }
 
@@ -600,6 +612,24 @@ async function handleDirectMessage(
     return;
   }
 
+
+  // The answer to "are these all the pictures you want relit?".
+  //
+  // Only while that question is actually open, so none of these words mean
+  // anything different anywhere else in the conversation. Matched loosely, and
+  // in Pidgin: a customer who types "na all" has answered, and the last time a
+  // matcher insisted on one exact spelling it swallowed a paying customer's
+  // retouch request.
+  if (session.state === "CONFIRMING_BATCH") {
+    const yes = /^(yes|yeah|yep|yup|ok|okay|sure|done|finish(ed)?|that'?s all|thats all|all of them|send( me)? (the )?link|proceed|go ahead|na all|e don do|dat'?s all)\b/i.test(text);
+    const no = /^(no|nope|not yet|wait|hold on|one more|more|still sending)\b/i.test(text);
+    if (yes || no) {
+      await confirmBatch(creds, session, yes);
+      return;
+    }
+    // Anything else falls through: a look number, "support", "retouch" and the
+    // rest still work mid-batch, and the held photographs are untouched.
+  }
 
   // A bare number is a look. Matched strictly so "I have 2 kids" cannot book
   // anything — the same guard the comment path already carries.
@@ -675,6 +705,17 @@ async function handleDirectMessage(
     await sendText(creds, senderId,
       `Send the photo you want relit as a picture in this chat and I'll apply ` +
       `*${session.look_name ? prettyLook(session.look_name) : "that look"}* to it.`);
+    return;
+  }
+
+  // Mid-question, with photographs held and nothing charged yet. The bot asked
+  // something, so it answers rather than going quiet — and repeats the count,
+  // which is how a customer notices a picture that never arrived.
+  if (session.state === "CONFIRMING_BATCH") {
+    const n = (session.source_paths ?? []).filter(Boolean).length;
+    await sendText(creds, senderId,
+      `I'm holding *${n} photo${n === 1 ? "" : "s"}* for you. ` +
+      `Reply *yes* and I'll send one payment link for all of them, or send more pictures first.`);
     return;
   }
 

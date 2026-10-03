@@ -11,6 +11,7 @@ import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
 import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
 import { stripImageMetadata } from "./strip-metadata";
+import { readDentition } from "./dentition";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
 import { getLightingForSlot, buildLightingBriefSection, type LightingPlan } from "./lighting-plan";
 import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups";
@@ -542,6 +543,34 @@ Clinical and precise. No subjective judgments. Stable biometric features only.`;
   const stillMissing = IDENTITY_PROFILE_FIELDS.filter((f) => !text.includes(f));
   if (stillMissing.length > 0) {
     console.error("[generate] identity profile incomplete after retries:", stillMissing, "| profile:", text.slice(0, 300));
+  }
+
+  // A second look at the teeth, close up.
+  //
+  // The pass above reads whole photographs, where a mouth is a few percent of
+  // the frame and a gap between two front teeth is a couple of dark pixels. It
+  // reported "no visible gaps" for a buyer whose diastema is plain to anyone
+  // who looks — and that gap is as much a part of her face as her jawline.
+  // readDentition finds the mouth, enlarges it, and asks again.
+  //
+  // Group mode is skipped on purpose: with several faces in frame there is no
+  // way to know whose mouth a crop belongs to, and giving one person another's
+  // teeth is worse than the guess it would replace.
+  if (!groupMode) {
+    try {
+      const teeth = await readDentition(imageUrls);
+      if (teeth) {
+        const replaced = text.replace(/^Teeth:.*$/m, `Teeth: ${teeth}`);
+        if (replaced !== text) {
+          console.log(`[generate] dentition refined from close-up: ${teeth.slice(0, 120)}`);
+          text = replaced;
+        }
+      }
+    } catch (e) {
+      // Never fatal. A shoot with a slightly worse Teeth line still ships;
+      // a shoot that throws here ships nothing.
+      console.warn("[generate] dentition pass failed:", (e as Error).message);
+    }
   }
 
   return text;
