@@ -1,13 +1,19 @@
 /**
- * Twelve weeks of carousels, written out.
+ * Twelve weeks of carousels, written to the house formula.
  *
- * Every post here passes the seven-point gate the audit produced, and the two
- * rules that matter most are structural rather than editorial, so they are
- * enforced by the app rather than left to whoever is typing:
+ * The copy structure is Sabri Suby's High-Value Content Offer, set out in
+ * COPY-FORMULA.md next to this file: the cover uses one of four title formulas,
+ * every body slide keeps the cover's promise, and the last slide is a directive.
+ * `cards[0]` of every post is the cover. Do not improvise a cover.
  *
- *   Slide 1 is a photograph. Slide 2 is the same subject transformed. The
- *   18 August post reached 20,907 opening that way; the posts that opened on a
- *   text card reached 102 and 114.
+ * Two rules of this account sit on top of Suby, and both are enforced by the
+ * app rather than left to whoever is typing:
+ *
+ *   The RENDERED slide 1 is a photograph, not the cover text. The app puts the
+ *   before and after first and the cover card third, because slide one is the
+ *   thumbnail — the 18 August post reached 20,907 opening on a photo, and the
+ *   posts that opened on a text card reached 102 and 114. The cover's job is to
+ *   hold the swipe that the photograph has already won.
  *
  *   The last card asks for ONE typed word. 444 comments carried that post, and
  *   comments are what Instagram spreads.
@@ -19,6 +25,9 @@
  * Four a week — Mon, Wed, Fri, Sun. Not fourteen: the account ran fourteen a
  * week for five weeks and then stopped dead for a month, and a pace nobody
  * keeps is worth less than a slower one they do.
+ *
+ * Every timeframe in here is one the studio can actually hit. "The same day"
+ * and "by morning" are true; nothing claims an hour it cannot keep.
  */
 
 /** The words that turn a scroll into a DM. One per product, never improvised. */
@@ -30,18 +39,15 @@ export const TRIGGERS = {
   shoot: "SHOOT",
 };
 
-const cta = (word) => ({
-  eyebrow: "Start today",
-  headline: word === "STUDIO" ? "Send me one photo."
-          : word === "ASSETS" ? "Send me one photo of it."
-          : word === "GIF" ? "Let's make yours."
-          : word === "SHOOT" ? "No studio. No appointment."
-          : "Send me a dark one.",
-  body: `Comment ${word} and I'll send you the link.`,
-});
-
 /** ₦1,000 a photo, said the same way every time so the price never looks invented. */
-const PRICE = "₦1,000 for one photo. No subscription — you pay for the photos you actually fix.";
+const PRICE = "₦1,000 for one photo. No subscription — you pay only for the photos you actually fix.";
+
+/** Suby's final slide: a directive, not a summary. One action, one word. */
+const cta = (word, action) => ({
+  eyebrow: "Do this now",
+  headline: action,
+  body: `Comment ${word} and I'll send you the link. One photo, ₦1,000, back the same day.`,
+});
 
 export const PLAN = [
   // ───────────────────────── MONTH 1 — rebuild the habit ─────────────────────
@@ -50,16 +56,31 @@ export const PLAN = [
     title: "Phone to studio — the party dress",
     photos: "A child photographed at home against a plain wall, and the same photo turned into a studio portrait",
     cards: [
-      { headline: "Taken against a wall at home.", body: "Same dress. Same child. A studio behind her." },
-      { headline: "A sitting room is not a studio.", body: "One window, a wall two feet behind her, and nothing separating child from background. That is why it looks like a snapshot." },
-      { headline: "Nothing about her changed.", body: "Same face, same outfit, same smile. Only the room and the light are new." },
-      { headline: "No studio. No appointment. No dressing up twice.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "3 Ways to Get a Studio Portrait of Your Child Without Ever Leaving Your Sitting Room",
+        body: "Same dress. Same child. Same day." },
+      { eyebrow: "The problem",
+        headline: "A sitting room is not a studio.",
+        body: "One window, a wall two feet behind her, and nothing separating child from background. That is why it reads as a snapshot instead of a portrait." },
+      { eyebrow: "Way 1",
+        headline: "Move the background back.",
+        body: "A studio sets the backdrop metres behind you. We do it afterwards, so she stands apart from the wall instead of against it." },
+      { eyebrow: "Way 2",
+        headline: "Light her from the side.",
+        body: "Side light is what gives a face shape. Your window gave her flat light from one direction and shadow everywhere else." },
+      { eyebrow: "Way 3",
+        headline: "Change the room, never the child.",
+        body: "Same face, same dress, same smile. If the child changes, the job was done wrong." },
+      { eyebrow: "What it costs",
+        headline: "No studio. No appointment. No dressing up twice.",
+        body: PRICE },
+      cta("STUDIO", "Send me the photo you already took."),
     ],
     caption:
-      "You already took the photo. It just happened to be taken in your sitting room.\n\n" +
-      "A studio does two things a house cannot: it puts a clean backdrop far enough behind you that you stand apart from it, and it lights you from the side instead of straight on. That is the whole difference. Not a better camera — a better room.\n\n" +
-      "Same dress. Same child. ₦1,000 for one photo.\n\n" +
+      "3 ways to get a studio portrait of your child without ever leaving your sitting room.\n\n" +
+      "You already took the photo. It just happened to be taken against the nearest wall.\n\n" +
+      "A studio does three things a house cannot. It sets the background metres back so she stands apart from it. It lights her from the side, which is what gives a face shape. And it changes nothing at all about the child.\n\n" +
+      "All three can happen after the photo is taken. Same dress, same day.\n\n" +
+      "₦1,000 for one photo.\n\n" +
       "💬 Comment STUDIO and I'll send you the link.\n\n" +
       "#abujaphotographer #nigerianchildren #studioportrait #kiddiesfashion #aluxart",
   },
@@ -68,16 +89,27 @@ export const PLAN = [
     title: "Relight — the club photo",
     photos: "A photo taken in a dark club or bar under coloured light, and the relit version",
     cards: [
-      { headline: "Too dark for your phone.", body: "Same photo. The flash arrived afterwards." },
-      { headline: "It was never your phone's fault.", body: "A small sensor in a dark room has two options: hold the shutter open, or turn up the gain. One gives you blur, the other noise. Yours did both." },
-      { headline: "The only cure for a dark room is more light.", body: "Nobody carries a flash to a club. So the light arrives after — same night, same outfit, lit like you brought one." },
-      { headline: "No camera. No flash. No reshoot.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Fix Every Dark Club Photo on Your Phone Without a Camera, a Flash or a Reshoot — The Same Day",
+        body: "Same night. Same outfit. Lit like you brought a flash." },
+      { eyebrow: "The problem",
+        headline: "It was never your phone's fault.",
+        body: "A small sensor in a dark room has two options: hold the shutter open, or turn up the gain. One gives you blur, the other noise. Yours did both." },
+      { eyebrow: "Why editing fails",
+        headline: "Brightening a dark photo is not the same as lighting it.",
+        body: "Turning up the exposure lifts the noise with it and leaves the colour wrong. The light has to be put back where it should have come from." },
+      { eyebrow: "The fix",
+        headline: "The flash arrives afterwards.",
+        body: "Nobody carries a flash to a club. So the light is added later — from the side, where it gives your face shape instead of flattening it." },
+      { eyebrow: "What it costs",
+        headline: "No camera. No flash. No second night out.",
+        body: PRICE },
+      cta("LIGHT", "Send me the darkest photo on your phone."),
     ],
     caption:
-      "The club was too dark for your phone. That was never your fault.\n\n" +
-      "In a dark room your phone holds the shutter open longer and cranks the gain, so you get noise and blur. Then it “helps” by lifting the brightness, which is where the orange comes from. Add a coloured LED wash and your skin is somebody else's colour.\n\n" +
-      "The fix was never a better phone. It was a flash — and that can arrive after the night is over.\n\n" +
+      "How to fix every dark club photo on your phone without a camera, a flash or a reshoot — the same day.\n\n" +
+      "The club was too dark for your phone, and that was never your fault. A small sensor in a dark room either holds the shutter open or cranks the gain. One gives you blur, the other noise.\n\n" +
+      "Brightening it afterwards does not help, because brightening lifts the noise too and leaves the colour wrong. The light has to be put back where it should have come from in the first place.\n\n" +
+      "Which can happen after the night is over. Same outfit, same night, lit like you brought a flash.\n\n" +
       "₦1,000 for one photo.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n" +
       "#lagosnightlife #nigerianphotographer #phonephotography #lowlightphotography #aluxart",
@@ -87,16 +119,27 @@ export const PLAN = [
     title: "Asset extractor — the dress on a hanger",
     photos: "A garment photographed on a hanger or rail, and the same garment extracted on its own",
     cards: [
-      { headline: "Shot on a hanger. Sold like one.", body: "Same dress, lifted off the rail." },
-      { headline: "Buyers cannot picture it from a hanger.", body: "A garment on a rail reads as stock. A garment with shape, front and back, reads as something you could wear on Saturday." },
-      { headline: "One photo in. Four angles out.", body: "Front, three-quarter, side and back — from a single picture. No model, no mannequin, no reshoot." },
-      { headline: "It lifts more than clothes.", body: "Wigs, shoes, bags, jewellery, nails. Anything you sell." },
-      cta("ASSETS"),
+      { headline: "Photograph Your Stock Like a Big Brand Even Without a Model, a Mannequin or a Studio",
+        body: "One photo on a hanger in. Four clean angles out." },
+      { eyebrow: "The problem",
+        headline: "Buyers cannot picture it from a hanger.",
+        body: "A garment on a rail reads as stock. A garment with shape reads as something you could wear on Saturday." },
+      { eyebrow: "What a brand has that you don't",
+        headline: "Front, three-quarter, side, back.",
+        body: "That is the set every big label shoots, and it is the set that answers a buyer's questions before they have to type them." },
+      { eyebrow: "What you send",
+        headline: "One photo of the item. That is all.",
+        body: "On a hanger, on a rail, on your bed. The garment is lifted out and rebuilt with real shape and real fabric fall." },
+      { eyebrow: "It is not only clothes",
+        headline: "Wigs, shoes, bags, jewellery, nails.",
+        body: "Anything you sell. ₦1,000 per photo." },
+      cta("ASSETS", "Send me one photo of your best piece."),
     ],
     caption:
+      "Photograph your stock like a big brand even without a model, a mannequin or a studio.\n\n" +
       "Your dress is beautiful. The hanger is doing it no favours.\n\n" +
-      "A buyer scrolling cannot tell how a garment falls from a photo of it hanging flat. They need to see shape — front, side, back — and most vendors cannot afford a model for every piece.\n\n" +
-      "Send one photo of the item and it comes back on its own, from four angles.\n\n" +
+      "A buyer scrolling cannot tell how a garment falls from a photo of it hanging flat, so they ask — and half of them never ask, they just scroll. What a big label has that you don't is the four-angle set: front, three-quarter, side, back.\n\n" +
+      "Send one photo of the item and that set comes back. No model, no mannequin, no reshoot.\n\n" +
       "₦1,000 per photo.\n\n" +
       "💬 Comment ASSETS and I'll send you the link.\n\n" +
       "#nigerianfashion #abujavendor #onlinevendor #fashionbusiness #aluxart",
@@ -106,12 +149,17 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "Whichever before/after you have this week that reads most clearly at thumbnail size",
     cards: [
-      { headline: "Same room. Same phone.", body: "One light moved." },
-      { headline: "That is the whole service.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Get a Photo Worth Posting Without Taking a Single New One",
+        body: "Same room. Same phone. One light moved." },
+      { eyebrow: "That is the whole service",
+        headline: "You send the photo you already have.",
+        body: PRICE },
+      cta("LIGHT", "Send me one."),
     ],
     caption:
-      "Same room. Same phone. One light moved.\n\n₦1,000 for one photo.\n\n" +
+      "Get a photo worth posting without taking a single new one.\n\n" +
+      "Same room. Same phone. One light moved.\n\n" +
+      "₦1,000 for one photo, back the same day.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart #nigerianphotographer",
   },
   {
@@ -119,16 +167,27 @@ export const PLAN = [
     title: "Phone to studio — the staircase",
     photos: "Someone photographed on a staircase or corridor at home, and the studio version",
     cards: [
-      { headline: "The staircase was the only clean spot in the house.", body: "We gave her somewhere better to stand." },
-      { headline: "Home walls flatten a photograph.", body: "Stand close to a wall and the light hits you and the wall equally. Nothing separates you from the background, so the picture reads flat." },
-      { headline: "Depth is the thing you cannot fake with a filter.", body: "A backdrop set back, lit separately, is what makes a portrait look taken rather than snapped." },
-      { headline: "Same outfit. Same day.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Get a Proper Family Portrait in One Day Even if the Only Clean Wall in Your House Is the Staircase",
+        body: "Keep the outfit. Keep the day. Change the room." },
+      { eyebrow: "The problem",
+        headline: "Standing against a wall flattens a photograph.",
+        body: "Light hits you and the wall equally, so nothing separates you from the background and the picture reads flat." },
+      { eyebrow: "What a studio actually does",
+        headline: "It creates depth.",
+        body: "The backdrop sits metres back and is lit on its own. That separation is the thing no filter can fake." },
+      { eyebrow: "Done afterwards",
+        headline: "Nobody has to get dressed twice.",
+        body: "Same outfit, same faces, same afternoon — in a room that does them justice." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("STUDIO", "Send me your staircase photo."),
     ],
     caption:
-      "Every Nigerian family has this photo. The outfit is beautiful, everyone is ready, and the only clean background in the house is the staircase.\n\n" +
-      "The problem is not the staircase. It is that you are standing against it. Light falls on you and the wall together, so there is no separation and the picture goes flat.\n\n" +
-      "A studio solves it by moving the background back and lighting it separately. We can do that afterwards.\n\n" +
+      "Get a proper family portrait in one day even if the only clean wall in your house is the staircase.\n\n" +
+      "Every Nigerian family has this photo. The outfit is beautiful, everyone is finally ready, and the only clear background in the house is the stairs.\n\n" +
+      "The problem is not the staircase. It is that you are standing against it — light falls on you and the wall together, so there is no separation and the picture goes flat.\n\n" +
+      "A studio solves it by moving the background back and lighting it on its own. That can be done after the photo is taken, and nobody has to get dressed twice.\n\n" +
       "₦1,000 for one photo.\n\n" +
       "💬 Comment STUDIO and I'll send you the link.\n\n" +
       "#abujaphotographer #studioportrait #nigerianfamily #aluxart",
@@ -138,16 +197,27 @@ export const PLAN = [
     title: "Relight — owambe yellow",
     photos: "An owambe or hall photo with a yellow cast, and the corrected version",
     cards: [
-      { headline: "The hall was yellow. You are not.", body: "Same photo, with your actual skin back." },
-      { headline: "Canopy bulbs are the problem.", body: "Hall lighting is warm, cheap and everywhere, so every face in the room picks up the same orange wash." },
-      { headline: "Your phone then makes it worse.", body: "It tries to balance for the brightest thing in frame — usually a white canopy — and pushes everyone else further orange." },
-      { headline: "Your skin tone is not a filter setting.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Get Your Real Skin Tone Back From Any Owambe Photo Without Filters, Apps or Editing Skills",
+        body: "The hall was yellow. You are not." },
+      { eyebrow: "The problem",
+        headline: "Canopy bulbs wash the whole room.",
+        body: "Hall lighting is warm, cheap and everywhere, so every face under it picks up the same orange." },
+      { eyebrow: "Then it gets worse",
+        headline: "Your phone balances for the brightest thing in frame.",
+        body: "Usually a white canopy. Which pushes every person in the photo further orange, not less." },
+      { eyebrow: "Why a filter won't do it",
+        headline: "This is a colour problem, not a brightness problem.",
+        body: "No amount of brightening corrects a cast. The light has to be rebuilt neutral, and then your real skin tone comes back on its own." },
+      { eyebrow: "What it costs",
+        headline: "Your skin tone is not a filter setting.",
+        body: PRICE },
+      cta("LIGHT", "Send me your asoebi photo."),
     ],
     caption:
+      "How to get your real skin tone back from any owambe photo without filters, apps or editing skills.\n\n" +
       "Owambe light is yellow. Your skin is not.\n\n" +
-      "Those warm canopy bulbs wash every face in the hall the same colour, and your phone makes it worse by balancing for the brightest thing in frame. You come out orange, and no amount of brightening fixes a colour problem.\n\n" +
-      "Relighting it properly puts your real skin tone back.\n\n" +
+      "Those warm canopy bulbs wash every face in the hall the same colour, and your phone makes it worse by balancing for the brightest thing in frame — usually a white canopy. You come out orange.\n\n" +
+      "No filter fixes that, because it is a colour problem and not a brightness one. Rebuild the light neutral and your real skin tone comes back by itself.\n\n" +
       "₦1,000 for one photo.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n" +
       "#owambe #nigerianwedding #asoebi #lagosparty #aluxart",
@@ -157,15 +227,30 @@ export const PLAN = [
     title: "GIF maker — what it is",
     photos: "A before/after pair that will become the GIF itself",
     cards: [
-      { headline: "A sticker that sells for you.", body: "Two photos, your words, one loop." },
-      { headline: "It goes where you cannot.", body: "People use it in their own stories and under other people's posts. Your words travel with it." },
-      { headline: "You choose every frame.", body: "Up to six scenes. Your pictures, your lines, your website at the end." },
-      { headline: "Made in a chat, in two minutes.", body: "Send the pictures, type the words, and it comes back ready to post." },
-      cta("GIF"),
+      { headline: "4 Ways to Advertise Your Business All Year Without Paying for a Single Ad",
+        body: "One sticker. Your pictures, your words." },
+      { eyebrow: "The problem",
+        headline: "An advert stops working the day you stop paying.",
+        body: "A sticker does not. People keep using it long after you made it." },
+      { eyebrow: "Way 1",
+        headline: "It goes where you cannot.",
+        body: "Into other people's stories, under other people's posts. Your words travel with it." },
+      { eyebrow: "Way 2",
+        headline: "Your message is built in.",
+        body: "Up to six scenes — your pictures, your lines, your website on the last frame." },
+      { eyebrow: "Way 3",
+        headline: "People search for it.",
+        body: "You pick the tags. Anybody looking for that word finds your business." },
+      { eyebrow: "Way 4",
+        headline: "It costs you once.",
+        body: "Made in a chat in about two minutes. Send the pictures, type the words, post it." },
+      cta("GIF", "Send me two pictures and your tagline."),
     ],
     caption:
+      "4 ways to advertise your business all year without paying for a single ad.\n\n" +
       "Most adverts stop working the moment you stop paying. A sticker does not.\n\n" +
-      "Send two pictures and the words you want on them, and you get back a short loop you can use as an Instagram sticker — the kind people drop into their own stories and under other people's posts. Your message travels with it, for free, for as long as people keep using it.\n\n" +
+      "One: it goes into other people's stories, where you could never buy a place. Two: your words and your website are built into it. Three: you choose the search tags, so people looking for that word find you. Four: you make it once.\n\n" +
+      "Send two pictures and the lines you want on them, and it comes back ready to post — about two minutes of work in a chat.\n\n" +
       "💬 Comment GIF and I'll send you the link.\n\n" +
       "#instagramstickers #smallbusinessnigeria #aluxart",
   },
@@ -174,12 +259,17 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "You already took the photo.", body: "We only changed the light." },
-      { headline: "Nothing was reshot.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Turn the Photo You Were About to Delete Into the One You Post — Without Taking It Again",
+        body: "You already took it. Only the light changed." },
+      { eyebrow: "Why it works",
+        headline: "Dark is not the same as ruined.",
+        body: "The detail is usually still there, under the noise. " + PRICE },
+      cta("LIGHT", "Send me the one you were about to delete."),
     ],
     caption:
-      "You already took the photo. We only changed the light.\n\n₦1,000 for one photo.\n\n" +
+      "Turn the photo you were about to delete into the one you post — without taking it again.\n\n" +
+      "Dark is not the same as ruined. The detail is usually still in there, buried under noise and the wrong colour.\n\n" +
+      "₦1,000 for one photo, back the same day.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
@@ -187,16 +277,26 @@ export const PLAN = [
     title: "Phone to studio — the birthday",
     photos: "A birthday photo taken at home, and the studio version",
     cards: [
-      { headline: "The birthday photo everybody takes.", body: "Cake, outfit, and whatever wall was nearest." },
-      { headline: "You will keep this one for twenty years.", body: "It is worth more than the wall it was taken against." },
-      { headline: "Nothing staged. Nothing repeated.", body: "The same moment, in a room that does it justice." },
-      { headline: "No second birthday needed.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Give Your Child a Birthday Portrait Worth Framing Even Though the Party Is Already Over",
+        body: "No second birthday required." },
+      { eyebrow: "The problem",
+        headline: "Nobody plans the background on a birthday.",
+        body: "There is a cake, there is an outfit, and there is whatever wall happened to be free." },
+      { eyebrow: "Why it matters",
+        headline: "This is the photo you keep for twenty years.",
+        body: "It is worth more than the wall it was taken against — and the wall is the only part you will wish were different." },
+      { eyebrow: "Nothing is staged twice",
+        headline: "The same moment, in a room that does it justice.",
+        body: "Same cake, same face, same laugh. Only the room and the light are new." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("STUDIO", "Send me last birthday's photo."),
     ],
     caption:
-      "Nobody plans the background on a birthday. There is a cake, there is an outfit, and there is whatever wall happened to be behind her.\n\n" +
-      "Twenty years from now the wall is the only part you will wish were different.\n\n" +
-      "Send me the photo and she keeps the day, in a room that does it justice.\n\n" +
+      "Give your child a birthday portrait worth framing even though the party is already over.\n\n" +
+      "Nobody plans the background on a birthday. There is a cake, there is an outfit, and there is whatever wall happened to be free.\n\n" +
+      "Twenty years from now the wall is the only part you will wish were different. So keep the moment and change the room.\n\n" +
       "₦1,000 for one photo.\n\n" +
       "💬 Comment STUDIO and I'll send you the link.\n\n" +
       "#kidsbirthday #abujamums #studioportrait #aluxart",
@@ -206,16 +306,27 @@ export const PLAN = [
     title: "Relight — church windows",
     photos: "A church or hall photo with blown-out highlights, and the relit version",
     cards: [
-      { headline: "The windows won.", body: "Same photo, with her face back." },
-      { headline: "High windows are the hardest light there is.", body: "The light comes from far above, so eyes fall into shadow while foreheads and cheekbones blow out white." },
-      { headline: "Your phone picks one or the other.", body: "Expose for the window and faces go dark. Expose for faces and the window burns. It cannot do both." },
-      { headline: "We can do both, afterwards.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Save Every Church Photo Where the Windows Won — Without Reshooting a Thing",
+        body: "Keep the window. Get the face back." },
+      { eyebrow: "The problem",
+        headline: "High windows are the hardest light there is.",
+        body: "The light comes from far above, so eyes drop into shadow while foreheads and cheekbones blow out white." },
+      { eyebrow: "Why your phone failed",
+        headline: "It has to choose one or the other.",
+        body: "Expose for the window and faces go dark. Expose for faces and the window burns out. A phone cannot hold both." },
+      { eyebrow: "The fix",
+        headline: "Afterwards, both can be held.",
+        body: "The window keeps its detail and the faces get light that comes from in front of them instead of above." },
+      { eyebrow: "What it costs",
+        headline: "No reshoot. No second ceremony.",
+        body: PRICE },
+      cta("LIGHT", "Send me your church photo."),
     ],
     caption:
-      "Church light is the hardest light in Nigeria.\n\n" +
-      "It comes from high windows, far above everyone, so eyes fall into shadow while foreheads go white. Your phone has to choose: keep the window or keep the face. It cannot keep both.\n\n" +
-      "Afterwards, we can.\n\n₦1,000 for one photo.\n\n" +
+      "How to save every church photo where the windows won — without reshooting a thing.\n\n" +
+      "Church light is the hardest light in Nigeria. It comes from high windows far above everyone, so eyes fall into shadow while foreheads go white.\n\n" +
+      "Your phone had to choose: keep the window or keep the face. It cannot keep both.\n\n" +
+      "Afterwards, both can be kept.\n\n₦1,000 for one photo.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n" +
       "#churchwedding #nigerianchurch #dedication #aluxart",
   },
@@ -224,15 +335,26 @@ export const PLAN = [
     title: "Full shoot — one photo, five images",
     photos: "One uploaded photo, and a grid of the five images it produced",
     cards: [
-      { headline: "One photo in. Five images out.", body: "Different poses, framing and light — the same person throughout." },
-      { headline: "A shoot without the shoot.", body: "No studio booking, no travelling across Lagos, no taking a day off." },
-      { headline: "You pick the look.", body: "Portrait, editorial, corporate. The archive has 197 lighting styles." },
-      { headline: "Same face. Every time.", body: "Identity is locked to your photo — not a lookalike, not an average." },
-      cta("SHOOT"),
+      { headline: "Get a Full Photoshoot in One Day Even if You've Never Set Foot in a Studio",
+        body: "One photo in. Five images out." },
+      { eyebrow: "The problem",
+        headline: "A shoot costs a day and a deposit.",
+        body: "Booking, travelling across the city, taking time off, and hoping the light is right when you get there." },
+      { eyebrow: "What you send",
+        headline: "One photo of yourself.",
+        body: "That is the entire upload. No studio, no appointment, no second outfit." },
+      { eyebrow: "What comes back",
+        headline: "Five images, five setups.",
+        body: "Different poses, framing and lighting — the same person throughout." },
+      { eyebrow: "You choose the look",
+        headline: "Portrait, editorial or corporate.",
+        body: "The archive holds 197 lighting styles. Your identity is locked to your photo, never a lookalike." },
+      cta("SHOOT", "Send me one photo of yourself."),
     ],
     caption:
-      "A photoshoot costs a day and a deposit. This costs one photo.\n\n" +
-      "Send a single picture of yourself and it comes back as a set — different poses, different framing, different lighting, the same face throughout.\n\n" +
+      "Get a full photoshoot in one day even if you've never set foot in a studio.\n\n" +
+      "A shoot costs a deposit, a day off and a drive across the city, before anyone has taken a picture.\n\n" +
+      "Send a single photo of yourself instead and it comes back as a set: five images, different poses, framing and lighting, the same face throughout. You pick the look — portrait, editorial or corporate.\n\n" +
       "💬 Comment SHOOT and I'll send you the link.\n\n" +
       "#portraitphotography #corporateheadshot #lagosbusiness #aluxart",
   },
@@ -241,26 +363,44 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "Before. After.", body: "₦1,000." },
-      cta("LIGHT"),
+      { headline: "Fix Last Night's Photo Before Lunch Today Even if You Have No Camera and No Editing Skills",
+        body: "Send it in a chat. It comes back in the same chat." },
+      { eyebrow: "What it costs",
+        headline: "One photo. One thousand naira.",
+        body: "No app to download, no account to make." },
+      cta("LIGHT", "Send me last night's photo."),
     ],
     caption:
-      "Before. After. ₦1,000.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+      "Fix last night's photo before lunch today even if you have no camera and no editing skills.\n\n" +
+      "Send it in the chat, pay in the chat, get it back in the chat. ₦1,000.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
     id: "p13", week: 4, slot: "A", product: "studio", trigger: "STUDIO",
     title: "Phone to studio — two children",
     photos: "Two children photographed together at home, and the studio version",
     cards: [
-      { headline: "Getting both of them to look is hard enough.", body: "The background should not be another problem." },
-      { headline: "You get one chance with children.", body: "They are still, both looking, nobody crying. Nobody is reshooting that." },
-      { headline: "So we fix the room instead.", body: "Same moment, same faces, a backdrop that belongs behind them." },
-      { headline: "One photo is all it takes.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Photograph Two Children Like a Studio Would Even Though They Only Sat Still Once",
+        body: "You get one chance. The room gets fixed afterwards." },
+      { eyebrow: "The problem",
+        headline: "Getting both of them to look is the hard part.",
+        body: "Still, both facing the camera, nobody crying. Nobody is reshooting that because of a wall." },
+      { eyebrow: "So fix the other thing",
+        headline: "The moment stays. The room changes.",
+        body: "Same faces, same pose, same afternoon — with a backdrop that belongs behind them." },
+      { eyebrow: "Both faces stay theirs",
+        headline: "Two children, two identities, locked.",
+        body: "Neither face is averaged, swapped or softened into the other." },
+      { eyebrow: "What it costs",
+        headline: "One photo is all it takes.",
+        body: PRICE },
+      cta("STUDIO", "Send me the one where they both looked."),
     ],
     caption:
+      "Photograph two children like a studio would even though they only sat still once.\n\n" +
       "Getting two children to look at the camera at the same time is the hard part. Nobody is doing that twice because of a wall.\n\n" +
-      "So keep the moment and change the room.\n\n₦1,000 for one photo.\n\n" +
+      "So keep the moment and change the room. Same faces, same pose, same afternoon.\n\n" +
+      "₦1,000 for one photo.\n\n" +
       "💬 Comment STUDIO and I'll send you the link.\n\n" +
       "#siblings #nigerianchildren #familyportrait #aluxart",
   },
@@ -269,16 +409,26 @@ export const PLAN = [
     title: "Relight — direct flash",
     photos: "A direct-flash photo with flat skin and a black background, and the relit version",
     cards: [
-      { headline: "The flash fired. That was the problem.", body: "Same photo, lit properly." },
-      { headline: "A phone flash sits next to the lens.", body: "So the light hits you straight on, flattens every feature, and drops the background to black." },
-      { headline: "Good light comes from the side.", body: "That is what gives a face shape — a cheekbone, a jawline, somewhere for a shadow to fall." },
-      { headline: "Same night. Different light.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Undo Everything Your Phone Flash Did to Your Face — Without Taking the Photo Again",
+        body: "The flash fired. That was the problem." },
+      { eyebrow: "The problem",
+        headline: "A phone flash sits beside the lens.",
+        body: "So the light hits you head-on, flattens every feature and drops anything behind you to black." },
+      { eyebrow: "What you lost",
+        headline: "Your cheekbones and your jawline.",
+        body: "Shape in a face comes from shadow. Light from directly in front leaves nowhere for a shadow to fall." },
+      { eyebrow: "The fix",
+        headline: "Light from the side, added later.",
+        body: "Same night, same outfit — lit the way a studio would have lit you, with the background back in the frame." },
+      { eyebrow: "What it costs",
+        headline: "No camera. No softbox. No reshoot.",
+        body: PRICE },
+      cta("LIGHT", "Send me a flash photo you hated."),
     ],
     caption:
-      "Your flash made you look like a suspect. Here is why.\n\n" +
-      "A phone's flash sits right beside the lens, so it fires straight at you. Light coming from directly in front flattens every feature — no cheekbone, no jawline, nothing for a shadow to fall on — and anything more than a metre behind you goes black.\n\n" +
-      "Light from the side is what gives a face shape. That can be added later.\n\n" +
+      "How to undo everything your phone flash did to your face — without taking the photo again.\n\n" +
+      "Your flash made you look like a suspect, and here is why. It sits right beside the lens, so it fires straight at you. Light from directly in front flattens every feature — no cheekbone, no jawline, nothing for a shadow to fall on — and anything more than a metre behind you goes black.\n\n" +
+      "Shape in a face comes from side light. That can be added afterwards.\n\n" +
       "₦1,000 for one photo.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart #phonephotography",
   },
@@ -287,16 +437,28 @@ export const PLAN = [
     title: "Asset extractor — the bag",
     photos: "A bag, shoe or accessory photographed on a sofa or table, and the extracted version",
     cards: [
-      { headline: "Photographed on a sofa. Sold like it.", body: "Same bag, on its own." },
-      { headline: "Background is the difference between a post and a product.", body: "A clean cut-out is what makes a listing look like a shop rather than a WhatsApp status." },
-      { headline: "Bags, shoes, wigs, nails, jewellery.", body: "If you sell it, it can be lifted out." },
-      { headline: "One photo. No studio.", body: PRICE },
-      cta("ASSETS"),
+      { headline: "Sell Bags, Shoes and Wigs Like a Boutique Even Without a Shop, a Model or a Studio",
+        body: "Photographed on your sofa. Sold like a shop window." },
+      { eyebrow: "The problem",
+        headline: "Your background is part of the sale.",
+        body: "A product on a sofa reads as second-hand. The same product on a clean ground reads as stock." },
+      { eyebrow: "What a boutique has",
+        headline: "One item, one frame, nothing else.",
+        body: "That is the whole trick, and it is the thing a busy vendor never has time to set up." },
+      { eyebrow: "What you send",
+        headline: "One photo, wherever it is sitting.",
+        body: "The item is lifted out and comes back from four angles, ready to list." },
+      { eyebrow: "What it costs",
+        headline: "Per piece, not per shoot.",
+        body: PRICE },
+      cta("ASSETS", "Send me a photo of your best-selling item."),
     ],
     caption:
+      "Sell bags, shoes and wigs like a boutique even without a shop, a model or a studio.\n\n" +
       "The bag is lovely. Your sofa is not part of the sale.\n\n" +
-      "A clean product shot is the single thing that separates a listing people trust from one they scroll past, and it is the thing small vendors never have time for.\n\n" +
-      "Send one photo of the item.\n\n₦1,000 per photo.\n\n" +
+      "A clean product shot is the single thing that separates a listing people trust from one they scroll past, and it is the thing small vendors never have time to set up.\n\n" +
+      "Send one photo of the item wherever it is sitting. It comes back on its own, from four angles.\n\n" +
+      "₦1,000 per photo.\n\n" +
       "💬 Comment ASSETS and I'll send you the link.\n\n" +
       "#nigerianvendor #bagsforsale #onlinebusiness #aluxart",
   },
@@ -305,12 +467,16 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "You did not need a better camera.", body: "You needed better light." },
-      { headline: "It can arrive afterwards.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Get Better Light on a Photo You Already Took Without Buying a Better Camera",
+        body: "You never needed the camera. You needed the light." },
+      { eyebrow: "And it can arrive late",
+        headline: "The photo is already taken.",
+        body: PRICE },
+      cta("LIGHT", "Send me one photo."),
     ],
     caption:
-      "You did not need a better camera. You needed better light — and it can arrive afterwards.\n\n" +
+      "Get better light on a photo you already took without buying a better camera.\n\n" +
+      "You never needed the camera. You needed the light — and it can arrive afterwards.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
 
@@ -320,15 +486,26 @@ export const PLAN = [
     title: "Phone to studio — a customer's result",
     photos: "A customer's own before/after, posted with their permission after the three-week hold",
     cards: [
-      { headline: "She sent this from her phone.", body: "Nothing else was asked of her." },
-      { headline: "No appointment. No travelling.", body: "One photo, sent in a chat, back the same day." },
-      { headline: "Her words, not mine.", body: "Add the customer's actual message here." },
-      { headline: "Your turn.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Get a Studio Portrait in One Day Even Without Leaving Your Desk at Work",
+        body: "She sent this from her phone on her lunch break." },
+      { eyebrow: "The problem",
+        headline: "Everybody is too busy for a studio.",
+        body: "A session means a booking, a drive and half a day. Which is why the photo never gets taken." },
+      { eyebrow: "What she did",
+        headline: "She sent one photo in a chat.",
+        body: "No appointment, no travelling, no second outfit. Nothing else was asked of her." },
+      { eyebrow: "Her words, not mine",
+        headline: "Add the customer's actual message here.",
+        body: "Paste exactly what they wrote. Do not tidy it up — the typing is the proof." },
+      { eyebrow: "What it costs",
+        headline: "Back the same day.",
+        body: PRICE },
+      cta("STUDIO", "Send me a photo on your next break."),
     ],
     caption:
-      "A customer sent this from her phone while she was at work.\n\n" +
-      "No appointment, no studio, no second outfit. One photo in a chat.\n\n" +
+      "Get a studio portrait in one day even without leaving your desk at work.\n\n" +
+      "A customer sent this from her phone on her lunch break. No appointment, no studio, no second outfit — one photo in a chat, back before she got home.\n\n" +
+      "Everybody is too busy for a session. That is exactly why the photo never gets taken.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#aluxart",
   },
   {
@@ -336,58 +513,100 @@ export const PLAN = [
     title: "Relight — she almost didn't send it",
     photos: "A customer's before/after where the before looked unpromising",
     cards: [
-      { headline: "She almost didn't send this one.", body: "She thought it was too far gone." },
-      { headline: "Dark is not the same as ruined.", body: "The detail is usually still there — buried under noise and the wrong colour, but there." },
-      { headline: "Send the one you were about to delete.", body: "That is usually the one worth fixing." },
-      { headline: "Nothing to lose.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Save the Photo You Thought Was Too Dark to Save — Without a Camera or a Reshoot",
+        body: "She almost didn't send this one." },
+      { eyebrow: "The problem",
+        headline: "People delete the photos most worth fixing.",
+        body: "If it looks hopeless on the phone screen, it goes. Usually it was not hopeless at all." },
+      { eyebrow: "Why it wasn't hopeless",
+        headline: "Dark is not the same as ruined.",
+        body: "The detail is still in the file, buried under noise and the wrong colour. Buried is recoverable. Missing is not." },
+      { eyebrow: "The one real limit",
+        headline: "Out of focus cannot be fixed.",
+        body: "Dark can. Orange can. Blurry cannot — and I will tell you before you pay, not after." },
+      { eyebrow: "What it costs",
+        headline: "Nothing to lose by asking.",
+        body: PRICE },
+      cta("LIGHT", "Send me the one you were about to delete."),
     ],
     caption:
-      "She almost didn't send this photo. She thought it was too dark to be worth anything.\n\n" +
-      "Dark is not the same as ruined. The detail is usually still in there, buried under noise and the wrong colour — which is exactly what relighting pulls back out.\n\n" +
-      "Send the one you were about to delete.\n\n₦1,000 for one photo.\n\n" +
-      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+      "How to save the photo you thought was too dark to save — without a camera or a reshoot.\n\n" +
+      "She almost didn't send this. She thought it was too far gone.\n\n" +
+      "Dark is not the same as ruined. The detail is still in the file, buried under noise and the wrong colour, and buried is recoverable.\n\n" +
+      "The one thing that cannot be fixed is focus. If a photo is blurry I will tell you before you pay, not after.\n\n" +
+      "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
     id: "p19", week: 5, slot: "C", product: "assets", trigger: "ASSETS",
     title: "Asset extractor — the rail shot",
     photos: "A vendor's rail or wardrobe shot, and the extracted product angles",
     cards: [
-      { headline: "Your whole rail in one photo.", body: "One piece, lifted out of it." },
-      { headline: "Buyers do not buy from a rail.", body: "They cannot tell the cut, the length or the fall. So they ask, and half of them never ask." },
-      { headline: "Four angles answer the questions first.", body: "Front, three-quarter, side, back — before anyone has to type." },
-      { headline: "Per piece, not per shoot.", body: PRICE },
-      cta("ASSETS"),
+      { headline: "4 Ways to Answer a Buyer's Questions Without Ever Typing a Reply",
+        body: "One photo of the rail in. Four angles out." },
+      { eyebrow: "The problem",
+        headline: "Every DM question is one your photo didn't answer.",
+        body: "And half the people who would have asked never ask. They just scroll." },
+      { eyebrow: "Answer 1 — the front",
+        headline: "How does it actually sit?",
+        body: "Shape, length and where it falls on a real body, not on a hanger." },
+      { eyebrow: "Answer 2 — the three-quarter",
+        headline: "Is it fitted or loose?",
+        body: "The angle that shows the cut without anybody having to ask for a side photo." },
+      { eyebrow: "Answers 3 and 4 — side and back",
+        headline: "What does the back look like?",
+        body: "The most asked question in Nigerian fashion DMs, answered before it is typed." },
+      cta("ASSETS", "Send me one photo from your rail."),
     ],
     caption:
-      "Every question a buyer asks in your DMs is a question your photo did not answer.\n\n" +
-      "How does it fall? What does the back look like? Is it lined? Four clean angles answer all of it before anybody types, and half the people who would have scrolled past will stay.\n\n" +
-      "💬 Comment ASSETS and I'll send you the link.\n\n#nigerianfashion #onlinevendor #aluxart",
+      "4 ways to answer a buyer's questions without ever typing a reply.\n\n" +
+      "Every question in your DMs is a question your photo did not answer. How does it fall? Is it fitted? What does the back look like? And half the people who would have asked never ask — they scroll.\n\n" +
+      "Four clean angles answer all of it before anybody types.\n\n" +
+      "₦1,000 per photo.\n\n💬 Comment ASSETS and I'll send you the link.\n\n" +
+      "#nigerianfashion #onlinevendor #aluxart",
   },
   {
     id: "p20", week: 5, slot: "D", product: "relight", trigger: "LIGHT",
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "Same photo.", body: "Different night, apparently." },
-      cta("LIGHT"),
+      { headline: "Get a Night-Out Photo Worth Posting Without Going Back Out",
+        body: "Same photo. Different night, apparently." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("LIGHT", "Send me one from the weekend."),
     ],
-    caption: "Same photo. Different night, apparently.\n\n₦1,000.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+    caption:
+      "Get a night-out photo worth posting without going back out.\n\n" +
+      "Same photo. Different night, apparently. ₦1,000.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
     id: "p21", week: 6, slot: "A", product: "studio", trigger: "STUDIO",
     title: "Will it still look like me?",
     photos: "A before/after cropped tight on the face, so identity is obviously preserved",
     cards: [
-      { headline: "“Will it still look like her?”", body: "The question everybody asks. Here is the honest answer." },
-      { headline: "Look at the face, not the room.", body: "Same eyes, same nose, same gap in the teeth, same everything. Compare them closely — that is the point." },
-      { headline: "We change the room and the light.", body: "Never the person. If the face changes, the job is wrong." },
-      { headline: "Judge it yourself.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Change the Room and the Light Without Changing a Single Thing About Your Face",
+        body: "The question everybody asks, answered honestly." },
+      { eyebrow: "The fear",
+        headline: "“Will it still look like her?”",
+        body: "It is the right question to ask, and most people are too polite to ask it out loud." },
+      { eyebrow: "Proof 1",
+        headline: "Crop in and compare.",
+        body: "Same eyes, same nose, same gap in the teeth, same hairline. Look at the face, not the room." },
+      { eyebrow: "Proof 2",
+        headline: "The face is locked to your photo.",
+        body: "Not a lookalike, not an average of a thousand faces. Your actual features, held in place." },
+      { eyebrow: "What may change",
+        headline: "The room, the light, the pose.",
+        body: "Nothing else. If the person changes, the job was done badly and I will redo it." },
+      cta("STUDIO", "Send me a photo and judge it yourself."),
     ],
     caption:
-      "“Will it still look like me?” is the question I get most, and it is the right question to ask.\n\n" +
-      "The answer is that we change the room and the light. Never the face. Crop in close on these two and compare them — same eyes, same nose, same smile. If the person changes, the job was done badly.\n\n" +
+      "Change the room and the light without changing a single thing about your face.\n\n" +
+      "“Will it still look like me?” is the question I get most, and it is the right one to ask.\n\n" +
+      "Crop in close on these two and compare. Same eyes, same nose, same smile, same hairline. What changes is the room, the light and the pose. Nothing else.\n\n" +
+      "If the person changes, the job was done badly and I redo it.\n\n" +
       "💬 Comment STUDIO and I'll send you the link.\n\n#aluxart",
   },
   {
@@ -395,14 +614,27 @@ export const PLAN = [
     title: "Three photos, one payment",
     photos: "Three before/afters from the same night, shown together",
     cards: [
-      { headline: "Three photos from one night.", body: "One payment, one link." },
-      { headline: "Send them all at once.", body: "The chat counts them, adds them up and sends a single link." },
-      { headline: "₦1,000 each. Nothing hidden.", body: "Three photos is ₦3,000. That is the whole sum." },
-      cta("LIGHT"),
+      { headline: "Fix Every Photo From One Night in a Single Payment Without Sending Them One at a Time",
+        body: "Three photos. One link. ₦3,000." },
+      { eyebrow: "The problem",
+        headline: "Nobody wants three payment links.",
+        body: "Three photos used to mean three conversations and three transfers. That is why people only ever sent one." },
+      { eyebrow: "How it works now",
+        headline: "Send them all at once.",
+        body: "The chat counts them, adds them up and sends a single link for the lot." },
+      { eyebrow: "It asks first",
+        headline: "“Are these all the pictures you want to relight?”",
+        body: "Say yes and the total is locked. Anything you send after the link is a fresh request, never a surprise charge." },
+      { eyebrow: "What it costs",
+        headline: "₦1,000 each. Nothing hidden.",
+        body: "Three photos is ₦3,000. That is the whole sum." },
+      cta("LIGHT", "Send me everything from one night."),
     ],
     caption:
-      "You do not have to send them one at a time.\n\n" +
-      "Send every photo from the night, and the chat counts them, adds them up and gives you one payment link for the lot. Three photos, ₦3,000, one link, all of them back together.\n\n" +
+      "Fix every photo from one night in a single payment without sending them one at a time.\n\n" +
+      "Send every photo from the night at once. The chat counts them, adds them up and gives you one link for the lot.\n\n" +
+      "It asks first — “are these all the pictures you want to relight?” — and once you say yes the total is locked. Anything you send after that is a new request, never a surprise charge.\n\n" +
+      "Three photos, ₦3,000, one link.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart #dettydecember",
   },
   {
@@ -410,14 +642,26 @@ export const PLAN = [
     title: "GIF maker — a customer's sticker",
     photos: "A customer's finished GIF, shown as before/after stills",
     cards: [
-      { headline: "She made this in a chat.", body: "Two pictures and four lines of her own." },
-      { headline: "Then it went where she could not.", body: "People use it in their own stories. Her business travels with it." },
-      { headline: "Yours takes about two minutes.", body: "Send the pictures, type the words, done." },
-      cta("GIF"),
+      { headline: "Get Other People to Advertise Your Business for You Without Paying Any of Them",
+        body: "She made this in a chat in two minutes." },
+      { eyebrow: "The problem",
+        headline: "You can buy reach, or you can be worth sharing.",
+        body: "Only one of those keeps working after the money stops." },
+      { eyebrow: "What she sent",
+        headline: "Two pictures and four lines.",
+        body: "That was the whole job. Her words, her website, her search tags." },
+      { eyebrow: "What happened next",
+        headline: "Strangers started using it.",
+        body: "In their stories, under their posts. Her business travelled with it, into feeds she could never have bought." },
+      { eyebrow: "What it costs",
+        headline: "Once. Then never again.",
+        body: "Made in a chat, in about two minutes." },
+      cta("GIF", "Send me two pictures and your tagline."),
     ],
     caption:
+      "Get other people to advertise your business for you without paying any of them.\n\n" +
       "She made this in a chat with two pictures and four lines of her own words.\n\n" +
-      "Now other people use it in their stories, and her business goes with it. That is advertising that keeps working after you stop paying for it.\n\n" +
+      "Now strangers use it in their stories and her business goes with it, into feeds she could never have bought. That is advertising that keeps working after you stop paying for it.\n\n" +
       "💬 Comment GIF and I'll send you the link.\n\n#smallbusinessnigeria #aluxart",
   },
   {
@@ -425,25 +669,43 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "No reshoot. No studio.", body: "Just the light you should have had." },
-      cta("LIGHT"),
+      { headline: "Get the Light You Should Have Had Without the Studio, the Flash or the Reshoot",
+        body: "Nothing in this photo was taken twice." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("LIGHT", "Send me one."),
     ],
-    caption: "No reshoot. No studio. Just the light you should have had.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+    caption:
+      "Get the light you should have had without the studio, the flash or the reshoot.\n\n" +
+      "Nothing here was taken twice. ₦1,000 for one photo.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
     id: "p25", week: 7, slot: "A", product: "studio", trigger: "STUDIO",
     title: "Phone to studio — not just children",
     photos: "An adult photographed at home, and the studio portrait",
     cards: [
-      { headline: "Not only for children.", body: "Same wall. Same problem. Same fix." },
-      { headline: "Everybody has one good photo of themselves.", body: "Usually taken somewhere with terrible light." },
-      { headline: "Use it for the thing you keep putting off.", body: "A profile picture, a company page, a frame on the wall." },
-      { headline: "One photo.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Get the Profile Picture You Keep Putting Off in One Day Even Without Booking a Session",
+        body: "Not only for children. Same wall, same problem, same fix." },
+      { eyebrow: "The problem",
+        headline: "You have been meaning to do this for a year.",
+        body: "A proper photo of yourself always loses to everything else on the list." },
+      { eyebrow: "You already have the photo",
+        headline: "Everybody has one they actually like.",
+        body: "Almost always taken somewhere with terrible light, which is the only thing wrong with it." },
+      { eyebrow: "What it becomes",
+        headline: "A profile picture, a company page, a frame.",
+        body: "The thing you keep putting off, done from a photo already on your phone." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("STUDIO", "Send me the photo of yourself you like."),
     ],
     caption:
-      "Everybody has one photo of themselves they actually like. It is almost always taken somewhere with terrible light.\n\n" +
-      "That is a fixable problem, and it is cheaper than booking a session for a photo you already have.\n\n" +
+      "Get the profile picture you keep putting off in one day even without booking a session.\n\n" +
+      "Everybody has one photo of themselves they actually like, and it is almost always taken somewhere with terrible light. That is the only thing wrong with it.\n\n" +
+      "Cheaper than booking a session for a photo you already have.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#aluxart #portrait",
   },
   {
@@ -451,15 +713,26 @@ export const PLAN = [
     title: "Relight — the old photo",
     photos: "A genuinely old photo, and the relit version",
     cards: [
-      { headline: "This photo is five years old.", body: "The light is new." },
-      { headline: "Old photos are the best candidates.", body: "Nobody is going back to reshoot them, and the moment cannot be repeated." },
-      { headline: "The memory stays exactly as it was.", body: "Same people, same day. Only the light changes." },
-      { headline: "Bring one back.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Bring a Five-Year-Old Photo Back to Life Without Changing a Single Face in It",
+        body: "This photo is five years old. The light is from this week." },
+      { eyebrow: "The problem",
+        headline: "The day cannot happen again.",
+        body: "Old photos are the ones most worth fixing, because nobody is ever reshooting them." },
+      { eyebrow: "What stays",
+        headline: "Everyone, exactly as they were.",
+        body: "Same faces, same clothes, same room, same day. The memory is not edited." },
+      { eyebrow: "What changes",
+        headline: "Only the light.",
+        body: "Put back the way it should have fallen, so you can finally see the people in it." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("LIGHT", "Send me one from years ago."),
     ],
     caption:
+      "Bring a five-year-old photo back to life without changing a single face in it.\n\n" +
       "This photo is five years old. The light on it is from this week.\n\n" +
-      "Old photos are the ones most worth doing — nobody is reshooting them, and the day cannot happen again. Everything stays exactly as it was. Only the light changes.\n\n" +
+      "Old photos are the ones most worth doing, because nobody is reshooting them and the day cannot happen again. Everyone stays exactly as they were. Only the light changes.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#throwback #aluxart",
   },
   {
@@ -467,14 +740,23 @@ export const PLAN = [
     title: "Full shoot — ten images",
     photos: "One source photo and a grid of ten varied results",
     cards: [
-      { headline: "One photo. Ten images.", body: "Ten different setups, one face." },
-      { headline: "What a studio day costs you.", body: "A deposit, a day off, travel across the city, and hoping the light is right." },
-      { headline: "What this costs you.", body: "One photo and a few minutes in a chat." },
-      cta("SHOOT"),
+      { headline: "Get Ten Studio Images in One Day Without a Deposit, a Day Off or a Drive Across Lagos",
+        body: "One photo in. Ten images out." },
+      { eyebrow: "What a studio day really costs",
+        headline: "More than the invoice.",
+        body: "A deposit, a day off work, travel across the city, and hoping the light is right when you arrive." },
+      { eyebrow: "What this costs",
+        headline: "One photo and a few minutes in a chat.",
+        body: "No booking, no travelling, no taking the afternoon off." },
+      { eyebrow: "What comes back",
+        headline: "Ten images, ten setups.",
+        body: "Different poses, framing and lighting. The same face in every one of them." },
+      cta("SHOOT", "Send me one photo of yourself."),
     ],
     caption:
-      "A studio day costs a deposit, a day off work, and travel across the city — before anybody has taken a picture.\n\n" +
-      "Send one photo instead and get back a full set: ten images, different poses, framing and lighting, the same face throughout.\n\n" +
+      "Get ten studio images in one day without a deposit, a day off or a drive across Lagos.\n\n" +
+      "A studio day costs more than the invoice: a deposit, time off work, travel across the city, and hoping the light is right when you get there.\n\n" +
+      "Send one photo instead and get back a full set — ten images, different poses, framing and lighting, the same face throughout.\n\n" +
       "💬 Comment SHOOT and I'll send you the link.\n\n#lagosbusiness #headshots #aluxart",
   },
   {
@@ -482,24 +764,43 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "Your phone did its best.", body: "It just had nothing to work with." },
-      cta("LIGHT"),
+      { headline: "Get the Photo Your Phone Could Not Take Even if Your Phone Is All You Own",
+        body: "It did its best. It just had nothing to work with." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("LIGHT", "Send me one."),
     ],
-    caption: "Your phone did its best. It just had nothing to work with.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+    caption:
+      "Get the photo your phone could not take even if your phone is all you own.\n\n" +
+      "It did its best. It just had nothing to work with. ₦1,000.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
     id: "p29", week: 8, slot: "A", product: "studio", trigger: "STUDIO",
     title: "Phone to studio — the christening",
     photos: "A christening or naming ceremony photo at home, and the studio version",
     cards: [
-      { headline: "The outfit cost more than the photo deserved.", body: "Let us even that up." },
-      { headline: "These are the photos families keep.", body: "Naming ceremonies, christenings, first birthdays. They outlive everything else on your phone." },
-      { headline: "One photo, printed properly, lasts.", body: "A sitting-room wall behind it does not do that." },
-      cta("STUDIO"),
+      { headline: "Give a Naming Ceremony the Studio Portrait It Deserved Even Though the Day Is Over",
+        body: "The outfit was planned for weeks. The photo took thirty seconds." },
+      { eyebrow: "The problem",
+        headline: "Nobody budgets for the photograph.",
+        body: "Lace, shoes, caterers, hall. Then the picture is taken against whatever wall was free." },
+      { eyebrow: "Why it matters most here",
+        headline: "These are the photos families keep longest.",
+        body: "Namings, christenings, first birthdays. They outlive everything else on your phone." },
+      { eyebrow: "What you get",
+        headline: "One photo worth printing.",
+        body: "A sitting-room wall behind it will not survive being framed. A proper backdrop will." },
+      { eyebrow: "What it costs",
+        headline: "Less than the lace.",
+        body: PRICE },
+      cta("STUDIO", "Send me the photo from the day."),
     ],
     caption:
+      "Give a naming ceremony the studio portrait it deserved even though the day is over.\n\n" +
       "The outfit was planned for weeks. The photo was taken in thirty seconds against whatever wall was free.\n\n" +
-      "These are the pictures families keep longest. Worth the small amount it takes to make them look like it.\n\n" +
+      "These are the pictures families keep longest, and they cost less to fix than the lace cost to buy.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#naming #christening #aluxart",
   },
   {
@@ -507,41 +808,73 @@ export const PLAN = [
     title: "Relight — restaurant dinner",
     photos: "A dim restaurant photo, and the relit version",
     cards: [
-      { headline: "Dinner looked better than this.", body: "Same table, properly lit." },
-      { headline: "Restaurants light the table, not your face.", body: "The light sits above you, so eyes go into shadow and the room behind you disappears." },
-      { headline: "Candlelight is worse than it looks.", body: "Beautiful to sit in. Almost nothing for a phone sensor to use." },
-      { headline: "Keep the evening.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Rescue Every Restaurant Photo Without Candlelight, a Flash or a Second Dinner",
+        body: "Dinner looked better than this." },
+      { eyebrow: "The problem",
+        headline: "Restaurants light the table, not your face.",
+        body: "The light sits directly above you, so your eyes fall into shadow and the room behind you disappears." },
+      { eyebrow: "The thing nobody expects",
+        headline: "Candlelight is worse than it looks.",
+        body: "Beautiful to sit in. Almost nothing for a phone sensor to actually use." },
+      { eyebrow: "Why the flash made it worse",
+        headline: "It killed the room you came for.",
+        body: "Fire the flash and the restaurant goes black behind you. Keep the room and you go dark. The fix keeps both." },
+      { eyebrow: "What it costs",
+        headline: "Keep the evening. Lose the shadows.",
+        body: PRICE },
+      cta("LIGHT", "Send me a photo from dinner."),
     ],
     caption:
+      "How to rescue every restaurant photo without candlelight, a flash or a second dinner.\n\n" +
       "Restaurants light the table, not your face. The light sits directly above you, so your eyes fall into shadow and everything behind you goes black.\n\n" +
-      "Candlelight makes it worse — lovely to sit in, almost nothing for a phone to work with.\n\n" +
-      "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#dateNight #lagosrestaurants #aluxart",
+      "Candlelight makes it worse — lovely to sit in, almost nothing for a phone to work with. And the flash kills the room you came for.\n\n" +
+      "Afterwards you can keep both.\n\n₦1,000 for one photo.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#datenight #lagosrestaurants #aluxart",
   },
   {
     id: "p31", week: 8, slot: "C", product: "assets", trigger: "ASSETS",
     title: "Asset extractor — wigs and beauty",
     photos: "A wig on a mannequin or stand, and the extracted version",
     cards: [
-      { headline: "On a mannequin. Sold on a person.", body: "Same wig, lifted clean." },
-      { headline: "Beauty sells on detail.", body: "Texture, length, parting, colour. A cluttered background hides all four." },
-      { headline: "Wigs, nails, lashes, jewellery.", body: "Anything small enough to be lost against a busy room." },
-      cta("ASSETS"),
+      { headline: "Show Every Detail of a Wig, Lash or Nail Set Even Without a Model, a Studio or a Ring Light",
+        body: "On a mannequin. Sold like it's on a person." },
+      { eyebrow: "The problem",
+        headline: "Beauty sells on four details.",
+        body: "Texture, length, parting and colour. A cluttered background hides every one of them." },
+      { eyebrow: "What a mannequin costs you",
+        headline: "It reads as stock, not as hair.",
+        body: "Buyers want to see how it falls, not how it sits on a plastic head in your bedroom." },
+      { eyebrow: "What you send",
+        headline: "One photo, wherever it is.",
+        body: "It comes back lifted clean, from four angles, with the texture still readable." },
+      { eyebrow: "Everything small",
+        headline: "Wigs, nails, lashes, jewellery.",
+        body: "Anything easily lost against a busy room. ₦1,000 per photo." },
+      cta("ASSETS", "Send me a photo of one piece."),
     ],
     caption:
-      "Beauty products sell on detail — texture, length, parting, colour — and a busy background hides every one of them.\n\n" +
-      "Send one photo of the piece and it comes back clean, from four angles.\n\n" +
-      "💬 Comment ASSETS and I'll send you the link.\n\n#wigsnigeria #beautybusiness #aluxart",
+      "Show every detail of a wig, lash or nail set even without a model, a studio or a ring light.\n\n" +
+      "Beauty products sell on four things — texture, length, parting and colour — and a busy background hides all four.\n\n" +
+      "Send one photo of the piece and it comes back clean, from four angles, with the texture still readable.\n\n" +
+      "₦1,000 per photo.\n\n💬 Comment ASSETS and I'll send you the link.\n\n" +
+      "#wigsnigeria #beautybusiness #aluxart",
   },
   {
     id: "p32", week: 8, slot: "D", product: "relight", trigger: "LIGHT",
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "One photo. One thousand naira.", body: "That is the entire offer." },
-      cta("LIGHT"),
+      { headline: "Fix One Photo for ₦1,000 Without a Subscription, an App or an Account",
+        body: "That is the entire offer." },
+      { eyebrow: "How it works",
+        headline: "It all happens in the chat.",
+        body: "Send the photo, pay, get it back. Nothing to download." },
+      cta("LIGHT", "Send me one photo."),
     ],
-    caption: "One photo. One thousand naira. That is the entire offer.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+    caption:
+      "Fix one photo for ₦1,000 without a subscription, an app or an account.\n\n" +
+      "Send it in the chat, pay in the chat, get it back in the chat. That is the entire offer.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
 
   // ───────────────────────── MONTH 3 — own December ──────────────────────────
@@ -550,32 +883,56 @@ export const PLAN = [
     title: "December — the Christmas outfit",
     photos: "A child or family in Christmas clothes at home, and the studio version",
     cards: [
-      { headline: "The outfit everyone planned for.", body: "The background nobody did." },
-      { headline: "December is when the photos happen.", body: "New clothes, family together, everybody home. All taken in a sitting room." },
-      { headline: "This is the one that gets printed.", body: "Worth more than the wall behind it." },
-      { headline: "Send it the same day.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Get a Christmas Portrait Worth Printing in One Day Even Though Every Studio Is Fully Booked",
+        body: "The outfit everyone planned for. The background nobody did." },
+      { eyebrow: "The problem",
+        headline: "December is when the photos happen.",
+        body: "New clothes, family together, everyone home — and all of it shot in a sitting room under one bulb." },
+      { eyebrow: "Why booking won't save you",
+        headline: "Every studio in town is full.",
+        body: "And the ones that are not are charging December prices for a slot in January." },
+      { eyebrow: "What you do instead",
+        headline: "Take the photo at home. Send it the same day.",
+        body: "The room is replaced afterwards. Nobody has to get dressed twice or wait for a slot." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("STUDIO", "Send me your Christmas photo."),
     ],
     caption:
+      "Get a Christmas portrait worth printing in one day even though every studio is fully booked.\n\n" +
       "Everyone plans the outfit. Nobody plans the background.\n\n" +
-      "December is when the most photographs of the year get taken, and almost all of them happen in a sitting room with one overhead bulb.\n\n" +
-      "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#christmas #detty december #aluxart",
+      "December is when the most photographs of the year get taken, almost all of them in a sitting room under one overhead bulb — and every studio in town is full.\n\n" +
+      "Take the photo at home and send it. The room is replaced afterwards.\n\n" +
+      "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n" +
+      "#christmas #dettydecember #aluxart",
   },
   {
     id: "p34", week: 9, slot: "B", product: "relight", trigger: "LIGHT",
     title: "December — every photo will be too dark",
     photos: "A December club or street photo, and the relit version",
     cards: [
-      { headline: "Every December photo will be too dark.", body: "Here is why, and what to do about it." },
-      { headline: "December happens at night.", body: "Clubs, streets, halls, car parks. All of them are harder than daylight." },
-      { headline: "Take them anyway.", body: "A dark photo of something that happened beats a good photo of nothing." },
-      { headline: "Fix them in January, or tonight.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "How to Save Every December Night Photo Without a Camera, a Flash or a Single Reshoot",
+        body: "Every photo you take this month will be too dark. Take them anyway." },
+      { eyebrow: "The problem",
+        headline: "December happens at night.",
+        body: "Clubs, streets, halls, car parks. All of them harder for a phone than any daylight shot." },
+      { eyebrow: "What most people do",
+        headline: "They stop taking photos.",
+        body: "Which is the only mistake here that cannot be undone later." },
+      { eyebrow: "What to do instead",
+        headline: "Take the photo anyway.",
+        body: "A dark photo of something that happened beats a perfect photo of nothing at all." },
+      { eyebrow: "Then",
+        headline: "Send it tonight or in January.",
+        body: "The light can be put back whenever you get round to it." },
+      cta("LIGHT", "Send me one from last night."),
     ],
     caption:
+      "How to save every December night photo without a camera, a flash or a single reshoot.\n\n" +
       "Every photo you take this month will be too dark, and that is not a reason to stop taking them.\n\n" +
       "December happens at night — clubs, streets, halls, car parks. Take the photo anyway. A dark photo of something that happened beats a perfect photo of nothing.\n\n" +
-      "Then send it to me.\n\n₦1,000 for one photo.\n\n" +
+      "Then send it. Tonight, or in January.\n\n₦1,000 for one photo.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #lagosnightlife #aluxart",
   },
   {
@@ -583,13 +940,23 @@ export const PLAN = [
     title: "December — a sticker for your business",
     photos: "A December-themed before/after that becomes the GIF",
     cards: [
-      { headline: "December is loud. Be the thing people reuse.", body: "A sticker gets used by other people, for free." },
-      { headline: "Your words, in their stories.", body: "Up to six scenes, your pictures, your business at the end." },
-      cta("GIF"),
+      { headline: "Be the Advert People Share This December Without Paying for a Single Impression",
+        body: "Everybody is shouting. Be the thing people reuse." },
+      { eyebrow: "The problem",
+        headline: "December is the most expensive month to buy reach.",
+        body: "Every business in Nigeria is bidding for the same feed at the same time." },
+      { eyebrow: "What gets through",
+        headline: "The things people pass around themselves.",
+        body: "A sticker in somebody's story costs you nothing and reaches people no budget could buy." },
+      { eyebrow: "What you send",
+        headline: "Your pictures and your words.",
+        body: "Up to six scenes, your tags, your website on the last frame." },
+      cta("GIF", "Send me two pictures before the rush."),
     ],
     caption:
-      "Everybody is shouting in December. The ones that get remembered are the ones other people pass around.\n\n" +
-      "Make a sticker with your own pictures and words, and let other people's stories carry it.\n\n" +
+      "Be the advert people share this December without paying for a single impression.\n\n" +
+      "December is the most expensive month in Nigeria to buy reach — every business is bidding for the same feed at the same time.\n\n" +
+      "What gets through is what people pass around themselves. Make a sticker with your own pictures and words, and let other people's stories carry it.\n\n" +
       "💬 Comment GIF and I'll send you the link.\n\n#dettydecember #smallbusinessnigeria #aluxart",
   },
   {
@@ -597,79 +964,143 @@ export const PLAN = [
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "Taken last night.", body: "Fixed this morning." },
-      cta("LIGHT"),
+      { headline: "Get Last Night's Photo Back Before Lunch Today Even Without a Camera",
+        body: "Taken last night. Fixed this morning." },
+      { eyebrow: "What it costs",
+        headline: "One photo, ₦1,000.",
+        body: "Sent and returned in the same chat." },
+      cta("LIGHT", "Send me last night's."),
     ],
-    caption: "Taken last night. Fixed this morning.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #aluxart",
+    caption:
+      "Get last night's photo back before lunch today even without a camera.\n\n" +
+      "Taken last night. Fixed this morning. ₦1,000.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #aluxart",
   },
   {
     id: "p37", week: 10, slot: "A", product: "studio", trigger: "STUDIO",
     title: "December — the family portrait",
     photos: "A family group photographed at home, and the studio version",
     cards: [
-      { headline: "Everyone is home for once.", body: "Take the photo. We will handle the room." },
-      { headline: "Getting everybody together is the hard part.", body: "Nobody is doing it twice because the background was wrong." },
-      { headline: "One group photo, properly finished.", body: PRICE },
-      cta("STUDIO"),
+      { headline: "Get the Whole Family Into One Good Portrait Even Though You Only Got Them Still Once",
+        body: "Everyone is home for once. Take the photo." },
+      { eyebrow: "The problem",
+        headline: "Getting everybody together is the hard part.",
+        body: "One month a year, and about ninety seconds of everyone standing still at the same time." },
+      { eyebrow: "So do not waste it",
+        headline: "Nobody is repeating that because of a wall.",
+        body: "Take the picture wherever they are standing. The room is somebody else's problem." },
+      { eyebrow: "Every face stays itself",
+        headline: "Six people, six identities, locked.",
+        body: "Nobody is averaged, smoothed or turned into a sibling." },
+      { eyebrow: "What it costs",
+        headline: "One group photo, properly finished.",
+        body: PRICE },
+      cta("STUDIO", "Send me the one where everyone looked."),
     ],
     caption:
-      "December is the one month everybody is in the same place. Getting all of them to stand still at the same time is the hard part — and nobody is repeating it because of a wall.\n\n" +
-      "Take the photo. Send it to me.\n\n₦1,000 for one photo.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#familyportrait #christmas #aluxart",
+      "Get the whole family into one good portrait even though you only got them still once.\n\n" +
+      "December is the one month everybody is in the same place, and you get about ninety seconds of all of them standing still. Nobody is repeating that because of a wall.\n\n" +
+      "Take the photo wherever they are standing. The room is my problem.\n\n" +
+      "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n" +
+      "#familyportrait #christmas #aluxart",
   },
   {
     id: "p38", week: 10, slot: "B", product: "relight", trigger: "LIGHT",
     title: "December — concert and show photos",
     photos: "A concert or show photo, and the relit version",
     cards: [
-      { headline: "The stage was lit. You were not.", body: "Same photo, with you in it." },
-      { headline: "Stage light points away from the crowd.", body: "Everything on stage is bright and everything in front of it is a silhouette." },
-      { headline: "You were there. The photo should say so.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Get Yourself Out of the Shadows in Every Concert Photo Without Standing Any Closer",
+        body: "The stage was lit. You were not." },
+      { eyebrow: "The problem",
+        headline: "Stage light points away from the crowd.",
+        body: "Everything on stage is bright, and everything in front of it is a silhouette. Including you." },
+      { eyebrow: "Why moving closer wouldn't help",
+        headline: "It is not about distance.",
+        body: "The light is aimed at the performer. Ten rows forward and you are still lit from behind." },
+      { eyebrow: "The fix",
+        headline: "Light added from the front, afterwards.",
+        body: "The stage keeps its colour and you come out of the dark in the same frame." },
+      { eyebrow: "What it costs",
+        headline: "You were there. The photo should say so.",
+        body: PRICE },
+      cta("LIGHT", "Send me a photo from the show."),
     ],
     caption:
-      "Stage lighting is built for the stage. It points away from you, so the performance is bright and the crowd is a silhouette.\n\n" +
+      "Get yourself out of the shadows in every concert photo without standing any closer.\n\n" +
+      "Stage lighting is built for the stage. It points away from you, so the performance is bright and the crowd is a silhouette — and moving forward does not help, because the light is aimed at the performer either way.\n\n" +
       "You were there. The photo should say so.\n\n₦1,000 for one photo.\n\n" +
-      "💬 Comment LIGHT and I'll send you the link.\n\n#detty december #concert #aluxart",
+      "💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #concert #aluxart",
   },
   {
     id: "p39", week: 10, slot: "C", product: "assets", trigger: "ASSETS",
     title: "December — sell through the season",
     photos: "December stock on a rail, and the extracted product angles",
     cards: [
-      { headline: "Your December stock, photographed properly.", body: "One photo per piece." },
-      { headline: "This is your busiest month.", body: "It is also the month you have least time to photograph anything." },
-      { headline: "One photo in, four angles out.", body: "Per piece, same day." },
-      cta("ASSETS"),
+      { headline: "Photograph a Whole December Rail in One Day Even Without a Model or a Studio",
+        body: "One photo per piece. Four angles back." },
+      { eyebrow: "The problem",
+        headline: "Your busiest month is your least free month.",
+        body: "December is when you sell most and have least time to photograph anything properly." },
+      { eyebrow: "What that costs you",
+        headline: "Stock nobody can picture does not move.",
+        body: "And by January the season is over and it is last year's." },
+      { eyebrow: "What you do",
+        headline: "One photo of each piece, however it hangs.",
+        body: "Clean product shots come back from four angles, same day, ready to post." },
+      { eyebrow: "What it costs",
+        headline: "Per piece, so you choose what matters.",
+        body: PRICE },
+      cta("ASSETS", "Send me a photo of your December stock."),
     ],
     caption:
-      "December is the month you sell most and have least time to photograph anything.\n\n" +
-      "Send one photo of each piece and get back clean product shots from four angles — same day.\n\n" +
-      "💬 Comment ASSETS and I'll send you the link.\n\n#dettydecember #nigerianvendor #aluxart",
+      "Photograph a whole December rail in one day even without a model or a studio.\n\n" +
+      "December is the month you sell most and have least time to photograph anything. Stock nobody can picture does not move, and by January it is last year's.\n\n" +
+      "Send one photo of each piece and clean product shots come back from four angles, same day.\n\n" +
+      "₦1,000 per photo.\n\n💬 Comment ASSETS and I'll send you the link.\n\n" +
+      "#dettydecember #nigerianvendor #aluxart",
   },
   {
     id: "p40", week: 10, slot: "D", product: "relight", trigger: "LIGHT",
     title: "Best pair of the week",
     photos: "The strongest before/after you have this week",
     cards: [
-      { headline: "Same dress. Same night.", body: "Better light." },
-      cta("LIGHT"),
+      { headline: "Get Better Light on That Dress Without Wearing It Again",
+        body: "Same dress. Same night. Different light." },
+      { eyebrow: "What it costs",
+        headline: "One photo, back the same day.",
+        body: PRICE },
+      cta("LIGHT", "Send me one from the party."),
     ],
-    caption: "Same dress. Same night. Better light.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
+    caption:
+      "Get better light on that dress without wearing it again.\n\n" +
+      "Same dress. Same night. Different light. ₦1,000.\n\n" +
+      "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },
   {
     id: "p41", week: 11, slot: "A", product: "studio", trigger: "STUDIO",
     title: "December — the photo you will want in twenty years",
     photos: "An older relative photographed at home, and the studio portrait",
     cards: [
-      { headline: "The photo you will want in twenty years.", body: "Take it now, properly." },
-      { headline: "Nobody photographs the people they see every day.", body: "Then one day it is the only picture you have." },
-      { headline: "It costs one photo and a thousand naira.", body: "That is a small price for something irreplaceable." },
-      cta("STUDIO"),
+      { headline: "Get the Portrait You'll Want in Twenty Years This Christmas Without Booking Anything",
+        body: "Everyone is still home. Take it now, properly." },
+      { eyebrow: "The problem",
+        headline: "Nobody photographs the people they see every day.",
+        body: "Then one day a snapshot is the only picture you have of them." },
+      { eyebrow: "The window",
+        headline: "This month everybody is in one place.",
+        body: "It will not be true again until next December, and sometimes not even then." },
+      { eyebrow: "What to do",
+        headline: "Sit them down. Take one photo.",
+        body: "Anywhere in the house. The room and the light are handled afterwards." },
+      { eyebrow: "What it costs",
+        headline: "One thousand naira for something irreplaceable.",
+        body: "A small price, and the only one you will never regret." },
+      cta("STUDIO", "Take one of them this week and send it."),
     ],
     caption:
+      "Get the portrait you'll want in twenty years this Christmas without booking anything.\n\n" +
       "Nobody takes proper photographs of the people they see every day. Then one day a snapshot is the only picture you have of them.\n\n" +
-      "While everyone is home this month, take one. We will make it worth keeping.\n\n" +
+      "This month everybody is in one place. Sit them down, take one photo anywhere in the house, and send it. The room and the light are handled afterwards.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment STUDIO and I'll send you the link.\n\n#family #aluxart",
   },
   {
@@ -677,14 +1108,26 @@ export const PLAN = [
     title: "December — send tonight, have it by morning",
     photos: "A night photo and its relit version, emphasising turnaround",
     cards: [
-      { headline: "Send it tonight. Have it by morning.", body: "Usually much sooner." },
-      { headline: "It all happens in the chat.", body: "Send the photo, get a price, pay, and it comes back to the same conversation." },
-      { headline: "No app. No account. No waiting.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Send a Photo Tonight and Have It Back by Morning Even if You Have No Camera and No Editing Skills",
+        body: "Usually much sooner than morning." },
+      { eyebrow: "The problem",
+        headline: "By the time you'd have fixed it, nobody cares.",
+        body: "A party photo posted a week late is a photo nobody engages with." },
+      { eyebrow: "Step 1",
+        headline: "Send the photo in the chat.",
+        body: "No app to download, no account to make, no file sizes to worry about." },
+      { eyebrow: "Step 2",
+        headline: "Pay in the same chat.",
+        body: "One link, ₦1,000 a photo, however many you send at once." },
+      { eyebrow: "Step 3",
+        headline: "It comes back to the same conversation.",
+        body: "Usually within the hour. By morning at the very worst." },
+      cta("LIGHT", "Send me tonight's photo before you sleep."),
     ],
     caption:
-      "Send the photo tonight and it comes back before breakfast — usually much sooner.\n\n" +
-      "No app to download, no account to make. Send it in the chat, pay in the chat, get it back in the chat.\n\n" +
+      "Send a photo tonight and have it back by morning even if you have no camera and no editing skills.\n\n" +
+      "A party photo posted a week late is a photo nobody engages with.\n\n" +
+      "So: send it in the chat, pay in the chat, get it back in the chat. No app to download, no account to make. Usually within the hour, by morning at the very worst.\n\n" +
       "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #aluxart",
   },
   {
@@ -692,13 +1135,23 @@ export const PLAN = [
     title: "December — a set for the new year",
     photos: "One photo and the ten-image set it produced",
     cards: [
-      { headline: "One photo now. A full set for January.", body: "New profile, new company page, new everything." },
-      { headline: "Ten images, ten setups.", body: "The same face throughout." },
-      cta("SHOOT"),
+      { headline: "Get a Full Set of New Year Photos in One Day Even Without a Studio, a Stylist or a Day Off",
+        body: "One photo now. Ten images ready for January." },
+      { eyebrow: "The problem",
+        headline: "Everybody updates their profile in January.",
+        body: "Most people use a cropped photo from a party, because there is nothing else on the phone." },
+      { eyebrow: "What you do now",
+        headline: "Send one photo this week.",
+        body: "While you are off work and actually have five minutes." },
+      { eyebrow: "What you have in January",
+        headline: "Ten images, ten setups.",
+        body: "Profile, company page, LinkedIn, WhatsApp. The same face in all of them." },
+      cta("SHOOT", "Send me one photo before the year ends."),
     ],
     caption:
-      "Everybody updates their profile in January. Most people use a photo from a party.\n\n" +
-      "Send one photo now and have a full set ready — ten images, different poses and lighting, same face.\n\n" +
+      "Get a full set of New Year photos in one day even without a studio, a stylist or a day off.\n\n" +
+      "Everybody updates their profile in January, and most people use a cropped photo from a party because there is nothing else on the phone.\n\n" +
+      "Send one photo this week, while you are off work, and have the full set ready: ten images, different poses and lighting, the same face throughout.\n\n" +
       "💬 Comment SHOOT and I'll send you the link.\n\n#newyear #headshots #aluxart",
   },
   {
@@ -706,12 +1159,19 @@ export const PLAN = [
     title: "The year in before and afters",
     photos: "A grid of the year's strongest before/after pairs",
     cards: [
-      { headline: "A year of photos nobody was going to keep.", body: "All of them, kept." },
-      { headline: "Yours can be next.", body: PRICE },
-      cta("LIGHT"),
+      { headline: "Rescue the Photo You Were About to Delete Without Ever Taking It Again",
+        body: "A year of photographs nobody was going to keep. All of them, kept." },
+      { eyebrow: "Every one of these",
+        headline: "Was nearly deleted.",
+        body: "Too dark, too orange, too flat. Not one of them was actually beyond saving." },
+      { eyebrow: "What it costs",
+        headline: "Yours can be next.",
+        body: PRICE },
+      cta("LIGHT", "Send me the one you were about to delete."),
     ],
     caption:
-      "A year of photographs that were nearly deleted.\n\n" +
+      "Rescue the photo you were about to delete without ever taking it again.\n\n" +
+      "A year of photographs that were nearly deleted. Too dark, too orange, too flat — and not one of them beyond saving.\n\n" +
       "Send me the one you were about to delete.\n\n₦1,000 for one photo.\n\n" +
       "💬 Comment LIGHT and I'll send you the link.\n\n#aluxart",
   },

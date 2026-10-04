@@ -158,34 +158,61 @@ export async function photoCard({ file, pill }) {
   return sharp(photo).composite([{ input: overlay }]).jpeg({ quality: 92 }).toBuffer();
 }
 
-/** Before and after side by side, for the slide that names the problem. */
+/**
+ * Before and after side by side, carrying the cover headline.
+ *
+ * This card holds a Sabri Suby title, which runs to five and six lines where
+ * the old hooks ran to two. So the headline is laid out first and the
+ * photographs take whatever height is left, never the other way round: with a
+ * fixed photo height, 43 of the 44 covers pushed the pair past the bottom edge
+ * of the card, the worst by 145px.
+ *
+ * Two bounds keep that from coming back however long a future headline is.
+ * HEAD_MAX caps what the type may take, shrinking it to fit rather than growing
+ * the block; and the photo height is clamped to the gap above the footer.
+ */
 export async function pairCard({ before, after, headline, body, index, total, site }) {
   const m = 90;
+  const FOOT = 150;        // keep-out strip for the site and the page number
+  const HEAD_TOP = 230;    // first baseline, just under the mint rule
+  const HEAD_MAX = 520;    // the headline may not take more of the card than this
+
+  const lines = wrap(headline, 11.5);
+  let size = Math.min(Math.round((W - m * 2) / Math.max(...lines.map(widthEm), 0.1)), 96);
+  let lead = Math.round(size * 1.08);
+  if (lines.length * lead > HEAD_MAX) {
+    lead = Math.floor(HEAD_MAX / lines.length);
+    size = Math.round(lead / 1.08);
+  }
+
+  const lastBaseline = HEAD_TOP + (lines.length - 1) * lead;
+  const textBottom = lastBaseline + (body ? 74 : 40);
+
   const gw = Math.round((W - m * 2 - 16) / 2);
-  const gh = Math.round(gw * 1.25);
+  const gh = Math.min(Math.round(gw * 1.25), H - FOOT - (textBottom + 30));
+  // Sit the pair against the footer when the headline is short, so a short
+  // cover reads as composed rather than top-heavy with a hole underneath.
+  const imgTop = Math.max(textBottom + 30, H - FOOT - gh);
+
   const [b, a] = await Promise.all([
     sharp(before).rotate().resize(gw, gh, { fit: "cover" }).toBuffer(),
     sharp(after).rotate().resize(gw, gh, { fit: "cover" }).toBuffer(),
   ]);
 
-  const lines = wrap(headline, 11.5);
-  const size = Math.min(Math.round((W - m * 2) / Math.max(...lines.map(widthEm), 0.1)), 96);
-  const lead = Math.round(size * 1.08);
   let svg = chrome({ index, total, site });
-  svg += `<rect x="${m}" y="150" width="64" height="4" fill="${MINT}"/>`;
+  svg += `<rect x="${m}" y="${HEAD_TOP - 80}" width="64" height="4" fill="${MINT}"/>`;
   lines.forEach((l, i) => {
-    svg += `<text x="${m}" y="${300 + i * lead}" font-family="${FONT}" font-size="${size}"
+    svg += `<text x="${m}" y="${HEAD_TOP + i * lead}" font-family="${FONT}" font-size="${size}"
       font-weight="800" fill="${PAPER}" letter-spacing="-0.02em">${esc(l)}</text>`;
   });
-  const top = 300 + lines.length * lead + 40;
   if (body) {
-    svg += `<text x="${m}" y="${top - 6}" font-family="${FONT}" font-size="30" fill="${MUTED}">${esc(body)}</text>`;
+    svg += `<text x="${m}" y="${lastBaseline + 58}" font-family="${FONT}" font-size="30" fill="${MUTED}">${esc(body)}</text>`;
   }
 
   return sharp(Buffer.from(`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`))
     .composite([
-      { input: b, left: m, top: top + 20 },
-      { input: a, left: m + gw + 16, top: top + 20 },
+      { input: b, left: m, top: imgTop },
+      { input: a, left: m + gw + 16, top: imgTop },
     ])
     .jpeg({ quality: 92 }).toBuffer();
 }
