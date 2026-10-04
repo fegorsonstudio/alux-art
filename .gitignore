@@ -91,3 +91,6 @@ qa-screenshots/
 
 # Carousel Studio keeps the owner's posts and photographs locally.
 tools/carousel/data/
+
+# The launcher holds the server secret. Never commit it.
+tools/carousel/start-carousel.cmd
