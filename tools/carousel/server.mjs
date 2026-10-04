@@ -20,6 +20,7 @@ import { existsSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { textCard, photoCard, pairCard } from "./slides.mjs";
+import { PLAN, scheduleFor } from "./plan.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA = join(HERE, "data");
@@ -55,6 +56,17 @@ const readBody = (req) => new Promise((resolve, reject) => {
   });
   req.on("error", reject);
 });
+
+/**
+ * A date in the shape the date box in the page uses: local wall-clock time, no
+ * zone. Lagos is UTC+1 all year, and the server that publishes reads these the
+ * same way, so an ISO string with a Z on it would silently move every post an
+ * hour earlier.
+ */
+const localStamp = (d) => {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 
 const dataUrlToBuffer = (s) => {
   const m = /^data:[^;]+;base64,(.+)$/.exec(String(s ?? ""));
@@ -127,14 +139,25 @@ const routes = {
     }
     await writeFile(join(dir, "post.json"),
       JSON.stringify({ ...post, beforeImage: sources.beforeImage ?? null,
-                       afterImage: sources.afterImage ?? null }, null, 2));
+                       afterImage: sources.afterImage ?? null,
+                       // Once a post has been saved by hand, its date is the
+                       // owner's and a later re-import of the plan leaves it
+                       // alone.
+                       scheduledForEdited: Boolean(post.scheduledFor) }, null, 2));
 
     const queue = await loadQueue();
     const row = {
       id, title: post.title, scheduledFor: post.scheduledFor || null,
       account: post.account || "fegorson_studio",
       slides: slides.length, caption: post.caption ?? "",
-      status: "draft", folder: dir, createdAt: new Date().toISOString(),
+      // A post with no photographs is not ready, however finished the words
+      // are: slide one is the thumbnail, and a text card there is the
+      // difference between 20,907 people and 102. Saying so in the queue is
+      // how the owner can see at a glance which of the twelve weeks still
+      // needs pictures.
+      status: (sources.beforeImage && sources.afterImage) ? "draft" : "needs-photos",
+      photos: post.photos ?? null,
+      folder: dir, createdAt: new Date().toISOString(),
     };
     const at = queue.findIndex((q) => q.id === id);
     if (at >= 0) queue[at] = { ...queue[at], ...row }; else queue.push(row);
@@ -144,6 +167,73 @@ const routes = {
 
   async "GET /api/queue"(_req, res) {
     json(res, 200, { queue: await loadQueue() });
+  },
+
+  /**
+   * Load the twelve weeks of written posts into the queue as drafts.
+   *
+   * The words come from plan.mjs; the photographs do not exist yet and cannot,
+   * because they are the owner's own before-and-afters. So each post lands with
+   * its cards, its caption and its date already set, and sits at
+   * `needs-photos` until two pictures are dropped on it.
+   *
+   * Safe to run more than once. Each post keeps a fixed id, so a second import
+   * refreshes the words in place instead of making a second copy of every
+   * post — and it deliberately never overwrites photographs that have already
+   * been attached, which is what makes it safe to re-run after an edit.
+   */
+  async "POST /api/import"(req, res) {
+    const { startMonday, account } = await readBody(req);
+    const start = new Date(`${startMonday}T00:00:00`);
+    if (Number.isNaN(start.getTime())) return json(res, 400, { error: "Pick the Monday the plan should start on." });
+
+    const queue = await loadQueue();
+    let added = 0, refreshed = 0;
+
+    for (const p of PLAN) {
+      const id = `plan-${p.id}`;
+      const dir = join(OUT, id);
+      await mkdir(dir, { recursive: true });
+
+      const existing = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "null"));
+      const when = scheduleFor(start, p.week, p.slot);
+
+      const post = {
+        id, title: `${p.id.toUpperCase()} ${p.title}`,
+        account: account || existing?.account || "fegorson_studio",
+        cards: p.cards,
+        caption: p.caption,
+        buttonText: existing?.buttonText ?? "aluxartandframes.shop",
+        // The date is recomputed on every import so moving the start Monday
+        // moves the whole plan, and a post whose date was changed by hand in
+        // the app keeps that change.
+        scheduledFor: existing?.scheduledForEdited ? existing.scheduledFor : localStamp(when),
+        // Kept so the app can tell the owner which photographs this one wants.
+        photos: p.photos, product: p.product, trigger: p.trigger,
+        week: p.week, slot: p.slot,
+        // Never clobber pictures already attached.
+        beforeImage: existing?.beforeImage ?? null,
+        afterImage: existing?.afterImage ?? null,
+      };
+      await writeFile(join(dir, "post.json"), JSON.stringify(post, null, 2));
+      await writeFile(join(dir, "caption.txt"), post.caption);
+
+      const row = {
+        id, title: post.title, scheduledFor: post.scheduledFor,
+        account: post.account, caption: post.caption,
+        slides: 0, status: "needs-photos", photos: p.photos,
+        folder: dir, createdAt: new Date().toISOString(),
+      };
+      const at = queue.findIndex((q) => q.id === id);
+      if (at >= 0) {
+        // An already-finished post keeps its rendered slide count and status.
+        queue[at] = { ...queue[at], ...row, slides: queue[at].slides || 0, status: queue[at].status };
+        refreshed++;
+      } else { queue.push(row); added++; }
+    }
+
+    await saveQueue(queue);
+    json(res, 200, { added, refreshed, total: PLAN.length });
   },
 
   async "POST /api/open"(req, res) {
@@ -176,6 +266,14 @@ const routes = {
     const row = queue.find((q) => q.id === String(id));
     if (!row) return json(res, 404, { error: "Not in the queue." });
     if (!row.scheduledFor) return json(res, 400, { error: "Set a date and time first." });
+    // An imported post has a folder and a date before it has a single slide in
+    // it, so without this the server would happily accept a carousel of
+    // nothing.
+    if (!row.slides) {
+      return json(res, 400, {
+        error: "This one has no slides yet — add the before and after photos, then press Save.",
+      });
+    }
 
     const site = process.env.CAROUSEL_SITE ?? "https://aluxartandframes.shop";
     const secret = process.env.INTERNAL_API_SECRET;

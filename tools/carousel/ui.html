@@ -64,6 +64,12 @@
   th { color: var(--mint); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
   .pill { font-size: .7rem; padding: 2px 9px; border-radius: 999px; background: rgba(255,255,255,.08); }
   .pill.scheduled { background: rgba(67,204,178,.2); color: var(--mint); }
+  .pill.needs-photos { background: rgba(233,162,59,.18); color: var(--warn); }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: rgba(67,204,178,.07); }
+  tbody tr.on { background: rgba(67,204,178,.12); }
+  input[type=date] { width: 100%; padding: 10px 12px; border-radius: 8px; font: inherit;
+    background: rgba(255,255,255,.05); color: var(--paper); border: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -83,6 +89,11 @@
       <option value="aluxartandframes">@aluxartandframes</option>
       <option value="aolivetv">@aolivetv</option>
     </select>
+
+    <div id="wants" class="card" style="display:none">
+      <h3>Photos this post needs</h3>
+      <div id="wantsText"></div>
+    </div>
 
     <label>Before photo — this becomes slide 1</label>
     <div class="drop" id="dropBefore">Click or drop the phone photo here
@@ -119,8 +130,22 @@
     <label>Preview</label>
     <div class="slides" id="out"><span class="hint" style="color:var(--muted)">Nothing yet — press Preview.</span></div>
 
-    <label style="margin-top:26px">Queue</label>
-    <table id="queue"><thead><tr><th>Post</th><th>When</th><th>Slides</th><th>Status</th></tr></thead><tbody></tbody></table>
+    <label style="margin-top:26px">The three-month plan</label>
+    <div class="card">
+      <h3>Load all 44 posts as drafts</h3>
+      <div style="color:var(--muted);font-size:.84rem;margin-bottom:10px">
+        The words and the dates are already written. Each one lands here waiting
+        for its two photographs. Safe to press again later &mdash; it refreshes the
+        words and never touches photos you have already added.
+      </div>
+      <div class="row">
+        <input type="date" id="startMonday" style="max-width:190px">
+        <button class="ghost" id="import">Load the plan</button>
+      </div>
+    </div>
+
+    <label style="margin-top:26px">Queue <span class="hint" style="text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400">&mdash; click a row to open it</span></label>
+    <table id="queue"><thead><tr><th>When</th><th>Post</th><th>Slides</th><th>Status</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
 
@@ -197,7 +222,62 @@ const collect = () => ({
   beforeImage: state.beforeImage, afterImage: state.afterImage,
   cards: state.cards, buttonText: $("buttonText").value,
   caption: $("caption").value, scheduledFor: $("scheduledFor").value || null,
-  id: state.id || null,
+  id: state.id || null, photos: state.photos || null,
+});
+
+// ---- opening a post that is already in the queue ---------------------------
+function showDrop(key, dataUrl) {
+  const drop = $(key === "beforeImage" ? "dropBefore" : "dropAfter");
+  const file = $(key === "beforeImage" ? "fileBefore" : "fileAfter");
+  state[key] = dataUrl || null;
+  if (dataUrl) {
+    drop.classList.add("has");
+    drop.innerHTML = `${key === "beforeImage" ? "Before" : "After"} — click to change<img src="${dataUrl}">`;
+  } else {
+    drop.classList.remove("has");
+    drop.innerHTML = key === "beforeImage"
+      ? "Click or drop the phone photo here" : "Click or drop the finished photo here";
+  }
+  drop.appendChild(file);
+}
+
+async function openPost(id) {
+  say("Opening…");
+  try {
+    // Destructured under another name: `post` is the fetch helper above, and
+    // shadowing it here would break every later call in this function.
+    const { post: data } = await post("/api/open", { id });
+    state.id = data.id || id;
+    state.photos = data.photos || null;
+    state.cards = data.cards || [];
+    $("title").value = data.title || "";
+    $("account").value = data.account || "fegorson_studio";
+    $("buttonText").value = data.buttonText || "aluxartandframes.shop";
+    $("caption").value = data.caption || "";
+    $("scheduledFor").value = data.scheduledFor || "";
+    showDrop("beforeImage", data.beforeImage);
+    showDrop("afterImage", data.afterImage);
+    drawCards();
+    $("wants").style.display = state.photos ? "" : "none";
+    $("wantsText").textContent = state.photos || "";
+    $("out").innerHTML = `<span class="hint" style="color:var(--muted)">Add the two photos, then press Preview.</span>`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    say(`Opened <strong>${data.title || id}</strong>. ${
+      data.beforeImage && data.afterImage ? "Both photos are attached." : "It still needs its photos."}`);
+  } catch (e) { say(e.message, true); }
+}
+
+// ---- loading the twelve weeks ---------------------------------------------
+$("import").addEventListener("click", async () => {
+  const startMonday = $("startMonday").value;
+  if (!startMonday) return say("Pick the Monday you want the plan to start on.", true);
+  say("Loading the plan…");
+  try {
+    const r = await post("/api/import", { startMonday, account: $("account").value });
+    say(`${r.total} posts in the queue — ${r.added} new, ${r.refreshed} refreshed. ` +
+        `Click the first one and add its photos.`);
+    loadQueue();
+  } catch (e) { say(e.message, true); }
 });
 
 async function post(path, body) {
@@ -240,14 +320,35 @@ $("schedule").addEventListener("click", async () => {
 async function loadQueue() {
   const r = await fetch("/api/queue").then((x) => x.json()).catch(() => ({ queue: [] }));
   const tb = $("queue").querySelector("tbody");
-  tb.innerHTML = (r.queue || []).slice().reverse().map((q) => `
-    <tr><td>${q.title || q.id}</td>
-    <td>${q.scheduledFor ? new Date(q.scheduledFor).toLocaleString() : "—"}</td>
-    <td>${q.slides}</td>
-    <td><span class="pill ${q.status}">${q.status}</span></td></tr>`).join("")
-    || `<tr><td colspan="4" style="color:var(--muted)">Nothing saved yet.</td></tr>`;
+  // Soonest first. Forty-four posts is a work list, and a work list is read in
+  // the order the work has to happen.
+  const rows = (r.queue || []).slice().sort((a, b) =>
+    String(a.scheduledFor ?? "9").localeCompare(String(b.scheduledFor ?? "9")));
+  const when = (s) => s
+    ? new Date(s).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+    : "—";
+  tb.innerHTML = rows.map((q) => `
+    <tr data-open="${q.id}" class="${q.id === state.id ? "on" : ""}">
+    <td style="white-space:nowrap">${when(q.scheduledFor)}</td>
+    <td>${q.title || q.id}</td>
+    <td>${q.slides || "—"}</td>
+    <td><span class="pill ${q.status}">${q.status === "needs-photos" ? "needs photos" : q.status}</span></td></tr>`).join("")
+    || `<tr><td colspan="4" style="color:var(--muted)">Nothing saved yet — load the plan above.</td></tr>`;
+  tb.querySelectorAll("[data-open]").forEach((tr) => {
+    tr.addEventListener("click", () => openPost(tr.dataset.open));
+  });
 }
 loadQueue();
+
+// The plan starts on a Monday, so offer the next one rather than today.
+{
+  const d = new Date();
+  d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+  // Built by hand rather than with toISOString, which converts to UTC and so
+  // hands back yesterday's date for anyone opening the app after midnight.
+  const p = (n) => String(n).padStart(2, "0");
+  $("startMonday").value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 </script>
 </body>
 </html>
