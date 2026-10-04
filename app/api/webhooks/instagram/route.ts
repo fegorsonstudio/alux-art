@@ -10,6 +10,7 @@ import {
   isGifCreateRequest, isGifSkip, askGifWords, armGifSession,
 } from "@/lib/instagram-gif";
 import { handleMention, mentionTooOld } from "@/lib/instagram-mentions";
+import { readConsentReply, recordConsent, withdrawAll, openAsk } from "@/lib/post-consent";
 import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { retouchPriceNgn } from "@/lib/retouch-pricing";
@@ -612,6 +613,40 @@ async function handleDirectMessage(
     return;
   }
 
+
+  // The answer to "may we show your photo on our page?".
+  //
+  // Checked before the batch question and before the look matchers, but only
+  // when an ask is actually open for this person — so none of these words mean
+  // anything different anywhere else in the conversation. "stop" is honoured
+  // whether or not an ask is open: somebody withdrawing permission should never
+  // have to find the right moment.
+  {
+    const reply = readConsentReply(text);
+    if (reply) {
+      const userId = session.user_id ?? await ensureUser(session).catch(() => null);
+      if (userId) {
+        if (reply === "withdrawn") {
+          const n = await withdrawAll(userId).catch(() => 0);
+          if (n > 0) {
+            await sendText(creds, senderId,
+              "Done \u2014 I've taken your photos out of everything we post. They stay yours only.");
+            return;
+          }
+        } else {
+          const shootId = await openAsk(userId).catch(() => null);
+          if (shootId) {
+            await recordConsent(shootId, reply).catch(() => {});
+            await sendText(creds, senderId, reply === "granted"
+              ? "Thank you \u2764\ufe0f I'll hold it for three weeks before it goes anywhere, so you get to post it first. " +
+                "Change your mind any time \u2014 just send *stop*."
+              : "Completely fine \u2014 it stays between us. Thanks for telling me.");
+            return;
+          }
+        }
+      }
+    }
+  }
 
   // The answer to "are these all the pictures you want relit?".
   //

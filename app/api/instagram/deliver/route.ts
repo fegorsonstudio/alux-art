@@ -10,6 +10,7 @@ import { instagramReadyCopy } from "@/lib/instagram-image";
 import { sendWithLinkFallback } from "@/lib/instagram-bot";
 import { RETOUCH_PRICE_PER_IMAGE_NGN } from "@/lib/retouch-pricing";
 import { gifPublishOffer } from "@/lib/instagram-gif";
+import { CONSENT_ASK, markAsked } from "@/lib/post-consent";
 
 /**
  * Sends finished shoots back into the Instagram chat that ordered them.
@@ -272,6 +273,22 @@ export async function GET(req: NextRequest) {
       `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
       `Instagram compresses pictures in chat. The full-size 4K file is waiting on ` +
       `aluxartandframes.shop under your shoots.` + upsell);
+
+    // Permission to show their result on our own page. Sent as its own message
+    // after the delivery and the retouch offer, so it is a question in its own
+    // right rather than a line at the bottom of a longer one.
+    //
+    // markAsked returns false when this shoot has been asked before, which is
+    // what stops a redelivery asking the same person twice about the same
+    // photographs.
+    try {
+      const first = await markAsked(r.shoot_id, r.user_id ?? null, "instagram");
+      if (first) await sendText(creds, to, CONSENT_ASK);
+    } catch (e) {
+      // Never fatal. A delivered shoot with no permission ask is a missed
+      // opportunity; a delivery that throws here is a customer with no photos.
+      console.warn("[ig deliver] consent ask failed:", (e as Error).message);
+    }
 
     await finish(r.session_id, r.shoot_id);
     delivered.push(r.shoot_id);
