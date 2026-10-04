@@ -22,6 +22,13 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { textCard, photoCard, pairCard } from "./slides.mjs";
 import { PLAN, scheduleFor } from "./plan.mjs";
+import { PLAN2 } from "./plan-newyear.mjs";
+
+// The twenty-two weeks as one list. Kept in two files because they were
+// written for two different seasons — plan.mjs runs to 20 December and
+// ends on Christmas; plan-newyear.mjs carries Boxing Day to Mothering
+// Sunday — but the queue and the importer only ever see one plan.
+const ALL = [...PLAN, ...PLAN2];
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA = join(HERE, "data");
@@ -191,7 +198,7 @@ const routes = {
     const queue = await loadQueue();
     let added = 0, refreshed = 0;
 
-    for (const p of PLAN) {
+    for (const p of ALL) {
       const id = `plan-${p.id}`;
       const dir = join(OUT, id);
       await mkdir(dir, { recursive: true });
@@ -234,7 +241,7 @@ const routes = {
     }
 
     await saveQueue(queue);
-    json(res, 200, { added, refreshed, total: PLAN.length });
+    json(res, 200, { added, refreshed, total: ALL.length });
   },
 
   async "POST /api/open"(req, res) {

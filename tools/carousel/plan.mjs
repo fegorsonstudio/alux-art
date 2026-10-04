@@ -42,12 +42,23 @@ export const TRIGGERS = {
 /** ₦1,000 a photo, said the same way every time so the price never looks invented. */
 const PRICE = "₦1,000 for one photo. No subscription — you pay only for the photos you actually fix.";
 
-/** Suby's final slide: a directive, not a summary. One action, one word. */
-const cta = (word, action) => ({
+/**
+ * Suby's final slide: a directive, not a summary. One action, one word.
+ *
+ * The price line is a parameter because it is not the same for every product.
+ * This card used to name ₦1,000 on every post, which quietly advertised a
+ * five-image shoot and a GIF at the price of a single relit photo. Only the
+ * per-photo products may carry PER_PHOTO; anything priced per package sends the
+ * reader to the link for the real figure rather than guessing on the slide.
+ */
+const PER_PHOTO = `One photo, ₦1,000, back the same day.`;
+const cta = (word, action, priceLine = PER_PHOTO) => ({
   eyebrow: "Do this now",
   headline: action,
-  body: `Comment ${word} and I'll send you the link. One photo, ₦1,000, back the same day.`,
+  body: `Comment ${word} and I'll send you the link. ${priceLine}`,
 });
+/** For packages whose price depends on how many images you choose. */
+const SEE_PRICES = "The link has the packages and what each one costs.";
 
 export const PLAN = [
   // ───────────────────────── MONTH 1 — rebuild the habit ─────────────────────
@@ -244,7 +255,7 @@ export const PLAN = [
       { eyebrow: "Way 4",
         headline: "It costs you once.",
         body: "Made in a chat in about two minutes. Send the pictures, type the words, post it." },
-      cta("GIF", "Send me two pictures and your tagline."),
+      cta("GIF", "Send me two pictures and your tagline.", SEE_PRICES),
     ],
     caption:
       "4 ways to advertise your business all year without paying for a single ad.\n\n" +
@@ -349,7 +360,7 @@ export const PLAN = [
       { eyebrow: "You choose the look",
         headline: "Portrait, editorial or corporate.",
         body: "The archive holds 197 lighting styles. Your identity is locked to your photo, never a lookalike." },
-      cta("SHOOT", "Send me one photo of yourself."),
+      cta("SHOOT", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Get a full photoshoot in one day even if you've never set foot in a studio.\n\n" +
@@ -656,7 +667,7 @@ export const PLAN = [
       { eyebrow: "What it costs",
         headline: "Once. Then never again.",
         body: "Made in a chat, in about two minutes." },
-      cta("GIF", "Send me two pictures and your tagline."),
+      cta("GIF", "Send me two pictures and your tagline.", SEE_PRICES),
     ],
     caption:
       "Get other people to advertise your business for you without paying any of them.\n\n" +
@@ -751,7 +762,7 @@ export const PLAN = [
       { eyebrow: "What comes back",
         headline: "Ten images, ten setups.",
         body: "Different poses, framing and lighting. The same face in every one of them." },
-      cta("SHOOT", "Send me one photo of yourself."),
+      cta("SHOOT", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Get ten studio images in one day without a deposit, a day off or a drive across Lagos.\n\n" +
@@ -951,7 +962,7 @@ export const PLAN = [
       { eyebrow: "What you send",
         headline: "Your pictures and your words.",
         body: "Up to six scenes, your tags, your website on the last frame." },
-      cta("GIF", "Send me two pictures before the rush."),
+      cta("GIF", "Send me two pictures before the rush.", SEE_PRICES),
     ],
     caption:
       "Be the advert people share this December without paying for a single impression.\n\n" +
@@ -1146,7 +1157,7 @@ export const PLAN = [
       { eyebrow: "What you have in January",
         headline: "Ten images, ten setups.",
         body: "Profile, company page, LinkedIn, WhatsApp. The same face in all of them." },
-      cta("SHOOT", "Send me one photo before the year ends."),
+      cta("SHOOT", "Send me one photo before the year ends.", SEE_PRICES),
     ],
     caption:
       "Get a full set of New Year photos in one day even without a studio, a stylist or a day off.\n\n" +
