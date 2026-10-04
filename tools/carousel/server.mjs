@@ -19,6 +19,7 @@ import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
 import { textCard, photoCard, pairCard } from "./slides.mjs";
 import { PLAN, scheduleFor } from "./plan.mjs";
 
@@ -310,7 +311,7 @@ const routes = {
   },
 };
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   const key = `${req.method} ${req.url.split("?")[0]}`;
   try {
     if (routes[key]) return await routes[key](req, res);
@@ -324,8 +325,44 @@ createServer(async (req, res) => {
     console.error(e);
     json(res, 500, { error: String(e).slice(0, 300) });
   }
-}).listen(PORT, () => {
-  console.log(`\n  Carousel studio  ->  http://localhost:${PORT}`);
+});
+
+/**
+ * The browser is opened from here, once the port is actually accepting.
+ *
+ * The launcher used to open it on the line before it started Node, so the
+ * browser always arrived a second or two early and showed "this site can't be
+ * reached" — which looks exactly like a broken app. Opening it from the listen
+ * callback cannot lose that race.
+ */
+function openBrowser(url) {
+  if (process.env.CAROUSEL_NO_OPEN) return;
+  const [cmd, args] = process.platform === "win32"
+    ? ["cmd", ["/c", "start", "", url]]
+    : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
+  try { spawn(cmd, args, { detached: true, stdio: "ignore" }).unref(); }
+  catch { /* no browser is not a reason to stop the server */ }
+}
+
+server.on("error", (e) => {
+  // Said in words rather than as a stack trace: the person reading this window
+  // is the owner of the business, not a developer, and the fix is one sentence.
+  if (e.code === "EADDRINUSE") {
+    console.error(`\n  Carousel Studio is ALREADY RUNNING on port ${PORT}.`);
+    console.error(`\n  Open it here:  http://localhost:${PORT}`);
+    console.error(`\n  If that page does not work, close the other black Carousel`);
+    console.error(`  window that is still open, then start this one again.\n`);
+  } else {
+    console.error(`\n  Could not start: ${e.message}\n`);
+  }
+  process.exit(1);
+});
+
+server.listen(PORT, () => {
+  const url = `http://localhost:${PORT}`;
+  console.log(`\n  Carousel studio  ->  ${url}`);
   console.log(`  Posts are saved in  ${OUT}`);
-  console.log(`  ${process.env.INTERNAL_API_SECRET ? "Scheduling to the server is ON" : "Scheduling is OFF (no INTERNAL_API_SECRET) — Save still works"}\n`);
+  console.log(`  ${process.env.INTERNAL_API_SECRET ? "Scheduling to the server is ON" : "Scheduling is OFF (no INTERNAL_API_SECRET) — Save still works"}`);
+  console.log(`\n  Opening your browser. Leave this window open while you work.\n`);
+  openBrowser(url);
 });
