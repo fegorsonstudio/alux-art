@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readFile } from "node:fs/promises";
 import sql from "@/lib/db";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import { tellAdmin } from "@/lib/telegram";
@@ -26,16 +27,71 @@ type Row = {
   slide_paths: string[]; attempts: number; scheduled_for: Date;
 };
 
+/** Where scripts/instagram-refresh.mjs keeps the tokens it renews every week. */
+const TOKEN_STORE = `${process.env.INSTAGRAM_DATA_DIR || "/home/aluxart/instagram-data"}/tokens.json`;
+
+/**
+ * The first credentials for this account that Instagram actually accepts.
+ *
+ * The renewed token comes first. This used to read .env.local only — the token
+ * pasted in by hand, which nothing renews and Instagram expires after 60 days —
+ * while the weekly refresh job kept a living one in tokens.json that this route
+ * never looked at. And the renewed one comes first but is not trusted blindly:
+ * a password change killed @fegorson_studio's stored token while the hand-pasted
+ * one still worked, so each candidate is checked with one read-only call and
+ * the first that answers wins.
+ */
+async function credsFor(handle: string): Promise<{ token: string; id: string } | null> {
+  const candidates: { token: string; id: string }[] = [];
+  try {
+    const stored = JSON.parse(await readFile(TOKEN_STORE, "utf8"))?.[handle];
+    if (stored?.token && stored?.id) candidates.push({ token: stored.token, id: stored.id });
+  } catch { /* no store on this machine: the environment is all there is */ }
+  const key = handle.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+  const envToken = process.env[`IG_${key}_TOKEN`];
+  const envId = process.env[`IG_${key}_ID`];
+  if (envToken && envId && !candidates.some((c) => c.token === envToken)) {
+    candidates.push({ token: envToken, id: envId });
+  }
+  for (const c of candidates) {
+    const ok = await fetch(`${GRAPH}/me?fields=id&access_token=${encodeURIComponent(c.token)}`)
+      .then((r) => r.json()).then((j) => Boolean(j?.id)).catch(() => false);
+    if (ok) return c;
+  }
+  return null;
+}
+
+/** Longer than any real publish takes; past this a run has died mid-flight. */
+const STUCK_MINUTES = 15;
+
 export async function GET(request: NextRequest) {
   if (!process.env.INTERNAL_API_SECRET ||
       request.headers.get("x-internal-secret") !== process.env.INTERNAL_API_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // A post left at `publishing` belongs to a run that died part-way. It may
+  // already be on the feed — the run can die after Instagram published it and
+  // before this table heard — so it is NEVER retried automatically. A human
+  // looks at the account and decides; a duplicate cannot be taken back.
+  const stuck = await sql<{ id: string; ig_account: string; scheduled_for: Date }[]>`
+    UPDATE scheduled_carousels
+    SET status = 'failed', updated_at = NOW(),
+        last_error = 'Interrupted while publishing. Check Instagram before sending it again: it may already be up.'
+    WHERE status = 'publishing' AND updated_at < NOW() - make_interval(mins => ${STUCK_MINUTES})
+    RETURNING id, ig_account, scheduled_for`;
+  for (const s of stuck) {
+    await tellAdmin(
+      `⚠️ A carousel was interrupted while publishing\n\n` +
+      `Account: @${s.ig_account}\nDue: ${s.scheduled_for.toISOString()}\n\n` +
+      `It may or may not be on Instagram. Check the account before sending it again.`
+    ).catch(() => {});
+  }
+
   const due = await sql<Row[]>`
     SELECT id, ig_account, caption, slide_paths, attempts, scheduled_for
     FROM scheduled_carousels
-    WHERE status IN ('queued', 'publishing')
+    WHERE status = 'queued'
       AND scheduled_for <= NOW()
       AND attempts < ${MAX_ATTEMPTS}
     ORDER BY scheduled_for
@@ -45,17 +101,19 @@ export async function GET(request: NextRequest) {
   const failed: string[] = [];
 
   for (const post of due) {
-    // Claimed before any network call, so two overlapping runs cannot both
-    // publish the same carousel. A double post cannot be undone.
+    // Claimed before any network call, and only from `queued`: a row another
+    // run has already moved to `publishing` is that run's, and matching it here
+    // too is exactly how two overlapping runs would both publish it.
     const claimed = await sql`
       UPDATE scheduled_carousels
       SET status = 'publishing', attempts = attempts + 1, updated_at = NOW()
-      WHERE id = ${post.id} AND status IN ('queued', 'publishing')
+      WHERE id = ${post.id} AND status = 'queued'
       RETURNING id`;
     if (claimed.length === 0) continue;
 
-    const token = process.env[`IG_${post.ig_account.toUpperCase()}_TOKEN`];
-    const igUserId = process.env[`IG_${post.ig_account.toUpperCase()}_ID`];
+    const creds = await credsFor(post.ig_account);
+    const token = creds?.token;
+    const igUserId = creds?.id;
     const fail = async (why: string) => {
       const over = post.attempts + 1 >= MAX_ATTEMPTS;
       await sql`UPDATE scheduled_carousels
@@ -72,7 +130,10 @@ export async function GET(request: NextRequest) {
       failed.push(post.id);
     };
 
-    if (!token || !igUserId) { await fail(`No token or id for @${post.ig_account}`); continue; }
+    if (!token || !igUserId) {
+      await fail(`No working token for @${post.ig_account}: neither the renewed one nor the one in .env.local was accepted`);
+      continue;
+    }
 
     try {
       // 1 — one container per slide. is_carousel_item keeps them out of the feed

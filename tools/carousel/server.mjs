@@ -71,10 +71,29 @@ const readBody = (req) => new Promise((resolve, reject) => {
 });
 
 /**
+ * A rendered slide, and nothing else in a post's folder: 01.jpg to 99.jpg.
+ *
+ * The folder also holds source-before.jpg and source-after.jpg — the
+ * originals — and a filter on ".jpg" alone sent them to Instagram as two extra
+ * slides at the end of the carousel.
+ */
+const SLIDE_FILE = /^\d{2}\.jpg$/;
+
+/**
+ * A post's time as an exact instant, in Lagos time.
+ *
+ * The app stores wall-clock times without a zone ("2026-10-05T19:00"), and the
+ * server that publishes runs on UTC — so a time sent bare was read as 19:00
+ * UTC, which is 20:00 in Lagos, and every post would have gone out an hour
+ * late. Lagos is UTC+1 all year, with no daylight saving to get wrong.
+ */
+const lagosInstant = (s) =>
+  /([zZ]|[+-]\d\d:\d\d)$/.test(String(s)) ? String(s) : `${String(s).slice(0, 16)}:00+01:00`;
+
+/**
  * A date in the shape the date box in the page uses: local wall-clock time, no
- * zone. Lagos is UTC+1 all year, and the server that publishes reads these the
- * same way, so an ISO string with a Z on it would silently move every post an
- * hour earlier.
+ * zone. Lagos is UTC+1 all year; lagosInstant() adds the zone at the one point
+ * a time leaves this laptop.
  */
 const localStamp = (d) => {
   const p = (n) => String(n).padStart(2, "0");
@@ -136,6 +155,12 @@ const routes = {
     const id = post.id || `${Date.now()}`;
     const dir = join(OUT, id);
     await mkdir(dir, { recursive: true });
+    // Clear the previous render first. A post re-saved with fewer slides left
+    // its old 08.jpg behind, and the scheduler sends every numbered slide in the
+    // folder — so a cut slide would still have gone out on Instagram.
+    for (const f of await readdir(dir)) {
+      if (SLIDE_FILE.test(f)) await rm(join(dir, f), { force: true });
+    }
     for (let i = 0; i < slides.length; i++) {
       await writeFile(join(dir, `${String(i + 1).padStart(2, "0")}.jpg`), slides[i]);
     }
@@ -325,7 +350,7 @@ const routes = {
     const { id } = await readBody(req);
     const dir = join(OUT, String(id));
     if (!existsSync(dir)) return json(res, 404, { error: "Not found" });
-    const files = (await readdir(dir)).filter((f) => extname(f) === ".jpg").sort();
+    const files = (await readdir(dir)).filter((f) => SLIDE_FILE.test(f)).sort();
     const post = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "{}"));
     // Turn the stored file names back into something the page can display.
     for (const key of ["beforeImage", "afterImage"]) {
@@ -354,7 +379,7 @@ const routes = {
     // The server publishes anything whose time has come on its next run, so a
     // post sent with a date already behind it goes out within minutes. That is
     // never what "schedule" means.
-    if (new Date(row.scheduledFor).getTime() < Date.now()) {
+    if (new Date(lagosInstant(row.scheduledFor)).getTime() < Date.now()) {
       return json(res, 400, {
         error: "This post's date has already passed, so the server would publish it the moment it arrived. " +
                "Give it a new date, press Save, then schedule it.",
@@ -378,7 +403,7 @@ const routes = {
       });
     }
 
-    const files = (await readdir(dir)).filter((f) => extname(f) === ".jpg").sort();
+    const files = (await readdir(dir)).filter((f) => SLIDE_FILE.test(f)).sort();
     const images = [];
     for (const f of files) images.push((await readFile(join(dir, f))).toString("base64"));
 
@@ -388,7 +413,7 @@ const routes = {
         headers: { "Content-Type": "application/json", "x-internal-secret": secret },
         body: JSON.stringify({
           localId: row.id, account: row.account, caption: row.caption,
-          scheduledFor: row.scheduledFor, images,
+          scheduledFor: lagosInstant(row.scheduledFor), images,
         }),
       });
       const body = await r.json().catch(() => ({}));
