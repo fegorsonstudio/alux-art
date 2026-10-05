@@ -71,6 +71,19 @@ BOOK keyword. Owner reviews posts at
 https://claude.ai/artifact/R93UHmFzGM5QBnrF7JwaQW (decisions stored in its
 `reviews` collection).
 
+**Update (2026-10-06): story GIFs + publisher fixes; a live refund bug awaits OK.**
+Every draft has a story GIF (`tools/carousel/gif-scripts.mjs`, made by
+`POST /api/carousel/gif`, table `carousel_gifs`; upload to GIPHY only with the
+consent tick, once per post). Publisher fixed: claims only `queued`, sets aside
+posts stuck mid-publish, uses the first working Instagram token (renewed
+`tokens.json` first); studio sends only `NN.jpg` slides and times as `+01:00`.
+**VPS `_migrations` stops at 051 — never run migrate-vps.mjs; `psql -f` new
+migrations.** **Open, needs owner OK:** `lib/generate.ts:2224` normalises package
+size to 1/5/10, so per-image orders refund the "shortfall" to wallets — ₦15,700
+across 8 fully delivered Gear Equalizer orders since 23 Aug. Full roadmap (story
+pictures for the 44 episodes, studio on the website, the two-tier customer product):
+`~/.claude/plans/i-am-building-an-polymorphic-koala.md`.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
