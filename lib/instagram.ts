@@ -1,4 +1,5 @@
 import "server-only";
+import { readFileSync } from "node:fs";
 
 /**
  * Sending into an Instagram DM.
@@ -25,18 +26,70 @@ export type IgSendResult =
 /** Instagram's own cap. Longer text is refused outright rather than trimmed. */
 export const IG_MAX_TEXT = 1000;
 
+/** Where scripts/instagram-refresh.mjs keeps the tokens it renews every week. */
+const TOKEN_STORE = `${process.env.INSTAGRAM_DATA_DIR || "/home/aluxart/instagram-data"}/tokens.json`;
+/** How often each account's working token is re-confirmed with Instagram. */
+const RECHECK_MS = 30 * 60_000;
+
+type StoredToken = { id?: string; token?: string };
+let store: { at: number; data: Record<string, StoredToken> } | null = null;
+/** Per handle: the token Instagram last accepted, and when that was asked. */
+const verdicts = new Map<string, { token: string | null; at: number }>();
+
+function storedToken(handle: string, accountId: string): string | null {
+  if (!store || Date.now() - store.at > 5 * 60_000) {
+    try {
+      store = { at: Date.now(), data: JSON.parse(readFileSync(TOKEN_STORE, "utf8")) };
+    } catch {
+      store = { at: Date.now(), data: {} };
+    }
+  }
+  const s = store.data[handle];
+  return s?.token && s.id === accountId ? s.token : null;
+}
+
+/** Ask Instagram, read-only, which candidate it accepts; remember the answer. */
+async function recheck(handle: string, candidates: string[]): Promise<void> {
+  for (const token of candidates) {
+    const ok = await fetch(`${GRAPH}/me?fields=id&access_token=${encodeURIComponent(token)}`)
+      .then((r) => r.json()).then((j) => Boolean(j?.id)).catch(() => false);
+    if (ok) { verdicts.set(handle, { token, at: Date.now() }); return; }
+  }
+  verdicts.set(handle, { token: null, at: Date.now() });
+}
+
 /**
  * Credentials for one of our connected accounts, by its Instagram user id.
  *
- * Reads the same IG_<HANDLE>_ID / IG_<HANDLE>_TOKEN pairs the comment webhook
- * already uses, so there is one place to add an account and it stays in .env.
+ * Two places hold a token for each account. .env.local has whatever was pasted
+ * in by hand, which nothing renews and Instagram expires after 60 days. The
+ * weekly refresh job keeps a renewed one in tokens.json. This used to read only
+ * the first, so the bot was always counting down to a cliff the refresh job
+ * was quietly avoiding next door.
+ *
+ * Neither is trusted blindly: a Facebook password change killed
+ * @fegorson_studio's stored token while the pasted one still worked. So the
+ * token Instagram last ACCEPTED wins, re-confirmed in the background every
+ * half hour, renewed one tried first. This stays synchronous — every caller
+ * reads it inline — and before the first check returns it answers as it always
+ * did, with the stored token or else the environment's.
  */
 export function credsForAccount(igAccountId: string): IgCreds | null {
   for (const handle of (process.env.IG_ACCOUNTS ?? "").split(",").map(s => s.trim()).filter(Boolean)) {
     const key = handle.toUpperCase().replace(/[^A-Z0-9]/g, "_");
     if (process.env[`IG_${key}_ID`] === igAccountId) {
-      const token = process.env[`IG_${key}_TOKEN`];
-      return token ? { accountId: igAccountId, token } : null;
+      const candidates = [storedToken(handle, igAccountId), process.env[`IG_${key}_TOKEN`] ?? null]
+        .filter((t, i, all): t is string => !!t && all.indexOf(t) === i);
+      if (candidates.length === 0) return null;
+
+      const verdict = verdicts.get(handle);
+      if (!verdict || Date.now() - verdict.at > RECHECK_MS) {
+        // Claimed before the call so a burst of messages starts one check, not fifty.
+        verdicts.set(handle, { token: verdict?.token ?? null, at: Date.now() });
+        void recheck(handle, candidates);
+      }
+      const token = verdict?.token && candidates.includes(verdict.token) ? verdict.token : candidates[0];
+      return { accountId: igAccountId, token };
     }
   }
   return null;

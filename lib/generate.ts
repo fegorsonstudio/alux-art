@@ -2221,7 +2221,17 @@ export async function startGenerationWorker(
     return { done: true, completed: 1, failed: 0, remaining: 0, total: 1 };
   }
 
-  const total = normalizePackageSize(shoot.package_size);
+  // Per-image products — the Gear Equalizer and the Asset Extractor — are
+  // booked as exactly as many images as the buyer sent (two takes doubles the
+  // rows), never as a 1/5/10 package. Normalising their count turned a 2-photo
+  // order into a 10-image one, so on completion it looked 8 images short: the
+  // buyer was refunded most of what they paid and offered a free regeneration,
+  // on an order delivered in full — 8 orders and ₦15,700 by 2026-10-06. For
+  // these, the rows booked are the order.
+  const perImageOrder = shoot.category === "photo_upgrade" || shoot.category === "asset_extract";
+  const total = perImageOrder && shootImages.length > 0
+    ? shootImages.length
+    : normalizePackageSize(shoot.package_size);
   const hasQuote = !!(shoot.quote as { text?: string } | null)?.text && total === 10;
 
   // Gear Equalizer (photo_upgrade): each slot is an EDIT of the buyer's own
