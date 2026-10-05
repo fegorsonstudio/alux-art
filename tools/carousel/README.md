@@ -90,6 +90,30 @@ the upload stops at the first thing GIPHY refuses. For the GIFs to show up when
 people search in Instagram's comment GIF button, the GIPHY account has to be an
 approved Brand channel.
 
+## Story pictures (Photo Wahala episodes)
+
+Each episode has two story pictures, full-screen between its text slides
+(10 slides — Instagram's limit). The studio writes the prompts; you make the
+pictures in Google Flow, free.
+
+1. Open an episode. The **Story pictures** box shows its **cast**:
+   - the **real** person (the one in the before and after) — attach their own
+     photo in Flow, so the pictures show the same face;
+   - **invented** characters — press **Copy portrait prompt**, make the face
+     once in Flow, and keep it: attach it to every scene they appear in.
+2. Each picture has its own card: **Copy prompt**, paste into Flow
+   (Nano Banana, 3:4, 2K), attach the faces it lists, generate.
+3. Drop the downloaded picture **on that same card**. Never sort pictures
+   afterwards — guessing which download is which is how mistakes happen.
+4. **Preview** to see it in place, then **Save**.
+
+## Approving
+
+Nothing can be scheduled until it is approved. Press **Preview**, read every
+slide, then **Approve**. An episode can't be approved until both story pictures
+are in, and any save puts a post back to draft — what you approved is no longer
+what would be posted.
+
 ## Things worth knowing
 
 - **Instagram takes at most 10 slides.** The app refuses more rather than
