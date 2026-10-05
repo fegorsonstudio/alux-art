@@ -85,6 +85,49 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ id: row.id, slides: paths.length, scheduledFor: when.toISOString() });
 }
 
+/**
+ * Withdraw posts that have not gone out yet.
+ *
+ * The laptop app calls this when a whole batch is dropped — an experiment that
+ * did not work — so that "remove" means the posts stop, not merely that they
+ * vanish from a list while the server goes on publishing them.
+ *
+ * Only `queued` and `failed` rows are touched. A row at `publishing` has been
+ * claimed by a run that is already talking to Instagram; pulling it out from
+ * under that run cannot stop the post and can only leave the record wrong. And
+ * a published post cannot be withdrawn from here at all — Instagram's API has
+ * no delete for business media — so those come back in `live` for the owner to
+ * take down by hand, rather than being reported as gone.
+ *
+ * `cancelled` needs nothing from the publisher: it only ever selects and claims
+ * rows at `queued` or `publishing`, so a cancelled row is invisible to it.
+ */
+export async function DELETE(request: NextRequest) {
+  if (!process.env.INTERNAL_API_SECRET ||
+      request.headers.get("x-internal-secret") !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => null) as { localIds?: unknown } | null;
+  const ids = Array.isArray(body?.localIds)
+    ? body.localIds.filter((x): x is string => typeof x === "string" && x.length > 0).slice(0, 500)
+    : [];
+  if (ids.length === 0) return NextResponse.json({ error: "Name the posts to withdraw." }, { status: 400 });
+
+  const cancelled = await sql<{ local_id: string }[]>`
+    UPDATE scheduled_carousels SET status = 'cancelled', updated_at = NOW()
+    WHERE local_id = ANY(${ids}) AND status = ANY(${["queued", "failed"]})
+    RETURNING local_id`;
+  const live = await sql<{ local_id: string; status: string }[]>`
+    SELECT local_id, status FROM scheduled_carousels
+    WHERE local_id = ANY(${ids}) AND status = ANY(${["publishing", "published"]})`;
+
+  return NextResponse.json({
+    cancelled: cancelled.map((r) => r.local_id),
+    live: live.map((r) => ({ localId: r.local_id, status: r.status })),
+  });
+}
+
 /** What is queued, for the app's own list. */
 export async function GET(request: NextRequest) {
   if (!process.env.INTERNAL_API_SECRET ||

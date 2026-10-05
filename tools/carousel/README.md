@@ -57,6 +57,18 @@ a container per slide, a carousel container, then publish.
 Your laptop can be shut. If a post fails three times you get a Telegram
 message naming the reason; the slides are never lost.
 
+## The two batches
+
+- **Load the plan** brings in the main 88 posts on their fixed dates,
+  5 October to 7 March. The dates can't move as a block: the Christmas, New
+  Year, Valentine's and Mother's Day posts are written for those exact days.
+- **Load the experiment** brings in Photo Wahala, 44 microdrama episodes, from
+  whichever Monday you pick, at 1pm so they never clash with the 7pm posts.
+- **Remove the experiment** (click twice) deletes all 44 drafts and withdraws
+  any episode already sent to the server. If the server can't be reached it
+  removes nothing, rather than hide a post that would still go out. Episodes
+  already published are named so you can take them down on Instagram by hand.
+
 ## Things worth knowing
 
 - **Instagram takes at most 10 slides.** The app refuses more rather than
@@ -65,6 +77,9 @@ message naming the reason; the slides are never lost.
   before accepting, instead of failing quietly later.
 - **Re-sending the same post replaces it.** A duplicate row would be a
   duplicate on the feed, and that cannot be taken back.
+- **A post whose date has passed won't schedule.** The server publishes
+  anything due on its next run, so it would go out within minutes. Give it a
+  new date and Save first.
 - **The queue is a plain JSON file** at `tools/carousel/data/queue.json`. Open
   it, read it, back it up. No database to install or lose.
 - **`data/` is not in git.** Your posts and photographs stay on your machine.

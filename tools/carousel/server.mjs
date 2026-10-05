@@ -15,7 +15,7 @@
  * backed up by the person whose business it is.
  */
 import { createServer } from "node:http";
-import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,12 +23,17 @@ import { spawn } from "node:child_process";
 import { textCard, photoCard, pairCard } from "./slides.mjs";
 import { PLAN, scheduleFor } from "./plan.mjs";
 import { PLAN2 } from "./plan-newyear.mjs";
+// The microdrama experiment. Loaded and removed on its own buttons, never by
+// "Load the plan", so dropping it touches nothing in the main 88.
+import { PLAN3, BATCH as EXPERIMENT } from "./plan-microdrama.mjs";
 
 // The twenty-two weeks as one list. Kept in two files because they were
 // written for two different seasons — plan.mjs runs to 20 December and
 // ends on Christmas; plan-newyear.mjs carries Boxing Day to Mothering
 // Sunday — but the queue and the importer only ever see one plan.
 const ALL = [...PLAN, ...PLAN2];
+/** Week 1 of the main plan. Its dated posts are only right from here. */
+const MAIN_PLAN_START = "2026-10-05";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA = join(HERE, "data");
@@ -191,20 +196,34 @@ const routes = {
    * been attached, which is what makes it safe to re-run after an edit.
    */
   async "POST /api/import"(req, res) {
-    const { startMonday, account } = await readBody(req);
-    const start = new Date(`${startMonday}T00:00:00`);
-    if (Number.isNaN(start.getTime())) return json(res, 400, { error: "Pick the Monday the plan should start on." });
+    const { startMonday, account, batch } = await readBody(req);
+    // The main plan is a calendar, not a list. Its Christmas Day, New Year's
+    // Day, Valentine's and Mothering Sunday posts — and the weeks leading up to
+    // each — were written for the exact days they land on from 5 October, so a
+    // later start would post "Merry Christmas" on New Year's Day. Only the
+    // experiment, which has no holidays in it, takes a start date.
+    const start = new Date(`${batch === EXPERIMENT ? startMonday : MAIN_PLAN_START}T00:00:00`);
+    if (Number.isNaN(start.getTime())) return json(res, 400, { error: "Pick the Monday the experiment should start on." });
+    // The experiment's slides name the next episode's day ("Ep 2 on
+    // Wednesday"), which is only true when its week starts on a Monday.
+    if (batch === EXPERIMENT && start.getDay() !== 1) {
+      return json(res, 400, { error: "The experiment has to start on a Monday — its episodes say which day the next one comes out." });
+    }
 
+    const posts = batch === EXPERIMENT ? PLAN3 : ALL;
     const queue = await loadQueue();
     let added = 0, refreshed = 0;
 
-    for (const p of ALL) {
+    for (const p of posts) {
       const id = `plan-${p.id}`;
       const dir = join(OUT, id);
       await mkdir(dir, { recursive: true });
 
       const existing = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "null"));
       const when = scheduleFor(start, p.week, p.slot);
+      // The experiment posts at lunchtime, so it never lands on the main
+      // plan's 19:00 slot on the same day.
+      if (p.hour != null) when.setHours(p.hour, 0, 0, 0);
 
       const post = {
         id, title: `${p.id.toUpperCase()} ${p.title}`,
@@ -218,7 +237,7 @@ const routes = {
         scheduledFor: existing?.scheduledForEdited ? existing.scheduledFor : localStamp(when),
         // Kept so the app can tell the owner which photographs this one wants.
         photos: p.photos, product: p.product, trigger: p.trigger,
-        week: p.week, slot: p.slot,
+        week: p.week, slot: p.slot, batch: p.batch ?? "main",
         // Never clobber pictures already attached.
         beforeImage: existing?.beforeImage ?? null,
         afterImage: existing?.afterImage ?? null,
@@ -230,6 +249,7 @@ const routes = {
         id, title: post.title, scheduledFor: post.scheduledFor,
         account: post.account, caption: post.caption,
         slides: 0, status: "needs-photos", photos: p.photos,
+        batch: p.batch ?? "main",
         folder: dir, createdAt: new Date().toISOString(),
       };
       const at = queue.findIndex((q) => q.id === id);
@@ -241,7 +261,64 @@ const routes = {
     }
 
     await saveQueue(queue);
-    json(res, 200, { added, refreshed, total: ALL.length });
+    json(res, 200, { added, refreshed, total: posts.length });
+  },
+
+  /**
+   * Drop the microdrama experiment: every draft, every folder, and every
+   * episode already handed to the server.
+   *
+   * The server goes first. If an episode was already scheduled and the server
+   * cannot be told to withdraw it, NOTHING is removed here: a post that
+   * vanished from this list while it still went out on Instagram would be worse
+   * than a button that refused. Episodes the server reports as already
+   * published come back by name, because Instagram's API cannot delete them —
+   * those have to come down by hand.
+   *
+   * Identified by the batch tag, and by the `plan-m` id as a fallback, since a
+   * row saved before the tag existed would otherwise be left behind.
+   */
+  async "POST /api/remove-batch"(req, res) {
+    const { batch } = await readBody(req);
+    if (batch !== EXPERIMENT) return json(res, 400, { error: "Only the microdrama experiment can be removed this way." });
+
+    const queue = await loadQueue();
+    const isExperiment = (q) => q.batch === EXPERIMENT || /^plan-m\d+$/.test(String(q.id));
+    const mine = queue.filter(isExperiment);
+    if (mine.length === 0) return json(res, 200, { removed: 0, cancelled: 0, live: [] });
+
+    const sent = mine.filter((q) => q.status === "scheduled").map((q) => q.id);
+    let cancelled = [], live = [];
+    if (sent.length) {
+      const site = process.env.CAROUSEL_SITE ?? "https://aluxartandframes.shop";
+      const secret = process.env.INTERNAL_API_SECRET;
+      if (!secret) {
+        return json(res, 400, {
+          error: `${sent.length} of these are already on the server, and this app was started without ` +
+                 "the server password, so it cannot withdraw them. Nothing was removed. " +
+                 "Start the app with start-carousel.cmd and try again.",
+        });
+      }
+      try {
+        const r = await fetch(`${site}/api/carousel/schedule`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json", "x-internal-secret": secret },
+          body: JSON.stringify({ localIds: sent }),
+        });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          return json(res, 502, { error: `The server would not withdraw them (${body.error ?? r.status}). Nothing was removed.` });
+        }
+        cancelled = body.cancelled ?? [];
+        live = body.live ?? [];
+      } catch (e) {
+        return json(res, 502, { error: `Could not reach the server, so nothing was removed: ${String(e).slice(0, 120)}` });
+      }
+    }
+
+    for (const q of mine) await rm(join(OUT, String(q.id)), { recursive: true, force: true });
+    await saveQueue(queue.filter((q) => !isExperiment(q)));
+    json(res, 200, { removed: mine.length, cancelled: cancelled.length, live });
   },
 
   async "POST /api/open"(req, res) {
@@ -274,6 +351,15 @@ const routes = {
     const row = queue.find((q) => q.id === String(id));
     if (!row) return json(res, 404, { error: "Not in the queue." });
     if (!row.scheduledFor) return json(res, 400, { error: "Set a date and time first." });
+    // The server publishes anything whose time has come on its next run, so a
+    // post sent with a date already behind it goes out within minutes. That is
+    // never what "schedule" means.
+    if (new Date(row.scheduledFor).getTime() < Date.now()) {
+      return json(res, 400, {
+        error: "This post's date has already passed, so the server would publish it the moment it arrived. " +
+               "Give it a new date, press Save, then schedule it.",
+      });
+    }
     // An imported post has a folder and a date before it has a single slide in
     // it, so without this the server would happily accept a carousel of
     // nothing.

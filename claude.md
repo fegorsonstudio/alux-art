@@ -56,6 +56,20 @@ opening it to customers.
   Telegram files are **uploaded**, not linked — its URL fetch limit is 20MB and a 4K
   render exceeds it.
 
+**Update (2026-10-05): Carousel Studio + 132 written posts.** `tools/carousel/` is a
+laptop app (double-click `start-carousel.cmd`, gitignored — it holds the internal
+secret) that renders carousels locally and schedules them to the VPS
+(`/api/carousel/schedule` + `/api/cron/publish-carousel`). Posts live in
+`plan.mjs` + `plan-newyear.mjs` (main 88, **pinned to start 2026-10-05** — holiday
+posts are date-specific) and `plan-microdrama.mjs` (44-episode "Photo Wahala"
+experiment, removable whole; its Remove button calls the new
+`DELETE /api/carousel/schedule`, deployed and verified live). Copy rules are in
+`tools/carousel/COPY-FORMULA.md`. **Every "Comment WORD" must be a keyword in
+`lib/instagram-keywords.ts` — there is no SHOOT.** Owner reviews posts at
+https://claude.ai/artifact/R93UHmFzGM5QBnrF7JwaQW (decisions stored in its
+`reviews` collection). Open question: phone-to-studio posts say ₦1,000 but STUDIO
+leads to the shoot page (₦2,000 for one image).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

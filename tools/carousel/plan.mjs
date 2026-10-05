@@ -36,7 +36,9 @@ export const TRIGGERS = {
   relight: "LIGHT",
   assets: "ASSETS",
   gif: "GIF",
-  shoot: "SHOOT",
+  // STUDIO, not SHOOT: the bot answers STUDIO with the shoot itself, and has
+  // no SHOOT keyword — "Comment SHOOT" used to get silence.
+  shoot: "STUDIO",
 };
 
 /** ₦1,000 a photo, said the same way every time so the price never looks invented. */
@@ -55,7 +57,10 @@ const PER_PHOTO = `One photo, ₦1,000, back the same day.`;
 const cta = (word, action, priceLine = PER_PHOTO) => ({
   eyebrow: "Do this now",
   headline: action,
-  body: `Comment ${word} and I'll send you the link. ${priceLine}`,
+  body: word === "GIF"
+    // The GIF reply is not a link: the loop is made right there in the chat.
+    ? "Comment GIF and we'll make it together, right there in the chat."
+    : `Comment ${word} and I'll send you the link. ${priceLine}`,
 });
 /** For packages whose price depends on how many images you choose. */
 const SEE_PRICES = "The link has the packages and what each one costs.";
@@ -262,7 +267,7 @@ export const PLAN = [
       "Most adverts stop working the moment you stop paying. A sticker does not.\n\n" +
       "One: it goes into other people's stories, where you could never buy a place. Two: your words and your website are built into it. Three: you choose the search tags, so people looking for that word find you. Four: you make it once.\n\n" +
       "Send two pictures and the lines you want on them, and it comes back ready to post — about two minutes of work in a chat.\n\n" +
-      "💬 Comment GIF and I'll send you the link.\n\n" +
+      "💬 Comment GIF and we'll make yours right there in the chat.\n\n" +
       "#instagramstickers #smallbusinessnigeria #aluxart",
   },
   {
@@ -342,7 +347,7 @@ export const PLAN = [
       "#churchwedding #nigerianchurch #dedication #aluxart",
   },
   {
-    id: "p11", week: 3, slot: "C", product: "shoot", trigger: "SHOOT",
+    id: "p11", week: 3, slot: "C", product: "shoot", trigger: "STUDIO",
     title: "Full shoot — one photo, five images",
     photos: "One uploaded photo, and a grid of the five images it produced",
     cards: [
@@ -360,13 +365,13 @@ export const PLAN = [
       { eyebrow: "You choose the look",
         headline: "Portrait, editorial or corporate.",
         body: "The archive holds 197 lighting styles. Your identity is locked to your photo, never a lookalike." },
-      cta("SHOOT", "Send me one photo of yourself.", SEE_PRICES),
+      cta("STUDIO", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Get a full photoshoot in one day even if you've never set foot in a studio.\n\n" +
       "A shoot costs a deposit, a day off and a drive across the city, before anyone has taken a picture.\n\n" +
       "Send a single photo of yourself instead and it comes back as a set: five images, different poses, framing and lighting, the same face throughout. You pick the look — portrait, editorial or corporate.\n\n" +
-      "💬 Comment SHOOT and I'll send you the link.\n\n" +
+      "💬 Comment STUDIO and I'll send you the link.\n\n" +
       "#portraitphotography #corporateheadshot #lagosbusiness #aluxart",
   },
   {
@@ -673,7 +678,7 @@ export const PLAN = [
       "Get other people to advertise your business for you without paying any of them.\n\n" +
       "She made this in a chat with two pictures and four lines of her own words.\n\n" +
       "Now strangers use it in their stories and her business goes with it, into feeds she could never have bought. That is advertising that keeps working after you stop paying for it.\n\n" +
-      "💬 Comment GIF and I'll send you the link.\n\n#smallbusinessnigeria #aluxart",
+      "💬 Comment GIF and we'll make yours right there in the chat.\n\n#smallbusinessnigeria #aluxart",
   },
   {
     id: "p24", week: 6, slot: "D", product: "relight", trigger: "LIGHT",
@@ -747,7 +752,7 @@ export const PLAN = [
       "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#throwback #aluxart",
   },
   {
-    id: "p27", week: 7, slot: "C", product: "shoot", trigger: "SHOOT",
+    id: "p27", week: 7, slot: "C", product: "shoot", trigger: "STUDIO",
     title: "Full shoot — ten images",
     photos: "One source photo and a grid of ten varied results",
     cards: [
@@ -762,13 +767,13 @@ export const PLAN = [
       { eyebrow: "What comes back",
         headline: "Ten images, ten setups.",
         body: "Different poses, framing and lighting. The same face in every one of them." },
-      cta("SHOOT", "Send me one photo of yourself.", SEE_PRICES),
+      cta("STUDIO", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Get ten studio images in one day without a deposit, a day off or a drive across Lagos.\n\n" +
       "A studio day costs more than the invoice: a deposit, time off work, travel across the city, and hoping the light is right when you get there.\n\n" +
       "Send one photo instead and get back a full set — ten images, different poses, framing and lighting, the same face throughout.\n\n" +
-      "💬 Comment SHOOT and I'll send you the link.\n\n#lagosbusiness #headshots #aluxart",
+      "💬 Comment STUDIO and I'll send you the link.\n\n#lagosbusiness #headshots #aluxart",
   },
   {
     id: "p28", week: 7, slot: "D", product: "relight", trigger: "LIGHT",
@@ -968,7 +973,7 @@ export const PLAN = [
       "Be the advert people share this December without paying for a single impression.\n\n" +
       "December is the most expensive month in Nigeria to buy reach — every business is bidding for the same feed at the same time.\n\n" +
       "What gets through is what people pass around themselves. Make a sticker with your own pictures and words, and let other people's stories carry it.\n\n" +
-      "💬 Comment GIF and I'll send you the link.\n\n#dettydecember #smallbusinessnigeria #aluxart",
+      "💬 Comment GIF and we'll make yours right there in the chat.\n\n#dettydecember #smallbusinessnigeria #aluxart",
   },
   {
     id: "p36", week: 9, slot: "D", product: "relight", trigger: "LIGHT",
@@ -1142,7 +1147,7 @@ export const PLAN = [
       "₦1,000 for one photo.\n\n💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #aluxart",
   },
   {
-    id: "p43", week: 11, slot: "C", product: "shoot", trigger: "SHOOT",
+    id: "p43", week: 11, slot: "C", product: "shoot", trigger: "STUDIO",
     title: "December — a set for the new year",
     photos: "One photo and the ten-image set it produced",
     cards: [
@@ -1157,13 +1162,13 @@ export const PLAN = [
       { eyebrow: "What you have in January",
         headline: "Ten images, ten setups.",
         body: "Profile, company page, LinkedIn, WhatsApp. The same face in all of them." },
-      cta("SHOOT", "Send me one photo before the year ends.", SEE_PRICES),
+      cta("STUDIO", "Send me one photo before the year ends.", SEE_PRICES),
     ],
     caption:
       "Get a full set of New Year photos in one day even without a studio, a stylist or a day off.\n\n" +
       "Everybody updates their profile in January, and most people use a cropped photo from a party because there is nothing else on the phone.\n\n" +
       "Send one photo this week, while you are off work, and have the full set ready: ten images, different poses and lighting, the same face throughout.\n\n" +
-      "💬 Comment SHOOT and I'll send you the link.\n\n#newyear #headshots #aluxart",
+      "💬 Comment STUDIO and I'll send you the link.\n\n#newyear #headshots #aluxart",
   },
   {
     id: "p44", week: 11, slot: "D", product: "relight", trigger: "LIGHT",

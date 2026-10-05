@@ -50,3 +50,43 @@ The cover's job is to hold the swipe once the photograph has earned it.
 
 **Only true timeframes.** "The same day" and "by morning" are real. Nothing
 here claims an hour, or a result the studio cannot produce.
+
+**Only words the bot answers.** Every "Comment WORD" must be in `KEYWORDS` in
+`lib/instagram-keywords.ts`: LIGHT, ASSETS, GIF, STUDIO, GUIDE, CREATOR, PRICE.
+There is no SHOOT — full shoots ask for STUDIO, whose reply sells the shoot.
+And GIF's reply is the GIF being made in the chat, not a link, so a GIF post
+never promises one.
+
+---
+
+# The other style: microdrama (Photo Wahala)
+
+Used only when asked for, and kept in its own file, `plan-microdrama.mjs`, so
+the batch can be removed whole. Modelled on the short serial dramas built for
+phones: an episode drops you into a fight already happening and ends on a
+question instead of an answer.
+
+**The loop.** One story a week, four episodes. Monday sets the stakes,
+Wednesday and Friday escalate, Sunday pays off — the villain gets theirs, the
+hero wins — and teases next Monday's story.
+
+**Every episode, in this order:**
+
+1. The before and the after. Here they are the ending shown first; the story
+   is how the character got there.
+2. **Cold open.** Mid-conflict, no setup. "Tolu posted Kemi's worst photo to
+   214 people."
+3. **Previously** (episodes 2 to 4). One line, so a stranger can start
+   anywhere — people meet carousels in the middle of the feed.
+4. **Beats.** Timestamp and speaker in the small label, the line itself big.
+   Real chat rhythm: short, specific, Nigerian.
+5. **Cliffhanger.** Tension, not resolution. "Then the bride's mother replied."
+6. **To be continued.** The next episode's day, then the one comment word.
+
+**The product is the turn in the story**, never a feature list: the photo gets
+fixed, and that is what changes what happens next.
+
+**Three hard rules.** No emoji on the slides (the renderer draws them as
+outlines). Every caption ends "The story is made up. The result is real." And a
+person in the photos must have agreed to play the part — not a customer from
+the consent ask, who agreed to a before-and-after, not to being cast.

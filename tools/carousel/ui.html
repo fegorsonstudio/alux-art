@@ -132,15 +132,31 @@
 
     <label style="margin-top:26px">The three-month plan</label>
     <div class="card">
-      <h3>Load all 44 posts as drafts</h3>
+      <h3>Load all 88 posts as drafts</h3>
       <div style="color:var(--muted);font-size:.84rem;margin-bottom:10px">
-        The words and the dates are already written. Each one lands here waiting
-        for its two photographs. Safe to press again later &mdash; it refreshes the
-        words and never touches photos you have already added.
+        5 October to 7 March, on fixed dates &mdash; the Christmas, New Year,
+        Valentine's and Mother's Day posts only land on the right day this way.
+        Each post waits here for its two photographs. Safe to press again later:
+        it refreshes the words and never touches photos you have already added.
+        A post whose date has passed can't be scheduled until you give it a new one.
       </div>
       <div class="row">
-        <input type="date" id="startMonday" style="max-width:190px">
         <button class="ghost" id="import">Load the plan</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Photo Wahala &mdash; the microdrama experiment</h3>
+      <div style="color:var(--muted);font-size:.84rem;margin-bottom:10px">
+        44 episodes, one story a week, posted at 1pm so they never clash with
+        the main plan at 7pm. Kept separate on purpose: if it does not work,
+        one button takes all of it out &mdash; including any episode already
+        sent to the server.
+      </div>
+      <div class="row">
+        <input type="date" id="startMondayMd" style="max-width:190px">
+        <button class="ghost" id="importMd">Load the experiment</button>
+        <button class="ghost" id="removeMd">Remove the experiment</button>
       </div>
     </div>
 
@@ -269,11 +285,10 @@ async function openPost(id) {
 
 // ---- loading the twelve weeks ---------------------------------------------
 $("import").addEventListener("click", async () => {
-  const startMonday = $("startMonday").value;
-  if (!startMonday) return say("Pick the Monday you want the plan to start on.", true);
   say("Loading the plan…");
   try {
-    const r = await post("/api/import", { startMonday, account: $("account").value });
+    // No date sent: the main plan is fixed to its calendar on the server.
+    const r = await post("/api/import", { account: $("account").value });
     say(`${r.total} posts in the queue — ${r.added} new, ${r.refreshed} refreshed. ` +
         `Click the first one and add its photos.`);
     loadQueue();
@@ -340,15 +355,58 @@ async function loadQueue() {
 }
 loadQueue();
 
-// The plan starts on a Monday, so offer the next one rather than today.
+// The experiment starts on a Monday, so offer the next one rather than today.
 {
   const d = new Date();
   d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
   // Built by hand rather than with toISOString, which converts to UTC and so
   // hands back yesterday's date for anyone opening the app after midnight.
   const p = (n) => String(n).padStart(2, "0");
-  $("startMonday").value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  $("startMondayMd").value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+// ---- the microdrama experiment ---------------------------------------------
+$("importMd").addEventListener("click", async () => {
+  const startMonday = $("startMondayMd").value;
+  if (!startMonday) return say("Pick the Monday the experiment should start on.", true);
+  say("Loading the experiment…");
+  try {
+    const r = await post("/api/import", { startMonday, account: $("account").value, batch: "microdrama" });
+    say(`${r.total} episodes in the queue — ${r.added} new, ${r.refreshed} refreshed. They start with M.`);
+    loadQueue();
+  } catch (e) { say(e.message, true); }
+});
+
+// Two clicks, not one: this deletes 44 drafts and withdraws anything already
+// scheduled, and a single stray click should never be able to do that.
+let removeArmed = null;
+$("removeMd").addEventListener("click", async () => {
+  const b = $("removeMd");
+  if (!removeArmed) {
+    b.textContent = "Click again to remove all 44";
+    b.style.color = "var(--bad)";
+    removeArmed = setTimeout(() => {
+      removeArmed = null; b.textContent = "Remove the experiment"; b.style.color = "";
+    }, 5000);
+    return;
+  }
+  clearTimeout(removeArmed); removeArmed = null;
+  b.textContent = "Remove the experiment"; b.style.color = "";
+  say("Removing the experiment…");
+  try {
+    const r = await post("/api/remove-batch", { batch: "microdrama" });
+    let msg = r.removed
+      ? `Removed ${r.removed} episodes.` + (r.cancelled ? ` ${r.cancelled} were withdrawn from the server and will not post.` : "")
+      : "There was nothing from the experiment in the queue.";
+    if (r.live?.length) {
+      msg += ` ${r.live.length} had already gone out on Instagram and have to be deleted there by hand: ` +
+             r.live.map((x) => x.localId.replace("plan-", "").toUpperCase()).join(", ") + ".";
+    }
+    say(msg, Boolean(r.live?.length));
+    if (state.id && /^plan-m\d+$/.test(state.id)) state.id = null;
+    loadQueue();
+  } catch (e) { say(e.message, true); }
+});
 </script>
 </body>
 </html>
