@@ -26,6 +26,8 @@ import { PLAN2 } from "./plan-newyear.mjs";
 // The microdrama experiment. Loaded and removed on its own buttons, never by
 // "Load the plan", so dropping it touches nothing in the main 88.
 import { PLAN3, BATCH as EXPERIMENT } from "./plan-microdrama.mjs";
+import { GIF_SCRIPTS, EPISODE_KICKER, gifTags } from "./gif-scripts.mjs";
+import sharp from "sharp";
 
 // The twenty-two weeks as one list. Kept in two files because they were
 // written for two different seasons — plan.mjs runs to 20 December and
@@ -99,6 +101,58 @@ const localStamp = (d) => {
   const p = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
+
+/** Change one queue row in place. `fn` gets the row and returns the fields to merge. */
+async function patchRow(id, fn) {
+  const queue = await loadQueue();
+  const at = queue.findIndex((q) => q.id === id);
+  if (at < 0) return;
+  queue[at] = { ...queue[at], ...fn(queue[at]) };
+  await saveQueue(queue);
+}
+
+/** True when the owner has changed a post's GIF lines from the plan's. */
+function gifLinesEdited(id, lines) {
+  const original = GIF_SCRIPTS[id.replace(/^plan-/, "")];
+  return !original || JSON.stringify(original) !== JSON.stringify(lines);
+}
+
+/**
+ * A post's two original photographs, small enough to send.
+ *
+ * The GIF is encoded 480 wide, so anything past 1400 pixels is bytes on the
+ * wire for nothing — and the originals are kept untouched on disk regardless.
+ */
+async function gifSources(dir) {
+  const read = (n) => readFile(join(dir, n)).catch(() => null);
+  const [b, a] = await Promise.all([read("source-before.jpg"), read("source-after.jpg")]);
+  if (!b || !a) return null;
+  const small = (buf) => sharp(buf).rotate()
+    .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 88 }).toBuffer();
+  return { before: (await small(b)).toString("base64"), after: (await small(a)).toString("base64") };
+}
+
+/** One call to the server's GIF route, with the same password the scheduler uses. */
+async function vps(action, payload) {
+  const site = process.env.CAROUSEL_SITE ?? "https://aluxartandframes.shop";
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) {
+    return { ok: false, status: 400, error: "This app was started without the server password. Start it with start-carousel.cmd." };
+  }
+  try {
+    const r = await fetch(`${site}/api/carousel/gif`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-internal-secret": secret },
+      body: JSON.stringify({ action, ...payload }),
+    });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, status: r.status === 400 ? 400 : 502, error: body.error ?? `Server said ${r.status}` };
+    return { ok: true, body };
+  } catch (e) {
+    return { ok: false, status: 502, error: `Could not reach the server: ${String(e).slice(0, 120)}` };
+  }
+}
 
 const dataUrlToBuffer = (s) => {
   const m = /^data:[^;]+;base64,(.+)$/.exec(String(s ?? ""));
@@ -175,9 +229,16 @@ const routes = {
       const buf = dataUrlToBuffer(post[key]);
       if (buf) { await writeFile(join(dir, name), buf); sources[key] = name; }
     }
+    // Merged over what is already on disk: the page sends back only what it
+    // shows, and the product, batch and week a plan post was imported with
+    // are what its GIF tags and its experiment membership are read from.
+    const before = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "{}"));
+    const gifLines = Array.isArray(post.gifLines) ? post.gifLines : before.gifLines ?? [];
     await writeFile(join(dir, "post.json"),
-      JSON.stringify({ ...post, beforeImage: sources.beforeImage ?? null,
+      JSON.stringify({ ...before, ...post, beforeImage: sources.beforeImage ?? null,
                        afterImage: sources.afterImage ?? null,
+                       gifLines, gifLinesEdited: gifLinesEdited(String(id), gifLines),
+                       gifCleared: post.gifCleared ?? before.gifCleared ?? false,
                        // Once a post has been saved by hand, its date is the
                        // owner's and a later re-import of the plan leaves it
                        // alone.
@@ -263,6 +324,11 @@ const routes = {
         // Kept so the app can tell the owner which photographs this one wants.
         photos: p.photos, product: p.product, trigger: p.trigger,
         week: p.week, slot: p.slot, batch: p.batch ?? "main",
+        // The story GIF's lines: the plan's, unless the owner has rewritten
+        // them, in which case theirs stay. The consent tick is never set here.
+        gifLines: existing?.gifLinesEdited ? existing.gifLines : (GIF_SCRIPTS[p.id] ?? []),
+        gifLinesEdited: Boolean(existing?.gifLinesEdited),
+        gifCleared: Boolean(existing?.gifCleared),
         // Never clobber pictures already attached.
         beforeImage: existing?.beforeImage ?? null,
         afterImage: existing?.afterImage ?? null,
@@ -359,7 +425,83 @@ const routes = {
         post[key] = buf ? `data:image/jpeg;base64,${buf.toString("base64")}` : null;
       }
     }
+    // The story GIF, if one has been made, so reopening a post shows it.
+    const gif = await readFile(join(dir, "story.gif")).catch(() => null);
+    const row = (await loadQueue()).find((q) => q.id === String(id));
+    if (gif) post.gifDataUrl = `data:image/gif;base64,${gif.toString("base64")}`;
+    if (row?.gif) Object.assign(post, { giphyUrl: row.gif.giphyUrl ?? null, gifSeconds: row.gif.seconds, gifBytes: row.gif.bytes });
     json(res, 200, { post, files });
+  },
+
+  /**
+   * Make this post's story GIF, on the server.
+   *
+   * Sends the two original photographs, shrunk (the GIF is 480 wide, so a
+   * 30MB original would be 30MB of nothing), and the GIF lines; keeps what
+   * comes back as story.gif beside the slides, so it travels with them.
+   */
+  async "POST /api/gif"(req, res) {
+    const { id, lines } = await readBody(req);
+    const dir = join(OUT, String(id));
+    if (!existsSync(dir)) return json(res, 404, { error: "Save the post first." });
+    const post = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "{}"));
+    const src = await gifSources(dir);
+    if (!src) return json(res, 400, { error: "This post needs its before and after photos before it can have a GIF." });
+
+    const useLines = (Array.isArray(lines) && lines.length ? lines : post.gifLines ?? [])
+      .map((s) => String(s).trim()).filter(Boolean);
+    const episode = post.batch === EXPERIMENT || /^plan-m\d+$/.test(String(id));
+    const r = await vps("render", { localId: String(id), ...src, lines: useLines, kicker: episode ? EPISODE_KICKER : undefined });
+    if (!r.ok) return json(res, r.status, { error: r.error });
+
+    await writeFile(join(dir, "story.gif"), Buffer.from(r.body.gif, "base64"));
+    post.gifLines = useLines;
+    post.gifLinesEdited = gifLinesEdited(String(id), useLines);
+    await writeFile(join(dir, "post.json"), JSON.stringify(post, null, 2));
+    await patchRow(String(id), (q) => ({
+      gif: { made: true, bytes: r.body.bytes, seconds: r.body.seconds, giphyUrl: r.body.giphyUrl ?? q.gif?.giphyUrl ?? null },
+    }));
+    json(res, 200, {
+      gif: `data:image/gif;base64,${r.body.gif}`, bytes: r.body.bytes, seconds: r.body.seconds,
+      giphyUrl: r.body.giphyUrl ?? null,
+    });
+  },
+
+  /** The consent tick, saved the moment it changes. */
+  async "POST /api/gif-clear"(req, res) {
+    const { id, cleared } = await readBody(req);
+    const dir = join(OUT, String(id));
+    if (!existsSync(dir)) return json(res, 404, { error: "Save the post first." });
+    const post = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "{}"));
+    post.gifCleared = cleared === true;
+    await writeFile(join(dir, "post.json"), JSON.stringify(post, null, 2));
+    await patchRow(String(id), () => ({ gifCleared: post.gifCleared }));
+    json(res, 200, { ok: true, cleared: post.gifCleared });
+  },
+
+  /**
+   * Put this post's GIF on GIPHY. Only with the tick, and only once — the
+   * server keeps the first link and refuses to make a second copy.
+   */
+  async "POST /api/gif-publish"(req, res) {
+    const { id, cleared } = await readBody(req);
+    const dir = join(OUT, String(id));
+    if (!existsSync(dir)) return json(res, 404, { error: "Save the post first." });
+    const post = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "{}"));
+    if (cleared !== true && post.gifCleared !== true) {
+      return json(res, 400, { error: "Tick the box first: everyone in these photos must have agreed to a public GIF." });
+    }
+    const row = (await loadQueue()).find((q) => q.id === String(id));
+    const r = await vps("publish", {
+      localId: String(id), cleared: true,
+      tags: gifTags({ ...post, batch: row?.batch ?? post.batch, product: post.product }),
+    });
+    if (!r.ok) return json(res, r.status, { error: r.error });
+
+    post.gifCleared = true;
+    await writeFile(join(dir, "post.json"), JSON.stringify(post, null, 2));
+    await patchRow(String(id), (q) => ({ gifCleared: true, gif: { ...(q.gif ?? { made: true }), giphyUrl: r.body.giphyUrl } }));
+    json(res, 200, { giphyUrl: r.body.giphyUrl, already: Boolean(r.body.already) });
   },
 
   /**

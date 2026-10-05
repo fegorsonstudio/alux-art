@@ -69,6 +69,27 @@ message naming the reason; the slides are never lost.
   removes nothing, rather than hide a post that would still go out. Episodes
   already published are named so you can take them down on Instagram by hand.
 
+## Story GIFs
+
+Every post has a short GIF script — three lines for a main post, four for an
+episode — in `gif-scripts.mjs`, editable in the **Story GIF** box. The GIF is
+made on the server (`/api/carousel/gif`) with the same engine as the paid GIF
+Maker, because a GIF in an Instagram comment is about 200 pixels wide and only
+three or four huge words survive that.
+
+1. **Make GIF** — made on the server, saved as `story.gif` beside the slides, and
+   shown so you can look at it first.
+2. Tick **Everyone in these photos agreed to a public GIF**. GIPHY is public:
+   anyone can find, download and reuse what goes up. A customer's YES to "show it
+   on our page" does not cover that.
+3. **Upload to GIPHY** — once per post. GIPHY's API has no delete, so a second
+   press returns the same link instead of making a second copy.
+
+**Make GIFs for all** and **Upload ticked GIFs** do the same across the queue;
+the upload stops at the first thing GIPHY refuses. For the GIFs to show up when
+people search in Instagram's comment GIF button, the GIPHY account has to be an
+approved Brand channel.
+
 ## Things worth knowing
 
 - **Instagram takes at most 10 slides.** The app refuses more rather than

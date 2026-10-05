@@ -70,6 +70,11 @@
   tbody tr.on { background: rgba(67,204,178,.12); }
   input[type=date] { width: 100%; padding: 10px 12px; border-radius: 8px; font: inherit;
     background: rgba(255,255,255,.05); color: var(--paper); border: 1px solid var(--line); }
+  label.tick { display: flex; gap: 8px; align-items: center; text-transform: none;
+    letter-spacing: 0; font-weight: 600; color: var(--paper); font-size: .86rem; margin: 10px 0 0; }
+  #gifOut img { max-width: 100%; border-radius: 8px; display: block; margin-top: 10px; border: 1px solid var(--line); }
+  #gifOut .meta { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+  #gifOut a, td a { color: var(--mint); }
 </style>
 </head>
 <body>
@@ -124,6 +129,23 @@
       <button class="ghost" id="schedule">Send to server &amp; schedule</button>
     </div>
     <div id="msg"></div>
+
+    <div class="card" id="gifBox" style="margin-top:22px">
+      <h3>Story GIF &mdash; for Instagram comments</h3>
+      <div style="color:var(--muted);font-size:.84rem;margin-bottom:8px">
+        One short line each, three or four words &mdash; a GIF in a comment is
+        tiny. The before photo shows until the last line, when the after
+        appears. Your web address is added at the end automatically.
+      </div>
+      <textarea id="gifLines" style="min-height:104px" placeholder="Tolu posted it&#10;214 people saw&#10;Same girl. New light"></textarea>
+      <label class="tick"><input type="checkbox" id="gifCleared">
+        Everyone in these photos agreed to a public GIF</label>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" id="gifMake">Make GIF</button>
+        <button class="ghost" id="gifPublish">Upload to GIPHY</button>
+      </div>
+      <div id="gifOut"></div>
+    </div>
   </div>
 
   <div class="pane">
@@ -160,8 +182,21 @@
       </div>
     </div>
 
+    <div class="card">
+      <h3>Story GIFs for every post</h3>
+      <div style="color:var(--muted);font-size:.84rem;margin-bottom:10px">
+        Makes a GIF for every saved post that has its photos and no GIF yet.
+        Uploading only sends the ones whose box is ticked, and stops at the
+        first thing GIPHY refuses.
+      </div>
+      <div class="row">
+        <button class="ghost" id="gifMakeAll">Make GIFs for all</button>
+        <button class="ghost" id="gifPublishAll">Upload ticked GIFs</button>
+      </div>
+    </div>
+
     <label style="margin-top:26px">Queue <span class="hint" style="text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400">&mdash; click a row to open it</span></label>
-    <table id="queue"><thead><tr><th>When</th><th>Post</th><th>Slides</th><th>Status</th></tr></thead><tbody></tbody></table>
+    <table id="queue"><thead><tr><th>When</th><th>Post</th><th>Slides</th><th>Status</th><th>GIF</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
 
@@ -239,7 +274,77 @@ const collect = () => ({
   cards: state.cards, buttonText: $("buttonText").value,
   caption: $("caption").value, scheduledFor: $("scheduledFor").value || null,
   id: state.id || null, photos: state.photos || null,
+  gifLines: gifLinesNow(), gifCleared: $("gifCleared").checked,
 });
+
+// ---- story GIF ---------------------------------------------------------------
+const gifLinesNow = () => $("gifLines").value.split("\n").map((s) => s.trim()).filter(Boolean);
+
+function showGif(r) {
+  const parts = [];
+  if (r.gif) parts.push(`<img src="${r.gif}" alt="Story GIF preview">`);
+  const meta = [];
+  if (r.seconds) meta.push(`${Number(r.seconds).toFixed(1)} seconds`);
+  if (r.bytes) meta.push(`${Math.round(r.bytes / 1024)} KB`);
+  if (r.giphyUrl) meta.push(`<a href="${r.giphyUrl}" target="_blank" rel="noopener">on GIPHY</a>`);
+  if (meta.length) parts.push(`<div class="meta">${meta.join(" &middot; ")}</div>`);
+  $("gifOut").innerHTML = parts.join("");
+}
+
+$("gifMake").addEventListener("click", async () => {
+  if (!state.id) return say("Save the post first — the GIF is made from its saved photos.", true);
+  say("Making the GIF on the server…");
+  try {
+    const r = await post("/api/gif", { id: state.id, lines: gifLinesNow() });
+    showGif(r);
+    say("GIF ready. Look at it before you upload — GIPHY is public.");
+    loadQueue();
+  } catch (e) { say(e.message, true); }
+});
+
+// The tick is saved the moment it changes: it is the owner's word that
+// everyone in the photos agreed, and the batch upload reads it from disk.
+$("gifCleared").addEventListener("change", async () => {
+  if (!state.id) return;
+  try { await post("/api/gif-clear", { id: state.id, cleared: $("gifCleared").checked }); loadQueue(); }
+  catch (e) { say(e.message, true); }
+});
+
+$("gifPublish").addEventListener("click", async () => {
+  if (!state.id) return say("Save the post and make its GIF first.", true);
+  if (!$("gifCleared").checked) return say("Tick the box first: everyone in these photos must have agreed to a public GIF.", true);
+  say("Uploading to GIPHY…");
+  try {
+    const r = await post("/api/gif-publish", { id: state.id, cleared: true });
+    showGif({ ...r, gif: $("gifOut").querySelector("img")?.src });
+    say(r.already ? "This GIF was already on GIPHY — nothing uploaded twice." : "On GIPHY. It can take up to a day to show in search.");
+    loadQueue();
+  } catch (e) { say(e.message, true); }
+});
+
+async function eachRow(filter, fn, label) {
+  const { queue } = await fetch("/api/queue").then((x) => x.json()).catch(() => ({ queue: [] }));
+  const rows = (queue || []).filter(filter);
+  if (!rows.length) return say(`Nothing to do — no post needs ${label}.`);
+  let done = 0;
+  for (const q of rows) {
+    say(`${label}: ${done + 1} of ${rows.length} — ${q.title}`);
+    try { await fn(q); done++; }
+    catch (e) { say(`Stopped at "${q.title}": ${e.message}. ${done} done before it.`, true); loadQueue(); return; }
+  }
+  say(`${label}: all ${done} done.`);
+  loadQueue();
+}
+
+$("gifMakeAll").addEventListener("click", () => eachRow(
+  (q) => (q.slides || 0) > 0 && !q.gif?.made,
+  (q) => post("/api/gif", { id: q.id }),
+  "Making GIFs"));
+
+$("gifPublishAll").addEventListener("click", () => eachRow(
+  (q) => q.gif?.made && q.gifCleared && !q.gif?.giphyUrl,
+  (q) => post("/api/gif-publish", { id: q.id, cleared: true }),
+  "Uploading GIFs"));
 
 // ---- opening a post that is already in the queue ---------------------------
 function showDrop(key, dataUrl) {
@@ -276,6 +381,12 @@ async function openPost(id) {
     drawCards();
     $("wants").style.display = state.photos ? "" : "none";
     $("wantsText").textContent = state.photos || "";
+    $("gifLines").value = (data.gifLines || []).join("\n");
+    $("gifCleared").checked = Boolean(data.gifCleared);
+    $("gifOut").innerHTML = "";
+    if (data.gifDataUrl || data.giphyUrl) {
+      showGif({ gif: data.gifDataUrl, giphyUrl: data.giphyUrl, seconds: data.gifSeconds, bytes: data.gifBytes });
+    }
     $("out").innerHTML = `<span class="hint" style="color:var(--muted)">Add the two photos, then press Preview.</span>`;
     window.scrollTo({ top: 0, behavior: "smooth" });
     say(`Opened <strong>${data.title || id}</strong>. ${
@@ -347,8 +458,10 @@ async function loadQueue() {
     <td style="white-space:nowrap">${when(q.scheduledFor)}</td>
     <td>${q.title || q.id}</td>
     <td>${q.slides || "—"}</td>
-    <td><span class="pill ${q.status}">${q.status === "needs-photos" ? "needs photos" : q.status}</span></td></tr>`).join("")
-    || `<tr><td colspan="4" style="color:var(--muted)">Nothing saved yet — load the plan above.</td></tr>`;
+    <td><span class="pill ${q.status}">${q.status === "needs-photos" ? "needs photos" : q.status}</span></td>
+    <td>${q.gif?.giphyUrl ? `<a href="${q.gif.giphyUrl}" target="_blank" rel="noopener">on GIPHY</a>`
+          : q.gif?.made ? (q.gifCleared ? "ready" : "made") : "—"}</td></tr>`).join("")
+    || `<tr><td colspan="5" style="color:var(--muted)">Nothing saved yet — load the plan above.</td></tr>`;
   tb.querySelectorAll("[data-open]").forEach((tr) => {
     tr.addEventListener("click", () => openPost(tr.dataset.open));
   });
