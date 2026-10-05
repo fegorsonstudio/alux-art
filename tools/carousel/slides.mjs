@@ -84,52 +84,111 @@ function chrome({ index, total, site = "aluxartandframes.shop" }) {
       font-size="22" fill="${MUTED}" fill-opacity="0.75">${index}/${total}</text>` : ""}`;
 }
 
+/** Where a text card's words may sit: inside the corner brackets, clear of the footer. */
+const AREA_TOP = 130;
+const AREA_BOTTOM = 1200;
+/** A short line is set big, like a title card; never bigger than this. */
+const HEADLINE_MAX = 124;
+const HEADLINE_MAX_LINES = 4;
+const BODY_SIZE = 34;
+const BODY_STEP = Math.round(BODY_SIZE * 1.45);
+
 /**
- * A text card: eyebrow, headline, body.
+ * Lay out a text card without drawing it.
+ *
+ * Exported so the plan can be checked against the real geometry instead of a
+ * copy of it that drifts.
+ *
+ * Two decisions, both made because the old layout pinned every card's words to
+ * the top and sized the headline for a long line: a short beat like "Then the
+ * bride's mother replied." sat small at the top of a card that was otherwise
+ * empty below the middle.
+ *
+ *   SIZE. Narrower wraps are tried first, so a short headline breaks into two
+ *   or three lines set large; the biggest size that keeps it to four lines and
+ *   leaves room for everything else wins. A long headline still gets the wide
+ *   wrap, and shrinks only if it would otherwise run past the footer.
+ *
+ *   POSITION. The finished block sits in the space between the brackets,
+ *   slightly above centre — where the eye lands — instead of from a fixed line.
+ *
+ * Offsets inside the block keep the old relationships: the mint rule, then the
+ * eyebrow 66px below it, then the headline clear of the eyebrow.
+ */
+export function layoutText({ eyebrow, headline, body, cta }) {
+  const inner = W - 90 * 2;
+  const bodyLines = body ? wrap(body, 30) : [];
+  const room = AREA_BOTTOM - AREA_TOP;
+
+  const measure = (lines, size) => {
+    const lead = Math.round(size * 1.08);
+    const headTop = eyebrow ? 66 + 30 : 64;
+    const first = headTop + Math.round(size * 0.76);
+    const last = first + (lines.length - 1) * lead;
+    const bodyFirst = last + Math.round(size * 0.3) + 66;
+    const bodyLast = bodyFirst + (bodyLines.length - 1) * BODY_STEP;
+    const afterText = bodyLines.length ? bodyLast : last + Math.round(size * 0.3);
+    const buttonTop = cta ? afterText + 52 : null;
+    const height = cta ? buttonTop + 78 : afterText + (bodyLines.length ? 12 : 0);
+    return { lead, first, bodyFirst, buttonTop, height };
+  };
+
+  let best = null;
+  for (const em of [7.5, 9, 10, 11.5]) {
+    const lines = wrap(headline, em);
+    const size = Math.min(HEADLINE_MAX, Math.floor(inner / Math.max(...lines.map(widthEm), 0.1)));
+    const g = measure(lines, size);
+    if (lines.length <= HEADLINE_MAX_LINES && g.height <= room && (!best || size > best.size)) {
+      best = { lines, size, g };
+    }
+  }
+  if (!best) {
+    // A long headline: the wide wrap, shrunk step by step until it fits.
+    const lines = wrap(headline, 11.5);
+    let size = Math.min(108, Math.floor(inner / Math.max(...lines.map(widthEm), 0.1)));
+    let g = measure(lines, size);
+    while (g.height > room && size > 40) { size = Math.floor(size * 0.94); g = measure(lines, size); }
+    best = { lines, size, g };
+  }
+
+  const top = AREA_TOP + Math.max(0, Math.round((room - best.g.height) * 0.42));
+  return { top, lines: best.lines, size: best.size, ...best.g, bodyLines };
+}
+
+/**
+ * A text card: eyebrow, headline, body, and on the last card a button.
  *
  * The headline sizes itself to the words rather than taking a fixed size, so a
- * three-word hook fills the card and a long one still fits.
+ * three-word hook fills the card and a long one still fits; layoutText decides
+ * how big and where.
  */
 export async function textCard({ eyebrow, headline, body, index, total, cta, site }) {
   const m = 90;
-  const inner = W - m * 2;
-  const lines = wrap(headline, 11.5);
-  const widest = Math.max(...lines.map(widthEm), 0.1);
-  const size = Math.min(Math.round(inner / widest), 108);
-  const lead = Math.round(size * 1.08);
-
-  let y = 300;
+  const L = layoutText({ eyebrow, headline, body, cta });
   let svg = chrome({ index, total, site });
 
-  // The headline's ascender reaches about three quarters of its size above the
-  // baseline, so at 108px it climbs to y-81. The eyebrow sat at y-54 and was
-  // struck through by it.
+  svg += `<rect x="${m}" y="${L.top}" width="64" height="4" fill="${MINT}"/>`;
   if (eyebrow) {
-    svg += `<text x="${m}" y="${y - 104}" font-family="${FONT}" font-size="24" font-weight="700"
+    svg += `<text x="${m}" y="${L.top + 66}" font-family="${FONT}" font-size="24" font-weight="700"
       fill="${MINT}" letter-spacing="0.18em">${esc(eyebrow.toUpperCase())}</text>`;
   }
-  svg += `<rect x="${m}" y="${y - (eyebrow ? 170 : 150)}" width="64" height="4" fill="${MINT}"/>`;
 
-  lines.forEach((l, i) => {
-    svg += `<text x="${m}" y="${y + i * lead}" font-family="${FONT}" font-size="${size}"
+  L.lines.forEach((l, i) => {
+    svg += `<text x="${m}" y="${L.top + L.first + i * L.lead}" font-family="${FONT}" font-size="${L.size}"
       font-weight="800" fill="${PAPER}" letter-spacing="-0.02em">${esc(l)}</text>`;
   });
-  y += lines.length * lead + 28;
 
-  if (body) {
-    const bs = 34;
-    for (const l of wrap(body, 30)) {
-      svg += `<text x="${m}" y="${y}" font-family="${FONT}" font-size="${bs}"
-        fill="${MUTED}">${esc(l)}</text>`;
-      y += Math.round(bs * 1.45);
-    }
-  }
+  L.bodyLines.forEach((l, i) => {
+    svg += `<text x="${m}" y="${L.top + L.bodyFirst + i * BODY_STEP}" font-family="${FONT}" font-size="${BODY_SIZE}"
+      fill="${MUTED}">${esc(l)}</text>`;
+  });
 
   if (cta) {
     const bw = Math.round(widthEm(cta) * 30) + 80;
+    const y = L.top + L.buttonTop;
     svg += `
-      <rect x="${m}" y="${y + 40}" width="${bw}" height="78" rx="12" fill="${MINT}"/>
-      <text x="${m + bw / 2}" y="${y + 92}" text-anchor="middle" font-family="${FONT}"
+      <rect x="${m}" y="${y}" width="${bw}" height="78" rx="12" fill="${MINT}"/>
+      <text x="${m + bw / 2}" y="${y + 52}" text-anchor="middle" font-family="${FONT}"
         font-size="32" font-weight="800" fill="${INK}">${esc(cta)}</text>`;
   }
 

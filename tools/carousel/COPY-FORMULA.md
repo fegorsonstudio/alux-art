@@ -52,10 +52,18 @@ The cover's job is to hold the swipe once the photograph has earned it.
 here claims an hour, or a result the studio cannot produce.
 
 **Only words the bot answers.** Every "Comment WORD" must be in `KEYWORDS` in
-`lib/instagram-keywords.ts`: LIGHT, ASSETS, GIF, STUDIO, GUIDE, CREATOR, PRICE.
-There is no SHOOT — full shoots ask for STUDIO, whose reply sells the shoot.
-And GIF's reply is the GIF being made in the chat, not a link, so a GIF post
-never promises one.
+`lib/instagram-keywords.ts`. Which word sells what:
+
+| Word | What the reply sells | Price on the slide |
+|------|----------------------|--------------------|
+| LIGHT | Relighting, done in the chat | ₦1,000 a photo |
+| STUDIO | The Gear Equalizer: their own photo, a new backdrop and the lighting look they pick | ₦1,000 a photo |
+| BOOK | The full shoot: one photo of you, a set of 1, 5 or 10 | none — the link has the packages |
+| ASSETS | The Asset Extractor | ₦1,000 a photo |
+| GIF | The sticker, made right there in the chat | none, and no link promised |
+
+There is no SHOOT. Matching is whole-word, and "nice shoot!" would fire a sales
+DM under every compliment.
 
 ---
 

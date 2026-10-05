@@ -65,10 +65,11 @@ posts are date-specific) and `plan-microdrama.mjs` (44-episode "Photo Wahala"
 experiment, removable whole; its Remove button calls the new
 `DELETE /api/carousel/schedule`, deployed and verified live). Copy rules are in
 `tools/carousel/COPY-FORMULA.md`. **Every "Comment WORD" must be a keyword in
-`lib/instagram-keywords.ts` — there is no SHOOT.** Owner reviews posts at
+`lib/instagram-keywords.ts` — there is no SHOOT.** STUDIO now replies with the
+Gear Equalizer (₦1,000/image, the owner's call); the full shoot moved to the new
+BOOK keyword. Owner reviews posts at
 https://claude.ai/artifact/R93UHmFzGM5QBnrF7JwaQW (decisions stored in its
-`reviews` collection). Open question: phone-to-studio posts say ₦1,000 but STUDIO
-leads to the shoot page (₦2,000 for one image).
+`reviews` collection).
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 

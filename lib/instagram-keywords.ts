@@ -129,7 +129,37 @@ export const KEYWORDS: Keyword[] = [
     publicReply: "Sent you a DM \ud83d\udce9",
   },
   {
+    // Phone photo to studio photo — which is the Gear Equalizer: the buyer's own
+    // picture, a new backdrop and the lighting look they pick, ₦1,000 an image.
+    // STUDIO used to send people to the full shoot instead, which asks for
+    // photos of you and charges ₦2,000 for one image — not what a post promising
+    // "send me the photo you already took, ₦1,000" was selling. The full shoot
+    // moved to BOOK, below.
     word: "STUDIO",
+    reply:
+      "Here's the Pro Studio Upgrade 👇\n\n" +
+      `${SITE}/marketplace/3d822eb4-9618-4cfc-8d21-25a4627a4d32\n\n` +
+      "Upload the photo you already took, then pick the backdrop and the lighting look you want. " +
+      "It comes back looking like it was shot in a studio. ₦1,000 per photo.\n\n" +
+      "Prefer WhatsApp? Message us there and we'll book it in the chat:\n" +
+      "https://wa.me/2349076858017?text=HI",
+    replyNoLink:
+      "Here's the Pro Studio Upgrade 👇\n\n" +
+      "Tap our name at the top of this chat, open the link in our bio, then choose " +
+      "The Gear Equalizer — Pro Studio Upgrade.\n\n" +
+      "Upload the photo you already took, then pick the backdrop and the lighting look you want. " +
+      "It comes back looking like it was shot in a studio. ₦1,000 per photo.",
+    publicReply: "Sent you a DM 📩",
+  },
+  {
+    // The full shoot: a photo of you in, a set of five or ten out. This was
+    // STUDIO's reply, word for word, until STUDIO became the Gear Equalizer.
+    //
+    // BOOK and not SHOOT, because matching is whole-word and "nice shoot!" is
+    // the commonest comment a photography account gets — SHOOT would fire a
+    // sales DM under every compliment. Somebody who writes "book" is asking to.
+    word: "BOOK",
+    aliases: ["BOOKING"],
     reply:
       "Here you go 👇\n\n" +
       `${SITE}\n\n` +

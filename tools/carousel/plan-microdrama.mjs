@@ -62,14 +62,15 @@ const NO_PERSON = " No person needed.";
 /** What the final slide asks for. Each line matches what the bot actually replies. */
 function commentBody(word) {
   if (word === "GIF") return "Comment GIF and we'll make yours together, right there in the chat.";
-  // STUDIO carries no price on the slide until the phone-to-studio price is
-  // settled: the main plan says ₦1,000, the shoot page charges ₦2,000 for one.
-  if (word === "STUDIO") return "Comment STUDIO and I'll send you the link. The prices are on it.";
+  // Shoots are priced by package — one, five or ten images — so the slide
+  // sends people to the link rather than naming a per-photo figure. LIGHT,
+  // ASSETS and STUDIO (the Gear Equalizer) are all ₦1,000 a photo.
+  if (word === "BOOK") return "Comment BOOK and I'll send you the link. The packages and prices are on it.";
   return `Comment ${word} and I'll send you the link. One photo, ₦1,000, back the same day.`;
 }
 function captionCta(word) {
   if (word === "GIF") return "Comment GIF and we'll make yours right there in the chat.";
-  if (word === "STUDIO") return "Comment STUDIO and I'll send you the link.";
+  if (word === "BOOK") return "Comment BOOK and I'll send you the link.";
   return `Comment ${word} and I'll send you the link. ₦1,000 a photo.`;
 }
 
@@ -353,7 +354,7 @@ const STORIES = [
 
   // ── 5 ─────────────────────────────────────────────────────────────────────
   {
-    title: "The Headshot", product: "shoot", trigger: "STUDIO",
+    title: "The Headshot", product: "shoot", trigger: "BOOK",
     tags: ["#newjob", "#corporatenigeria", "#headshots"],
     photos: "A young man's casual phone photo (a cropped event photo is perfect), and the five-image professional set it became." + CAST,
     eps: [
@@ -592,7 +593,7 @@ const STORIES = [
 
   // ── 9 ─────────────────────────────────────────────────────────────────────
   {
-    title: "The Induction", product: "shoot", trigger: "STUDIO",
+    title: "The Induction", product: "shoot", trigger: "BOOK",
     tags: ["#nursesofnigeria", "#inductionday", "#nursing"],
     photos: "A nurse in uniform: one imperfect phone photo from a ceremony, and the set of five the shoot produced." + CAST,
     eps: [
@@ -714,7 +715,7 @@ const STORIES = [
 
   // ── 11 — season finale ────────────────────────────────────────────────────
   {
-    title: "Six Years, First Class", product: "shoot", trigger: "STUDIO",
+    title: "Six Years, First Class", product: "shoot", trigger: "BOOK",
     tags: ["#convocation", "#firstclass", "#nigeriangraduate"],
     photos: "A graduate in gown photographed in harsh midday sun, and the set the shoot produced." + CAST,
     eps: [

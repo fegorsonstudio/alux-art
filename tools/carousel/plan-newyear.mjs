@@ -139,7 +139,7 @@ export const PLAN2 = [
 
   // ───────────────── WEEK 13 — year end (28 Dec – 3 Jan) ─────────────────────
   {
-    id: "p49", week: 13, slot: "A", product: "shoot", trigger: "STUDIO",
+    id: "p49", week: 13, slot: "A", product: "shoot", trigger: "BOOK",
     title: "Ten images for a business page",
     photos: "One source photo and the ten-image set it produced",
     cards: [
@@ -157,13 +157,13 @@ export const PLAN2 = [
       { eyebrow: "Done while the office is closed",
         headline: "Ready before anybody is back at work.",
         body: "Send the photo this week and start January with a page that looks like a business." },
-      cta("STUDIO", "Send me one photo of yourself.", SEE_PRICES),
+      cta("BOOK", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Get ten images for your business page in one day even if you have never been photographed for work.\n\n" +
       "One photo is not a business page. You need a profile picture, a banner, something for the about page and something to post — and most people have one blurry selfie doing all four jobs.\n\n" +
       "Send one photo and get back ten: different poses, framing and lighting, the same face throughout.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#smallbusinessnigeria #branding #lagosbusiness #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#smallbusinessnigeria #branding #lagosbusiness #aluxart",
   },
   {
     id: "p50", week: 13, slot: "B", product: "relight", trigger: "LIGHT",
@@ -193,7 +193,7 @@ export const PLAN2 = [
       "💬 Comment LIGHT and I'll send you the link.\n\n#dettydecember #lagosnightlife #aluxart",
   },
   {
-    id: "p51", week: 13, slot: "C", product: "shoot", trigger: "STUDIO",
+    id: "p51", week: 13, slot: "C", product: "shoot", trigger: "BOOK",
     title: "NEW YEAR'S DAY — start the year with a photo of yourself",
     photos: "One photo and the set it produced",
     cards: [
@@ -208,17 +208,17 @@ export const PLAN2 = [
       { eyebrow: "What it takes",
         headline: "One photo and a few minutes today.",
         body: "No studio to book, no day off, no waiting until you have lost weight." },
-      cta("STUDIO", "Send me one photo today.", SEE_PRICES),
+      cta("BOOK", "Send me one photo today.", SEE_PRICES),
     ],
     caption:
       "Happy New Year 🎇\n\n" +
       "Start the year with a photo of yourself you actually like — without a studio or a resolution.\n\n" +
       "Everybody updates their profile today, and almost everybody uses a cropped photo from a party because there is nothing else on the phone. It is the first thing people will see of you all year.\n\n" +
       "One photo, today, is the whole task.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#newyear2027 #newyearnewme #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#newyear2027 #newyearnewme #aluxart",
   },
   {
-    id: "p52", week: 13, slot: "D", product: "shoot", trigger: "STUDIO",
+    id: "p52", week: 13, slot: "D", product: "shoot", trigger: "BOOK",
     title: "Best of the year",
     photos: "A grid of the year's best results across all products",
     cards: [
@@ -227,12 +227,12 @@ export const PLAN2 = [
       { eyebrow: "That is the whole point",
         headline: "None of these people hired a photographer.",
         body: "They sent one picture in a chat." },
-      cta("STUDIO", "Start with one photo.", SEE_PRICES),
+      cta("BOOK", "Start with one photo.", SEE_PRICES),
     ],
     caption:
       "Get a year of photographs you are proud of without owning a camera.\n\n" +
       "Every single one of these started as somebody's phone photo, sent in a chat.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#newyear #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#newyear #aluxart",
   },
 
   // ───────────────── WEEK 14 — back to work (4–10 Jan) ───────────────────────
@@ -340,7 +340,7 @@ export const PLAN2 = [
 
   // ───────────────── WEEK 15 — January is long (11–17 Jan) ───────────────────
   {
-    id: "p57", week: 15, slot: "A", product: "shoot", trigger: "STUDIO",
+    id: "p57", week: 15, slot: "A", product: "shoot", trigger: "BOOK",
     title: "The job hunt headshot",
     photos: "One casual photo and the corporate set it produced",
     cards: [
@@ -358,13 +358,13 @@ export const PLAN2 = [
       { eyebrow: "What comes back",
         headline: "A set you can use everywhere.",
         body: "LinkedIn, the CV, the company page, the email signature. Same face in all of them." },
-      cta("STUDIO", "Send me one photo of yourself.", SEE_PRICES),
+      cta("BOOK", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Get a corporate headshot in one day even if you own nothing corporate to wear.\n\n" +
       "A recruiter looks at your picture before your CV, and a cropped party photo answers a question you did not want asked.\n\n" +
       "But a headshot session costs more than the suit — booking, travel, a day off, and payment before you have the job. Send one photo in whatever you are wearing instead. The wardrobe, the room and the light are built afterwards.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#jobsearch #linkedin #careers #lagosjobs #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#jobsearch #linkedin #careers #lagosjobs #aluxart",
   },
   {
     id: "p58", week: 15, slot: "B", product: "relight", trigger: "LIGHT",
@@ -537,7 +537,7 @@ export const PLAN2 = [
 
   // ───────────────── WEEK 17 — business (25–31 Jan) ──────────────────────────
   {
-    id: "p65", week: 17, slot: "A", product: "shoot", trigger: "STUDIO",
+    id: "p65", week: 17, slot: "A", product: "shoot", trigger: "BOOK",
     title: "A set for a service business",
     photos: "One photo and the ten-image set it produced",
     cards: [
@@ -555,13 +555,13 @@ export const PLAN2 = [
       { eyebrow: "What you get",
         headline: "Ten images, ten setups.",
         body: "Enough to run a page for months without repeating yourself." },
-      cta("STUDIO", "Send me one photo of yourself.", SEE_PRICES),
+      cta("BOOK", "Send me one photo of yourself.", SEE_PRICES),
     ],
     caption:
       "Look like an established business in one day even if you started last month.\n\n" +
       "New businesses look new: one photo, used everywhere, slightly blurry. Customers read that before they read your prices.\n\n" +
       "What established actually looks like is consistency — the same person, photographed properly, appearing the same way everywhere you show up.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#smallbusinessnigeria #entrepreneur #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#smallbusinessnigeria #entrepreneur #aluxart",
   },
   {
     id: "p66", week: 17, slot: "B", product: "relight", trigger: "LIGHT",
@@ -616,7 +616,7 @@ export const PLAN2 = [
       "💬 Comment GIF and we'll make yours right there in the chat.\n\n#smallbusinessnigeria #instagramstickers #aluxart",
   },
   {
-    id: "p68", week: 17, slot: "D", product: "shoot", trigger: "STUDIO",
+    id: "p68", week: 17, slot: "D", product: "shoot", trigger: "BOOK",
     title: "Best set of the week",
     photos: "One source photo and the set it produced",
     cards: [
@@ -625,12 +625,12 @@ export const PLAN2 = [
       { eyebrow: "Same face, every time",
         headline: "Locked to your photo, not a lookalike.",
         body: "Different pose, framing and light in each one." },
-      cta("STUDIO", "Send me one photo.", SEE_PRICES),
+      cta("BOOK", "Send me one photo.", SEE_PRICES),
     ],
     caption:
       "Get five different photos of yourself without being photographed five times.\n\n" +
       "All of these came from the one on the left.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#aluxart",
   },
 
   // ───────────────── WEEK 18 — run-up to Valentine's (1–7 Feb) ───────────────
@@ -738,7 +738,7 @@ export const PLAN2 = [
 
   // ───────────────── WEEK 19 — Valentine's week (8–14 Feb) ───────────────────
   {
-    id: "p73", week: 19, slot: "A", product: "shoot", trigger: "STUDIO",
+    id: "p73", week: 19, slot: "A", product: "shoot", trigger: "BOOK",
     title: "A couple's set",
     photos: "One photo of a couple and the set it produced",
     cards: [
@@ -756,13 +756,13 @@ export const PLAN2 = [
       { eyebrow: "In time for the day",
         headline: "Sent this week, ready for Saturday.",
         body: "Print one, or just have something worth posting." },
-      cta("STUDIO", "Send me one photo of the two of you.", SEE_PRICES),
+      cta("BOOK", "Send me one photo of the two of you.", SEE_PRICES),
     ],
     caption:
       "Get a full couple's shoot this week even though every photographer is booked.\n\n" +
       "Valentine's week is the busiest week of the year for photographers in this country. Nobody has a slot left before Saturday.\n\n" +
       "Send one photo of the two of you, taken anywhere, today. A whole set comes back — different poses, framing and light, both faces exactly as they are.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#valentines #couplesshoot #nigeriancouples #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#valentines #couplesshoot #nigeriancouples #aluxart",
   },
   {
     id: "p74", week: 19, slot: "B", product: "relight", trigger: "LIGHT",
@@ -939,7 +939,7 @@ export const PLAN2 = [
 
   // ───────────────── WEEK 21 — how it works (22–28 Feb) ──────────────────────
   {
-    id: "p81", week: 21, slot: "A", product: "shoot", trigger: "STUDIO",
+    id: "p81", week: 21, slot: "A", product: "shoot", trigger: "BOOK",
     title: "One, five or ten",
     photos: "One source photo shown against a one-image, five-image and ten-image result",
     cards: [
@@ -957,13 +957,13 @@ export const PLAN2 = [
       { eyebrow: "Ten images",
         headline: "For a business, a brand or a whole year.",
         body: "Profile, banner, about page, posts, email signature — covered." },
-      cta("STUDIO", "Pick the size that fits.", SEE_PRICES),
+      cta("BOOK", "Pick the size that fits.", SEE_PRICES),
     ],
     caption:
       "Get exactly as many photos as you need without paying for a whole session.\n\n" +
       "A studio sells you an hour whether you needed one good picture or twenty.\n\n" +
       "Here you choose first: one image for a profile picture, five for a page that has to keep posting, ten for a business that needs a profile, a banner, an about page and a year of posts.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link with what each one costs.\n\n" +
+      "💬 Comment BOOK and I'll send you the link with what each one costs.\n\n" +
       "#aluxart #lagosbusiness #headshots",
   },
   {
@@ -1093,7 +1093,7 @@ export const PLAN2 = [
       "#mothersday #throwback #family #aluxart",
   },
   {
-    id: "p87", week: 22, slot: "C", product: "shoot", trigger: "STUDIO",
+    id: "p87", week: 22, slot: "C", product: "shoot", trigger: "BOOK",
     title: "A set for her",
     photos: "One photo of a mother and the set it produced",
     cards: [
@@ -1111,14 +1111,14 @@ export const PLAN2 = [
       { eyebrow: "What she gets",
         headline: "A set of portraits of herself.",
         body: "Different poses, framing and lighting. The first proper photographs of her in years." },
-      cta("STUDIO", "Send me one photo of her.", SEE_PRICES),
+      cta("BOOK", "Send me one photo of her.", SEE_PRICES),
     ],
     caption:
       "Give her a full photoshoot for Mother's Day even though she would never book one herself.\n\n" +
       "She has spent thirty years behind the camera — every birthday, every Christmas, every school event. There are a thousand photographs in that house and almost none of her.\n\n" +
       "And she would never spend money on herself for this, which is exactly why it works as a gift.\n\n" +
       "One photo of her is all you need.\n\n" +
-      "💬 Comment STUDIO and I'll send you the link.\n\n#mothersday #nigerianmothers #aluxart",
+      "💬 Comment BOOK and I'll send you the link.\n\n#mothersday #nigerianmothers #aluxart",
   },
   {
     id: "p88", week: 22, slot: "D", product: "studio", trigger: "STUDIO",
