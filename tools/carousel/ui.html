@@ -64,7 +64,14 @@
   th { color: var(--mint); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
   .pill { font-size: .7rem; padding: 2px 9px; border-radius: 999px; background: rgba(255,255,255,.08); }
   .pill.scheduled { background: rgba(67,204,178,.2); color: var(--mint); }
-  .pill.needs-photos { background: rgba(233,162,59,.18); color: var(--warn); }
+  .pill.needs-photos, .pill.needs-pictures { background: rgba(233,162,59,.18); color: var(--warn); }
+  .pill.approved { background: rgba(67,204,178,.12); color: var(--paper); border: 1px solid var(--line); }
+  .scene pre { white-space: pre-wrap; font: .78rem/1.5 ui-monospace, Consolas, monospace; color: var(--muted);
+    background: rgba(0,0,0,.25); padding: 10px 12px; border-radius: 8px; margin: 8px 0; max-height: 220px; overflow: auto; }
+  .scene .meta, .castItem .meta { font-size: .78rem; color: var(--muted); }
+  .castItem { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .castItem:last-child { border-bottom: 0; }
+  .castItem b { color: var(--paper); }
   tbody tr { cursor: pointer; }
   tbody tr:hover { background: rgba(67,204,178,.07); }
   tbody tr.on { background: rgba(67,204,178,.12); }
@@ -110,6 +117,15 @@
       <input type="file" accept="image/*" hidden id="fileAfter">
     </div>
 
+    <div id="storyBox" style="display:none">
+      <label>Story pictures &mdash; made in Google Flow, two per episode</label>
+      <div class="card">
+        <h3>Cast &mdash; keep these faces the same in every picture</h3>
+        <div id="castList"></div>
+      </div>
+      <div id="sceneList"></div>
+    </div>
+
     <label>The cards</label>
     <div id="cards"></div>
     <button class="ghost" id="addCard">+ Add a card</button>
@@ -126,6 +142,7 @@
     <div class="row" style="margin-top:18px">
       <button id="preview">Preview slides</button>
       <button class="ghost" id="save">Save to folder</button>
+      <button class="ghost" id="approve">Approve</button>
       <button class="ghost" id="schedule">Send to server &amp; schedule</button>
     </div>
     <div id="msg"></div>
@@ -275,6 +292,81 @@ const collect = () => ({
   caption: $("caption").value, scheduledFor: $("scheduledFor").value || null,
   id: state.id || null, photos: state.photos || null,
   gifLines: gifLinesNow(), gifCleared: $("gifCleared").checked,
+  storyboard: state.storyboard || null, sceneImages: state.sceneImages || [],
+});
+
+// ---- story pictures ------------------------------------------------------------
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/** Copy to the clipboard, or select the text so it can be copied by hand. */
+async function copyText(text, el) {
+  try {
+    await navigator.clipboard.writeText(text);
+    say(`Prompt copied — ${text.length} characters. Paste it into Flow.`);
+  } catch {
+    if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    say("Couldn't copy automatically — the prompt is selected: press Ctrl+C.", true);
+  }
+}
+
+function drawStory() {
+  const sb = state.storyboard;
+  $("storyBox").style.display = sb ? "" : "none";
+  if (!sb) return;
+  $("castList").innerHTML = sb.cast.map((c, i) => c.real
+    ? `<div class="castItem"><b>${esc(c.name)}</b> &mdash; a real person.<div class="meta">${esc(c.note)}</div></div>`
+    : `<div class="castItem"><b>${esc(c.name)}</b> &mdash; invented. Make this face once in Flow and attach it to every scene ${esc(c.name)} is in.
+         <pre id="castPrompt${i}" style="display:none">${esc(c.prompt)}</pre>
+         <div class="row" style="margin-top:6px"><button class="ghost" data-copy-cast="${i}">Copy portrait prompt</button></div></div>`).join("");
+  $("sceneList").innerHTML = sb.scenes.map((s, i) => {
+    const card = (state.cards[s.after - 1] || {}).headline || "";
+    const img = state.sceneImages?.[i];
+    return `<div class="card scene">
+      <h3>Picture ${i + 1} &mdash; goes after card ${s.after}</h3>
+      <div class="meta">&ldquo;${esc(card)}&rdquo;</div>
+      <div class="meta" style="margin-top:6px">${esc(sb.flow)} &middot; attach in Flow: <b>${esc(s.attach.join(", ") || "nobody — no recurring face")}</b></div>
+      <pre id="scenePrompt${i}">${esc(s.prompt)}</pre>
+      <div class="row"><button class="ghost" data-copy-scene="${i}">Copy prompt</button></div>
+      <div class="drop${img ? " has" : ""}" data-scene-drop="${i}" style="margin-top:10px">
+        ${img ? `Picture ${i + 1} &mdash; click to change<img src="${img}">` : `Drop picture ${i + 1} from Flow here, or click`}
+        <input type="file" accept="image/*" hidden data-scene-file="${i}">
+      </div></div>`;
+  }).join("");
+
+  $("castList").querySelectorAll("[data-copy-cast]").forEach((b) => b.addEventListener("click", () => {
+    const i = +b.dataset.copyCast; copyText(sb.cast[i].prompt, $(`castPrompt${i}`));
+  }));
+  $("sceneList").querySelectorAll("[data-copy-scene]").forEach((b) => b.addEventListener("click", () => {
+    const i = +b.dataset.copyScene; copyText(sb.scenes[i].prompt, $(`scenePrompt${i}`));
+  }));
+  $("sceneList").querySelectorAll("[data-scene-drop]").forEach((drop) => {
+    const i = +drop.dataset.sceneDrop;
+    const file = drop.querySelector("input");
+    const take = (f) => {
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        state.sceneImages = state.sceneImages || [];
+        state.sceneImages[i] = r.result;
+        drawStory();
+        say(`Picture ${i + 1} added. Press Preview to see it in place, then Save.`);
+      };
+      r.readAsDataURL(f);
+    };
+    drop.addEventListener("click", () => file.click());
+    file.addEventListener("change", (e) => take(e.target.files[0]));
+    drop.addEventListener("dragover", (e) => e.preventDefault());
+    drop.addEventListener("drop", (e) => { e.preventDefault(); take(e.dataTransfer.files[0]); });
+  });
+}
+
+$("approve").addEventListener("click", async () => {
+  if (!state.id) return say("Save the post first.", true);
+  try {
+    const r = await post("/api/approve", { id: state.id });
+    say(r.status === "scheduled" ? "Already scheduled." : "Approved. It can be scheduled now.");
+    loadQueue();
+  } catch (e) { say(e.message, true); }
 });
 
 // ---- story GIF ---------------------------------------------------------------
@@ -381,6 +473,9 @@ async function openPost(id) {
     drawCards();
     $("wants").style.display = state.photos ? "" : "none";
     $("wantsText").textContent = state.photos || "";
+    state.storyboard = data.storyboard || null;
+    state.sceneImages = data.sceneImages || [];
+    drawStory();
     $("gifLines").value = (data.gifLines || []).join("\n");
     $("gifCleared").checked = Boolean(data.gifCleared);
     $("gifOut").innerHTML = "";
@@ -458,7 +553,7 @@ async function loadQueue() {
     <td style="white-space:nowrap">${when(q.scheduledFor)}</td>
     <td>${q.title || q.id}</td>
     <td>${q.slides || "—"}</td>
-    <td><span class="pill ${q.status}">${q.status === "needs-photos" ? "needs photos" : q.status}</span></td>
+    <td><span class="pill ${q.status}">${q.status === "needs-photos" ? "needs photos" : q.status === "needs-pictures" ? "needs pictures" : q.status}</span></td>
     <td>${q.gif?.giphyUrl ? `<a href="${q.gif.giphyUrl}" target="_blank" rel="noopener">on GIPHY</a>`
           : q.gif?.made ? (q.gifCleared ? "ready" : "made") : "—"}</td></tr>`).join("")
     || `<tr><td colspan="5" style="color:var(--muted)">Nothing saved yet — load the plan above.</td></tr>`;

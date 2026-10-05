@@ -27,6 +27,7 @@ import { PLAN2 } from "./plan-newyear.mjs";
 // "Load the plan", so dropping it touches nothing in the main 88.
 import { PLAN3, BATCH as EXPERIMENT } from "./plan-microdrama.mjs";
 import { GIF_SCRIPTS, EPISODE_KICKER, gifTags } from "./gif-scripts.mjs";
+import { storyboardFor } from "./storyboard.mjs";
 import sharp from "sharp";
 
 // The twenty-two weeks as one list. Kept in two files because they were
@@ -176,6 +177,12 @@ async function renderPost(post) {
   if (before) slides.push(await photoCard({ file: before, pill: "Before" }));
   if (after) slides.push(await photoCard({ file: after, pill: "After" }));
 
+  // Story pictures, full-screen and wordless, each straight after the card it
+  // illustrates. A missing one is simply skipped, so a preview works while the
+  // owner is still making them; the queue status is what stops it going out.
+  const scenes = Array.isArray(post.storyboard?.scenes) ? post.storyboard.scenes : [];
+  const sceneImgs = (Array.isArray(post.sceneImages) ? post.sceneImages : []).map(dataUrlToBuffer);
+
   for (let i = 0; i < cards.length; i++) {
     const c = cards[i];
     const common = { index: i + 1, total, site: post.site };
@@ -187,6 +194,9 @@ async function renderPost(post) {
         cta: i === cards.length - 1 ? (post.buttonText || null) : null,
         ...common,
       }));
+    }
+    for (let s = 0; s < scenes.length; s++) {
+      if (scenes[s].after === i + 1 && sceneImgs[s]) slides.push(await photoCard({ file: sceneImgs[s] }));
     }
   }
   return slides;
@@ -203,12 +213,37 @@ const routes = {
     const post = await readBody(req);
     if (!post.title?.trim()) return json(res, 400, { error: "Give the post a name so you can find it again." });
 
-    const slides = await renderPost(post);
-    if (slides.length === 0) return json(res, 400, { error: "Nothing to save — add a photo or a card first." });
-
     const id = post.id || `${Date.now()}`;
     const dir = join(OUT, id);
     await mkdir(dir, { recursive: true });
+
+    // The storyboard comes from disk, not the page: it is the plan's, and the
+    // page never edits it. A story picture the page did not send back is the
+    // one already saved — dropping it because the page forgot it would undo
+    // work done in Flow.
+    const stored = JSON.parse(await readFile(join(dir, "post.json"), "utf8").catch(() => "{}"));
+    post.storyboard = post.storyboard ?? stored.storyboard ?? null;
+    const sceneCount = Array.isArray(post.storyboard?.scenes) ? post.storyboard.scenes.length : 0;
+    const sceneImages = [];
+    for (let s = 0; s < sceneCount; s++) {
+      const sent = dataUrlToBuffer(post.sceneImages?.[s]);
+      // Whatever Flow handed over — its ".png" downloads are JPEG inside — is
+      // stored as one JPEG per scene under a name that cannot drift.
+      const buf = sent
+        ? await sharp(sent).rotate().jpeg({ quality: 92 }).toBuffer()
+        : await readFile(join(dir, `scene-${s + 1}.jpg`)).catch(() => null);
+      sceneImages.push(buf);
+    }
+    post.sceneImages = sceneImages.map((b) => (b ? `data:image/jpeg;base64,${b.toString("base64")}` : null));
+
+    const slides = await renderPost(post);
+    if (slides.length === 0) return json(res, 400, { error: "Nothing to save — add a photo or a card first." });
+    if (slides.length > 10) {
+      return json(res, 400, { error: `That is ${slides.length} slides; Instagram stops at 10. Remove a card or a picture.` });
+    }
+    for (let s = 0; s < sceneImages.length; s++) {
+      if (sceneImages[s]) await writeFile(join(dir, `scene-${s + 1}.jpg`), sceneImages[s]);
+    }
     // Clear the previous render first. A post re-saved with fewer slides left
     // its old 08.jpg behind, and the scheduler sends every numbered slide in the
     // folder — so a cut slide would still have gone out on Instagram.
@@ -237,6 +272,8 @@ const routes = {
     await writeFile(join(dir, "post.json"),
       JSON.stringify({ ...before, ...post, beforeImage: sources.beforeImage ?? null,
                        afterImage: sources.afterImage ?? null,
+                       // File names, never the pictures themselves (see above).
+                       sceneImages: sceneImages.map((b, s) => (b ? `scene-${s + 1}.jpg` : null)),
                        gifLines, gifLinesEdited: gifLinesEdited(String(id), gifLines),
                        gifCleared: post.gifCleared ?? before.gifCleared ?? false,
                        // Once a post has been saved by hand, its date is the
@@ -254,7 +291,12 @@ const routes = {
       // difference between 20,907 people and 102. Saying so in the queue is
       // how the owner can see at a glance which of the twelve weeks still
       // needs pictures.
-      status: (sources.beforeImage && sources.afterImage) ? "draft" : "needs-photos",
+      // An episode with a storyboard also waits for both story pictures. And
+      // any save lands on draft, never approved: whatever changed has not been
+      // looked at yet, so it has to be approved again before it can go out.
+      status: !(sources.beforeImage && sources.afterImage) ? "needs-photos"
+            : sceneImages.some((b) => !b) ? "needs-pictures"
+            : "draft",
       photos: post.photos ?? null,
       folder: dir, createdAt: new Date().toISOString(),
     };
@@ -266,6 +308,29 @@ const routes = {
 
   async "GET /api/queue"(_req, res) {
     json(res, 200, { queue: await loadQueue() });
+  },
+
+  /**
+   * The owner's word that this post is right, slide by slide.
+   *
+   * Only a saved post with everything it needs can be approved — photos, and
+   * for an episode both story pictures — and only scheduling reads it. A save
+   * after approving puts the post back to draft, because what was approved is
+   * no longer what would be posted.
+   */
+  async "POST /api/approve"(req, res) {
+    const { id } = await readBody(req);
+    const queue = await loadQueue();
+    const row = queue.find((q) => q.id === String(id));
+    if (!row) return json(res, 404, { error: "Save the post first." });
+    if (row.status === "needs-photos") return json(res, 400, { error: "Add the before and after photos first." });
+    if (row.status === "needs-pictures") return json(res, 400, { error: "Add both story pictures first." });
+    if (!row.slides) return json(res, 400, { error: "Save the post first." });
+    if (row.status === "scheduled") return json(res, 200, { ok: true, status: "scheduled" });
+    row.status = "approved";
+    row.approvedAt = new Date().toISOString();
+    await saveQueue(queue);
+    json(res, 200, { ok: true, status: "approved" });
   },
 
   /**
@@ -329,6 +394,11 @@ const routes = {
         gifLines: existing?.gifLinesEdited ? existing.gifLines : (GIF_SCRIPTS[p.id] ?? []),
         gifLinesEdited: Boolean(existing?.gifLinesEdited),
         gifCleared: Boolean(existing?.gifCleared),
+        // Episodes carry their story-picture prompts and cast. Always the
+        // plan's latest: the owner never edits these, they only add pictures,
+        // and the pictures live in their own files, untouched by an import.
+        storyboard: storyboardFor(id),
+        sceneImages: existing?.sceneImages ?? null,
         // Never clobber pictures already attached.
         beforeImage: existing?.beforeImage ?? null,
         afterImage: existing?.afterImage ?? null,
@@ -424,6 +494,13 @@ const routes = {
         const buf = await readFile(join(dir, post[key])).catch(() => null);
         post[key] = buf ? `data:image/jpeg;base64,${buf.toString("base64")}` : null;
       }
+    }
+    // The story pictures, back into something the page can show.
+    if (Array.isArray(post.storyboard?.scenes)) {
+      post.sceneImages = await Promise.all(post.storyboard.scenes.map(async (_s, i) => {
+        const buf = await readFile(join(dir, `scene-${i + 1}.jpg`)).catch(() => null);
+        return buf ? `data:image/jpeg;base64,${buf.toString("base64")}` : null;
+      }));
     }
     // The story GIF, if one has been made, so reopening a post shows it.
     const gif = await readFile(join(dir, "story.gif")).catch(() => null);
@@ -533,6 +610,15 @@ const routes = {
     if (!row.slides) {
       return json(res, 400, {
         error: "This one has no slides yet — add the before and after photos, then press Save.",
+      });
+    }
+    // Nothing goes out unlooked-at. Approval is pressed after reading every
+    // slide in the preview, and any save afterwards clears it.
+    if (row.status !== "approved" && row.status !== "scheduled") {
+      return json(res, 400, {
+        error: row.status === "needs-pictures"
+          ? "This episode still needs its two story pictures."
+          : "Approve it first: press Preview, read every slide, then press Approve.",
       });
     }
 

@@ -55,8 +55,8 @@ const HOUR = 13;
 const NEXT_DAY = { 1: "Wednesday", 2: "Friday", 3: "Sunday" };
 
 const CAST =
-  " Use someone who agreed to play this part: a model, a friend, staff. Not a customer's photo " +
-  "from the consent ask. The same person in all four episodes if you can.";
+  " Use someone who agreed to play this part — including AI-made story pictures of them: a model, " +
+  "a friend, staff. Not a customer's photo from the consent ask. The same person in all four episodes.";
 const NO_PERSON = " No person needed.";
 
 /** What the final slide asks for. Each line matches what the bot actually replies. */
