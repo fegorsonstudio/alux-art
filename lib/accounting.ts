@@ -251,15 +251,22 @@ export async function accountingSummary(
   // ── Things a human should look at ─────────────────────────────────────────
   const attention: AccountingSummary["attention"] = [];
 
+  // Older than a day: a checkout opened an hour ago is in progress, not stuck.
+  // The payment safety net (scripts/paystack-reconcile.mjs, every 10 minutes)
+  // asks Paystack or Flutterwave about each of these, alerts on any that were
+  // paid, and closes the never-paid ones as 'abandoned' after a week — so what
+  // remains here is genuinely waiting.
   const [pending] = await sql<{ n: number; ngn: number }[]>`
     SELECT COUNT(*)::int AS n, COALESCE(SUM(amount_ngn), 0)::bigint AS ngn
-    FROM template_purchases WHERE status = 'pending'`.catch(() => [{ n: 0, ngn: 0 }]);
+    FROM template_purchases
+    WHERE status = 'pending' AND created_at < NOW() - INTERVAL '1 day'`.catch(() => [{ n: 0, ngn: 0 }]);
   if (pending?.n) {
     attention.push({
       severity: "medium",
       title: `${pending.n} purchases stuck at pending`,
       detail: `Worth ₦${Number(pending.ngn).toLocaleString("en-NG")} if they were ever meant to be paid. ` +
-              `A booking that never completes payment should not sit here for ever.`,
+              `The payment safety net checks each with the gateway every 10 minutes, alerts you on Telegram ` +
+              `if any was paid, and closes the unpaid ones as abandoned once they are a week old.`,
     });
   }
 

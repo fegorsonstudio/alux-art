@@ -58,9 +58,15 @@ export async function POST(request: NextRequest) {
       ${txRef}, ${event.event}, ${JSON.stringify(event)},
       ${idempotencyKey}, 'flutterwave_webhook', ${now}
     )
-    ON CONFLICT (idempotency_key) DO NOTHING
+    ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
     RETURNING id
   `;
+  // The WHERE is not decoration. The unique index on idempotency_key is
+  // partial (WHERE idempotency_key IS NOT NULL), and Postgres only matches a
+  // partial index when the conflict target repeats its predicate. Without it
+  // this insert failed with 42P10 on EVERY call — so no Flutterwave payment was
+  // ever confirmed here, and a customer who paid through the fallback gateway
+  // sat at "pending" for good. The Paystack route always had it.
 
   if (!loggedEvent) {
     console.log(`[flutterwave webhook] Duplicate event (idempotency_key: ${idempotencyKey.slice(0, 8)}...) — skipping`);

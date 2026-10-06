@@ -103,7 +103,103 @@ async function main() {
       rescued.map(r => "• " + r).join("\n") +
       "\n\nThese were paid on Paystack but never processed. Their shoots are now running.");
   }
+
+  await marketplace();
   await sql.end();
+}
+
+/**
+ * Marketplace bookings — the pass this script was missing.
+ *
+ * Everything above reads `payments`, which only direct studio shoots write.
+ * Marketplace bookings — every template, the Gear Equalizer, and everything the
+ * Instagram and WhatsApp bots sell — record their payment in
+ * template_purchases, which nothing here ever looked at. So a bot customer who
+ * paid by bank transfer, whose webhook never landed, would have waited for ever
+ * with nobody told.
+ *
+ * Two jobs:
+ *
+ *   PAID BUT STILL PENDING — a customer who paid and got nothing. Reported to
+ *   the admin at once rather than processed here: the webhook's template path
+ *   does more than flip a status (the creator's payout, the sale email, the
+ *   coupon count), and copying half of it would be worse than a human pressing
+ *   one button.
+ *
+ *   NEVER PAID, OVER A WEEK OLD — closed as 'abandoned', so it stops reading as
+ *   money owed. ONLY the purchase row changes. The shoot stays at
+ *   PENDING_PAYMENT, so a payment that does turn up late still goes through
+ *   untouched: the webhook and the customer's own "check payment" button both
+ *   act on the shoot's status, and update any purchase not already 'success'.
+ *
+ * The gateway is asked for every row before anything is closed — "never paid"
+ * is Paystack's or Flutterwave's answer, not an assumption from age. Flutterwave
+ * is included because it is the fallback when Paystack fails, and its webhook
+ * failed on every call until 2026-10-06 — exactly the booking this net is for.
+ */
+const ABANDON_AFTER_DAYS = 7;
+/** Each gateway's own words for a transaction that will not complete. */
+const NEVER_PAID = new Set(["abandoned", "failed", "reversed", "cancelled", "not found"]);
+const FLW_KEY = process.env.FLUTTERWAVE_SECRET_KEY || process.env.FLW_SECRET_KEY;
+
+/** What the gateway that took this booking says happened, as one word. */
+async function gatewayStatus(provider, ref) {
+  if (provider === "flutterwave") {
+    if (!FLW_KEY) return "unknown";
+    const r = await fetch(`https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(ref)}`, {
+      headers: { Authorization: `Bearer ${FLW_KEY}` },
+    }).then(x => x.json()).catch(() => null);
+    const s = r?.data?.status ?? (r?.status === "error" ? "not found" : "unknown");
+    return s === "successful" ? "success" : s;
+  }
+  const r = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(ref)}`, {
+    headers: { Authorization: `Bearer ${KEY}` },
+  }).then(x => x.json()).catch(() => null);
+  return r?.data?.status ?? (r?.status === false ? "not found" : "unknown");
+}
+
+async function marketplace() {
+  const rows = await sql`
+    SELECT tp.id, COALESCE(tp.payment_provider, 'paystack') AS provider,
+           COALESCE(tp.provider_reference, tp.paystack_reference) AS ref,
+           tp.shoot_id, tp.amount_ngn, tp.created_at, s.status AS shoot_status
+    FROM template_purchases tp
+    LEFT JOIN shoots s ON s.id = tp.shoot_id
+    WHERE tp.status = 'pending'
+      AND COALESCE(tp.payment_provider, 'paystack') IN ('paystack', 'flutterwave')
+      AND tp.created_at < NOW() - INTERVAL '2 hours'
+    ORDER BY tp.created_at`;
+  if (!rows.length) return;
+
+  const paidMissed = [];
+  let closed = 0;
+  for (const p of rows) {
+    let status = "no reference";
+    if (p.ref) {
+      status = await gatewayStatus(p.provider, p.ref);
+      if (status === "success") {
+        paidMissed.push(`₦${p.amount_ngn} via ${p.provider} — shoot ${String(p.shoot_id).slice(0, 8)} (${p.shoot_status ?? "?"}), ref ${p.ref}`);
+        continue;
+      }
+      await new Promise(r => setTimeout(r, 250));
+    }
+    const ageDays = (Date.now() - new Date(p.created_at).getTime()) / 86_400_000;
+    if (ageDays >= ABANDON_AFTER_DAYS && (NEVER_PAID.has(status) || status === "no reference")) {
+      if (!DRY) {
+        await sql`UPDATE template_purchases SET status = 'abandoned' WHERE id = ${p.id} AND status = 'pending'`;
+      }
+      closed++;
+    }
+  }
+
+  log(`marketplace: ${rows.length} pending checked, ${paidMissed.length} paid but unprocessed, ` +
+      `${closed} closed as abandoned${DRY ? " (dry run — nothing changed)" : ""}`);
+  if (paidMissed.length && !DRY) {
+    await tellAdmin("🚨 <b>Paid marketplace bookings that never started</b>\n\n" +
+      paidMissed.map(r => "• " + r).join("\n") +
+      "\n\nPaystack says these were paid, but the booking is still pending here. " +
+      "The customer is waiting — open the shoot in admin and start it.");
+  }
 }
 
 main().catch(async (e) => {
