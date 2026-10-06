@@ -133,6 +133,16 @@ Day and Mothering Sunday on their day. The 4 December stories are `dec-1-1`…`d
 hidden and undated, held for December 2027. Titles read "S1 · Story 01 · Ep 1 — Title".
 The seed reads schedule.mjs and removes old rows only if untouched.
 
+**Update (2026-10-06, evening): tour, download, old auto-poster OFF.** `/admin/carousel`
+has a "How to use" tour (`app/admin/carousel/Tour.tsx`, 11 lit-up steps by `data-tour`
+name; runs once per browser, `localStorage` `carousel-tour-seen`) and a **Download slides**
+button (`GET /api/admin/carousel/[id]/download` → zip of `slides/NN.jpg` 1080×1350,
+`caption.txt`, `story.gif` if made; verified live). **The old `scripts/instagram-schedule.mjs`
+cron is RETIRED** — renewing the fegorson token let it post an August-queue carousel
+(`w5-d25-fegorson-firstbooking`) at 06:00 UTC today without the owner's OK. Its 3 crontab
+lines are removed (backup `/root/crontab.bak-2026-10-06`); do not put them back. Nothing
+reaches Instagram now except a post the owner approved AND scheduled in the studio.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

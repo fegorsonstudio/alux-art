@@ -308,6 +308,7 @@
   padding: 10px 18px; border-radius: 8px;
   background: var(--cta); color: var(--cta-ink); border: 1px solid rgba(255, 255, 255, 0.88);
   box-shadow: var(--cta-shadow);
+  text-decoration: none; display: inline-block; text-align: center;
 }
 .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 18px 38px rgba(48, 141, 151, 0.23); }
 .btnGhost {
@@ -390,4 +391,28 @@
   .panel { padding: 14px 12px; gap: 12px; }
   .drops { gap: 8px; }
   .drop { min-height: 130px; padding: 10px; }
+}
+
+/* ---- How to use: the guided tour ---- */
+.tour { position: fixed; inset: 0; z-index: 100; }
+/* The lit part: a clear window, everything around it dimmed by its shadow. */
+.tourHole {
+  position: fixed; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(10, 24, 28, 0.62), 0 0 0 3px var(--mint);
+}
+.tourNote {
+  position: fixed; width: 320px; max-width: calc(100vw - 24px); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border-radius: 12px;
+  background: var(--panel-bg); border: 1px solid var(--panel-line); backdrop-filter: blur(18px);
+  box-shadow: var(--panel-shadow); color: var(--ink);
+}
+.app[data-theme="dark"] .tourNote { background: rgba(19, 41, 45, 0.96); }
+.app:not([data-theme="dark"]) .tourNote { background: rgba(255, 255, 255, 0.97); }
+.tourCount { font-size: 0.7rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; color: var(--panel-title); }
+.tourTitle { margin: 0; font-size: 1rem; font-weight: 800; color: var(--heading); }
+.tourBody { margin: 0 0 4px; font-size: 0.86rem; line-height: 1.5; color: var(--ink); }
+.tourSkip { font: inherit; font-size: 0.78rem; background: none; border: 0; color: var(--meta); cursor: pointer; padding: 4px; margin-left: auto; }
+.tourSkip:hover { color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) {
+  .tourHole, .tourNote { transition: top 0.25s cubic-bezier(0.23, 1, 0.32, 1), left 0.25s cubic-bezier(0.23, 1, 0.32, 1), width 0.25s cubic-bezier(0.23, 1, 0.32, 1), height 0.25s cubic-bezier(0.23, 1, 0.32, 1); }
 }

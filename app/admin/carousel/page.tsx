@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import cs from "./carousel.module.css";
+import Tour, { tourNotSeen } from "./Tour";
 
 /**
  * Carousel Studio — the planned Instagram carousels, on the website.
@@ -152,6 +153,7 @@ export default function CarouselStudioPage() {
   const [saved, setSaved] = useState<Form | null>(null);
   const [preview, setPreview] = useState<{ slides: string[]; version: string; tooMany: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [msg, setMsg] = useState<{ text: string; tone: Tone } | null>(null);
 
@@ -220,6 +222,22 @@ export default function CarouselStudioPage() {
       if (showing.current === id) say((e as Error).message, "bad");
     }
   };
+
+  /** Opens a post (the first in the list if none is open), then plays the tour over it. */
+  const startTour = async () => {
+    const first = list?.[0]?.local_id;
+    if (!selected && first) await open(first);
+    window.setTimeout(() => setTourOpen(true), 350);
+  };
+
+  // A first visit gets the tour once the list has arrived.
+  const tourOffered = useRef(false);
+  useEffect(() => {
+    if (!list || !list.length || tourOffered.current || !tourNotSeen()) return;
+    tourOffered.current = true;
+    startTour();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
 
   const close = () => {
     if (!leaveOk()) return;
@@ -493,6 +511,7 @@ export default function CarouselStudioPage() {
       </div>
       <div className={cs.navRight}>
         <Link href="/admin" className={cs.navBtn}>Admin</Link>
+        <button type="button" className={cs.navBtn} data-tour="help" onClick={startTour}>How to use</button>
         <button type="button" className={`${cs.navBtn} ${cs.themeToggle}`} onClick={toggleTheme} aria-pressed={theme === "dark"}>
           {theme === "dark" ? "Light" : "Dark"}
         </button>
@@ -520,8 +539,8 @@ export default function CarouselStudioPage() {
       <div className={cs.main}>
         {/* ---- the list, and the batch tools ---- */}
         <aside className={`${cs.side} ${selected ? cs.hideNarrow : ""}`}>
-          <section className={cs.panel} aria-label="Posts">
-            <div className={cs.chips} role="tablist">
+          <section className={cs.panel} aria-label="Posts" data-tour="list">
+            <div className={cs.chips} role="tablist" data-tour="tabs">
               {FILTERS.map((f) => (
                 <button
                   key={f.key} type="button" role="tab" aria-selected={filter === f.key}
@@ -533,7 +552,7 @@ export default function CarouselStudioPage() {
               ))}
             </div>
             <input
-              type="search" className={cs.input} placeholder="Find a post: S1, S2 story 3, christmas"
+              type="search" data-tour="search" className={cs.input} placeholder="Find a post: S1, S2 story 3, christmas"
               aria-label="Find a post" value={query} onChange={(e) => setQuery(e.target.value)}
             />
             <p className={cs.hintSmall}>Every post goes out at 7pm Lagos time. Season 1 first, then Season 2.</p>
@@ -639,7 +658,7 @@ export default function CarouselStudioPage() {
                 )}
               </section>
 
-              <section className={cs.panel}>
+              <section className={cs.panel} data-tour="photos">
                 <h2 className={cs.panelTitle}>Photos</h2>
                 <div className={cs.drops}>
                   <Drop label="Before" hint="The phone photo. It becomes slide 1." url={detail.post.before}
@@ -650,7 +669,7 @@ export default function CarouselStudioPage() {
               </section>
 
               {detail.post.storyboard && (
-                <section className={cs.panel}>
+                <section className={cs.panel} data-tour="story">
                   <h2 className={cs.panelTitle}>Story pictures, made in Google Flow</h2>
                   <p className={cs.hint}>{detail.post.storyboard.flow}. Two per episode, each going in after its card.</p>
                   <div className={cs.cast} style={{ marginTop: 10 }}>
@@ -687,7 +706,7 @@ export default function CarouselStudioPage() {
                 </section>
               )}
 
-              <section className={cs.panel}>
+              <section className={cs.panel} data-tour="cards">
                 <h2 className={cs.panelTitle}>The cards</h2>
                 <div className={cs.cardList}>
                   {form.cards.map((c, i) => (
@@ -725,7 +744,7 @@ export default function CarouselStudioPage() {
 
               <section className={cs.panel}>
                 <div className={cs.fields}>
-                  <label className={cs.field}>
+                  <label className={cs.field} data-tour="when">
                     <span className={cs.label}>Post at (Lagos time)</span>
                     <input type="datetime-local" className={cs.input} value={form.when} disabled={locked}
                       onChange={(e) => setForm({ ...form, when: e.target.value })} />
@@ -757,7 +776,7 @@ export default function CarouselStudioPage() {
               </section>
 
               {!locked && (
-                <div className={cs.actions}>
+                <div className={cs.actions} data-tour="actions">
                   <div className={cs.btns}>
                     <button type="button" className={`${cs.btn} ${cs.btnGhost}`} disabled={!dirty || !!busy} onClick={save}>
                       {busy === "save" ? "Saving…" : dirty ? "Save" : "Saved"}
@@ -784,12 +803,24 @@ export default function CarouselStudioPage() {
                         {busy === "unschedule" ? "Taking it off…" : "Unschedule"}
                       </button>
                     )}
+                    <a className={`${cs.btn} ${cs.btnGhost}`} data-tour="download" href={`/api/admin/carousel/${id}/download`}
+                      title={dirty ? "Downloads the saved version — save first to include your changes" : "Every slide as a JPEG, the caption and the GIF, in one zip"}>
+                      Download slides
+                    </a>
                   </div>
                   {msg && (
                     <p className={`${cs.msg} ${msg.tone === "bad" ? cs.msgBad : msg.tone === "ok" ? cs.msgOk : cs.msgInfo}`} role="status">
                       {msg.text}
                     </p>
                   )}
+                </div>
+              )}
+              {locked && (
+                <div className={cs.btns}>
+                  <a className={`${cs.btn} ${cs.btnGhost}`} data-tour="download" href={`/api/admin/carousel/${id}/download`}
+                      title={dirty ? "Downloads the saved version — save first to include your changes" : "Every slide as a JPEG, the caption and the GIF, in one zip"}>
+                      Download slides
+                    </a>
                 </div>
               )}
               {locked && msg && (
@@ -813,7 +844,7 @@ export default function CarouselStudioPage() {
                 </section>
               )}
 
-              <section className={cs.panel}>
+              <section className={cs.panel} data-tour="gif">
                 <h2 className={cs.panelTitle}>Story GIF, for Instagram comments</h2>
                 <p className={cs.hint}>
                   One short line each, three or four words: a GIF in a comment is tiny. The before photo shows until
@@ -850,6 +881,7 @@ export default function CarouselStudioPage() {
           )}
         </section>
       </div>
+      <Tour open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   );
 }
