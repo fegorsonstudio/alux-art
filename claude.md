@@ -88,6 +88,29 @@ token Instagram last accepted (renewed first). GIPHY Brand channel is connected.
 scheduling. Next on the roadmap: the studio on the website, then the two-tier customer
 product — `~/.claude/plans/i-am-building-an-polymorphic-koala.md`.
 
+**Update (2026-10-06, later): the studio is ON THE WEBSITE; the laptop app is retired.**
+`/admin/carousel` (admin only) over table `carousel_posts` (migration 070, applied with
+psql), loaded from the `tools/carousel` plan files by `scripts/carousel-seed.mjs`
+(re-runnable; never overwrites the owner's edits, photos, hand-set dates or approvals).
+Routes `/api/admin/carousel/*`; slides drawn by `lib/carousel/render.ts` (text MEASURED
+by drawing it, in Outfit). Approval is tied to the previewed content version
+(`updated_at` moves only when something on a slide changes); editing a scheduled post
+withdraws it; nothing can resend a post Instagram already has. Scheduling writes
+`scheduled_carousels` directly; GIFs still go through `/api/carousel/gif`, called on
+localhost. Removed: `tools/carousel/server.mjs`, `ui.html`, `slides.mjs`,
+`start-carousel.cmd`, and `/api/carousel/schedule` (it re-queued ANY row, published
+included). Verified with 36 end-to-end checks on the server (test post dated 2027, no
+GIPHY upload) and a browser pass. **Fonts:** Outfit + the emoji no-digits rule live in
+`deploy/fonts`; run `deploy/install-fonts.sh` after any rebuild. Outfit has no ₦ — it
+falls back to DejaVu. **Payments:** 55 never-paid marketplace bookings closed as
+`abandoned` (gateway-checked); `scripts/paystack-reconcile.mjs` now checks marketplace
+bookings on Paystack and Flutterwave every 10 minutes; the Flutterwave webhook's
+`ON CONFLICT` was failing on every call and is fixed. **Open:** the old
+`scripts/instagram-schedule.mjs` cron still runs — retire it once the new publisher has
+posted for a week; week-1 dates (5–11 Oct) have passed; the experiment is not loaded;
+owner to confirm story-carousel prices (Phase 4) and whether shoot `4e8d1ee0` (₦2,000,
+never paid, delivered 19 Aug) was started by hand.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
