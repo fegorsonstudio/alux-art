@@ -119,6 +119,13 @@ black-and-gold admin — with a copy-paste token block for both modes. New pages
 admin tools included, use the App look (the owner asked for this). `/admin/carousel`
 is built on the token block.
 
+**Update (2026-10-06, latest): every carousel is a Photo Wahala microdrama episode.**
+HVCO is retired (`tools/carousel/COPY-FORMULA.md` is the house style). Season 1
+(`plan-microdrama.mjs`, m01–m44) shows from Mon 12 Oct at 1pm; Season 2
+(`tools/carousel/season2/`, built by `plan-season2.mjs`, p01–p88) holds the old drafts'
+7pm dated slots, holiday episodes on their day. Check stories with
+`node tools/carousel/season2/check.mjs`, then reseed with `scripts/carousel-seed.mjs`.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
