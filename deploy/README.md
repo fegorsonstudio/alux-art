@@ -56,6 +56,9 @@ nginx -t && systemctl reload nginx
 # Get SSL certificate (DNS must already be pointing to this IP)
 certbot --nginx -d aluxartandframes.shop -d www.aluxartandframes.shop
 
+# Fonts for slides and GIFs (Outfit, emoji). Skip it and they quietly come out in DejaVu
+bash deploy/install-fonts.sh
+
 # Build and start the app
 bash deploy/deploy.sh
 ```
