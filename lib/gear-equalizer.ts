@@ -525,7 +525,10 @@ export function buildGearEqualizerPrompt(
       "showing; a closed mouth stays closed. Do not calm, soften or neutralise a face.\n" +
       "- Smoothing, lightening or evening out skin. Keep texture, pores, marks, moles, " +
       "scars, tattoos, stretch marks and uneven tone exactly as photographed. Relighting " +
-      "changes how light falls ON skin, never the skin itself.\n" +
+      "changes how light falls ON skin, never the skin itself. A colour cast thrown by the " +
+      "room's own lights (orange or red from bulbs, green from fluorescent tubes, purple or " +
+      "blue from party lights) is NOT the person's skin tone: it belongs to the old lighting, " +
+      "and the relight must remove it and show their true skin colour under the new light.\n" +
       "- Changing hairline, hair length, braid or loc placement, or how the hair sits.\n" +
       "- Changing apparent age, weight or ethnicity.\n" +
       "THE TEST: place the output beside IMAGE 1. Every difference must be explainable " +
