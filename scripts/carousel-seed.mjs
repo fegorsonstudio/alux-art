@@ -4,10 +4,11 @@
  *
  *   node --env-file=.env.local scripts/carousel-seed.mjs [--dry-run]
  *
- * The words live in tools/carousel — 88 main posts on fixed dates from 5
- * October, and the 44 Photo Wahala episodes. The episodes go in hidden and
- * undated: the studio's "Load the experiment" button shows them and dates them
- * from a Monday the owner picks.
+ * The words live in tools/carousel. Every post is a Photo Wahala episode:
+ * Season 2 (plan-season2.mjs) holds the 88 dated 7pm slots from 5 October;
+ * Season 1 (plan-microdrama.mjs, batch "microdrama") goes in hidden and
+ * undated, and the studio's Season 1 button shows it and dates it from a
+ * Monday the owner picks, at 1pm.
  *
  * Safe to run again after the plan files change. It refreshes the plan's
  * words only on posts the owner has not edited, approved or scheduled, and it
@@ -15,8 +16,7 @@
  * whether the experiment is showing.
  */
 import postgres from "postgres";
-import { PLAN } from "../tools/carousel/plan.mjs";
-import { PLAN2 } from "../tools/carousel/plan-newyear.mjs";
+import { PLAN_S2 } from "../tools/carousel/plan-season2.mjs";
 import { PLAN3, BATCH as EXPERIMENT } from "../tools/carousel/plan-microdrama.mjs";
 import { GIF_SCRIPTS } from "../tools/carousel/gif-scripts.mjs";
 import { storyboardFor } from "../tools/carousel/storyboard.mjs";
@@ -48,7 +48,7 @@ function planDate(startMonday, week, slot, hour) {
 }
 
 async function main() {
-  const posts = [...PLAN, ...PLAN2, ...PLAN3];
+  const posts = [...PLAN_S2, ...PLAN3];
   const existing = new Set((await sql`SELECT local_id FROM carousel_posts`).map((r) => r.local_id));
   let added = 0, refreshed = 0;
 

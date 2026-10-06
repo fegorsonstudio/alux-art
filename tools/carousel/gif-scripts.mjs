@@ -17,103 +17,16 @@
  * thing to make a stranger read in a comment).
  */
 
+import { GIFS_S2 } from "./plan-season2.mjs";
+
 /** Episodes carry the series name along the bottom of every frame. */
 export const EPISODE_KICKER = "#PHOTOWAHALA";
 
 export const GIF_SCRIPTS = {
-  // ── Main plan, Oct–Dec ────────────────────────────────────────────────────
-  p01: ["Taken at home", "Against a wall", "Now a studio portrait"],
-  p02: ["Too dark to post", "Same night", "Now it's lit"],
-  p03: ["Shot on a hanger", "Same dress", "Four clean angles"],
-  p04: ["Same room", "Same phone", "One light moved"],
-  p05: ["Shot on the stairs", "Same outfit", "Now a studio"],
-  p06: ["The hall was yellow", "You are not", "Real skin tone back"],
-  p07: ["Two pictures", "Your words", "One sticker"],
-  p08: ["Almost deleted it", "Same photo", "New light"],
-  p09: ["Birthday at home", "Same smile", "Worth framing now"],
-  p10: ["The windows won", "Same ceremony", "Faces back"],
-  p11: ["One photo in", "Five images out", "Same face in all"],
-  p12: ["Last night's photo", "Fixed by lunch", "New light"],
-  p13: ["They sat still once", "Same moment", "Studio portrait"],
-  p14: ["The flash fired", "Flat and dark", "Lit from the side"],
-  p15: ["Shot on a sofa", "Same bag", "Boutique shot"],
-  p16: ["No new camera", "Same photo", "Better light"],
-  p17: ["Sent on her break", "One photo", "Studio portrait"],
-  p18: ["Too dark to save?", "Not really", "Saved"],
-  p19: ["One photo of the rail", "Four angles out", "Questions answered"],
-  p20: ["Same night out", "Same photo", "Different light"],
-  p21: ["Will it look like me?", "Same face", "New room, new light"],
-  p22: ["Three photos", "One link", "All fixed"],
-  p23: ["Two pictures", "Four lines", "Now everyone uses it"],
-  p24: ["No studio", "No reshoot", "The right light"],
-  p25: ["The photo you like", "Bad light", "Now a portrait"],
-  p26: ["Five years old", "Same faces", "New light"],
-  p27: ["One photo", "Ten setups", "Same face"],
-  p28: ["Phone did its best", "Same photo", "Better light"],
-  p29: ["Naming day photo", "Against a wall", "Worth printing now"],
-  p30: ["Dinner in the dark", "Same table", "Faces lit"],
-  p31: ["On a mannequin", "Same wig", "Clean, four angles"],
-  p32: ["One photo", "No app needed", "Fixed in the chat"],
-  p33: ["Christmas at home", "Same outfit", "Studio portrait"],
-  p34: ["December nights", "Too dark", "Saved"],
-  p35: ["Two pictures", "Your words", "Shared all December"],
-  p36: ["Taken last night", "Same photo", "Fixed this morning"],
-  p37: ["Everyone home once", "One photo", "Family portrait"],
-  p38: ["Lost in the dark", "Same concert", "You, lit"],
-  p39: ["December stock", "One photo each", "Four clean angles"],
-  p40: ["Same dress", "Same night", "Better light"],
-  p41: ["Take it now", "One photo", "A portrait to keep"],
-  p42: ["Sent tonight", "Back by morning", "Lit properly"],
-  p43: ["One photo now", "Ten for January", "Same face"],
-  p44: ["Almost deleted", "All year long", "All kept"],
+  // ── Season 2 (p01–p88): written beside each story in season2/ ─────────
+  ...GIFS_S2,
 
-  // ── Main plan, Dec–Mar ────────────────────────────────────────────────────
-  p45: ["Too late to book", "Shot at home", "Christmas portrait"],
-  p46: ["Carol night", "Too dark", "Faces lit"],
-  p47: ["Christmas Day", "Everyone home", "One proper photo"],
-  p48: ["Against a curtain", "Same photo", "Now a portrait"],
-  p49: ["One selfie", "Doing every job", "Ten proper images"],
-  p50: ["December backlog", "Too dark to post", "All fixed"],
-  p51: ["New year", "Old party photo", "A photo you like"],
-  p52: ["Phone photos", "All year", "Studio results"],
-  p53: ["First day back", "At the door", "School portrait"],
-  p54: ["Harmattan haze", "Flat and grey", "Shape back"],
-  p55: ["Leftover stock", "Same pieces", "Looks new"],
-  p56: ["Dusty afternoon", "Same photo", "Shape back"],
-  p57: ["Party photo profile", "Same face", "Corporate headshot"],
-  p58: ["January is long", "One photo", "Looks expensive"],
-  p59: ["No ad budget", "Two pictures", "Free reach"],
-  p60: ["One photo", "One fix", "Worth posting"],
-  p61: ["Kitchen behind you", "Same shirt", "Profile photo"],
-  p62: ["Looking ashy?", "It's the light", "Glow back"],
-  p63: ["Bedroom photo", "Same unit", "Salon shot"],
-  p64: ["Sitting room", "Same woman", "Studio backdrop"],
-  p65: ["Started last month", "One photo", "Looks established"],
-  p66: ["Office lights", "Green and flat", "Lit properly"],
-  p67: ["Your name", "Their stories", "No favours asked"],
-  p68: ["One photo", "Five setups", "Same face"],
-  p69: ["All booked out", "One photo of you two", "Couple portrait"],
-  p70: ["Date night, dark", "One frame", "Lit warm"],
-  p71: ["Ten days to sell", "One photo each", "Ready to post"],
-  p72: ["Same evening", "Same table", "Better light"],
-  p73: ["Every slot gone", "One photo", "A full set"],
-  p74: ["She said yes", "Too dark to see", "Now you can"],
-  p75: ["Valentine's noise", "Your sticker", "In their stories"],
-  p76: ["Valentine's Day", "One photo", "You two, a portrait"],
-  p77: ["Rushed photo", "Same outfit", "Now a portrait"],
-  p78: ["Not looking", "Same moment", "Lit properly"],
-  p79: ["Still in bags", "One photo each", "Listed today"],
-  p80: ["Not posing", "Same photo", "Her best"],
-  p81: ["One photo", "Pick 1, 5 or 10", "Your set"],
-  p82: ["The only photo", "Badly lit", "Face unchanged"],
-  p83: ["Made once", "Searched all year", "Still working"],
-  p84: ["Shot on a bed", "Same piece", "Shop window"],
-  p85: ["She won't go", "One photo at home", "Her portrait"],
-  p86: ["Thirty years old", "Same photo", "Finally visible"],
-  p87: ["Behind the camera", "Thirty years", "Her own portraits"],
-  p88: ["Mother's Day", "One photo today", "You and her"],
-
-  // ── Photo Wahala — four lines, the last is the reveal ────────────────────
+  // ── Season 1 (m01–m44) — four lines, the last is the reveal ─────────────
   m01: ["Tolu posted it", "214 people saw", "Orange. Dark.", "Same girl. New light"],
   m02: ["Guests, not ghosts?", "Kemi zoomed in", "Sent it at 1am", "Back by 2:14"],
   m03: ["She has the fix", "Tolu has no idea", "Then Tolu messaged", "Same gele. New light"],
@@ -170,7 +83,9 @@ export function gifTags(post) {
     shoot: ["photoshoot", "headshots", "portrait"],
   };
   const base = ["nigeria", "naija", "before after", ...(byProduct[post.product] ?? [])];
-  if (post.batch === "microdrama") {
+  // Every post is a Photo Wahala episode now: Season 1 by its batch, Season 2
+  // by its title ("P01 Photo Wahala S2 1.1: The 30th").
+  if (post.batch === "microdrama" || /Photo Wahala/.test(String(post.title ?? ""))) {
     const story = String(post.title ?? "").replace(/^.*?:\s*/, "").toLowerCase();
     return ["photo wahala", "photowahala", "nigerian drama", "story", story, ...base].slice(0, 14);
   }

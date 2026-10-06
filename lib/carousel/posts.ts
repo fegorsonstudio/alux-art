@@ -168,7 +168,7 @@ export function planDate(startMonday: string, week: number, slot: string, hour: 
   return new Date(`${day}T${String(hour).padStart(2, "0")}:00:00+01:00`);
 }
 
-/** GIPHY tags for a post's story GIF — tools/carousel/gif-scripts.mjs gifTags, unchanged. */
+/** GIPHY tags for a post's story GIF — the same rule as tools/carousel/gif-scripts.mjs gifTags. */
 export function gifTags(row: Pick<PostRow, "product" | "batch" | "title">): string[] {
   const byProduct: Record<string, string[]> = {
     relight: ["relight", "phone photography", "lighting"],
@@ -178,7 +178,9 @@ export function gifTags(row: Pick<PostRow, "product" | "batch" | "title">): stri
     shoot: ["photoshoot", "headshots", "portrait"],
   };
   const base = ["nigeria", "naija", "before after", ...(byProduct[row.product ?? ""] ?? [])];
-  if (row.batch === EXPERIMENT) {
+  // Every post is a Photo Wahala episode: Season 1 by its batch, Season 2 by
+  // its title ("P01 Photo Wahala S2 1.1: The 30th").
+  if (row.batch === EXPERIMENT || /Photo Wahala/.test(String(row.title ?? ""))) {
     const story = String(row.title ?? "").replace(/^.*?:\s*/, "").toLowerCase();
     return ["photo wahala", "photowahala", "nigerian drama", "story", story, ...base].slice(0, 14);
   }

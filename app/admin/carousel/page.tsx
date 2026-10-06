@@ -152,6 +152,7 @@ export default function CarouselStudioPage() {
   const [listErr, setListErr] = useState("");
   const [experiment, setExperiment] = useState({ total: 0, loaded: 0 });
   const [filter, setFilter] = useState("todo");
+  const [query, setQuery] = useState("");
 
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -471,7 +472,7 @@ export default function CarouselStudioPage() {
     try {
       const r = await call<{ loaded: number; unscheduled: number; live: string[] }>("/api/admin/carousel", send("POST", { action: "load-experiment", startMonday }));
       setBatchMsg({
-        text: `${r.loaded} episodes are in the list, starting ${dayLabel(`${startMonday}T12:00:00Z`)}.` +
+        text: `Season 1's ${r.loaded} episodes are in the list, starting ${dayLabel(`${startMonday}T12:00:00Z`)} at 1pm.` +
           (r.unscheduled ? ` ${r.unscheduled} that were already scheduled moved date, so they were taken off the schedule: schedule them again.` : ""),
         tone: "ok",
       });
@@ -483,7 +484,7 @@ export default function CarouselStudioPage() {
     }
   };
 
-  // Two clicks, not one: this hides 44 posts and withdraws any already scheduled.
+  // Two clicks, not one: this hides Season 1's 44 posts and withdraws any already scheduled.
   const removeExperiment = async () => {
     if (!removeArmed) {
       setRemoveArmed(true);
@@ -494,7 +495,7 @@ export default function CarouselStudioPage() {
     setBatchBusy(true);
     try {
       const r = await call<{ removed: number; cancelled: number; live: string[] }>("/api/admin/carousel", send("POST", { action: "remove-experiment" }));
-      let text = r.removed ? `Removed ${r.removed} episodes from the list.` : "The experiment wasn't in the list.";
+      let text = r.removed ? `Removed Season 1's ${r.removed} episodes from the list.` : "Season 1 wasn't in the list.";
       if (r.cancelled) text += ` ${r.cancelled} were scheduled and will not post now.`;
       if (r.live.length) {
         text += ` ${r.live.length} are already on Instagram and have to be deleted there by hand: ` +
@@ -513,13 +514,23 @@ export default function CarouselStudioPage() {
   // ---- derived ----
 
   const states = useMemo(() => new Map((list ?? []).map((p) => [p.local_id, stateOf(p.status, p.publish_status)])), [list]);
+  // Words typed in the search box narrow the list and the counts on the tabs:
+  // "S1", "wahala 3", "christmas", "p47".
+  const matching = useMemo(() => {
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return list ?? [];
+    return (list ?? []).filter((p) => {
+      const text = `${p.title} ${p.local_id} ${p.batch === "microdrama" ? "season 1 s1" : "season 2 s2"}`.toLowerCase();
+      return words.every((w) => text.includes(w));
+    });
+  }, [list, query]);
   const shown = useMemo(() => {
     const f = FILTERS.find((x) => x.key === filter) ?? FILTERS[0];
-    return (list ?? []).filter((p) => f.test(states.get(p.local_id)!.key));
-  }, [list, filter, states]);
+    return matching.filter((p) => f.test(states.get(p.local_id)!.key));
+  }, [matching, filter, states]);
   const countFor = (key: string) => {
     const f = FILTERS.find((x) => x.key === key)!;
-    return (list ?? []).filter((p) => f.test(states.get(p.local_id)!.key)).length;
+    return matching.filter((p) => f.test(states.get(p.local_id)!.key)).length;
   };
 
   const now = Date.now();
@@ -576,10 +587,14 @@ export default function CarouselStudioPage() {
                 </button>
               ))}
             </div>
-            <p className={cs.hintSmall}>Times are Lagos time. Slide 1 is always a photograph.</p>
+            <input
+              type="search" className={cs.input} placeholder="Find a post: a name, S1, christmas, p47"
+              aria-label="Find a post" value={query} onChange={(e) => setQuery(e.target.value)}
+            />
+            <p className={cs.hintSmall}>Times are Lagos time. Season 2 posts at 7pm, Season 1 at 1pm.</p>
             {!list && <p className={cs.hint}>Loading…</p>}
             {list && list.length === 0 && <p className={cs.hint}>No posts yet. The plan has not been loaded onto the server.</p>}
-            {list && list.length > 0 && shown.length === 0 && <p className={cs.hint}>Nothing here.</p>}
+            {list && list.length > 0 && shown.length === 0 && <p className={cs.hint}>{query ? "No post matches that." : "Nothing here."}</p>}
             <div className={cs.list}>
               {shown.map((p) => {
                 const s = states.get(p.local_id)!;
@@ -607,12 +622,12 @@ export default function CarouselStudioPage() {
             </div>
           </section>
 
-          <section className={cs.panel} aria-label="Photo Wahala experiment">
-            <h2 className={cs.panelTitle}>Photo Wahala experiment</h2>
+          <section className={cs.panel} aria-label="Photo Wahala Season 1">
+            <h2 className={cs.panelTitle}>Season 1 · 1pm</h2>
             <p className={cs.hint}>
               {experiment.loaded
-                ? `${experiment.loaded} episodes are in the list, posting at 1pm so they never clash with the main posts at 7pm.`
-                : "One story a week, posting at 1pm. Pick the Monday it starts, then load it."}
+                ? `Season 1's ${experiment.loaded} episodes are in the list, one story a week at 1pm, beside Season 2 at 7pm.`
+                : `Season 1 is ready: ${experiment.total || 44} episodes, one story a week at 1pm. Pick the Monday it starts, then load it.`}
               {" "}One button takes it all out again, including any episode already scheduled.
             </p>
             <div className={cs.btns} style={{ marginTop: 10 }}>
@@ -621,11 +636,11 @@ export default function CarouselStudioPage() {
                 value={startMonday} onChange={(e) => setStartMonday(e.target.value)}
               />
               <button type="button" className={`${cs.btn} ${cs.btnGhost}`} disabled={batchBusy} onClick={loadExperiment}>
-                {experiment.loaded ? "Move start date" : "Load the experiment"}
+                {experiment.loaded ? "Move start date" : "Load Season 1"}
               </button>
               {experiment.loaded > 0 && (
                 <button type="button" className={`${cs.btn} ${cs.btnDanger}`} disabled={batchBusy} onClick={removeExperiment}>
-                  {removeArmed ? `Click again to remove all ${experiment.loaded}` : "Remove the experiment"}
+                  {removeArmed ? `Click again to remove all ${experiment.loaded}` : "Remove Season 1"}
                 </button>
               )}
             </div>

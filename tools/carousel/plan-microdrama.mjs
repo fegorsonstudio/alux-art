@@ -1,17 +1,16 @@
 /**
- * PHOTO WAHALA — the microdrama experiment. Posts m01 to m44.
+ * PHOTO WAHALA — Season 1. Posts m01 to m44, at 1pm.
  *
- * An EXPERIMENT, kept apart from the main plan so it can be dropped whole.
- * It loads with its own button in the studio and leaves with its own button,
- * which also withdraws any episode already sent to the server. Nothing in
- * plan.mjs or plan-newyear.mjs depends on anything here.
+ * Began as an experiment beside the HVCO drafts. On 6 October 2026 the owner
+ * made this microdrama style the house style for every carousel, and Season 2
+ * (plan-season2.mjs) took over the 7pm slots those drafts held. Season 1
+ * still loads with its own button in the studio, from a Monday the owner
+ * picks, and leaves with its own button, which also withdraws any episode
+ * already handed to the publisher.
  *
- * WHY THIS IS NOT WRITTEN TO THE HVCO FORMULA. COPY-FORMULA.md governs the
- * main plan; the owner asked for this batch in the microdrama style instead,
- * after the short-form serial format behind China's microdrama apps. The two
- * pull in opposite directions on purpose: an HVCO cover makes a promise and
- * keeps it, a microdrama cover drops you into a fight already happening and
- * ends on a question instead of an answer.
+ * The style is the short-form serial behind China's microdrama apps: a cover
+ * drops you into a fight already happening and ends on a question instead of
+ * an answer.
  *
  * The architecture, from the brief:
  *
@@ -767,9 +766,9 @@ const STORIES = [
            "Six years of work, on the wall, where the whole family can see it."],
         ],
         twist: ["That's the end of Season 1", "Which story was yours? Tell us in the comments.",
-                "Season 2 is being written. Your photo wahala could be in it."],
+                "Season 2 is on now, every night at 7."],
         close: "Your story deserves a better photo too.",
-        caption: "“Who did your photos? I have an interview on Friday and I look like a passport.” 😂\n\nZainab sent the link. With a smiley. A big one. 😊\n\nOne week later, the third portrait went up on her mum's wall. The big size.\n\nThat's the end of Season 1 of Photo Wahala. Which story was yours? Tell us in the comments. Season 2 is being written. 🎬",
+        caption: "“Who did your photos? I have an interview on Friday and I look like a passport.” 😂\n\nZainab sent the link. With a smiley. A big one. 😊\n\nOne week later, the third portrait went up on her mum's wall. The big size.\n\nThat's the end of Season 1 of Photo Wahala. Which story was yours? Tell us in the comments. Season 2 is on now, every night at 7. 🎬",
         ask: "Your story deserves a better photo too." },
     ],
   },

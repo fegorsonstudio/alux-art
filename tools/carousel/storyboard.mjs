@@ -1,5 +1,6 @@
 /**
- * Story pictures for the 44 Photo Wahala episodes.
+ * Story pictures for every Photo Wahala episode — Season 1 here, Season 2
+ * written beside its stories in season2/ and turned into prompts below.
  *
  * Two pictures per episode, shown full-screen between the text slides. The
  * owner makes them in Google Flow for free — the studio only writes the
@@ -26,6 +27,8 @@
  * Flow has no 4:5. Pictures are made at 3:4 and trimmed to Instagram's 4:5,
  * which loses a sliver top and bottom — hence "keep heads clear of the edges".
  */
+
+import { SCENES_S2, CASTS_S2 } from "./plan-season2.mjs";
 
 export const FLOW_SETTINGS = "Google Flow · Nano Banana · 3:4 portrait · 2K";
 
@@ -470,11 +473,26 @@ export const STORYBOARD = {
   ],
 };
 
-/** Everything the studio needs for one episode, or null for a main-plan post. */
+/**
+ * Everything the studio needs for one episode: the cast, the two scene prompts
+ * and the Flow settings. Season 1 is m01–m44; Season 2 is p01–p88, its scenes
+ * and cast written as plain sentences beside each story and given the same
+ * prompt template here, so both seasons' pictures are asked for alike.
+ */
 export function storyboardFor(id) {
   const key = String(id).replace(/^plan-/, "");
+  const story = Math.ceil(Number(key.slice(1)) / 4);
+  if (/^p\d+$/.test(key)) {
+    const written = SCENES_S2[key];
+    if (!written) return null;
+    return {
+      season: 2, story,
+      cast: (CASTS_S2[story] ?? []).map((c) => (c.real ? real(c.name, c.who) : made(c.name, c.who))),
+      scenes: written.map((x) => scene(x.after, x.attach, x.setting, x.subject, x.details)),
+      flow: FLOW_SETTINGS,
+    };
+  }
   const scenes = STORYBOARD[key];
   if (!scenes) return null;
-  const story = Math.ceil(Number(key.slice(1)) / 4);
-  return { story, cast: CASTS[story] ?? [], scenes, flow: FLOW_SETTINGS };
+  return { season: 1, story, cast: CASTS[story] ?? [], scenes, flow: FLOW_SETTINGS };
 }

@@ -3,7 +3,7 @@ import sharp from "sharp";
 import sql from "@/lib/db";
 import { r2Download, r2ProxyUrl } from "@/lib/r2";
 import {
-  requireAdmin, cleanId, loadPost, gifRoute, gifTags, BUCKET, EXPERIMENT, EPISODE_KICKER,
+  requireAdmin, cleanId, loadPost, gifRoute, gifTags, BUCKET, EPISODE_KICKER,
 } from "@/lib/carousel/posts";
 
 /**
@@ -53,7 +53,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const r = await gifRoute({
       action: "render", localId: id,
       before: await small(row.before_path), after: await small(row.after_path),
-      lines, kicker: row.batch === EXPERIMENT ? EPISODE_KICKER : undefined,
+      // Every episode, either season, carries the series name on its frames.
+      lines, kicker: row.storyboard ? EPISODE_KICKER : undefined,
     });
     if (!r.ok) return fail(r.status, r.error);
 

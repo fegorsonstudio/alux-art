@@ -6,19 +6,24 @@ studio that used to live in this folder was retired on 2026-10-06. Nothing
 needs to run on a laptop, and the page works on a phone.
 
 This folder holds the **written plan** — the words of every post — and how
-they are written:
+they are written. **Every post is a Photo Wahala microdrama episode** (the
+owner's decision, 6 October 2026):
 
 | File | What it is |
 |---|---|
-| `plan.mjs`, `plan-newyear.mjs` | The 88 main posts, 5 October to 7 March, on fixed dates |
-| `plan-microdrama.mjs` | Photo Wahala, the 44-episode microdrama experiment |
-| `gif-scripts.mjs` | Each post's short story-GIF lines |
+| `season2/OUTLINE.md` | Season 2's plan: 22 stories, one a week, holidays on their day |
+| `season2/s2-01.mjs` … `s2-22.mjs` | Season 2's stories: cards, captions, story pictures, GIF lines |
+| `plan-season2.mjs` | Turns Season 2 into posts `p01`–`p88`, 7pm, 5 Oct to 7 Mar |
+| `plan-microdrama.mjs` | Season 1: 44 episodes `m01`–`m44`, 1pm from a Monday the owner picks |
+| `gif-scripts.mjs` | Each episode's story-GIF lines |
 | `storyboard.mjs` | Each episode's cast and story-picture prompts for Google Flow |
-| `COPY-FORMULA.md` | The HVCO and microdrama rules every post is written to |
+| `COPY-FORMULA.md` | The house style every carousel is written to |
+| `season2/check.mjs` | Checks Season 2's story files against the rules |
 
 ## Changing the plan
 
-Edit the files here, deploy them to the server, then load them:
+Edit the files here, run `node tools/carousel/season2/check.mjs`, deploy them
+to the server, then load them:
 
 ```
 node --env-file=.env.local scripts/carousel-seed.mjs --dry-run
