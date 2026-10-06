@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import styles from "../admin.module.css";
 import cs from "./carousel.module.css";
 
 /**
@@ -167,6 +166,9 @@ export default function CarouselStudioPage() {
   const [removeArmed, setRemoveArmed] = useState(false);
   const [batchMsg, setBatchMsg] = useState<{ text: string; tone: Tone } | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
+  // Light or dark, remembered under the same key as /studio and /marketplace
+  // so the choice follows the owner from page to page (DESIGN.md).
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   /** The post the page is showing; answers that arrive for another one are dropped. */
   const showing = useRef<string | null>(null);
@@ -187,6 +189,19 @@ export default function CarouselStudioPage() {
     }
   }, []);
   useEffect(() => { loadList(); }, [loadList]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("studio-theme");
+    if (stored === "dark" || stored === "light") setTheme(stored);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("studio-theme", next);
+      return next;
+    });
+  };
 
   // Closing the tab with unsaved words should ask first, like leaving a post does.
   useEffect(() => {
@@ -513,13 +528,26 @@ export default function CarouselStudioPage() {
 
   // ---- render ----
 
+  const topBar = (
+    <nav className={cs.nav}>
+      <div className={cs.navBrand}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Alux Art" className={cs.navLogo} />
+        Carousel Studio
+      </div>
+      <div className={cs.navRight}>
+        <Link href="/admin" className={cs.navBtn}>Admin</Link>
+        <button type="button" className={`${cs.navBtn} ${cs.themeToggle}`} onClick={toggleTheme} aria-pressed={theme === "dark"}>
+          {theme === "dark" ? "Light" : "Dark"}
+        </button>
+      </div>
+    </nav>
+  );
+
   if (listErr && !list) {
     return (
-      <div className={styles.page}>
-        <header className={styles.header}>
-          <Link href="/admin" className={styles.back}>← Admin</Link>
-          <h1 className={styles.title}>Carousel Studio</h1>
-        </header>
+      <div className={cs.app} data-theme={theme}>
+        {topBar}
         <div className={cs.empty}>
           {listErr === "Forbidden"
             ? <>This page is for the studio&apos;s admin. <Link className={cs.link} href="/login?next=/admin/carousel">Log in with the admin account</Link>.</>
@@ -530,14 +558,10 @@ export default function CarouselStudioPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <Link href="/admin" className={styles.back}>← Admin</Link>
-        <h1 className={styles.title}>Carousel Studio</h1>
-        <span className={cs.hint}>Times are Lagos time · slide 1 is always a photograph</span>
-      </header>
+    <div className={cs.app} data-theme={theme}>
+      {topBar}
 
-      <div className={cs.layout}>
+      <div className={cs.main}>
         {/* ---- the list, and the batch tools ---- */}
         <aside className={`${cs.side} ${selected ? cs.hideNarrow : ""}`}>
           <section className={cs.panel} aria-label="Posts">
@@ -552,6 +576,7 @@ export default function CarouselStudioPage() {
                 </button>
               ))}
             </div>
+            <p className={cs.hintSmall}>Times are Lagos time. Slide 1 is always a photograph.</p>
             {!list && <p className={cs.hint}>Loading…</p>}
             {list && list.length === 0 && <p className={cs.hint}>No posts yet. The plan has not been loaded onto the server.</p>}
             {list && list.length > 0 && shown.length === 0 && <p className={cs.hint}>Nothing here.</p>}
@@ -744,7 +769,8 @@ export default function CarouselStudioPage() {
                       </div>
                       <input className={cs.input} placeholder="Small heading above (optional)" aria-label={`Card ${i + 1} small heading`}
                         value={c.eyebrow} disabled={locked} onChange={(e) => editCard(i, "eyebrow", e.target.value)} />
-                      <textarea className={`${cs.textarea} ${cs.headline}`} placeholder="Headline" aria-label={`Card ${i + 1} headline`} rows={2}
+                      <textarea className={`${cs.textarea} ${cs.headline}`} placeholder="Headline" aria-label={`Card ${i + 1} headline`}
+                        rows={Math.min(4, Math.max(2, Math.ceil(c.headline.length / 38)))}
                         value={c.headline} disabled={locked} onChange={(e) => editCard(i, "headline", e.target.value)} />
                       <textarea className={cs.textarea} placeholder="Body (optional)" aria-label={`Card ${i + 1} body`}
                         value={c.body} disabled={locked} onChange={(e) => editCard(i, "body", e.target.value)} />
@@ -782,7 +808,7 @@ export default function CarouselStudioPage() {
                   </label>
                 </div>
                 {datePassed && st.key !== "posted" && (
-                  <p className={cs.hintSmall} style={{ color: "#e9a23b" }}>This date has passed. Give it a new one before scheduling.</p>
+                  <p className={`${cs.hintSmall} ${cs.warnText}`}>This date has passed. Give it a new one before scheduling.</p>
                 )}
                 <label className={cs.field} style={{ marginTop: 12 }}>
                   <span className={cs.label}>Caption</span>

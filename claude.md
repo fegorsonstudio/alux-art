@@ -111,6 +111,14 @@ posted for a week; week-1 dates (5–11 Oct) have passed; the experiment is not 
 owner to confirm story-carousel prices (Phase 4) and whether shoot `4e8d1ee0` (₦2,000,
 never paid, delivered 19 Aug) was started by hand.
 
+**Design guide (2026-10-06): read `DESIGN.md` before building any page.** It records
+the site's four looks — the App look (pastel sky, frosted panels, teal) in light AND
+dark, switched by the person and remembered under `localStorage` `studio-theme`; the
+home page's dark editorial look; the Instagram slide/GIF deck; and the legacy
+black-and-gold admin — with a copy-paste token block for both modes. New pages,
+admin tools included, use the App look (the owner asked for this). `/admin/carousel`
+is built on the token block.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
