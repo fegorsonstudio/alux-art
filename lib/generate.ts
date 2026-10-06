@@ -15,6 +15,7 @@ import { readDentition } from "./dentition";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
 import { getLightingForSlot, buildLightingBriefSection, type LightingPlan } from "./lighting-plan";
 import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups";
+import { nanoBananaEdit, NANO_BANANA_2, NANO_BANANA_21 } from "./fal-edit";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -342,34 +343,38 @@ async function callFalWithFallback(
   aspectRatio: string,
   resolution: string,
   dbForbiddenWords: Array<{ word: string; replacement: string }> = [],
-  generationModel: "nano-banana" | "seedream" = "nano-banana",
+  generationModel: "nano-banana-2.1" | "nano-banana" | "seedream" = "nano-banana-2.1",
   allowAdult = false,
   soulId: { loraUrl: string; triggerPhrase: string } | null = null
 ): Promise<{ url: string; sanitized: boolean; model: string }> {
+  const nanoModel = generationModel === "nano-banana" ? NANO_BANANA_2 : NANO_BANANA_21;
   const primary = soulId
     ? "fal-ai/flux-lora"
     : generationModel === "seedream"
       ? "fal-ai/bytedance/seedream/v4/edit"
-      : "fal-ai/nano-banana-2/edit";
+      : nanoModel;
+  // 2.1 can hand a photo to 2 when fal refuses it; the record names what ran.
+  let used = primary;
   const generate = (prompt: string) =>
     soulId
       ? generateImageWithFluxLora(prompt, soulId.loraUrl, soulId.triggerPhrase, aspectRatio, resolution)
       : generationModel === "seedream"
         ? generateImageWithSeedream(prompt, imageUrls, aspectRatio, resolution, allowAdult)
-        : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution);
+        : generateImageWithFal(prompt, imageUrls, aspectRatio, resolution, nanoModel)
+            .then((r) => { used = r.model; return r.url; });
 
   const isForbidden = (err: unknown) =>
     err instanceof Error && err.message.toLowerCase().includes("forbidden");
   try {
     const url = await withRetry(() => generate(slotPrompt));
-    return { url, sanitized: false, model: primary };
+    return { url, sanitized: false, model: used };
   } catch (err) {
     if (isForbidden(err)) {
       const clean = sanitizeForFal(slotPrompt, dbForbiddenWords);
       if (clean !== slotPrompt) {
         try {
           const url = await withRetry(() => generate(clean));
-          return { url, sanitized: true, model: primary };
+          return { url, sanitized: true, model: used };
         } catch (retryErr) {
           if (!allowAdult) throw retryErr;
         }
@@ -1155,10 +1160,11 @@ async function generateImageWithFal(
   prompt: string,
   imageUrls: string[],
   aspectRatio: string,
-  resolution = "1K"
-): Promise<string> {
+  resolution = "4K",
+  model: string = NANO_BANANA_21
+): Promise<{ url: string; model: string }> {
   if (USE_MOCK_FAL) {
-    return MOCK_FAL_PLACEHOLDER_IMAGE_URL;
+    return { url: MOCK_FAL_PLACEHOLDER_IMAGE_URL, model };
   }
 
   // Free fallback for testing when FAL_KEY has no credits
@@ -1170,24 +1176,25 @@ async function generateImageWithFal(
     const size = dims[aspectRatio] ?? "820x1024";
     const [w, h] = size.split("x");
     const encoded = encodeURIComponent(prompt.slice(0, 300));
-    return `https://image.pollinations.ai/prompt/${encoded}?width=${w}&height=${h}&nologo=1&seed=${Date.now()}`;
+    return { url: `https://image.pollinations.ai/prompt/${encoded}?width=${w}&height=${h}&nologo=1&seed=${Date.now()}`, model };
   }
 
   let response;
+  let modelUsed = model;
   try {
-    response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
-      input: {
-        prompt,
-        num_images: 1,
-        // All our AspectRatio values are in fal's union; cast through unknown to satisfy strict type
-        aspect_ratio: aspectRatio as unknown as "4:5",
-        output_format: "png",
-        safety_tolerance: "6",
-        image_urls: imageUrls.slice(0, NANO_BANANA_MAX_IMAGES),
-        limit_generations: false,
-        ...(resolution ? { resolution: resolution as unknown as "4K" } : {}),
-      },
-    });
+    const r = await nanoBananaEdit({
+      prompt,
+      num_images: 1,
+      aspect_ratio: aspectRatio,
+      output_format: "png",
+      safety_tolerance: "6",
+      image_urls: imageUrls.slice(0, NANO_BANANA_MAX_IMAGES),
+      limit_generations: false,
+      // No resolution ("Default" on the admin studio) means 4K, never fal's 1K.
+      resolution: resolution || "4K",
+    }, model);
+    response = r.data;
+    modelUsed = r.model;
   } catch (err) {
     // fal's ValidationError carries the REASON in its body; the bare Error
     // message is only the HTTP status text. A real failure was recorded as
@@ -1195,7 +1202,7 @@ async function generateImageWithFal(
     // refused, an image URL was unreachable, or a field was invalid was lost.
     const e = err as { message?: string; status?: number; body?: unknown };
     const detail = e?.body ? JSON.stringify(e.body).slice(0, 600) : "";
-    console.error("[fal] nano-banana-2/edit failed:", e?.status ?? "", e?.message ?? String(err),
+    console.error(`[fal] ${model} failed:`, e?.status ?? "", e?.message ?? String(err),
       detail ? "| detail: " + detail : "| (no detail in error body)",
       "| images:", imageUrls.length, "| aspect:", aspectRatio, "| resolution:", resolution ?? "default");
     throw new Error(`fal ${e?.status ?? ""} ${e?.message ?? String(err)}${detail ? " — " + detail : ""}`.trim());
@@ -1207,7 +1214,7 @@ async function generateImageWithFal(
   const images = output.images ?? [];
   const url = images[images.length - 1]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL");
-  return url;
+  return { url, model: modelUsed };
 }
 
 async function polishImageWithFal(imageUrl: string, prompt: string): Promise<string> {
@@ -2381,7 +2388,7 @@ export async function startGenerationWorker(
 
   // Load active model config (no-code admin switches) — must be before identity analysis
   let visionModel: "gemini" | "claude" = "gemini";
-  let generationModel: "nano-banana" | "seedream" = "nano-banana";
+  let generationModel: "nano-banana-2.1" | "nano-banana" | "seedream" = "nano-banana-2.1";
   let promptOnlyMode = false;
   let adminPromptOnlyMode = false;
   let polishPassEnabled = false;
@@ -2391,6 +2398,7 @@ export async function startGenerationWorker(
     const cfgMap = Object.fromEntries(cfgData.map(r => [r.key, r.value]));
     if (cfgMap.vision_model === "claude") visionModel = "claude";
     if (cfgMap.generation_model === "seedream") generationModel = "seedream";
+    else if (cfgMap.generation_model === "nano-banana") generationModel = "nano-banana";
     promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
     adminPromptOnlyMode = cfgMap.admin_prompt_only_mode === "true" || cfgMap.admin_prompt_only_mode === true;
     polishPassEnabled = cfgMap.polish_pass_enabled === "true" || cfgMap.polish_pass_enabled === true;

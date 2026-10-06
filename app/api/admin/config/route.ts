@@ -4,7 +4,7 @@ import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
 
 const ALLOWED_VISION_MODELS = ["gemini", "claude"] as const;
-const ALLOWED_GENERATION_MODELS = ["nano-banana", "seedream"] as const;
+const ALLOWED_GENERATION_MODELS = ["nano-banana-2.1", "nano-banana", "seedream"] as const;
 
 type VisionModel = (typeof ALLOWED_VISION_MODELS)[number];
 type GenerationModel = (typeof ALLOWED_GENERATION_MODELS)[number];
@@ -52,7 +52,7 @@ export async function GET() {
 
   return NextResponse.json({
     vision_model: (map.vision_model ?? "gemini") as VisionModel,
-    generation_model: (map.generation_model ?? "nano-banana") as GenerationModel,
+    generation_model: (map.generation_model ?? "nano-banana-2.1") as GenerationModel,
     locked_base_rollout_percent: parseInt((map.locked_base_rollout_percent as string) ?? "100", 10),
     locked_base_enabled: map.locked_base_enabled === "true",
     platform_fee_ngn: n("platform_fee_ngn", 15000),

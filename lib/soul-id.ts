@@ -18,6 +18,7 @@ import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import JSZip from "jszip";
 import sql from "./db";
+import { nanoBananaEdit } from "./fal-edit";
 import { r2Upload, r2Download, r2SignedDownloadUrl } from "./r2";
 import {
   CHARACTER_SHEETS,
@@ -75,19 +76,16 @@ async function renderSheet(
   const prompt = buildCharacterSheetPrompt(sheet, identityProfile, !!anchorUrl);
   // The anchor leads the list — the prompt calls it "the FIRST attached image".
   const inputs = anchorUrl ? [anchorUrl, ...identityUrls] : identityUrls;
-  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
-    input: {
-      prompt,
-      num_images: 1,
-      aspect_ratio: sheet.aspect as unknown as "1:1",
-      output_format: "png",
-      safety_tolerance: "6",
-      image_urls: inputs.slice(0, 8),
-      limit_generations: false,
-      resolution: "4K" as unknown as "4K",
-    },
+  const { data: out } = await nanoBananaEdit({
+    prompt,
+    num_images: 1,
+    aspect_ratio: sheet.aspect,
+    output_format: "png",
+    safety_tolerance: "6",
+    image_urls: inputs.slice(0, 8),
+    limit_generations: false,
+    resolution: "4K",
   });
-  const out = ((response as Record<string, unknown>).data || response) as { images?: Array<{ url: string }> };
   const url = out.images?.[0]?.url;
   if (!url) throw new Error(`sheet "${sheet.id}" returned no image`);
 

@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
-import { fal } from "@fal-ai/client";
+import { nanoBananaEdit } from "./fal-edit";
 import sharp from "sharp";
 import type { StylingBrief, QualityGateResult } from "./types";
 import { r2Upload, r2SignedDownloadUrl } from "./r2";
@@ -240,8 +240,6 @@ export function evaluateGate(result: QualityGateResult): GateDecision {
 
 // ── fal.ai base generation ───────────────────────────────────────────────────
 
-type FalOutput = { images?: Array<{ url: string }> };
-
 export async function generateBaseWithFal(
   prompt: string,
   refImageUrls: string[],
@@ -252,22 +250,19 @@ export async function generateBaseWithFal(
     return `https://image.pollinations.ai/prompt/${encoded}?width=768&height=1024&nologo=1&seed=${seed ?? Date.now()}`;
   }
 
-  // Cast through unknown to satisfy strict fal.ai SDK input type — same pattern used in generate.ts
-  const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
-    input: {
-      prompt,
-      num_images: 1,
-      aspect_ratio: "3:4" as unknown as "4:5",
-      output_format: "png" as const,
-      safety_tolerance: "6",
-      image_urls: refImageUrls.slice(0, 4),
-      resolution: "4K",
-      limit_generations: false,
-      ...(seed !== undefined ? { seed } : {}),
-    },
+  // Nano Banana 2.1 by default (Admin → Generation model), 2 if fal refuses it.
+  const { data: output } = await nanoBananaEdit({
+    prompt,
+    num_images: 1,
+    aspect_ratio: "3:4",
+    output_format: "png",
+    safety_tolerance: "6",
+    image_urls: refImageUrls.slice(0, 4),
+    resolution: "4K",
+    limit_generations: false,
+    ...(seed !== undefined ? { seed } : {}),
   });
-  
-  const output = response.data as FalOutput;
+
   const url = output.images?.[0]?.url ?? "";
   if (!url) throw new Error("fal.ai returned no image URL for base lock");
   return url;

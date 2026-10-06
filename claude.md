@@ -143,6 +143,17 @@ cron is RETIRED** — renewing the fegorson token let it post an August-queue ca
 lines are removed (backup `/root/crontab.bak-2026-10-06`); do not put them back. Nothing
 reaches Instagram now except a post the owner approved AND scheduled in the studio.
 
+**Update (2026-10-06, night): default image model is Nano Banana 2.1** (`google/nano-banana-2.1/edit`,
+owner's call). Every nano-banana call (shoots + Gear Equalizer via `lib/generate.ts`, base-lock,
+Soul ID sheets, Template Lab) goes through `lib/fal-edit.ts` `nanoBananaEdit()`: safety_tolerance
+"6", 4K (an empty resolution now means 4K, never fal's 1K). fal labels 2.1 "for integration
+purposes only", so on any NON-content failure the photo is remade on `fal-ai/nano-banana-2/edit`
+and `configured_model` records the model that actually ran (a 401/403/404 skips 2.1 for 10 min).
+Admin → Image Generation has Nano Banana 2.1 / Nano Banana 2 / SeedDream; `app_config.generation_model`
+= `nano-banana-2.1`; `fal_rate_card` has a 2.1 row. **Not yet proven by a real shoot** — the
+owner is running the first one; check `configured_model` on it (2 there means 2.1 was refused).
+Scripts `render-look-thumbnail.mjs` / `relight-one.mjs` still call nano-banana-2 directly.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

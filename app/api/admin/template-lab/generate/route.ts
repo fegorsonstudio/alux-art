@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import sql from "@/lib/db";
 import { fal } from "@fal-ai/client";
+import { nanoBananaEdit } from "@/lib/fal-edit";
 import { r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 import { isAdminEmail } from "@/lib/auth";
 
@@ -58,18 +59,16 @@ export async function POST(req: NextRequest) {
 
   let falUrl: string;
   try {
-    const response = await fal.subscribe("fal-ai/nano-banana-2/edit", {
-      input: {
-        prompt: slotImg.prompt as string,
-        num_images: 1,
-        aspect_ratio: "4:5" as const,
-        output_format: "png" as const,
-        safety_tolerance: "6",
-        image_urls: imageUrls,
-        limit_generations: false,
-      },
+    const { data: output } = await nanoBananaEdit({
+      prompt: slotImg.prompt as string,
+      num_images: 1,
+      aspect_ratio: "4:5",
+      output_format: "png",
+      safety_tolerance: "6",
+      image_urls: imageUrls,
+      limit_generations: false,
+      resolution: "4K",
     });
-    const output = ((response as Record<string, unknown>).data || response) as { images?: Array<{ url: string }> };
     falUrl = output.images?.[0]?.url ?? "";
     if (!falUrl) throw new Error("fal.ai returned no image URL");
   } catch (err) {

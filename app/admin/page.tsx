@@ -141,7 +141,7 @@ interface ErrorGroup {
 
 interface ModelConfig {
   vision_model: "gemini" | "claude";
-  generation_model: "nano-banana" | "seedream";
+  generation_model: "nano-banana-2.1" | "nano-banana" | "seedream";
   locked_base_rollout_percent: number;
   locked_base_enabled: boolean;
   platform_fee_ngn: number;
@@ -448,7 +448,7 @@ export default function AdminPage() {
 
   const [copiedSlotPrompt, setCopiedSlotPrompt] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
-    vision_model: "gemini", generation_model: "nano-banana",
+    vision_model: "gemini", generation_model: "nano-banana-2.1",
     locked_base_rollout_percent: 100, locked_base_enabled: false,
     platform_fee_ngn: 15000,
     price_1_ngn: 1500, price_5_ngn: 7500, price_10_ngn: 15000,
@@ -989,15 +989,15 @@ export default function AdminPage() {
           <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Image Generation</div>
             <div className={styles.modelPills}>
-              {(["nano-banana", "seedream"] as const).map(m => (
+              {(["nano-banana-2.1", "nano-banana", "seedream"] as const).map(m => (
                 <button key={m} type="button"
                   className={`${styles.modelPill} ${modelConfig.generation_model === m ? styles.modelPillActive : ""}`}
                   onClick={() => saveModelConfig({ generation_model: m })} disabled={modelSaving}>
-                  {m === "nano-banana" ? "Flux Kontext" : "SeedDream 4"}
+                  {m === "nano-banana-2.1" ? "Nano Banana 2.1" : m === "nano-banana" ? "Nano Banana 2" : "SeedDream 4"}
                 </button>
               ))}
             </div>
-            <div className={styles.modelHint}>{modelConfig.generation_model === "nano-banana" ? "fal-ai/nano-banana-2/edit — strong identity lock." : "fal-ai/bytedance/seedream/v4/edit — multi-image editing."}</div>
+            <div className={styles.modelHint}>{modelConfig.generation_model === "nano-banana-2.1" ? "google/nano-banana-2.1/edit — the default. 4K, safety 6. If fal refuses it, that photo is made on Nano Banana 2 instead of failing." : modelConfig.generation_model === "nano-banana" ? "fal-ai/nano-banana-2/edit — strong identity lock. 4K, safety 6." : "fal-ai/bytedance/seedream/v4/edit — multi-image editing. Base-lock, Soul ID and Template Lab stay on Nano Banana 2.1."}</div>
           </div>
           <div className={styles.modelSection}>
             <div className={styles.modelLabel}>Base-lock Feature</div>
