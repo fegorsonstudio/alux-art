@@ -1,130 +1,68 @@
-# Carousel Studio
+# Carousel plan
 
-Builds Instagram carousels on your laptop and hands them to the server to post
-on schedule. No Claude subscription, no AI, no internet needed to make a post —
-only to send one.
+The Instagram carousels are made and scheduled on the website now:
+**https://aluxartandframes.shop/admin/carousel** (admin login). The laptop
+studio that used to live in this folder was retired on 2026-10-06. Nothing
+needs to run on a laptop, and the page works on a phone.
 
-## Starting it
+This folder holds the **written plan** — the words of every post — and how
+they are written:
 
-```
-cd "C:\Users\FUJITSU\Documents\claude apps"
-node tools/carousel/server.mjs
-```
+| File | What it is |
+|---|---|
+| `plan.mjs`, `plan-newyear.mjs` | The 88 main posts, 5 October to 7 March, on fixed dates |
+| `plan-microdrama.mjs` | Photo Wahala, the 44-episode microdrama experiment |
+| `gif-scripts.mjs` | Each post's short story-GIF lines |
+| `storyboard.mjs` | Each episode's cast and story-picture prompts for Google Flow |
+| `COPY-FORMULA.md` | The HVCO and microdrama rules every post is written to |
 
-Then open **http://localhost:4300**.
+## Changing the plan
 
-To let it schedule to the server as well, start it with the secret:
-
-```
-$env:INTERNAL_API_SECRET = "<the value from the VPS .env.local>"
-node tools/carousel/server.mjs
-```
-
-Without that it still renders and saves; only the Schedule button is off, and
-it says so when it starts.
-
-## Making a post
-
-1. **Name it** — for your own list, never shown anywhere.
-2. **Drop the before photo.** This becomes **slide 1**, which is the thumbnail
-   in the feed. It is the single thing that decided between a 20,907-reach post
-   and a 102-reach one, so the app will not let a text card go first.
-3. **Drop the after photo.** Slide 2, the payoff, before anyone reads a word.
-4. **Write the cards.** The first card automatically shows the two photos side
-   by side. The last one gets the button.
-5. **Preview**, then **Save to folder**, then **Send to server & schedule**.
-
-Saved posts land in `tools/carousel/data/posts/<id>/`:
+Edit the files here, deploy them to the server, then load them:
 
 ```
-01.jpg … 07.jpg      the slides, ready to post
-caption.txt          the caption
-source-before.jpg    your originals, kept so the post can be reopened
-source-after.jpg
-post.json            what you typed
+node --env-file=.env.local scripts/carousel-seed.mjs --dry-run
+node --env-file=.env.local scripts/carousel-seed.mjs
 ```
 
-If you would rather post by hand, stop after Save — the folder is everything
-you need.
+Safe to run again. It refreshes the words only on posts the owner has not
+edited, approved or scheduled on the website, and never touches photographs,
+story pictures, hand-set dates, or whether the experiment is showing.
 
-## What the server does with it
+## How a post goes out (on the website)
 
-`Send to server & schedule` uploads the slides to R2 and writes a row in
-`scheduled_carousels`. A cron on the VPS runs every five minutes, finds posts
-whose time has come, and publishes them through Instagram's API — three steps:
-a container per slide, a carousel container, then publish.
+1. **Photos.** Every post needs its before and after photograph. The before
+   becomes slide 1 — the thumbnail, which decided between a 20,907-reach post
+   and a 102-reach one — so a text card never goes first.
+2. **Story pictures** (Photo Wahala episodes only). Copy each prompt into
+   Google Flow (Nano Banana, 3:4, 2K), attach the faces it lists, and drop the
+   result on that same picture's box. Episodes come to 10 slides, Instagram's
+   limit.
+3. **Preview**, read every slide, **Approve**, **Schedule**. The server posts
+   it at its time (`/api/cron/publish-carousel`).
 
-Your laptop can be shut. If a post fails three times you get a Telegram
-message naming the reason; the slides are never lost.
+Rules the website enforces:
 
-## The two batches
-
-- **Load the plan** brings in the main 88 posts on their fixed dates,
-  5 October to 7 March. The dates can't move as a block: the Christmas, New
-  Year, Valentine's and Mother's Day posts are written for those exact days.
-- **Load the experiment** brings in Photo Wahala, 44 microdrama episodes, from
-  whichever Monday you pick, at 1pm so they never clash with the 7pm posts.
-- **Remove the experiment** (click twice) deletes all 44 drafts and withdraws
-  any episode already sent to the server. If the server can't be reached it
-  removes nothing, rather than hide a post that would still go out. Episodes
-  already published are named so you can take them down on Instagram by hand.
+- Only the version just previewed can be approved. Any change to the words or
+  pictures puts a post back to draft, and a scheduled post that changes is
+  taken off the schedule until it is approved again.
+- A post whose time has passed won't schedule — it would go out at once.
+- Once Instagram has a post, nothing on the website can change or resend it.
+- The Photo Wahala experiment is loaded from a chosen Monday (1pm posts) and
+  removed with one button, which also withdraws any episode already scheduled.
 
 ## Story GIFs
 
-Every post has a short GIF script — three lines for a main post, four for an
-episode — in `gif-scripts.mjs`, editable in the **Story GIF** box. The GIF is
-made on the server (`/api/carousel/gif`) with the same engine as the paid GIF
-Maker, because a GIF in an Instagram comment is about 200 pixels wide and only
-three or four huge words survive that.
-
-1. **Make GIF** — made on the server, saved as `story.gif` beside the slides, and
-   shown so you can look at it first.
-2. Tick **Everyone in these photos agreed to a public GIF**. GIPHY is public:
-   anyone can find, download and reuse what goes up. A customer's YES to "show it
-   on our page" does not cover that.
-3. **Upload to GIPHY** — once per post. GIPHY's API has no delete, so a second
-   press returns the same link instead of making a second copy.
-
-**Make GIFs for all** and **Upload ticked GIFs** do the same across the queue;
-the upload stops at the first thing GIPHY refuses. For the GIFs to show up when
-people search in Instagram's comment GIF button, the GIPHY account has to be an
+Each post's GIF is made on the server with the same engine as the paid GIF
+Maker. It goes to GIPHY only with the tick saying everyone in the photos agreed
+to a **public** GIF, and only once — GIPHY's API has no delete. For the GIFs to
+show up in Instagram's comment GIF search, the GIPHY account must be an
 approved Brand channel.
 
-## Story pictures (Photo Wahala episodes)
+## Where things live
 
-Each episode has two story pictures, full-screen between its text slides
-(10 slides — Instagram's limit). The studio writes the prompts; you make the
-pictures in Google Flow, free.
-
-1. Open an episode. The **Story pictures** box shows its **cast**:
-   - the **real** person (the one in the before and after) — attach their own
-     photo in Flow, so the pictures show the same face;
-   - **invented** characters — press **Copy portrait prompt**, make the face
-     once in Flow, and keep it: attach it to every scene they appear in.
-2. Each picture has its own card: **Copy prompt**, paste into Flow
-   (Nano Banana, 3:4, 2K), attach the faces it lists, generate.
-3. Drop the downloaded picture **on that same card**. Never sort pictures
-   afterwards — guessing which download is which is how mistakes happen.
-4. **Preview** to see it in place, then **Save**.
-
-## Approving
-
-Nothing can be scheduled until it is approved. Press **Preview**, read every
-slide, then **Approve**. An episode can't be approved until both story pictures
-are in, and any save puts a post back to draft — what you approved is no longer
-what would be posted.
-
-## Things worth knowing
-
-- **Instagram takes at most 10 slides.** The app refuses more rather than
-  silently dropping any.
-- **Only accounts whose token is on the server** can be scheduled to. It checks
-  before accepting, instead of failing quietly later.
-- **Re-sending the same post replaces it.** A duplicate row would be a
-  duplicate on the feed, and that cannot be taken back.
-- **A post whose date has passed won't schedule.** The server publishes
-  anything due on its next run, so it would go out within minutes. Give it a
-  new date and Save first.
-- **The queue is a plain JSON file** at `tools/carousel/data/queue.json`. Open
-  it, read it, back it up. No database to install or lose.
-- **`data/` is not in git.** Your posts and photographs stay on your machine.
+- Slides are drawn by `lib/carousel/render.ts` in Outfit (`deploy/fonts`,
+  installed by `deploy/install-fonts.sh`).
+- Posts: table `carousel_posts`; the publishing queue: `scheduled_carousels`;
+  GIFs: `carousel_gifs`. Photos and pictures are in R2 under
+  `generated-4k/carousels/studio/<post>/`.

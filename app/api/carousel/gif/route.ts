@@ -8,8 +8,8 @@ import { cleanTags } from "@/lib/giphy-publish";
 /**
  * A story GIF for one carousel post — made here, published separately.
  *
- * The laptop studio sends the post's before and after photographs and four or
- * five short lines; this composes them with the same engine as the paid GIF
+ * The studio (/admin/carousel) sends the post's before and after photographs
+ * and four or five short lines; this composes them with the same engine as the paid GIF
  * Maker, which was built for the one size that matters here: a GIF in an
  * Instagram comment is about 200 pixels wide, so it carries three or four huge
  * words beside the photograph and nothing small at all.
@@ -23,8 +23,9 @@ import { cleanTags } from "@/lib/giphy-publish";
  *             public GIF, and refused a second time for the same post: GIPHY
  *             has no delete in its API, so a duplicate stays up for good.
  *
- * Internal only, like /api/carousel/schedule: the laptop has no browser session
- * and presents the internal secret.
+ * Internal only. The website's admin studio calls it on this machine with the
+ * internal secret (gifRoute in lib/carousel/posts.ts), so there is one GIF
+ * maker and one publish-once rule.
  */
 
 const BUCKET = "generated-4k";
