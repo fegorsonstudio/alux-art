@@ -154,6 +154,23 @@ Admin → Image Generation has Nano Banana 2.1 / Nano Banana 2 / SeedDream; `app
 owner is running the first one; check `configured_model` on it (2 there means 2.1 was refused).
 Scripts `render-look-thumbnail.mjs` / `relight-one.mjs` still call nano-banana-2 directly.
 
+**Update (2026-10-06, late): all 33 stories rewritten on a new writing engine.** Research
+into how China's hit micro-dramas are written (`tools/carousel/RESEARCH.md`, sourced) became
+the engine in `tools/carousel/COPY-FORMULA.md`: hold down then lift (Ep1 public slap, Ep2
+villain wins, Ep3 reversal, Ep4 witnessed payoff), a hidden truth planted early with a
+visible clue in a story picture, a quotable insult thrown back word for word, typed
+cliffhangers (reveal/reversal/deadline/intrusion/document), ≤3 named characters with
+labels, one anti-trope beat, word caps per slide. **One file per story** in
+`tools/carousel/stories/` named as the calendar names it (`s1-01` … `s2-18`, `dec-1` …
+`dec-4`), each with `engine`, `hook`, `secret`, `insult`, `throwback`, `antiTrope`; checked
+by `node tools/carousel/stories/check.mjs` (product per slot and holiday episodes are
+enforced: Christmas s1-11 Ep3 and dec-4 Ep3, New Year s2-01 Ep3, Valentine s2-07 Ep4,
+Mothering Sunday s2-10 Ep4, Easter s2-13 Ep4). `schedule.mjs` builds all 132 posts from
+them; Ep 4 ends on the next story's own `hook`. Removed: `plan-microdrama.mjs`,
+`plan-season2.mjs`, `gif-scripts.mjs`, `season2/`. Seeded live (132 refreshed, nothing
+scheduled). **Open:** Christmas 2027 is a Saturday — when the December specials are dated,
+dec-4 Ep 3 needs its own day.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

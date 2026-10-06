@@ -11,18 +11,21 @@ owner's decision, 6 October 2026):
 
 | File | What it is |
 |---|---|
-| `season2/OUTLINE.md` | Season 2's plan: 22 stories, one a week, holidays on their day |
-| `season2/s2-01.mjs` … `s2-22.mjs` | Season 2's stories: cards, captions, story pictures, GIF lines |
-| `plan-season2.mjs` | Turns Season 2 into posts `p01`–`p88`, 7pm, 5 Oct to 7 Mar |
-| `plan-microdrama.mjs` | Season 1: 44 episodes `m01`–`m44`, 1pm from a Monday the owner picks |
-| `gif-scripts.mjs` | Each episode's story-GIF lines |
-| `storyboard.mjs` | Each episode's cast and story-picture prompts for Google Flow |
-| `COPY-FORMULA.md` | The house style every carousel is written to |
-| `season2/check.mjs` | Checks Season 2's story files against the rules |
+| `stories/s1-01.mjs` … `s1-11.mjs` | Season 1: 11 stories, Mon 12 Oct – Sun 27 Dec 2026 |
+| `stories/s2-01.mjs` … `s2-18.mjs` | Season 2: 18 stories, Mon 28 Dec 2026 – Sun 2 May 2027 |
+| `stories/dec-1.mjs` … `dec-4.mjs` | December specials, held for December 2027 (hidden, undated) |
+| `schedule.mjs` | The calendar: turns every story into its four dated posts, 7pm Mon/Wed/Fri/Sun |
+| `storyboard.mjs` | Turns each story's cast and scenes into Google Flow prompts |
+| `COPY-FORMULA.md` | The writing engine every story follows |
+| `RESEARCH.md` | Why: how China's hit micro-dramas are written, with sources |
+| `stories/check.mjs` | Checks every story file against the engine's rules |
+
+Each story file holds all four episodes: slides, captions, the cast, two story
+pictures per episode and the GIF lines.
 
 ## Changing the plan
 
-Edit the files here, run `node tools/carousel/season2/check.mjs`, deploy them
+Edit the files here, run `node tools/carousel/stories/check.mjs`, deploy them
 to the server, then load them:
 
 ```
@@ -32,7 +35,7 @@ node --env-file=.env.local scripts/carousel-seed.mjs
 
 Safe to run again. It refreshes the words only on posts the owner has not
 edited, approved or scheduled on the website, and never touches photographs,
-story pictures, hand-set dates, or whether the experiment is showing.
+story pictures or hand-set dates.
 
 ## How a post goes out (on the website)
 
@@ -53,8 +56,8 @@ Rules the website enforces:
   taken off the schedule until it is approved again.
 - A post whose time has passed won't schedule — it would go out at once.
 - Once Instagram has a post, nothing on the website can change or resend it.
-- The Photo Wahala experiment is loaded from a chosen Monday (1pm posts) and
-  removed with one button, which also withdraws any episode already scheduled.
+- Nothing reaches Instagram unless the owner pressed both Approve and Schedule.
+- Download slides gives a zip of every slide, the caption and the story GIF.
 
 ## Story GIFs
 
