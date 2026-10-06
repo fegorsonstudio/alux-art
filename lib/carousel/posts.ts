@@ -178,13 +178,10 @@ export function gifTags(row: Pick<PostRow, "product" | "batch" | "title">): stri
     shoot: ["photoshoot", "headshots", "portrait"],
   };
   const base = ["nigeria", "naija", "before after", ...(byProduct[row.product ?? ""] ?? [])];
-  // Every post is a Photo Wahala episode: Season 1 by its batch, Season 2 by
-  // its title ("P01 Photo Wahala S2 1.1: The 30th").
-  if (row.batch === EXPERIMENT || /Photo Wahala/.test(String(row.title ?? ""))) {
-    const story = String(row.title ?? "").replace(/^.*?:\s*/, "").toLowerCase();
-    return ["photo wahala", "photowahala", "nigerian drama", "story", story, ...base].slice(0, 14);
-  }
-  return base;
+  // Every post is a Photo Wahala episode; its story is the part of the title
+  // after the dash ("S1 · Story 01 · Ep 1 — The Asoebi Group Chat").
+  const story = String(row.title ?? "").replace(/^.*?—\s*/, "").toLowerCase();
+  return ["photo wahala", "photowahala", "nigerian drama", "story", story, ...base].slice(0, 14);
 }
 
 /** Where scripts/instagram-refresh.mjs keeps the tokens it renews every week. */

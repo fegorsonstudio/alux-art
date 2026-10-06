@@ -58,13 +58,6 @@ const dayLabel = (iso: string | null) =>
 const timeLabel = (iso: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit" }) : "";
 
-/** The next Monday in Lagos, as the date box wants it. */
-function nextMonday(): string {
-  const d = new Date(Date.now() + LAGOS_MS);
-  d.setUTCDate(d.getUTCDate() + (((8 - d.getUTCDay()) % 7) || 7));
-  return d.toISOString().slice(0, 10);
-}
-
 // ---- where a post stands ------------------------------------------------------
 
 type StateKey = "needs" | "draft" | "approved" | "scheduled" | "posted" | "failed";
@@ -150,7 +143,6 @@ function Drop({ label, hint, url, busy, disabled, onFile }: {
 export default function CarouselStudioPage() {
   const [list, setList] = useState<ListPost[] | null>(null);
   const [listErr, setListErr] = useState("");
-  const [experiment, setExperiment] = useState({ total: 0, loaded: 0 });
   const [filter, setFilter] = useState("todo");
   const [query, setQuery] = useState("");
 
@@ -163,8 +155,6 @@ export default function CarouselStudioPage() {
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [msg, setMsg] = useState<{ text: string; tone: Tone } | null>(null);
 
-  const [startMonday, setStartMonday] = useState(nextMonday);
-  const [removeArmed, setRemoveArmed] = useState(false);
   const [batchMsg, setBatchMsg] = useState<{ text: string; tone: Tone } | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
   // Light or dark, remembered under the same key as /studio and /marketplace
@@ -181,9 +171,8 @@ export default function CarouselStudioPage() {
 
   const loadList = useCallback(async () => {
     try {
-      const d = await call<{ posts: ListPost[]; experiment: { total: number; loaded: number } }>("/api/admin/carousel");
+      const d = await call<{ posts: ListPost[] }>("/api/admin/carousel");
       setList(d.posts);
-      setExperiment(d.experiment);
       setListErr("");
     } catch (e) {
       setListErr((e as Error).message);
@@ -467,50 +456,6 @@ export default function CarouselStudioPage() {
     loadList();
   };
 
-  const loadExperiment = async () => {
-    setBatchBusy(true);
-    try {
-      const r = await call<{ loaded: number; unscheduled: number; live: string[] }>("/api/admin/carousel", send("POST", { action: "load-experiment", startMonday }));
-      setBatchMsg({
-        text: `Season 1's ${r.loaded} episodes are in the list, starting ${dayLabel(`${startMonday}T12:00:00Z`)} at 1pm.` +
-          (r.unscheduled ? ` ${r.unscheduled} that were already scheduled moved date, so they were taken off the schedule: schedule them again.` : ""),
-        tone: "ok",
-      });
-      loadList();
-    } catch (e) {
-      setBatchMsg({ text: (e as Error).message, tone: "bad" });
-    } finally {
-      setBatchBusy(false);
-    }
-  };
-
-  // Two clicks, not one: this hides Season 1's 44 posts and withdraws any already scheduled.
-  const removeExperiment = async () => {
-    if (!removeArmed) {
-      setRemoveArmed(true);
-      setTimeout(() => setRemoveArmed(false), 5000);
-      return;
-    }
-    setRemoveArmed(false);
-    setBatchBusy(true);
-    try {
-      const r = await call<{ removed: number; cancelled: number; live: string[] }>("/api/admin/carousel", send("POST", { action: "remove-experiment" }));
-      let text = r.removed ? `Removed Season 1's ${r.removed} episodes from the list.` : "Season 1 wasn't in the list.";
-      if (r.cancelled) text += ` ${r.cancelled} were scheduled and will not post now.`;
-      if (r.live.length) {
-        text += ` ${r.live.length} are already on Instagram and have to be deleted there by hand: ` +
-          r.live.map((x) => x.replace("plan-", "").toUpperCase()).join(", ") + ".";
-      }
-      setBatchMsg({ text, tone: r.live.length ? "bad" : "ok" });
-      if (selected && list?.find((p) => p.local_id === selected)?.batch === "microdrama") close();
-      loadList();
-    } catch (e) {
-      setBatchMsg({ text: (e as Error).message, tone: "bad" });
-    } finally {
-      setBatchBusy(false);
-    }
-  };
-
   // ---- derived ----
 
   const states = useMemo(() => new Map((list ?? []).map((p) => [p.local_id, stateOf(p.status, p.publish_status)])), [list]);
@@ -520,7 +465,7 @@ export default function CarouselStudioPage() {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     if (!words.length) return list ?? [];
     return (list ?? []).filter((p) => {
-      const text = `${p.title} ${p.local_id} ${p.batch === "microdrama" ? "season 1 s1" : "season 2 s2"}`.toLowerCase();
+      const text = `${p.title} ${p.local_id} ${p.batch === "season1" ? "season 1 s1" : p.batch === "season2" ? "season 2 s2" : "december"}`.toLowerCase();
       return words.every((w) => text.includes(w));
     });
   }, [list, query]);
@@ -588,10 +533,10 @@ export default function CarouselStudioPage() {
               ))}
             </div>
             <input
-              type="search" className={cs.input} placeholder="Find a post: a name, S1, christmas, p47"
+              type="search" className={cs.input} placeholder="Find a post: S1, S2 story 3, christmas"
               aria-label="Find a post" value={query} onChange={(e) => setQuery(e.target.value)}
             />
-            <p className={cs.hintSmall}>Times are Lagos time. Season 2 posts at 7pm, Season 1 at 1pm.</p>
+            <p className={cs.hintSmall}>Every post goes out at 7pm Lagos time. Season 1 first, then Season 2.</p>
             {!list && <p className={cs.hint}>Loading…</p>}
             {list && list.length === 0 && <p className={cs.hint}>No posts yet. The plan has not been loaded onto the server.</p>}
             {list && list.length > 0 && shown.length === 0 && <p className={cs.hint}>{query ? "No post matches that." : "Nothing here."}</p>}
@@ -619,30 +564,6 @@ export default function CarouselStudioPage() {
                   </button>
                 );
               })}
-            </div>
-          </section>
-
-          <section className={cs.panel} aria-label="Photo Wahala Season 1">
-            <h2 className={cs.panelTitle}>Season 1 · 1pm</h2>
-            <p className={cs.hint}>
-              {experiment.loaded
-                ? `Season 1's ${experiment.loaded} episodes are in the list, one story a week at 1pm, beside Season 2 at 7pm.`
-                : `Season 1 is ready: ${experiment.total || 44} episodes, one story a week at 1pm. Pick the Monday it starts, then load it.`}
-              {" "}One button takes it all out again, including any episode already scheduled.
-            </p>
-            <div className={cs.btns} style={{ marginTop: 10 }}>
-              <input
-                type="date" className={cs.input} style={{ maxWidth: 170 }} aria-label="Start Monday"
-                value={startMonday} onChange={(e) => setStartMonday(e.target.value)}
-              />
-              <button type="button" className={`${cs.btn} ${cs.btnGhost}`} disabled={batchBusy} onClick={loadExperiment}>
-                {experiment.loaded ? "Move start date" : "Load Season 1"}
-              </button>
-              {experiment.loaded > 0 && (
-                <button type="button" className={`${cs.btn} ${cs.btnDanger}`} disabled={batchBusy} onClick={removeExperiment}>
-                  {removeArmed ? `Click again to remove all ${experiment.loaded}` : "Remove Season 1"}
-                </button>
-              )}
             </div>
           </section>
 

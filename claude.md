@@ -126,6 +126,13 @@ HVCO is retired (`tools/carousel/COPY-FORMULA.md` is the house style). Season 1
 7pm dated slots, holiday episodes on their day. Check stories with
 `node tools/carousel/season2/check.mjs`, then reseed with `scripts/carousel-seed.mjs`.
 
+**Update (2026-10-06, final): one calendar.** `tools/carousel/schedule.mjs` orders every
+post: Season 1 (`s1-01-1`…`s1-11-4`) Mon 12 Oct–Sun 27 Dec, then Season 2 (`s2-01-1`…
+`s2-18-4`) Mon 28 Dec–Sun 2 May, all at 7pm Mon/Wed/Fri/Sun; New Year's Day, Valentine's
+Day and Mothering Sunday on their day. The 4 December stories are `dec-1-1`…`dec-4-4`,
+hidden and undated, held for December 2027. Titles read "S1 · Story 01 · Ep 1 — Title".
+The seed reads schedule.mjs and removes old rows only if untouched.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
