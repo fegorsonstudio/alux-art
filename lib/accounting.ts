@@ -270,9 +270,16 @@ export async function accountingSummary(
     });
   }
 
+  // Paid sales only, the same rule as revenue. A free booking records the
+  // creator's payout as owed against a ₦0 sale on purpose (see the book route),
+  // and the July call-to-bar backfill is 'cash'; counting either made this
+  // warning fire on every free booking rather than on a real fault.
   const [payoutCheck] = await sql<{ gross: number; payout: number }[]>`
     SELECT COALESCE(SUM(amount_ngn),0)::bigint AS gross, COALESCE(SUM(creator_payout_ngn),0)::bigint AS payout
-    FROM template_purchases WHERE status = 'success'`.catch(() => [{ gross: 0, payout: 0 }]);
+    FROM template_purchases
+    WHERE status = 'success'
+      AND is_free IS NOT TRUE
+      AND LOWER(COALESCE(payment_provider, '')) = ANY(${SETTLED_PROVIDERS})`.catch(() => [{ gross: 0, payout: 0 }]);
   if (payoutCheck && Number(payoutCheck.payout) > Number(payoutCheck.gross)) {
     attention.push({
       severity: "high",
