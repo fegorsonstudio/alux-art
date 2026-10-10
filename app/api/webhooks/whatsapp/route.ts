@@ -224,8 +224,13 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
   // (CHOOSING_TEMPLATE picks a menu row by number, CHOOSING_LOOK already handles
   // this) and only when the digits name a look that really exists, so anything
   // else falls through to the step that was open.
+  //
+  // Per-image templates only. A normal shoot can list the same looks as an
+  // optional picker in its web checkout (Nursing Induction does), and there a
+  // stray number in chat is not a request to relight anything.
   if (/^\d{1,3}$/.test(text) && session.template_id &&
-      ["COLLECTING_PHOTOS", "CHOOSING_RATIO", "CONFIRMING"].includes(session.state)) {
+      ["COLLECTING_PHOTOS", "CHOOSING_RATIO", "CONFIRMING"].includes(session.state) &&
+      await isPerImage(session.template_id)) {
     const look = await lookByNumber(session.template_id, parseInt(text, 10));
     if (look) {
       await sql`UPDATE whatsapp_sessions SET enhance_look_id = ${look.id}, updated_at = NOW() WHERE id = ${session.id}`;

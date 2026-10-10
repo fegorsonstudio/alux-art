@@ -171,6 +171,31 @@ them; Ep 4 ends on the next story's own `hook`. Removed: `plan-microdrama.mjs`,
 scheduled). **Open:** Christmas 2027 is a Saturday — when the December specials are dated,
 dec-4 Ep 3 needs its own day.
 
+**Update (2026-10-07): two small fixes.** Relights of orange-lit photos came back nearly
+unchanged on Nano Banana 2.1 — the identity block in `buildGearEqualizerPrompt` read a
+bulb's colour cast as skin tone; one sentence now says a room's cast is NOT skin tone
+(`lib/gear-equalizer.ts`, commit `9488090`; **not yet proven by a real relight**). The
+accounting warning "payouts exceed gross sales" counted free bookings and the July `cash`
+backfill; it now uses the paid-only rule revenue uses (`lib/accounting.ts`, `ce35d8a`).
+
+**Update (2026-10-10): Nursing Induction carries the 197 lighting looks.** Copied from the
+Gear Equalizer by `scripts/copy-looks-to-nursing.mjs` (backup first, `sql.json()`, read
+back and checked; `--restore <backup>` undoes it; backup at
+`/home/aluxart/backups/nursing-induction-option-groups-2026-10-10T18-59-39-428Z.json`).
+Three sections (Headshots 56, Medium 104, Full body 37), fresh ids, same thumbnails,
+`updated_at` left alone so the dashboard's lighting library still reads from the Gear
+Equalizer. Buyers see "Lighting — AI decides" in the checkout; manual lighting is opt-in,
+so default shoots are unchanged. **Look numbers and names are sold by the relight product
+only:** `sellsLooks` in `lib/whatsapp-triggers.ts` (WhatsApp triggers, Instagram LIGHT bot,
+comments, mentions) and an `isPerImage` gate on the WhatsApp stray-number branch — without
+them "197" could land on whichever published template the database returned first. **Do not
+remove that guard while any non-relight template carries numbered looks.** It is a
+snapshot: later edits to a Gear Equalizer look do not reach the nursing copy. **Unproven:**
+every look is worded "Relight this image…"; 18 owner test shoots on Private temp / Baby
+shoot ran clean on nano-banana-2, but not yet on 2.1 or against nursing's own lighting
+rules (the DRAMATIC LIGHT slots). M1 blue's 3 looks were left out (private template).
+The Airtable "Fal Payloads" log base is over its record limit (422 on every write).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

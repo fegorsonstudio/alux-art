@@ -74,6 +74,17 @@ function lightingOptions(optionGroups: unknown): Array<{ id: string; name: strin
 }
 
 /**
+ * Only the relight product sells a look by its number or name.
+ *
+ * Other templates can carry the same archive as an optional lighting picker in
+ * their own checkout — Nursing Induction does. A buyer who types "197" is asking
+ * for a photo relit with look 197, never for a nursing shoot that happens to
+ * list it, and without this the answer would depend on which row the database
+ * happened to return first.
+ */
+const sellsLooks = (r: Row) => r.category === "photo_upgrade";
+
+/**
  * Resolve one message to a template, and a look where the buyer named one.
  *
  * Order matters and is deliberate: a bare number is checked first (it can only
@@ -90,11 +101,12 @@ export async function resolveTrigger(creatorId: string, message: string): Promis
 
   const rows = await candidates(creatorId);
   if (!rows.length) return null;
+  const lookRows = rows.filter(sellsLooks);
 
   // 1. A bare number — "197". Only ever a look.
   const asNumber = /^\d{1,3}$/.test(text) ? Number(text) : null;
   if (asNumber !== null) {
-    for (const r of rows) {
+    for (const r of lookRows) {
       for (const o of lightingOptions(r.option_groups)) {
         if (parseLookName(o.name).n === asNumber) {
           return { kind: "look", templateId: r.id, title: r.title, lookId: o.id, lookName: o.name };
@@ -117,7 +129,7 @@ export async function resolveTrigger(creatorId: string, message: string): Promis
   }
 
   // 4. A look by name — "g7x", "paparazzi", "wine dark". Carries its template.
-  for (const r of rows) {
+  for (const r of lookRows) {
     for (const o of lightingOptions(r.option_groups)) {
       const { bare } = parseLookName(o.name);
       if (bare === text || (text.length >= 3 && bare.includes(text))) {
@@ -170,7 +182,7 @@ export async function findLookByNumber(n: number): Promise<
     FROM templates
     WHERE status = 'published' AND is_private = false`.catch(() => [] as Row[]);
 
-  for (const r of rows) {
+  for (const r of rows.filter(sellsLooks)) {
     for (const o of lightingOptions(r.option_groups)) {
       if (parseLookName(o.name).n === n) {
         return { templateId: r.id, title: r.title, lookId: o.id, lookName: o.name };
