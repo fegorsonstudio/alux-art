@@ -43,6 +43,28 @@ const GRAPH = "https://graph.instagram.com/v23.0";
 /** The look the promoted post is selling. Commenting LIGHT chooses it. */
 const LIGHT_LOOK_NUMBER = 197;
 
+/**
+ * Did this message open the chat from one of the relight ads?
+ *
+ * Meta tags the FIRST message of a chat opened from an ad with that ad's name.
+ * Tapping a relight ad is the same request as typing LIGHT, but the bot only
+ * knew the word: of the eight tagged arrivals in the log, five tapped one of the
+ * ad's own buttons, two said "Hi", and all seven were met with silence on a
+ * click that had been paid for. Only the one who typed "Light" was answered.
+ *
+ * Recognised by the ad's NAME in Ads Manager — "0826 vertical – relight." — so
+ * a copied or renamed ad keeps working with no change here, and an ad for
+ * anything else is left alone. Keep "relight" (or the word "light") in the name
+ * of any ad that should start this conversation.
+ *
+ * This is deliberately NOT a greeting for everybody. Fifty-four of the fifty-six
+ * bare "hi"s in the same log carried no ad tag: friends, clients and other
+ * businesses talking to the studio, which is who quiet mode protects.
+ */
+function isRelightAd(adTitle: string | undefined): boolean {
+  return typeof adTitle === "string" && /relight|\blight\b/i.test(adTitle);
+}
+
 /** Handles come from IG_ACCOUNTS so the bot never answers itself. */
 function ourHandles(): Set<string> {
   return new Set(
@@ -125,6 +147,8 @@ export async function POST(request: NextRequest) {
           text?: string;
           is_echo?: boolean;
           attachments?: Array<{ type?: string; payload?: { url?: string } }>;
+          // Only on the first message of a chat opened from an ad.
+          referral?: { source?: string; ad_id?: string; ads_context_data?: { ad_title?: string } };
         };
       }>;
     }>;
@@ -171,6 +195,9 @@ export async function POST(request: NextRequest) {
           imageUrls: (m.message?.attachments ?? [])
             .filter(a => a.type === "image" && a.payload?.url)
             .map(a => a.payload!.url as string),
+          adTitle: m.message?.referral?.source === "ADS"
+            ? (m.message.referral.ads_context_data?.ad_title ?? "")
+            : undefined,
         });
       } catch (e) {
         console.error("[ig webhook] DM handling failed:", (e as Error).message);
@@ -501,7 +528,7 @@ async function ignoreQuietly(
 async function handleDirectMessage(
   igAccountId: string,
   senderId: string,
-  msg: { text?: string; imageUrls?: string[] },
+  msg: { text?: string; imageUrls?: string[]; adTitle?: string },
 ): Promise<void> {
   const creds = credsForAccount(igAccountId);
   if (!creds) { console.warn("[ig bot] no credentials for account", igAccountId); return; }
@@ -545,10 +572,20 @@ async function handleDirectMessage(
   // handlePhoto, which downloads the attachment, uploads it to R2, creates a
   // profile and writes an identity_images row: none of which should happen
   // because a stranger sent an unsolicited picture.
+  // They tapped a relight ad to get here. See isRelightAd.
+  const fromRelightAd = isRelightAd(msg.adTitle);
+
   if (photos.length > 0) {
     if (!engaged) {
-      await ignoreQuietly(session, "[sent a photo, no look chosen]");
-      return;
+      if (!fromRelightAd) {
+        await ignoreQuietly(session, "[sent a photo, no look chosen]");
+        return;
+      }
+      // The ad click already said which light, so the picture is the whole
+      // order. Arm the look and let it through — this is not a stranger's
+      // unsolicited photo, it is the thing the advert asked them to send.
+      console.log(`[ig bot] photo from a relight-ad arrival — arming look ${LIGHT_LOOK_NUMBER}`);
+      await armLookSession(igAccountId, senderId, session.ig_username ?? undefined, LIGHT_LOOK_NUMBER);
     }
     // One at a time, in the order they were attached. Each call re-reads the
     // session so the running count is right — handlePhoto appends to
@@ -772,6 +809,18 @@ async function handleDirectMessage(
     await sendText(creds, senderId,
       "Your GIF is above. Reply *post* if you want it in Instagram's GIF search, " +
       "or *gif* to make another one.");
+    return;
+  }
+
+  // Arrived from a relight ad and said something nothing above answers: "Hi",
+  // or one of the ad's own buttons. Tapping that ad IS the request, so it gets
+  // what typing LIGHT gets. Last on purpose: "help", a look number, an email and
+  // every mid-booking reply above still win, and only a conversation at rest is
+  // moved, so an order in flight is never restarted by a second tap on the ad.
+  if (fromRelightAd && ["IDLE", "DONE", "COLLECTING_LOOK"].includes(session.state)) {
+    console.log(`[ig bot] relight-ad arrival said "${text.slice(0, 60)}" — treating it as LIGHT`);
+    if (await offerLook(creds, session, LIGHT_LOOK_NUMBER)) return;
+    await ignoreQuietly(session, text, { failedTrigger: true });
     return;
   }
 

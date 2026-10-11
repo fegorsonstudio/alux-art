@@ -196,6 +196,25 @@ shoot ran clean on nano-banana-2, but not yet on 2.1 or against nursing's own li
 rules (the DRAMATIC LIGHT slots). M1 blue's 3 looks were left out (private template).
 The Airtable "Fal Payloads" log base is over its record limit (422 on every write).
 
+**Update (2026-10-11): a relight-ad arrival is treated as LIGHT.** Meta tags the first
+message of a chat opened from an ad: `message.referral = { source: "ADS", ad_id,
+ads_context_data: { ad_title } }`. Of the 8 tagged arrivals in the log, 5 tapped the ad's
+own welcome buttons, 2 said "Hi" and 1 typed "Light" — 7 of 8 paid clicks met quiet mode.
+`isRelightAd()` in `app/api/webhooks/instagram/route.ts` matches the ad's NAME
+(`/relight|\blight\b/i`, e.g. "0826 vertical – relight."), and at the two places the bot
+goes silent a tagged arrival now gets what LIGHT gets: a first photo arms look 197 and is
+let through; any other unanswered message calls `offerLook(197)`. "help", look numbers and
+mid-booking replies still win. **Quiet mode is unchanged for everyone else** — 54 of 56 bare
+"hi"s in the log carried no ad tag (friends, clients, other businesses), so there is still no
+greeting for untagged DMs; that was the owner's August call and has not been reopened.
+**Keep "relight" in the name of any ad that should start this conversation.** Verified live
+with made-up sender ids (8 checks, rows removed); the photo-first check used a missing
+file on purpose, so storing a real first photo was not exercised. New welcome-message
+wording for the ad (buttons "LIGHT - relight my photo", "How does LIGHT work?", "Help")
+was handed to the owner to paste into Meta's ad assistant — not yet confirmed applied.
+The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
+cannot pass Facebook's sign-in, so restarting it is with the owner.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
