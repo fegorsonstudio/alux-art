@@ -174,9 +174,24 @@ dec-4 Ep 3 needs its own day.
 **Update (2026-10-07): two small fixes.** Relights of orange-lit photos came back nearly
 unchanged on Nano Banana 2.1 — the identity block in `buildGearEqualizerPrompt` read a
 bulb's colour cast as skin tone; one sentence now says a room's cast is NOT skin tone
-(`lib/gear-equalizer.ts`, commit `9488090`; **not yet proven by a real relight**). The
+(`lib/gear-equalizer.ts`, commit `9488090`; **REVERTED 2026-10-12 — see below**). The
 accounting warning "payouts exceed gross sales" counted free bookings and the July `cash`
 backfill; it now uses the paid-only rule revenue uses (`lib/accounting.ts`, `ce35d8a`).
+
+**Update (2026-10-12): the 7 Oct "colour cast" sentence REDREW FACES and is gone.** Two
+owner relights (look 197, Nano Banana 2.1, wide travel shots) came back with a different
+face, a different necklace, a re-wrapped scarf and a re-framed, heavily darkened scene
+(change score 79 and 87 of 255; the same look on 2.1 scored 5–13 before the sentence).
+Evidence it was the sentence and not the model or the small face: on 6 Oct, BEFORE it,
+both nano-banana-2 and 2.1 kept the face on a full-body shot (small face) even while
+swapping the whole backdrop. `lib/gear-equalizer.ts` is byte-identical to its pre-9488090
+text again, deployed. **Never loosen the IDENTITY block to get a stronger relight** — a
+sentence that says part of what is on the skin "is not the person" reads as licence to
+redraw them. The underlying tension is unsolved: with the strict block 2.1 barely relights
+(relight-only), and nano-banana-2 relit strongly AND kept the face. **Not yet proven by a
+real relight** (owner's OK needed for any paid run): `scratchpad/relight-ab.mjs` re-runs
+one of today's photos on both models. Proposed, not built: an automatic face check that
+holds a relight instead of delivering it when the face does not match.
 
 **Update (2026-10-10): Nursing Induction carries the 197 lighting looks.** Copied from the
 Gear Equalizer by `scripts/copy-looks-to-nursing.mjs` (backup first, `sql.json()`, read
