@@ -178,20 +178,26 @@ bulb's colour cast as skin tone; one sentence now says a room's cast is NOT skin
 accounting warning "payouts exceed gross sales" counted free bookings and the July `cash`
 backfill; it now uses the paid-only rule revenue uses (`lib/accounting.ts`, `ce35d8a`).
 
-**Update (2026-10-12): the 7 Oct "colour cast" sentence REDREW FACES and is gone.** Two
-owner relights (look 197, Nano Banana 2.1, wide travel shots) came back with a different
-face, a different necklace, a re-wrapped scarf and a re-framed, heavily darkened scene
-(change score 79 and 87 of 255; the same look on 2.1 scored 5–13 before the sentence).
-Evidence it was the sentence and not the model or the small face: on 6 Oct, BEFORE it,
-both nano-banana-2 and 2.1 kept the face on a full-body shot (small face) even while
-swapping the whole backdrop. `lib/gear-equalizer.ts` is byte-identical to its pre-9488090
-text again, deployed. **Never loosen the IDENTITY block to get a stronger relight** — a
-sentence that says part of what is on the skin "is not the person" reads as licence to
-redraw them. The underlying tension is unsolved: with the strict block 2.1 barely relights
-(relight-only), and nano-banana-2 relit strongly AND kept the face. **Not yet proven by a
-real relight** (owner's OK needed for any paid run): `scratchpad/relight-ab.mjs` re-runs
-one of today's photos on both models. Proposed, not built: an automatic face check that
-holds a relight instead of delivering it when the face does not match.
+**Update (2026-10-12): relights of small faces come back as a DIFFERENT PERSON — OPEN, not
+fixed.** Two owner relights (look 197, Nano Banana 2.1, wide travel shots, face ~260–300px
+tall and soft) came back with a different face, a different necklace, a re-wrapped scarf and
+a re-framed, darkened scene (change score 79 and 87 of 255). I first blamed the 7 Oct
+"colour cast" sentence and removed it (`lib/gear-equalizer.ts` is byte-identical to its
+pre-9488090 text, deployed) — **that diagnosis was wrong**: the owner's re-test without the
+sentence (shoot `cb2df310`, same photo) still redrew the scene (change 64) and invented a
+third, different face. The sentence made it worse; it was not the cause. Cause as understood
+now: the model repaints the whole frame at 4K, and where the real face is small and soft it
+makes one up — and the prompt's own IMAGE QUALITY UPGRADE / SOURCE RESTORATION sections ask
+for exactly that. **No wording can guarantee the face; do not try another sentence.** Still
+true: never loosen the IDENTITY block to get a stronger relight. **Shown to the owner,
+awaiting their decision, nothing built in the app:** a "lighting transfer" — keep every pixel
+of the customer's photo and take only the light from the AI result (match the two frames,
+measure brightness/colour change area by area, tie the map to the original's edges with a
+guided filter, multiply the original in linear light, one contrast curve). Proven on both
+photos offline with sharp, ~15 s each, no fal call: the person is identical by construction;
+the result is tamer than the AI's and the face stays as soft as the phone took it. It would
+sit after the fal call for `photo_upgrade` in `lib/generate.ts` (core worker — needs the
+owner's OK and one real run to prove).
 
 **Update (2026-10-10): Nursing Induction carries the 197 lighting looks.** Copied from the
 Gear Equalizer by `scripts/copy-looks-to-nursing.mjs` (backup first, `sql.json()`, read
