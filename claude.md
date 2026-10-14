@@ -236,8 +236,26 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-14, night): 48-hour photo deletion LIVE; full-quality upload link and
+all-photos download page LIVE; privacy page corrected.** Owner approved each. Purge first run:
+611 files (1.8 GB) + 386 stale reference rows + 16 empty library rows, templates untouched; cron
+`25 * * * *`; deletion records in `/root/purge-logs`. Consequences the owner accepted: the
+website's saved-photo library lasts 48 h after a shoot, free redos fail after 48 h, an unpaid
+order paid after 48 h fails and refunds to the wallet. Privacy page: only the two untrue lines
+changed (Cloudflare R2, not Supabase; fal.ai/Google process photos). **Upload link**
+(`/d/up/<token>`, table `chat_upload_links` migration 072, `lib/chat-upload-links.ts`): both
+bots offer it when asking for photos — Instagram in `offerLook` and on the first chat photo,
+WhatsApp in the per-photo prompts. The page (App look, light/dark, 7 dictionaries under
+`chatUpload`, chat language for WhatsApp) sends originals to `/api/up/<token>` one at a time
+(30 MB, HEIC→JPEG q95, else byte for byte; 48 h; 30 files per link). Instagram: `handlePhoto` is
+now download + `acceptInstagramPhoto` (shared by chat and upload). WhatsApp: `lib/whatsapp-upload.ts`
+mirrors collectPhoto's after-download steps, only for per-photo products in COLLECTING_PHOTOS (the
+route file cannot be imported). **Kept under `/d/` because middleware.ts skips `/d/` — do not move
+it.** Downloads: `lib/download-link.ts` tokens every finished photo; `/d/<token>` lists the whole
+order; WhatsApp delivery sends the link too. Verified live with made-up customers, 13/13.
+
 **Update (2026-10-14, evening): nightly database backup LIVE; 48-hour photo deletion BUILT, not
-switched on.** `scripts/db-backup.mjs`, cron `30 2 * * *` (UTC): pg_dump custom format to
+switched on (switched on later the same night — see above).** `scripts/db-backup.mjs`, cron `30 2 * * *` (UTC): pg_dump custom format to
 `/root/db-backups` (newest 14 kept), checked with pg_restore --list, and an AES-256 encrypted copy
 (password `/root/.db-backup-pass`; the owner was given a copy on their Desktop to move into a
 password manager) sent silently to the owner's Telegram — the R2 key cannot create a bucket, so
