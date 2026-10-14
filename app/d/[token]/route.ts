@@ -112,6 +112,52 @@ const page = (token: string, mb: string, isVideo: boolean, sticker?: { tag: stri
   <p class="foot">This link works for 7 days &middot; aluxartandframes.shop</p>
 </div></body></html>`;
 
+/**
+ * Every photo in one order, on one page. A chat order can hold up to ten photos
+ * and the chat used to receive a link to the first one only. Each photo keeps
+ * its own token (and its own /preview and /file), so nothing about how a single
+ * file is served changes.
+ */
+type Sibling = { token: string; slot: number; bytes: number | null; path: string };
+const listPage = (items: Sibling[]) => `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your ${items.length} photos — Alux Art</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d2620;color:#eaf5f1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       min-height:100vh;padding:20px 16px}
+  .wrap{width:100%;max-width:520px;margin:0 auto;text-align:center}
+  h1{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+  p{font-size:.9rem;line-height:1.5;opacity:.8;margin-bottom:18px}
+  .item{margin-bottom:26px}
+  img,video{width:100%;border-radius:12px;display:block;margin-bottom:10px;background:#123}
+  .meta{font-size:.78rem;opacity:.65;margin-bottom:8px}
+  a.btn{display:block;background:#43ccb2;color:#06150f;font-weight:800;font-size:1rem;
+        padding:14px;border-radius:12px;text-decoration:none}
+  .hint{font-size:.78rem;opacity:.6;line-height:1.5;margin-bottom:22px}
+  .foot{margin-top:6px;font-size:.75rem;opacity:.45}
+</style></head>
+<body><div class="wrap">
+  <h1>Your ${items.length} photos are ready</h1>
+  <p>Full size, full quality. Download each one below.</p>
+  <p class="hint">If a photo opens in a viewer instead of saving, press and hold it and choose
+     <strong>Save to Photos</strong>. On a computer, right-click and choose <strong>Save image as</strong>.</p>
+  ${items.map((it, i) => {
+    const video = /\.(mp4|webm|mov)$/i.test(it.path);
+    const size = it.bytes ? ` · ${(it.bytes / 1048576).toFixed(1)} MB` : "";
+    return `<div class="item">
+    ${video
+      ? `<video src="/d/${it.token}/preview" muted playsinline controls preload="metadata"></video>`
+      : `<img src="/d/${it.token}/preview" alt="Photo ${i + 1}" loading="lazy">`}
+    <div class="meta">${video ? "Video" : "Photo"} ${i + 1} of ${items.length}${size}</div>
+    <a class="btn" href="/d/${it.token}/file">Download ${video ? "video" : "photo"} ${i + 1}</a>
+  </div>`;
+  }).join("\n  ")}
+  <p class="foot">These links work for 7 days &middot; aluxartandframes.shop</p>
+</div></body></html>`;
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
@@ -120,6 +166,24 @@ export async function GET(
   if (!token || token.length < 16) return new NextResponse("Not found", { status: 404 });
 
   const resolved = await resolveToken(token);
+
+  // An order with several finished photos: show them all. Retouched files keep
+  // their own single-file page and paywall check.
+  if (resolved && !resolved.retouched) {
+    const siblings = await sql<Sibling[]>`
+      SELECT download_token AS token, slot,
+             COALESCE(download_file_size, file_size) AS bytes,
+             COALESCE(download_storage_path, preview_storage_path) AS path
+      FROM shoot_images
+      WHERE shoot_id = ${resolved.shootId} AND status = 'COMPLETE' AND download_token IS NOT NULL
+        AND COALESCE(download_storage_path, preview_storage_path) IS NOT NULL
+      ORDER BY slot`.catch(() => [] as Sibling[]);
+    if (siblings.length > 1) {
+      return new NextResponse(listPage(siblings), {
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
+  }
   const [row] = resolved
     ? [{ bytes: null as number | null, path: resolved.path }]
     : await sql<{ bytes: number | null; path: string | null }[]>`

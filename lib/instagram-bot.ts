@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase-server";
 import { SITE_URL } from "@/lib/site-url";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
 import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
+import { uploadLinkFor } from "@/lib/chat-upload-links";
 import {
   sendText, sendImage, downloadAttachment, credsForAccount, handleForAccount,
   type IgCreds, type IgSendResult,
@@ -382,11 +383,16 @@ export async function offerLook(
   // already typed. Without it the customer arrives in a second bot having lost
   // the only piece of context that matters and has to start again.
   const waLink = `https://wa.me/${WA_NUMBER}?text=${n}`;
+  // Instagram shrinks photos sent in a DM, so the chat option carries the
+  // full-quality upload page too. Only in the linked version: the no-link
+  // fallback below exists because links are being refused.
+  const upLink = await uploadLinkFor("instagram", session.id);
   const opening =
     `That's *${prettyLook(look.lookName)}* \u2014 look ${n}. \ud83d\udc47\n\n` +
     `${naira(RELIGHT_PRICE_NGN)} for one photo. Three ways to do it \u2014 ` +
     `whichever suits you:\n\n` +
-    `1\ufe0f\u20e3 *Right here* \u2014 send me the photo in this chat.\n` +
+    `1\ufe0f\u20e3 *Right here* \u2014 send me the photo in this chat. Instagram shrinks ` +
+    `photos sent here, so for full quality upload the original instead: ${upLink}\n` +
     `2\ufe0f\u20e3 *WhatsApp* \u2014 ${waLink}\n`;
   const closing =
     `\n\nQuickest is right here: send the picture \u2014 the dark club, the dim ` +
@@ -421,21 +427,50 @@ export async function handlePhoto(
   session: IgSession,
   attachmentUrl: string,
 ): Promise<void> {
-  const to = session.ig_user_id;
-
   const media = await downloadAttachment(attachmentUrl);
   if (!media) {
-    await sendText(creds, to, "That image didn't come through. Could you send it once more?");
+    await sendText(creds, session.ig_user_id, "That image didn't come through. Could you send it once more?");
     return;
   }
+  await acceptInstagramPhoto(creds, session, media, { notify: true, viaUpload: false });
+}
+
+/**
+ * A photo is in hand — from the chat (handlePhoto) or from the full-quality
+ * upload page (/d/up/<token>). Same order, same batch, same replies; the only
+ * differences are where it came from and, for an upload of several files, that
+ * only the last one says the running count, so five uploads are one message.
+ */
+export async function acceptInstagramPhoto(
+  creds: IgCreds,
+  session: IgSession,
+  media: { buffer: Buffer; contentType: string },
+  opts: { notify: boolean; viaUpload: boolean },
+): Promise<{ held: number }> {
+  const to = session.ig_user_id;
+  const say = async (text: string, withLink?: string) => {
+    if (!opts.notify) return;
+    if (withLink) await sendWithLinkFallback(creds, to, text + withLink, text);
+    else await sendText(creds, to, text);
+  };
 
   const userId = await ensureUser(session);
-  const path = `${userId}/${crypto.randomUUID()}-instagram.jpg`;
+  const ext = media.contentType.includes("png") ? "png" : media.contentType.includes("webp") ? "webp" : "jpg";
+  const path = opts.viaUpload
+    ? `${userId}/${crypto.randomUUID()}-upload.${ext}`
+    : `${userId}/${crypto.randomUUID()}-instagram.jpg`;
   await r2Upload("identity-images", path, media.buffer, media.contentType);
   await sql`
     INSERT INTO identity_images (user_id, name, type, size, storage_bucket, storage_path, created_at, last_used_at)
-    VALUES (${userId}, ${"Instagram photo"}, ${media.contentType},
+    VALUES (${userId}, ${opts.viaUpload ? "Instagram upload" : "Instagram photo"}, ${media.contentType},
             ${media.buffer.byteLength}, 'identity-images', ${path}, NOW(), NOW())`;
+
+  // Said once, on the first photo of a batch sent in the chat: Instagram has
+  // already shrunk it (median 0.1 MB, measured 14 Oct 2026), and the customer
+  // can still swap in the original before paying.
+  const shrinkNote = async () => opts.viaUpload ? "" :
+    `\n\n📷 Instagram shrinks photos sent in chat. For full quality, upload the ` +
+    `original here instead: ${await uploadLinkFor("instagram", session.id)}`;
 
   // A photograph arriving after a link has gone out belongs to a NEW order. The
   // previous one is already priced and waiting to be paid, and quietly adding
@@ -444,32 +479,40 @@ export async function handlePhoto(
   const held = closed ? [] : await freshHeld(session.source_paths ?? []);
 
   if (!session.look_option_id || !session.template_id) {
-    await patchSession(session.id, { state: "COLLECTING_LOOK", source_paths: [...held, path] });
-    await sendText(creds, to,
-      `Lovely \u2014 I've got your photo. Which light do you want on it?\n\n` +
-      `Send me the number from the post (for example *69* or *197*) and I'll get started.`);
-    return;
+    const all = [...held, path];
+    await patchSession(session.id, { state: "COLLECTING_LOOK", source_paths: all });
+    await say(
+      (all.length === 1
+        ? `Lovely \u2014 I've got your photo. Which light do you want on it?`
+        : `Lovely \u2014 I've got *${all.length} photos*. Which light do you want on them?`) +
+      `\n\nSend me the number from the post (for example *69* or *197*) and I'll get started.`,
+      held.length === 0 ? await shrinkNote() : undefined);
+    return { held: all.length };
   }
 
   const batch = [...held, path].slice(0, MAX_BATCH);
   await patchSession(session.id, { state: "CONFIRMING_BATCH", source_paths: batch, shoot_id: null });
 
   if (batch.length >= MAX_BATCH) {
+    // Always said, even mid-upload: the booking below sends a payment link,
+    // and the customer must know why it came.
     await sendText(creds, to,
       `That's ${MAX_BATCH} photos \u2014 the most I can do in one go. Setting them up now\u2026`);
     await bookIt(creds, { ...session, source_paths: batch }, batch,
                  media.contentType, media.buffer.byteLength);
-    return;
+    return { held: batch.length };
   }
 
   // The count is said out loud every time on purpose. Photographs were being
   // dropped silently, and a running total is how a customer notices one of
   // theirs never arrived.
-  await sendText(creds, to,
+  await say(
     `Got it \u2014 that's *${batch.length} photo${batch.length === 1 ? "" : "s"}* so far ` +
     `(${naira(RELIGHT_PRICE_NGN * batch.length)}).\n\n` +
     `Are these all the pictures you want relit? Reply *yes* and I'll send one payment link ` +
-    `for all of them, or just send the rest.`);
+    `for all of them, or just send the rest.`,
+    batch.length === 1 ? await shrinkNote() : undefined);
+  return { held: batch.length };
 }
 
 /**

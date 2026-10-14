@@ -524,6 +524,26 @@ const pt: AppDictionary = {
     gif_loop: "🎞️ GIF do Instagram",
     other: "Outros",
   },
+  chatUpload: {
+    title: "Envie suas fotos com qualidade máxima",
+    introInstagram: "O Instagram reduz as fotos enviadas no chat, e os detalhes finos se perdem antes mesmo de começarmos. Envie os originais aqui e trabalharemos com os arquivos em qualidade máxima.",
+    introWhatsApp: "O WhatsApp reduz as fotos enviadas do jeito normal. Envie os originais aqui e trabalharemos com os arquivos em qualidade máxima.",
+    choose: "Escolher fotos",
+    hint: "Até {max} fotos, {mb} MB cada. JPEG, PNG ou HEIC.",
+    selected: "{count} selecionada(s)",
+    uploadButton: "Enviar",
+    uploading: "Enviando {n} de {total}…",
+    done: "Pronto: {count} recebida(s).",
+    backToChat: "Volte ao chat: enviamos o próximo passo para você lá.",
+    openChat: "Voltar ao chat",
+    tooBig: "{name} passa de {mb} MB. Escolha um arquivo menor.",
+    notImage: "{name} não é uma foto que conseguimos ler.",
+    failed: "{name} não foi enviada. Verifique sua conexão e tente de novo.",
+    expired: "Este link de envio expirou. Peça um novo no chat.",
+    closed: "Este pedido não está recebendo fotos agora. Volte ao chat para continuar.",
+    full: "Esse é o máximo de fotos para um pedido. Volte ao chat e responda done.",
+    privacy: "Suas fotos são usadas só para o seu pedido e apagadas em até 48 horas depois que ele termina.",
+  },
 };
 
 export default pt;

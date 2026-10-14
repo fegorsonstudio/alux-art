@@ -524,6 +524,26 @@ const pcm: AppDictionary = {
     gif_loop: "🎞️ Instagram GIF",
     other: "Others",
   },
+  chatUpload: {
+    title: "Send your photos for full quality",
+    introInstagram: "Instagram dey reduce photo wey you send for chat, so small details go lost before we even start. Upload the original ones here make we work with the full quality.",
+    introWhatsApp: "WhatsApp dey reduce photo wey you send the normal way. Upload the original ones here make we work with the full quality.",
+    choose: "Choose photos",
+    hint: "Up to {max} photos, {mb} MB each. JPEG, PNG or HEIC.",
+    selected: "{count} don select",
+    uploadButton: "Upload",
+    uploading: "E dey upload {n} of {total}…",
+    done: "E don finish — we don receive {count}.",
+    backToChat: "Go back to the chat: we don send you the next step there.",
+    openChat: "Back to the chat",
+    tooBig: "{name} pass {mb} MB. Abeg choose smaller file.",
+    notImage: "{name} no be photo wey we fit read.",
+    failed: "{name} no upload. Check your network, then try again.",
+    expired: "This upload link don expire. Ask for new one for the chat.",
+    closed: "This order no dey collect photos now. Go back to the chat to continue.",
+    full: "Na the maximum photos one order fit take be that. Go back to the chat, reply done.",
+    privacy: "We go use your photos only for your order, and we go delete them within 48 hours after e finish.",
+  },
 };
 
 export default pcm;

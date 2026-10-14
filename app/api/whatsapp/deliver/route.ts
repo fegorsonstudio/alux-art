@@ -3,6 +3,7 @@ import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import { sendText, sendImage, sendDocument, type WaCreds } from "@/lib/whatsapp";
+import { shootDownloadLink } from "@/lib/download-link";
 import { RETOUCH_PRICE_PER_IMAGE_NGN } from "@/lib/retouch-pricing";
 import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 
@@ -169,9 +170,14 @@ export async function GET(req: NextRequest) {
     // Thank them, then offer the retouch. Asked HERE and nowhere else: the
     // buyer has just seen the images, which is the only moment they can judge
     // whether a hand pass is worth paying for.
+    // The same files on a page, for anyone who would rather save them from a
+    // browser or reach them from another device. Never fatal: the documents above
+    // are the delivery, the link is a convenience.
+    const page = await shootDownloadLink(r.shoot_id).catch(() => null);
     await sendText(creds, r.customer_phone,
       "That's everything — thank you for choosing Alux Art 🎉\n\n" +
-      "Save them to your phone now — they're kept for 7 days, then removed.\n\n" +
+      "Save them to your phone now — they're kept for 7 days, then removed." +
+      (page ? `\n\nYou can also download them in full quality here: ${page}` : "") + "\n\n" +
       `Want them hand-retouched? Skin, stray hairs, and the small things a model notices. ` +
       `*${naira(RETOUCH_PRICE_PER_IMAGE_NGN)} per image* — reply *retouch* and I'll take it from here.\n\n` +
       "Or send *restart* for another look with the same photos.");

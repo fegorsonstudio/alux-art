@@ -523,6 +523,26 @@ const en = {
     gif_loop: "🎞️ Instagram GIF",
     other: "Other",
   },
+  chatUpload: {
+    title: "Send your photos in full quality",
+    introInstagram: "Instagram shrinks photos sent in chat, so fine detail is lost before we even start. Upload the originals here and we'll work from the full-quality files.",
+    introWhatsApp: "WhatsApp shrinks photos sent the normal way. Upload the originals here and we'll work from the full-quality files.",
+    choose: "Choose photos",
+    hint: "Up to {max} photos, {mb} MB each. JPEG, PNG or HEIC.",
+    selected: "{count} selected",
+    uploadButton: "Upload",
+    uploading: "Uploading {n} of {total}…",
+    done: "Done — {count} received.",
+    backToChat: "Go back to the chat: we've sent you the next step there.",
+    openChat: "Back to the chat",
+    tooBig: "{name} is over {mb} MB. Please choose a smaller file.",
+    notImage: "{name} isn't a photo we can read.",
+    failed: "{name} didn't upload. Check your connection and try again.",
+    expired: "This upload link has expired. Ask for a new one in the chat.",
+    closed: "This order isn't taking photos right now. Go back to the chat to continue.",
+    full: "That's the most photos one order can take. Go back to the chat and reply done.",
+    privacy: "Your photos are used only for your order and deleted within 48 hours after it's finished.",
+  },
 };
 
 export type AppDictionary = typeof en;

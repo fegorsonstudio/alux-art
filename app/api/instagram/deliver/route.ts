@@ -11,6 +11,7 @@ import { sendWithLinkFallback } from "@/lib/instagram-bot";
 import { RETOUCH_PRICE_PER_IMAGE_NGN } from "@/lib/retouch-pricing";
 import { gifPublishOffer } from "@/lib/instagram-gif";
 import { CONSENT_ASK, markAsked } from "@/lib/post-consent";
+import { shootDownloadLink } from "@/lib/download-link";
 
 /**
  * Sends finished shoots back into the Instagram chat that ordered them.
@@ -57,28 +58,11 @@ async function publicUrl(bucket: string, path: string): Promise<string | null> {
 
 
 /**
- * A login-free link to the full-size file.
- *
- * Minted on first use and kept, so the same link works if it is sent twice. An
- * Instagram or WhatsApp buyer has a synthetic account with no password, so this
- * is the only way they can reach the 4K file they paid for.
+ * A login-free link to the full-size files. It used to cover only the first
+ * photo of an order; lib/download-link.ts gives every photo a token and the page
+ * lists them all.
  */
-async function downloadLink(shootId: string): Promise<string | null> {
-  const [img] = await sql<{ id: string; token: string | null }[]>`
-    SELECT id, download_token AS token FROM shoot_images
-    WHERE shoot_id = ${shootId} AND status = 'COMPLETE'
-      AND COALESCE(download_storage_path, preview_storage_path) IS NOT NULL
-    ORDER BY slot LIMIT 1`.catch(() => []);
-  if (!img) return null;
-
-  let token = img.token;
-  if (!token) {
-    token = crypto.randomUUID().replace(/-/g, "");
-    await sql`UPDATE shoot_images SET download_token = ${token} WHERE id = ${img.id}`
-      .catch(() => { token = null; });
-  }
-  return token ? `${SITE_URL}/d/${token}` : null;
-}
+const downloadLink = shootDownloadLink;
 
 const finish = (sessionId: string | null, shootId: string) => Promise.all([
   sessionId

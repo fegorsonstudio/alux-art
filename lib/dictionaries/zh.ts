@@ -524,6 +524,26 @@ const zh: AppDictionary = {
     gif_loop: "🎞️ Instagram 动图",
     other: "其他",
   },
+  chatUpload: {
+    title: "上传原画质照片",
+    introInstagram: "Instagram 会压缩聊天中发送的照片，细节在我们开始之前就已丢失。请在这里上传原图，我们将使用原画质文件处理。",
+    introWhatsApp: "WhatsApp 会压缩以普通方式发送的照片。请在这里上传原图，我们将使用原画质文件处理。",
+    choose: "选择照片",
+    hint: "最多 {max} 张，每张不超过 {mb} MB。支持 JPEG、PNG 或 HEIC。",
+    selected: "已选择 {count} 张",
+    uploadButton: "上传",
+    uploading: "正在上传第 {n} 张，共 {total} 张…",
+    done: "完成——已收到 {count} 张。",
+    backToChat: "请回到聊天，我们已在那里发送下一步。",
+    openChat: "返回聊天",
+    tooBig: "{name} 超过 {mb} MB，请选择较小的文件。",
+    notImage: "{name} 不是我们能读取的照片。",
+    failed: "{name} 上传失败。请检查网络后重试。",
+    expired: "此上传链接已过期。请在聊天中索取新链接。",
+    closed: "此订单目前不接收照片。请回到聊天继续。",
+    full: "一个订单最多只能上传这么多照片。请回到聊天并回复 done。",
+    privacy: "你的照片仅用于你的订单，并会在订单完成后 48 小时内删除。",
+  },
 };
 
 export default zh;

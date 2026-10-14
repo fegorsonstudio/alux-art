@@ -15,6 +15,7 @@ import { walletBalance, naira } from "@/lib/wallet";
 import { requestEmailLink, confirmEmailLink, hasPendingLink } from "@/lib/whatsapp-email-link";
 import { saveContactEmail, contactEmailSaved } from "@/lib/chat-contact-email";
 import { handleLicenceMessage } from "@/lib/fegorson-licence";
+import { uploadLinkFor } from "@/lib/chat-upload-links";
 import {
   sendText, sendImage, sendDocument, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
@@ -452,6 +453,7 @@ async function startFromTrigger(
       "button at the top right - turn it on so WhatsApp does not shrink them.\n\n" +
       "Even better: send them as *files* (paperclip, then Document). That keeps " +
       "them exactly as they are.\n\n" +
+      `Or upload the originals on our site: ${await uploadLinkFor("whatsapp", session.id)}\n\n` +
       "Up to 10. Reply *done* when you have finished." +
       (lookId ? "\n\nWant a different look? Send its number any time." : ""));
     return;
@@ -757,6 +759,8 @@ async function chooseTemplate(
       `*${picked.title}* — good choice.\n\n` +
       "Send me the photos you want upgraded, one at a time. These are photos you " +
       "already took — a night out, an event, anything lit badly.\n\n" +
+      "WhatsApp shrinks photos sent the normal way. For full quality, send them as " +
+      `files (paperclip, then Document) or upload the originals here: ${await uploadLinkFor("whatsapp", session.id)}\n\n` +
       "Send as many as you like, up to 10. Reply *done* when you have finished.");
     return;
   }
@@ -796,7 +800,8 @@ async function collectPhoto(
       return askWhereItGoes(creds, creator, phone, session);
     }
     await sendText(creds, phone, perImage
-      ? "Send the photos as pictures (tap *HD* first), or as files. Reply *done* when you have finished."
+      ? "Send the photos as pictures (tap *HD* first), or as files, or upload the originals here: " +
+        `${await uploadLinkFor("whatsapp", session.id)}\n\nReply *done* when you have finished.`
       : `I need photos to work from. Send ${PHOTOS_NEEDED - session.selfie_count} more as pictures, not as text or a file.`);
     return;
   }
