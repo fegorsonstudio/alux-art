@@ -135,7 +135,10 @@ export default function UploadForm(props: {
                   <input
                     ref={input}
                     type="file"
-                    accept="image/*,.heic,.heif"
+                    // Plain image/* on purpose: an iPhone then hands over a
+                    // full-resolution JPEG. Naming .heic here makes it send the
+                    // HEIC original, which the server's image library cannot open.
+                    accept="image/*"
                     multiple
                     disabled={busy || !!stopped}
                     onChange={(e) => pick(e.target.files)}

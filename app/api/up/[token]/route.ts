@@ -52,15 +52,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (!meta.format || !FORMATS.has(meta.format) || !meta.width || !meta.height) return fail("notImage", 415);
 
   // The original bytes are kept as they are (the 30 MB rule: never shrink an
-  // upload). The one exception is HEIC from iPhones, which the image models do
-  // not all accept: it becomes a full-resolution JPEG at quality 95.
+  // upload). HEIC from iPhones is turned into a full-resolution JPEG at quality
+  // 95 where it can be — but this server's sharp build reads a HEIC's header and
+  // cannot decode its pixels (checked 14 Oct 2026: "bad seek"). Then the
+  // original is kept as it is, exactly as the WhatsApp bot already keeps a HEIC
+  // sent as a document, rather than refusing a photo the customer can see.
+  // The page asks for image/* so iPhones normally send a JPEG anyway.
   let contentType = TYPE[meta.format] ?? "image/jpeg";
   if (meta.format === "heif") {
     try {
       buffer = await sharp(buffer, { limitInputPixels: 120_000_000 }).rotate().jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
       contentType = "image/jpeg";
     } catch {
-      return fail("notImage", 415);
+      contentType = "image/heic";
     }
   }
 

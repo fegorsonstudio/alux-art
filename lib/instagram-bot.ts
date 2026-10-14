@@ -455,7 +455,7 @@ export async function acceptInstagramPhoto(
   };
 
   const userId = await ensureUser(session);
-  const ext = media.contentType.includes("png") ? "png" : media.contentType.includes("webp") ? "webp" : "jpg";
+  const ext = media.contentType.includes("png") ? "png" : media.contentType.includes("webp") ? "webp" : media.contentType.includes("heic") ? "heic" : "jpg";
   const path = opts.viaUpload
     ? `${userId}/${crypto.randomUUID()}-upload.${ext}`
     : `${userId}/${crypto.randomUUID()}-instagram.jpg`;

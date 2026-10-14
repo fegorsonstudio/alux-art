@@ -55,7 +55,7 @@ export async function acceptWhatsAppUpload(
   const creds: WaCreds | null = c ? { phoneNumberId: c.phone_number_id, token: c.token } : null;
 
   const userId = await ensureUser(session);
-  const ext = media.contentType.includes("png") ? "png" : media.contentType.includes("webp") ? "webp" : "jpg";
+  const ext = media.contentType.includes("png") ? "png" : media.contentType.includes("webp") ? "webp" : media.contentType.includes("heic") ? "heic" : "jpg";
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   await r2Upload("identity-images", path, media.buffer, media.contentType);
 
