@@ -236,6 +236,21 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-14, evening): nightly database backup LIVE; 48-hour photo deletion BUILT, not
+switched on.** `scripts/db-backup.mjs`, cron `30 2 * * *` (UTC): pg_dump custom format to
+`/root/db-backups` (newest 14 kept), checked with pg_restore --list, and an AES-256 encrypted copy
+(password `/root/.db-backup-pass`; the owner was given a copy on their Desktop to move into a
+password manager) sent silently to the owner's Telegram — the R2 key cannot create a bucket, so
+Telegram is the off-server copy (50 MB cap; the dump is 7.4 MB). First run restored into a
+throwaway database with identical row counts. Restore steps are in the script header.
+`scripts/purge-customer-photos.mjs` deletes customers' uploads (identity-images and
+inspiration-images ONLY) 48 h after they stop being needed, as the privacy page promises; it keeps
+anything a running shoot, an active chat (48 h), a recently used library photo, a template, a
+character base / Soul ID sheet, a carousel or a retouched file points at, and deletes the rows that
+pointed at deleted files. Dry run 14 Oct: 611 of 624 files (1.8 GB), 108 library rows, 290 shoot
+references. **Not scheduled — the owner must OK the first real run** (it empties the website's
+saved-photo library and ends free redos after 48 h). Run with `--dry-run` to preview.
+
 **Update (2026-10-14, later): the licence shop is LIVE (owner approved, ₦20,000 lifetime).**
 `lib/fegorson-licence.ts` (commit `1d62105`), table `licence_orders` (migration 071, applied
 with psql). The app's message ("…Fegorson Studio licence code.") on the Alux Art number →
