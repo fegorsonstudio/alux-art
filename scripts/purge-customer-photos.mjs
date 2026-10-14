@@ -117,21 +117,46 @@ try {
   const inBucket = (rows) => rows.filter((r) => doomed.some((f) => f.bucket === r.storage_bucket && f.path === r.storage_path));
   const delIdentity = inBucket(rowsIdentity), delInspiration = inBucket(rowsInspiration), delRefs = inBucket(rowsRefs);
 
+  // Rows that point at a file that is not there at all (392 such references were
+  // found on 14 Oct, made May–Aug 2026, files lost before this job existed). They
+  // show nobody anything; they only advertise photos that do not exist. Same 48h
+  // rule: only for shoots finished or unpaid for 48h+, and library rows unused 48h+.
+  const present = new Set(files.map((f) => k(f.bucket, f.path)));
+  const strayRefs = (await sql`
+    SELECT r.id, r.shoot_id, r.storage_bucket, r.storage_path FROM shoot_references r LEFT JOIN shoots s ON s.id = r.shoot_id
+    WHERE r.storage_bucket = ANY(${BUCKETS})
+      AND (s.id IS NULL OR (s.status IN ('COMPLETE', 'FAILED', 'PENDING_PAYMENT') AND s.updated_at <= ${cutoff}))`)
+    .filter((r) => !present.has(k(r.storage_bucket, r.storage_path)));
+  const strayLibrary = (await sql`
+    SELECT 'identity_images' AS t, id, storage_bucket, storage_path FROM identity_images
+      WHERE storage_bucket = ANY(${BUCKETS}) AND coalesce(last_used_at, created_at) <= ${cutoff}
+    UNION ALL
+    SELECT 'inspiration_images', id, storage_bucket, storage_path FROM inspiration_images
+      WHERE storage_bucket = ANY(${BUCKETS}) AND coalesce(last_used_at, created_at) <= ${cutoff}`)
+    .filter((r) => !present.has(k(r.storage_bucket, r.storage_path)));
+
   const summary = {
     when: new Date().toISOString(), dryRun: DRY, hours: HOURS,
     files: files.length, keep: keep.size, delete: doomed.length,
     deleteMB: Math.round(doomed.reduce((a, f) => a + f.size, 0) / 1048576), byBucket,
     rows: { identity_images: delIdentity.length, inspiration_images: delInspiration.length, shoot_references: delRefs.length },
+    rowsForMissingFiles: { shoot_references: strayRefs.length, library: strayLibrary.length },
     kept: reasons,
   };
 
-  if (DRY || !doomed.length) {
+  if (DRY || (!doomed.length && !strayRefs.length && !strayLibrary.length)) {
     console.log(JSON.stringify(summary));
   } else {
     // Record first, so anything deleted can be traced.
     fs.mkdirSync(LOG_DIR, { recursive: true, mode: 0o700 });
     fs.writeFileSync(`${LOG_DIR}/purge-${summary.when.replace(/[:.]/g, "")}.json`,
-      JSON.stringify({ summary, files: doomed, delIdentity, delInspiration, delRefs }, null, 1), { mode: 0o600 });
+      JSON.stringify({ summary, files: doomed, delIdentity, delInspiration, delRefs, strayRefs, strayLibrary }, null, 1), { mode: 0o600 });
+
+    if (strayRefs.length) await sql`DELETE FROM shoot_references WHERE id = ANY(${strayRefs.map((r) => r.id)})`;
+    const strayIdentity = strayLibrary.filter((r) => r.t === "identity_images").map((r) => r.id);
+    const strayInspiration = strayLibrary.filter((r) => r.t === "inspiration_images").map((r) => r.id);
+    if (strayIdentity.length) await sql`DELETE FROM identity_images WHERE id = ANY(${strayIdentity})`;
+    if (strayInspiration.length) await sql`DELETE FROM inspiration_images WHERE id = ANY(${strayInspiration})`;
 
     // Delete files, bucket by bucket; rows follow only what was really deleted.
     const gone = [];
