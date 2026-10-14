@@ -236,6 +236,20 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-14): Fegorson Studio licence shop — Phase 1 done, Phase 2 NOT approved.**
+The owner sells licence codes for their offline Windows app (brief on their laptop:
+`Desktop\Avoto\Prompt for the VPS agent.md`). A new Ed25519 shop key pair lives at
+`/etc/fegorson-shop/` on the VPS (dir 700, private key 600 root, outside every web folder
+and git). **Never regenerate it** (its public key goes into the app) and **never print,
+log or send the private key**. One encrypted backup is on the owner's laptop
+(`Desktop\Avoto\shop-key-backup\`), its password in a separate file there. A "Test Buyer"
+code was made with the owner's reference signer and verified. Build no sales flow until the
+owner approves the plan. Known for Phase 2: the trigger message begins "Hello", which the
+WhatsApp bot today answers with the photo menu, so the licence branch must come before the
+greeting check; Paystack has one webhook URL, so licence payments arrive in the live
+`/api/webhooks/paystack` route; a payment later than WhatsApp's 24-hour window needs an
+approved template to deliver the code.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
