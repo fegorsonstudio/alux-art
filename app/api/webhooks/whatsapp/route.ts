@@ -14,6 +14,7 @@ import { matchCommand, manualText } from "@/lib/whatsapp-commands";
 import { walletBalance, naira } from "@/lib/wallet";
 import { requestEmailLink, confirmEmailLink, hasPendingLink } from "@/lib/whatsapp-email-link";
 import { saveContactEmail, contactEmailSaved } from "@/lib/chat-contact-email";
+import { handleLicenceMessage } from "@/lib/fegorson-licence";
 import {
   sendText, sendImage, sendDocument, sendList, sendButtons, downloadMedia, markRead,
   verifySignature, normalisePhone, type WaCreds,
@@ -176,6 +177,12 @@ async function handleMessage(creds: WaCreds, creator: Creator, msg: WaMessage) {
   // which leaves "start over" meaning restart exactly as it always has.
   if (matchCommand(text)?.name === "stop") return optOut(creds, phone);
   if (text.trim().toLowerCase() === "start") return optIn(creds, phone);
+
+  // Fegorson Studio licence sales share this number. Checked before the photo
+  // bot's own rules because the app's opening message starts with "Hello", which
+  // the greeting rule below answers with the photo menu. Returns false for any
+  // message that is not part of a licence sale, so the photo bot is unchanged.
+  if (await handleLicenceMessage(creds, creator.id, phone, text, choiceId)) return;
 
   // Universal escape hatches, valid in any state.
   if (/^(restart|start over|cancel|reset|menu|styles)$/i.test(text) || choiceId === "restart") {

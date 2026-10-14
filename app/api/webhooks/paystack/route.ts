@@ -7,6 +7,7 @@ import { deliverRetouch } from "@/lib/whatsapp-retouch";
 import { deliverRetouch as deliverRetouchIg } from "@/lib/instagram-retouch";
 import { creditWallet } from "@/lib/wallet";
 import { notifyWalletTopUp } from "@/lib/wallet-notify";
+import { fulfilLicencePayment } from "@/lib/fegorson-licence";
 
 /**
  * Compute a deterministic idempotency key from the webhook body.
@@ -76,6 +77,16 @@ export async function POST(request: NextRequest) {
 
   // ── 6. Event is NEW → proceed with business logic ──────────────────────────
   const { metadata, amount, currency } = event.data;
+
+  // ── Fegorson Studio licence ──────────────────────────────────────────────
+  // The licence code is made inside fulfilLicencePayment, which checks the
+  // amount and currency against the order and issues once per reference. It
+  // never throws: a problem after Paystack has taken the money goes to the
+  // owner on Telegram, and Paystack still gets its 200.
+  if (metadata?.type === "fegorson_licence") {
+    await fulfilLicencePayment({ reference, amountKobo: Number(amount), currency, via: "webhook" });
+    return NextResponse.json({ ok: true });
+  }
 
   // ── Creator showcase generation ─────────────────────────────────────────
   if (metadata?.type === "creator_showcase") {
