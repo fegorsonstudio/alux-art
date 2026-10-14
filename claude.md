@@ -236,6 +236,23 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-14, later): the licence shop is LIVE (owner approved, ₦20,000 lifetime).**
+`lib/fegorson-licence.ts` (commit `1d62105`), table `licence_orders` (migration 071, applied
+with psql). The app's message ("…Fegorson Studio licence code.") on the Alux Art number →
+ask name → confirm (buttons `fgs_yes`/`fgs_change`) → Paystack link (`metadata.type =
+fegorson_licence`, callback back to wa.me) → code made ONLY in `fulfilLicencePayment()`,
+called by `/api/webhooks/paystack` after its signature check, or by Paystack's verify API
+when the buyer replies PAID; NGN and amount ≥ the order's price, once per reference
+(`WHERE code IS NULL`); wrong amount → `PAYMENT_MISMATCH` + Telegram, no code. Lost code:
+any licence message from a number with a code resends it; NEW buys another. Each sale goes
+to the owner's Telegram with today/all-time totals; if the chat send fails (24-hour window)
+the alert carries the code. Runs before the photo bot's greeting rule, returns false for
+everything else, and any error falls back to the photo bot. **Off unless
+`FEGORSON_SHOP_CREATOR_ID` (in `.env.local`) names the number.** Verified live with
+made-up numbers, 13/13 checks, rows removed (one unpaid Paystack checkout T867655185391021
+was left by the test). Also today: the Flutterwave webhook hash was replaced (8 characters
+of the old one were exposed by me in a check); `.env.local` backups are in `/root`.
+
 **Update (2026-10-14): Fegorson Studio licence shop — Phase 1 done, Phase 2 NOT approved.**
 The owner sells licence codes for their offline Windows app (brief on their laptop:
 `Desktop\Avoto\Prompt for the VPS agent.md`). A new Ed25519 shop key pair lives at
