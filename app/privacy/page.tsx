@@ -104,9 +104,9 @@ export default function PrivacyPage() {
             protections we apply:
           </p>
           <ul>
-            <li>Stored in Supabase secure storage, accessible only to you and our generation pipeline during your active shoot.</li>
+            <li>Stored in encrypted cloud storage (Cloudflare R2), accessible only to you and our generation pipeline during your active shoot.</li>
             <li>Used solely to generate your requested portraits for that shoot.</li>
-            <li>Not shared with third parties.</li>
+            <li>Not shared with third parties, except the AI image services that process them to make your images (fal.ai, and Google on some products), which receive them only for that purpose.</li>
             <li>Automatically and permanently deleted within 48 hours of shoot completion or expiry.</li>
           </ul>
           <p>
