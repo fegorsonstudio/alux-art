@@ -66,6 +66,71 @@ export type IgSession = {
 
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
+// ── Glow Retouch (automatic retouching) ─────────────────────────────────────
+// The same chat journey as a relight — photos, one link, pay, delivered here —
+// on the private "Glow Retouch" template (category photo_retouch). Its orders are
+// processed by the retouch worker (workers/retouch), which edits only the
+// customer's own pixels; nothing here decides how a photo is retouched.
+
+/** Marks a conversation that is collecting photos for Glow Retouch rather than a look. */
+export const RETOUCH_MARKER = "retouch";
+const RETOUCH_PRICE_NGN = 1000;
+
+let retouchTemplate: { id: string; at: number } | null = null;
+export async function glowRetouchTemplateId(): Promise<string | null> {
+  if (retouchTemplate && Date.now() - retouchTemplate.at < 5 * 60_000) return retouchTemplate.id;
+  const [t] = await sql<{ id: string }[]>`
+    SELECT id FROM templates WHERE category = 'photo_retouch' AND status = 'published'
+    ORDER BY created_at LIMIT 1`.catch(() => [] as { id: string }[]);
+  retouchTemplate = t ? { id: t.id, at: Date.now() } : null;
+  return t?.id ?? null;
+}
+
+export const isRetouchSession = (s: Pick<IgSession, "look_option_id">) => s.look_option_id === RETOUCH_MARKER;
+/** "relit" or "retouched", for the sentences both products share. */
+const doneWord = (s: Pick<IgSession, "look_option_id">) => (isRetouchSession(s) ? "retouched" : "relit");
+
+/**
+ * Someone asked for RETOUCH. Arms the conversation for Glow Retouch and asks for
+ * the photos; photos already sent (before a look was chosen) are kept and counted.
+ * Returns false if the template is not set up, so the caller can fall back.
+ */
+export async function offerRetouch(creds: IgCreds, session: IgSession): Promise<boolean> {
+  const templateId = await glowRetouchTemplateId();
+  if (!templateId) return false;
+  // Held photos are unpaid ones (booking clears them), so they carry over — the
+  // same rule acceptInstagramPhoto uses: nothing once a link has gone out.
+  const closed = session.state === "AWAITING_PAYMENT" || session.state === "GENERATING";
+  const waiting = closed ? [] : await freshHeld(session.source_paths ?? []);
+  await patchSession(session.id, {
+    state: waiting.length ? "CONFIRMING_BATCH" : "COLLECTING_PHOTO",
+    template_id: templateId,
+    look_option_id: RETOUCH_MARKER,
+    look_name: "Glow Retouch",
+    shoot_id: null,
+  });
+  if (waiting.length > 0) {
+    await sendText(creds, session.ig_user_id,
+      `*Glow Retouch* it is. I have *${waiting.length} photo${waiting.length === 1 ? "" : "s"}* ` +
+      `(${naira(RETOUCH_PRICE_NGN * waiting.length)}).\n\n` +
+      `Are these all the pictures you want retouched? Reply *yes* and I'll send one payment ` +
+      `link for all of them, or just send the rest.`);
+    return true;
+  }
+  const upLink = await uploadLinkFor("instagram", session.id);
+  const intro =
+    `*Glow Retouch* ✨ ${naira(RETOUCH_PRICE_NGN)} per photo.\n\n` +
+    `I even out skin and tone, heal blemishes, soften shine, brighten the eyes and tidy ` +
+    `stray hairs and background distractions — and you stay exactly you: your face is ` +
+    `never redrawn.\n\n`;
+  await sendWithLinkFallback(creds, session.ig_user_id,
+    intro +
+    `Send me the photo here, or for full quality upload the original instead ` +
+    `(Instagram shrinks photos sent in chat): ${upLink}\n\nUp to 10 photos.`,
+    intro + `Send me the photo here — up to 10.`);
+  return true;
+}
+
 /** "197 · S Night Paparazzi G7X" -> "Night Paparazzi G7X" */
 export const prettyLook = (name: string) =>
   name.replace(/^\d+\s*·\s*/, "").replace(/^[CS]\s+/, "");
@@ -246,9 +311,12 @@ async function bookIt(
       // comes back "Pick a lighting look" with one plainly chosen.
       // Every photo in the batch gets the same look: it is the look they asked
       // for in the comment or the chat, and nothing has offered them a second.
-      enhance: {
-        lightingByPath: Object.fromEntries(shots.map(p => [p, session.look_option_id])),
-      },
+      // Glow Retouch has no look: the retouch worker decides what each photo needs.
+      ...(isRetouchSession(session) ? {} : {
+        enhance: {
+          lightingByPath: Object.fromEntries(shots.map(p => [p, session.look_option_id])),
+        },
+      }),
       identityRefs: shots.map((p, i) => ({
         id: crypto.randomUUID(),
         name: `Instagram ${i + 1}`,
@@ -299,7 +367,13 @@ async function bookIt(
   const askEmail = await needsContactEmail(userId).catch(() => false);
 
   if (!payUrl) {
-    await sendText(creds, to, "Paid from your balance \u2705 Making your photo now \u2014 about two minutes.");
+    // No link means the booking route settled it: from the wallet, or free (a
+    // grant, e.g. the studio's own test account).
+    await sendText(creds, to,
+      (booking?.free ? "No charge for this one \u2705 " : "Paid from your balance \u2705 ") +
+      (isRetouchSession(session)
+        ? "Retouching your photo now \u2014 usually a few minutes."
+        : "Making your photo now \u2014 about two minutes."));
     if (askEmail) await sendText(creds, to, CONTACT_EMAIL_ASK);
     return;
   }
@@ -308,7 +382,7 @@ async function bookIt(
   // route, never multiplied here — a price the bot works out itself is a price
   // that can disagree with the one actually charged.
   const n = shots.length;
-  const total = Number(booking?.amountNgn ?? booking?.amount ?? 0) || RELIGHT_PRICE_NGN * n;
+  const total = Number(booking?.amountNgn ?? booking?.amount ?? 0) || (isRetouchSession(session) ? RETOUCH_PRICE_NGN : RELIGHT_PRICE_NGN) * n;
   const forWhat = n === 1 ? "this photo" : `these ${n} photos`;
 
   await sendWithLinkFallback(creds, to,
@@ -318,7 +392,7 @@ async function bookIt(
     // so the customer is given the number rather than left with nothing.
     `Ready \u2014 ${naira(total)} for ${forWhat}.\n\n` +
     `Instagram won't let me send payment links right now, so message me on ` +
-    `WhatsApp on ${WA_NUMBER} and send *${session.look_name?.match(/^\d+/)?.[0] ?? "the number"}* \u2014 ` +
+    `WhatsApp on ${WA_NUMBER} and send *${isRetouchSession(session) ? "support" : (session.look_name?.match(/^\d+/)?.[0] ?? "the number")}* \u2014 ` +
     `I'll pick it straight up there and you'll have it in a couple of minutes.`
   );
 
@@ -508,8 +582,8 @@ export async function acceptInstagramPhoto(
   // theirs never arrived.
   await say(
     `Got it \u2014 that's *${batch.length} photo${batch.length === 1 ? "" : "s"}* so far ` +
-    `(${naira(RELIGHT_PRICE_NGN * batch.length)}).\n\n` +
-    `Are these all the pictures you want relit? Reply *yes* and I'll send one payment link ` +
+    `(${naira((isRetouchSession(session) ? RETOUCH_PRICE_NGN : RELIGHT_PRICE_NGN) * batch.length)}).\n\n` +
+    `Are these all the pictures you want ${doneWord(session)}? Reply *yes* and I'll send one payment link ` +
     `for all of them, or just send the rest.`,
     batch.length === 1 ? await shrinkNote() : undefined);
   return { held: batch.length };
@@ -530,7 +604,7 @@ export async function confirmBatch(
   if (batch.length === 0) {
     await patchSession(session.id, { state: "COLLECTING_PHOTO" });
     await sendText(creds, session.ig_user_id,
-      "I don't have any photos held for you. Send the picture you want relit and I'll get started.");
+      `I don't have any photos held for you. Send the picture you want ${doneWord(session)} and I'll get started.`);
     return;
   }
   if (!yes) {

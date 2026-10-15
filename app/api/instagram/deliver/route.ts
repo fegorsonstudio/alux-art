@@ -47,6 +47,8 @@ type Row = {
   ig_username: string | null;
   last_inbound_at: Date | null;
   user_id: string | null;
+  /** The template's category: 'photo_retouch' is Glow Retouch, worded as such. */
+  category: string | null;
 };
 
 /** A URL Instagram's own servers can fetch — no session, no cookies. */
@@ -85,7 +87,8 @@ export async function GET(req: NextRequest) {
     SELECT sh.id AS shoot_id, sh.status AS shoot_status,
            sh.ig_user_id, sh.ig_account_id,
            sh.ig_stranded_alerted_at, sh.ig_started_notified_at,
-           s.id AS session_id, s.ig_username, s.last_inbound_at, s.user_id
+           s.id AS session_id, s.ig_username, s.last_inbound_at, s.user_id,
+           (SELECT t.category FROM templates t WHERE t.id = sh.template_id) AS category
     FROM shoots sh
     LEFT JOIN instagram_sessions s
       ON s.ig_user_id = sh.ig_user_id AND s.ig_account_id = sh.ig_account_id
@@ -108,9 +111,11 @@ export async function GET(req: NextRequest) {
         if (r.session_id) {
           await sql`UPDATE instagram_sessions SET state = 'GENERATING', updated_at = NOW() WHERE id = ${r.session_id}`;
         }
-        await sendText(creds, to,
-          "Payment received, thank you ✅\n\nI'm relighting your photo now — usually a couple of " +
-          "minutes. I'll send it here the moment it's ready.");
+        await sendText(creds, to, r.category === "photo_retouch"
+          ? "Payment received, thank you ✅\n\nI'm retouching your photo now — usually a few " +
+            "minutes. I'll send it here the moment it's ready."
+          : "Payment received, thank you ✅\n\nI'm relighting your photo now — usually a couple of " +
+            "minutes. I'll send it here the moment it's ready.");
         // Asked at the moment money is actually at stake, and only once — this
         // is the point where a customer can see why it matters.
         if (await needsContactEmail(r.user_id)) {
@@ -118,7 +123,11 @@ export async function GET(req: NextRequest) {
         }
         started.push(r.shoot_id);
       }
-      if (r.shoot_status !== "COMPLETE") continue;
+      // A shoot that FAILED before any poll saw it running never got the notice
+      // above. It still gets the failure message below — otherwise the customer
+      // hears nothing at all. A Glow Retouch photo the engine cannot do safely
+      // fails within seconds, well inside one poll.
+      if (r.shoot_status !== "COMPLETE" && r.shoot_status !== "FAILED") continue;
     }
 
     // The window has closed. Nothing can be sent, so escalate instead of
@@ -152,9 +161,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (r.shoot_status === "FAILED") {
-      await sendText(creds, to,
-        "I'm sorry — your photo didn't come out.\n\n" +
-        "You have not lost your money. Send *support* and a person will sort this out for you today.");
+      // Glow Retouch fails on purpose rather than send a doubtful result, and the
+      // worker has already put the photo in front of the studio.
+      await sendText(creds, to, r.category === "photo_retouch"
+        ? "Your photo needs a person's hands rather than the automatic retouch, so I " +
+          "haven't sent it back half-done.\n\n" +
+          "You have not lost your money. Send *support* and the studio will finish it for you today."
+        : "I'm sorry — your photo didn't come out.\n\n" +
+          "You have not lost your money. Send *support* and a person will sort this out for you today.");
       await finish(r.session_id, r.shoot_id);
       failed.push(r.shoot_id);
       continue;
@@ -246,16 +260,34 @@ export async function GET(req: NextRequest) {
     // The retouch is offered HERE and nowhere else, the same as on WhatsApp:
     // the buyer has just seen the picture, and that is the only moment they can
     // judge whether a hand pass is worth paying for.
-    const upsell =
+    // Not after a Glow Retouch: the photo has just been retouched, and the word
+    // "retouch" would start the automatic service again rather than this offer.
+    const isRetouch = r.category === "photo_retouch";
+    let upsell = isRetouch ? "" :
       `\n\nWant it hand-retouched? Skin, stray hairs, and the small things a ` +
       `model notices. *${naira(RETOUCH_PRICE_PER_IMAGE_NGN)} per image* — reply ` +
       `*retouch* and I'll take it from here.`;
+    // A Glow Retouch photo the engine could not finish safely (no clear face,
+    // say) is left for a person rather than sent back half-done. The studio has
+    // already been alerted by the worker; the customer is told the same thing a
+    // failed order is told.
+    if (isRetouch) {
+      const [{ n: unfinished } = { n: 0 }] = await sql<{ n: number }[]>`
+        SELECT COUNT(*)::int AS n FROM shoot_images
+        WHERE shoot_id = ${r.shoot_id} AND status = 'FAILED'`;
+      if (unfinished > 0) {
+        upsell = `\n\n${unfinished === 1 ? "1 photo" : `${unfinished} photos`} needed a person's ` +
+          `hands rather than the automatic retouch. You have not lost your money — send ` +
+          `*support* and the studio will finish ${unfinished === 1 ? "it" : "them"} for you.`;
+      }
+    }
+    const fileWord = isRetouch ? "file" : "4K file";
     await sendWithLinkFallback(creds, to,
       `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
-      `Instagram compresses pictures in chat. Your full-size 4K file is here:\n` +
+      `Instagram compresses pictures in chat. Your full-size ${fileWord} is here:\n` +
       `${fullSize ?? `${SITE_URL}/studio`}` + upsell,
       `That's *${sent === 1 ? "your photo" : `all ${sent}`}* ✨\n\n` +
-      `Instagram compresses pictures in chat. The full-size 4K file is waiting on ` +
+      `Instagram compresses pictures in chat. The full-size ${fileWord} is waiting on ` +
       `aluxartandframes.shop under your shoots.` + upsell);
 
     // Permission to show their result on our own page. Sent as its own message

@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
 import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
-import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser } from "@/lib/instagram-bot";
+import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser, offerRetouch, isRetouchSession } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
   startGifFlow, handleGifPhoto, handleGifWords, handleGifPublish, isPostRequest,
@@ -402,6 +402,20 @@ export async function POST(request: NextRequest) {
  * a carousel comment is mid-scroll, not filling in a form.
  */
 /**
+ * Was this person's last order delivered in the last 24 hours, and was it not
+ * itself a Glow Retouch? Then "retouch" is the reply to the hand-retouch offer
+ * that came with it.
+ */
+async function justDelivered(session: IgSession): Promise<boolean> {
+  if (!session.shoot_id) return false;
+  const [s] = await sql<{ recent: boolean; category: string | null }[]>`
+    SELECT (sh.ig_delivered_at > NOW() - INTERVAL '24 hours') AS recent, t.category
+    FROM shoots sh LEFT JOIN templates t ON t.id = sh.template_id
+    WHERE sh.id = ${session.shoot_id}`.catch(() => []);
+  return !!s?.recent && s.category !== "photo_retouch";
+}
+
+/**
  * The buyer wants the photo we just made them retouched by hand.
  *
  * Deliberately the same shape as the WhatsApp handler: record the order, put
@@ -756,7 +770,12 @@ async function handleDirectMessage(
   // hijack "I need to edit my caption".
   if (/\bretouch(ed|ing)?\b/i.test(text)
       || /^edit( my (photos?|images?))?$/i.test(text)) {
-    await requestRetouch(creds, session, senderId);
+    // Two products answer to this word. Within a day of a delivery it is the
+    // answer to "want it hand-retouched?" and means THAT order, exactly as
+    // before. Any other time it is the automatic Glow Retouch service.
+    if (await justDelivered(session) || !(await offerRetouch(creds, session))) {
+      await requestRetouch(creds, session, senderId);
+    }
     return;
   }
 
@@ -774,9 +793,10 @@ async function handleDirectMessage(
   // Waiting on a photo: say so rather than restating the whole offer, which is
   // what made the WhatsApp bot loop at a customer who asked a question.
   if (session.state === "COLLECTING_PHOTO") {
-    await sendText(creds, senderId,
-      `Send the photo you want relit as a picture in this chat and I'll apply ` +
-      `*${session.look_name ? prettyLook(session.look_name) : "that look"}* to it.`);
+    await sendText(creds, senderId, isRetouchSession(session)
+      ? "Send the photo you want retouched as a picture in this chat — or use the upload link above for full quality."
+      : `Send the photo you want relit as a picture in this chat and I'll apply ` +
+        `*${session.look_name ? prettyLook(session.look_name) : "that look"}* to it.`);
     return;
   }
 

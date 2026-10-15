@@ -52,6 +52,16 @@ export async function POST(
     return NextResponse.json({ ok: true, status: shoot.status });
   }
 
+  // Glow Retouch orders are not generated here. The retouch worker
+  // (workers/retouch, cron on the server) picks up QUEUED photo_retouch shoots and
+  // edits the customer's own pixels; sending one into lib/generate.ts would run
+  // the relight model on it instead. Left exactly as the payment step set it.
+  const [{ category: startCategory } = { category: null }] = await sql`
+    SELECT t.category FROM templates t JOIN shoots s ON s.template_id = t.id WHERE s.id = ${id}`;
+  if (startCategory === "photo_retouch") {
+    return NextResponse.json({ ok: true, status: shoot.status, worker: "retouch" });
+  }
+
   const now = new Date().toISOString();
 
   let rolloutPct: number | undefined;

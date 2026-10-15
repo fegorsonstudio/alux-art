@@ -30,6 +30,14 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // A Glow Retouch photo is redone by the retouch worker, never by the relight
+  // model in lib/generate.ts.
+  const [{ category: retryCategory } = { category: null }] = await sql`
+    SELECT t.category FROM templates t JOIN shoots s ON s.template_id = t.id WHERE s.id = ${id}`;
+  if (retryCategory === "photo_retouch") {
+    return NextResponse.json({ error: "Retouched photos are redone by the studio — send support in the chat." }, { status: 409 });
+  }
+
   const [slotRow] = await sql`
     SELECT id, status FROM shoot_images WHERE shoot_id = ${id} AND slot = ${slotNum}
   `;

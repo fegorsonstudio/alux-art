@@ -235,7 +235,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  const perImagePricing = template.category === "photo_upgrade" || isAssetExtract;
+  // photo_retouch (Glow Retouch) is the same kind of product: the buyer's own
+  // photos, one price each. Its photos are processed by the retouch worker, not
+  // lib/generate.ts — see app/api/shoots/[id]/start.
+  const perImagePricing = template.category === "photo_upgrade" || template.category === "photo_retouch" || isAssetExtract;
   if (isAssetExtract) {
     const uploaded = new Set(identityRefs.map((r) => r.storagePath));
     const unknown = assetPlan.find((p) => !uploaded.has(p.sourcePath));
@@ -410,6 +413,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         { error: "Add at least one line — three or four words is what reads best." },
         { status: 400 });
     }
+  }
+  // Glow Retouch edits photo N into slot N, so a count that disagrees with the
+  // photos sent would charge for a photo that is not there.
+  if (template.category === "photo_retouch" && identityRefs.length !== buyerPackageSize) {
+    return NextResponse.json(
+      { error: `Send exactly ${buyerPackageSize} photo${buyerPackageSize === 1 ? "" : "s"} (you sent ${identityRefs.length}).` },
+      { status: 400 }
+    );
   }
   if (template.category === "photo_upgrade") {
     if (identityRefs.length !== buyerPackageSize) {
