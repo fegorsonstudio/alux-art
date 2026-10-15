@@ -121,6 +121,10 @@ def retouch_face(rgb, box):
     for i in range(1, n_f):
         if st_f[i, cv2.CC_STAT_AREA] < math.pi * (0.018 * fh) ** 2: foreign[cc_f == i] = 1
     foreign = cv2.dilate(foreign, np.ones((5, 5), np.uint8)).astype(np.float32)
+    # Piercings sit on the nose wings and nostrils. Elsewhere a small bright spot is shine
+    # on skin, and shielding it left pale blotches when the skin around it was toned down.
+    piercing_zone = poly((ch, cw), pts, [129, 49, 64, 98, 97, 2, 326, 327, 294, 279, 358, 4], int(0.04 * fh))
+    foreign = foreign * piercing_zone
     skin = skin * (1 - foreign)
     keep_out = np.maximum(keep_out, foreign)
     soft = gb(skin, 0.006 * fh) * skin + 0 * skin           # hard inside, used for statistics

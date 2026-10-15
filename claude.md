@@ -236,6 +236,15 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-15): retouch-by-DM proof engine — `tools/retouch-proof/` (README there).** Not
+wired into the site. Face skin, eyes, teeth, body skin, studio backdrop and the owner's colour style
+(a 3D LUT learned from 4 of their hand edits) are free; hair-accurate cut-out (fal BiRefNet v2) and
+erasing tourists/stray hairs (fal Bria Eraser, masked paste-back only) are paid. Owner approved $1;
+13 calls, about $0.28. Same-person score 0.87–0.94. **On the VPS it must run inside
+`systemd-run --scope -p MemoryMax=1700M`** — an unfenced run hit 2.8 GB and was OOM-killed three
+times (the site survived). Installed on the VPS for it: python3.12-venv, libegl1, libgles2;
+`/root/retouch-proof` holds the venv and models, no customer photos.
+
 **Update (2026-10-14, night): 48-hour photo deletion LIVE; full-quality upload link and
 all-photos download page LIVE; privacy page corrected.** Owner approved each. Purge first run:
 611 files (1.8 GB) + 386 stale reference rows + 16 empty library rows, templates untouched; cron
