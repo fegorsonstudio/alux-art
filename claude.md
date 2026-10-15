@@ -269,6 +269,22 @@ usernames can order (`*` = everyone); template published again. Verified end to 
 tester (45 s, 3888x5184). Orders wait while the laptop is off (watchdog alerts after an hour).
 **Next:** owner rents an 8-core/16 GB Hetzner server for an afternoon so speed on server hardware
 can be measured, then deletes it.
+**Then: the RETOUCH DIRECTOR is built and ON for testers** (`363f007`; owner: complete brief per
+photo, send automatically, only failures to the studio, body shaping AI-decided within limits).
+`workers/retouch/director.py`: FIND (free detectors + a ~$0.002 BiRefNet matte of the head) →
+DECIDE (Gemini 3.1 Pro ~$0.07: reasoned keep/fix verdict per numbered candidate from a close-up
+gallery, a lettered face grid for missed pimples, the 12-area brief, sliders) → laptop renders →
+CHECK (~$0.05). **Never use the AI's own coordinates** (wrong on the owner's photo); detectors find,
+the AI only approves. Recipe merge on the laptop: `max` raises the preset (never lowers), `set`
+replaces, `caps` = house limits (armpit ≤ 40, waist/hips ≤ 20, none on slim figures). Rows in
+`retouch_briefs` (migration 073, psql): ready → rendering → rendered → passed | redo (pass 2) |
+failed (→ Telegram with original + last result). `app_config.retouch_director='on'`. Also today:
+download page saves to the gallery (`b634215`: escapes Instagram's browser via x-safari-https /
+intent://, iPhone share sheet from `/d/<token>/blob`). **State:** plumbing proven end to end; quality
+NOT yet passing the check on hard photos (stray hairs vs backdrop, small body marks, lace line needs a
+blend not a line stroke, no background-person removal — add Fegorson `bgFill`/`bgClean`). The check
+can raise false alarms (it once claimed a waist change). Director testing spend ≈ $0.75 Gemini.
+The owner's laptop worker window must be restarted after worker.mjs changes (old code stays in memory).
 
 **Update (2026-10-15, later): Glow Retouch is LIVE on Instagram (owner: build it, ₦1,000 a
 photo, trigger RETOUCH; commit `5fe4a57`).** Reply *retouch* in the DM → photos in chat or via the
