@@ -692,8 +692,15 @@ async function handleDirectMessage(
   // anything different anywhere else in the conversation. "stop" is honoured
   // whether or not an ask is open: somebody withdrawing permission should never
   // have to find the right moment.
+  //
+  // While photos are held waiting for "are these all the pictures?", that is the
+  // question the customer was just asked, so their yes/no answers it. Before this,
+  // an older permission ask left open from an earlier delivery took the "yes": the
+  // owner's two booking confirmations on 15 Oct granted posting permission twice and
+  // booked nothing. "stop" still withdraws, whatever is open.
   {
-    const reply = readConsentReply(text);
+    const raw = readConsentReply(text);
+    const reply = session.state === "CONFIRMING_BATCH" && raw !== "withdrawn" ? null : raw;
     if (reply) {
       const userId = session.user_id ?? await ensureUser(session).catch(() => null);
       if (userId) {
