@@ -257,6 +257,18 @@ Matting/Portrait + SAM 3 (12 prompts, face parts on a full-res face crop), data 
 `X-Fal-Store-IO: 0`, est. $0.77 of $2 (our fal key cannot read billing: 403); zip on R2
 `generated-4k/admin/…`, deleted by transient timer `cloudmask-zip-delete` on 17 Oct 13:20 UTC;
 server copies already deleted. Phase 2 not approved.
+**Then (owner chose "both"): Glow Retouch runs on the owner's LAPTOP for testing** (`034a78e`).
+`/api/retouch-worker/next|result|fail` (`lib/retouch-worker.ts`, bearer `RETOUCH_WORKER_TOKEN` in
+.env.local; backup `/root/env.local.bak-2026-10-15-retouch-worker`) hand photos to
+`Desktop\Glow Retouch worker` (copy in `tools/glow-retouch-worker`, its `config.json` holds the key
+and is not in git), which renders each with the installed Fegorson Studio + the owner's current
+"Hanna" preset (`app_config.retouch_preset`) and posts the JPEG; un-answered photos requeue after
+15 min, then go to a person. `app_config.retouch_engine = 'laptop'` stands `workers/retouch` aside
+(cron still runs and exits). `app_config.glow_retouch_testers = 'nvidia_studio'` — only listed IG
+usernames can order (`*` = everyone); template published again. Verified end to end with a made-up
+tester (45 s, 3888x5184). Orders wait while the laptop is off (watchdog alerts after an hour).
+**Next:** owner rents an 8-core/16 GB Hetzner server for an afternoon so speed on server hardware
+can be measured, then deletes it.
 
 **Update (2026-10-15, later): Glow Retouch is LIVE on Instagram (owner: build it, ₦1,000 a
 photo, trigger RETOUCH; commit `5fe4a57`).** Reply *retouch* in the DM → photos in chat or via the
