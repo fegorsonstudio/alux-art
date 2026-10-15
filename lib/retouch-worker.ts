@@ -35,7 +35,20 @@ const MAX_TRIES = 2;
 export type RetouchJob = {
   imageId: string; shootId: string; slot: number; total: number;
   originalUrl: string; fileName: string; preset: string;
+  /** The retouch director's settings and Remove-brush strokes (workers/retouch/director.py), when it is on. */
+  recipe?: unknown; pass?: number;
 };
+
+/**
+ * The retouch director (app_config retouch_director = 'on'): the server writes a brief for
+ * each photo before the laptop renders it, and checks the render before the customer sees
+ * it (workers/retouch/worker.py, director_duties). While it is on, the laptop is handed only
+ * photos whose brief is ready, and its result waits for the check instead of completing.
+ */
+async function directorOn(): Promise<boolean> {
+  const [r] = await sql<{ value: string }[]>`SELECT value FROM app_config WHERE key = 'retouch_director'`.catch(() => []);
+  return r?.value === "on";
+}
 
 async function customer(shootId: string): Promise<string> {
   const [r] = await sql<{ ig_username: string | null; ig_user_id: string | null }[]>`
@@ -81,6 +94,8 @@ export async function failJob(imageId: string, reason: string): Promise<boolean>
     WHERE id = ${imageId} AND status = 'GENERATING'
     RETURNING shoot_id, slot`;
   if (!img) return false;
+  await sql`UPDATE retouch_briefs SET status = 'failed', updated_at = NOW()
+            WHERE shoot_image_id = ${imageId} AND status IN ('ready', 'rendering')`.catch(() => {});
   const orig = await original(img.shoot_id, img.slot);
   const link = orig ? await r2SignedDownloadUrl(orig.bucket, orig.path, 3 * 24 * 3600).catch(() => null) : null;
   await tellAdmin(
@@ -96,10 +111,12 @@ export async function failJob(imageId: string, reason: string): Promise<boolean>
 /** The next photo to retouch, or null. Takes it, so two calls never get the same one. */
 export async function claimNext(): Promise<RetouchJob | null> {
   // Photos taken and never answered for go back in the queue, or to a person.
+  // A photo waiting for the director's check is the server's, not the laptop's: left alone.
   const stale = await sql<{ id: string; stage: string | null }[]>`
     SELECT i.id, i.stage FROM shoot_images i
     JOIN shoots s ON s.id = i.shoot_id JOIN templates t ON t.id = s.template_id
     WHERE t.category = 'photo_retouch' AND i.status = 'GENERATING'
+      AND COALESCE(i.stage, '') NOT LIKE 'Checking%'
       AND i.updated_at < NOW() - (${STALE_MINUTES} * interval '1 minute')`;
   for (const s of stale) {
     if (attempts(s.stage) >= MAX_TRIES) {
@@ -108,8 +125,11 @@ export async function claimNext(): Promise<RetouchJob | null> {
       await sql`UPDATE shoot_images SET status = 'QUEUED', updated_at = NOW(),
                   stage = ${`Waiting to retry (attempt ${attempts(s.stage)})`}
                 WHERE id = ${s.id} AND status = 'GENERATING'`;
+      await sql`UPDATE retouch_briefs SET status = 'ready', updated_at = NOW()
+                WHERE shoot_image_id = ${s.id} AND status = 'rendering'`.catch(() => {});
     }
   }
+  const director = await directorOn();
 
   for (let guard = 0; guard < 5; guard++) {
     const taken = await sql.begin(async (tx) => {
@@ -118,16 +138,23 @@ export async function claimNext(): Promise<RetouchJob | null> {
         JOIN shoots s ON s.id = i.shoot_id JOIN templates t ON t.id = s.template_id
         WHERE t.category = 'photo_retouch' AND s.status IN ('QUEUED', 'PROCESSING')
           AND i.status IN ('PENDING', 'QUEUED')
+          AND (${!director} OR EXISTS (SELECT 1 FROM retouch_briefs b WHERE b.shoot_image_id = i.id AND b.status = 'ready'))
         ORDER BY s.created_at ASC, i.slot ASC
         LIMIT 1 FOR UPDATE OF i SKIP LOCKED`;
       if (!c) return null;
+      const [b] = director
+        ? await tx<{ pass: number; recipe: unknown }[]>`
+            UPDATE retouch_briefs SET status = 'rendering', updated_at = NOW()
+            WHERE id = (SELECT id FROM retouch_briefs WHERE shoot_image_id = ${c.id} AND status = 'ready' ORDER BY pass DESC LIMIT 1)
+            RETURNING pass, recipe`
+        : [];
       await tx`UPDATE shoot_images SET status = 'GENERATING', updated_at = NOW(),
-                 stage = ${`Retouching on the studio computer (attempt ${attempts(c.stage) + 1})`}
+                 stage = ${`Retouching on the studio computer${b ? ` (pass ${b.pass})` : ""} (attempt ${attempts(c.stage) + 1})`}
                WHERE id = ${c.id}`;
       await tx`UPDATE shoots SET status = 'PROCESSING', progress = GREATEST(COALESCE(progress, 0), 5),
                  pipeline_stage = 'Retouching', updated_at = NOW()
                WHERE id = ${c.shoot_id} AND status = 'QUEUED'`;
-      return c;
+      return { ...c, recipe: b?.recipe, pass: b?.pass };
     });
     if (!taken) return null;
 
@@ -144,6 +171,7 @@ export async function claimNext(): Promise<RetouchJob | null> {
       originalUrl: await r2SignedDownloadUrl(orig.bucket, orig.path, 3600),
       fileName: orig.path.split("/").pop() ?? `photo-${taken.slot}.jpg`,
       preset: cfg?.value || "Hanna",
+      ...(taken.recipe ? { recipe: taken.recipe, pass: taken.pass } : {}),
     };
   }
   return null;
@@ -159,6 +187,20 @@ export async function saveResult(imageId: string, file: Buffer, engine: string):
   let meta: sharp.Metadata;
   try { meta = await sharp(file).metadata(); } catch { return { ok: false, error: "The file is not a readable image." }; }
   if (meta.format !== "jpeg" || !meta.width || !meta.height) return { ok: false, error: "Send the result as a JPEG." };
+  // With the director on, the render waits for its check (workers/retouch/worker.py) before
+  // the customer can have it: kept under its pass, the photo stays GENERATING meanwhile.
+  const [brief] = await sql<{ id: string; pass: number }[]>`
+    SELECT id, pass FROM retouch_briefs WHERE shoot_image_id = ${imageId} AND status = 'rendering'
+    ORDER BY pass DESC LIMIT 1`.catch(() => []);
+  if (brief) {
+    const pkey = `${img.user_id}/${img.shoot_id}/retouch-${img.slot}-p${brief.pass}.jpg`;
+    await r2Upload("generated-4k", pkey, file, "image/jpeg");
+    await sql`UPDATE retouch_briefs SET status = 'rendered', result_bucket = 'generated-4k', result_path = ${pkey},
+                updated_at = NOW() WHERE id = ${brief.id}`;
+    await sql`UPDATE shoot_images SET stage = ${`Checking (pass ${brief.pass})`}, updated_at = NOW()
+              WHERE id = ${imageId} AND status = 'GENERATING'`;
+    return { ok: true };
+  }
   const key = `${img.user_id}/${img.shoot_id}/retouch-${img.slot}.jpg`;
   await r2Upload("generated-4k", key, file, "image/jpeg");
   await sql`UPDATE shoot_images SET status = 'COMPLETE', width = ${meta.width}, height = ${meta.height},

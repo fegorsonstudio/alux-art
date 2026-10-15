@@ -241,6 +241,131 @@ def process(conn, s3, shoot):
     log(f"shoot {sid}: {status} ({c['done']}/{c['total']} retouched)")
     return outcome
 
+# ── the retouch director, while the studio computer renders (app_config retouch_director = 'on') ──
+# Briefs before the laptop renders, checks after (workers/retouch/director.py). The laptop is
+# handed only photos with a brief ready, and its result waits here for the check before the
+# customer sees it: pass -> COMPLETE; fail -> one second pass with the checker's corrections;
+# fail again -> the studio (Telegram, with the original and the last result), never the customer.
+
+def director_fail(conn, s3, img, reason, result=None):
+    conn.execute("""UPDATE shoot_images SET status = 'FAILED', stage = %s, provider = 'fegorson-studio',
+                    provider_error = %s, updated_at = NOW() WHERE id = %s""",
+                 (("Needs a person: " + reason)[:200], reason[:1000], img["image_id"]))
+    links = []
+    for label, bucket, key in (("Original", img.get("ref_bucket"), img.get("ref_path")), ("Last attempt", "generated-4k", result)):
+        if bucket and key:
+            try: links.append(f"{label}: " + s3.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=3 * 24 * 3600))
+            except Exception: pass
+    shoot = {"id": img["shoot_id"], "ig_user_id": img.get("ig_user_id"), "ig_account_id": img.get("ig_account_id")}
+    tell("✋ <b>Glow Retouch needs your hands</b>\n\n"
+         f"Customer: {html.escape(who(conn, shoot))}\nShoot: <code>{img['shoot_id']}</code>\n"
+         f"Photo {img['slot']}: {html.escape(reason[:600])}\n\n"
+         "It was NOT sent to the customer. They will be told a person is finishing it."
+         + ("\n\n" + "\n".join(html.escape(l) for l in links) if links else ""))
+    log(f"  director: slot {img['slot']} of {img['shoot_id'][:8]} handed to a person - {reason[:160]}")
+
+def director_duties(conn, s3):
+    rendered = conn.execute("""SELECT b.id::text AS brief_id, b.pass, b.brief, b.candidates, b.recipe, b.result_path, b.cost_usd,
+                                      i.id::text AS image_id, i.slot, s.id::text AS shoot_id, s.user_id::text AS user_id,
+                                      s.ig_user_id, s.ig_account_id
+                               FROM retouch_briefs b JOIN shoot_images i ON i.id = b.shoot_image_id JOIN shoots s ON s.id = b.shoot_id
+                               WHERE b.status = 'rendered' ORDER BY b.updated_at LIMIT 3""").fetchall()
+    fresh = conn.execute("""SELECT i.id::text AS image_id, i.slot, s.id::text AS shoot_id, s.user_id::text AS user_id,
+                                   s.ig_user_id, s.ig_account_id
+                            FROM shoot_images i JOIN shoots s ON s.id = i.shoot_id JOIN templates t ON t.id = s.template_id
+                            WHERE t.category = 'photo_retouch' AND s.status IN ('QUEUED', 'PROCESSING')
+                              AND i.status IN ('PENDING', 'QUEUED')
+                              AND NOT EXISTS (SELECT 1 FROM retouch_briefs b WHERE b.shoot_image_id = i.id)
+                            ORDER BY s.created_at, i.slot LIMIT 3""").fetchall()
+    if not rendered and not fresh: return
+    sys.path.insert(0, HERE)
+    import director as D                      # loads the models: only when there is work
+    from PIL import Image as PILImage
+
+    def original(shoot_id, slot, dest):
+        refs = conn.execute("""SELECT storage_bucket, storage_path FROM shoot_references
+                               WHERE shoot_id = %s AND purpose = 'identity' ORDER BY created_at ASC, id ASC""", (shoot_id,)).fetchall()
+        if not 0 < slot <= len(refs): return None, None
+        ref = refs[slot - 1]
+        path = os.path.join(dest, "original" + (os.path.splitext(ref["storage_path"])[1].lower() or ".jpg"))
+        s3.download_file(ref["storage_bucket"], ref["storage_path"], path)
+        return path, ref
+
+    # 1. Checks first: those customers are nearest to their photos.
+    for r in rendered:
+        work = os.path.join(BASE, "work", "check-" + r["brief_id"]); os.makedirs(work, exist_ok=True)
+        try:
+            src, ref = original(r["shoot_id"], r["slot"], work)
+            res_path = os.path.join(work, "result.jpg"); s3.download_file("generated-4k", r["result_path"], res_path)
+            img = dict(r, ref_bucket=ref["storage_bucket"] if ref else None, ref_path=ref["storage_path"] if ref else None)
+            brief, found, recipe = r["brief"] or {}, r["candidates"] or {}, r["recipe"] or {}
+            if brief.get("fallback"):
+                qa, cost = {"passed": True, "note": "director unavailable: the owner's preset only"}, 0.0
+            else:
+                qa, cost = D.check(D.load(src), D.load(res_path), found, brief, work, recipe=recipe)
+            conn.execute("UPDATE retouch_briefs SET qa = %s, cost_usd = cost_usd + %s, updated_at = NOW() WHERE id = %s",
+                         (json.dumps(qa), cost, r["brief_id"]))
+            if qa.get("passed"):
+                with PILImage.open(res_path) as im: w, h = im.size
+                size = os.path.getsize(res_path)
+                conn.execute("""UPDATE shoot_images SET status = 'COMPLETE', width = %s, height = %s, file_size = %s,
+                                  download_file_size = %s, stage = %s, provider = 'fegorson-studio',
+                                  configured_model = %s, preview_storage_bucket = 'generated-4k', preview_storage_path = %s,
+                                  download_storage_bucket = 'generated-4k', download_storage_path = %s,
+                                  provider_error = NULL, updated_at = NOW()
+                                WHERE id = %s AND status = 'GENERATING'""",
+                             (w, h, size, size, f"Retouched and checked (pass {r['pass']}, score {qa.get('score')})",
+                              f"director/fegorson-studio pass {r['pass']}", r["result_path"], r["result_path"], r["image_id"]))
+                conn.execute("UPDATE retouch_briefs SET status = 'passed', updated_at = NOW() WHERE id = %s", (r["brief_id"],))
+                log(f"  director: slot {r['slot']} of {r['shoot_id'][:8]} passed its check (pass {r['pass']}, score {qa.get('score')})")
+            elif r["pass"] < 2:
+                nxt = D.next_recipe(recipe, qa, found)
+                conn.execute("UPDATE retouch_briefs SET status = 'redo', updated_at = NOW() WHERE id = %s", (r["brief_id"],))
+                conn.execute("""INSERT INTO retouch_briefs (shoot_image_id, shoot_id, pass, status, brief, candidates, recipe)
+                                VALUES (%s, %s, %s, 'ready', %s, %s, %s)""",
+                             (r["image_id"], r["shoot_id"], r["pass"] + 1, json.dumps(brief), json.dumps(found), json.dumps(nxt)))
+                conn.execute("UPDATE shoot_images SET status = 'QUEUED', stage = %s, updated_at = NOW() WHERE id = %s",
+                             (f"Brief ready (pass {r['pass'] + 1})", r["image_id"]))
+                log(f"  director: slot {r['slot']} of {r['shoot_id'][:8]} failed its check, second pass queued")
+            else:
+                conn.execute("UPDATE retouch_briefs SET status = 'failed', updated_at = NOW() WHERE id = %s", (r["brief_id"],))
+                probs = "; ".join(f"{p.get('area')}: {p.get('what')}" for p in (qa.get("problems") or [])[:4]) or "did not pass the check"
+                director_fail(conn, s3, img, f"failed the check twice - {probs}", r["result_path"])
+            progress(conn, r["shoot_id"])
+        except Exception as e:
+            log(f"  director: check of {r['brief_id'][:8]} stopped: {type(e).__name__}: {str(e)[:200]}")
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+    # 2. Briefs for photos nobody has looked at yet.
+    for r in fresh:
+        work = os.path.join(BASE, "work", "brief-" + r["image_id"]); os.makedirs(work, exist_ok=True)
+        try:
+            src, ref = original(r["shoot_id"], r["slot"], work)
+            if not src:
+                img = dict(r, ref_bucket=None, ref_path=None)
+                conn.execute("UPDATE shoot_images SET status = 'GENERATING' WHERE id = %s", (r["image_id"],))
+                director_fail(conn, s3, img, "no photo was attached for this slot"); progress(conn, r["shoot_id"]); continue
+            try:
+                im = D.load(src); found = D.find(im); brief, cost = D.decide(im, found, work); recipe = D.recipe_from(brief, found)
+            except Exception as e:     # the AI is down: the laptop still retouches with the owner's preset
+                found, brief, recipe, cost = {}, {"fallback": True, "error": str(e)[:300]}, {}, 0.0
+                tell("⚠️ <b>Retouch director unavailable</b> - photo " + str(r["slot"]) + " of shoot <code>" + r["shoot_id"] +
+                     "</code> is being retouched with your preset only.\n" + html.escape(str(e)[:200]))
+            conn.execute("""INSERT INTO retouch_briefs (shoot_image_id, shoot_id, pass, status, brief, candidates, recipe, cost_usd)
+                            VALUES (%s, %s, 1, 'ready', %s, %s, %s, %s)""",
+                         (r["image_id"], r["shoot_id"], json.dumps(brief), json.dumps(found), json.dumps(recipe), cost))
+            conn.execute("UPDATE shoot_images SET status = 'QUEUED', stage = 'Brief ready (pass 1)', updated_at = NOW() WHERE id = %s",
+                         (r["image_id"],))
+            conn.execute("""UPDATE shoots SET status = 'PROCESSING', progress = GREATEST(COALESCE(progress, 0), 5),
+                              pipeline_stage = 'Retouching', updated_at = NOW() WHERE id = %s AND status = 'QUEUED'""", (r["shoot_id"],))
+            log(f"  director: brief for slot {r['slot']} of {r['shoot_id'][:8]} - {len(recipe.get('healStrokes') or [])} spot(s), "
+                f"{len(brief.get('brief') or [])} areas, ${cost}")
+        except Exception as e:
+            log(f"  director: brief for {r['image_id'][:8]} stopped: {type(e).__name__}: {str(e)[:200]}")
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
 def main():
     load_env(os.path.join(APP, ".env.local"))
     os.environ.setdefault("RETOUCH_FAL_LEDGER", os.path.join(BASE, "fal-ledger.jsonl"))
@@ -250,6 +375,11 @@ def main():
     # orders through /api/retouch-worker (lib/retouch-worker.ts), so this worker stands aside.
     eng = conn.execute("SELECT value FROM app_config WHERE key = 'retouch_engine'").fetchone()
     if eng and eng["value"] == "laptop" and not ONLY:
+        # The laptop renders; this worker only writes briefs and checks results, when the
+        # retouch director is switched on.
+        dr = conn.execute("SELECT value FROM app_config WHERE key = 'retouch_director'").fetchone()
+        if dr and dr["value"] == "on":
+            director_duties(conn, r2())
         conn.close(); return
     s3 = r2()
     started, seen = time.time(), set()

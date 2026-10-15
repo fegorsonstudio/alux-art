@@ -38,17 +38,41 @@ function presetValues(name) {
   return p.values;
 }
 
+/**
+ * The settings for one photo: the owner's preset, with the retouch director's choices on top
+ * (workers/retouch/director.py). "max" sliders raise the preset and never lower it, "set"
+ * sliders replace it (body shaping, face light, the checker's corrections), and every slider
+ * stays inside the house "caps" (armpit at most 40, even if the preset says 100). The
+ * director's Remove-brush strokes (spots, stray hairs, the lace line) come with it.
+ * A job without a recipe is the preset as it is.
+ */
+function finalParams(job) {
+  const p = { ...presetValues(job.preset) };
+  const r = job.recipe || {};
+  for (const [k, v] of Object.entries(r.max || {})) p[k] = Math.max(Number(p[k] ?? 0), Number(v));
+  for (const [k, v] of Object.entries(r.set || {})) p[k] = Number(v);
+  for (const [k, lim] of Object.entries(r.caps || {})) {
+    if (typeof p[k] === "number" && Array.isArray(lim)) p[k] = Math.max(lim[0], Math.min(lim[1], p[k]));
+  }
+  if (Array.isArray(r.healStrokes) && r.healStrokes.length) p.healStrokes = r.healStrokes.slice(0, 200);
+  return p;
+}
+
 async function render(job, work) {
-  const res = await fetch(job.originalUrl);
-  if (!res.ok) throw new Error(`could not download the photo (${res.status})`);
   const safeName = job.fileName.replace(/[^\w.\-]/g, "_");
   fs.mkdirSync(path.join(work, "in"), { recursive: true });
   const local = path.join(work, "in", safeName);
-  fs.writeFileSync(local, Buffer.from(await res.arrayBuffer()));
+  if (job.localFile) {
+    fs.copyFileSync(job.localFile, local);
+  } else {
+    const res = await fetch(job.originalUrl);
+    if (!res.ok) throw new Error(`could not download the photo (${res.status})`);
+    fs.writeFileSync(local, Buffer.from(await res.arrayBuffer()));
+  }
   const config = path.join(work, "config.json");
   fs.writeFileSync(config, JSON.stringify({
     outDir: work, portraits: [], soak: 0, raw: null, backdropReal: null, heic: [], probe: local,
-    probeSpec: { sets: [{ name: "glow", params: presetValues(job.preset), cropsOnly: true, full: true }] },
+    probeSpec: { sets: [{ name: "glow", params: finalParams(job), cropsOnly: true, full: true }] },
   }));
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;   // set by some editors; it would start the app as plain Node
@@ -114,8 +138,23 @@ async function once() {
 }
 
 process.title = "Glow Retouch worker";
+if (!fs.existsSync(EXE)) { console.log(`Fegorson Studio is not installed at ${EXE}`); process.exit(1); }
+
+// Test mode, no website: node worker.mjs --render <photo> <recipe.json> <out.jpg>
+if (process.argv.includes("--render")) {
+  const [photo, recipeFile, outFile] = process.argv.slice(process.argv.indexOf("--render") + 1);
+  const job = { imageId: "test-" + Date.now(), preset: "Hanna", fileName: path.basename(photo), localFile: photo,
+                recipe: recipeFile && fs.existsSync(recipeFile) ? JSON.parse(fs.readFileSync(recipeFile, "utf8")) : null };
+  const work = path.join(os.tmpdir(), "glow-retouch-worker", job.imageId);
+  const t0 = Date.now();
+  try {
+    fs.writeFileSync(outFile, await render(job, work));
+    console.log(JSON.stringify({ ok: true, secs: Math.round((Date.now() - t0) / 1000), out: outFile, params: finalParams(job) }));
+  } finally { fs.rmSync(work, { recursive: true, force: true }); }
+  process.exit(0);
+}
+
 log("Glow Retouch worker started. Leave this window open; close it to stop.");
-if (!fs.existsSync(EXE)) { log(`Fegorson Studio is not installed at ${EXE}`); process.exit(1); }
 for (;;) {
   try {
     const had = await once();
