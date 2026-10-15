@@ -98,6 +98,15 @@ const doneWord = (s: Pick<IgSession, "look_option_id">) => (isRetouchSession(s) 
 export async function offerRetouch(creds: IgCreds, session: IgSession): Promise<boolean> {
   const templateId = await glowRetouchTemplateId();
   if (!templateId) return false;
+  // Testing phase (owner, 15 Oct 2026): app_config glow_retouch_testers lists the Instagram
+  // usernames that may order it, comma-separated, or "*" for everyone. Anyone else gets
+  // the hand-retouch path, exactly as while it was paused.
+  const [testers] = await sql<{ value: string }[]>`
+    SELECT value FROM app_config WHERE key = 'glow_retouch_testers'`.catch(() => [] as { value: string }[]);
+  if (testers) {
+    const list = testers.value.split(",").map((u) => u.trim().replace(/^@/, "").toLowerCase()).filter(Boolean);
+    if (!list.includes("*") && !list.includes((session.ig_username ?? "").toLowerCase())) return false;
+  }
   // Held photos are unpaid ones (booking clears them), so they carry over — the
   // same rule acceptInstagramPhoto uses: nothing once a link has gone out.
   const closed = session.state === "AWAITING_PAYMENT" || session.state === "GENERATING";

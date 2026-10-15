@@ -246,6 +246,11 @@ def main():
     os.environ.setdefault("RETOUCH_FAL_LEDGER", os.path.join(BASE, "fal-ledger.jsonl"))
     os.makedirs(os.path.join(BASE, "work"), exist_ok=True)
     conn = psycopg.connect(os.environ["DATABASE_URL"], autocommit=True, row_factory=dict_row)
+    # app_config retouch_engine = 'laptop': the studio computer runs Fegorson Studio on these
+    # orders through /api/retouch-worker (lib/retouch-worker.ts), so this worker stands aside.
+    eng = conn.execute("SELECT value FROM app_config WHERE key = 'retouch_engine'").fetchone()
+    if eng and eng["value"] == "laptop" and not ONLY:
+        conn.close(); return
     s3 = r2()
     started, seen = time.time(), set()
     while time.time() - started < RUN_LIMIT:
