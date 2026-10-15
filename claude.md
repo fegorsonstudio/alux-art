@@ -236,6 +236,35 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-15, later): Glow Retouch is LIVE on Instagram (owner: build it, ₦1,000 a
+photo, trigger RETOUCH; commit `5fe4a57`).** Reply *retouch* in the DM → photos in chat or via the
+upload link → one payment link → retouched photo back in the chat + full-size download page.
+Within 24 h of a delivered (non-retouch) order the word still means the old HAND-retouch offer for
+that order (`justDelivered` in the IG webhook). Private template "Glow Retouch" `83275b9f`,
+category `photo_retouch`, per-image like the relight, no trigger words (invisible to chat
+triggers). `/api/shoots/[id]/start` and the slot retry hand photo_retouch to the worker — the
+relight model never sees them. **Worker:** `workers/retouch/worker.py` (orders) → `engine.py`
+(one photo per process) → `fal.mjs` (paid cut-out/eraser, $5/UTC-day cap, ledger
+`/root/retouch-worker/fal-ledger.jsonl`). Root cron every minute, `flock` + `systemd-run
+MemoryMax=1700M` (crontab backup `/root/crontab.bak-2026-10-15-glow`), log
+`/root/retouch-worker/worker.log`, venv `/root/retouch-proof/venv` (+psycopg, boto3). Photo N →
+slot N; output `generated-4k/{user}/{shoot}/retouch-N.jpg` at the customer's own size, ICC kept,
+EXIF dropped. **Never sent half-done:** no face / features don't line up / same-person score
+< 0.75 / two crashes → slot FAILED, Telegram "needs your hands" with a 3-day link to the
+original; the customer is told a person will finish it. Paid step failing 3× → finishes without
+it and alerts. Owner's colour style is NOT applied to customers. **Healing was buggy in the
+proof** (one texture source for all marks; healed inside eyeshadow → eyeshadow fleck and a
+nose-edge slash pasted onto skin, visible only at 100%): now per mark, plain skin only, smoothest
+source, reverted if it darkens skin. **Check retouch output at 100% zoom, never on contact
+sheets.** Verified: 10 owner samples (7 retouched, same-person 0.95–0.97, peak 1.39 GB; IMG_0190,
+0191, 7381 → a person) and two made-up IG customers end to end on live (rows + files removed);
+paid steps used a free stand-in (`RETOUCH_FAKE_FAL=1`, tests only). **Not yet proven: a real paid
+run** — the owner's own test. Also fixed: an IG shoot that FAILED before any delivery poll saw it
+was never told (affects relights too); free bookings now say "No charge". **@nvidia_studio is the
+owner's Instagram test account:** free grant of 100 images on
+`ig-1448007867158554@instagram.aluxartandframes.shop` (`free_grants` 4319b24d) — covers relights
+too; top it up there.
+
 **Update (2026-10-15): retouch-by-DM proof engine — `tools/retouch-proof/` (README there).** Not
 wired into the site. Face skin, eyes, teeth, body skin, studio backdrop and the owner's colour style
 (a 3D LUT learned from 4 of their hand edits) are free; hair-accurate cut-out (fal BiRefNet v2) and
