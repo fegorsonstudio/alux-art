@@ -817,7 +817,7 @@ async function handleDirectMessage(
   // what made the WhatsApp bot loop at a customer who asked a question.
   if (session.state === "COLLECTING_PHOTO") {
     await sendText(creds, senderId, isRetouchSession(session)
-      ? "Send the photo you want retouched as a picture in this chat — or use the upload link above for full quality."
+      ? "Upload the original photo with the Upload full quality button above — photos sent here in the chat are shrunk by Instagram, so I retouch originals only."
       : `Send the photo you want relit as a picture in this chat and I'll apply ` +
         `*${session.look_name ? prettyLook(session.look_name) : "that look"}* to it.`);
     return;

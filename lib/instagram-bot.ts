@@ -101,9 +101,13 @@ export async function offerRetouch(creds: IgCreds, session: IgSession): Promise<
   // Held photos are unpaid ones (booking clears them), so they carry over — the
   // same rule acceptInstagramPhoto uses: nothing once a link has gone out.
   const closed = session.state === "AWAITING_PAYMENT" || session.state === "GENERATING";
-  const waiting = closed ? [] : await freshHeld(session.source_paths ?? []);
+  // Only originals from the upload page carry over: chat photos are shrunk by
+  // Instagram, and Glow Retouch takes originals only (see acceptInstagramPhoto).
+  const waiting = (closed ? [] : await freshHeld(session.source_paths ?? []))
+    .filter((p) => /-upload\.[a-z0-9]+$/i.test(p));
   await patchSession(session.id, {
     state: waiting.length ? "CONFIRMING_BATCH" : "COLLECTING_PHOTO",
+    source_paths: waiting,
     template_id: templateId,
     look_option_id: RETOUCH_MARKER,
     look_name: "Glow Retouch",
@@ -125,9 +129,10 @@ export async function offerRetouch(creds: IgCreds, session: IgSession): Promise<
     `never redrawn.\n\n`;
   await sendWithLinkFallback(creds, session.ig_user_id,
     intro +
-    `Send me the photo here, or for full quality upload the original instead ` +
-    `(Instagram shrinks photos sent in chat): ${upLink}\n\nUp to 10 photos.`,
-    intro + `Send me the photo here — up to 10.`);
+    `Upload your original photos with the button below — up to 10. Photos sent ` +
+    `here in the chat are shrunk by Instagram, so I retouch originals only: ${upLink}`,
+    intro + `I retouch original photos only, and Instagram won't let me send the upload ` +
+    `link right now. Send *support* and the studio will help you.`);
   return true;
 }
 
@@ -528,6 +533,22 @@ export async function acceptInstagramPhoto(
     if (withLink) await sendWithLinkFallback(creds, to, text + withLink, text);
     else await sendText(creds, to, text);
   };
+
+  // Glow Retouch takes ORIGINALS only (owner, 15 Oct 2026). A photo sent in the
+  // chat reaches us shrunk by Instagram — the first test's faces were 63-104 px
+  // tall — and a retouch on that cannot show. It is not stored; the customer is
+  // handed the upload button instead.
+  if (isRetouchSession(session) && !opts.viaUpload) {
+    const upLink = await uploadLinkFor("instagram", session.id);
+    await sendWithLinkFallback(creds, to,
+      `For Glow Retouch I need the original photo — Instagram shrinks pictures sent ` +
+      `here in the chat, and a shrunk photo can't be retouched properly.\n\n` +
+      `Tap the button below to upload the original (up to 10 photos): ${upLink}`,
+      `For Glow Retouch I need the original photo — Instagram shrinks pictures sent ` +
+      `here in the chat. Instagram won't let me send the upload link right now, so send ` +
+      `*support* and the studio will help you.`);
+    return { held: 0 };
+  }
 
   const userId = await ensureUser(session);
   const ext = media.contentType.includes("png") ? "png" : media.contentType.includes("webp") ? "webp" : media.contentType.includes("heic") ? "heic" : "jpg";
