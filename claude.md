@@ -236,6 +236,28 @@ was handed to the owner to paste into Meta's ad assistant — not yet confirmed 
 The ad itself is still not delivering (ad set retired by Meta); the Playwright browser
 cannot pass Facebook's sign-in, so restarting it is with the owner.
 
+**Update (2026-10-15, evening): Glow Retouch PAUSED; Fegorson Studio is the quality bar.**
+The owner's first real test (3 Wadi Rum photos via @nvidia_studio) was rejected: chat photos
+arrive Instagram-shrunk (1180x1572, faces 63-104 px), the engine changed ~1% of each photo and
+handed a clear face to a person. Their own Fegorson Studio edit (laptop app, `Desktop\Avoto\studio`,
+"Hanna" preset: contrast 17, temp 21, vignette 10, blemish 56, dodge&burn 65, body tools) is far
+better. Done: template `83275b9f` set to **draft** (one switch back to `published`); Glow Retouch
+now takes **originals only** via the upload button (chat photos not stored; `1aaab1d`); "edit"
+short forms trigger like "retouch" (`ae50e32`). Owner chose: run Fegorson Studio's OWN engine on
+the server. Its hands-off probe mode (`--selftest` with a probe spec, used by `tools/selftest.mjs`)
+renders a photo with a recipe at full size: 29-50 s per photo on the laptop through the installed
+exe (clear `ELECTRON_RUN_AS_NODE` first — VS Code sets it). **Never run `tools/selftest.mjs`: it
+wipes the app's `test-output`, which its own agent is using.** On the VPS (`/root/fegorson-engine`,
+app source by `git archive`, xvfb + SwiftShader WebGL2, apt libs installed) the engine starts and
+analyses, then was **OOM-killed at 1.6 GB** inside the 1700M fence (site untouched) — it needs
+more memory than this server can spare. Decision with the owner: bigger/second server, the
+laptop as the worker, or smaller renders. **Cloud-mask Phase 1** (Fegorson brief
+`Desktop\Avoto\Prompt for the VPS agent - cloud masking.md`): 13 owner photos, BiRefNet v2
+Matting/Portrait + SAM 3 (12 prompts, face parts on a full-res face crop), data URIs + sync_mode +
+`X-Fal-Store-IO: 0`, est. $0.77 of $2 (our fal key cannot read billing: 403); zip on R2
+`generated-4k/admin/…`, deleted by transient timer `cloudmask-zip-delete` on 17 Oct 13:20 UTC;
+server copies already deleted. Phase 2 not approved.
+
 **Update (2026-10-15, later): Glow Retouch is LIVE on Instagram (owner: build it, ₦1,000 a
 photo, trigger RETOUCH; commit `5fe4a57`).** Reply *retouch* in the DM → photos in chat or via the
 upload link → one payment link → retouched photo back in the chat + full-size download page.
