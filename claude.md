@@ -263,7 +263,15 @@ run** — the owner's own test. Also fixed: an IG shoot that FAILED before any d
 was never told (affects relights too); free bookings now say "No charge". **@nvidia_studio is the
 owner's Instagram test account:** free grant of 100 images on
 `ig-1448007867158554@instagram.aluxartandframes.shop` (`free_grants` 4319b24d) — covers relights
-too; top it up there.
+too; top it up there. **Links are buttons (owner asked, same day):** URLs in a plain IG DM showed
+as untappable text on the owner's phone. `sendTextWithButtons` / `linksAsButtons` /
+`buttonMessage` in `lib/instagram.ts` turn a message's 1–3 links into Instagram button-template
+buttons named by destination (Upload full quality, Pay now, Download full size, Open WhatsApp,
+Open my shoots, Open on the website, Open website); `sendWithLinkFallback` and the hand-retouch
+pay message use it, so every bot link is covered. Text over 640 chars or >3 links stays plain;
+any refusal other than a link restriction/closed window resends the plain text. Comment private
+replies try buttons first, then the old text — **whether Instagram allows a button template as a
+private reply is unproven** (check the log for "button reply refused"). Button text drops `*`.
 
 **Update (2026-10-15): retouch-by-DM proof engine — `tools/retouch-proof/` (README there).** Not
 wired into the site. Face skin, eyes, teeth, body skin, studio backdrop and the owner's colour style

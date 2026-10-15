@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
-import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles } from "@/lib/instagram";
+import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
 import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser, offerRetouch, isRetouchSession } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
@@ -309,7 +309,27 @@ export async function POST(request: NextRequest) {
           }),
         }).then(x => x.json());
 
-        let r = await send(keyword.reply);
+        // Its links as tappable buttons first (lib/instagram.ts). Whether a
+        // private reply may carry a button message is not documented clearly, so
+        // a refusal of any kind falls through to the text reply below, exactly as
+        // before — a comment only ever gets one reply, and an error is not one.
+        let r: { error?: Record<string, unknown> & { error_subcode?: number; error_user_title?: string; error_user_msg?: string } } = { error: {} };
+        const asButtons = linksAsButtons(keyword.reply);
+        if (asButtons) {
+          r = await fetch(`${GRAPH}/${igUserId}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipient: { comment_id: commentId },
+              message: buttonMessage(asButtons.text, asButtons.buttons),
+              access_token: token,
+            }),
+          }).then(x => x.json()).catch((e) => ({ error: { message: String(e) } }));
+          if (r.error) {
+            console.warn("[ig webhook] button reply refused, sending text:", JSON.stringify(r.error).slice(0, 300));
+          }
+        }
+        if (r.error) r = await send(keyword.reply);
 
         // Instagram drops the entire message when the account is under a link
         // restriction. It reports that as "Invalid message id", which points at

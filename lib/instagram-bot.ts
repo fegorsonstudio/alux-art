@@ -8,7 +8,7 @@ import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 import { uploadLinkFor } from "@/lib/chat-upload-links";
 import {
   sendText, sendImage, downloadAttachment, credsForAccount, handleForAccount,
-  type IgCreds, type IgSendResult,
+  sendTextWithButtons, type IgCreds, type IgSendResult,
 } from "@/lib/instagram";
 
 /**
@@ -251,7 +251,8 @@ export async function sendWithLinkFallback(
   withLink: string,
   withoutLink: string,
 ): Promise<IgSendResult> {
-  const first = await sendText(creds, to, withLink);
+  // Links go as tappable buttons (lib/instagram.ts), plain text if refused.
+  const first = await sendTextWithButtons(creds, to, withLink);
   if (first.ok || !first.linkBlocked) return first;
 
   console.warn(

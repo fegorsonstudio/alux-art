@@ -161,6 +161,81 @@ export function sendText(creds: IgCreds, to: string, text: string): Promise<IgSe
   return post(creds, { recipient: { id: to }, message: { text: body } });
 }
 
+// ── Links as buttons ─────────────────────────────────────────────────────────
+// A URL in a plain DM is not reliably tappable: on the owner's own test chat
+// (15 Oct 2026) every link showed as plain text. Instagram's button message — a
+// short text with up to three buttons that open a web page — is, and "Pay now"
+// reads better than a long checkout address. Checked live on @fegorson_studio.
+
+export type IgButton = { title: string; url: string };
+
+/** Instagram's caps for a button message. */
+const IG_BUTTON_TEXT = 640, IG_MAX_BUTTONS = 3, IG_BUTTON_TITLE = 20;
+
+/** What a link's button says, from where the link goes. */
+function buttonTitle(url: string): string {
+  let u: URL;
+  try { u = new URL(url); } catch { return "Open link"; }
+  const host = u.hostname.replace(/^www\./, "");
+  if (u.pathname.startsWith("/d/up/")) return "Upload full quality";
+  if (/paystack|flutterwave|ravepay/i.test(host)) return "Pay now";
+  if (host === "wa.me" || host.endsWith("whatsapp.com")) return "Open WhatsApp";
+  if (/^\/d\/[A-Za-z0-9_-]+\/?$/.test(u.pathname)) return "Download full size";
+  if (u.pathname.startsWith("/studio")) return "Open my shoots";
+  if (u.pathname.startsWith("/marketplace/")) return "Open on the website";
+  return host.endsWith("aluxartandframes.shop") ? "Open website" : "Open link";
+}
+
+/**
+ * A message's links taken out and turned into buttons, or null when it does not
+ * fit a button message (no link, more than three, or too long without them).
+ * Asterisks are dropped from the text: a button message's text may not render
+ * *bold* the way a plain message does, and stars on show would look broken.
+ */
+export function linksAsButtons(text: string): { text: string; buttons: IgButton[] } | null {
+  const urls = [...new Set((text.match(/https?:\/\/[^\s<>]+/g) ?? []).map((u) => u.replace(/[).,!?]+$/, "")))];
+  if (urls.length === 0 || urls.length > IG_MAX_BUTTONS) return null;
+  let rest = text;
+  for (const u of urls) rest = rest.split(u).join("");
+  rest = rest
+    .split("\n").map((line) => line.replace(/\s*[—–-]\s*$/, "").replace(/\s+$/, "")).join("\n")
+    .replace(/\*/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!rest || rest.length > IG_BUTTON_TEXT) return null;
+  return { text: rest, buttons: urls.map((url) => ({ url, title: buttonTitle(url).slice(0, IG_BUTTON_TITLE) })) };
+}
+
+/** The `message` of a button message, for any recipient (a chat or a comment). */
+export function buttonMessage(text: string, buttons: IgButton[]): Record<string, unknown> {
+  return {
+    attachment: {
+      type: "template",
+      payload: {
+        template_type: "button",
+        text: text.slice(0, IG_BUTTON_TEXT),
+        buttons: buttons.slice(0, IG_MAX_BUTTONS).map((b) => ({ type: "web_url", url: b.url, title: b.title })),
+      },
+    },
+  };
+}
+
+/**
+ * Text whose links arrive as buttons. If the message does not fit a button
+ * message, or Instagram refuses one for any reason other than a link
+ * restriction or a closed window, the same text goes as before — so a button
+ * can only ever add tappability, never cost the customer the message.
+ */
+export async function sendTextWithButtons(creds: IgCreds, to: string, text: string): Promise<IgSendResult> {
+  const b = linksAsButtons(text);
+  if (b) {
+    const r = await post(creds, { recipient: { id: to }, message: buttonMessage(b.text, b.buttons) });
+    if (r.ok || r.linkBlocked || r.windowClosed) return r;
+    console.warn("[instagram] button message refused, sending plain text:", r.error.slice(0, 200));
+  }
+  return sendText(creds, to, text);
+}
+
 /**
  * One image, by public URL.
  *

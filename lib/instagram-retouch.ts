@@ -3,7 +3,7 @@ import sql from "@/lib/db";
 import { signedMediaUrl } from "@/lib/media-url";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
-import { sendText, sendImage, windowOpen, credsForAccount, type IgCreds } from "@/lib/instagram";
+import { sendText, sendImage, windowOpen, credsForAccount, sendTextWithButtons, type IgCreds } from "@/lib/instagram";
 import { tellAdmin } from "@/lib/telegram";
 import { sendWithLinkFallback } from "@/lib/instagram-bot";
 
@@ -172,7 +172,9 @@ export async function offerRetouchPayment(shootId: string): Promise<boolean> {
     }
 
     const n = order.image_count ?? 1;
-    const sent = await sendText(chat.creds, chat.ig_user_id,
+    // The link arrives as a "Pay now" button; a refused button falls back to
+    // this same text, and a refusal of both still escalates below.
+    const sent = await sendTextWithButtons(chat.creds, chat.ig_user_id,
       `Your retouched photo${n === 1 ? " is" : "s are"} ready ✨\n\n` +
       `${naira(order.price_ngn ?? 0)} for ${n} image${n === 1 ? "" : "s"}. ` +
       `Pay here and I'll send ${n === 1 ? "it" : "them"} straight away:\n${body.authorizationUrl}`);
