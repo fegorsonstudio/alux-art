@@ -787,9 +787,12 @@ async function handleDirectMessage(
   // Telegram either, because the handler never ran at all.
   //
   // "edit" stays anchored: it is a common word and matching it loosely would
-  // hijack "I need to edit my caption".
+  // hijack "I need to edit my caption". The owner made "retouch" or "edit" the
+  // trigger (15 Oct 2026), so its short forms count too — "edit please",
+  // "edit this", "edit another one", "please edit my pictures" — but only when
+  // the whole message is about editing a photo.
   if (/\bretouch(ed|ing)?\b/i.test(text)
-      || /^edit( my (photos?|images?))?$/i.test(text)) {
+      || /^(pls |please )?edit( (my|this|these|the|a|another|new|more))?( (photos?|pictures?|pics?|images?|one))?( (please|pls|abeg))?[.!?]*$/i.test(text)) {
     // Two products answer to this word. Within a day of a delivery it is the
     // answer to "want it hand-retouched?" and means THAT order, exactly as
     // before. Any other time it is the automatic Glow Retouch service.
