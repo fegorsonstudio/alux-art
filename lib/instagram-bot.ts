@@ -8,7 +8,7 @@ import { needsContactEmail, CONTACT_EMAIL_ASK } from "@/lib/chat-contact-email";
 import { uploadLinkFor } from "@/lib/chat-upload-links";
 import {
   sendText, sendImage, downloadAttachment, credsForAccount, handleForAccount,
-  sendTextWithButtons, type IgCreds, type IgSendResult,
+  sendTextWithButtons, sendTextWithReplies, type IgCreds, type IgSendResult, type IgQuickReply,
 } from "@/lib/instagram";
 
 /**
@@ -91,6 +91,25 @@ export const isRetouchSession = (s: Pick<IgSession, "look_option_id">) => s.look
 const doneWord = (s: Pick<IgSession, "look_option_id">) => (isRetouchSession(s) ? "retouched" : "relit");
 
 /**
+ * "Are these all the pictures?" as buttons under the question. The owner missed
+ * the typed "Reply yes" on their first test (15 Oct 2026). The titles are worded
+ * so the webhook's batch matchers read a tap exactly as they read typing: "Yes,
+ * that's all" is a yes, "No, I have more" a no (and no consent answer — that
+ * matcher is off while photos are held).
+ */
+export const BATCH_REPLIES: IgQuickReply[] = [
+  { title: "Yes, that's all", payload: "BATCH_YES" },
+  { title: "No, I have more", payload: "BATCH_MORE" },
+];
+export const BATCH_YES_ONLY: IgQuickReply[] = [BATCH_REPLIES[0]];
+
+/** The question, said the same way everywhere it is asked. */
+export const batchQuestion = (s: Pick<IgSession, "look_option_id">) =>
+  `👉 *Are these all the pictures you want ${doneWord(s)}?*\n` +
+  `Tap *Yes, that's all* below (or type *yes*) and I'll send one payment link for all of them. ` +
+  (isRetouchSession(s) ? `Got more? Upload them with the same button.` : `Got more? Just send them.`);
+
+/**
  * Someone asked for RETOUCH. Arms the conversation for Glow Retouch and asks for
  * the photos; photos already sent (before a look was chosen) are kept and counted.
  * Returns false if the template is not set up, so the caller can fall back.
@@ -123,11 +142,10 @@ export async function offerRetouch(creds: IgCreds, session: IgSession): Promise<
     shoot_id: null,
   });
   if (waiting.length > 0) {
-    await sendText(creds, session.ig_user_id,
+    await sendTextWithReplies(creds, session.ig_user_id,
       `*Glow Retouch* it is. I have *${waiting.length} photo${waiting.length === 1 ? "" : "s"}* ` +
       `(${naira(RETOUCH_PRICE_NGN * waiting.length)}).\n\n` +
-      `Are these all the pictures you want retouched? Reply *yes* and I'll send one payment ` +
-      `link for all of them, or just send the rest.`);
+      batchQuestion({ look_option_id: RETOUCH_MARKER }), BATCH_REPLIES);
     return true;
   }
   const upLink = await uploadLinkFor("instagram", session.id);
@@ -448,12 +466,11 @@ export async function offerLook(
   const waiting = session.state === "COLLECTING_LOOK" ? await freshHeld(session.source_paths ?? []) : [];
   if (waiting.length > 0) {
     await patchSession(session.id, { state: "CONFIRMING_BATCH" });
-    await sendText(creds, session.ig_user_id,
+    await sendTextWithReplies(creds, session.ig_user_id,
       `*${prettyLook(look.lookName)}* it is \u2014 look ${n}. I have ` +
       `*${waiting.length} photo${waiting.length === 1 ? "" : "s"}* ` +
       `(${naira(RELIGHT_PRICE_NGN * waiting.length)}).\n\n` +
-      `Are these all the pictures you want relit? Reply *yes* and I'll send one payment ` +
-      `link for all of them, or just send the rest.`);
+      batchQuestion({ look_option_id: look.lookId }), BATCH_REPLIES);
     return true;
   }
 
@@ -611,12 +628,20 @@ export async function acceptInstagramPhoto(
   // The count is said out loud every time on purpose. Photographs were being
   // dropped silently, and a running total is how a customer notices one of
   // theirs never arrived.
-  await say(
-    `Got it \u2014 that's *${batch.length} photo${batch.length === 1 ? "" : "s"}* so far ` +
-    `(${naira((isRetouchSession(session) ? RETOUCH_PRICE_NGN : RELIGHT_PRICE_NGN) * batch.length)}).\n\n` +
-    `Are these all the pictures you want ${doneWord(session)}? Reply *yes* and I'll send one payment link ` +
-    `for all of them, or just send the rest.`,
-    batch.length === 1 ? await shrinkNote() : undefined);
+  if (opts.notify) {
+    const count =
+      `Got it \u2014 that's *${batch.length} photo${batch.length === 1 ? "" : "s"}* so far ` +
+      `(${naira((isRetouchSession(session) ? RETOUCH_PRICE_NGN : RELIGHT_PRICE_NGN) * batch.length)}).`;
+    const note = batch.length === 1 ? await shrinkNote() : "";
+    // The upload link is a button message of its own, and the question goes
+    // last: Instagram shows answer buttons under the newest message only.
+    if (note) {
+      await sendWithLinkFallback(creds, to, count + note, count);
+      await sendTextWithReplies(creds, to, batchQuestion(session), BATCH_REPLIES);
+    } else {
+      await sendTextWithReplies(creds, to, count + "\n\n" + batchQuestion(session), BATCH_REPLIES);
+    }
+  }
   return { held: batch.length };
 }
 
@@ -639,8 +664,11 @@ export async function confirmBatch(
     return;
   }
   if (!yes) {
-    await sendText(creds, session.ig_user_id,
-      "No problem \u2014 send the rest, and tell me when you're done.");
+    await sendTextWithReplies(creds, session.ig_user_id,
+      (isRetouchSession(session)
+        ? "No problem \u2014 upload the rest with the same button. "
+        : "No problem \u2014 send the rest. ") +
+      "When you're done, tap *Yes, that's all* (or type *yes*).", BATCH_YES_ONLY);
     return;
   }
   await bookIt(creds, session, batch, "image/jpeg", 1);

@@ -286,6 +286,22 @@ blend not a line stroke, no background-person removal — add Fegorson `bgFill`/
 can raise false alarms (it once claimed a waist change). Director testing spend ≈ $0.75 Gemini.
 The owner's laptop worker window must be restarted after worker.mjs changes (old code stays in memory).
 
+**Update (2026-10-16): "are these all the pictures?" has answer buttons; check crashes capped.**
+The owner's own test: their "yes" was taken by an old open post-consent ask (fixed `405d5eb`: while
+photos are held, consent words are ignored except *stop*), and they had not seen that "yes" was
+expected. Every place the question is asked (`offerRetouch`, `offerLook`, `acceptInstagramPhoto`,
+`confirmBatch`'s "send the rest", the webhook's "I'm holding N photos") now goes through
+`sendTextWithReplies` (`lib/instagram.ts`, Instagram quick replies) with **Yes, that's all** /
+**No, I have more** under a bold 👉 question. A tap arrives as a text message whose text is the
+title, so the existing batch matchers read it; **keep the titles matching those regexes** (start
+with yes / no). Quick replies show in the phone app only, so the text still says "or type *yes*".
+Refused buttons resend the plain text. The owner's order `c89feca2` then failed the check twice
+(stray hairs against the backdrop, eyes not visibly brighter at eyeBright/eyeWhiten 35, top
+creases) and went to Telegram as designed. The check had also crashed 4× with `'list' object has
+no attribute 'get'` — Gemini sometimes wraps its JSON in a list — each crash after a paid call
+(~$0.05) and with no limit: `gemini()` now unwraps a list, `check()` guards problems/adjust, and
+three crashed checks hand the photo to a person (count kept in `retouch_briefs.qa.errors`).
+
 **Update (2026-10-15, later): Glow Retouch is LIVE on Instagram (owner: build it, ₦1,000 a
 photo, trigger RETOUCH; commit `5fe4a57`).** Reply *retouch* in the DM → photos in chat or via the
 upload link → one payment link → retouched photo back in the chat + full-size download page.

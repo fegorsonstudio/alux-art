@@ -236,6 +236,40 @@ export async function sendTextWithButtons(creds: IgCreds, to: string, text: stri
   return sendText(creds, to, text);
 }
 
+// ── Answer buttons ───────────────────────────────────────────────────────────
+// Instagram's quick replies: tappable answers under a text message. A tap
+// arrives as an ordinary message whose text is the button's title, so the
+// matchers that read typed answers read taps the same way. They show in the
+// phone app only, not on instagram.com, so the text must still say what to type.
+
+export type IgQuickReply = { title: string; payload: string };
+
+/** Instagram's caps for quick replies. */
+const IG_MAX_REPLIES = 13, IG_REPLY_TITLE = 20;
+
+/**
+ * Text with answer buttons under it. If Instagram refuses the buttons for any
+ * reason other than a link restriction or a closed window, the same text goes
+ * plain — a button can only add a shortcut, never cost the customer the message.
+ */
+export async function sendTextWithReplies(
+  creds: IgCreds, to: string, text: string, replies: IgQuickReply[],
+): Promise<IgSendResult> {
+  const body = text.length > IG_MAX_TEXT ? text.slice(0, IG_MAX_TEXT - 1) + "…" : text;
+  const r = await post(creds, {
+    recipient: { id: to },
+    message: {
+      text: body,
+      quick_replies: replies.slice(0, IG_MAX_REPLIES).map((q) => ({
+        content_type: "text", title: q.title.slice(0, IG_REPLY_TITLE), payload: q.payload,
+      })),
+    },
+  });
+  if (r.ok || r.linkBlocked || r.windowClosed) return r;
+  console.warn("[instagram] answer buttons refused, sending plain text:", r.error.slice(0, 200));
+  return sendText(creds, to, text);
+}
+
 /**
  * One image, by public URL.
  *

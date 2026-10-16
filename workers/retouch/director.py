@@ -405,7 +405,10 @@ def gemini(model, text, images, max_out=16000):
     cost = u.get("promptTokenCount", 0) * PRICES["in"] + (u.get("candidatesTokenCount", 0) + u.get("thoughtsTokenCount", 0)) * PRICES["out"]
     s = txt.strip()
     if s.startswith("```"): s = s.split("\n", 1)[1].rsplit("```", 1)[0]
-    return json.loads(s), round(cost, 4)
+    out = json.loads(s)
+    if isinstance(out, list):                 # it sometimes wraps its one answer in a list
+        out = next((x for x in out if isinstance(x, dict)), {})
+    return out, round(cost, 4)
 
 def legend(found):
     rows = []
@@ -541,7 +544,10 @@ Sliders and ranges for "adjust": {SLIDER_HELP}"""
             imgs += [(f"Image: {name}, BEFORE", b[name]), (f"Image: {name}, AFTER", a[name])]
     if "face" in m: imgs.append(("Image: face BEFORE with the numbered candidates", m["face"]))
     qa, cost = gemini(model, prompt, imgs)
-    high = any(p.get("severity") == "high" for p in qa.get("problems") or [])
+    qa["problems"] = [p for p in (qa.get("problems") or []) if isinstance(p, dict)]
+    if not isinstance(qa.get("adjust"), dict): qa["adjust"] = {}
+    if not isinstance(qa["adjust"].get("sliders"), dict): qa["adjust"]["sliders"] = {}
+    high = any(p.get("severity") == "high" for p in qa["problems"])
     qa["passed"] = bool(qa.get("pass")) and not high
     return qa, cost
 

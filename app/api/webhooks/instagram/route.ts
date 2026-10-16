@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
-import { sendText, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
-import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser, offerRetouch, isRetouchSession } from "@/lib/instagram-bot";
+import { sendText, sendTextWithReplies, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
+import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser, offerRetouch, isRetouchSession, batchQuestion, BATCH_REPLIES } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
   startGifFlow, handleGifPhoto, handleGifWords, handleGifPublish, isPostRequest,
@@ -835,9 +835,8 @@ async function handleDirectMessage(
   // which is how a customer notices a picture that never arrived.
   if (session.state === "CONFIRMING_BATCH") {
     const n = (session.source_paths ?? []).filter(Boolean).length;
-    await sendText(creds, senderId,
-      `I'm holding *${n} photo${n === 1 ? "" : "s"}* for you. ` +
-      `Reply *yes* and I'll send one payment link for all of them, or send more pictures first.`);
+    await sendTextWithReplies(creds, senderId,
+      `I'm holding *${n} photo${n === 1 ? "" : "s"}* for you.\n\n` + batchQuestion(session), BATCH_REPLIES);
     return;
   }
 

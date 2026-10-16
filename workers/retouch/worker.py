@@ -265,7 +265,7 @@ def director_fail(conn, s3, img, reason, result=None):
     log(f"  director: slot {img['slot']} of {img['shoot_id'][:8]} handed to a person - {reason[:160]}")
 
 def director_duties(conn, s3):
-    rendered = conn.execute("""SELECT b.id::text AS brief_id, b.pass, b.brief, b.candidates, b.recipe, b.result_path, b.cost_usd,
+    rendered = conn.execute("""SELECT b.id::text AS brief_id, b.pass, b.brief, b.candidates, b.recipe, b.result_path, b.cost_usd, b.qa,
                                       i.id::text AS image_id, i.slot, s.id::text AS shoot_id, s.user_id::text AS user_id,
                                       s.ig_user_id, s.ig_account_id
                                FROM retouch_briefs b JOIN shoot_images i ON i.id = b.shoot_image_id JOIN shoots s ON s.id = b.shoot_id
@@ -294,6 +294,7 @@ def director_duties(conn, s3):
     # 1. Checks first: those customers are nearest to their photos.
     for r in rendered:
         work = os.path.join(BASE, "work", "check-" + r["brief_id"]); os.makedirs(work, exist_ok=True)
+        img = None
         try:
             src, ref = original(r["shoot_id"], r["slot"], work)
             res_path = os.path.join(work, "result.jpg"); s3.download_file("generated-4k", r["result_path"], res_path)
@@ -334,6 +335,18 @@ def director_duties(conn, s3):
             progress(conn, r["shoot_id"])
         except Exception as e:
             log(f"  director: check of {r['brief_id'][:8]} stopped: {type(e).__name__}: {str(e)[:200]}")
+            # Each try may already have paid for the AI: three crashes and a person takes it.
+            try:
+                errors = int(((r.get("qa") or {}).get("errors") or 0) if isinstance(r.get("qa"), dict) else 0) + 1
+                conn.execute("UPDATE retouch_briefs SET qa = %s, updated_at = NOW() WHERE id = %s",
+                             (json.dumps({"errors": errors, "last": f"{type(e).__name__}: {str(e)[:200]}"}), r["brief_id"]))
+                if errors >= 3:
+                    conn.execute("UPDATE retouch_briefs SET status = 'failed', updated_at = NOW() WHERE id = %s", (r["brief_id"],))
+                    director_fail(conn, s3, img or dict(r, ref_bucket=None, ref_path=None),
+                                  f"the check stopped three times ({type(e).__name__})", r["result_path"])
+                    progress(conn, r["shoot_id"])
+            except Exception as e2:
+                log(f"  director: could not record the stopped check: {type(e2).__name__}: {str(e2)[:200]}")
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
