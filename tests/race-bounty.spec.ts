@@ -27,6 +27,8 @@ test.describe("Bounty Run hunt", () => {
     await expect(page.locator("[data-phase]")).toHaveAttribute("data-phase", "racing", { timeout: 200_000 });
     await expect(page.locator("canvas").first()).toBeVisible();
     await expect(page.getByText(/to the prize/i)).toBeVisible();
+    // The real street takes a moment to load; the debug line shows "links" once it has.
+    await expect(page.locator("pre")).toContainText(/links [0-9]+/, { timeout: 90_000 });
     await page.keyboard.down("ArrowUp");
     await page.waitForTimeout(2500);
     await page.keyboard.up("ArrowUp");

@@ -22,7 +22,7 @@ export type RaceEvent =
   | { type: "error"; message: string };
 
 const FINISH_RADIUS = 28;
-const HOPS_PER_SEC = 2.2;
+const HOPS_PER_SEC = 1.7;
 const OPPONENT_COLORS = ["#2f8e9a", "#ffd166", "#8e44ad", "#27ae60", "#e67e22", "#3498db"];
 
 export default function StreetViewRace(props: {
@@ -109,19 +109,26 @@ export default function StreetViewRace(props: {
         let t0 = last, moved = false, finished = false, lastSample = 0, hudAt = 0, hopping = false;
         const path: [number, number, number][] = [];
         const startsAt = props.startsAt ?? null;
-        pano.addListener("pov_changed", () => { if (!hopping) { heading = pano!.getPov().heading; headingTarget = heading; } });
+        pano.addListener("pov_changed", () => { if (!hopping) { const h = pano!.getPov().heading; if (Math.abs(angleDiff(h, heading)) > 2) { heading = h; headingTarget = h; } } });
         pano.addListener("pano_changed", () => {
           const loc = pano!.getLocation();
           setRoad(loc?.shortDescription ?? loc?.description ?? null);
         });
 
+        // One hop at a time: the next waits until the panorama has actually
+        // changed (and a beat for its tiles), or the view goes black on a
+        // slow connection.
+        let hopDone = 0;
+        pano.addListener("pano_changed", () => { hopDone = performance.now(); });
         const step = (link: google.maps.StreetViewLink) => {
           if (!link.pano || link.heading == null) return;
           hopping = true;
+          hopDone = 0;
           pano!.setPano(link.pano);
           headingTarget = link.heading;
-          setTimeout(() => { hopping = false; }, 250);
         };
+        const hopSettled = () => !hopping || (hopDone > 0 && performance.now() - hopDone > 180) || performance.now() - hopStartedAt > 2500;
+        let hopStartedAt = 0;
 
         timer = setInterval(() => {
           if (cancelled || !pano) return;
@@ -148,9 +155,11 @@ export default function StreetViewRace(props: {
           }
 
           // A hop along the road when enough speed has built up.
+          if (hopping && hopSettled()) hopping = false;
           hop += v * HOPS_PER_SEC * dt;
-          if (hop >= 1) {
+          if (hop >= 1 && !hopping) {
             hop -= 1;
+            hopStartedAt = performance.now();
             const links = (pano.getLinks() ?? []).filter((l): l is google.maps.StreetViewLink => !!l && l.heading != null);
             const want = (heading + inp.steer * 75 + 360) % 360;
             if (links.length) {
