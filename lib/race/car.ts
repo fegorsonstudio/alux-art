@@ -64,10 +64,10 @@ export class Car {
   private lastRoad = -1;
   private bodyRoll = 0;
 
-  constructor(private graph: RoadGraph, start: { edge: GEdge; t: number }, color = "#d9342b") {
+  constructor(private graph: RoadGraph, start: { edge: GEdge; t: number }, color = "#d9342b", laneFrac = 0.22) {
     this.edge = start.edge;
     this.s = start.t * start.edge.len;
-    this.lane = start.edge.width * 0.22;
+    this.lane = start.edge.width * laneFrac;
     this.heading = graph.heading(this.edge, this.dir);
 
     const built = buildCarBody(color);

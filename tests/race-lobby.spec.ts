@@ -28,6 +28,9 @@ test("two hunters meet in the lobby and start together", async ({ browser }) => 
   await expect(pb.locator("[data-phase]")).toHaveAttribute("data-phase", "racing", { timeout: 200_000 });
   await expect(pa.locator("canvas").first()).toBeVisible();
   await expect(pb.locator("canvas").first()).toBeVisible();
+  // The positions flow both ways: each page sees one other hunter racing.
+  await expect(pa.getByText(/1 other hunter racing/i)).toBeVisible({ timeout: 30_000 });
+  await expect(pb.getByText(/1 other hunter racing/i)).toBeVisible({ timeout: 30_000 });
   await a.close();
   await b.close();
 });

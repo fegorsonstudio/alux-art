@@ -502,6 +502,22 @@ Verified live: `scripts/test-bounty.mjs` on the test campaign (too fast → 409,
 prize in sight). The test campaign `7972301f` now has 10 test prizes (1 claimed). **Not yet done on a real
 phone; the owner has not driven a full hunt to the finish.** Stage 3 (live opponents) not started.
 
+**Update (2026-10-18): Bounty Run stage 3 is LIVE — race others, and a ghost when alone.** On the bounty
+page "Race others" opens a lobby per bounty over **Supabase Realtime** (`lib/race/realtime.ts`: presence on
+`race-lobby-<token>`, 5 Hz position broadcasts on `race-room-<group>`; the anon key and the CSP's
+`wss://…supabase.co` already allowed it, nothing in Supabase was configured). Anyone taps "Start the race":
+`POST /api/race/[token]/group` makes a shared start (one drop, `starts_at` 12 s ahead; migration 077
+`race_groups`, `races.group_id`, `races.path`) and the lobby broadcasts "go"; every hunter then starts
+with the group, the canvas holds the pedals and shows a countdown until the server's start time, the
+other cars appear (`buildCarBody` in `lib/race/car.ts`, eased toward the last pose and nudged by their
+speed, HTML name labels projected over the canvas), group members are spread across the road, and the
+finish ranks within the group (prizes stay first-come on the server). Each hunt keeps a path sample every
+0.5 s; alone, the fastest run on the bounty is replayed as a see-through ghost (`GET /api/race/[token]/ghost`).
+Verified live: 5 Playwright tests, including two browsers meeting in the lobby, starting together and each
+seeing the other racing. **Still not driven on a real phone by the owner.** Known limits: lobby is per bounty
+(no "near me" filter yet); the race clock trusts each phone's clock against the server's start time within
+the 15 s rule; Supabase concurrent-connection limits apply (check the plan before a big event).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

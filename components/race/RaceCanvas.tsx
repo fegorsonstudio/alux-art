@@ -96,7 +96,8 @@ export default function RaceCanvas(props: {
     const city = buildCity(tile, graph);
     scene.add(city.group);
 
-    const car = new Car(graph, near);
+    // In a group everyone starts at the same spot: spread the cars across the road.
+    const car = new Car(graph, near, "#d9342b", props.others ? (Math.random() * 0.8 - 0.4) : 0.22);
     scene.add(car.group);
     const startMark = marker("#55cdbc");
     startMark.position.set(car.x, 0, car.z);
