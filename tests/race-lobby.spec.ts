@@ -8,6 +8,8 @@ import { test, expect } from "@playwright/test";
  *   AR_TOKEN=<campaign token> npx playwright test tests/race-lobby.spec.ts
  */
 const TOKEN = process.env.AR_TOKEN ?? "";
+// Google Chrome, not the bundled Chromium: the road video is H.264, which the bundled build cannot decode.
+test.use({ channel: "chrome" });
 
 test("two hunters meet in the lobby and start together", async ({ browser }) => {
   test.skip(!TOKEN, "AR_TOKEN not set");

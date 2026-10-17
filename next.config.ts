@@ -64,18 +64,19 @@ const nextConfig: NextConfig = {
       // load Google's script and talk to its servers. The site-wide policy
       // above is untouched everywhere else.
       {
-        source: "/d/race/:path*",
+        source: "/d/:game(race|road)/:path*",
         headers: [
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com",
+              "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
-              "font-src 'self' data: https://fonts.gstatic.com",
+              "media-src 'self' blob: https://*.r2.cloudflarestorage.com",
+              "font-src 'self' data:",
               "worker-src 'self' blob:",
-              "connect-src 'self' https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com https://owdfoxglbxrqhgqbvkon.supabase.co wss://owdfoxglbxrqhgqbvkon.supabase.co",
+              "connect-src 'self' https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com https://owdfoxglbxrqhgqbvkon.supabase.co wss://owdfoxglbxrqhgqbvkon.supabase.co",
               "frame-ancestors 'none'",
             ].join("; "),
           },

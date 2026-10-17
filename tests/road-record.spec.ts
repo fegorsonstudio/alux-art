@@ -8,8 +8,9 @@ import { test, expect } from "@playwright/test";
  *   AR_TOKEN=<campaign token> npx playwright test tests/road-record.spec.ts
  */
 const TOKEN = process.env.AR_TOKEN ?? "";
-
+// Google Chrome, not the bundled Chromium: the road video is H.264, which the bundled build cannot decode.
 test.use({
+  channel: "chrome",
   launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
   permissions: ["camera", "geolocation"],
   geolocation: { latitude: 9.1178, longitude: 7.3929 },
