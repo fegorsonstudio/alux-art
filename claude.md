@@ -518,6 +518,23 @@ seeing the other racing. **Still not driven on a real phone by the owner.** Know
 (no "near me" filter yet); the race clock trusts each phone's clock against the server's start time within
 the 15 s rule; Supabase concurrent-connection limits apply (check the plan before a big event).
 
+**Update (2026-10-18, later): the hunt now drives through REAL Google Street View (owner: "it looks like a
+cartoon… I want real Street View, no animation").** `components/race/StreetViewRace.tsx` replaces the 3D
+canvas for `/d/race/<token>`: the Maps JavaScript API panorama (`lib/race/gmaps.ts` loader, key
+`NEXT_PUBLIC_GOOGLE_MAPS_KEY`) is the world; GO builds speed into hops along the panorama's own links in
+the direction faced (one hop at a time, 450 ms dwell after `pano_changed` so the view never goes black;
+max ~1.5 hops/s), the wheel turns the view and biases the branch at a junction, STOP/N as before. Finish =
+within 28 m of the pin by GPS distance; path samples are [lat, lng, heading]; poses in Realtime are now
+lat/lng; the other hunters, the ghost and the balloons are `google.maps.Marker`s inside the panorama
+(deprecated-but-supported API; AdvancedMarkerElement is the eventual replacement); the minimap still
+comes from the OSM tile. **Cost:** one "Dynamic Street View" load per hunt per player ($14/1,000 after
+5,000 free a month), nothing per step. **Only `/d/race/*` gets a CSP that allows Google's script**
+(second headers rule in `next.config.ts`; the site-wide CSP is unchanged). Coverage: Lagos Island has
+panoramas within metres of the test pin; an uncovered drop says so and offers another street. The 3D
+demo (`/d/race/demo`) stays as it was. Verified live: hunt + lobby Playwright tests, screenshots (HUD above
+Google's layers after a z-index fix; a single hop renders the next real photo). **Not yet driven on a real
+phone by the owner.** Known: Google's logo/terms strip stays (required by Google's terms).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
