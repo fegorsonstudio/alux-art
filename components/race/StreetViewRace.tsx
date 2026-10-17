@@ -5,6 +5,7 @@ import { loadGoogleMaps, distanceM, bearingDeg, angleDiff, carIcon, balloonIcon 
 import { projector, type RoadTile } from "@/lib/race/types";
 import type { Pose } from "@/lib/race/realtime";
 import { Traffic, carSprite, personSprite, type SpriteView } from "@/lib/race/traffic";
+import { SpriteLayer } from "@/lib/race/sprite-layer";
 import styles from "./race.module.css";
 
 /**
@@ -12,7 +13,7 @@ import styles from "./race.module.css";
  * steps it along the road photo by photo in the direction you are facing,
  * the wheel turns you and picks the way at a junction, STOP holds. The
  * minimap and the prize arrow come from the OpenStreetMap tile. The other
- * hunters, the ghost and the balloons are markers in the panorama.
+ * hunters, the ghost, the balloons and our traffic are pictures in a layer of ours, placed by projection.
  */
 
 export type Finish = { lat: number; lng: number; brand: string; colors: [string, string]; logoUrl: string | null };
@@ -25,6 +26,15 @@ export type RaceEvent =
 const FINISH_RADIUS = 28;
 const HOPS_PER_SEC = 1.6;
 const OPPONENT_COLORS = ["#2f8e9a", "#ffd166", "#8e44ad", "#27ae60", "#e67e22", "#3498db"];
+
+/** Which side of a car or person the player sees, from its heading and where it is relative to them. */
+const viewOf = (h: number, bear: number): SpriteView => {
+  const rel = angleDiff(h, bear);
+  if (Math.abs(rel) < 55) return "back";
+  if (Math.abs(rel) > 125) return "front";
+  return Math.abs(angleDiff(h, bear + 90)) < 90 ? "right" : "left";
+};
+const carBox = (view: SpriteView) => ({ wM: view === "back" || view === "front" ? 1.9 : 4.3, hM: 1.5 });
 
 export default function StreetViewRace(props: {
   tile: RoadTile;
@@ -53,6 +63,7 @@ export default function StreetViewRace(props: {
 
   const panoRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLDivElement>(null);
+  const spriteRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
   const input = useRef({ throttle: 0, brake: 0, steer: 0, nitro: false });
@@ -67,7 +78,7 @@ export default function StreetViewRace(props: {
     let cancelled = false;
     let timer: ReturnType<typeof setInterval> | null = null;
     let pano: google.maps.StreetViewPanorama | null = null;
-    const markers: google.maps.Marker[] = [];
+    let layer: SpriteLayer | null = null;
     const { finish, tile } = props;
     const { toXZ } = projector(tile.lat, tile.lng);
 
@@ -130,32 +141,15 @@ export default function StreetViewRace(props: {
           return true;
         };
 
+        // Everything drawn over the photo (prize, rivals, ghost, our traffic)
+        // lives in the sprite layer: our own pictures at projected positions.
+        layer = spriteRef.current ? new SpriteLayer(g, pano, spriteRef.current) : null;
+        const prizeUrl = balloonIcon(finish.colors[0], finish.colors[1]);
         // Our own traffic: cars and people on the OpenStreetMap roads around
-        // the player, drawn over the photo. (The cars and people in the photos
-        // are pixels and cannot move.)
+        // the player. (The cars and people in the photos are pixels and cannot move.)
         const traffic = new Traffic(tile, 3, 2);
-        const sprites: { m: google.maps.Marker; key: string }[] = [];
-        for (let i = 0; i < traffic.agents.length; i++) {
-          const m = new g.maps.Marker({ map: null, position: props.drop, clickable: false, optimized: false });
-          sprites.push({ m, key: "" }); markers.push(m);
-        }
-
-        if (props.debug) (window as unknown as Record<string, unknown>).__svr = { pano, pre, traffic, sprites, g };
-
-        // The prize.
-        markers.push(new g.maps.Marker({
-          position: { lat: finish.lat, lng: finish.lng }, map: pano, title: finish.brand,
-          icon: { url: balloonIcon(finish.colors[0], finish.colors[1]), scaledSize: new g.maps.Size(72, 96), anchor: new g.maps.Point(36, 96) },
-        }));
-
-        // The others and the ghost, as cars.
-        const rivals = new Map<string, google.maps.Marker>();
-        let ghostMarker: google.maps.Marker | null = null;
-        if (props.ghost && props.ghost.path.length > 1) {
-          ghostMarker = new g.maps.Marker({ position: { lat: props.ghost.path[0][0], lng: props.ghost.path[0][1] }, map: pano, title: `${props.ghost.player} (ghost)`,
-            icon: { url: carIcon("#ffffff", true), scaledSize: new g.maps.Size(44, 44), anchor: new g.maps.Point(22, 40) }, label: { text: `${props.ghost.player} (ghost)`, color: "#fff", fontSize: "11px", fontWeight: "700" } });
-          markers.push(ghostMarker);
-        }
+        const rivalPos = new Map<string, { lat: number; lng: number; color: string }>();
+        if (props.debug) (window as unknown as Record<string, unknown>).__svr = { pano, pre, traffic, layer, g };
 
         // Driving.
         let v = 0, hop = 0, heading = pano.getPov().heading, headingTarget = heading, last = performance.now();
@@ -267,51 +261,43 @@ export default function StreetViewRace(props: {
               if (moved && !finished) setClock(now - t0);
               if (startsAt != null) setCountdown(waiting ? Math.ceil((startsAt - Date.now()) / 1000) : null);
               drawMap(lat, lng, heading);
-              if (props.debug) setDbg(`speed ${(v * 20).toFixed(1)} m/s heading ${Math.round(heading)} links ${(pano.getLinks() ?? []).length}\nlat ${lat.toFixed(5)} lng ${lng.toFixed(5)} to prize ${Math.round(d)} m rivals ${rivals.size} traffic ${traffic.agents.filter((a) => a.alive).length}`);
+              if (props.debug) setDbg(`speed ${(v * 20).toFixed(1)} m/s heading ${Math.round(heading)} links ${(pano.getLinks() ?? []).length}\nlat ${lat.toFixed(5)} lng ${lng.toFixed(5)} to prize ${Math.round(d)} m rivals ${rivalPos.size} traffic ${traffic.agents.filter((a) => a.alive).length}`);
             }
 
-            // Traffic: move everyone, then draw each as a marker sized by distance.
+            // The prize balloon, floating over the pin; a small beacon from afar.
+            layer?.place("prize", finish.lat, finish.lng, { url: prizeUrl, wM: 9, hM: 12, liftM: 10, minPx: 44, maxPx: 520 });
+
+            // Traffic: move everyone, then draw each at its projected spot.
             traffic.update(dt, lat, lng);
-            traffic.agents.forEach((a, i) => {
-              const s = sprites[i];
-              if (!a.alive) { if (s.key) { s.m.setMap(null); s.key = ""; } return; }
-              const dist = Math.max(3, distanceM(lat, lng, a.lat, a.lng));
-              const bear = bearingDeg(lat, lng, a.lat, a.lng);
-              const rel = angleDiff(a.heading, bear);
-              let view: SpriteView;
-              if (Math.abs(rel) < 55) view = "back";
-              else if (Math.abs(rel) > 125) view = "front";
-              else view = Math.abs(angleDiff(a.heading, bear + 90)) < 90 ? "right" : "left";
-              let w: number, h: number, url: string;
-              if (a.kind === "car") { w = Math.round(Math.min(170, Math.max(8, 460 / dist)) / 3) * 3; h = Math.round(w * 0.75); url = carSprite(a.color, view); }
-              else { h = Math.round(Math.min(170, Math.max(10, 430 / dist)) / 3) * 3; w = Math.round(h * 0.44); url = personSprite(a.color, (Math.floor(now / 350) % 2) as 0 | 1, view === "left" ? "left" : "right"); }
-              const key = `${url}|${w}`;
-              s.m.setPosition({ lat: a.lat, lng: a.lng });
-              if (s.key !== key) { s.key = key; s.m.setIcon({ url, scaledSize: new g.maps.Size(w, h), anchor: new g.maps.Point(w / 2, h) }); s.m.setZIndex(Math.round(2000 - dist)); if (!s.m.getMap()) s.m.setMap(pano); }
+            if (layer) traffic.agents.forEach((a, i) => {
+              const id = `t${i}`;
+              if (!a.alive) { layer!.hide(id); return; }
+              const view = viewOf(a.heading, bearingDeg(lat, lng, a.lat, a.lng));
+              if (a.kind === "car") layer!.place(id, a.lat, a.lng, { url: carSprite(a.color, view), ...carBox(view) });
+              else layer!.place(id, a.lat, a.lng, { url: personSprite(a.color, (Math.floor(now / 350) % 2) as 0 | 1, view === "left" ? "left" : "right"), wM: 0.6, hM: 1.7 });
             });
           }
 
-          // The others: a marker each, eased toward the last pose.
-          if (props.others) {
+          // The others: a car each, eased toward the last pose, named.
+          const herePos = pano.getPosition();
+          if (props.others && layer && herePos) {
             for (const [id, p] of props.others) {
-              let m = rivals.get(id);
-              if (!m) {
-                m = new g.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map: pano, title: p.name,
-                  icon: { url: carIcon(OPPONENT_COLORS[rivals.size % OPPONENT_COLORS.length]), scaledSize: new g.maps.Size(44, 44), anchor: new g.maps.Point(22, 40) },
-                  label: { text: p.name || "Hunter", color: "#fff", fontSize: "11px", fontWeight: "700" } });
-                rivals.set(id, m); markers.push(m);
-              }
-              const cur = m.getPosition();
-              if (cur) m.setPosition({ lat: cur.lat() + (p.lat - cur.lat()) * Math.min(1, dt * 4), lng: cur.lng() + (p.lng - cur.lng()) * Math.min(1, dt * 4) });
+              let sp = rivalPos.get(id);
+              if (!sp) { sp = { lat: p.lat, lng: p.lng, color: OPPONENT_COLORS[rivalPos.size % OPPONENT_COLORS.length] }; rivalPos.set(id, sp); }
+              sp.lat += (p.lat - sp.lat) * Math.min(1, dt * 4); sp.lng += (p.lng - sp.lng) * Math.min(1, dt * 4);
+              const view = viewOf(p.h, bearingDeg(herePos.lat(), herePos.lng(), sp.lat, sp.lng));
+              layer.place(`r:${id}`, sp.lat, sp.lng, { url: carSprite(sp.color, view), ...carBox(view), label: p.name || "Hunter" });
             }
-            for (const [id, m] of rivals) if (!props.others.has(id)) { m.setMap(null); rivals.delete(id); }
+            for (const id of [...rivalPos.keys()]) if (!props.others.has(id)) { rivalPos.delete(id); layer.remove(`r:${id}`); }
           }
-          if (ghostMarker && props.ghost) {
+          if (props.ghost && props.ghost.path.length > 1 && layer && herePos) {
             const gp = props.ghost.path;
             const tg = moved ? (now - t0) / 500 : 0;
             const i = Math.min(gp.length - 1, Math.floor(tg)), f = Math.min(1, tg - i);
             const a = gp[i], b = gp[Math.min(gp.length - 1, i + 1)];
-            ghostMarker.setPosition({ lat: a[0] + (b[0] - a[0]) * f, lng: a[1] + (b[1] - a[1]) * f });
+            const glat = a[0] + (b[0] - a[0]) * f, glng = a[1] + (b[1] - a[1]) * f;
+            const view = viewOf(a[2], bearingDeg(herePos.lat(), herePos.lng(), glat, glng));
+            layer.place("ghost", glat, glng, { url: carSprite("#ffffff", view), ...carBox(view), opacity: 0.55, label: `${props.ghost.player} (ghost)` });
           }
         }, 50);
       } catch (e) {
@@ -373,7 +359,7 @@ export default function StreetViewRace(props: {
     return () => {
       cancelled = true;
       if (timer) clearInterval(timer);
-      for (const m of markers) m.setMap(null);
+      layer?.destroy();
       window.removeEventListener("keydown", kd);
       window.removeEventListener("keyup", ku);
     };
@@ -402,6 +388,7 @@ export default function StreetViewRace(props: {
     <div className={styles.stage}>
       <div ref={preRef} className={styles.gl} style={{ opacity: 0, pointerEvents: "none" }} aria-hidden />
       <div ref={panoRef} className={styles.gl} />
+      <div ref={spriteRef} className={styles.sprites} aria-hidden />
       {loading && <div className={styles.loadingPano}>{loading}</div>}
       {countdown != null && <div className={styles.countdown}>{countdown > 0 ? countdown : "GO"}</div>}
       <div className={styles.hud}>

@@ -91,3 +91,5 @@
 .countdown { z-index: 7; }
 .debug { z-index: 8; }
 .loadingPano { z-index: 7; }
+/* Our pictures over the panorama (prize, rivals, ghost, traffic). */
+.sprites { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; }
