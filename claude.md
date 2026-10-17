@@ -453,6 +453,21 @@ sampled every 500 ms for sky colour and brightness → sky light, fog and glow, 
 haptic on Android); drag looks around; walking moves the camera from smoothed GPS (`setViewerOffset`, moves
 over 6 m only). Deployed and re-verified with the 4 Playwright tests. Still unproven on a real phone.
 
+**Update (2026-10-17, evening): Google Maps Platform set up for the planned balloon race game.** Owner
+decisions: client hosting a bounty pays, so the AR campaign template is now **₦20,000** (private until
+`scripts/publish-ar-template.mjs`); the race is a virtual navigation race on real roads (Street View at
+start, junctions and finish; stylised 3D roads from OpenStreetMap), not a real-world drive. In Google Cloud
+project `fegorson-studio` (billing "Firebase Payment"): Maps JavaScript API + Street View Static API
+enabled; key "Alux Art website (balloon race)" restricted to `https://aluxartandframes.shop/*` and those
+two APIs, stored as `NEXT_PUBLIC_GOOGLE_MAPS_KEY` in the VPS `.env.local` (backup
+`/root/env.local.bak-2026-10-17-maps-key`; unused until the race is built and `next build` runs);
+quota caps 2,000/day on Maps JS loads and both Street View daily request quotas; budget "Maps balloon race
+($20 alert)" at 50/90/100 %. Done through a Playwright-driven Chrome window the owner signed into
+(`tools/browser-driver/driver.mjs`, JSON ops on 127.0.0.1:47120); the key was written to the server
+without being printed. Verified: Street View request 200 with the site Referer, 403 with a wrong one.
+**Race game: not planned in detail yet.** Next step is the staged plan (3D road from the owner's street +
+drivable car, then the bounty finish with the balloons, then nearby players and live opponents).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
