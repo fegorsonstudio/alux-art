@@ -595,6 +595,9 @@ const pcm: AppDictionary = {
     close: "Close",
     directions: "N,NE,E,SE,S,SW,W,NW",
     madeWith: "Made with Alux Art",
+    tapHint: "Tap one balloon make e fire di burner",
+    soundOn: "Sound on",
+    soundOff: "Sound off",
   },
   chatUpload: {
     title: "Send your photos for full quality",

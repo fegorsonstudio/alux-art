@@ -595,6 +595,9 @@ const pt: AppDictionary = {
     close: "Fechar",
     directions: "N,NE,E,SE,S,SO,O,NO",
     madeWith: "Feito com Alux Art",
+    tapHint: "Toque num balão para acender o queimador",
+    soundOn: "Som ligado",
+    soundOff: "Som desligado",
   },
   chatUpload: {
     title: "Envie suas fotos com qualidade máxima",

@@ -595,6 +595,9 @@ const ar: AppDictionary = {
     close: "إغلاق",
     directions: "ش,ش‌ش,ش‌ق,ج‌ق,ج,ج‌غ,غ,ش‌غ",
     madeWith: "صُنع مع Alux Art",
+    tapHint: "اضغط على منطاد لتشغيل موقده",
+    soundOn: "الصوت مفعّل",
+    soundOff: "الصوت مغلق",
   },
   chatUpload: {
     title: "أرسل صورك بجودتها الكاملة",

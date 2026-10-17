@@ -595,6 +595,9 @@ const zh: AppDictionary = {
     close: "关闭",
     directions: "北,东北,东,东南,南,西南,西,西北",
     madeWith: "由 Alux Art 制作",
+    tapHint: "点击热气球点燃它的燃烧器",
+    soundOn: "声音已开",
+    soundOff: "声音已关",
   },
   chatUpload: {
     title: "上传原画质照片",

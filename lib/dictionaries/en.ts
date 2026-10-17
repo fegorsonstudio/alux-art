@@ -594,6 +594,9 @@ const en = {
     close: "Close",
     directions: "N,NE,E,SE,S,SW,W,NW",
     madeWith: "Made with Alux Art",
+    tapHint: "Tap a balloon to fire its burner",
+    soundOn: "Sound on",
+    soundOff: "Sound off",
   },
   chatUpload: {
     title: "Send your photos in full quality",

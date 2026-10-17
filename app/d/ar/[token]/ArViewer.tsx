@@ -6,6 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import type { AppDictionary } from "@/lib/dictionaries";
 import { GeofenceTracker, type GeoState, compassIndex, formatDistance } from "@/lib/ar/geo";
 import { OrientationSource, requestMotionPermission, type HeadingSource } from "@/lib/ar/orientation";
+import { BurnerAudio } from "@/lib/ar/audio";
 import { composePhoto, sharePhoto } from "@/lib/ar/photo";
 import { sendArEvent, distanceBucket, platformOf } from "@/lib/ar/events";
 import { detectInApp, escapeUrl } from "@/lib/ar/in-app-browser";
@@ -69,7 +70,9 @@ export default function ArViewer(props: {
   const [heading, setHeading] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [thumb, setThumb] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(true);
+  const [hint, setHint] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+  const [walk, setWalk] = useState<{ east: number; north: number } | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [fps, setFps] = useState(0);
   const [here, setHere] = useState("");
@@ -79,6 +82,30 @@ export default function ArViewer(props: {
   const tracker = useRef<GeofenceTracker | null>(null);
   const orientation = useRef<OrientationSource | null>(null);
   const sceneApi = useRef<SceneApi | null>(null);
+  const audio = useRef<BurnerAudio | null>(null);
+  const geoRef = useRef<GeoState | null>(null);
+  const origin = useRef<{ lat: number; lng: number } | null>(null);
+  const hintTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  /** "You're here, look up", then "tap a balloon", then nothing. */
+  const runHints = (first: string) => {
+    hintTimers.current.forEach(clearTimeout);
+    setHint(first);
+    hintTimers.current = [
+      setTimeout(() => setHint(t.tapHint), 2800),
+      setTimeout(() => setHint(null), 7500),
+    ];
+  };
+
+  /** Where the viewer has walked since the camera opened, in metres. */
+  const updateWalk = (g: GeoState) => {
+    if (!g.fix) return;
+    const o = origin.current;
+    if (!o) return;
+    const east = (g.lng - o.lng) * 111_320 * Math.cos((o.lat * Math.PI) / 180);
+    const north = (g.lat - o.lat) * 110_540;
+    setWalk({ east, north });
+  };
   const phaseRef = useRef<Phase>("landing");
   phaseRef.current = phase;
 
@@ -118,6 +145,8 @@ export default function ArViewer(props: {
   // ---- the geofence decides between outside and active once started ----
   const onGeo = useCallback((s: GeoState) => {
     setGeo(s);
+    geoRef.current = s;
+    updateWalk(s);
     if (!started.current || props.preview) return;
     if (s.error === "denied") {
       setDenied("location");
@@ -150,17 +179,22 @@ export default function ArViewer(props: {
         return;
       }
     }
-    setShowHint(true);
-    setTimeout(() => setShowHint(false), 3500);
+    const g = geoRef.current;
+    origin.current = g?.fix ? { lat: g.lat, lng: g.lng } : null;
+    setWalk(null);
     setPhase("active");
-    setToast(t.youAreHere);
-    setTimeout(() => setToast(null), 2200);
+    runHints(t.youAreHere);
     sendArEvent(props.token, { type: "activated", preview: props.preview });
-  }, [props.token, props.preview, t.youAreHere]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.token, props.preview, t.youAreHere, t.tapHint]);
 
   // ---- Start: every permission is asked for inside this one tap ----
   const start = async () => {
     setPhase("requesting");
+    // Sound has to be unlocked by a tap; this is the tap.
+    if (!audio.current) audio.current = new BurnerAudio();
+    audio.current.muted = muted;
+    audio.current.unlock();
     const motionP = requestMotionPermission();
     const camP = openCamera().then((s) => ({ ok: true as const, s })).catch((e: unknown) => ({ ok: false as const, e }));
     if (!tracker.current && c) {
@@ -182,16 +216,18 @@ export default function ArViewer(props: {
     streamRef.current = cam.s;
     setStream(cam.s);
     started.current = true;
+    const g = geoRef.current;
     if (props.preview) {
-      setShowHint(true);
-      setTimeout(() => setShowHint(false), 3500);
+      origin.current = g?.fix ? { lat: g.lat, lng: g.lng } : null;
       setPhase("active");
+      runHints(t.tapHint);
       sendArEvent(props.token, { type: "activated", preview: true });
       return;
     }
-    const g = tracker.current ? geo : null;
     if (g?.inside) {
+      origin.current = { lat: g.lat, lng: g.lng };
       setPhase("active");
+      runHints(t.youAreHere);
       sendArEvent(props.token, { type: "activated", preview: false });
     } else {
       // The camera waits until they are at the spot.
@@ -211,9 +247,19 @@ export default function ArViewer(props: {
     orientation.current?.stop();
     orientation.current = null;
     started.current = false;
+    hintTimers.current.forEach(clearTimeout);
+    setHint(null);
     setGeo(null);
+    geoRef.current = null;
+    origin.current = null;
+    setWalk(null);
     setPhase("landing");
   };
+
+  const toggleMute = () => setMuted((m) => {
+    if (audio.current) audio.current.muted = !m;
+    return !m;
+  });
 
   const resume = async () => {
     try {
@@ -260,6 +306,8 @@ export default function ArViewer(props: {
     stopStream(streamRef.current);
     tracker.current?.stop();
     orientation.current?.stop();
+    audio.current?.close();
+    hintTimers.current.forEach(clearTimeout);
   }, []);
 
   // ---- the photo ----
@@ -420,6 +468,9 @@ export default function ArViewer(props: {
             <ArScene
               stream={stream}
               orientation={orientation.current}
+              audio={audio.current}
+              walk={walk}
+              onBurn={() => undefined}
               colors={c.colors}
               brand={c.brand}
               logoUrl={c.logoUrl}
@@ -431,11 +482,16 @@ export default function ArViewer(props: {
           <div className={styles.hud}>
             <div className={styles.hudTop}>
               <span className={styles.chip}><img className={styles.chipLogo} src={c.logoUrl} alt="" />{c.brand}{props.preview ? ` · ${t.preview}` : ""}</span>
-              <button type="button" className={styles.close} onClick={close} aria-label={t.close}>✕</button>
+              <div className={styles.hudBtns}>
+                <button type="button" className={styles.sound} onClick={toggleMute} aria-pressed={muted} aria-label={muted ? t.soundOff : t.soundOn}>
+                  {muted ? "🔇" : "🔊"}
+                </button>
+                <button type="button" className={styles.close} onClick={close} aria-label={t.close}>✕</button>
+              </div>
             </div>
             <div className={styles.hudBottom}>
-              {showHint && phase === "active" && (
-                <p className={styles.hint}>{headingSource === "drag" ? t.dragHint : t.youAreHere}</p>
+              {hint && phase === "active" && (
+                <p className={styles.hint}>{headingSource === "drag" && hint === t.youAreHere ? t.dragHint : hint}</p>
               )}
               <button type="button" className={styles.shutter} onClick={takePhoto} disabled={photoBusy || phase !== "active"}>
                 <span className={styles.shutterLabel}>{t.takePhoto}</span>
@@ -461,7 +517,7 @@ export default function ArViewer(props: {
           `phase ${phase}${props.preview ? " (preview)" : ""}`,
           `dist ${geo?.fix ? Math.round(geo.distanceM) + " m ±" + Math.round(geo.accuracyM) : "no fix"} ${geo?.stale ? "stale" : ""} inside ${geo?.inside ?? "-"}${geo?.error ? " err " + geo.error : ""}`,
           `heading ${headingSource} ${heading == null ? "-" : Math.round(heading) + "°"}`,
-          `fps ${fps} dpr ${typeof devicePixelRatio === "number" ? devicePixelRatio.toFixed(2) : "-"} balloons ${sceneApi.current?.balloons() ?? "-"}`,
+          `fps ${fps} dpr ${typeof devicePixelRatio === "number" ? devicePixelRatio.toFixed(2) : "-"} balloons ${sceneApi.current?.balloons() ?? "-"} night ${sceneApi.current?.night() ?? "-"} walk ${walk ? Math.round(walk.east) + "," + Math.round(walk.north) : "-"}`,
           `video ${sceneApi.current?.video.videoWidth ?? 0}x${sceneApi.current?.video.videoHeight ?? 0} secure ${typeof window !== "undefined" ? window.isSecureContext : "-"}`,
         ].join("\n")}</pre>
       )}

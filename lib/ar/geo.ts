@@ -29,6 +29,9 @@ export function compassIndex(deg: number): number {
 
 export type GeoState = {
   fix: boolean;
+  /** Smoothed position, for walking parallax. */
+  lat: number;
+  lng: number;
   distanceM: number;
   accuracyM: number;
   bearingDeg: number;
@@ -125,14 +128,14 @@ export class GeofenceTracker {
       this.outsideSince = 0;
     }
     this.onChange(this.state({
-      fix: true, distanceM: d, accuracyM: best,
+      fix: true, lat, lng, distanceM: d, accuracyM: best,
       bearingDeg: bearingDeg(lat, lng, this.target.lat, this.target.lng),
       inside: this.inside, stale: false,
     }));
   }
 
   private state(partial: Partial<GeoState>): GeoState {
-    return { fix: false, distanceM: 0, accuracyM: 0, bearingDeg: 0, inside: this.inside, stale: false, ...partial };
+    return { fix: false, lat: 0, lng: 0, distanceM: 0, accuracyM: 0, bearingDeg: 0, inside: this.inside, stale: false, ...partial };
   }
 }
 
