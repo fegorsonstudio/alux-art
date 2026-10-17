@@ -144,8 +144,9 @@ export default function RaceCanvas(props: {
           label.className = styles.rivalLabel;
           label.textContent = p.name || "Hunter";
           labels?.appendChild(label);
-          rivals.set(id, { body: built.body, wheels: built.wheels, x: p.x, z: p.z, h: p.h, label });
-          built.body.position.set(p.x, 0, p.z);
+          const [px, pz] = toXZ(p.lat, p.lng);
+          rivals.set(id, { body: built.body, wheels: built.wheels, x: px, z: pz, h: (p.h * Math.PI) / 180, label });
+          built.body.position.set(px, 0, pz);
         }
       }
       for (const [id, r] of rivals) {
@@ -187,7 +188,7 @@ export default function RaceCanvas(props: {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    const { toLatLng } = projector(tile.lat, tile.lng);
+    const { toLatLng, toXZ } = projector(tile.lat, tile.lng);
     const map = mapRef.current?.getContext("2d") ?? null;
     const events: CarEvent[] = [];
     let last = performance.now(), fpsAcc = 0, fpsN = 0, fps = 0, hudAt = 0, running = true, raf = 0, t0 = performance.now(), finished = false, moved = false;
@@ -244,15 +245,17 @@ export default function RaceCanvas(props: {
       } else if (!moved && inp.throttle > 0) { moved = true; t0 = now; }
       car.update(dt, inp, events);
       if (moved && !finished && now - lastSample >= 500) { lastSample = now; path.push([car.x, car.z, car.heading]); }
-      onPose.current?.(car.x, car.z, car.heading, car.speed);
+      { const [la, ln] = toLatLng(car.x, car.z); onPose.current?.(la, ln, (car.heading * 180) / Math.PI, car.speed); }
       syncRivals();
       for (const [id, r] of rivals) {
         const p = others!.get(id)!;
         // Ease toward the last pose, nudged along by its own speed since then.
         const age = Math.min(1, (performance.now() - p.t) / 1000);
-        const tx = p.x + Math.sin(p.h) * p.v * age, tz = p.z - Math.cos(p.h) * p.v * age;
+        const [ppx, ppz] = toXZ(p.lat, p.lng);
+        const ph = (p.h * Math.PI) / 180;
+        const tx = ppx + Math.sin(ph) * p.v * age, tz = ppz - Math.cos(ph) * p.v * age;
         r.x += (tx - r.x) * Math.min(1, dt * 6); r.z += (tz - r.z) * Math.min(1, dt * 6);
-        let dh = p.h - r.h; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
+        let dh = ph - r.h; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
         r.h += dh * Math.min(1, dt * 6);
         r.body.position.set(r.x, 0, r.z);
         r.body.rotation.y = -r.h;

@@ -16,7 +16,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
  */
 
 export type Hunter = { id: string; name: string; joinedAt: number };
-export type Pose = { id: string; name: string; x: number; z: number; h: number; v: number; t: number };
+export type Pose = { id: string; name: string; lat: number; lng: number; h: number; v: number; t: number };
 export type GoMessage = { groupId: string; startsAt: string; by: string };
 
 export const clientId = (): string => {
@@ -64,11 +64,11 @@ export class Room {
     this.ch.subscribe();
   }
   /** Call every frame; sends five times a second. */
-  send(x: number, z: number, h: number, v: number) {
+  send(lat: number, lng: number, h: number, v: number) {
     const now = performance.now();
     if (now - this.lastSent < 200) return;
     this.lastSent = now;
-    void this.ch.send({ type: "broadcast", event: "pose", payload: { id: this.me.id, name: this.me.name, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10, h: Math.round(h * 1000) / 1000, v: Math.round(v * 10) / 10 } });
+    void this.ch.send({ type: "broadcast", event: "pose", payload: { id: this.me.id, name: this.me.name, lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, h: Math.round(h * 10) / 10, v: Math.round(v * 10) / 10 } });
   }
   async leave() { try { await this.ch.unsubscribe(); } catch { /* gone anyway */ } }
 }

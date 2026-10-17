@@ -81,3 +81,6 @@
 .labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .rivalLabel { position: absolute; left: 0; top: 0; padding: 3px 8px; border-radius: 999px; background: rgba(10, 20, 24, 0.7); color: #fff; font-size: 0.72rem; font-weight: 700; white-space: nowrap; will-change: transform; }
 .countdown { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: 5rem; font-weight: 800; color: #fff; text-shadow: 0 6px 30px rgba(0, 0, 0, 0.5); pointer-events: none; }
+
+/* ---- Street View ---- */
+.loadingPano { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 20, 24, 0.7); color: #eaf8f6; font-weight: 700; z-index: 3; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import RaceCanvas, { type Finish, type Ghost, type RaceEvent } from "@/components/race/RaceCanvas";
+import StreetViewRace, { type Finish, type Ghost, type RaceEvent } from "@/components/race/StreetViewRace";
 import { fetchTile } from "../demo/RaceGame";
 import { Lobby, Room, clientId, type GoMessage, type Hunter, type Pose } from "@/lib/race/realtime";
 import type { RoadTile } from "@/lib/race/types";
@@ -9,10 +9,11 @@ import styles from "../demo/race.module.css";
 import own from "./bounty.module.css";
 
 /**
- * The hunt: name, "Hunt" (alone, against the best run's ghost) or "Race
- * others" (a lobby; one shared start for everyone in it, the other cars live
- * on your streets). Drop on a real street, race the clock to the balloons,
- * pop one, get the code. The server decides who gets a prize.
+ * The hunt, through real Google Street View: name, "Hunt" (alone, against
+ * the best run's ghost) or "Race others" (a lobby; one shared start for
+ * everyone in it, the other cars live on the real street). Drop on a real
+ * street, race the clock to the balloons, pop one, get the code. The server
+ * decides who gets a prize.
  */
 
 type Bounty = {
@@ -22,7 +23,7 @@ type Bounty = {
 type Phase = "landing" | "lobby" | "starting" | "racing" | "claiming" | "done" | "error";
 type Result = { place: number; elapsedMs: number; prize: { code: string; label: string } | null; prizesLeft: number };
 type Board = { counts: { prizesLeft: number; races: number; finished: number }; top: { place: number; player: string; elapsedMs: number; won: boolean }[] };
-type Started = { raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
+type Started = { raceId: string; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
 
 const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}.${String(Math.floor((ms % 1000) / 100))}`;
 
@@ -38,7 +39,7 @@ export default function BountyRace(props: {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [tile, setTile] = useState<RoadTile | null>(null);
-  const [race, setRace] = useState<{ raceId: string; drop: { x: number; z: number }; finish: Finish; routeM: number; startsAt: number | null; group: boolean } | null>(null);
+  const [race, setRace] = useState<{ raceId: string; drop: { lat: number; lng: number }; finish: Finish; routeM: number; startsAt: number | null; group: boolean } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [pops, setPops] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -94,7 +95,6 @@ export default function BountyRace(props: {
       }
       if (!started) throw new Error("Could not start the hunt.");
       const t = await fetchTile(started.tile);
-      // Alone: the best earlier run rides along as a ghost. With others: no ghost, they are real.
       let g: Ghost | null = null;
       if (!groupId) {
         try {
@@ -106,12 +106,13 @@ export default function BountyRace(props: {
         others.current.clear();
         room.current?.leave();
         room.current = new Room(groupId, me.current);
+        room.current.others.clear();
       }
       setGhost(g);
       setTile(t);
       setRace({
-        raceId: started.raceId, drop: started.drop, routeM: started.routeM,
-        finish: { x: started.finish.x, z: started.finish.z, brand: b.brand, colors: b.colors, logoUrl: b.logoUrl },
+        raceId: started.raceId, drop: started.dropLatLng, routeM: started.routeM,
+        finish: { lat: started.finishLatLng.lat, lng: started.finishLatLng.lng, brand: b.brand, colors: b.colors, logoUrl: b.logoUrl },
         startsAt: started.startsAt ? new Date(started.startsAt).getTime() : null,
         group: !!groupId,
       });
@@ -170,7 +171,8 @@ export default function BountyRace(props: {
   };
 
   const onEvent = async (e: RaceEvent) => {
-    if (e.type === "junction") return;
+    if (e.type === "nocoverage") { setError("Google has no Street View photos near this drop point yet. Try again for another street."); setPhase("error"); return; }
+    if (e.type === "error") { setError(e.message); setPhase("error"); return; }
     if (e.type === "finish" && race && !finishing.current) {
       finishing.current = true;
       setPhase("claiming");
@@ -191,9 +193,12 @@ export default function BountyRace(props: {
     }
   };
 
-  const onPose = (x: number, z: number, h: number, v: number) => {
-    room.current?.send(x, z, h, v);
-    if (room.current && room.current.others.size !== rivals) setRivals(room.current.others.size);
+  const onPose = (lat: number, lng: number, h: number, v: number) => {
+    const r = room.current;
+    if (!r) return;
+    r.send(lat, lng, h, v);
+    // The canvas reads the room's map directly; keep the pill in step.
+    if (r.others.size !== rivals) setRivals(r.others.size);
   };
 
   const pop = () => {
@@ -206,7 +211,6 @@ export default function BountyRace(props: {
   };
   const again = () => { room.current?.leave(); room.current = null; others.current.clear(); setRivals(0); setRace(null); setPhase("landing"); };
 
-  // ---- screens ----
   const panel = (children: React.ReactNode) => (
     <main className={styles.panelWrap}><section className={styles.panel}>{children}</section></main>
   );
@@ -236,7 +240,7 @@ export default function BountyRace(props: {
             <span className={own.prizeLabel}>{b.prizeLabel || "A prize"}</span>
             <span className={own.prizeLeft}>{b.prizesLeft} of {b.prizes} prizes left · {b.races} hunts so far</span>
           </div>
-          <p className={styles.note}>You are dropped on a real street a short drive away. Race to the balloons. First to arrive takes the next prize code and shows it at the counter.</p>
+          <p className={styles.note}>You are dropped on a real street a short drive away, in real Street View. Race to the balloons. First to arrive takes the next prize code and shows it at the counter.</p>
           <input className={own.name} value={name} maxLength={24} placeholder="Your hunter name" onChange={(e) => setName(e.target.value)} />
           {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
           {phase === "starting"
@@ -255,7 +259,7 @@ export default function BountyRace(props: {
               ))}
             </div>
           )}
-          <p className={styles.note}>Steer with the wheel, GO and STOP with the pedals, N is nitro. Hold the wheel left or right at a junction to pick the turn. The arrow on the map points at the prize. Alone, the fastest run so far rides along as a ghost.</p>
+          <p className={styles.note}>Hold GO to drive down the real street, photo by photo. Turn the wheel to look around and to pick the way at a junction. STOP holds, N is nitro. The arrow on the map points at the prize. Alone, the fastest run so far rides along as a ghost.</p>
         </>,
       )}
 
@@ -275,9 +279,9 @@ export default function BountyRace(props: {
       )}
 
       {(phase === "racing" || phase === "claiming" || phase === "done") && tile && race && (
-        <RaceCanvas
-          tile={tile} start={race.drop} finish={race.finish} mapsKey={props.mapsKey} debug={props.debug}
-          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? others.current : undefined}
+        <StreetViewRace
+          tile={tile} drop={race.drop} finish={race.finish} mapsKey={props.mapsKey} debug={props.debug}
+          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? room.current?.others : undefined}
           ghost={ghost} onPose={race.group ? onPose : undefined} onEvent={onEvent}
         />
       )}

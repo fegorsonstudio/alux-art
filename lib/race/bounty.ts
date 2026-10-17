@@ -39,11 +39,17 @@ export async function bountyCounts(campaignId: string): Promise<BountyCounts> {
   return { prizes: p?.n ?? 0, prizesLeft: p?.left ?? 0, races: r?.n ?? 0, finished: r?.f ?? 0 };
 }
 
+/** Tile metres → degrees. */
+export function tileToLatLng(tile: { lat: number; lng: number }, x: number, z: number): { lat: number; lng: number } {
+  const mx = 111_320 * Math.cos((tile.lat * Math.PI) / 180), mz = 110_540;
+  return { lat: tile.lat - z / mz, lng: tile.lng + x / mx };
+}
+
 export type StartAnswer =
   | { status: "pending" }
   | { status: "full" }
   | { status: "noroads" }
-  | { status: "ok"; raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
+  | { status: "ok"; raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
 
 /** A new hunt: a drop point on a real street some way from the pin. */
 export type Group = { id: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; startsAt: string; tile: { lat: number; lng: number } };
@@ -91,7 +97,7 @@ export async function startRace(c: ArCampaignRow, player: string, ipHash: string
     const [row] = await sql<{ id: string }[]>`
       INSERT INTO races (campaign_id, player, drop_x, drop_z, route_m, ip_hash, group_id, started_at)
       VALUES (${c.id}, ${player.slice(0, 24)}, ${g.drop_x}, ${g.drop_z}, ${g.route_m}, ${ipHash}, ${g.id}, ${g.starts_at}) RETURNING id`;
-    return { status: "ok", raceId: row.id, drop: { x: g.drop_x, z: g.drop_z }, finish: { x: finish.x, z: finish.z }, routeM: g.route_m, tile: { lat: t.tile.lat, lng: t.tile.lng }, startsAt: new Date(g.starts_at).toISOString() };
+    return { status: "ok", raceId: row.id, drop: { x: g.drop_x, z: g.drop_z }, finish: { x: finish.x, z: finish.z }, dropLatLng: tileToLatLng(t.tile, g.drop_x, g.drop_z), finishLatLng: { lat: c.lat, lng: c.lng }, routeM: g.route_m, tile: { lat: t.tile.lat, lng: t.tile.lng }, startsAt: new Date(g.starts_at).toISOString() };
   }
   const t = await getTile(c.lat, c.lng, 2500);
   if (t.status === "pending") return { status: "pending" };
@@ -107,7 +113,7 @@ export async function startRace(c: ArCampaignRow, player: string, ipHash: string
   const [row] = await sql<{ id: string }[]>`
     INSERT INTO races (campaign_id, player, drop_x, drop_z, route_m, ip_hash)
     VALUES (${c.id}, ${player.slice(0, 24)}, ${drop.node.x}, ${drop.node.z}, ${drop.routeM}, ${ipHash}) RETURNING id`;
-  return { status: "ok", raceId: row.id, drop: { x: drop.node.x, z: drop.node.z }, finish: { x: finish.x, z: finish.z }, routeM: drop.routeM, tile: { lat: t.tile.lat, lng: t.tile.lng } };
+  return { status: "ok", raceId: row.id, drop: { x: drop.node.x, z: drop.node.z }, finish: { x: finish.x, z: finish.z }, dropLatLng: tileToLatLng(t.tile, drop.node.x, drop.node.z), finishLatLng: { lat: c.lat, lng: c.lng }, routeM: drop.routeM, tile: { lat: t.tile.lat, lng: t.tile.lng } };
 }
 
 /** The fastest a car can possibly cover the route, with a margin. */
