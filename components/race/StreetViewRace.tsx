@@ -22,7 +22,7 @@ export type RaceEvent =
   | { type: "error"; message: string };
 
 const FINISH_RADIUS = 28;
-const HOPS_PER_SEC = 1.5;
+const HOPS_PER_SEC = 1.3;
 const OPPONENT_COLORS = ["#2f8e9a", "#ffd166", "#8e44ad", "#27ae60", "#e67e22", "#3498db"];
 
 export default function StreetViewRace(props: {
@@ -129,7 +129,7 @@ export default function StreetViewRace(props: {
         };
         // Give each photo time to arrive before the next one is asked for: a
         // hop every 1.5 s at full speed reads as a brisk drive and never goes black.
-        const hopSettled = () => !hopping || (hopDone > 0 && performance.now() - hopDone > 450) || performance.now() - hopStartedAt > 2500;
+        const hopSettled = () => !hopping || (hopDone > 0 && performance.now() - hopDone > 700) || performance.now() - hopStartedAt > 2500;
         let hopStartedAt = 0;
 
         timer = setInterval(() => {
