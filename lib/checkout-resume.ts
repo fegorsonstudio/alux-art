@@ -86,6 +86,8 @@ export interface PendingConfig {
   arPin?: { lat: number; lng: number } | null;
   arRadius?: number;
   arStart?: string;
+  arPrizeCount?: number;
+  arPrizeLabel?: string;
 }
 
 export interface PendingFile {

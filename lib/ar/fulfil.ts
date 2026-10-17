@@ -6,6 +6,7 @@ import { r2Download, r2Upload, r2Delete, r2ProxyUrl } from "@/lib/r2";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import { SITE_URL } from "@/lib/site-url";
 import { arMapsUrl, arPreviewUrl, arPublicUrl } from "@/lib/ar/campaign";
+import { createPrizes } from "@/lib/race/bounty";
 
 /**
  * Turns a paid `ar_experience` shoot into a live campaign.
@@ -34,6 +35,9 @@ export type ArBooking = {
   radiusM: number;
   /** YYYY-MM-DD, Lagos midnight. */
   startsAt: string;
+  /** Bounty Run: how many prize codes to make, and what a prize is. */
+  prizeCount?: number;
+  prizeLabel?: string;
 };
 
 type WorkerResult = { done: true; completed: number; failed: number; remaining: 0; total: 1 };
@@ -64,6 +68,8 @@ function readBooking(enhance: Record<string, unknown> | null): ArBooking {
     tagline: String(e.tagline ?? "").trim().slice(0, 60),
     logoPath, logoBucket: String(e.logoBucket ?? "identity-images"),
     colors: [colors[0], colors[1]], lat, lng, radiusM, startsAt,
+    prizeCount: Math.max(0, Math.min(200, Math.round(Number(e.prizeCount ?? 10)) || 0)),
+    prizeLabel: String(e.prizeLabel ?? "").trim().slice(0, 60),
   };
 }
 
@@ -106,12 +112,12 @@ export async function fulfilArCampaign(
         INSERT INTO ar_campaigns
           (id, shoot_id, user_id, token, preview_token, status, brand_name, tagline,
            logo_bucket, logo_path, color_primary, color_secondary, lat, lng, radius_m,
-           starts_at, ends_at)
+           starts_at, ends_at, prize_label)
         VALUES
           (${campaignId}, ${shootId}, ${userId}, ${token()}, ${token()}, 'active',
            ${booking.brandName}, ${booking.tagline}, 'template-images', ${logoPath},
            ${booking.colors[0]}, ${booking.colors[1]}, ${booking.lat}, ${booking.lng},
-           ${booking.radiusM}, ${startsAt}, ${endsAt})
+           ${booking.radiusM}, ${startsAt}, ${endsAt}, ${booking.prizeLabel ?? ""})
         ON CONFLICT (shoot_id) DO NOTHING`;
       [row] = await sql`SELECT id, token, preview_token, logo_path, starts_at, ends_at FROM ar_campaigns WHERE shoot_id = ${shootId}`;
       if (!row) throw new Error("Campaign row did not save");
@@ -120,6 +126,8 @@ export async function fulfilArCampaign(
         await r2Delete("template-images", [logoPath]).catch(() => undefined);
       } else {
         fresh = true;
+        // The bounty: prize codes a cashier can read out, handed out by the race server.
+        if (booking.prizeCount) await createPrizes(campaignId, booking.prizeCount, booking.prizeLabel || "Prize");
       }
     }
 
@@ -136,6 +144,7 @@ export async function fulfilArCampaign(
         `Buyer: ${esc(owner?.owner_email ?? "unknown")}\n` +
         `Where: ${arMapsUrl(booking.lat, booking.lng)} (${booking.radiusM} m)\n` +
         `Runs: ${fmt(row.starts_at)} – ${fmt(row.ends_at)}\n` +
+        (booking.prizeCount ? `Bounty: ${booking.prizeCount} × ${esc(booking.prizeLabel || "Prize")} · race link ${arPublicUrl(row.token).replace("/d/ar/", "/d/race/")}\n` : "") +
         `Public: ${arPublicUrl(row.token)}\n` +
         `Preview anywhere: ${arPreviewUrl(row.token, row.preview_token)}\n` +
         `Admin: ${SITE_URL}/admin/ar`;

@@ -18,6 +18,8 @@ type Campaign = {
   publicUrl: string; previewUrl: string; logoUrl: string; mapsUrl: string;
   counts: { opens: number; activations: number; photos: number };
   buyerEmail: string | null; bookedAt: string; colors: [string, string];
+  raceUrl: string; prizeLabel: string;
+  bounty: { prizes: number; prizesLeft: number; races: number; finished: number };
 };
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
@@ -142,11 +144,13 @@ export default function AdminArPage() {
                     </p>
                     <p className={cs.hintSmall}>
                       {c.counts.opens} opens · {c.counts.activations} activations · {c.counts.photos} photos
+                      {c.bounty.prizes > 0 && <> · bounty: {c.bounty.prizesLeft} of {c.bounty.prizes} prizes left ({c.prizeLabel}), {c.bounty.races} hunts, {c.bounty.finished} finished</>}
                     </p>
                     <div className={cs.btns}>
                       <a className={`${cs.btn} ${cs.btnGhost} ${cs.btnSmall}`} href={c.publicUrl} target="_blank" rel="noopener noreferrer">Public link</a>
                       <a className={`${cs.btn} ${cs.btnGhost} ${cs.btnSmall}`} href={c.previewUrl} target="_blank" rel="noopener noreferrer">Preview anywhere</a>
                       <a className={`${cs.btn} ${cs.btnGhost} ${cs.btnSmall}`} href={c.mapsUrl} target="_blank" rel="noopener noreferrer">Map</a>
+                      {c.bounty.prizes > 0 && <a className={`${cs.btn} ${cs.btnGhost} ${cs.btnSmall}`} href={c.raceUrl} target="_blank" rel="noopener noreferrer">Race link</a>}
                       <button type="button" className={`${cs.btn} ${c.suspended ? cs.btnGhost : cs.btnDanger} ${cs.btnSmall}`}
                         disabled={busy === c.id} onClick={() => flip(c)}>
                         {c.suspended ? "Unsuspend" : "Suspend"}

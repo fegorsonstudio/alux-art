@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { requireAdmin } from "@/lib/carousel/posts";
-import { viewOf, type ArCampaignRow } from "@/lib/ar/campaign";
+import { viewOf, bountyCountsOf, type ArCampaignRow } from "@/lib/ar/campaign";
 
 /**
  * Every AR balloon campaign, newest first, and the one switch the owner has:
@@ -28,8 +28,9 @@ export async function GET() {
     m[c.type] = c.n;
     byId.set(c.campaign_id, m);
   }
-  const campaigns = rows.map((r) => ({
-    ...viewOf(r, byId.get(r.id) ?? {}),
+  const bounties = await Promise.all(rows.map((r) => bountyCountsOf(r.id)));
+  const campaigns = rows.map((r, i) => ({
+    ...viewOf(r, byId.get(r.id) ?? {}, bounties[i]),
     buyerEmail: r.owner_email,
     bookedAt: new Date(r.booked_at).toISOString(),
     colors: [r.color_primary, r.color_secondary],

@@ -30,6 +30,9 @@ export type ArCampaignRow = {
   lng: number;
   radius_m: number;
   balloon_count: number;
+  /** Bounty Run: what a prize is, and how many hunts the campaign allows. */
+  prize_label: string;
+  max_races: number;
   starts_at: Date;
   ends_at: Date;
   created_at: Date;
@@ -91,10 +94,17 @@ export type ArCampaignView = {
   logoUrl: string;
   mapsUrl: string;
   counts: { opens: number; activations: number; photos: number };
+  /** Bounty Run: the race link and how the prizes are going. */
+  raceUrl: string;
+  prizeLabel: string;
+  bounty: { prizes: number; prizesLeft: number; races: number; finished: number };
 };
 
-export function viewOf(row: ArCampaignRow, counts: Record<string, number>): ArCampaignView {
+export function viewOf(row: ArCampaignRow, counts: Record<string, number>, bounty = { prizes: 0, prizesLeft: 0, races: 0, finished: 0 }): ArCampaignView {
   return {
+    raceUrl: `${SITE_URL}/d/race/${row.token}`,
+    prizeLabel: row.prize_label ?? "",
+    bounty,
     id: row.id,
     shootId: row.shoot_id,
     brandName: row.brand_name,
@@ -125,5 +135,15 @@ export async function campaignForShoot(shootId: string, userId: string | null): 
     : await sql<ArCampaignRow[]>`SELECT * FROM ar_campaigns WHERE shoot_id = ${shootId}`;
   const row = rows[0];
   if (!row) return null;
-  return viewOf(row, await campaignCounts(row.id));
+  const [counts, bounty] = await Promise.all([campaignCounts(row.id), bountyCountsOf(row.id)]);
+  return viewOf(row, counts, bounty);
+}
+
+/** Prize and hunt counts, kept here so the studio and admin read them the same way. */
+export async function bountyCountsOf(campaignId: string) {
+  const [p] = await sql<{ n: number; left: number }[]>`
+    SELECT count(*)::int AS n, count(*) FILTER (WHERE claimed_at IS NULL)::int AS left FROM race_prizes WHERE campaign_id = ${campaignId}`;
+  const [r] = await sql<{ n: number; f: number }[]>`
+    SELECT count(*)::int AS n, count(*) FILTER (WHERE status = 'finished')::int AS f FROM races WHERE campaign_id = ${campaignId}`;
+  return { prizes: p?.n ?? 0, prizesLeft: p?.left ?? 0, races: r?.n ?? 0, finished: r?.f ?? 0 };
 }

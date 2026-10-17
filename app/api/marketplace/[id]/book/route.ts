@@ -428,10 +428,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const arBody = (body as { arExperience?: {
     brandName?: string; tagline?: string; logoRef?: { storagePath?: string };
     colors?: string[]; lat?: number; lng?: number; radiusM?: number; startsAt?: string;
+    prizeCount?: number; prizeLabel?: string;
   } }).arExperience;
   let arExperience: {
     kind: "ar_experience"; brandName: string; tagline: string; logoPath: string; logoBucket: string;
     colors: [string, string]; lat: number; lng: number; radiusM: number; startsAt: string;
+    prizeCount: number; prizeLabel: string;
   } | null = null;
   if (template.category === "ar_experience") {
     const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
@@ -458,9 +460,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (Number.isNaN(start) || startsAt < todayLagos || start > Date.now() + 366 * 86_400_000) {
       return bad("The start date must be today or within the next year.");
     }
+    // Bounty Run: how many prize codes, and what a prize is (0 = balloons only, no race).
+    const prizeCount = Math.round(Number(arBody.prizeCount ?? 10));
+    if (!Number.isFinite(prizeCount) || prizeCount < 0 || prizeCount > 200) return bad("Between 0 and 200 prizes.");
+    const prizeLabel = String(arBody.prizeLabel ?? "").trim();
+    if (prizeLabel.length > 60) return bad("Keep the prize description under 60 characters.");
+    if (prizeCount > 0 && !prizeLabel) return bad("Say what the prize is.");
     arExperience = {
       kind: "ar_experience", brandName, tagline, logoPath, logoBucket: "identity-images",
-      colors: [colors[0], colors[1]], lat, lng, radiusM, startsAt,
+      colors: [colors[0], colors[1]], lat, lng, radiusM, startsAt, prizeCount, prizeLabel,
     };
   }
   // Glow Retouch edits photo N into slot N, so a count that disagrees with the

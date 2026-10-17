@@ -382,6 +382,9 @@ export default function CheckoutPanel({
   const [arRadius, setArRadius] = useState(250);
   const [arStart, setArStart] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" }));
   const [arRights, setArRights] = useState(false);
+  // Bounty Run: the prize codes the race hands out (0 = balloons only).
+  const [arPrizeCount, setArPrizeCount] = useState(10);
+  const [arPrizeLabel, setArPrizeLabel] = useState("");
   const [arDays, setArDays] = useState(30);
   const [newsHeadline, setNewsHeadline] = useState("");
   const [newsSubtitle, setNewsSubtitle] = useState("");
@@ -811,6 +814,8 @@ export default function CheckoutPanel({
       if (c.arPin) setArPin(c.arPin);
       if (c.arRadius) setArRadius(c.arRadius);
       if (c.arStart) setArStart(c.arStart);
+      if (typeof c.arPrizeCount === "number") setArPrizeCount(c.arPrizeCount);
+      if (c.arPrizeLabel) setArPrizeLabel(c.arPrizeLabel);
       if (pending.arFile) {
         const pf = pending.arFile;
         setGifSlot(setArLogo, { keepOriginal: true })(new File([pf.blob], pf.name, { type: pf.type || "image/png" }));
@@ -1325,6 +1330,7 @@ export default function CheckoutPanel({
   const gifBusy = !!gifBefore?.uploading || !!gifAfter?.uploading || !!gifLogo?.uploading;
   const arValid = arBrand.trim().length >= 1 && arBrand.trim().length <= 40
     && arTagline.length <= 60 && !!arLogo?.storagePath && !!arPin && arRights
+    && (arPrizeCount === 0 || (arPrizeLabel.trim().length > 0 && arPrizeLabel.length <= 60))
     && /^#[0-9a-f]{6}$/i.test(arColors[0]) && /^#[0-9a-f]{6}$/i.test(arColors[1]);
 
   // A loop carries no identity photograph at all, so that requirement is
@@ -1363,6 +1369,8 @@ export default function CheckoutPanel({
       arPin: arActive ? arPin : undefined,
       arRadius: arActive ? arRadius : undefined,
       arStart: arActive ? arStart : undefined,
+      arPrizeCount: arActive ? arPrizeCount : undefined,
+      arPrizeLabel: arActive ? arPrizeLabel : undefined,
       groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
@@ -1507,6 +1515,7 @@ export default function CheckoutPanel({
               logoRef: { storagePath: arLogo?.storagePath },
               colors: [arColors[0].toLowerCase(), arColors[1].toLowerCase()],
               lat: arPin.lat, lng: arPin.lng, radiusM: arRadius, startsAt: arStart,
+              prizeCount: arPrizeCount, prizeLabel: arPrizeLabel.trim(),
             }
           : undefined,
       }),
@@ -2060,6 +2069,15 @@ export default function CheckoutPanel({
                 max={new Date(Date.now() + 365 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" })}
                 onChange={e => setArStart(e.target.value)} />
               <p className={styles.sectionHint}>{t("arStartHint").replace("{days}", String(arDays))}</p>
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("arPrizesLabel")}</p>
+              <p className={styles.sectionHint}>{t("arPrizesHint")}</p>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input className={styles.flagInput} type="number" min={0} max={200} value={arPrizeCount} style={{ width: 90 }}
+                  onChange={e => setArPrizeCount(Math.max(0, Math.min(200, Math.round(Number(e.target.value)) || 0)))} />
+                <input className={styles.flagInput} value={arPrizeLabel} maxLength={60} placeholder={t("arPrizePh")}
+                  onChange={e => setArPrizeLabel(e.target.value)} style={{ flex: 1 }} />
+              </div>
 
               <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, fontSize: "0.82rem", cursor: "pointer" }}>
                 <input type="checkbox" checked={arRights} onChange={e => setArRights(e.target.checked)} style={{ marginTop: 3 }} />

@@ -120,6 +120,8 @@ export default function WorkspacePage() {
     brandName: string; tagline: string; status: "scheduled" | "live" | "ended" | "suspended";
     startsAt: string; endsAt: string; publicUrl: string; previewUrl: string; mapsUrl: string;
     counts: { opens: number; activations: number; photos: number };
+    raceUrl?: string; prizeLabel?: string;
+    bounty?: { prizes: number; prizesLeft: number; races: number; finished: number };
   } | null>(null);
   const [arCopied, setArCopied] = useState(false);
 
@@ -1786,6 +1788,15 @@ export default function WorkspacePage() {
                     {" — "}{t("arPreviewHint")}
                   </p>
                   <a className={styles.giphyLink} href={ar.mapsUrl} target="_blank" rel="noopener noreferrer">{t("arMap")}</a>
+                  {ar.bounty && ar.bounty.prizes > 0 && ar.raceUrl && (
+                    <>
+                      <label className={styles.giphyTagLabel} htmlFor="ar-race-link">{t("arRaceLink")}</label>
+                      <input id="ar-race-link" className={styles.giphyTagInput} value={ar.raceUrl} readOnly onFocus={e => e.currentTarget.select()} />
+                      <p className={styles.retouchHint}>
+                        {t("arRaceStats").replace("{left}", String(ar.bounty.prizesLeft)).replace("{total}", String(ar.bounty.prizes)).replace("{label}", ar.prizeLabel ?? "").replace("{hunts}", String(ar.bounty.races)).replace("{finished}", String(ar.bounty.finished))}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
