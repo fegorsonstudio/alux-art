@@ -52,11 +52,23 @@ export default function RaceGame(props: { start: { lat: number; lng: number } | 
     setPhase("loading");
     setError(null);
     try {
-      const r = await fetch(`/api/race/tiles?lat=${at.lat}&lng=${at.lng}`);
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "Could not load the streets.");
+      // The first visit to a new place asks OpenStreetMap in the background;
+      // the server says "pending" until the tile is in, so poll for it.
+      const deadline = Date.now() + 4 * 60_000;
+      let j: { pending?: boolean; error?: string; roads?: unknown[] } & Partial<RoadTile> = {};
+      for (;;) {
+        const r = await fetch(`/api/race/tiles?lat=${at.lat}&lng=${at.lng}`, { cache: "no-store" });
+        j = await r.json();
+        if (r.status === 202 && j.pending) {
+          if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
+          await new Promise((res) => setTimeout(res, 5000));
+          continue;
+        }
+        if (!r.ok) throw new Error(j.error || "Could not load the streets.");
+        break;
+      }
       if (!j.roads?.length) throw new Error("No roads here yet. Try a point nearer a town.");
-      setTile(j);
+      setTile(j as RoadTile);
       setPhase("ready");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load the streets.");
