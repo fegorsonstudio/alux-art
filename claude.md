@@ -468,6 +468,23 @@ without being printed. Verified: Street View request 200 with the site Referer, 
 **Race game: not planned in detail yet.** Next step is the staged plan (3D road from the owner's street +
 drivable car, then the bounty finish with the balloons, then nearby players and live opponents).
 
+**Update (2026-10-17, night): Bounty Run stage 1 is LIVE — drive your real street.** Plan at
+`~/.claude/plans/balloon-race-game.md` (owner said go). `/d/race/demo` (`?lat=&lng=`, `&debug=1`; no
+start → "Use my location" / "Drive Lagos Island"). Streets come from OpenStreetMap through the Overpass API
+(`lib/race/osm.ts`): one fetch per ~100 m tile, 2.5 km of roads + 1.4 km of buildings, cached in
+`road_tiles` (migration 075, psql) for 30 days; the fetch runs in the background and
+`GET /api/race/tiles` answers 202 "pending" until it is in (Overpass took 37 s for Lagos Island and
+answers 502 when busy; 3 retries with backoff; `OVERPASS_URL` may list several instances, comma
+separated — the other public mirrors were broken on 2026-10-17). `lib/race/graph.ts` turns the roads into
+a graph the car never leaves (steering picks the branch at a junction); `lib/race/city.ts` builds the
+low-poly city (ribbon roads with kerbs and markings, extruded footprints with winding fixed, 1,500 trees,
+sky dome) in a few merged draw calls; `lib/race/car.ts` is the arcade car (wheel + GO/STOP pedals + N
+nitro, drift feel). A Street View Static photo of each junction slides in the first time it is reached
+(key `NEXT_PUBLIC_GOOGLE_MAPS_KEY`, max 20 per session). The race path shares the AR page's
+Permissions-Policy rule (`/d/:game(ar|race)/:path*`). Verified live: 2 Playwright tests + phone-emulated
+screenshots (Lagos Island tile: 769 roads, 2,500 buildings, 142 KB compressed). **Not yet done on a real
+phone.** Stage 2 (bounty, prizes, finish in the AR viewer) and stage 3 (live opponents) are not started.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

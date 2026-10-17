@@ -178,7 +178,7 @@ export default function RaceGame(props: { start: { lat: number; lng: number } | 
           const [la, ln] = toLatLng(ev.node.x, ev.node.z);
           const deg = Math.round(((ev.heading * 180) / Math.PI + 360) % 360);
           const url = `https://maps.googleapis.com/maps/api/streetview?size=480x270&location=${la.toFixed(6)},${ln.toFixed(6)}&heading=${deg}&fov=80&pitch=4&key=${props.mapsKey}`;
-          setCard({ url, title: car.roadName ?? "This junction, for real" });
+          setCard({ url, title: car.roadName ? `${car.roadName}, for real` : "This junction, for real" });
           if (cardTimer.current) clearTimeout(cardTimer.current);
           cardTimer.current = setTimeout(() => setCard(null), 5000);
         }

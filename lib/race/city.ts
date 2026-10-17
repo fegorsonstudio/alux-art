@@ -89,8 +89,17 @@ const PALETTE = ["#d9c7a6", "#e8e2d2", "#c7a27c", "#bfc3c8", "#d4b48c", "#e3d0b8
 function buildings(tile: RoadTile): Mesh | null {
   const parts: BufferGeometry[] = [];
   tile.buildings.forEach((b, i) => {
+    // Extruded sides face outward only when the footprint runs anticlockwise
+    // in the shape's own plane; OSM draws them either way, so fix the winding
+    // (a clockwise one came out as a black box).
+    let area = 0;
+    for (let k = 0; k < b.pts.length; k++) {
+      const [x1, z1] = b.pts[k], [x2, z2] = b.pts[(k + 1) % b.pts.length];
+      area += x1 * -z2 - x2 * -z1;
+    }
+    const pts = area < 0 ? [...b.pts].reverse() : b.pts;
     const shape = new Shape();
-    b.pts.forEach(([x, z], k) => (k === 0 ? shape.moveTo(x, -z) : shape.lineTo(x, -z)));
+    pts.forEach(([x, z], k) => (k === 0 ? shape.moveTo(x, -z) : shape.lineTo(x, -z)));
     shape.closePath();
     let g: BufferGeometry;
     try { g = new ExtrudeGeometry(shape, { depth: b.height, bevelEnabled: false, steps: 1 }); } catch { return; }
@@ -112,7 +121,7 @@ function buildings(tile: RoadTile): Mesh | null {
   const merged = mergeGeometries(parts, false);
   parts.forEach((p) => p.dispose());
   if (!merged) return null;
-  return new Mesh(merged, new MeshLambertMaterial({ vertexColors: true }));
+  return new Mesh(merged, new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
 }
 
 function trees(tile: RoadTile): InstancedMesh | null {
