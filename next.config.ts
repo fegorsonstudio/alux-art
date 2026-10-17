@@ -50,12 +50,12 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // The AR balloon viewer (/d/ar/<token>) needs the phone's camera, its
+      // The AR balloon viewer (/d/ar/<token>) and the race (/d/race/...) need the phone's camera, its
       // position and its motion sensors. Everything else on the site keeps the
       // rule above; Next applies the later matching rule's value for a key both
       // rules set, so this one only loosens that single header on that one path.
       {
-        source: "/d/ar/:path*",
+        source: "/d/:game(ar|race)/:path*",
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), gyroscope=(self), accelerometer=(self), magnetometer=(self), microphone=()" },
         ],
