@@ -553,6 +553,32 @@ entries, 250 ms after `pano_changed`, 3 s cap), `HOPS_PER_SEC = 1.6`; in the hea
 stays a real street while driving (Google's own zoom-blur between photos). (4) The hunt page had been bundling three.js only because it imported `fetchTile` from the 3D demo; the fetcher now lives in `lib/race/tile-client.ts` (demo re-exports it): first-load JS 336 → 177 KB. On a 1.5 Mbit/s link: landing 8.9 → 6.4 s (the rest is the root layout's 163 KB font + 95 KB CSS, not touched), tap-to-first-photo 1.6 s. 5 live Playwright tests pass. **Still unproven on the owner's
 phone.** The last Playwright hunt at the Abuja pin dropped 373 m straight-line from the prize (roads wind).
 
+**Update (2026-10-18, late night): choose your start, route preload, our own traffic, sprite layer.** Owner asked
+for Street View "captured and loaded from us" and for the photos' cars/people to move — both would copy or alter
+Google's imagery, which the Maps terms forbid (key + Cloud project at risk; explained to the owner, who chose
+"preload + our own traffic"). Built instead: (1) **Start chooser** on the hunt landing (`BountyRace.tsx`): Random
+drop / Where I am (phone GPS; the race path already allows geolocation) / Pick on the map (`ArLocationPicker`,
+Leaflet). A chosen start is sent as `from` to `POST /api/race/[token]/start` → `startRace(..., from)` snaps it to
+the nearest road node (≤250 m, else 409 "nostart") and refuses a start under 500 m by road from the prize (409
+"tooclose"); groups ignore it. **Fairness caveat:** leaderboard times are no longer over equal distances. (2) **The
+route** (`shortestPath` in `lib/race/route.ts`, ≤400 points) comes back with every start (`route`), is drawn on the
+minimap and drives a **rolling preload**: a hidden second `StreetViewPanorama` (one extra Dynamic Street View
+load per hunt, nothing per step) is pointed 35/70/105 m ahead along the route in turn (`setPosition`), or at the
+most likely next link when off-route, so the next photos are in the browser cache before the hop. A hop now counts
+as settled only when tiles whose URL carries the CURRENT pano id have landed (the preloader's tiles no longer
+fool it). (3) **Our own traffic** (`lib/race/traffic.ts`): 3 cars + 2 people driving/walking along the OSM road
+polylines near the player (right-hand traffic offset, pavement offset), SVG sprites by view (back/front/side).
+(4) **Google's markers did not draw in the panorama** (not even a default marker 25 m ahead, in the headless
+test) — the prize balloon, rivals, ghost and traffic are now `<img>`s in our own layer (`lib/race/sprite-layer.ts`,
+`.sprites` z-index 5) placed with an `OverlayView` projection (`fromLatLngToContainerPixel`, verified: 10° off
+centre = 26 px at 393 px wide), sized by the projected size of one metre at that spot (balloon min 44 px as a
+beacon). Verified live: API (too close → 409; 1 km north → route of 117 points), landing map picker renders,
+"Where I am" drops at the phone's position, sprites visible at rest (balloon + person at the right scale), 5
+Playwright race tests pass. `?debug=1` exposes `window.__svr = { pano, pre, traffic, layer, g }`. **Open:** the
+owner's real-phone test; whether Google markers render on real phones is moot now. Unreal Engine was asked
+about: not needed and would not fix the rights issue (own 360 photos → Polycam/Luma splats, or Google
+Photorealistic 3D Tiles, are the legal 3D routes).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
