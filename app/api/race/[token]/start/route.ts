@@ -17,11 +17,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (status !== "live") return NextResponse.json({ error: status === "scheduled" ? "This bounty has not started yet." : "This bounty is over." }, { status: 409 });
   const ip = ipOf(request);
   if (!allow(`race-start:${ip}`, 20, 10 * 60_000)) return NextResponse.json({ error: "Too many hunts from here. Try again later." }, { status: 429 });
-  const body = await request.json().catch(() => ({})) as { player?: unknown };
+  const body = await request.json().catch(() => ({})) as { player?: unknown; groupId?: unknown };
+  const groupId = /^[0-9a-f-]{36}$/.test(String(body.groupId ?? "")) ? String(body.groupId) : undefined;
   const player = String(body.player ?? "").replace(/[^\p{L}\p{N} _.'-]/gu, "").trim().slice(0, 24);
   const ipHash = crypto.createHash("sha256").update(ip + (process.env.INTERNAL_API_SECRET ?? "")).digest("hex").slice(0, 16);
   try {
-    const a = await startRace(c, player, ipHash);
+    const a = await startRace(c, player, ipHash, groupId);
     if (a.status === "pending") return NextResponse.json({ pending: true }, { status: 202, headers: { "Cache-Control": "no-store" } });
     if (a.status === "full") return NextResponse.json({ error: "This bounty has had all the hunts it allows." }, { status: 409 });
     if (a.status === "noroads") return NextResponse.json({ error: "There are no mapped roads around this bounty." }, { status: 409 });

@@ -1,24 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import RaceCanvas, { type Finish, type RaceEvent } from "@/components/race/RaceCanvas";
+import RaceCanvas, { type Finish, type Ghost, type RaceEvent } from "@/components/race/RaceCanvas";
 import { fetchTile } from "../demo/RaceGame";
+import { Lobby, Room, clientId, type GoMessage, type Hunter, type Pose } from "@/lib/race/realtime";
 import type { RoadTile } from "@/lib/race/types";
 import styles from "../demo/race.module.css";
 import own from "./bounty.module.css";
 
 /**
- * The hunt: name, "Hunt", drop on a real street, race the clock to the
- * balloons, pop one, get the code. The server decides who gets a prize.
+ * The hunt: name, "Hunt" (alone, against the best run's ghost) or "Race
+ * others" (a lobby; one shared start for everyone in it, the other cars live
+ * on your streets). Drop on a real street, race the clock to the balloons,
+ * pop one, get the code. The server decides who gets a prize.
  */
 
 type Bounty = {
   brand: string; tagline: string; logoUrl: string; colors: [string, string];
   prizeLabel: string; prizesLeft: number; prizes: number; races: number; lat: number; lng: number;
 };
-type Phase = "landing" | "starting" | "racing" | "claiming" | "done" | "error";
+type Phase = "landing" | "lobby" | "starting" | "racing" | "claiming" | "done" | "error";
 type Result = { place: number; elapsedMs: number; prize: { code: string; label: string } | null; prizesLeft: number };
 type Board = { counts: { prizesLeft: number; races: number; finished: number }; top: { place: number; player: string; elapsedMs: number; won: boolean }[] };
+type Started = { raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
 
 const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}.${String(Math.floor((ms % 1000) / 100))}`;
 
@@ -34,16 +38,26 @@ export default function BountyRace(props: {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [tile, setTile] = useState<RoadTile | null>(null);
-  const [race, setRace] = useState<{ raceId: string; drop: { x: number; z: number }; finish: Finish; routeM: number } | null>(null);
+  const [race, setRace] = useState<{ raceId: string; drop: { x: number; z: number }; finish: Finish; routeM: number; startsAt: number | null; group: boolean } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [pops, setPops] = useState(0);
   const [copied, setCopied] = useState(false);
   const [board, setBoard] = useState<Board | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [hunters, setHunters] = useState<Hunter[]>([]);
+  const [ghost, setGhost] = useState<Ghost | null>(null);
+  const [rivals, setRivals] = useState(0);
   const finishing = useRef(false);
+  const lobby = useRef<Lobby | null>(null);
+  const room = useRef<Room | null>(null);
+  const others = useRef(new Map<string, Pose>());
+  const me = useRef<{ id: string; name: string }>({ id: "", name: "" });
+  const goHandled = useRef<string | null>(null);
 
   useEffect(() => {
+    me.current.id = clientId();
     try { const n = localStorage.getItem("bounty-name"); if (n) setName(n); } catch { /* private mode */ }
+    return () => { lobby.current?.leave(); room.current?.leave(); };
   }, []);
 
   const loadBoard = async () => {
@@ -54,20 +68,24 @@ export default function BountyRace(props: {
   };
   useEffect(() => { if (props.status === "live") loadBoard(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  const hunt = async () => {
+  const hunterName = () => (name.trim() || "A hunter").slice(0, 24);
+
+  /** Start a hunt: alone (fresh drop) or with a group (its drop and start time). */
+  const start = async (groupId?: string) => {
     if (!b) return;
     setPhase("starting");
     setError(null);
     try { localStorage.setItem("bounty-name", name); } catch { /* private mode */ }
+    me.current.name = hunterName();
     try {
-      let started: { raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; tile: { lat: number; lng: number } } | null = null;
+      let started: Started | null = null;
       const deadline = Date.now() + 4 * 60_000;
       for (;;) {
-        const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: name }) });
+        const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: hunterName(), groupId }) });
         const j = await r.json();
         if (r.status === 202 && j.pending) {
           if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
-          await new Promise((res) => setTimeout(res, 5000));
+          await new Promise((res) => setTimeout(res, 3000));
           continue;
         }
         if (!r.ok) throw new Error(j.error || "Could not start the hunt.");
@@ -76,10 +94,26 @@ export default function BountyRace(props: {
       }
       if (!started) throw new Error("Could not start the hunt.");
       const t = await fetchTile(started.tile);
+      // Alone: the best earlier run rides along as a ghost. With others: no ghost, they are real.
+      let g: Ghost | null = null;
+      if (!groupId) {
+        try {
+          const r = await fetch(`/api/race/${props.token}/ghost`, { cache: "no-store" });
+          const j = await r.json();
+          if (j.ghost?.path?.length > 1) g = { player: j.ghost.player, path: j.ghost.path };
+        } catch { /* no ghost */ }
+      } else {
+        others.current.clear();
+        room.current?.leave();
+        room.current = new Room(groupId, me.current);
+      }
+      setGhost(g);
       setTile(t);
       setRace({
         raceId: started.raceId, drop: started.drop, routeM: started.routeM,
         finish: { x: started.finish.x, z: started.finish.z, brand: b.brand, colors: b.colors, logoUrl: b.logoUrl },
+        startsAt: started.startsAt ? new Date(started.startsAt).getTime() : null,
+        group: !!groupId,
       });
       setPops(0);
       setResult(null);
@@ -88,6 +122,50 @@ export default function BountyRace(props: {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the hunt.");
       setPhase("error");
+    }
+  };
+
+  // ---- the lobby ----
+  const openLobby = () => {
+    me.current.name = hunterName();
+    try { localStorage.setItem("bounty-name", name); } catch { /* private mode */ }
+    goHandled.current = null;
+    lobby.current?.leave();
+    lobby.current = new Lobby(
+      props.token,
+      { id: me.current.id, name: me.current.name, joinedAt: Date.now() },
+      (h) => setHunters(h),
+      (m: GoMessage) => {
+        if (goHandled.current === m.groupId) return;
+        goHandled.current = m.groupId;
+        lobby.current?.leave();
+        lobby.current = null;
+        start(m.groupId);
+      },
+    );
+    setPhase("lobby");
+  };
+  const leaveLobby = () => { lobby.current?.leave(); lobby.current = null; setHunters([]); setPhase("landing"); };
+  const startForEveryone = async () => {
+    setError(null);
+    try {
+      let group: GoMessage | null = null;
+      const deadline = Date.now() + 4 * 60_000;
+      for (;;) {
+        const r = await fetch(`/api/race/${props.token}/group`, { method: "POST" });
+        const j = await r.json();
+        if (r.status === 202 && j.pending) {
+          if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
+          await new Promise((res) => setTimeout(res, 3000));
+          continue;
+        }
+        if (!r.ok) throw new Error(j.error || "Could not start the race.");
+        group = { groupId: j.id, startsAt: j.startsAt, by: me.current.id };
+        break;
+      }
+      if (group) await lobby.current?.go(group);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start the race.");
     }
   };
 
@@ -100,7 +178,7 @@ export default function BountyRace(props: {
         setPhoto(`https://maps.googleapis.com/maps/api/streetview?size=480x270&location=${b.lat.toFixed(6)},${b.lng.toFixed(6)}&fov=80&pitch=6&key=${props.mapsKey}`);
       }
       try {
-        const r = await fetch(`/api/race/${props.token}/finish`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raceId: race.raceId, elapsedMs: e.elapsedMs }) });
+        const r = await fetch(`/api/race/${props.token}/finish`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raceId: race.raceId, elapsedMs: e.elapsedMs, path: e.path }) });
         const j = await r.json();
         if (!r.ok) throw new Error(j.error || "The finish was not accepted.");
         setResult(j);
@@ -113,15 +191,20 @@ export default function BountyRace(props: {
     }
   };
 
+  const onPose = (x: number, z: number, h: number, v: number) => {
+    room.current?.send(x, z, h, v);
+    if (room.current && room.current.others.size !== rivals) setRivals(room.current.others.size);
+  };
+
   const pop = () => {
     setPops((p) => Math.min(3, p + 1));
     try { navigator.vibrate?.(pops >= 2 ? [30, 40, 60] : 20); } catch { /* no haptics */ }
   };
-
   const copy = () => {
     if (!result?.prize) return;
     navigator.clipboard?.writeText(result.prize.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => undefined);
   };
+  const again = () => { room.current?.leave(); room.current = null; others.current.clear(); setRivals(0); setRace(null); setPhase("landing"); };
 
   // ---- screens ----
   const panel = (children: React.ReactNode) => (
@@ -158,7 +241,12 @@ export default function BountyRace(props: {
           {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
           {phase === "starting"
             ? <p className={styles.msg}>Finding you a street… the first hunt at a new place takes up to a minute.</p>
-            : <button type="button" className={styles.primary} onClick={hunt}>Hunt</button>}
+            : (
+              <>
+                <button type="button" className={styles.primary} onClick={() => start()}>Hunt</button>
+                <button type="button" className={styles.quiet} onClick={openLobby}>Race others</button>
+              </>
+            )}
           {board && board.top.length > 0 && (
             <div className={own.board}>
               <p className={own.boardTitle}>Fastest hunters</p>
@@ -167,12 +255,34 @@ export default function BountyRace(props: {
               ))}
             </div>
           )}
-          <p className={styles.note}>Steer with the wheel, GO and STOP with the pedals, N is nitro. Hold the wheel left or right at a junction to pick the turn. The arrow on the map points at the prize.</p>
+          <p className={styles.note}>Steer with the wheel, GO and STOP with the pedals, N is nitro. Hold the wheel left or right at a junction to pick the turn. The arrow on the map points at the prize. Alone, the fastest run so far rides along as a ghost.</p>
+        </>,
+      )}
+
+      {phase === "lobby" && panel(
+        <>
+          {head}
+          <p className={own.boardTitle}>Hunters in the lobby</p>
+          <div className={own.board}>
+            {hunters.length === 0 && <p className={styles.note}>Connecting…</p>}
+            {hunters.map((h) => <div key={h.id} className={own.row}><span>{h.name}{h.id === me.current.id ? " (you)" : ""}</span><span>ready</span></div>)}
+          </div>
+          <p className={styles.note}>{hunters.length < 2 ? "Share this page with a friend, or wait for someone to join. Everyone starts from the same street at the same moment." : "Everyone here starts from the same street at the same moment. Anyone can start the race."}</p>
+          {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
+          <button type="button" className={styles.primary} onClick={startForEveryone} disabled={hunters.length < 1}>Start the race</button>
+          <button type="button" className={styles.quiet} onClick={leaveLobby}>Back</button>
         </>,
       )}
 
       {(phase === "racing" || phase === "claiming" || phase === "done") && tile && race && (
-        <RaceCanvas tile={tile} start={race.drop} finish={race.finish} mapsKey={props.mapsKey} debug={props.debug} frozen={phase !== "racing"} onEvent={onEvent} />
+        <RaceCanvas
+          tile={tile} start={race.drop} finish={race.finish} mapsKey={props.mapsKey} debug={props.debug}
+          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? others.current : undefined}
+          ghost={ghost} onPose={race.group ? onPose : undefined} onEvent={onEvent}
+        />
+      )}
+      {phase === "racing" && race?.group && (
+        <div className={own.rivals}>{rivals === 0 ? "Waiting for the others…" : `${rivals} other ${rivals === 1 ? "hunter" : "hunters"} racing`}</div>
       )}
 
       {phase === "claiming" && (
@@ -182,7 +292,7 @@ export default function BountyRace(props: {
       {phase === "done" && result && (
         <div className={own.overlay}>
           <div className={own.sheet}>
-            <p className={own.big}>{result.place === 1 ? "Fastest hunter!" : `${result.place}${result.place === 2 ? "nd" : result.place === 3 ? "rd" : "th"} fastest`}</p>
+            <p className={own.big}>{result.place === 1 ? (race?.group ? "You won the race!" : "Fastest hunter!") : `${result.place}${result.place === 2 ? "nd" : result.place === 3 ? "rd" : "th"} ${race?.group ? "home" : "fastest"}`}</p>
             <p className={own.time}>{fmt(result.elapsedMs)}</p>
             {result.prize ? (
               pops < 3 ? (
@@ -208,7 +318,7 @@ export default function BountyRace(props: {
                 <span>The real spot</span>
               </div>
             )}
-            <button type="button" className={styles.primary} onClick={() => { setPhase("landing"); setRace(null); }}>Hunt again</button>
+            <button type="button" className={styles.primary} onClick={again}>Hunt again</button>
           </div>
         </div>
       )}

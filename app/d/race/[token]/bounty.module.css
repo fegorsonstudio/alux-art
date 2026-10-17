@@ -26,3 +26,4 @@
 .confetti i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; animation: fall 1.6s ease-in forwards; }
 @keyframes fall { to { transform: translateY(260px) rotate(540deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .confetti i { animation: none; opacity: 0; } .balloon { transition: none; } }
+.rivals { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); z-index: 4; padding: 6px 12px; border-radius: 999px; background: rgba(10, 20, 24, 0.6); color: #cfe8ec; font-size: 0.78rem; font-weight: 700; pointer-events: none; white-space: nowrap; }

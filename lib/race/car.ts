@@ -19,6 +19,34 @@ const ACCEL = 7.5;
 const BRAKE = 14;
 const DRAG = 0.0022;
 
+/** The hatchback, origin at the ground under its middle, facing -z. */
+export function buildCarBody(color: string, opts: { ghost?: boolean } = {}): { body: Group; wheels: Mesh[]; brakeLights: MeshStandardMaterial } {
+  const ghost = !!opts.ghost;
+  const paint = new MeshStandardMaterial({ color: new Color(color), roughness: 0.35, metalness: 0.4, transparent: ghost, opacity: ghost ? 0.45 : 1 });
+  const dark = new MeshStandardMaterial({ color: 0x1b1e22, roughness: 0.6, transparent: ghost, opacity: ghost ? 0.45 : 1 });
+  const glass = new MeshStandardMaterial({ color: 0x8fc8ff, roughness: 0.1, metalness: 0.6, transparent: true, opacity: ghost ? 0.35 : 0.8 });
+  const brakeLights = new MeshStandardMaterial({ color: 0x5a0d0d, emissive: new Color(0xff2a1a), emissiveIntensity: 0.1, transparent: ghost, opacity: ghost ? 0.45 : 1 });
+  const head = new MeshStandardMaterial({ color: 0xffffff, emissive: new Color(0xfff2c0), emissiveIntensity: 0.8, transparent: ghost, opacity: ghost ? 0.45 : 1 });
+  const body = new Group();
+  const chassis = new Mesh(new BoxGeometry(1.9, 0.62, 4.3), paint); chassis.position.y = 0.62; body.add(chassis);
+  const bonnet = new Mesh(new BoxGeometry(1.8, 0.22, 1.3), paint); bonnet.position.set(0, 0.98, 1.3); body.add(bonnet);
+  const cabin = new Mesh(new BoxGeometry(1.7, 0.62, 2.0), glass); cabin.position.set(0, 1.22, -0.25); body.add(cabin);
+  const roof = new Mesh(new BoxGeometry(1.72, 0.08, 2.02), paint); roof.position.set(0, 1.56, -0.25); body.add(roof);
+  const sill = new Mesh(new BoxGeometry(2.0, 0.18, 4.4), dark); sill.position.y = 0.34; body.add(sill);
+  for (const sx of [-0.62, 0.62]) {
+    const hl = new Mesh(new BoxGeometry(0.4, 0.16, 0.06), head); hl.position.set(sx, 0.72, 2.16); body.add(hl);
+    const tl = new Mesh(new BoxGeometry(0.45, 0.16, 0.06), brakeLights); tl.position.set(sx, 0.74, -2.16); body.add(tl);
+  }
+  const wheelGeo = new CylinderGeometry(0.36, 0.36, 0.26, 12);
+  wheelGeo.rotateZ(Math.PI / 2);
+  const wheels: Mesh[] = [];
+  for (const [sx, sz] of [[-0.92, 1.35], [0.92, 1.35], [-0.92, -1.35], [0.92, -1.35]]) {
+    const w = new Mesh(wheelGeo, dark); w.position.set(sx, 0.36, sz); body.add(w); wheels.push(w);
+  }
+  if (!ghost) { const lamp = new PointLight(0xfff2c0, 0, 18, 2); lamp.position.set(0, 1, 2.5); body.add(lamp); }
+  return { body, wheels, brakeLights };
+}
+
 export class Car {
   readonly group = new Group();
   speed = 0;
@@ -42,28 +70,10 @@ export class Car {
     this.lane = start.edge.width * 0.22;
     this.heading = graph.heading(this.edge, this.dir);
 
-    const paint = new MeshStandardMaterial({ color: new Color(color), roughness: 0.35, metalness: 0.4 });
-    const dark = new MeshStandardMaterial({ color: 0x1b1e22, roughness: 0.6 });
-    const glass = new MeshStandardMaterial({ color: 0x8fc8ff, roughness: 0.1, metalness: 0.6, transparent: true, opacity: 0.8 });
-    this.brakeLights = new MeshStandardMaterial({ color: 0x5a0d0d, emissive: new Color(0xff2a1a), emissiveIntensity: 0.1 });
-    const head = new MeshStandardMaterial({ color: 0xffffff, emissive: new Color(0xfff2c0), emissiveIntensity: 0.8 });
-
-    this.body = new Group();
-    const chassis = new Mesh(new BoxGeometry(1.9, 0.62, 4.3), paint); chassis.position.y = 0.62; this.body.add(chassis);
-    const bonnet = new Mesh(new BoxGeometry(1.8, 0.22, 1.3), paint); bonnet.position.set(0, 0.98, 1.3); this.body.add(bonnet);
-    const cabin = new Mesh(new BoxGeometry(1.7, 0.62, 2.0), glass); cabin.position.set(0, 1.22, -0.25); this.body.add(cabin);
-    const roof = new Mesh(new BoxGeometry(1.72, 0.08, 2.02), paint); roof.position.set(0, 1.56, -0.25); this.body.add(roof);
-    const sill = new Mesh(new BoxGeometry(2.0, 0.18, 4.4), dark); sill.position.y = 0.34; this.body.add(sill);
-    for (const sx of [-0.62, 0.62]) {
-      const hl = new Mesh(new BoxGeometry(0.4, 0.16, 0.06), head); hl.position.set(sx, 0.72, 2.16); this.body.add(hl);
-      const tl = new Mesh(new BoxGeometry(0.45, 0.16, 0.06), this.brakeLights); tl.position.set(sx, 0.74, -2.16); this.body.add(tl);
-    }
-    const wheelGeo = new CylinderGeometry(0.36, 0.36, 0.26, 12);
-    wheelGeo.rotateZ(Math.PI / 2);
-    for (const [sx, sz] of [[-0.92, 1.35], [0.92, 1.35], [-0.92, -1.35], [0.92, -1.35]]) {
-      const w = new Mesh(wheelGeo, dark); w.position.set(sx, 0.36, sz); this.body.add(w); this.wheels.push(w);
-    }
-    const lamp = new PointLight(0xfff2c0, 0, 18, 2); lamp.position.set(0, 1, 2.5); this.body.add(lamp);
+    const built = buildCarBody(color);
+    this.body = built.body;
+    this.wheels = built.wheels;
+    this.brakeLights = built.brakeLights;
     this.group.add(this.body);
     this.place();
   }

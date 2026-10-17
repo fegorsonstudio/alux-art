@@ -43,12 +43,56 @@ export type StartAnswer =
   | { status: "pending" }
   | { status: "full" }
   | { status: "noroads" }
-  | { status: "ok"; raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; tile: { lat: number; lng: number } };
+  | { status: "ok"; raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
 
 /** A new hunt: a drop point on a real street some way from the pin. */
-export async function startRace(c: ArCampaignRow, player: string, ipHash: string): Promise<StartAnswer> {
+export type Group = { id: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; startsAt: string; tile: { lat: number; lng: number } };
+
+/** The streets, the finish node and a fresh drop for this campaign. */
+async function layout(c: ArCampaignRow) {
+  const t = await getTile(c.lat, c.lng, 2500);
+  if (t.status !== "ready") return t;
+  const graph = new RoadGraph(t.tile);
+  const mx = 111_320 * Math.cos((t.tile.lat * Math.PI) / 180), mz = 110_540;
+  const fx = (c.lng - t.tile.lng) * mx, fz = -(c.lat - t.tile.lat) * mz;
+  const finish = nearestNode(graph, fx, fz);
+  if (!finish) return { status: "noroads" as const };
+  const drop = pickDrop(graph, finish);
+  if (!drop) return { status: "noroads" as const };
+  return { status: "ready" as const, tile: t.tile, finish, drop };
+}
+
+/** A shared start for several hunters: one drop, one start time a few seconds ahead. */
+export async function createGroup(c: ArCampaignRow): Promise<{ status: "pending" } | { status: "noroads" } | { status: "ok"; group: Group }> {
+  const l = await layout(c);
+  if (l.status === "pending") return { status: "pending" };
+  if (l.status === "failed") throw new Error(l.error);
+  if (l.status === "noroads") return { status: "noroads" };
+  const startsAt = new Date(Date.now() + 12_000);
+  const [g] = await sql<{ id: string }[]>`
+    INSERT INTO race_groups (campaign_id, drop_x, drop_z, route_m, starts_at)
+    VALUES (${c.id}, ${l.drop.node.x}, ${l.drop.node.z}, ${l.drop.routeM}, ${startsAt}) RETURNING id`;
+  return { status: "ok", group: { id: g.id, drop: { x: l.drop.node.x, z: l.drop.node.z }, finish: { x: l.finish.x, z: l.finish.z }, routeM: l.drop.routeM, startsAt: startsAt.toISOString(), tile: { lat: l.tile.lat, lng: l.tile.lng } } };
+}
+
+export async function startRace(c: ArCampaignRow, player: string, ipHash: string, groupId?: string): Promise<StartAnswer> {
   const [n] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM races WHERE campaign_id = ${c.id}`;
   if (n.n >= c.max_races) return { status: "full" };
+  if (groupId) {
+    const [g] = await sql<{ id: string; drop_x: number; drop_z: number; route_m: number; starts_at: Date }[]>`
+      SELECT id, drop_x, drop_z, route_m, starts_at FROM race_groups WHERE id = ${groupId} AND campaign_id = ${c.id}`;
+    if (!g) return { status: "noroads" };
+    const t = await getTile(c.lat, c.lng, 2500);
+    if (t.status !== "ready") return t.status === "pending" ? { status: "pending" } : { status: "noroads" };
+    const graph = new RoadGraph(t.tile);
+    const mx = 111_320 * Math.cos((t.tile.lat * Math.PI) / 180), mz = 110_540;
+    const finish = nearestNode(graph, (c.lng - t.tile.lng) * mx, -(c.lat - t.tile.lat) * mz);
+    if (!finish) return { status: "noroads" };
+    const [row] = await sql<{ id: string }[]>`
+      INSERT INTO races (campaign_id, player, drop_x, drop_z, route_m, ip_hash, group_id, started_at)
+      VALUES (${c.id}, ${player.slice(0, 24)}, ${g.drop_x}, ${g.drop_z}, ${g.route_m}, ${ipHash}, ${g.id}, ${g.starts_at}) RETURNING id`;
+    return { status: "ok", raceId: row.id, drop: { x: g.drop_x, z: g.drop_z }, finish: { x: finish.x, z: finish.z }, routeM: g.route_m, tile: { lat: t.tile.lat, lng: t.tile.lng }, startsAt: new Date(g.starts_at).toISOString() };
+  }
   const t = await getTile(c.lat, c.lng, 2500);
   if (t.status === "pending") return { status: "pending" };
   if (t.status === "failed") throw new Error(t.error);
@@ -74,10 +118,12 @@ export type FinishAnswer =
   | { status: "refused"; reason: string }
   | { status: "finished"; place: number; elapsedMs: number; prize: { code: string; label: string } | null; prizesLeft: number };
 
-export async function finishRace(campaignId: string, raceId: string, elapsedMs: number): Promise<FinishAnswer> {
+export type PathSample = [number, number, number]; // x, z, heading, every half second
+
+export async function finishRace(campaignId: string, raceId: string, elapsedMs: number, path: PathSample[] | null = null): Promise<FinishAnswer> {
   return sql.begin(async (tx) => {
-    const [race] = await tx<{ id: string; status: string; route_m: number; started_at: Date }[]>`
-      SELECT id, status, route_m, started_at FROM races WHERE id = ${raceId} AND campaign_id = ${campaignId} FOR UPDATE`;
+    const [race] = await tx<{ id: string; status: string; route_m: number; started_at: Date; group_id: string | null }[]>`
+      SELECT id, status, route_m, started_at, group_id FROM races WHERE id = ${raceId} AND campaign_id = ${campaignId} FOR UPDATE`;
     if (!race) return { status: "notfound" } as FinishAnswer;
     if (race.status !== "running") return { status: "refused", reason: "This hunt is already over." } as FinishAnswer;
     const wall = Date.now() - new Date(race.started_at).getTime();
@@ -92,12 +138,22 @@ export async function finishRace(campaignId: string, raceId: string, elapsedMs: 
       SELECT id, code, label FROM race_prizes WHERE campaign_id = ${campaignId} AND claimed_at IS NULL
       ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED`;
     if (prize) await tx`UPDATE race_prizes SET claimed_at = now(), race_id = ${raceId} WHERE id = ${prize.id}`;
-    await tx`UPDATE races SET status = 'finished', elapsed_ms = ${ms}, finished_at = now(), prize_id = ${prize?.id ?? null} WHERE id = ${raceId}`;
-    const [rank] = await tx<{ place: number }[]>`
-      SELECT count(*)::int + 1 AS place FROM races WHERE campaign_id = ${campaignId} AND status = 'finished' AND elapsed_ms < ${ms}`;
+    const keep = Array.isArray(path) && path.length <= 2400 ? path.map((s) => [Math.round(s[0] * 10) / 10, Math.round(s[1] * 10) / 10, Math.round(s[2] * 100) / 100]) : null;
+    await tx`UPDATE races SET status = 'finished', elapsed_ms = ${ms}, finished_at = now(), prize_id = ${prize?.id ?? null}, path = ${keep ? sql.json(keep as never) : null} WHERE id = ${raceId}`;
+    const [rank] = race.group_id
+      ? await tx<{ place: number }[]>`SELECT count(*)::int + 1 AS place FROM races WHERE group_id = ${race.group_id} AND status = 'finished' AND elapsed_ms < ${ms}`
+      : await tx<{ place: number }[]>`SELECT count(*)::int + 1 AS place FROM races WHERE campaign_id = ${campaignId} AND status = 'finished' AND elapsed_ms < ${ms}`;
     const [left] = await tx<{ n: number }[]>`SELECT count(*)::int AS n FROM race_prizes WHERE campaign_id = ${campaignId} AND claimed_at IS NULL`;
     return { status: "finished", place: rank.place, elapsedMs: ms, prize: prize ? { code: prize.code, label: prize.label } : null, prizesLeft: left.n } as FinishAnswer;
   });
+}
+
+/** The fastest run that kept its path: the ghost a solo hunter races against. */
+export async function ghostPath(campaignId: string): Promise<{ player: string; elapsedMs: number; path: PathSample[] } | null> {
+  const [r] = await sql<{ player: string; elapsed_ms: number; path: PathSample[] }[]>`
+    SELECT player, elapsed_ms, path FROM races WHERE campaign_id = ${campaignId} AND status = 'finished' AND path IS NOT NULL
+    ORDER BY elapsed_ms ASC LIMIT 1`;
+  return r ? { player: r.player || "A hunter", elapsedMs: r.elapsed_ms, path: r.path } : null;
 }
 
 export async function leaderboard(campaignId: string) {

@@ -7,7 +7,8 @@ import {
 } from "three";
 import { RoadGraph } from "@/lib/race/graph";
 import { buildCity, marker } from "@/lib/race/city";
-import { Car, type CarEvent, type CarInput } from "@/lib/race/car";
+import { Car, buildCarBody, type CarEvent, type CarInput } from "@/lib/race/car";
+import type { Pose } from "@/lib/race/realtime";
 import { projector, type RoadTile } from "@/lib/race/types";
 import { buildBalloon, buildEnvelopeMaps, type BalloonParts } from "@/lib/ar/balloon";
 import styles from "./race.module.css";
@@ -21,7 +22,10 @@ import styles from "./race.module.css";
 export type Finish = { x: number; z: number; brand: string; colors: [string, string]; logoUrl: string | null };
 export type RaceEvent =
   | { type: "junction"; lat: number; lng: number; heading: number; road: string | null }
-  | { type: "finish"; elapsedMs: number };
+  | { type: "finish"; elapsedMs: number; path: [number, number, number][] };
+export type Ghost = { player: string; path: [number, number, number][] };
+
+const OPPONENT_COLORS = ["#2f8e9a", "#ffd166", "#8e44ad", "#27ae60", "#e67e22", "#3498db"];
 
 const MAX_PHOTOS = 20;
 const FINISH_RADIUS = 22;
@@ -33,6 +37,13 @@ export default function RaceCanvas(props: {
   mapsKey: string;
   debug: boolean;
   frozen?: boolean;
+  /** A shared start: the clock and the pedals wait for this moment. */
+  startsAt?: number | null;
+  /** Everyone else's latest pose, kept up to date by the owner (never replaced). */
+  others?: Map<string, Pose>;
+  /** The fastest earlier run, replayed as a see-through car. */
+  ghost?: Ghost | null;
+  onPose?: (x: number, z: number, heading: number, speed: number) => void;
   onEvent?: (e: RaceEvent) => void;
 }) {
   const [kmh, setKmh] = useState(0);
@@ -45,6 +56,7 @@ export default function RaceCanvas(props: {
   const [wheelAngle, setWheelAngle] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const labelsRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
   const input = useRef<CarInput>({ throttle: 0, brake: 0, steer: 0, nitro: false });
@@ -55,6 +67,9 @@ export default function RaceCanvas(props: {
   onEvent.current = props.onEvent;
   const frozen = useRef(!!props.frozen);
   frozen.current = !!props.frozen;
+  const onPose = useRef(props.onPose);
+  onPose.current = props.onPose;
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -114,6 +129,49 @@ export default function RaceCanvas(props: {
       scene.add(finishMark);
     }
 
+    // The others: a car per hunter, eased toward the last pose we heard.
+    const others = props.others;
+    const rivals = new Map<string, { body: ReturnType<typeof buildCarBody>["body"]; wheels: ReturnType<typeof buildCarBody>["wheels"]; x: number; z: number; h: number; label: HTMLDivElement }>();
+    const labels = labelsRef.current;
+    const syncRivals = () => {
+      if (!others) return;
+      for (const [id, p] of others) {
+        if (!rivals.has(id)) {
+          const built = buildCarBody(OPPONENT_COLORS[rivals.size % OPPONENT_COLORS.length]);
+          scene.add(built.body);
+          const label = document.createElement("div");
+          label.className = styles.rivalLabel;
+          label.textContent = p.name || "Hunter";
+          labels?.appendChild(label);
+          rivals.set(id, { body: built.body, wheels: built.wheels, x: p.x, z: p.z, h: p.h, label });
+          built.body.position.set(p.x, 0, p.z);
+        }
+      }
+      for (const [id, r] of rivals) {
+        if (!others.has(id)) { scene.remove(r.body); r.label.remove(); rivals.delete(id); }
+      }
+    };
+    // The ghost: the best run, replayed from the start.
+    let ghostBody: ReturnType<typeof buildCarBody>["body"] | null = null;
+    let ghostLabel: HTMLDivElement | null = null;
+    if (props.ghost && props.ghost.path.length > 1) {
+      const g = buildCarBody("#ffffff", { ghost: true });
+      g.body.position.set(props.ghost.path[0][0], 0, props.ghost.path[0][1]);
+      scene.add(g.body);
+      ghostBody = g.body;
+      ghostLabel = document.createElement("div");
+      ghostLabel.className = styles.rivalLabel;
+      ghostLabel.textContent = `${props.ghost.player} (ghost)`;
+      labels?.appendChild(ghostLabel);
+    }
+    const placeLabel = (el: HTMLDivElement, x: number, z: number) => {
+      const v = new Vector3(x, 2.4, z).project(camera);
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (v.z > 1 || v.x < -1.2 || v.x > 1.2 || v.y < -1.2 || v.y > 1.2) { el.style.display = "none"; return; }
+      el.style.display = "";
+      el.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -100%)`;
+    };
+
     const camera = new PerspectiveCamera(62, 1, 0.5, 7000);
     const camPos = new Vector3(car.x, 4, car.z + 10);
     const camLook = new Vector3(car.x, 1, car.z);
@@ -132,6 +190,10 @@ export default function RaceCanvas(props: {
     const map = mapRef.current?.getContext("2d") ?? null;
     const events: CarEvent[] = [];
     let last = performance.now(), fpsAcc = 0, fpsN = 0, fps = 0, hudAt = 0, running = true, raf = 0, t0 = performance.now(), finished = false, moved = false;
+    // A shared start: the clock starts at the moment the server named, for everyone.
+    const startsAt = props.startsAt ?? null;
+    const path: [number, number, number][] = [];
+    let lastSample = 0;
 
     const drawMap = () => {
       if (!map || !mapRef.current) return;
@@ -174,9 +236,37 @@ export default function RaceCanvas(props: {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       events.length = 0;
-      const inp = frozen.current || finished ? { throttle: 0, brake: 1, steer: 0, nitro: false } : input.current;
-      if (!moved && inp.throttle > 0) { moved = true; t0 = now; }
+      const waiting = startsAt != null && Date.now() < startsAt;
+      const inp = frozen.current || finished || waiting ? { throttle: 0, brake: 1, steer: 0, nitro: false } : input.current;
+      if (startsAt != null) {
+        if (!moved && !waiting) { moved = true; t0 = now - (Date.now() - startsAt); }
+      } else if (!moved && inp.throttle > 0) { moved = true; t0 = now; }
       car.update(dt, inp, events);
+      if (moved && !finished && now - lastSample >= 500) { lastSample = now; path.push([car.x, car.z, car.heading]); }
+      onPose.current?.(car.x, car.z, car.heading, car.speed);
+      syncRivals();
+      for (const [id, r] of rivals) {
+        const p = others!.get(id)!;
+        // Ease toward the last pose, nudged along by its own speed since then.
+        const age = Math.min(1, (performance.now() - p.t) / 1000);
+        const tx = p.x + Math.sin(p.h) * p.v * age, tz = p.z - Math.cos(p.h) * p.v * age;
+        r.x += (tx - r.x) * Math.min(1, dt * 6); r.z += (tz - r.z) * Math.min(1, dt * 6);
+        let dh = p.h - r.h; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
+        r.h += dh * Math.min(1, dt * 6);
+        r.body.position.set(r.x, 0, r.z);
+        r.body.rotation.y = -r.h;
+        for (const w of r.wheels) w.rotation.x += (p.v * dt) / 0.36;
+        placeLabel(r.label, r.x, r.z);
+      }
+      if (ghostBody && props.ghost) {
+        const gp = props.ghost.path;
+        const tGhost = moved ? (now - t0) / 500 : 0;
+        const i = Math.min(gp.length - 1, Math.floor(tGhost)), f = Math.min(1, tGhost - i);
+        const a = gp[i], b = gp[Math.min(gp.length - 1, i + 1)];
+        ghostBody.position.set(a[0] + (b[0] - a[0]) * f, 0, a[1] + (b[1] - a[1]) * f);
+        ghostBody.rotation.y = -a[2];
+        if (ghostLabel) placeLabel(ghostLabel, ghostBody.position.x, ghostBody.position.z);
+      }
       for (const ev of events) {
         if (ev.type === "road") setRoad(ev.name);
         if (ev.type === "junction") {
@@ -202,7 +292,8 @@ export default function RaceCanvas(props: {
         const d = Math.hypot(finish.x - car.x, finish.z - car.z);
         if (d <= FINISH_RADIUS && moved) {
           finished = true;
-          onEvent.current?.({ type: "finish", elapsedMs: Math.round(now - t0) });
+          path.push([car.x, car.z, car.heading]);
+          onEvent.current?.({ type: "finish", elapsedMs: Math.round(now - t0), path });
         }
       }
       // Chase camera.
@@ -221,6 +312,7 @@ export default function RaceCanvas(props: {
         setNitro(car.nitro);
         if (finish) setToFinish(Math.hypot(finish.x - car.x, finish.z - car.z));
         if (finish && moved && !finished) setClock(now - t0);
+        if (startsAt != null) setCountdown(waiting ? Math.ceil((startsAt - Date.now()) / 1000) : null);
         drawMap();
         if (fpsAcc >= 1) { fps = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
         if (props.debug) setDbg(`fps ${fps} dpr ${dpr.toFixed(2)} roads ${city.counts.roads} buildings ${city.counts.buildings} trees ${city.counts.trees}\nedge ${car.edge.id} s ${car.s.toFixed(1)} lane ${car.lane.toFixed(1)} speed ${car.speed.toFixed(1)} m/s\nphotos ${photos.current} steer ${input.current.steer.toFixed(2)}`);
@@ -252,11 +344,13 @@ export default function RaceCanvas(props: {
       window.removeEventListener("keydown", kd);
       window.removeEventListener("keyup", ku);
       balloons = [];
+      for (const r of rivals.values()) r.label.remove();
+      ghostLabel?.remove();
       renderer.dispose();
     };
     // The tile and the start never change while the canvas is mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.tile, props.start, props.finish, props.mapsKey, props.debug]);
+  }, [props.tile, props.start, props.finish, props.mapsKey, props.debug, props.startsAt, props.ghost, props.others]);
 
   // ---- the wheel ----
   const wheelDown = (e: React.PointerEvent) => {
@@ -290,6 +384,8 @@ export default function RaceCanvas(props: {
   return (
     <div className={styles.stage}>
       <canvas ref={canvasRef} className={styles.gl} />
+      <div ref={labelsRef} className={styles.labels} />
+      {countdown != null && <div className={styles.countdown}>{countdown > 0 ? countdown : "GO"}</div>}
       <div className={styles.hud}>
         <div className={styles.top}>
           <div className={styles.roadName}>{road ?? props.tile.roads.find((r) => r.name)?.name ?? "Unnamed road"}</div>
