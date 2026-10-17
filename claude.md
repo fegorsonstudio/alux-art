@@ -412,6 +412,37 @@ greeting check; Paystack has one webhook URL, so licence payments arrive in the 
 `/api/webhooks/paystack` route; a payment later than WhatsApp's 24-hour window needs an
 approved template to deliver the code.
 
+**Update (2026-10-17): AR balloon campaigns are LIVE (owner approved the plan; commit `c2127f7`).**
+A business books the private template **AR Balloon Campaign** (`43df341b`, category
+`ar_experience`, ₦50,000 PLACEHOLDER price, `platform_fee_exempt`, listed only after
+`scripts/publish-ar-template.mjs`) with a brand name, tagline, logo, two colours, a pin on a
+Leaflet/OSM map, a radius (100–1000 m) and a start date; the campaign runs
+`app_config.ar_campaign_days` (30) days. Fulfilment (`lib/ar/fulfil.ts`, forked in
+`lib/generate.ts` right after gif_loop, before the refund block) copies the logo to
+`template-images/ar/<campaign>/logo.png` (identity-images is purged after 48 h; template-images
+is public via `/api/media` and never swept), writes `ar_campaigns` (migration 074, psql; a
+public `token` and a `preview_token`), marks the shoot COMPLETE with NO `shoot_images` rows, and
+sends the owner a Telegram alert. Public page `/d/ar/<token>` (`app/d/ar/[token]`, three.js
+bundled, `lib/ar/*`): camera feed + branded hot-air balloons placed around the viewer (never
+GPS-anchored), device orientation turns the camera, GPS geofence with hysteresis (2 fixes in,
++30 m and 10 s out), a Take-a-photo share button, `?p=<preview_token>` skips the fence,
+`?debug=1` overlays the numbers. **`next.config.ts` has a second headers rule for
+`/d/ar/:path*`** that re-enables camera/geolocation/motion (the site-wide rule still blocks them
+everywhere else; verified through Cloudflare). Buyers see link, QR (PNG), preview link and counts
+in `/studio` (`/api/shoots/[id]/ar`); `/admin/ar` lists every campaign with Suspend/Unsuspend.
+Events (`POST /api/ar/[token]/event`: open, permission_denied, outside, activated, photo) are
+rate limited, carry no PII, and preview visits are not counted. Verified live: an admin free
+booking end to end (`scripts/test-ar-booking.mjs`, campaign `7972301f`, pinned at Lagos Island
+6.4541, 3.3947, 1000 m; its link is the owner's test link) and 4 Playwright tests against the live
+site (fake camera, moved geolocation, preview). **Not yet done on a real phone**: the owner's
+walk-in test (iPhone + Android) with the preview link, then at the pin. **Deploy note:** the VPS
+git history has diverged from the laptop's (VPS HEAD `5a69c97` wardrobe work + 202 uncommitted
+files); this deploy copied only the 46 committed files by tar after checking the 19 shared ones
+were byte-identical to the laptop's pre-edit versions; backup `/root/ar-deploy-backup/`. Open:
+the price; "use my location" in the checkout (needs the header on /marketplace too); editing a
+campaign after purchase; other experience types (the scene class and the colours/logo config are
+the seams).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
