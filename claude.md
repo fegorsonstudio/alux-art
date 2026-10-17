@@ -579,6 +579,37 @@ owner's real-phone test; whether Google markers render on real phones is moot no
 about: not needed and would not fix the rights issue (own 360 photos → Polycam/Luma splats, or Google
 Photorealistic 3D Tiles, are the legal 3D routes).
 
+**Update (2026-10-18, final): the hunt runs on roads PLAYERS RECORD THEMSELVES; Google Street View is gone
+from the hunt** (owner: "I don't want us to use Google's Street View anymore. Create a camera in the web app").
+**Recorder** `/d/road/<campaign token>/record` (`app/d/road/[token]/record/Recorder.tsx`): rear camera at 720p
+via MediaRecorder (mp4 on iPhone, webm on Android), the GPS logged while recording ([seconds, lat, lng, acc]),
+6 s–3 min, review, name it, then an upload in 8 MB parts (nginx allows 32 MB a request):
+`POST /api/road/<token>/create` → `PUT …/part?id&n` → `POST …/done` (parts + track). Parts wait in
+`/home/aluxart/road-uploads/<id>/` (`ROAD_UPLOAD_DIR`). **Converter** `scripts/road-transcode.mjs`, root cron
+every minute, `flock` + `systemd-run MemoryMax=1200M` (crontab backup `/root/crontab.bak-2026-10-18-road`;
+log `/home/aluxart/road-transcode.log`): ffmpeg one thread → H.264 mp4 ≤1280 px + poster, length from the GPS
+track (≥30 m, else duration×8 m/s), into the `template-images` bucket `roads/<id>/` (never purged); table
+`road_tracks` (migration 078, applied with psql; status uploading → uploaded → processing → ready | failed |
+hidden; `races.road_id`, `race_groups.road_id`). `GET /api/road/<token>/list` (ready roads + pending count),
+`GET …/file/<id>` → 302 to a one-hour R2 link (range requests work there; **the race/road CSP has
+`media-src self blob: https://*.r2.cloudflarestorage.com`** — without it the video is blocked and the page
+says "could not be played"). `scripts/road-delete.mjs <id>|--name` removes a road and its files. **The hunt
+page** (`BountyRace.tsx`) lists the roads (poster, length, time, recorder, runs; polls every 15 s), a "Record a
+road" link, Hunt / Race others on the chosen road; `POST start` takes `roadId` (route_m = road length, the 70
+m/s rule still applies), `POST group` takes `roadId` (the lobby races that road), `ghost` and `leaderboard`
+take `?road=`. **The race** (`components/race/VideoRace.tsx`): the video is the road; GO = playback (full
+throttle 1.3× the recording, nitro to 2×, STOP pauses), position = `lib/race/track.ts` TrackGeom (GPS samples →
+metres along the road; a recording without GPS gets a straight synthetic line), finish = end of the video; the
+prize balloon, our traffic (`lib/race/track-traffic.ts`, by metres along the road) and rivals/ghost are <img>s
+placed by a simple pinhole projection (horizon at 46 %, camera 1.5 m up). Removed: `StreetViewRace.tsx`,
+`sprite-layer.ts`, Google script/CSP entries on the race pages (the Maps key is now used only by the 3D demo's
+junction photos). Permissions-Policy rule covers `/d/(ar|race|road)`. **Verified live (Google Chrome, fake
+camera, moving geolocation):** record → upload → converted in 6 s (12.3 s, 89 m, 1280×720) → listed. **The
+bundled Playwright Chromium cannot decode H.264, so the race tests use `channel: "chrome"`.** Not yet done: the
+owner recording a real road on a real phone (iPhone Safari MediaRecorder = mp4; Android Chrome = webm). Known
+limits: no moderation UI (set `status=hidden` by SQL); one road at a time in the converter; a landscape video
+on a portrait phone shows its middle (object-fit cover); leaderboard is per road.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
