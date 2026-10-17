@@ -22,7 +22,7 @@ export type RaceEvent =
   | { type: "error"; message: string };
 
 const FINISH_RADIUS = 28;
-const HOPS_PER_SEC = 1.3;
+const HOPS_PER_SEC = 1.6;
 const OPPONENT_COLORS = ["#2f8e9a", "#ffd166", "#8e44ad", "#27ae60", "#e67e22", "#3498db"];
 
 export default function StreetViewRace(props: {
@@ -127,10 +127,20 @@ export default function StreetViewRace(props: {
           pano!.setPano(link.pano);
           headingTarget = link.heading;
         };
-        // Give each photo time to arrive before the next one is asked for: a
-        // hop every 1.5 s at full speed reads as a brisk drive and never goes black.
-        const hopSettled = () => !hopping || (hopDone > 0 && performance.now() - hopDone > 700) || performance.now() - hopStartedAt > 2500;
-        let hopStartedAt = 0;
+        // The next photo is asked for only once the current one has really
+        // arrived. There is no tiles-loaded event, but the tile downloads show
+        // up in the browser's resource timing: a hop counts as settled when a
+        // few new tiles have landed since it started (or after 3 s regardless).
+        const TILE_RE = /streetviewpixels|ggpht.com|cbkd*.google/;
+        const tilesSoFar = () => performance.getEntriesByType("resource").filter((e) => TILE_RE.test(e.name)).length;
+        let tilesAtHop = 0, hopStartedAt = 0;
+        const hopSettled = () => {
+          if (!hopping) return true;
+          const since = performance.now() - hopStartedAt;
+          if (since > 3000) return true;
+          if (hopDone === 0 || performance.now() - hopDone < 250) return false;
+          return tilesSoFar() - tilesAtHop >= 3;
+        };
 
         timer = setInterval(() => {
           if (cancelled || !pano) return;
@@ -162,6 +172,8 @@ export default function StreetViewRace(props: {
           if (hop >= 1 && !hopping) {
             hop -= 1;
             hopStartedAt = performance.now();
+            if (performance.getEntriesByType("resource").length > 200) performance.clearResourceTimings();
+            tilesAtHop = tilesSoFar();
             const links = (pano.getLinks() ?? []).filter((l): l is google.maps.StreetViewLink => !!l && l.heading != null);
             const want = (heading + inp.steer * 75 + 360) % 360;
             if (links.length) {
