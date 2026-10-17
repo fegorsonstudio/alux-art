@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps, distanceM, bearingDeg, angleDiff, carIcon, balloonIcon } from "@/lib/race/gmaps";
 import { projector, type RoadTile } from "@/lib/race/types";
 import type { Pose } from "@/lib/race/realtime";
+import { Traffic, carSprite, personSprite, type SpriteView } from "@/lib/race/traffic";
 import styles from "./race.module.css";
 
 /**
@@ -49,6 +50,7 @@ export default function StreetViewRace(props: {
   const [dbg, setDbg] = useState("");
 
   const panoRef = useRef<HTMLDivElement>(null);
+  const preRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
   const input = useRef({ throttle: 0, brake: 0, steer: 0, nitro: false });
@@ -88,6 +90,31 @@ export default function StreetViewRace(props: {
           motionTracking: false, motionTrackingControl: false, showRoadLabels: false,
         });
         setLoading("");
+
+        // Preload: a second, invisible panorama is pointed at the photo we are
+        // most likely to step to next, so its tiles are already in the
+        // browser's cache when the hop comes (Google counts it as one more
+        // panorama load per hunt; nothing per step).
+        let pre: google.maps.StreetViewPanorama | null = null;
+        if (preRef.current) {
+          pre = new g.maps.StreetViewPanorama(preRef.current, {
+            pano: near.data.location.pano, pov: { heading: first?.heading ?? toPrize, pitch: 0 }, zoom: 0.6,
+            disableDefaultUI: true, clickToGo: false, scrollwheel: false, linksControl: false, panControl: false,
+            zoomControl: false, addressControl: false, fullscreenControl: false, enableCloseButton: false,
+            motionTracking: false, motionTrackingControl: false, showRoadLabels: false,
+          });
+        }
+        let preTarget = near.data.location.pano ?? "", preAt = 0;
+
+        // Our own traffic: cars and people on the OpenStreetMap roads around
+        // the player, drawn over the photo. (The cars and people in the photos
+        // are pixels and cannot move.)
+        const traffic = new Traffic(tile, 3, 2);
+        const sprites: { m: google.maps.Marker; key: string }[] = [];
+        for (let i = 0; i < traffic.agents.length; i++) {
+          const m = new g.maps.Marker({ map: null, clickable: false, optimized: false });
+          sprites.push({ m, key: "" }); markers.push(m);
+        }
 
         // The prize.
         markers.push(new g.maps.Marker({
@@ -168,6 +195,15 @@ export default function StreetViewRace(props: {
 
           // A hop along the road when enough speed has built up.
           if (hopping && hopSettled()) hopping = false;
+          if (pre && !hopping && now - preAt > 300) {
+            preAt = now;
+            const links = (pano.getLinks() ?? []).filter((l): l is google.maps.StreetViewLink => !!l && l.heading != null && !!l.pano);
+            const want = (heading + inp.steer * 75 + 360) % 360;
+            if (links.length) {
+              const best = links.reduce((p, c) => (Math.abs(angleDiff(c.heading!, want)) < Math.abs(angleDiff(p.heading!, want)) ? c : p));
+              if (best.pano !== preTarget && Math.abs(angleDiff(best.heading!, want)) <= 100) { preTarget = best.pano!; pre.setPano(best.pano!); pre.setPov({ heading: best.heading!, pitch: 0 }); }
+            }
+          }
           hop += v * HOPS_PER_SEC * dt;
           if (hop >= 1 && !hopping) {
             hop -= 1;
@@ -201,8 +237,28 @@ export default function StreetViewRace(props: {
               if (moved && !finished) setClock(now - t0);
               if (startsAt != null) setCountdown(waiting ? Math.ceil((startsAt - Date.now()) / 1000) : null);
               drawMap(lat, lng, heading);
-              if (props.debug) setDbg(`speed ${(v * 20).toFixed(1)} m/s heading ${Math.round(heading)} links ${(pano.getLinks() ?? []).length}\nlat ${lat.toFixed(5)} lng ${lng.toFixed(5)} to prize ${Math.round(d)} m rivals ${rivals.size}`);
+              if (props.debug) setDbg(`speed ${(v * 20).toFixed(1)} m/s heading ${Math.round(heading)} links ${(pano.getLinks() ?? []).length}\nlat ${lat.toFixed(5)} lng ${lng.toFixed(5)} to prize ${Math.round(d)} m rivals ${rivals.size} traffic ${traffic.agents.filter((a) => a.alive).length}`);
             }
+
+            // Traffic: move everyone, then draw each as a marker sized by distance.
+            traffic.update(dt, lat, lng);
+            traffic.agents.forEach((a, i) => {
+              const s = sprites[i];
+              if (!a.alive) { if (s.key) { s.m.setMap(null); s.key = ""; } return; }
+              const dist = Math.max(3, distanceM(lat, lng, a.lat, a.lng));
+              const bear = bearingDeg(lat, lng, a.lat, a.lng);
+              const rel = angleDiff(a.heading, bear);
+              let view: SpriteView;
+              if (Math.abs(rel) < 55) view = "back";
+              else if (Math.abs(rel) > 125) view = "front";
+              else view = Math.abs(angleDiff(a.heading, bear + 90)) < 90 ? "right" : "left";
+              let w: number, h: number, url: string;
+              if (a.kind === "car") { w = Math.round(Math.min(170, Math.max(8, 460 / dist)) / 3) * 3; h = Math.round(w * 0.75); url = carSprite(a.color, view); }
+              else { h = Math.round(Math.min(170, Math.max(10, 430 / dist)) / 3) * 3; w = Math.round(h * 0.44); url = personSprite(a.color, (Math.floor(now / 350) % 2) as 0 | 1, view === "left" ? "left" : "right"); }
+              const key = `${url}|${w}`;
+              if (s.key !== key) { s.key = key; s.m.setIcon({ url, scaledSize: new g.maps.Size(w, h), anchor: new g.maps.Point(w / 2, h) }); s.m.setZIndex(Math.round(2000 - dist)); if (!s.m.getMap()) s.m.setMap(pano); }
+              s.m.setPosition({ lat: a.lat, lng: a.lng });
+            });
           }
 
           // The others: a marker each, eased toward the last pose.
@@ -307,6 +363,7 @@ export default function StreetViewRace(props: {
 
   return (
     <div className={styles.stage}>
+      <div ref={preRef} className={styles.gl} style={{ opacity: 0, pointerEvents: "none" }} aria-hidden />
       <div ref={panoRef} className={styles.gl} />
       {loading && <div className={styles.loadingPano}>{loading}</div>}
       {countdown != null && <div className={styles.countdown}>{countdown > 0 ? countdown : "GO"}</div>}
