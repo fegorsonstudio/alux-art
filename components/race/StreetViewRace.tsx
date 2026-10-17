@@ -140,6 +140,8 @@ export default function StreetViewRace(props: {
           sprites.push({ m, key: "" }); markers.push(m);
         }
 
+        if (props.debug) (window as unknown as Record<string, unknown>).__svr = { pano, pre, traffic, sprites, g };
+
         // The prize.
         markers.push(new g.maps.Marker({
           position: { lat: finish.lat, lng: finish.lng }, map: pano, title: finish.brand,
