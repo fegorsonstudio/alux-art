@@ -130,7 +130,7 @@ export async function fulfilArCampaign(
         // The bounty: prize codes a cashier can read out, handed out by the race server.
         if (booking.prizeCount) await createPrizes(campaignId, booking.prizeCount, booking.prizeLabel || "Prize");
         // Warm the streets now (OpenStreetMap takes 30-120 s), so the first hunter never waits for them.
-        if (booking.prizeCount) void getTile(lat, lng, 2500).catch(() => { /* the first hunt asks again */ });
+        if (booking.prizeCount) void getTile(booking.lat, booking.lng, 2500).catch(() => { /* the first hunt asks again */ });
       }
     }
 
