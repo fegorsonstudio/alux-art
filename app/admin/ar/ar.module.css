@@ -1,0 +1,18 @@
+/* The AR campaigns admin list. Tokens, bar, panel, pills and buttons come from
+   the carousel studio's stylesheet; only the list itself lives here. */
+.wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+.card {
+  display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: start;
+  padding: 14px; border-radius: 8px;
+  background: var(--tile-bg); border: 1px solid var(--tile-line);
+}
+.logo { width: 72px; height: 72px; object-fit: contain; border-radius: 10px; background: #fff; padding: 6px; }
+.body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.brand { font-size: 0.95rem; font-weight: 800; color: var(--heading); }
+.tagline { margin: 0; font-size: 0.84rem; color: var(--ink); }
+.swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.15); display: inline-block; }
+@media (max-width: 520px) {
+  .card { grid-template-columns: 1fr; }
+}

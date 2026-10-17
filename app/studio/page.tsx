@@ -8,6 +8,7 @@ import { ASPECTS, REFERENCE_TAGS, SHOOT_PACKAGES, normalizePackageSize, packageP
 import { resizeIfNeeded } from "@/lib/resize-image";
 import { useT } from "@/lib/useLocale";
 import styles from "../workspace.module.css";
+import ArQr from "@/components/ArQr";
 import SoulIdPanel from "./SoulIdPanel";
 import WalletPanel from "./WalletPanel";
 
@@ -113,6 +114,14 @@ export default function WorkspacePage() {
   const [giphyTags, setGiphyTags] = useState("");
   const [giphyBusy, setGiphyBusy] = useState(false);
   const [giphyError, setGiphyError] = useState<string | null>(null);
+  // The AR balloon campaign behind a finished ar_experience order: its link,
+  // QR, preview link and counts. Null for every other kind of shoot.
+  const [ar, setAr] = useState<{
+    brandName: string; tagline: string; status: "scheduled" | "live" | "ended" | "suspended";
+    startsAt: string; endsAt: string; publicUrl: string; previewUrl: string; mapsUrl: string;
+    counts: { opens: number; activations: number; photos: number };
+  } | null>(null);
+  const [arCopied, setArCopied] = useState(false);
 
   // /api/shoots returns 20 at a time plus a cursor. The page used to drop the
   // cursor, so anyone past 20 shoots could not reach their older galleries at
@@ -388,6 +397,22 @@ export default function WorkspacePage() {
     fetch(`/api/shoots/${id}/giphy`)
       .then(r => (r.ok ? r.json() : null))
       .then(data => { if (!cancelled && data?.eligible) setGiphy(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentShoot?.id, currentShoot?.status, currentShoot]);
+
+  // The campaign block. The shoot row carries its booking in `enhance`, whose
+  // `kind` says what the order was; only a finished AR order asks.
+  useEffect(() => {
+    setAr(null);
+    setArCopied(false);
+    const id = currentShoot?.id;
+    const kind = (currentShoot as unknown as { enhance?: { kind?: string } } | null)?.enhance?.kind;
+    if (!id || currentShoot?.status !== "COMPLETE" || kind !== "ar_experience") return;
+    let cancelled = false;
+    fetch(`/api/shoots/${id}/ar`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (!cancelled && data?.campaign) setAr(data.campaign); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [currentShoot?.id, currentShoot?.status, currentShoot]);
@@ -1726,6 +1751,41 @@ export default function WorkspacePage() {
                       {giphyError && <p className={styles.identityWarn}>{giphyError}</p>}
                     </>
                   )}
+                </div>
+              )}
+
+              {/* The AR balloon campaign: the link people open at the spot, its
+                  QR code, a preview link that skips the location check, and
+                  how many have opened it. */}
+              {ar && (
+                <div className={styles.retouchBlock}>
+                  <div className={styles.retouchHead}>
+                    <span className={styles.retouchTitle}>{t("arTitle")} · {ar.brandName}</span>
+                    <span className={styles.giphyTagOut}>
+                      {ar.status === "live" ? t("arStatusLive") : ar.status === "scheduled" ? t("arStatusScheduled") : ar.status === "ended" ? t("arStatusEnded") : t("arStatusSuspended")}
+                      {" · "}
+                      {t("arRuns").replace("{from}", new Date(ar.startsAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })).replace("{to}", new Date(ar.endsAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }))}
+                    </span>
+                  </div>
+                  <label className={styles.giphyTagLabel} htmlFor="ar-link">{t("arLink")}</label>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input id="ar-link" className={styles.giphyTagInput} value={ar.publicUrl} readOnly onFocus={e => e.currentTarget.select()} />
+                    <button type="button" className={styles.giphyBtn} style={{ marginTop: 0, flexShrink: 0 }}
+                      onClick={() => { navigator.clipboard?.writeText(ar.publicUrl).then(() => { setArCopied(true); setTimeout(() => setArCopied(false), 1500); }).catch(() => {}); }}>
+                      {arCopied ? t("arCopied") : t("arCopy")}
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <ArQr url={ar.publicUrl} fileName={`${ar.brandName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-balloons-qr.png`} label={t("arQrDownload")} />
+                  </div>
+                  <p className={styles.retouchHint}>
+                    {t("arStats").replace("{opens}", String(ar.counts.opens)).replace("{activations}", String(ar.counts.activations)).replace("{photos}", String(ar.counts.photos))}
+                  </p>
+                  <p className={styles.retouchHint}>
+                    <a className={styles.giphyLink} href={ar.previewUrl} target="_blank" rel="noopener noreferrer">{t("arPreview")}</a>
+                    {" — "}{t("arPreviewHint")}
+                  </p>
+                  <a className={styles.giphyLink} href={ar.mapsUrl} target="_blank" rel="noopener noreferrer">{t("arMap")}</a>
                 </div>
               )}
 

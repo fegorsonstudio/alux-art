@@ -5,6 +5,10 @@ import { resizeIfNeeded, downscaleForDisplay } from "@/lib/resize-image";
 import { CUSTOM_BACKDROP_ID } from "@/lib/gear-equalizer";
 import styles from "./checkout-panel.module.css";
 import ImagePreview from "@/components/ImagePreview";
+import dynamic from "next/dynamic";
+
+// Leaflet needs window, so the map only ever renders in the browser.
+const ArLocationPicker = dynamic(() => import("@/components/ArLocationPicker"), { ssr: false });
 import { savePendingCheckout, loadPendingCheckout, clearPendingCheckout, setResumeMarker } from "@/lib/checkout-resume";
 import { NURSING_TITLES, INDUCTION_NAME_MAXLEN, INDUCTION_MAX_TITLES, inductionYearRange } from "@/lib/nursing-induction";
 import { RECOLOR_PALETTE, RECOLOR_GROUP_TYPES, GROUP_TYPES } from "@/lib/choice-groups";
@@ -368,6 +372,17 @@ export default function CheckoutPanel({
   const [gifBefore, setGifBefore] = useState<NewIdentityUpload | null>(null);
   const [gifAfter, setGifAfter] = useState<NewIdentityUpload | null>(null);
   const [gifLogo, setGifLogo] = useState<NewIdentityUpload | null>(null);
+  // ar_experience - a branded balloon campaign over one spot on the map. No
+  // face anywhere in it either, so the identity section is hidden like the loop's.
+  const [arBrand, setArBrand] = useState("");
+  const [arTagline, setArTagline] = useState("");
+  const [arLogo, setArLogo] = useState<NewIdentityUpload | null>(null);
+  const [arColors, setArColors] = useState<[string, string]>(["#ff4d6d", "#ffd166"]);
+  const [arPin, setArPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [arRadius, setArRadius] = useState(250);
+  const [arStart, setArStart] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" }));
+  const [arRights, setArRights] = useState(false);
+  const [arDays, setArDays] = useState(30);
   const [newsHeadline, setNewsHeadline] = useState("");
   const [newsSubtitle, setNewsSubtitle] = useState("");
   const [newsCaption, setNewsCaption] = useState("");
@@ -579,6 +594,13 @@ export default function CheckoutPanel({
   // they tap one lighting rig + one camera look, and optionally swap the background.
   const photoUpgradeActive = template.category === "photo_upgrade";
   const gifLoopActive = template.category === "gif_loop";
+  const arActive = template.category === "ar_experience";
+  // How long a campaign runs is the owner's setting, shown beside the start date.
+  useEffect(() => {
+    if (!arActive) return;
+    fetch("/api/ar/config").then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.days) setArDays(Number(d.days)); }).catch(() => {});
+  }, [arActive]);
   const t = useT("checkout");
   const tc = useT("common");
   // Plural-aware "image(s)" word used inside interpolated sentences.
@@ -783,6 +805,16 @@ export default function CheckoutPanel({
       }
       if (c.gifKicker) setGifKicker(c.gifKicker);
       if (c.gifWebsite) setGifWebsite(c.gifWebsite);
+      if (c.arBrand) setArBrand(c.arBrand);
+      if (c.arTagline) setArTagline(c.arTagline);
+      if (c.arColors) setArColors(c.arColors);
+      if (c.arPin) setArPin(c.arPin);
+      if (c.arRadius) setArRadius(c.arRadius);
+      if (c.arStart) setArStart(c.arStart);
+      if (pending.arFile) {
+        const pf = pending.arFile;
+        setGifSlot(setArLogo, { keepOriginal: true })(new File([pf.blob], pf.name, { type: pf.type || "image/png" }));
+      }
       const gf = pending.gifFiles;
       if (gf) {
         ([["before", setGifBefore], ["after", setGifAfter], ["logo", setGifLogo]] as const)
@@ -1037,7 +1069,7 @@ export default function CheckoutPanel({
   // One uploader for all three slots - they behave identically and differ only
   // in which piece of state they land in.
   type SlotSetter = React.Dispatch<React.SetStateAction<NewIdentityUpload | null>>;
-  const setGifSlot = (set: SlotSetter) => async (file: File) => {
+  const setGifSlot = (set: SlotSetter, opts?: { keepOriginal?: boolean }) => async (file: File) => {
     const localId = crypto.randomUUID();
     set({
       localId, file, preview: URL.createObjectURL(file),
@@ -1056,7 +1088,9 @@ export default function CheckoutPanel({
       ? { ...prev, uploading: false, error: msg } : prev);
 
     try {
-      const f = await downscaleForDisplay(file);
+      // A logo keeps its bytes: downscaling re-encodes to JPEG and loses the
+      // see-through background the balloons need. The 5 MB cap is on the tile.
+      const f = opts?.keepOriginal ? file : await downscaleForDisplay(file);
       const form = new FormData();
       form.append("file", f, f.name);
       form.append("bucket", "identity-images");
@@ -1289,11 +1323,14 @@ export default function CheckoutPanel({
   const gifValid = !!gifBefore?.storagePath && !!gifAfter?.storagePath
     && gifLines.some(l => l.trim());
   const gifBusy = !!gifBefore?.uploading || !!gifAfter?.uploading || !!gifLogo?.uploading;
+  const arValid = arBrand.trim().length >= 1 && arBrand.trim().length <= 40
+    && arTagline.length <= 60 && !!arLogo?.storagePath && !!arPin && arRights
+    && /^#[0-9a-f]{6}$/i.test(arColors[0]) && /^#[0-9a-f]{6}$/i.test(arColors[1]);
 
   // A loop carries no identity photograph at all, so that requirement is
   // replaced rather than relaxed: its own two pictures and headline are what
   // must be present before the button does anything.
-  const canPay = (gifLoopActive ? gifValid && !gifBusy : allIdentityRefs.length > 0)
+  const canPay = (gifLoopActive ? gifValid && !gifBusy : arActive ? arValid && !arLogo?.uploading : allIdentityRefs.length > 0)
     && !anyUploading
     && !newUploads.some(u => u.error)
     && !buying
@@ -1320,6 +1357,12 @@ export default function CheckoutPanel({
       gifLines: gifLines.some(l => l.trim()) ? gifLines : undefined,
       gifKicker: gifKicker || undefined,
       gifWebsite: gifWebsite || undefined,
+      arBrand: arActive ? arBrand : undefined,
+      arTagline: arActive ? arTagline : undefined,
+      arColors: arActive ? arColors : undefined,
+      arPin: arActive ? arPin : undefined,
+      arRadius: arActive ? arRadius : undefined,
+      arStart: arActive ? arStart : undefined,
       groupColors, inductionName, inductionTitles, inductionYear, inductionCap,
       enhanceLighting: enhanceLighting ?? undefined,
       enhanceCamera: enhanceCamera ?? undefined,
@@ -1341,7 +1384,8 @@ export default function CheckoutPanel({
     const bowlFile = bowlUpload?.file
       ? { name: bowlUpload.file.name, type: bowlUpload.file.type || "image/jpeg", blob: bowlUpload.file as Blob }
       : null;
-    await savePendingCheckout(templateId, config, files, bowlFile, gifFiles);
+    const arFile = arActive ? asPending(arLogo) : null;
+    await savePendingCheckout(templateId, config, files, bowlFile, gifFiles, arFile);
     // Marker (cookie + localStorage) drives the post-login redirect back here even if the
     // OAuth `next` is dropped to the home page.
     setResumeMarker(templateId);
@@ -1455,6 +1499,14 @@ export default function CheckoutPanel({
               beforeRef: { storagePath: gifBefore?.storagePath },
               afterRef: { storagePath: gifAfter?.storagePath },
               logoRef: gifLogo?.storagePath ? { storagePath: gifLogo.storagePath } : undefined,
+            }
+          : undefined,
+        arExperience: arActive && arPin
+          ? {
+              brandName: arBrand.trim(), tagline: arTagline.trim(),
+              logoRef: { storagePath: arLogo?.storagePath },
+              colors: [arColors[0].toLowerCase(), arColors[1].toLowerCase()],
+              lat: arPin.lat, lng: arPin.lng, radiusM: arRadius, startsAt: arStart,
             }
           : undefined,
       }),
@@ -1670,7 +1722,7 @@ export default function CheckoutPanel({
           {/* Identity photos — deliberately NOT collapsible: this is the one step
               every buyer must complete, so the upload button is always on screen.
               Hidden entirely for a loop, which has no subject to recognise. */}
-          {!gifLoopActive && (
+          {!gifLoopActive && !arActive && (
           <div style={{ flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
               <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>
@@ -1921,8 +1973,105 @@ export default function CheckoutPanel({
             </div>
           )}
 
+          {/* ── ar_experience: brand, logo, colours, the spot on the map ── */}
+          {arActive && (
+            <div style={{ flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>🎈 {t("arTitle")}</span>
+              <p className={styles.sectionHint}>{t("arHint")}</p>
+
+              <p className={styles.pkgLabel} style={{ marginTop: 10, marginBottom: 4 }}>{t("arBrandLabel")}</p>
+              <input className={styles.flagInput} value={arBrand} maxLength={40}
+                placeholder={t("arBrandPh")} onChange={e => setArBrand(e.target.value)} />
+
+              <p className={styles.pkgLabel} style={{ marginTop: 10, marginBottom: 4 }}>
+                {t("arTaglineLabel")} <span className={styles.optionalTag}>{t("optionalParen")}</span>
+              </p>
+              <input className={styles.flagInput} value={arTagline} maxLength={60}
+                placeholder={t("arTaglinePh")} onChange={e => setArTagline(e.target.value)} />
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("arLogoLabel")}</p>
+              <p className={styles.sectionHint}>{t("arLogoHint")}</p>
+              {arLogo ? (
+                <div className={styles.uploadGrid}>
+                  <div className={styles.uploadItem}>
+                    <ImagePreview src={arLogo.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                    {arLogo.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
+                    {arLogo.error && <div className={styles.uploadError}>{arLogo.error}</div>}
+                    <button type="button" className={styles.removeBtn} onClick={() => setArLogo(null)}>✕</button>
+                  </div>
+                </div>
+              ) : (
+                <label className={styles.uploadBtn} style={{ cursor: "pointer", alignSelf: "flex-start" }}>
+                  {t("uploadLogo")}
+                  <input type="file" accept="image/png,image/jpeg" style={{ display: "none" }}
+                    onChange={e => {
+                      const f = e.target.files?.[0]; e.target.value = "";
+                      if (!f) return;
+                      if (!["image/png", "image/jpeg"].includes(f.type)) {
+                        setArLogo({ localId: crypto.randomUUID(), file: f, preview: URL.createObjectURL(f), storagePath: "", storageBucket: "identity-images", uploading: false, error: t("arLogoBadType") });
+                        return;
+                      }
+                      if (f.size > 5 * 1024 * 1024) {
+                        setArLogo({ localId: crypto.randomUUID(), file: f, preview: URL.createObjectURL(f), storagePath: "", storageBucket: "identity-images", uploading: false, error: t("arLogoTooBig") });
+                        return;
+                      }
+                      setGifSlot(setArLogo, { keepOriginal: true })(f);
+                    }} />
+                </label>
+              )}
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("arColorsLabel")}</p>
+              <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem" }}>
+                  <input type="color" value={arColors[0]} onChange={e => setArColors([e.target.value, arColors[1]])} />
+                  {t("arColorPrimary")}
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem" }}>
+                  <input type="color" value={arColors[1]} onChange={e => setArColors([arColors[0], e.target.value])} />
+                  {t("arColorSecondary")}
+                </label>
+              </div>
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("arLocationLabel")}</p>
+              <p className={styles.sectionHint}>{t("arLocationHint")}</p>
+              <ArLocationPicker value={arPin} radiusM={arRadius} onChange={setArPin} />
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                <label style={{ flex: 1, fontSize: "0.78rem" }}>
+                  {t("arLatLabel")}
+                  <input className={styles.flagInput} type="number" step="0.000001" min={-90} max={90}
+                    value={arPin?.lat ?? ""} onChange={e => { const v = Number(e.target.value); if (Number.isFinite(v)) setArPin({ lat: v, lng: arPin?.lng ?? 3.3792 }); }} />
+                </label>
+                <label style={{ flex: 1, fontSize: "0.78rem" }}>
+                  {t("arLngLabel")}
+                  <input className={styles.flagInput} type="number" step="0.000001" min={-180} max={180}
+                    value={arPin?.lng ?? ""} onChange={e => { const v = Number(e.target.value); if (Number.isFinite(v)) setArPin({ lat: arPin?.lat ?? 6.5244, lng: v }); }} />
+                </label>
+              </div>
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>
+                {t("arRadiusLabel")} · {t("arRadiusValue").replace("{m}", String(arRadius))}
+              </p>
+              <input type="range" min={100} max={1000} step={50} value={arRadius} style={{ width: "100%" }}
+                onChange={e => setArRadius(Number(e.target.value))} />
+
+              <p className={styles.pkgLabel} style={{ marginTop: 12, marginBottom: 4 }}>{t("arStartLabel")}</p>
+              <input className={styles.flagInput} type="date" value={arStart}
+                min={new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" })}
+                max={new Date(Date.now() + 365 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" })}
+                onChange={e => setArStart(e.target.value)} />
+              <p className={styles.sectionHint}>{t("arStartHint").replace("{days}", String(arDays))}</p>
+
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, fontSize: "0.82rem", cursor: "pointer" }}>
+                <input type="checkbox" checked={arRights} onChange={e => setArRights(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>{t("arRights")}</span>
+              </label>
+
+              {!arValid && <p className={styles.identityWarn}>{t("arWarn")}</p>}
+            </div>
+          )}
+
           {/* Package picker — a loop is always one file, so there is nothing to pick */}
-          {!perImagePricing && !gifLoopActive && pkgOptions.length > 1 && (
+          {!perImagePricing && !gifLoopActive && !arActive && pkgOptions.length > 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("images")}</span>
               <div className={styles.pkgPills}>
@@ -1943,7 +2092,7 @@ export default function CheckoutPanel({
 
           {/* Shot type (1-image package only) — meaningless for a loop: the buyer
               brings their own two pictures already framed. */}
-          {!perImagePricing && !gifLoopActive && selectedPkg === 1 && (
+          {!perImagePricing && !gifLoopActive && !arActive && selectedPkg === 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("shotType")}</span>
               <div className={styles.shotTypeRow}>

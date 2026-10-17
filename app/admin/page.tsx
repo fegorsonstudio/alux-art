@@ -823,6 +823,9 @@ export default function AdminPage() {
             {t.label}
           </button>
         ))}
+        <Link href="/admin/ar" style={{ padding: "8px 16px", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", border: "1px solid rgba(127,127,127,0.3)", color: "inherit", textDecoration: "none" }}>
+          🎈 AR campaigns →
+        </Link>
       </div>
 
       {tab === "overview" && (<>

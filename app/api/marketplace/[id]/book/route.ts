@@ -120,7 +120,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // on trust here and checked against the real category below. Every other
   // category is refused exactly where it always was.
   const claimsGifLoop = !!(body as { gifLoop?: unknown }).gifLoop;
-  if (!claimsGifLoop && (!Array.isArray(identityRefs) || identityRefs.length === 0)) {
+  // An AR balloon campaign has no person in it either; same trust, same re-check below.
+  const claimsAr = !!(body as { arExperience?: unknown }).arExperience;
+  if (!claimsGifLoop && !claimsAr && (!Array.isArray(identityRefs) || identityRefs.length === 0)) {
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
   }
 
@@ -260,7 +262,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ? assetPlan.length
     : perImagePricing
       ? Math.min(10, Math.max(1, Number.isInteger(requestedCount) ? requestedCount : 1))
-      : packagedSize;
+      : template.category === "ar_experience" ? 1 : packagedSize;
 
   // A free booking (admin, sponsor-funded template, or an admin-granted credit)
   // never touches a payment gateway, so the creator's payout setup is irrelevant
@@ -370,6 +372,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       && (!Array.isArray(identityRefs) || identityRefs.length === 0)) {
     return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
   }
+  if (claimsAr && template.category !== "ar_experience"
+      && (!Array.isArray(identityRefs) || identityRefs.length === 0)) {
+    return NextResponse.json({ error: "At least 1 identity photo is required" }, { status: 400 });
+  }
 
   // ── gif_loop ────────────────────────────────────────────────────────────────
   // Two pictures, a headline and the customer's own logo. Every uploaded path is
@@ -413,6 +419,49 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         { error: "Add at least one line — three or four words is what reads best." },
         { status: 400 });
     }
+  }
+  // ── ar_experience ──────────────────────────────────────────────────────────
+  // A branded balloon campaign over one spot on the map. The logo path is
+  // ownership-checked like every other upload; everything else is numbers and
+  // short text, checked here so the fulfilment step (lib/ar/fulfil.ts) only
+  // ever sees a booking it can run. Stored in shoots.enhance like the loop.
+  const arBody = (body as { arExperience?: {
+    brandName?: string; tagline?: string; logoRef?: { storagePath?: string };
+    colors?: string[]; lat?: number; lng?: number; radiusM?: number; startsAt?: string;
+  } }).arExperience;
+  let arExperience: {
+    kind: "ar_experience"; brandName: string; tagline: string; logoPath: string; logoBucket: string;
+    colors: [string, string]; lat: number; lng: number; radiusM: number; startsAt: string;
+  } | null = null;
+  if (template.category === "ar_experience") {
+    const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
+    if (!arBody) return bad("Fill in your balloon campaign details.");
+    const brandName = String(arBody.brandName ?? "").trim();
+    if (!brandName || brandName.length > 40) return bad("Add your brand name (up to 40 characters).");
+    const tagline = String(arBody.tagline ?? "").trim();
+    if (tagline.length > 60) return bad("Keep the tagline under 60 characters.");
+    const logoPath = mine(arBody.logoRef?.storagePath);
+    if (!logoPath) return bad("Upload your logo.");
+    const colors = Array.isArray(arBody.colors) ? arBody.colors.map((c) => String(c ?? "").trim().toLowerCase()) : [];
+    if (colors.length !== 2 || !colors.every((c) => /^#[0-9a-f]{6}$/.test(c))) return bad("Pick two balloon colours.");
+    const lat = Number(arBody.lat), lng = Number(arBody.lng);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+      return bad("Drop the pin where the balloons should appear.");
+    }
+    const radiusM = Math.round(Number(arBody.radiusM));
+    if (!Number.isFinite(radiusM) || radiusM < 100 || radiusM > 1000) return bad("The radius must be between 100 m and 1000 m.");
+    const startsAt = String(arBody.startsAt ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startsAt)) return bad("Pick a start date.");
+    // Lagos calendar days: today through a year ahead.
+    const todayLagos = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
+    const start = Date.parse(`${startsAt}T00:00:00+01:00`);
+    if (Number.isNaN(start) || startsAt < todayLagos || start > Date.now() + 366 * 86_400_000) {
+      return bad("The start date must be today or within the next year.");
+    }
+    arExperience = {
+      kind: "ar_experience", brandName, tagline, logoPath, logoBucket: "identity-images",
+      colors: [colors[0], colors[1]], lat, lng, radiusM, startsAt,
+    };
   }
   // Glow Retouch edits photo N into slot N, so a count that disagrees with the
   // photos sent would charge for a photo that is not there.
@@ -673,7 +722,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ${flagShot ? sql.json(flagShot as unknown as Parameters<typeof sql.json>[0]) : null},
       ${trendSelection ? sql.json(trendSelection as unknown as Parameters<typeof sql.json>[0]) : null},
       ${induction ? sql.json(induction as unknown as Parameters<typeof sql.json>[0]) : null},
-      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : (assetEnhance ? sql.json(assetEnhance as unknown as Parameters<typeof sql.json>[0]) : (gifLoop ? sql.json(gifLoop as unknown as Parameters<typeof sql.json>[0]) : null))},
+      ${enhance ? sql.json(enhance as unknown as Parameters<typeof sql.json>[0]) : (assetEnhance ? sql.json(assetEnhance as unknown as Parameters<typeof sql.json>[0]) : (gifLoop ? sql.json(gifLoop as unknown as Parameters<typeof sql.json>[0]) : (arExperience ? sql.json(arExperience as unknown as Parameters<typeof sql.json>[0]) : null)))},
       ${body.noSmile === true},
       ${now}, ${now}
     )
@@ -710,11 +759,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // upload to edit. It also keeps shoots.package_size at what the buyer paid for,
   // which matters because that column is CHECK-constrained to 1..10 — a 6-photo
   // booking would fail outright if the doubling were stored there.
-  const slots = perImagePricing
-    ? Array.from({ length: buyerPackageSize }, (_, i) => i)
-        .flatMap(i => Array.from({ length: takesPerPhoto }, () => slotRow(i, null)))
-    : Array.from({ length: buyerPackageSize }, (_, i) => slotRow(i, null));
-  await sql`INSERT INTO shoot_images ${sql(slots)}`;
+  // An AR campaign produces no pictures, so it gets no slot rows: a PENDING tile
+  // with nothing ever filling it would sit in the studio for good.
+  const slots = arExperience
+    ? []
+    : perImagePricing
+      ? Array.from({ length: buyerPackageSize }, (_, i) => i)
+          .flatMap(i => Array.from({ length: takesPerPhoto }, () => slotRow(i, null)))
+      : Array.from({ length: buyerPackageSize }, (_, i) => slotRow(i, null));
+  if (slots.length) await sql`INSERT INTO shoot_images ${sql(slots)}`;
 
   const allRefs = [
     ...identityRefs.map((ref, i) => ({
@@ -909,6 +962,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       name: String(tag).toLowerCase(), type: "image/png", size: 1,
       storage_bucket: "identity-images", storage_path: p as string, created_at: now,
     })) : []),
+    ...(arExperience ? [{
+      id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
+      purpose: "tagged", tag: "BRAND_LOGO", custom_name: "Brand logo", note: null,
+      name: "brand_logo", type: "image/png", size: 1,
+      storage_bucket: "identity-images", storage_path: arExperience.logoPath, created_at: now,
+    }] : []),
     ...(trendBowl && bowlRefValid ? [{
       id: crypto.randomUUID(), shoot_id: shootId, user_id: user.id,
       purpose: "tagged", tag: "BOWL_CONTENT",

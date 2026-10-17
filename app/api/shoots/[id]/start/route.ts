@@ -117,7 +117,8 @@ export async function POST(
       FROM shoot_references r
       WHERE r.shoot_id = ${id} AND r.purpose = 'identity'
     `;
-    if (identityCheck?.category !== "gif_loop"
+    // Neither a loop nor an AR balloon campaign has a person in it.
+    if (identityCheck?.category !== "gif_loop" && identityCheck?.category !== "ar_experience"
         && !shoot.character_base_id && (identityCheck?.count ?? 0) === 0) {
       await sql`UPDATE shoots SET status = 'FAILED', pipeline_stage = 'No identity images — please start a new shoot and upload identity photos', updated_at = ${now} WHERE id = ${id}`;
       return NextResponse.json({ ok: false, error: "No identity images attached to this shoot. Start a new shoot and upload your identity photos first." }, { status: 400 });
