@@ -18,7 +18,7 @@ import { projector, type RoadKind, type RoadTile, type TileBuilding, type TileRo
 const ROADS_RE = "^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$";
 const OVERPASS = (process.env.OVERPASS_URL || "https://overpass-api.de/api/interpreter").split(",");
 const TTL_MS = 30 * 86_400_000;
-const MAX_BUILDINGS = 2500;
+const MAX_BUILDINGS = 5000;
 
 export const tileKey = (lat: number, lng: number, radiusM: number) => `${lat.toFixed(3)},${lng.toFixed(3)},${radiusM}`;
 
@@ -64,7 +64,7 @@ async function fetchOverpass(lat: number, lng: number, radiusM: number): Promise
   const q = `[out:json][timeout:90];
 (
   way["highway"~"${ROADS_RE}"](around:${radiusM},${lat},${lng});
-  way["building"](around:${Math.round(radiusM * 0.55)},${lat},${lng});
+  way["building"](around:${Math.round(radiusM * 0.8)},${lat},${lng});
 );
 out geom;`;
   let lastErr: unknown;
@@ -100,12 +100,12 @@ function compact(lat: number, lng: number, radiusM: number, ways: OsmWay[]): Omi
       buildings.push({ pts, height: Math.round(buildingHeight(tags, w.id) * 10) / 10 });
     }
   }
-  // Nearest buildings first, so a cap keeps the ones around the start.
-  buildings.sort((a, b) => dist2(a.pts) - dist2(b.pts));
-  return { lat, lng, radiusM, roads, buildings: buildings.slice(0, MAX_BUILDINGS) };
+  // Over the cap, thin evenly rather than keeping only the centre: a hunt
+  // starts up to 2 km out and the streets there must not be bare.
+  const kept = buildings.length <= MAX_BUILDINGS ? buildings : buildings.filter((_, i) => (i * 7919) % buildings.length < MAX_BUILDINGS);
+  return { lat, lng, radiusM, roads, buildings: kept.slice(0, MAX_BUILDINGS) };
 }
 
-const dist2 = (pts: [number, number][]) => { const p = pts[0]; return p[0] * p[0] + p[1] * p[1]; };
 
 async function cached(key: string): Promise<{ tile: RoadTile; fresh: boolean } | null> {
   const [row] = await sql<{ data: RoadTile; fetched_at: Date }[]>`SELECT data, fetched_at FROM road_tiles WHERE key = ${key}`;

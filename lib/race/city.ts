@@ -207,11 +207,13 @@ export function buildCity(tile: RoadTile, graph: RoadGraph): City {
     const pd = disc(j.x, j.z, w / 2 + 1.6, 0.012); pd.deleteAttribute("uv"); paveParts.push(pd);
   }
   const pave = mergeGeometries(paveParts, false);
-  if (pave) group.add(new Mesh(pave, new MeshLambertMaterial({ color: new Color("#8e8f8a") })));
+  // Both faces: a ribbon drawn along a road in the other direction faces down,
+  // and a single-sided road vanished under the car.
+  if (pave) group.add(new Mesh(pave, new MeshLambertMaterial({ color: new Color("#8e8f8a"), side: DoubleSide })));
   const yellow = mergeGeometries(yellowParts, false);
-  if (yellow) group.add(new Mesh(yellow, new MeshStandardMaterial({ map: roadTexture("yellow"), roughness: 0.95, metalness: 0 })));
+  if (yellow) group.add(new Mesh(yellow, new MeshStandardMaterial({ map: roadTexture("yellow"), roughness: 0.95, metalness: 0, side: DoubleSide })));
   const white = mergeGeometries(whiteParts, false);
-  if (white) group.add(new Mesh(white, new MeshStandardMaterial({ map: roadTexture("white"), roughness: 0.95, metalness: 0 })));
+  if (white) group.add(new Mesh(white, new MeshStandardMaterial({ map: roadTexture("white"), roughness: 0.95, metalness: 0, side: DoubleSide })));
   [...paveParts, ...yellowParts, ...whiteParts].forEach((g) => g.dispose());
 
   const b = buildings(tile);
