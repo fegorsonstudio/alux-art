@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
       // rule above; Next applies the later matching rule's value for a key both
       // rules set, so this one only loosens that single header on that one path.
       {
-        source: "/d/:game(ar|race)/:path*",
+        source: "/d/:game(ar|race|road)/:path*",
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), gyroscope=(self), accelerometer=(self), magnetometer=(self), microphone=()" },
         ],

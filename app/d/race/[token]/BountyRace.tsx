@@ -1,23 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import StreetViewRace, { type Finish, type Ghost, type RaceEvent } from "@/components/race/StreetViewRace";
-import { fetchTile } from "@/lib/race/tile-client";
-import { loadGoogleMaps } from "@/lib/race/gmaps";
+import VideoRace, { type Finish, type Ghost, type RaceEvent, type RoadData } from "@/components/race/VideoRace";
 import { Lobby, Room, clientId, type GoMessage, type Hunter, type Pose } from "@/lib/race/realtime";
-import type { RoadTile } from "@/lib/race/types";
 import styles from "../demo/race.module.css";
 import own from "./bounty.module.css";
 
-const ArLocationPicker = dynamic(() => import("@/components/ArLocationPicker"), { ssr: false });
-
 /**
- * The hunt, through real Google Street View: name, "Hunt" (alone, against
- * the best run's ghost) or "Race others" (a lobby; one shared start for
- * everyone in it, the other cars live on the real street). Drop on a real
- * street, race the clock to the balloons, pop one, get the code. The server
- * decides who gets a prize.
+ * The hunt, on roads the players recorded themselves: pick a road (or record
+ * one), "Hunt" alone against the best run's ghost, or "Race others" in a
+ * lobby where everyone starts the same road at the same moment. Drive the
+ * real footage to the balloons, pop one, get the code. The server decides
+ * who gets a prize. No Google Street View anywhere.
  */
 
 type Bounty = {
@@ -27,47 +21,43 @@ type Bounty = {
 type Phase = "landing" | "lobby" | "starting" | "racing" | "claiming" | "done" | "error";
 type Result = { place: number; elapsedMs: number; prize: { code: string; label: string } | null; prizesLeft: number };
 type Board = { counts: { prizesLeft: number; races: number; finished: number }; top: { place: number; player: string; elapsedMs: number; won: boolean }[] };
-type Started = { raceId: string; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string; route?: { lat: number; lng: number }[] };
-type StartMode = "random" | "me" | "map";
+type Road = RoadData & { recorder: string; runs: number; createdAt: string };
+type Started = { raceId: string; finishLatLng: { lat: number; lng: number }; routeM: number; startsAt?: string; road?: Road };
 
 const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}.${String(Math.floor((ms % 1000) / 100))}`;
+const fmtS = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
 export default function BountyRace(props: {
   token: string;
   status: "live" | "scheduled" | "ended" | "suspended" | "notFound";
   bounty: Bounty | null;
-  mapsKey: string;
   debug: boolean;
 }) {
   const b = props.bounty;
   const [phase, setPhase] = useState<Phase>("landing");
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [tile, setTile] = useState<RoadTile | null>(null);
-  const [race, setRace] = useState<{ raceId: string; drop: { lat: number; lng: number }; finish: Finish; routeM: number; startsAt: number | null; group: boolean; route?: { lat: number; lng: number }[] } | null>(null);
-  // Where the hunt starts: a random drop, where the phone is, or a spot picked on the map.
-  const [startMode, setStartMode] = useState<StartMode>("random");
-  const [from, setFrom] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState<string | null>(null);
+  const [roads, setRoads] = useState<Road[]>([]);
+  const [pending, setPending] = useState(0);
+  const [roadsLoaded, setRoadsLoaded] = useState(false);
+  const [roadId, setRoadId] = useState<string | null>(null);
+  const [race, setRace] = useState<{ raceId: string; road: Road; finish: Finish; startsAt: number | null; group: boolean } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [pops, setPops] = useState(0);
   const [copied, setCopied] = useState(false);
   const [board, setBoard] = useState<Board | null>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
   const [hunters, setHunters] = useState<Hunter[]>([]);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const [rivals, setRivals] = useState(0);
   const [starting, setStarting] = useState("");
   const finishing = useRef(false);
-  // Warmed up while the landing page is open: the streets (roads only, one
-  // download for the whole campaign) and Google's script, so "Hunt" has
-  // only the drop and the first photo left to wait for.
-  const warmTile = useRef<Promise<RoadTile> | null>(null);
   const lobby = useRef<Lobby | null>(null);
   const room = useRef<Room | null>(null);
   const others = useRef(new Map<string, Pose>());
   const me = useRef<{ id: string; name: string }>({ id: "", name: "" });
   const goHandled = useRef<string | null>(null);
+  const phaseRef = useRef<Phase>("landing"); phaseRef.current = phase;
+  const roadRef = useRef<string | null>(null); roadRef.current = roadId;
 
   useEffect(() => {
     me.current.id = clientId();
@@ -75,76 +65,56 @@ export default function BountyRace(props: {
     return () => { lobby.current?.leave(); room.current?.leave(); };
   }, []);
 
-  const loadBoard = async () => {
+  const loadBoard = async (road: string | null = roadRef.current) => {
     try {
-      const r = await fetch(`/api/race/${props.token}/leaderboard`, { cache: "no-store" });
+      const r = await fetch(`/api/race/${props.token}/leaderboard${road ? `?road=${road}` : ""}`, { cache: "no-store" });
       if (r.ok) setBoard(await r.json());
     } catch { /* the board is decoration */ }
   };
-  useEffect(() => { if (props.status === "live") loadBoard(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  const loadRoads = async () => {
+    try {
+      const r = await fetch(`/api/road/${props.token}/list`, { cache: "no-store" });
+      if (!r.ok) return;
+      const j = await r.json() as { roads: Road[]; pending: number };
+      setRoads(j.roads);
+      setPending(j.pending);
+      setRoadsLoaded(true);
+      if (!roadRef.current && j.roads[0]) { setRoadId(j.roads[0].id); loadBoard(j.roads[0].id); }
+    } catch { /* try again on the next poll */ }
+  };
   useEffect(() => {
-    if (props.status !== "live" || !b) return;
-    const t = fetchTile({ lat: b.lat, lng: b.lng }, 4 * 60_000, true);
-    t.catch(() => { /* the start falls back to its own fetch */ });
-    warmTile.current = t;
-    loadGoogleMaps(props.mapsKey).catch(() => { /* the panorama reports it */ });
+    if (props.status !== "live") return;
+    loadRoads();
+    // A road someone just recorded shows up when the server has prepared it.
+    const t = setInterval(() => { if (phaseRef.current === "landing" || phaseRef.current === "lobby") loadRoads(); }, 15_000);
+    return () => clearInterval(t);
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
   const hunterName = () => (name.trim() || "A hunter").slice(0, 24);
+  const chooseRoad = (id: string) => { setRoadId(id); setError(null); loadBoard(id); };
 
-  const chooseStart = (mode: StartMode) => {
-    setStartMode(mode);
-    setError(null);
-    if (mode === "random") { setFrom(null); setLocating(null); return; }
-    if (mode === "map") { setLocating(null); if (b) setFrom((f) => f ?? { lat: b.lat, lng: b.lng }); return; }
-    setFrom(null);
-    if (!navigator.geolocation) { setLocating("This phone cannot share its location. Pick a spot on the map instead."); return; }
-    setLocating("Finding you…");
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setFrom({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(`Start where you are (to about ${Math.round(p.coords.accuracy)} m).`); },
-      () => setLocating("Location was refused or not found. Pick a spot on the map instead."),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
-    );
-  };
-
-  /** Start a hunt: alone (fresh drop) or with a group (its drop and start time). */
+  /** Start a hunt: alone on the chosen road, or with a group (its road and start time). */
   const start = async (groupId?: string) => {
     if (!b) return;
+    if (!groupId && !roadId) { setError("Pick a road first, or record one."); return; }
     setPhase("starting");
-    setStarting("Finding you a street…");
+    setStarting("Getting the road ready…");
     setError(null);
     try { localStorage.setItem("bounty-name", name); } catch { /* private mode */ }
     me.current.name = hunterName();
     try {
-      let started: Started | null = null;
-      const deadline = Date.now() + 4 * 60_000;
-      // The ghost does not depend on the drop: ask for it now, read it later.
-      const ghostReq = groupId ? null : fetch(`/api/race/${props.token}/ghost`, { cache: "no-store" }).then((r) => r.json()).catch(() => null);
-      for (;;) {
-        const chosen = !groupId && startMode !== "random" && from ? from : undefined;
-        const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: hunterName(), groupId, from: chosen }) });
-        const j = await r.json();
-        if (r.status === 202 && j.pending) {
-          if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
-          setStarting("Fetching the streets from OpenStreetMap… the first hunt at a new place takes up to a minute.");
-          await new Promise((res) => setTimeout(res, 3000));
-          continue;
-        }
-        if (!r.ok) throw new Error(j.error || "Could not start the hunt.");
-        started = j;
-        break;
-      }
-      if (!started) throw new Error("Could not start the hunt.");
-      setStarting("Loading the streets…");
-      let t: RoadTile;
-      try { t = await (warmTile.current ?? fetchTile(started.tile, 4 * 60_000, true)); }
-      catch { t = await fetchTile(started.tile, 4 * 60_000, true); }
+      const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: hunterName(), groupId, roadId: groupId ? undefined : roadId }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Could not start the hunt.");
+      const started = j as Started;
+      if (!started.road) throw new Error("That road is not available any more. Pick another road.");
       let g: Ghost | null = null;
       if (!groupId) {
         try {
-          const j = await ghostReq;
-          if (j?.ghost?.path?.length > 1) g = { player: j.ghost.player, path: j.ghost.path };
+          const gr = await fetch(`/api/race/${props.token}/ghost?road=${started.road.id}`, { cache: "no-store" });
+          const gj = await gr.json();
+          if (gj?.ghost?.path?.length > 1) g = { player: gj.ghost.player, path: gj.ghost.path };
         } catch { /* no ghost */ }
       } else {
         others.current.clear();
@@ -153,13 +123,11 @@ export default function BountyRace(props: {
         room.current.others.clear();
       }
       setGhost(g);
-      setTile(t);
       setRace({
-        raceId: started.raceId, drop: started.dropLatLng, routeM: started.routeM,
+        raceId: started.raceId, road: started.road,
         finish: { lat: started.finishLatLng.lat, lng: started.finishLatLng.lng, brand: b.brand, colors: b.colors, logoUrl: b.logoUrl },
         startsAt: started.startsAt ? new Date(started.startsAt).getTime() : null,
         group: !!groupId,
-        route: started.route,
       });
       setPops(0);
       setResult(null);
@@ -173,6 +141,7 @@ export default function BountyRace(props: {
 
   // ---- the lobby ----
   const openLobby = () => {
+    if (!roadId) { setError("Pick a road first, or record one."); return; }
     me.current.name = hunterName();
     try { localStorage.setItem("bounty-name", name); } catch { /* private mode */ }
     goHandled.current = null;
@@ -195,42 +164,27 @@ export default function BountyRace(props: {
   const startForEveryone = async () => {
     setError(null);
     try {
-      let group: GoMessage | null = null;
-      const deadline = Date.now() + 4 * 60_000;
-      for (;;) {
-        const r = await fetch(`/api/race/${props.token}/group`, { method: "POST" });
-        const j = await r.json();
-        if (r.status === 202 && j.pending) {
-          if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
-          await new Promise((res) => setTimeout(res, 3000));
-          continue;
-        }
-        if (!r.ok) throw new Error(j.error || "Could not start the race.");
-        group = { groupId: j.id, startsAt: j.startsAt, by: me.current.id };
-        break;
-      }
-      if (group) await lobby.current?.go(group);
+      const r = await fetch(`/api/race/${props.token}/group`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roadId }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Could not start the race.");
+      await lobby.current?.go({ groupId: j.id, startsAt: j.startsAt, by: me.current.id });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the race.");
     }
   };
 
   const onEvent = async (e: RaceEvent) => {
-    if (e.type === "nocoverage") { setError("Google has no Street View photos near this drop point yet. Try again for another street."); setPhase("error"); return; }
     if (e.type === "error") { setError(e.message); setPhase("error"); return; }
     if (e.type === "finish" && race && !finishing.current) {
       finishing.current = true;
       setPhase("claiming");
-      if (props.mapsKey && b) {
-        setPhoto(`https://maps.googleapis.com/maps/api/streetview?size=480x270&location=${b.lat.toFixed(6)},${b.lng.toFixed(6)}&fov=80&pitch=6&key=${props.mapsKey}`);
-      }
       try {
         const r = await fetch(`/api/race/${props.token}/finish`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raceId: race.raceId, elapsedMs: e.elapsedMs, path: e.path }) });
         const j = await r.json();
         if (!r.ok) throw new Error(j.error || "The finish was not accepted.");
         setResult(j);
         setPhase("done");
-        loadBoard();
+        loadBoard(race.road.id);
       } catch (err) {
         setError(err instanceof Error ? err.message : "The finish was not accepted.");
         setPhase("error");
@@ -242,7 +196,6 @@ export default function BountyRace(props: {
     const r = room.current;
     if (!r) return;
     r.send(lat, lng, h, v);
-    // The canvas reads the room's map directly; keep the pill in step.
     if (r.others.size !== rivals) setRivals(r.others.size);
   };
 
@@ -254,11 +207,12 @@ export default function BountyRace(props: {
     if (!result?.prize) return;
     navigator.clipboard?.writeText(result.prize.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => undefined);
   };
-  const again = () => { room.current?.leave(); room.current = null; others.current.clear(); setRivals(0); setRace(null); setPhase("landing"); };
+  const again = () => { room.current?.leave(); room.current = null; others.current.clear(); setRivals(0); setRace(null); setPhase("landing"); loadRoads(); };
 
   const panel = (children: React.ReactNode) => (
     <main className={styles.panelWrap}><section className={styles.panel}>{children}</section></main>
   );
+  const recordUrl = `/d/road/${props.token}/record`;
 
   if (!b || props.status === "notFound") {
     return <div className={styles.app} data-phase="notFound">{panel(<><p className={styles.kicker}>Bounty Run</p><p className={`${styles.msg} ${styles.error}`}>This bounty link is not valid.</p></>)}</div>;
@@ -276,6 +230,28 @@ export default function BountyRace(props: {
     return <div className={styles.app} data-phase="closed">{panel(<>{head}<p className={`${styles.msg} ${styles.error}`}>{props.status === "scheduled" ? "This bounty has not started yet." : "This bounty is over."}</p></>)}</div>;
   }
 
+  const roadList = (
+    <div className={own.roads} data-roads={roads.length}>
+      <p className={own.boardTitle}>Pick a road</p>
+      {!roadsLoaded && <p className={styles.note}>Loading the roads…</p>}
+      {roadsLoaded && roads.length === 0 && (
+        <p className={styles.msg}>No road has been recorded for this bounty yet. Be the first: film the road you want everyone to race on.</p>
+      )}
+      {roads.map((r) => (
+        <button type="button" key={r.id} className={`${own.road} ${r.id === roadId ? own.roadOn : ""}`} onClick={() => chooseRoad(r.id)} aria-pressed={r.id === roadId}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {r.posterUrl ? <img className={own.poster} src={r.posterUrl} alt="" /> : <span className={own.poster} />}
+          <span className={own.roadText}>
+            <span className={own.roadName}>{r.name}</span>
+            <span className={own.roadMeta}>{Math.round(r.lengthM)} m · {fmtS(r.durationS)}{r.recorder ? ` · by ${r.recorder}` : ""}{r.runs ? ` · ${r.runs} ${r.runs === 1 ? "run" : "runs"}` : ""}</span>
+          </span>
+        </button>
+      ))}
+      {pending > 0 && <p className={styles.note}>{pending === 1 ? "A road is being prepared and will appear here in a minute or two." : `${pending} roads are being prepared and will appear here shortly.`}</p>}
+      <a className={styles.quiet} href={recordUrl}>Record a road with your camera</a>
+    </div>
+  );
+
   return (
     <div className={styles.app} data-phase={phase}>
       {(phase === "landing" || phase === "starting" || phase === "error") && panel(
@@ -285,43 +261,27 @@ export default function BountyRace(props: {
             <span className={own.prizeLabel}>{b.prizeLabel || "A prize"}</span>
             <span className={own.prizeLeft}>{b.prizesLeft} of {b.prizes} prizes left · {b.races} hunts so far</span>
           </div>
-          <p className={styles.note}>You are dropped on a real street a short drive away, in real Street View. Race to the balloons. First to arrive takes the next prize code and shows it at the counter.</p>
+          <p className={styles.note}>Race on a real road someone filmed. Drive the footage to the balloons at its end. First to arrive takes the next prize code and shows it at the counter.</p>
           <input className={own.name} value={name} maxLength={24} placeholder="Your hunter name" onChange={(e) => setName(e.target.value)} />
-          {phase !== "starting" && (
-            <div className={own.startPick}>
-              <p className={own.boardTitle}>Start from</p>
-              <div className={own.chips}>
-                <button type="button" className={`${own.chip} ${startMode === "random" ? own.chipOn : ""}`} onClick={() => chooseStart("random")}>Random drop</button>
-                <button type="button" className={`${own.chip} ${startMode === "me" ? own.chipOn : ""}`} onClick={() => chooseStart("me")}>Where I am</button>
-                <button type="button" className={`${own.chip} ${startMode === "map" ? own.chipOn : ""}`} onClick={() => chooseStart("map")}>Pick on the map</button>
-              </div>
-              {startMode === "me" && locating && <p className={styles.note}>{locating}</p>}
-              {startMode === "map" && (
-                <div className={own.pickBox}>
-                  <ArLocationPicker value={from} radiusM={25} onChange={setFrom} />
-                  <p className={styles.note}>Tap or drag the pin onto a street at least 500 m from the prize. The game knows the route from there, so the photos ahead are loaded before you reach them.</p>
-                </div>
-              )}
-            </div>
-          )}
+          {phase !== "starting" && roadList}
           {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
           {phase === "starting"
-            ? <p className={styles.msg}>{starting || "Finding you a street…"}</p>
+            ? <p className={styles.msg}>{starting || "Getting the road ready…"}</p>
             : (
               <>
-                <button type="button" className={styles.primary} onClick={() => start()}>Hunt</button>
-                <button type="button" className={styles.quiet} onClick={openLobby}>Race others</button>
+                <button type="button" className={styles.primary} onClick={() => start()} disabled={!roadId}>Hunt</button>
+                <button type="button" className={styles.quiet} onClick={openLobby} disabled={!roadId}>Race others</button>
               </>
             )}
           {board && board.top.length > 0 && (
             <div className={own.board}>
-              <p className={own.boardTitle}>Fastest hunters</p>
+              <p className={own.boardTitle}>Fastest on this road</p>
               {board.top.slice(0, 5).map((r) => (
                 <div key={r.place} className={own.row}><span>{r.place}. {r.player}</span><span>{fmt(r.elapsedMs)}{r.won ? " 🎈" : ""}</span></div>
               ))}
             </div>
           )}
-          <p className={styles.note}>Hold GO to drive down the real street, photo by photo. Turn the wheel to look around and to pick the way at a junction. STOP holds, N is nitro. The arrow on the map points at the prize. Alone, the fastest run so far rides along as a ghost.</p>
+          <p className={styles.note}>Hold GO to drive; the harder you push, the faster the road goes by. STOP holds, N is nitro, the wheel leans you into the bends. Alone, the fastest run on this road rides along as a ghost.</p>
         </>,
       )}
 
@@ -333,17 +293,18 @@ export default function BountyRace(props: {
             {hunters.length === 0 && <p className={styles.note}>Connecting…</p>}
             {hunters.map((h) => <div key={h.id} className={own.row}><span>{h.name}{h.id === me.current.id ? " (you)" : ""}</span><span>ready</span></div>)}
           </div>
-          <p className={styles.note}>{hunters.length < 2 ? "Share this page with a friend, or wait for someone to join. Everyone starts from the same street at the same moment." : "Everyone here starts from the same street at the same moment. Anyone can start the race."}</p>
+          <p className={styles.note}>{hunters.length < 2 ? "Share this page with a friend, or wait for someone to join. Everyone starts the same road at the same moment." : "Everyone here starts the same road at the same moment. Anyone can start the race."}</p>
+          <p className={styles.note}>Road: {roads.find((r) => r.id === roadId)?.name ?? "the chosen road"}</p>
           {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
           <button type="button" className={styles.primary} onClick={startForEveryone} disabled={hunters.length < 1}>Start the race</button>
           <button type="button" className={styles.quiet} onClick={leaveLobby}>Back</button>
         </>,
       )}
 
-      {(phase === "racing" || phase === "claiming" || phase === "done") && tile && race && (
-        <StreetViewRace
-          tile={tile} drop={race.drop} finish={race.finish} mapsKey={props.mapsKey} debug={props.debug}
-          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? room.current?.others : undefined} route={race.route}
+      {(phase === "racing" || phase === "claiming" || phase === "done") && race && (
+        <VideoRace
+          road={race.road} finish={race.finish} debug={props.debug}
+          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? room.current?.others : undefined}
           ghost={ghost} onPose={race.group ? onPose : undefined} onEvent={onEvent}
         />
       )}
@@ -376,13 +337,6 @@ export default function BountyRace(props: {
               )
             ) : (
               <p className={styles.msg}>All the prizes are gone, but your time is on the board.</p>
-            )}
-            {photo && pops >= 3 && (
-              <div className={styles.card}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt="" onError={() => setPhoto(null)} />
-                <span>The real spot</span>
-              </div>
             )}
             <button type="button" className={styles.primary} onClick={again}>Hunt again</button>
           </div>

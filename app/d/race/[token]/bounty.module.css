@@ -35,3 +35,12 @@
 .chipOn { background: #2f8e9a; border-color: #2f8e9a; color: #fff; }
 .pickBox { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .pickBox :global(.leaflet-container) { background: #1a2a30; }
+
+/* The recorded roads to pick from. */
+.roads { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.road { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.06); color: #eaf8f6; font: inherit; text-align: left; cursor: pointer; }
+.roadOn { border-color: #88eadb; background: rgba(136, 234, 219, 0.14); box-shadow: 0 0 0 1px #88eadb inset; }
+.poster { flex: 0 0 76px; width: 76px; height: 54px; border-radius: 8px; object-fit: cover; background: #0e1c20; display: block; }
+.roadText { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.roadName { font-weight: 800; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roadMeta { font-size: 0.75rem; color: #9fc1c4; }

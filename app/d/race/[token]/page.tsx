@@ -4,8 +4,9 @@ import { bountyCounts } from "@/lib/race/bounty";
 import BountyRace from "./BountyRace";
 
 /**
- * A bounty: race the real streets to a brand's balloons for a prize code
- * (/d/race/<campaign token>). Under /d/ so nobody is sent to a login page.
+ * A bounty: race roads the players recorded themselves to a brand's balloons
+ * for a prize code (/d/race/<campaign token>). Under /d/ so nobody is sent
+ * to a login page.
  */
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function BountyPage({ params, searchParams }: { params: Pro
   const { token } = await params;
   const { debug } = await searchParams;
   const row = await resolveArCampaign(token);
-  if (!row) return <BountyRace token={token} bounty={null} status="notFound" mapsKey="" debug={false} />;
+  if (!row) return <BountyRace token={token} bounty={null} status="notFound" debug={false} />;
   const counts = await bountyCounts(row.id);
   return (
     <BountyRace
@@ -35,7 +36,6 @@ export default async function BountyPage({ params, searchParams }: { params: Pro
         lat: row.lat,
         lng: row.lng,
       }}
-      mapsKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ""}
       debug={debug === "1"}
     />
   );
