@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import StreetViewRace, { type Finish, type Ghost, type RaceEvent } from "@/components/race/StreetViewRace";
-import { fetchTile } from "../demo/RaceGame";
+import { fetchTile } from "@/lib/race/tile-client";
 import { loadGoogleMaps } from "@/lib/race/gmaps";
 import { Lobby, Room, clientId, type GoMessage, type Hunter, type Pose } from "@/lib/race/realtime";
 import type { RoadTile } from "@/lib/race/types";
