@@ -443,6 +443,16 @@ the price; "use my location" in the checkout (needs the header on /marketplace t
 campaign after purchase; other experience types (the scene class and the colours/logo config are
 the seams).
 
+**Update (2026-10-17, later): the balloons fly like balloons (commit after `c2127f7`).** The owner found the first
+version flat. Now: a 20 m 16-gore envelope with load tapes, Nomex skirt, crown vent, burner frame, wicker basket
+and a flame; the envelope is a fabric lit from inside (emissive gore copy strongest at the throat + a point
+light at the burner that lights the interior when you look up through the mouth). Each balloon is a physical
+model (burner heat → lift, drag, gusting wind that turns with height, basket pendulum). The camera frame is
+sampled every 500 ms for sky colour and brightness → sky light, fog and glow, so at dusk the balloons light up.
+**Interactive:** tap a balloon to fire its burner (synthesised roar, `lib/ar/audio.ts`, mute button in the HUD;
+haptic on Android); drag looks around; walking moves the camera from smoothed GPS (`setViewerOffset`, moves
+over 6 m only). Deployed and re-verified with the 4 Playwright tests. Still unproven on a real phone.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
