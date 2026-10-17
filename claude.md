@@ -535,6 +535,24 @@ demo (`/d/race/demo`) stays as it was. Verified live: hunt + lobby Playwright te
 Google's layers after a z-index fix; a single hop renders the next real photo). **Not yet driven on a real
 phone by the owner.** Known: Google's logo/terms strip stays (required by Google's terms).
 
+**Update (2026-10-18, night): hunt speed + the owner's test pin.** Owner: "location is not correct, I am at
+28 Daniel Gemena, Abuja" and "the game is slow and taking so much time to load". (1) The TEST campaign
+(`7972301f`, token `a4945c4d…`) is now pinned at **Daniel Gemana Close, Gwarinpa, Abuja (9.1178501, 7.3929415)**
+— Google Maps spells it "Gemana"; OSM does not know the street at all (geocoded through the owner's signed-in
+Chrome via `tools/browser-driver`). Street View covers the close (June 2022 photos) and the Abuja tile is cached
+(1091 roads). Hunts drop 900–2200 m by ROAD from the pin, so a hunter is never dropped where they stand; if the
+owner wants "start from where I am", that is a product change (drop at the phone's GPS when within the tile),
+not built. (2) Load time: the tile was 817 KB (246 KB on the wire, ~9 s on a slow link) and everything ran in
+series (start → tile → ghost → Google script → panorama). Now: `/api/race/tiles?lite=1` drops the buildings
+(the Street View hunt never draws them; `fetchTile(at, deadline, lite)` gained the flag, demo unchanged); the
+hunt page warms the lite tile AND Google's script while the landing page is open; start posts the ghost
+request in parallel and shows what it is waiting for; `lib/ar/fulfil.ts` asks OpenStreetMap for the streets the
+moment a bounty is created so the first hunter never waits 30–120 s on Overpass. (3) Hop gating: a hop now counts
+as settled when the new photo's tiles have landed (resource timing: 3+ new `streetviewpixels`/`ggpht`
+entries, 250 ms after `pano_changed`, 3 s cap), `HOPS_PER_SEC = 1.6`; in the headless browser the view now
+stays a real street while driving (Google's own zoom-blur between photos). **Still unproven on the owner's
+phone.** The last Playwright hunt at the Abuja pin dropped 373 m straight-line from the prize (roads wind).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
