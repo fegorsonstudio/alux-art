@@ -178,15 +178,17 @@ export default function StreetViewRace(props: {
         // arrived. There is no tiles-loaded event, but the tile downloads show
         // up in the browser's resource timing: a hop counts as settled when a
         // few new tiles have landed since it started (or after 3 s regardless).
+        // Only the current photo's own tiles count (their URLs carry the pano
+        // id), so the preloader's downloads cannot make a hop look finished.
         const TILE_RE = /streetviewpixels|ggpht.com|cbkd*.google/;
-        const tilesSoFar = () => performance.getEntriesByType("resource").filter((e) => TILE_RE.test(e.name)).length;
-        let tilesAtHop = 0, hopStartedAt = 0;
+        const tilesOf = (id: string) => id ? performance.getEntriesByType("resource").filter((e) => TILE_RE.test(e.name) && e.name.includes(id)).length : 0;
+        let hopStartedAt = 0;
         const hopSettled = () => {
           if (!hopping) return true;
           const since = performance.now() - hopStartedAt;
           if (since > 3000) return true;
           if (hopDone === 0 || performance.now() - hopDone < 250) return false;
-          return tilesSoFar() - tilesAtHop >= 3;
+          return tilesOf(pano!.getPano()) >= 3;
         };
 
         timer = setInterval(() => {
@@ -232,8 +234,7 @@ export default function StreetViewRace(props: {
           if (hop >= 1 && !hopping) {
             hop -= 1;
             hopStartedAt = performance.now();
-            if (performance.getEntriesByType("resource").length > 200) performance.clearResourceTimings();
-            tilesAtHop = tilesSoFar();
+            if (performance.getEntriesByType("resource").length > 400) performance.clearResourceTimings();
             const links = (pano.getLinks() ?? []).filter((l): l is google.maps.StreetViewLink => !!l && l.heading != null);
             const want = (heading + inp.steer * 75 + 360) % 360;
             if (links.length) {
