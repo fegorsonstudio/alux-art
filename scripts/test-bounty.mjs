@@ -47,7 +47,10 @@ const main = async () => {
   // 3. a real one
   const s2 = await post("start", { player: "Test hunter" });
   console.log("start 2:", s2.status, "route", Math.round(s2.json.routeM), "m");
-  const ms = Math.round(s2.json.routeM / 14 * 1000);
+  // The server also refuses a clock that runs ahead of its own, so wait for
+  // (almost) the fastest possible time before claiming it.
+  const ms = Math.round(s2.json.routeM / 70 * 1000) + 800;
+  await new Promise((r) => setTimeout(r, Math.max(0, ms - 12_000)));
   const fin = await post("finish", { raceId: s2.json.raceId, elapsedMs: ms });
   console.log("finish:", fin.status, JSON.stringify(fin.json));
   if (fin.status !== 200 || !fin.json.prize) throw new Error("a plausible finish did not win a prize");

@@ -485,6 +485,23 @@ Permissions-Policy rule (`/d/:game(ar|race)/:path*`). Verified live: 2 Playwrigh
 screenshots (Lagos Island tile: 769 roads, 2,500 buildings, 142 KB compressed). **Not yet done on a real
 phone.** Stage 2 (bounty, prizes, finish in the AR viewer) and stage 3 (live opponents) are not started.
 
+**Update (2026-10-17, late night): Bounty Run stage 2 is LIVE — the hunt and the prize.** A campaign is a
+bounty: the AR checkout asks how many prize codes (0–200, default 10; 0 = balloons only) and what a prize
+is; `lib/ar/fulfil.ts` makes cashier-readable codes (`lib/race/bounty.ts` `prizeCode`, no 0/O/1/I/8/B) in
+`race_prizes` and sets `ar_campaigns.prize_label` (migration 076 by psql; `max_races` default 300). The hunt
+is `/d/race/<campaign token>` (`app/d/race/[token]`): name → Hunt → `POST /api/race/[token]/start` picks a
+drop node 900 m–2.2 km of real road from the pin (Dijkstra in `lib/race/route.ts`, 202 "pending" while the
+tile is fetched) → the shared `components/race/RaceCanvas.tsx` shows three branded balloons + a light
+beam at the pin, a clock and "x m to the prize" → within 22 m the page posts `finish`; the server
+(`finishRace`, one transaction, `FOR UPDATE`) refuses a hunt that is not running, a time faster than
+70 m/s over the route or a clock ahead of its own, else claims the next unclaimed prize
+(`SKIP LOCKED`) and ranks the time; three taps pop the balloon and show the code; leaderboard at
+`GET /api/race/[token]/leaderboard`. Studio and `/admin/ar` show the race link, prizes left and hunts.
+Verified live: `scripts/test-bounty.mjs` on the test campaign (too fast → 409, plausible → prize
+9ENG-YFRT, twice → 409, board) and 2 Playwright tests (bad token; a hunt starts on a real street with the
+prize in sight). The test campaign `7972301f` now has 10 test prizes (1 claimed). **Not yet done on a real
+phone; the owner has not driven a full hunt to the finish.** Stage 3 (live opponents) not started.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
