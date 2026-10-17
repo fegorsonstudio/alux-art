@@ -120,7 +120,7 @@ export default function RaceGame(props: { start: { lat: number; lng: number } | 
     startMark.position.set(car.x, 0, car.z);
     scene.add(startMark);
 
-    const camera = new PerspectiveCamera(62, 1, 0.5, 2600);
+    const camera = new PerspectiveCamera(62, 1, 0.5, 7000);
     const camPos = new Vector3(car.x, 4, car.z + 10);
     const camLook = new Vector3(car.x, 1, car.z);
     const resize = () => {

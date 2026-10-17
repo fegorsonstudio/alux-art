@@ -169,12 +169,14 @@ function trees(tile: RoadTile): InstancedMesh | null {
 }
 
 function sky(): Mesh {
-  const g = new SphereGeometry(3000, 24, 12);
+  // Well inside the camera's far plane: a dome that straddles it is cut
+  // open by the far clip and shows the black clear colour as a jagged "mountain".
+  const g = new SphereGeometry(2400, 32, 16);
   const m = new ShaderMaterial({
     side: BackSide, depthWrite: false,
     uniforms: { top: { value: new Color("#4f8fd6") }, horizon: { value: new Color("#dbe9f5") } },
     vertexShader: "varying vec3 vW; void main(){ vW = (modelMatrix * vec4(position,1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-    fragmentShader: "uniform vec3 top; uniform vec3 horizon; varying vec3 vW; void main(){ float h = clamp(vW.y / 1400.0, 0.0, 1.0); gl_FragColor = vec4(mix(horizon, top, pow(h, 0.6)), 1.0); }",
+    fragmentShader: "uniform vec3 top; uniform vec3 horizon; varying vec3 vW; void main(){ float h = clamp(vW.y / 1100.0, 0.0, 1.0); gl_FragColor = vec4(mix(horizon, top, pow(h, 0.6)), 1.0); }",
   });
   return new Mesh(g, m);
 }
