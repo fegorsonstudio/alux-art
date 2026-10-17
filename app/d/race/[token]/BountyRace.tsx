@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import StreetViewRace, { type Finish, type Ghost, type RaceEvent } from "@/components/race/StreetViewRace";
 import { fetchTile } from "../demo/RaceGame";
+import { loadGoogleMaps } from "@/lib/race/gmaps";
 import { Lobby, Room, clientId, type GoMessage, type Hunter, type Pose } from "@/lib/race/realtime";
 import type { RoadTile } from "@/lib/race/types";
 import styles from "../demo/race.module.css";
@@ -48,7 +49,12 @@ export default function BountyRace(props: {
   const [hunters, setHunters] = useState<Hunter[]>([]);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const [rivals, setRivals] = useState(0);
+  const [starting, setStarting] = useState("");
   const finishing = useRef(false);
+  // Warmed up while the landing page is open: the streets (roads only, one
+  // download for the whole campaign) and Google's script, so "Hunt" has
+  // only the drop and the first photo left to wait for.
+  const warmTile = useRef<Promise<RoadTile> | null>(null);
   const lobby = useRef<Lobby | null>(null);
   const room = useRef<Room | null>(null);
   const others = useRef(new Map<string, Pose>());
@@ -68,6 +74,14 @@ export default function BountyRace(props: {
     } catch { /* the board is decoration */ }
   };
   useEffect(() => { if (props.status === "live") loadBoard(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    if (props.status !== "live" || !b) return;
+    const t = fetchTile({ lat: b.lat, lng: b.lng }, 4 * 60_000, true);
+    t.catch(() => { /* the start falls back to its own fetch */ });
+    warmTile.current = t;
+    loadGoogleMaps(props.mapsKey).catch(() => { /* the panorama reports it */ });
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []);
 
   const hunterName = () => (name.trim() || "A hunter").slice(0, 24);
 
@@ -75,17 +89,21 @@ export default function BountyRace(props: {
   const start = async (groupId?: string) => {
     if (!b) return;
     setPhase("starting");
+    setStarting("Finding you a street…");
     setError(null);
     try { localStorage.setItem("bounty-name", name); } catch { /* private mode */ }
     me.current.name = hunterName();
     try {
       let started: Started | null = null;
       const deadline = Date.now() + 4 * 60_000;
+      // The ghost does not depend on the drop: ask for it now, read it later.
+      const ghostReq = groupId ? null : fetch(`/api/race/${props.token}/ghost`, { cache: "no-store" }).then((r) => r.json()).catch(() => null);
       for (;;) {
         const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: hunterName(), groupId }) });
         const j = await r.json();
         if (r.status === 202 && j.pending) {
           if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
+          setStarting("Fetching the streets from OpenStreetMap… the first hunt at a new place takes up to a minute.");
           await new Promise((res) => setTimeout(res, 3000));
           continue;
         }
@@ -94,13 +112,15 @@ export default function BountyRace(props: {
         break;
       }
       if (!started) throw new Error("Could not start the hunt.");
-      const t = await fetchTile(started.tile);
+      setStarting("Loading the streets…");
+      let t: RoadTile;
+      try { t = await (warmTile.current ?? fetchTile(started.tile, 4 * 60_000, true)); }
+      catch { t = await fetchTile(started.tile, 4 * 60_000, true); }
       let g: Ghost | null = null;
       if (!groupId) {
         try {
-          const r = await fetch(`/api/race/${props.token}/ghost`, { cache: "no-store" });
-          const j = await r.json();
-          if (j.ghost?.path?.length > 1) g = { player: j.ghost.player, path: j.ghost.path };
+          const j = await ghostReq;
+          if (j?.ghost?.path?.length > 1) g = { player: j.ghost.player, path: j.ghost.path };
         } catch { /* no ghost */ }
       } else {
         others.current.clear();
@@ -244,7 +264,7 @@ export default function BountyRace(props: {
           <input className={own.name} value={name} maxLength={24} placeholder="Your hunter name" onChange={(e) => setName(e.target.value)} />
           {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
           {phase === "starting"
-            ? <p className={styles.msg}>Finding you a street… the first hunt at a new place takes up to a minute.</p>
+            ? <p className={styles.msg}>{starting || "Finding you a street…"}</p>
             : (
               <>
                 <button type="button" className={styles.primary} onClick={() => start()}>Hunt</button>

@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
   if (!allow(`tiles:${ip}`, 120, 10 * 60_000)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   try {
     const a = await getTile(lat, lng, radius);
-    if (a.status === "ready") return NextResponse.json(a.tile, { headers: { "Cache-Control": "public, max-age=3600" } });
+    // lite=1: roads only. The Street View hunt draws no buildings, and they are two thirds of the bytes.
+    const lite = request.nextUrl.searchParams.get("lite") === "1";
+    if (a.status === "ready") return NextResponse.json(lite ? { ...a.tile, buildings: [] } : a.tile, { headers: { "Cache-Control": "public, max-age=3600" } });
     if (a.status === "pending") return NextResponse.json({ pending: true, since: a.startedAt }, { status: 202, headers: { "Cache-Control": "no-store" } });
     return NextResponse.json({ error: `The streets could not be fetched (${a.error}). Try again in a minute.` }, { status: 503, headers: { "Cache-Control": "no-store" } });
   } catch (e) {

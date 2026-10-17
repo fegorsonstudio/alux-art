@@ -14,10 +14,10 @@ type Phase = "locate" | "loading" | "ready" | "error";
 const LAGOS_ISLAND = { lat: 6.4541, lng: 3.3947 };
 
 /** Polls the tile route until the streets are in (the first visit asks OpenStreetMap in the background). */
-export async function fetchTile(at: { lat: number; lng: number }, deadlineMs = 4 * 60_000): Promise<RoadTile> {
+export async function fetchTile(at: { lat: number; lng: number }, deadlineMs = 4 * 60_000, lite = false): Promise<RoadTile> {
   const deadline = Date.now() + deadlineMs;
   for (;;) {
-    const r = await fetch(`/api/race/tiles?lat=${at.lat}&lng=${at.lng}`, { cache: "no-store" });
+    const r = await fetch(`/api/race/tiles?lat=${at.lat}&lng=${at.lng}${lite ? "&lite=1" : ""}`, { cache: "no-store" });
     const j = await r.json();
     if (r.status === 202 && j.pending) {
       if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");

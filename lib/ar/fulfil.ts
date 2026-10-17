@@ -7,6 +7,7 @@ import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import { SITE_URL } from "@/lib/site-url";
 import { arMapsUrl, arPreviewUrl, arPublicUrl } from "@/lib/ar/campaign";
 import { createPrizes } from "@/lib/race/bounty";
+import { getTile } from "@/lib/race/osm";
 
 /**
  * Turns a paid `ar_experience` shoot into a live campaign.
@@ -128,6 +129,8 @@ export async function fulfilArCampaign(
         fresh = true;
         // The bounty: prize codes a cashier can read out, handed out by the race server.
         if (booking.prizeCount) await createPrizes(campaignId, booking.prizeCount, booking.prizeLabel || "Prize");
+        // Warm the streets now (OpenStreetMap takes 30-120 s), so the first hunter never waits for them.
+        if (booking.prizeCount) void getTile(lat, lng, 2500).catch(() => { /* the first hunt asks again */ });
       }
     }
 
