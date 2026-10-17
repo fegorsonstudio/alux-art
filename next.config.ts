@@ -60,9 +60,9 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), gyroscope=(self), accelerometer=(self), magnetometer=(self), microphone=()" },
         ],
       },
-      // The race drives through Google Street View, so these pages alone may
-      // load Google's script and talk to its servers. The site-wide policy
-      // above is untouched everywhere else.
+      // The race plays roads the players recorded (video on R2, blob previews in
+      // the recorder), so these pages alone may load media from there. The
+      // site-wide policy above is untouched everywhere else.
       {
         source: "/d/:game(race|road)/:path*",
         headers: [
