@@ -31,6 +31,36 @@ export function distancesFrom(graph: RoadGraph, startId: number): Map<number, nu
   return dist;
 }
 
+/** The shortest road path from one node to another, as the nodes along it and its length. */
+export function shortestPath(graph: RoadGraph, fromId: number, toId: number): { nodes: GNode[]; m: number } | null {
+  const dist = new Map<number, number>(), prev = new Map<number, number>();
+  const frontier: { id: number; d: number }[] = [{ id: fromId, d: 0 }];
+  dist.set(fromId, 0);
+  while (frontier.length) {
+    let bi = 0;
+    for (let i = 1; i < frontier.length; i++) if (frontier[i].d < frontier[bi].d) bi = i;
+    const { id, d } = frontier.splice(bi, 1)[0];
+    if (d > (dist.get(id) ?? Infinity)) continue;
+    if (id === toId) break;
+    const node = graph.nodes.get(id);
+    if (!node) continue;
+    for (const eid of node.edges) {
+      const e = graph.edges[eid];
+      const other = e.a === id ? e.b : e.a;
+      const nd = d + e.len;
+      if (nd < (dist.get(other) ?? Infinity)) { dist.set(other, nd); prev.set(other, id); frontier.push({ id: other, d: nd }); }
+    }
+  }
+  if (!dist.has(toId)) return null;
+  const nodes: GNode[] = [];
+  for (let cur: number | undefined = toId; cur !== undefined; cur = prev.get(cur)) {
+    nodes.push(graph.nodes.get(cur)!);
+    if (cur === fromId) break;
+  }
+  nodes.reverse();
+  return { nodes, m: dist.get(toId)! };
+}
+
 /** The node nearest a point. */
 export function nearestNode(graph: RoadGraph, x: number, z: number): GNode | null {
   let best: GNode | null = null, bd = Infinity;

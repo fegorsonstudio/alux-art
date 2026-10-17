@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import StreetViewRace, { type Finish, type Ghost, type RaceEvent } from "@/components/race/StreetViewRace";
 import { fetchTile } from "@/lib/race/tile-client";
 import { loadGoogleMaps } from "@/lib/race/gmaps";
@@ -8,6 +9,8 @@ import { Lobby, Room, clientId, type GoMessage, type Hunter, type Pose } from "@
 import type { RoadTile } from "@/lib/race/types";
 import styles from "../demo/race.module.css";
 import own from "./bounty.module.css";
+
+const ArLocationPicker = dynamic(() => import("@/components/ArLocationPicker"), { ssr: false });
 
 /**
  * The hunt, through real Google Street View: name, "Hunt" (alone, against
@@ -24,7 +27,8 @@ type Bounty = {
 type Phase = "landing" | "lobby" | "starting" | "racing" | "claiming" | "done" | "error";
 type Result = { place: number; elapsedMs: number; prize: { code: string; label: string } | null; prizesLeft: number };
 type Board = { counts: { prizesLeft: number; races: number; finished: number }; top: { place: number; player: string; elapsedMs: number; won: boolean }[] };
-type Started = { raceId: string; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
+type Started = { raceId: string; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string; route?: { lat: number; lng: number }[] };
+type StartMode = "random" | "me" | "map";
 
 const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}.${String(Math.floor((ms % 1000) / 100))}`;
 
@@ -40,7 +44,11 @@ export default function BountyRace(props: {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [tile, setTile] = useState<RoadTile | null>(null);
-  const [race, setRace] = useState<{ raceId: string; drop: { lat: number; lng: number }; finish: Finish; routeM: number; startsAt: number | null; group: boolean } | null>(null);
+  const [race, setRace] = useState<{ raceId: string; drop: { lat: number; lng: number }; finish: Finish; routeM: number; startsAt: number | null; group: boolean; route?: { lat: number; lng: number }[] } | null>(null);
+  // Where the hunt starts: a random drop, where the phone is, or a spot picked on the map.
+  const [startMode, setStartMode] = useState<StartMode>("random");
+  const [from, setFrom] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [pops, setPops] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -85,6 +93,21 @@ export default function BountyRace(props: {
 
   const hunterName = () => (name.trim() || "A hunter").slice(0, 24);
 
+  const chooseStart = (mode: StartMode) => {
+    setStartMode(mode);
+    setError(null);
+    if (mode === "random") { setFrom(null); setLocating(null); return; }
+    if (mode === "map") { setLocating(null); if (b) setFrom((f) => f ?? { lat: b.lat, lng: b.lng }); return; }
+    setFrom(null);
+    if (!navigator.geolocation) { setLocating("This phone cannot share its location. Pick a spot on the map instead."); return; }
+    setLocating("Finding you…");
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setFrom({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(`Start where you are (to about ${Math.round(p.coords.accuracy)} m).`); },
+      () => setLocating("Location was refused or not found. Pick a spot on the map instead."),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
+    );
+  };
+
   /** Start a hunt: alone (fresh drop) or with a group (its drop and start time). */
   const start = async (groupId?: string) => {
     if (!b) return;
@@ -99,7 +122,8 @@ export default function BountyRace(props: {
       // The ghost does not depend on the drop: ask for it now, read it later.
       const ghostReq = groupId ? null : fetch(`/api/race/${props.token}/ghost`, { cache: "no-store" }).then((r) => r.json()).catch(() => null);
       for (;;) {
-        const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: hunterName(), groupId }) });
+        const chosen = !groupId && startMode !== "random" && from ? from : undefined;
+        const r = await fetch(`/api/race/${props.token}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ player: hunterName(), groupId, from: chosen }) });
         const j = await r.json();
         if (r.status === 202 && j.pending) {
           if (Date.now() > deadline) throw new Error("OpenStreetMap is taking too long. Try again in a few minutes.");
@@ -135,6 +159,7 @@ export default function BountyRace(props: {
         finish: { lat: started.finishLatLng.lat, lng: started.finishLatLng.lng, brand: b.brand, colors: b.colors, logoUrl: b.logoUrl },
         startsAt: started.startsAt ? new Date(started.startsAt).getTime() : null,
         group: !!groupId,
+        route: started.route,
       });
       setPops(0);
       setResult(null);
@@ -262,6 +287,23 @@ export default function BountyRace(props: {
           </div>
           <p className={styles.note}>You are dropped on a real street a short drive away, in real Street View. Race to the balloons. First to arrive takes the next prize code and shows it at the counter.</p>
           <input className={own.name} value={name} maxLength={24} placeholder="Your hunter name" onChange={(e) => setName(e.target.value)} />
+          {phase !== "starting" && (
+            <div className={own.startPick}>
+              <p className={own.boardTitle}>Start from</p>
+              <div className={own.chips}>
+                <button type="button" className={`${own.chip} ${startMode === "random" ? own.chipOn : ""}`} onClick={() => chooseStart("random")}>Random drop</button>
+                <button type="button" className={`${own.chip} ${startMode === "me" ? own.chipOn : ""}`} onClick={() => chooseStart("me")}>Where I am</button>
+                <button type="button" className={`${own.chip} ${startMode === "map" ? own.chipOn : ""}`} onClick={() => chooseStart("map")}>Pick on the map</button>
+              </div>
+              {startMode === "me" && locating && <p className={styles.note}>{locating}</p>}
+              {startMode === "map" && (
+                <div className={own.pickBox}>
+                  <ArLocationPicker value={from} radiusM={25} onChange={setFrom} />
+                  <p className={styles.note}>Tap or drag the pin onto a street at least 500 m from the prize. The game knows the route from there, so the photos ahead are loaded before you reach them.</p>
+                </div>
+              )}
+            </div>
+          )}
           {error && <p className={`${styles.msg} ${styles.error}`}>{error}</p>}
           {phase === "starting"
             ? <p className={styles.msg}>{starting || "Finding you a street…"}</p>
@@ -301,7 +343,7 @@ export default function BountyRace(props: {
       {(phase === "racing" || phase === "claiming" || phase === "done") && tile && race && (
         <StreetViewRace
           tile={tile} drop={race.drop} finish={race.finish} mapsKey={props.mapsKey} debug={props.debug}
-          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? room.current?.others : undefined}
+          frozen={phase !== "racing"} startsAt={race.startsAt} others={race.group ? room.current?.others : undefined} route={race.route}
           ghost={ghost} onPose={race.group ? onPose : undefined} onEvent={onEvent}
         />
       )}

@@ -27,3 +27,11 @@
 @keyframes fall { to { transform: translateY(260px) rotate(540deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .confetti i { animation: none; opacity: 0; } .balloon { transition: none; } }
 .rivals { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); z-index: 4; padding: 6px 12px; border-radius: 999px; background: rgba(10, 20, 24, 0.6); color: #cfe8ec; font-size: 0.78rem; font-weight: 700; pointer-events: none; white-space: nowrap; }
+
+/* Start chooser on the landing panel. */
+.startPick { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { flex: 1 1 auto; padding: 9px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.08); color: #eaf8f6; font: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.chipOn { background: #2f8e9a; border-color: #2f8e9a; color: #fff; }
+.pickBox { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.pickBox :global(.leaflet-container) { background: #1a2a30; }

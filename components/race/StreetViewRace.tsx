@@ -36,6 +36,8 @@ export default function StreetViewRace(props: {
   startsAt?: number | null;
   others?: Map<string, Pose>;
   ghost?: Ghost | null;
+  /** The road route from the drop to the prize: drawn on the minimap and used to preload the photos ahead. */
+  route?: { lat: number; lng: number }[];
   onPose?: (lat: number, lng: number, heading: number, speed: number) => void;
   onEvent?: (e: RaceEvent) => void;
 }) {
@@ -105,6 +107,28 @@ export default function StreetViewRace(props: {
           });
         }
         let preTarget = near.data.location.pano ?? "", preAt = 0;
+        // With a known route the preloader walks ahead of the player along it,
+        // 35 m, 70 m then 105 m ahead in turn, so the next photos are in the
+        // cache before they are needed.
+        const route = props.route ?? [];
+        const routeXZ = route.map((p) => toXZ(p.lat, p.lng));
+        let preStep = 0;
+        const preloadAlongRoute = (lat: number, lng: number) => {
+          if (!pre || routeXZ.length < 2) return false;
+          const [cx, cz] = toXZ(lat, lng);
+          let ni = 0, nd = Infinity;
+          for (let i = 0; i < routeXZ.length; i++) { const d = Math.hypot(routeXZ[i][0] - cx, routeXZ[i][1] - cz); if (d < nd) { nd = d; ni = i; } }
+          if (nd > 120) return false; // off the route: fall back to the links
+          const ahead = 35 * (preStep + 1);
+          let acc = 0, ti = ni;
+          for (let i = ni; i + 1 < routeXZ.length && acc < ahead; i++) { acc += Math.hypot(routeXZ[i + 1][0] - routeXZ[i][0], routeXZ[i + 1][1] - routeXZ[i][1]); ti = i + 1; }
+          preStep = (preStep + 1) % 3;
+          const key = `route:${ti}`;
+          if (key === preTarget) return true;
+          preTarget = key;
+          pre.setPosition(route[ti]);
+          return true;
+        };
 
         // Our own traffic: cars and people on the OpenStreetMap roads around
         // the player, drawn over the photo. (The cars and people in the photos
@@ -112,7 +136,7 @@ export default function StreetViewRace(props: {
         const traffic = new Traffic(tile, 3, 2);
         const sprites: { m: google.maps.Marker; key: string }[] = [];
         for (let i = 0; i < traffic.agents.length; i++) {
-          const m = new g.maps.Marker({ map: null, clickable: false, optimized: false });
+          const m = new g.maps.Marker({ map: null, position: props.drop, clickable: false, optimized: false });
           sprites.push({ m, key: "" }); markers.push(m);
         }
 
@@ -197,11 +221,15 @@ export default function StreetViewRace(props: {
           if (hopping && hopSettled()) hopping = false;
           if (pre && !hopping && now - preAt > 300) {
             preAt = now;
+            const here = pano.getPosition();
+            if (here && preloadAlongRoute(here.lat(), here.lng())) { preAt = now + 600; }
+            else {
             const links = (pano.getLinks() ?? []).filter((l): l is google.maps.StreetViewLink => !!l && l.heading != null && !!l.pano);
             const want = (heading + inp.steer * 75 + 360) % 360;
             if (links.length) {
               const best = links.reduce((p, c) => (Math.abs(angleDiff(c.heading!, want)) < Math.abs(angleDiff(p.heading!, want)) ? c : p));
               if (best.pano !== preTarget && Math.abs(angleDiff(best.heading!, want)) <= 100) { preTarget = best.pano!; pre.setPano(best.pano!); pre.setPov({ heading: best.heading!, pitch: 0 }); }
+            }
             }
           }
           hop += v * HOPS_PER_SEC * dt;
@@ -256,8 +284,8 @@ export default function StreetViewRace(props: {
               if (a.kind === "car") { w = Math.round(Math.min(170, Math.max(8, 460 / dist)) / 3) * 3; h = Math.round(w * 0.75); url = carSprite(a.color, view); }
               else { h = Math.round(Math.min(170, Math.max(10, 430 / dist)) / 3) * 3; w = Math.round(h * 0.44); url = personSprite(a.color, (Math.floor(now / 350) % 2) as 0 | 1, view === "left" ? "left" : "right"); }
               const key = `${url}|${w}`;
-              if (s.key !== key) { s.key = key; s.m.setIcon({ url, scaledSize: new g.maps.Size(w, h), anchor: new g.maps.Point(w / 2, h) }); s.m.setZIndex(Math.round(2000 - dist)); if (!s.m.getMap()) s.m.setMap(pano); }
               s.m.setPosition({ lat: a.lat, lng: a.lng });
+              if (s.key !== key) { s.key = key; s.m.setIcon({ url, scaledSize: new g.maps.Size(w, h), anchor: new g.maps.Point(w / 2, h) }); s.m.setZIndex(Math.round(2000 - dist)); if (!s.m.getMap()) s.m.setMap(pano); }
             });
           }
 
@@ -290,6 +318,7 @@ export default function StreetViewRace(props: {
     })();
 
     let nitroLeft = 1;
+    const routeMapXZ = (props.route ?? []).map((p) => toXZ(p.lat, p.lng));
     const map = mapRef.current?.getContext("2d") ?? null;
     const drawMap = (lat: number, lng: number, headingDeg: number) => {
       if (!map || !mapRef.current) return;
@@ -309,6 +338,12 @@ export default function StreetViewRace(props: {
           map.lineWidth = r.kind === "residential" || r.kind === "living_street" ? 1.5 : 2.5;
           map.beginPath(); map.moveTo((ax - cx) * k, (az - cz) * k); map.lineTo((bx - cx) * k, (bz - cz) * k); map.stroke();
         }
+      }
+      // The route to the prize, if the server sent one.
+      if (routeMapXZ.length > 1) {
+        map.strokeStyle = "rgba(47, 142, 154, 0.95)"; map.lineWidth = 3; map.beginPath();
+        for (let i = 0; i < routeMapXZ.length; i++) { const [rx, rz] = routeMapXZ[i]; if (i === 0) map.moveTo((rx - cx) * k, (rz - cz) * k); else map.lineTo((rx - cx) * k, (rz - cz) * k); }
+        map.stroke();
       }
       const [fx, fz] = toXZ(finish.lat, finish.lng);
       const dx = fx - cx, dz = fz - cz, d = Math.hypot(dx, dz);
@@ -342,7 +377,7 @@ export default function StreetViewRace(props: {
     };
     // The drop, the finish and the tile never change while mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.tile, props.drop, props.finish, props.mapsKey, props.debug, props.startsAt, props.ghost, props.others]);
+  }, [props.tile, props.drop, props.finish, props.mapsKey, props.debug, props.startsAt, props.ghost, props.others, props.route]);
 
   // ---- the wheel ----
   const wheelDown = (e: React.PointerEvent) => { wheelDrag.current = { id: e.pointerId }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); wheelMove(e); };

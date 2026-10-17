@@ -1,8 +1,8 @@
 import "server-only";
 import crypto from "node:crypto";
 import sql from "@/lib/db";
-import { RoadGraph } from "./graph";
-import { nearestNode, pickDrop } from "./route";
+import { RoadGraph, type GNode } from "./graph";
+import { nearestNode, pickDrop, shortestPath } from "./route";
 import { getTile } from "./osm";
 import type { ArCampaignRow } from "@/lib/ar/campaign";
 
@@ -49,7 +49,21 @@ export type StartAnswer =
   | { status: "pending" }
   | { status: "full" }
   | { status: "noroads" }
-  | { status: "ok"; raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string };
+  | { status: "nostart" }
+  | { status: "tooclose" }
+  | { status: "ok"; raceId: string; drop: { x: number; z: number }; finish: { x: number; z: number }; dropLatLng: { lat: number; lng: number }; finishLatLng: { lat: number; lng: number }; routeM: number; tile: { lat: number; lng: number }; startsAt?: string; route?: { lat: number; lng: number }[] };
+
+/** A chosen start must still be a drive: at least this far from the prize by road. */
+const MIN_CHOSEN_ROUTE_M = 500;
+
+/** The road route from a node to the finish as lat/lng points (at most ~400), for the minimap and the photo preload. */
+function routeOf(graph: RoadGraph, tile: { lat: number; lng: number }, fromId: number, toId: number): { lat: number; lng: number }[] | undefined {
+  const p = shortestPath(graph, fromId, toId);
+  if (!p) return undefined;
+  const step = Math.max(1, Math.ceil(p.nodes.length / 400));
+  const out = p.nodes.filter((_, i) => i % step === 0 || i === p.nodes.length - 1).map((n) => tileToLatLng(tile, n.x, n.z));
+  return out;
+}
 
 /** A new hunt: a drop point on a real street some way from the pin. */
 export type Group = { id: string; drop: { x: number; z: number }; finish: { x: number; z: number }; routeM: number; startsAt: string; tile: { lat: number; lng: number } };
@@ -81,7 +95,7 @@ export async function createGroup(c: ArCampaignRow): Promise<{ status: "pending"
   return { status: "ok", group: { id: g.id, drop: { x: l.drop.node.x, z: l.drop.node.z }, finish: { x: l.finish.x, z: l.finish.z }, routeM: l.drop.routeM, startsAt: startsAt.toISOString(), tile: { lat: l.tile.lat, lng: l.tile.lng } } };
 }
 
-export async function startRace(c: ArCampaignRow, player: string, ipHash: string, groupId?: string): Promise<StartAnswer> {
+export async function startRace(c: ArCampaignRow, player: string, ipHash: string, groupId?: string, from?: { lat: number; lng: number }): Promise<StartAnswer> {
   const [n] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM races WHERE campaign_id = ${c.id}`;
   if (n.n >= c.max_races) return { status: "full" };
   if (groupId) {
@@ -97,7 +111,8 @@ export async function startRace(c: ArCampaignRow, player: string, ipHash: string
     const [row] = await sql<{ id: string }[]>`
       INSERT INTO races (campaign_id, player, drop_x, drop_z, route_m, ip_hash, group_id, started_at)
       VALUES (${c.id}, ${player.slice(0, 24)}, ${g.drop_x}, ${g.drop_z}, ${g.route_m}, ${ipHash}, ${g.id}, ${g.starts_at}) RETURNING id`;
-    return { status: "ok", raceId: row.id, drop: { x: g.drop_x, z: g.drop_z }, finish: { x: finish.x, z: finish.z }, dropLatLng: tileToLatLng(t.tile, g.drop_x, g.drop_z), finishLatLng: { lat: c.lat, lng: c.lng }, routeM: g.route_m, tile: { lat: t.tile.lat, lng: t.tile.lng }, startsAt: new Date(g.starts_at).toISOString() };
+    const gNode = nearestNode(graph, g.drop_x, g.drop_z);
+    return { status: "ok", raceId: row.id, drop: { x: g.drop_x, z: g.drop_z }, finish: { x: finish.x, z: finish.z }, dropLatLng: tileToLatLng(t.tile, g.drop_x, g.drop_z), finishLatLng: { lat: c.lat, lng: c.lng }, routeM: g.route_m, tile: { lat: t.tile.lat, lng: t.tile.lng }, startsAt: new Date(g.starts_at).toISOString(), route: gNode ? routeOf(graph, t.tile, gNode.id, finish.id) : undefined };
   }
   const t = await getTile(c.lat, c.lng, 2500);
   if (t.status === "pending") return { status: "pending" };
@@ -108,12 +123,22 @@ export async function startRace(c: ArCampaignRow, player: string, ipHash: string
   const fx = (c.lng - t.tile.lng) * mx, fz = -(c.lat - t.tile.lat) * mz;
   const finish = nearestNode(graph, fx, fz);
   if (!finish) return { status: "noroads" };
-  const drop = pickDrop(graph, finish);
+  let drop: { node: GNode; routeM: number } | null;
+  if (from) {
+    // The player chose where to start: the nearest mapped road point, if one is close.
+    const sx = (from.lng - t.tile.lng) * mx, sz = -(from.lat - t.tile.lat) * mz;
+    const n = nearestNode(graph, sx, sz);
+    if (!n || Math.hypot(n.x - sx, n.z - sz) > 250) return { status: "nostart" };
+    const p = shortestPath(graph, n.id, finish.id);
+    if (!p) return { status: "nostart" };
+    if (p.m < MIN_CHOSEN_ROUTE_M) return { status: "tooclose" };
+    drop = { node: n, routeM: p.m };
+  } else drop = pickDrop(graph, finish);
   if (!drop) return { status: "noroads" };
   const [row] = await sql<{ id: string }[]>`
     INSERT INTO races (campaign_id, player, drop_x, drop_z, route_m, ip_hash)
     VALUES (${c.id}, ${player.slice(0, 24)}, ${drop.node.x}, ${drop.node.z}, ${drop.routeM}, ${ipHash}) RETURNING id`;
-  return { status: "ok", raceId: row.id, drop: { x: drop.node.x, z: drop.node.z }, finish: { x: finish.x, z: finish.z }, dropLatLng: tileToLatLng(t.tile, drop.node.x, drop.node.z), finishLatLng: { lat: c.lat, lng: c.lng }, routeM: drop.routeM, tile: { lat: t.tile.lat, lng: t.tile.lng } };
+  return { status: "ok", raceId: row.id, drop: { x: drop.node.x, z: drop.node.z }, finish: { x: finish.x, z: finish.z }, dropLatLng: tileToLatLng(t.tile, drop.node.x, drop.node.z), finishLatLng: { lat: c.lat, lng: c.lng }, routeM: drop.routeM, tile: { lat: t.tile.lat, lng: t.tile.lng }, route: routeOf(graph, t.tile, drop.node.id, finish.id) };
 }
 
 /** The fastest a car can possibly cover the route, with a margin. */
