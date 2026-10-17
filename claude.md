@@ -550,7 +550,7 @@ request in parallel and shows what it is waiting for; `lib/ar/fulfil.ts` asks Op
 moment a bounty is created so the first hunter never waits 30–120 s on Overpass. (3) Hop gating: a hop now counts
 as settled when the new photo's tiles have landed (resource timing: 3+ new `streetviewpixels`/`ggpht`
 entries, 250 ms after `pano_changed`, 3 s cap), `HOPS_PER_SEC = 1.6`; in the headless browser the view now
-stays a real street while driving (Google's own zoom-blur between photos). **Still unproven on the owner's
+stays a real street while driving (Google's own zoom-blur between photos). (4) The hunt page had been bundling three.js only because it imported `fetchTile` from the 3D demo; the fetcher now lives in `lib/race/tile-client.ts` (demo re-exports it): first-load JS 336 → 177 KB. On a 1.5 Mbit/s link: landing 8.9 → 6.4 s (the rest is the root layout's 163 KB font + 95 KB CSS, not touched), tap-to-first-photo 1.6 s. 5 live Playwright tests pass. **Still unproven on the owner's
 phone.** The last Playwright hunt at the Abuja pin dropped 373 m straight-line from the prize (roads wind).
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
