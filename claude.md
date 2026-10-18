@@ -636,6 +636,18 @@ SmartScreen shows "Windows protected your PC" → More info → Run anyway (expl
 App look (reuses `app/d/up/[token]/upload.module.css`), light/dark by `studio-theme`. `public/fegorson-icon.png`
 is force-added (public/*.png is git-ignored).
 
+**Update (2026-10-18): the download link went out to the people who asked @fegorson_studio.** Only the last
+inbound message per chat is stored (`instagram_sessions.last_inbound`, `whatsapp_sessions.last_inbound`) — there is
+no full DM log — so "who asked" = sessions whose last message mentions Evoto / the link / the app within 7 days:
+13 Instagram people (12 asked on 14–15 Oct after the owner's comment on "Kagan's" post about Evoto for Windows
+without subscription; none on WhatsApp). `scripts/send-fegorson-link.mjs` (dry run / `--send`, sent log
+`instagram-data/fegorson-link-sent.jsonl`) sent a button message to @ojays.art (within 24 h). **The other 12 were
+refused:** Instagram allows a reply only within 24 h of the person's last message (error 10 / 2534022, confirmed
+with a plain text too), and the HUMAN_AGENT tag (7 days) needs Meta app review ("Human Agent" feature) which this
+app does not have. The owner answers those 12 by hand in the Instagram app (list in the chat of 2026-10-18).
+Not built: an auto-reply for @fegorson_studio when a DM mentions evoto/link/software — would catch future asks
+inside the 24 h window; offered to the owner.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
