@@ -38,6 +38,8 @@ export default function DownloadPage(props: { version: string; sizeMb: number; s
             Professional photo retouching on your own laptop: skin, eyes, teeth, body shaping, dodge and burn, frequency separation,
             studio backdrops and your own colour style. Your photos never leave your computer.
           </p>
+          {/* A route handler (a redirect to the file), not a page: a plain link is right here. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a className={styles.primary} href="/d/fegorson/download">Download for Windows · {props.sizeMb} MB</a>
           <p className={own.meta}>Version {props.version} · Windows 10 or 11, 64-bit · one-time install</p>
 
