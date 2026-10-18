@@ -648,6 +648,17 @@ app does not have. The owner answers those 12 by hand in the Instagram app (list
 Not built: an auto-reply for @fegorson_studio when a DM mentions evoto/link/software — would catch future asks
 inside the 24 h window; offered to the owner.
 
+**Update (2026-10-18): the Instagram bot now hands out the Fegorson Studio link itself.** In
+`app/api/webhooks/instagram/route.ts` (`asksForFegorson` / `offerFegorsonLink`, placed before the retouch
+words so "your retouching software" is an app request, not a Glow Retouch order): on **@fegorson_studio** any
+DM mentioning evoto/envato/fegorson/link/download/install/software/app/subscription/free version/windows,
+and on the other accounts only an explicit evoto/envato/fegorson mention, gets the download page as a
+button message ("Download for Windows", `buttonTitle` in `lib/instagram.ts`) — only while the conversation
+is at rest (state IDLE/DONE). The full pitch goes once (`instagram_sessions.fegorson_link_sent_at`, migration
+079 by psql; @ojays.art pre-marked), a later ask gets "Here it is again: <link>"; each first send is
+reported on Telegram. Verified live with a signed made-up webhook message: the branch ran and Instagram
+answered "user not found" for the fake id (row removed). Quiet mode for everything else is unchanged.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
