@@ -178,6 +178,7 @@ function buttonTitle(url: string): string {
   try { u = new URL(url); } catch { return "Open link"; }
   const host = u.hostname.replace(/^www\./, "");
   if (u.pathname.startsWith("/d/up/")) return "Upload full quality";
+  if (u.pathname.startsWith("/d/fegorson")) return "Download for Windows";
   if (/paystack|flutterwave|ravepay/i.test(host)) return "Pay now";
   if (host === "wa.me" || host.endsWith("whatsapp.com")) return "Open WhatsApp";
   if (/^\/d\/[A-Za-z0-9_-]+\/?$/.test(u.pathname)) return "Download full size";

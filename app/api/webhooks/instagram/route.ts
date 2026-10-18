@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
-import { sendText, sendTextWithReplies, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
+import { sendText, sendTextWithReplies, sendTextWithButtons, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
 import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser, offerRetouch, isRetouchSession, batchQuestion, BATCH_REPLIES } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
@@ -61,6 +61,41 @@ const LIGHT_LOOK_NUMBER = 197;
  * bare "hi"s in the same log carried no ad tag: friends, clients and other
  * businesses talking to the studio, which is who quiet mode protects.
  */
+// ── Fegorson Studio: "where's the link?" ─────────────────────────────────────
+// The owner's comment on a photographers' page ("Evoto for Windows without a
+// subscription") sends people to the DMs asking for "the link" — 13 of them
+// on 14–15 Oct 2026, answered by hand because the API cannot reply after 24 h.
+// Now the bot answers at once, while the window is open. On @fegorson_studio
+// any such ask gets the download page; on the other accounts only an explicit
+// Evoto/Fegorson mention does, because "send me the link" there usually means
+// a shoot or a payment. Only a conversation at rest is answered, so a booking
+// in flight is never interrupted. The full message goes once; a later ask gets
+// the link alone. The studio hears about each first send on Telegram.
+const FEGORSON_ACCOUNT_ID = "17841401081427201"; // @fegorson_studio
+const FEGORSON_LINK = "https://aluxartandframes.shop/d/fegorson";
+const FEGORSON_ASK = /evoto|envato|fegorson/i;
+const FEGORSON_ASK_LOOSE = /evoto|envato|fegorson|\blinks?\b|download|install|\bsoftware\b|\bapp\b|subscription|free version|\bwindows\b/i;
+const FEGORSON_PITCH =
+  "Hi! Here is the link you asked for 🙂\n\n" +
+  "It is not Evoto itself. It is Fegorson Studio, my own retouching app for Windows: skin, eyes, teeth, body shaping, " +
+  "dodge and burn, frequency separation, studio backdrops and your own colour style, all on your laptop, no subscription.\n\n" +
+  "Free for 7 days, then a one-time ₦20,000 licence. When Windows shows \"Windows protected your PC\", click More info, then Run anyway.\n\n" +
+  "Tell me what you think!";
+function asksForFegorson(text: string, igAccountId: string): boolean {
+  return (igAccountId === FEGORSON_ACCOUNT_ID ? FEGORSON_ASK_LOOSE : FEGORSON_ASK).test(text);
+}
+async function offerFegorsonLink(creds: IgCreds, session: IgSession, senderId: string, text: string): Promise<void> {
+  const again = !!session.fegorson_link_sent_at;
+  const who = session.ig_username ? `@${session.ig_username}` : senderId;
+  const r = await sendTextWithButtons(creds, senderId, again ? `Here it is again: ${FEGORSON_LINK}` : `${FEGORSON_PITCH}\n\n${FEGORSON_LINK}`);
+  if (!r.ok) { console.warn(`[ig bot] fegorson link to ${who} failed: ${r.error}`); return; }
+  console.log(`[ig bot] fegorson link ${again ? "re-" : ""}sent to ${who}`);
+  if (!again) {
+    await patchSession(session.id, { fegorson_link_sent_at: new Date() });
+    tellAdmin(`💾 Fegorson Studio link sent to ${who}\nThey wrote: "${text.slice(0, 120)}"`).catch(() => {});
+  }
+}
+
 function isRelightAd(adTitle: string | undefined): boolean {
   return typeof adTitle === "string" && /relight|\blight\b/i.test(adTitle);
 }
@@ -783,6 +818,13 @@ async function handleDirectMessage(
     // Now it would fall through to silence, so the studio is told instead: the
     // customer typed the right word and the look could not be found.
     await ignoreQuietly(session, text, { failedTrigger: true });
+    return;
+  }
+
+  // Asking for the Fegorson Studio app or its link. Before the retouch words:
+  // "your retouching software" is a request for the app, not a Glow Retouch order.
+  if (["IDLE", "DONE"].includes(session.state) && asksForFegorson(text, igAccountId)) {
+    await offerFegorsonLink(creds, session, senderId, text);
     return;
   }
 

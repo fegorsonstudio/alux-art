@@ -62,6 +62,8 @@ export type IgSession = {
   last_inbound_at: Date;
   /** When the studio was last told about a message this bot ignored. */
   last_ignored_alert_at: Date | null;
+  /** When this person was sent the Fegorson Studio download link (the full message goes once). */
+  fegorson_link_sent_at: Date | null;
 };
 
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
