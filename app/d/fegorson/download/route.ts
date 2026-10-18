@@ -9,7 +9,7 @@ import { r2SignedDownloadUrl } from "@/lib/r2";
  */
 export const dynamic = "force-dynamic";
 
-export const FEGORSON_VERSION = "0.32.0";
+const FEGORSON_VERSION = "0.32.0"; // bump with page.tsx when a new build is uploaded
 const KEY = `fegorson/Fegorson-Studio-Setup-${FEGORSON_VERSION}.exe`;
 
 export async function GET() {
