@@ -1,0 +1,7 @@
+/* The Fegorson Studio download page: a few extras over the App-look upload stylesheet. */
+.meta { margin: -6px 0 0; font-size: 0.82rem; color: var(--meta); text-align: center; }
+.link { color: var(--teal); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.steps { display: flex; flex-direction: column; gap: 6px; }
+.stepsTitle { margin: 0; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--label); }
+.list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; line-height: 1.5; color: var(--ink); }
+.hash { font-size: 0.72rem; word-break: break-all; color: var(--meta); }
