@@ -15,7 +15,7 @@ import { readDentition } from "./dentition";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
 import { getLightingForSlot, buildLightingBriefSection, type LightingPlan } from "./lighting-plan";
 import { buildChoiceBriefSection, type ChoiceSelections } from "./choice-groups";
-import { nanoBananaEdit, NANO_BANANA_2, NANO_BANANA_21 } from "./fal-edit";
+import { nanoBananaEdit, NANO_BANANA_2, NANO_BANANA_21, NANO_BANANA_PRO } from "./fal-edit";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -343,11 +343,11 @@ async function callFalWithFallback(
   aspectRatio: string,
   resolution: string,
   dbForbiddenWords: Array<{ word: string; replacement: string }> = [],
-  generationModel: "nano-banana-2.1" | "nano-banana" | "seedream" = "nano-banana-2.1",
+  generationModel: "nano-banana-pro" | "nano-banana-2.1" | "nano-banana" | "seedream" = "nano-banana-pro",
   allowAdult = false,
   soulId: { loraUrl: string; triggerPhrase: string } | null = null
 ): Promise<{ url: string; sanitized: boolean; model: string }> {
-  const nanoModel = generationModel === "nano-banana" ? NANO_BANANA_2 : NANO_BANANA_21;
+  const nanoModel = generationModel === "nano-banana" ? NANO_BANANA_2 : generationModel === "nano-banana-2.1" ? NANO_BANANA_21 : NANO_BANANA_PRO;
   const primary = soulId
     ? "fal-ai/flux-lora"
     : generationModel === "seedream"
@@ -1161,7 +1161,7 @@ async function generateImageWithFal(
   imageUrls: string[],
   aspectRatio: string,
   resolution = "4K",
-  model: string = NANO_BANANA_21
+  model: string = NANO_BANANA_PRO
 ): Promise<{ url: string; model: string }> {
   if (USE_MOCK_FAL) {
     return { url: MOCK_FAL_PLACEHOLDER_IMAGE_URL, model };
@@ -2398,7 +2398,7 @@ export async function startGenerationWorker(
 
   // Load active model config (no-code admin switches) — must be before identity analysis
   let visionModel: "gemini" | "claude" = "gemini";
-  let generationModel: "nano-banana-2.1" | "nano-banana" | "seedream" = "nano-banana-2.1";
+  let generationModel: "nano-banana-pro" | "nano-banana-2.1" | "nano-banana" | "seedream" = "nano-banana-pro";
   let promptOnlyMode = false;
   let adminPromptOnlyMode = false;
   let polishPassEnabled = false;
@@ -2409,6 +2409,7 @@ export async function startGenerationWorker(
     if (cfgMap.vision_model === "claude") visionModel = "claude";
     if (cfgMap.generation_model === "seedream") generationModel = "seedream";
     else if (cfgMap.generation_model === "nano-banana") generationModel = "nano-banana";
+    else if (cfgMap.generation_model === "nano-banana-2.1") generationModel = "nano-banana-2.1";
     promptOnlyMode = cfgMap.prompt_only_mode === "true" || cfgMap.prompt_only_mode === true;
     adminPromptOnlyMode = cfgMap.admin_prompt_only_mode === "true" || cfgMap.admin_prompt_only_mode === true;
     polishPassEnabled = cfgMap.polish_pass_enabled === "true" || cfgMap.polish_pass_enabled === true;
