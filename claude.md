@@ -623,6 +623,19 @@ shoot** — generate.ts can only be proven by one (see memory); the owner runs i
 Base-lock, Soul ID sheets and Template Lab follow the same switch. Scripts `render-look-thumbnail.mjs` /
 `relight-one.mjs` still call nano-banana-2 directly.
 
+**Update (2026-10-18): Fegorson Studio download page for friends — `/d/fegorson`.** The owner shares
+https://aluxartandframes.shop/d/fegorson; its button goes to `/d/fegorson/download` (`app/d/fegorson/download/route.ts`),
+which 302s to a one-hour R2 link for `template-images/fegorson/Fegorson-Studio-Setup-<version>.exe` (never purged;
+version constant `FEGORSON_VERSION`, 0.32.0, 369 MB, SHA-256 on the page). Upload a new build with
+`node --env-file=.env.local scripts/upload-fegorson-installer.mjs "<Setup.exe>" <version>` (multipart, from the
+laptop; the exe lives in Desktop/Avoto/studio/dist/), then bump the version in the route and `page.tsx`. The
+app itself enforces the 7-day trial (`licence.js` in the app: trial start sealed in two places, then a code) and
+its Buy button opens WhatsApp +234 907 685 8017 with "Hello, I would like to buy a Fegorson Studio licence code."
+— the live licence shop (₦20,000, codes only after Paystack confirms). The installer is unsigned: Windows
+SmartScreen shows "Windows protected your PC" → More info → Run anyway (explained on the page). Page is in the
+App look (reuses `app/d/up/[token]/upload.module.css`), light/dark by `studio-theme`. `public/fegorson-icon.png`
+is force-added (public/*.png is git-ignored).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
