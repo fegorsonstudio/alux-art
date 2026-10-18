@@ -610,6 +610,19 @@ owner recording a real road on a real phone (iPhone Safari MediaRecorder = mp4; 
 limits: no moderation UI (set `status=hidden` by SQL); one road at a time in the converter; a landscape video
 on a portrait phone shows its middle (object-fit cover); leaderboard is per road.
 
+**Update (2026-10-18): default image model is Nano Banana Pro** (`fal-ai/nano-banana-pro/edit`, owner's call;
+safety_tolerance "6" = the least strict of 1–6; resolution 4K unless a caller asks for less). `lib/fal-edit.ts`
+`nanoBananaEdit()` runs Pro (or 2.1) and, on any NON-content refusal of the request (401/403/404 → that model is
+skipped for 10 min), remakes the photo on `fal-ai/nano-banana-2/edit`; `configured_model` records what ran.
+Admin → Image Generation now offers **Nano Banana Pro / Nano Banana 2.1 / Nano Banana 2 / SeedDream**
+(`app/api/admin/config` allow-list `nano-banana-pro|nano-banana-2.1|nano-banana|seedream`);
+`app_config.generation_model = nano-banana-pro`; `fal_rate_card` has a Pro row at $0.30 (4K — fal lists 1K/2K at
+about $0.15; confirm on fal's model page). fal's schema for Pro checked: resolution 1K/2K/4K, safety "1"–"6",
+`limit_generations` default true (we send false), so the input we already send fits. **Not yet proven by a real
+shoot** — generate.ts can only be proven by one (see memory); the owner runs it and checks `configured_model`.
+Base-lock, Soul ID sheets and Template Lab follow the same switch. Scripts `render-look-thumbnail.mjs` /
+`relight-one.mjs` still call nano-banana-2 directly.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
