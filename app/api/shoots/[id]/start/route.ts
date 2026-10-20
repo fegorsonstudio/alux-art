@@ -5,7 +5,11 @@ import { notifyGenerationStarted, notifyShootComplete } from "@/lib/n8n";
 import { isLockedBaseEnabled } from "@/lib/base-lock";
 import sql from "@/lib/db";
 import { isAdminEmail } from "@/lib/auth";
-import { SITE_URL } from "@/lib/site-url";
+import { INTERNAL_BASE_URL } from "@/lib/site-url";
+import { isInternalSecret, safeResolution } from "@/lib/internal-auth";
+import { withShootLock } from "@/lib/worker-lock";
+import { settleShortfall } from "@/lib/shortfall";
+import { tellAdmin } from "@/lib/telegram";
 
 export const maxDuration = 300;
 
@@ -15,10 +19,9 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  const resolution: string = typeof body.resolution === "string" ? body.resolution : "4K";
-  const internalSecret = req.headers.get("x-internal-secret");
-  const isInternal =
-    internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
+  const resolution: string = safeResolution(body.resolution);
+  const isInternal = isInternalSecret(req.headers.get("x-internal-secret"));
+  let callerIsAdmin = false;
 
   if (!isInternal) {
     const supabase = await createClient();
@@ -28,10 +31,16 @@ export async function POST(
     const [ownerCheck] = await sql`SELECT user_id, status FROM shoots WHERE id = ${id}`;
     const isOwner = ownerCheck?.user_id === user.id;
     const isAdmin = isAdminEmail(user.email);
+    callerIsAdmin = isAdmin;
     if (!isOwner && !isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (!isAdmin && ownerCheck?.status === "PENDING_PAYMENT")
       return NextResponse.json({ error: "Payment required" }, { status: 402 });
+    // A finished-and-failed order is not restarted by the buyer: failed photos
+    // were either refunded or are redone through retry / free regeneration, which
+    // apply the refund rules. Restarting it here regenerated refunded images.
+    if (!isAdmin && ownerCheck?.status === "FAILED")
+      return NextResponse.json({ error: "This order has finished. Use retry on a failed photo instead." }, { status: 409 });
   } else {
     const [ownerCheck] = await sql`SELECT status FROM shoots WHERE id = ${id}`;
     if (ownerCheck?.status === "PENDING_PAYMENT")
@@ -88,10 +97,9 @@ export async function POST(
         base_lock_started_at = ${now}, updated_at = ${now}
       WHERE id = ${id}
     `;
-    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'base_locking', ${JSON.stringify({ stage: "Locking character base", progress: 5 })}, ${now})`.catch(() => {});
+    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'base_locking', ${sql.json({ stage: "Locking character base", progress: 5 })}, ${now})`.catch(() => {});
 
-    const origin = SITE_URL;
-    fetch(`${origin}/api/shoots/${id}/base-lock`, {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${id}/base-lock`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,7 +138,7 @@ export async function POST(
       UPDATE shoots SET
         status = 'PROCESSING', progress = 5,
         pipeline_stage = 'Starting generation', updated_at = ${now}
-      WHERE id = ${id} AND status = ANY(${["QUEUED", "FAILED"]})
+      WHERE id = ${id} AND status = ANY(${isInternal || callerIsAdmin ? ["QUEUED", "FAILED"] : ["QUEUED"]})
       RETURNING id
     `;
 
@@ -141,7 +149,7 @@ export async function POST(
       UPDATE shoot_images SET status = 'QUEUED', stage = 'Queued for generation', updated_at = ${now}
       WHERE shoot_id = ${id} AND status = ANY(${["PENDING", "FAILED"]})
     `;
-    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'stage', ${JSON.stringify({ stage: "Starting generation", progress: 5 })}, ${now})`.catch(() => {});
+    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${id}, ${shoot.user_id}, 'stage', ${sql.json({ stage: "Starting generation", progress: 5 })}, ${now})`.catch(() => {});
 
     const ownerEmail = shoot.owner_email as string | undefined;
     if (ownerEmail) {
@@ -167,11 +175,16 @@ export async function POST(
   }
 
   try {
-    const result = await startGenerationWorker(id, { maxSlots: 1, resolution });
+    // One worker per shoot. If another is already running it will reach any
+    // queued slot itself, so this call has nothing to do.
+    const run = await withShootLock(id, () => startGenerationWorker(id, { maxSlots: 1, resolution }));
+    if (!run.locked) {
+      return NextResponse.json({ ok: true, busy: true, status: "PROCESSING" });
+    }
+    const result = run.value;
 
     if (!result.done) {
-      const origin = SITE_URL;
-      fetch(`${origin}/api/shoots/${id}/start`, {
+      fetch(`${INTERNAL_BASE_URL}/api/shoots/${id}/start`, {
         method: "POST",
         headers: {
           "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "",
@@ -193,13 +206,43 @@ export async function POST(
     const message = error instanceof Error ? error.message : String(error);
     console.error("[start] generation worker failed:", message);
 
+    // The worker failed before or between photos (identity analysis, the brief,
+    // a missing reference). Every slot not yet made is marked failed so the
+    // order is settled like any other short shoot — refund for a paid booking,
+    // free regeneration for a free one — and the studio is told. Before, the
+    // slots stayed queued, the refund code never ran and nobody heard.
+    await sql`
+      UPDATE shoot_images SET status = 'FAILED',
+        stage = ${`Failed before generation: ${message}`.slice(0, 200)},
+        provider_error = ${message.slice(0, 1000)}, updated_at = NOW()
+      WHERE shoot_id = ${id} AND status = ANY(${["QUEUED", "PENDING", "GENERATING"]})
+    `.catch(() => {});
+    const [{ done } = { done: 0 }] = await sql<{ done: number }[]>`
+      SELECT count(*)::int AS done FROM shoot_images WHERE shoot_id = ${id} AND status = 'COMPLETE'`.catch(() => [{ done: 0 }]);
+
     await sql`
       UPDATE shoots SET
-        status = 'FAILED',
-        pipeline_stage = ${`Generation failed: ${message}`},
+        status = ${done > 0 ? "COMPLETE" : "FAILED"},
+        pipeline_stage = ${`Generation failed: ${message}`.slice(0, 300)},
+        completed_at = COALESCE(completed_at, NOW()),
         updated_at = NOW()
       WHERE id = ${id}
     `;
+
+    let settledNote = "";
+    try {
+      const settled = await settleShortfall(id);
+      settledNote = settled.refundedNgn > 0
+        ? `Refunded ₦${settled.refundedNgn.toLocaleString("en-NG")} to the buyer's wallet.`
+        : settled.regenerationOffered ? "Free order: a free regeneration was offered." : "Nothing to refund.";
+    } catch (e) {
+      settledNote = `Settlement failed: ${e instanceof Error ? e.message : e}`;
+    }
+    const esc = (s: string) => s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] as string);
+    tellAdmin(
+      `⚠️ <b>Order ${id.slice(0, 8)} stopped</b> (${esc(shoot.owner_email ?? "unknown buyer")})\n` +
+      `${done} photo(s) were made before it failed.\nReason: ${esc(message.slice(0, 300))}\n${esc(settledNote)}`,
+    ).catch(() => {});
 
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }

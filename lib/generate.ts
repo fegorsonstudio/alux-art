@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { creditWallet } from "@/lib/wallet";
+import { settleShortfall } from "@/lib/shortfall";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
@@ -9,7 +9,7 @@ import { buildGearEqualizerPrompt, buildGearReferenceMapText, type EnhanceSelect
 import { assetKindById, assetAngleById, buildAssetExtractPrompt, buildAssetReferenceMapText } from "./asset-extractor";
 import { logFalPayload, logReferenceUpload } from "./airtable";
 import { signBasePath } from "./base-lock";
-import { r2SignedDownloadUrl, r2Upload, r2Delete, r2StreamUpload } from "./r2";
+import { r2SignedDownloadUrl, r2Upload, r2StreamUpload } from "./r2";
 import { stripImageMetadata } from "./strip-metadata";
 import { readDentition } from "./dentition";
 import { getBackgroundForSlot, buildBackgroundBriefSection, type BackgroundPlan } from "./background-plan";
@@ -2470,7 +2470,7 @@ export async function startGenerationWorker(
   // Fire-and-forget wrapper — generation_events is non-critical UI telemetry.
   // A missing table or constraint error must never crash image generation.
   const logEvent = (type: string, payload: Record<string, unknown>) =>
-    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${type}, ${JSON.stringify(payload)}::jsonb, ${ts()})`.catch(() => {});
+    sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at) VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id as string}, ${type}, ${sql.json(payload as never)}, ${ts()})`.catch(() => {});
 
   // --- Step 1: Identity analysis (skip if base provides it; photo-upgrade edits
   // the buyer's own photo, so there is nothing to analyze) ---
@@ -2530,7 +2530,7 @@ export async function startGenerationWorker(
         identityRefsOrdered.map((r) => ({ url: r.url, storagePath: r.storagePath }))
       );
       if (Object.keys(identityAttributes).length > 0) {
-        await sql`UPDATE shoots SET identity_attributes = ${JSON.stringify(identityAttributes)}::jsonb, updated_at = ${ts()} WHERE id = ${shootId}`;
+        await sql`UPDATE shoots SET identity_attributes = ${sql.json(identityAttributes as never)}, updated_at = ${ts()} WHERE id = ${shootId}`;
         console.log("[generate] identity attributes classified:", identityAttributes);
       }
     }
@@ -3220,7 +3220,7 @@ export async function startGenerationWorker(
 
     await sql`UPDATE shoots SET pipeline_stage = ${`Generating slot ${slot}`}, progress = ${Math.min(85, 20 + Math.round((slot / total) * 65))}, updated_at = ${ts()} WHERE id = ${shootId}`;
 
-    logEvent('slot_update', { image: { slot, status: "GENERATING" } });
+    logEvent('slot_update', { image: { id: slotImg.id, slot, status: "GENERATING" } });
 
     let slotPrompt = ""; // hoisted so catch block can log it for learning
     try {
@@ -3774,7 +3774,7 @@ export async function startGenerationWorker(
         updated_at = ${ts()}
         WHERE id = ${slotImg.id}`;
 
-      logEvent('slot_complete', { image: { slot, status: "COMPLETE" } });
+      logEvent('slot_complete', { image: { id: slotImg.id, slot, status: "COMPLETE" } });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[generate] slot ${slot} failed:`, message);
@@ -3871,58 +3871,18 @@ export async function startGenerationWorker(
     updated_at = ${ts()}
     WHERE id = ${shootId}`;
 
-  // Refund the naira value of whatever did not arrive.
-  //
-  // The promise is that a buyer either gets what they paid for or gets the money
-  // back to spend on something else — without having to notice, complain, or
-  // know the word "refund". A content refusal, a provider error, a timeout: the
-  // cause does not change what they are owed.
-  //
-  // Naira rather than a count of images, because a ₦3,500 portrait image and a
-  // ₦1,000 relight are not worth the same and crediting "one image" for either
-  // would quietly sell the dearer work at the cheaper price.
-  if (hasFailures && totalComplete < total) {
-    try {
-      const [paid] = await sql<{ amount_ngn: number; user_id: string }[]>`
-        SELECT tp.amount_ngn, tp.user_id
-        FROM template_purchases tp
-        WHERE tp.shoot_id = ${shootId} AND tp.status = 'success' AND tp.amount_ngn > 0
-        ORDER BY tp.created_at DESC LIMIT 1`;
-
-      // Free and comped shoots have nothing to give back.
-      if (paid && total > 0) {
-        // Per delivered image, from what was actually charged — never from
-        // package_size. A two-takes booking pays for 5 and receives 10, and
-        // dividing by the label would refund twice what an image cost.
-        const perImage = Math.round(paid.amount_ngn / total);
-        const owed = perImage * (total - totalComplete);
-        if (owed > 0) {
-          const credited = await creditWallet({
-            userId: paid.user_id,
-            amountNgn: owed,
-            reason: "shortfall",
-            shootId,
-            note: `${total - totalComplete} of ${total} image(s) did not generate`,
-          });
-          if (credited) {
-            logEvent('wallet_credited', { amountNgn: owed, missing: total - totalComplete });
-            console.log(`[generate] refunded ₦${owed} to ${paid.user_id} for ${shootId}`);
-          }
-        }
-      }
-    } catch (e) {
-      // A refund that fails must never fail the shoot on top of it.
-      console.error("[generate] shortfall refund failed:",
-        e instanceof Error ? e.message : e);
-    }
-  }
-
-  // Grant the complimentary regeneration only when currently 'none' — so a
-  // previously-consumed regeneration is never re-granted (prevents infinite free retries).
+  // Settle what a short shoot is owed: the naira value of the missing images
+  // back in the wallet for a paid booking, or the one-time free regeneration
+  // for a free one — one remedy, never both (lib/shortfall.ts explains why).
+  // A settlement problem must never fail the shoot on top of it.
   if (hasFailures) {
-    await sql`UPDATE shoots SET regeneration_status = 'eligible', updated_at = ${ts()}
-      WHERE id = ${shootId} AND regeneration_status = 'none'`;
-    logEvent('regeneration_offered', { completed: totalComplete, total });
+    try {
+      const settled = await settleShortfall(shootId, { total, completed: totalComplete });
+      if (settled.refundedNgn > 0) logEvent('wallet_credited', { amountNgn: settled.refundedNgn, missing: total - totalComplete });
+      if (settled.regenerationOffered) logEvent('regeneration_offered', { completed: totalComplete, total });
+    } catch (e) {
+      console.error("[generate] shortfall settlement failed:", e instanceof Error ? e.message : e);
+    }
   }
 
   if (done) {
@@ -3937,42 +3897,11 @@ export async function startGenerationWorker(
     });
   }
 
-  // Only clean up reference files on a FULLY successful shoot. If any slot failed,
-  // the buyer may use their free regeneration, which re-runs generation and needs
-  // these exact references — deleting them would break the retry.
-  if (done && !hasFailures) {
-    // Delete inspiration + tagged reference files from storage on completion.
-    // Identity images are intentionally kept — they power the identity library for future shoots.
-    // CRITICAL: template-owned assets live in the `template-images` bucket — template tagged
-    // refs, background options AND choice-group options (outfit/hairstyle/shoes/etc.). NEVER
-    // delete anything from that bucket: marketplace bookings copy those paths into
-    // shoot_references, and deleting them destroys the option for all future buyers (this is
-    // exactly how an outfit image went missing before). The template_images NOT IN clause is
-    // kept as a second guard for legacy paths.
-    try {
-      const cleanupRefs = await sql`
-        SELECT storage_bucket, storage_path FROM shoot_references
-        WHERE shoot_id = ${shootId} AND purpose = ANY(${['inspiration', 'tagged']})
-          AND storage_bucket != 'template-images'
-          AND storage_path NOT IN (SELECT storage_path FROM template_images WHERE storage_path IS NOT NULL)
-      `;
-
-      if (cleanupRefs.length > 0) {
-        const byBucket = new Map<string, string[]>();
-        for (const ref of cleanupRefs) {
-          if (!byBucket.has(ref.storage_bucket)) byBucket.set(ref.storage_bucket, []);
-          byBucket.get(ref.storage_bucket)!.push(ref.storage_path);
-        }
-        await Promise.allSettled(
-          Array.from(byBucket.entries()).map(([bucket, paths]) =>
-            r2Delete(bucket, paths)
-          )
-        );
-      }
-    } catch (err) {
-      console.error("[generate] reference cleanup failed (non-fatal):", err);
-    }
-  }
+  // Reference files are NOT deleted here any more. Inspiration and tagged
+  // photos are also the buyer's saved library and can be shared by other
+  // shoots (201 files were), so deleting them on completion broke the next
+  // booking that used them. scripts/purge-customer-photos.mjs removes them 48 h
+  // after their last use, with the guards this block never had.
 
   return { done, completed: totalComplete, failed: failedCount, remaining, total };
 }
