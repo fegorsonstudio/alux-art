@@ -412,203 +412,23 @@ greeting check; Paystack has one webhook URL, so licence payments arrive in the 
 `/api/webhooks/paystack` route; a payment later than WhatsApp's 24-hour window needs an
 approved template to deliver the code.
 
-**Update (2026-10-17): AR balloon campaigns are LIVE (owner approved the plan; commit `c2127f7`).**
-A business books the private template **AR Balloon Campaign** (`43df341b`, category
-`ar_experience`, ₦50,000 PLACEHOLDER price, `platform_fee_exempt`, listed only after
-`scripts/publish-ar-template.mjs`) with a brand name, tagline, logo, two colours, a pin on a
-Leaflet/OSM map, a radius (100–1000 m) and a start date; the campaign runs
-`app_config.ar_campaign_days` (30) days. Fulfilment (`lib/ar/fulfil.ts`, forked in
-`lib/generate.ts` right after gif_loop, before the refund block) copies the logo to
-`template-images/ar/<campaign>/logo.png` (identity-images is purged after 48 h; template-images
-is public via `/api/media` and never swept), writes `ar_campaigns` (migration 074, psql; a
-public `token` and a `preview_token`), marks the shoot COMPLETE with NO `shoot_images` rows, and
-sends the owner a Telegram alert. Public page `/d/ar/<token>` (`app/d/ar/[token]`, three.js
-bundled, `lib/ar/*`): camera feed + branded hot-air balloons placed around the viewer (never
-GPS-anchored), device orientation turns the camera, GPS geofence with hysteresis (2 fixes in,
-+30 m and 10 s out), a Take-a-photo share button, `?p=<preview_token>` skips the fence,
-`?debug=1` overlays the numbers. **`next.config.ts` has a second headers rule for
-`/d/ar/:path*`** that re-enables camera/geolocation/motion (the site-wide rule still blocks them
-everywhere else; verified through Cloudflare). Buyers see link, QR (PNG), preview link and counts
-in `/studio` (`/api/shoots/[id]/ar`); `/admin/ar` lists every campaign with Suspend/Unsuspend.
-Events (`POST /api/ar/[token]/event`: open, permission_denied, outside, activated, photo) are
-rate limited, carry no PII, and preview visits are not counted. Verified live: an admin free
-booking end to end (`scripts/test-ar-booking.mjs`, campaign `7972301f`, pinned at Lagos Island
-6.4541, 3.3947, 1000 m; its link is the owner's test link) and 4 Playwright tests against the live
-site (fake camera, moved geolocation, preview). **Not yet done on a real phone**: the owner's
-walk-in test (iPhone + Android) with the preview link, then at the pin. **Deploy note:** the VPS
-git history has diverged from the laptop's (VPS HEAD `5a69c97` wardrobe work + 202 uncommitted
-files); this deploy copied only the 46 committed files by tar after checking the 19 shared ones
-were byte-identical to the laptop's pre-edit versions; backup `/root/ar-deploy-backup/`. Open:
-the price; "use my location" in the checkout (needs the header on /marketplace too); editing a
-campaign after purchase; other experience types (the scene class and the colours/logo config are
-the seams).
-
-**Update (2026-10-17, later): the balloons fly like balloons (commit after `c2127f7`).** The owner found the first
-version flat. Now: a 20 m 16-gore envelope with load tapes, Nomex skirt, crown vent, burner frame, wicker basket
-and a flame; the envelope is a fabric lit from inside (emissive gore copy strongest at the throat + a point
-light at the burner that lights the interior when you look up through the mouth). Each balloon is a physical
-model (burner heat → lift, drag, gusting wind that turns with height, basket pendulum). The camera frame is
-sampled every 500 ms for sky colour and brightness → sky light, fog and glow, so at dusk the balloons light up.
-**Interactive:** tap a balloon to fire its burner (synthesised roar, `lib/ar/audio.ts`, mute button in the HUD;
-haptic on Android); drag looks around; walking moves the camera from smoothed GPS (`setViewerOffset`, moves
-over 6 m only). Deployed and re-verified with the 4 Playwright tests. Still unproven on a real phone.
-
-**Update (2026-10-17, evening): Google Maps Platform set up for the planned balloon race game.** Owner
-decisions: client hosting a bounty pays, so the AR campaign template is now **₦20,000** (private until
-`scripts/publish-ar-template.mjs`); the race is a virtual navigation race on real roads (Street View at
-start, junctions and finish; stylised 3D roads from OpenStreetMap), not a real-world drive. In Google Cloud
-project `fegorson-studio` (billing "Firebase Payment"): Maps JavaScript API + Street View Static API
-enabled; key "Alux Art website (balloon race)" restricted to `https://aluxartandframes.shop/*` and those
-two APIs, stored as `NEXT_PUBLIC_GOOGLE_MAPS_KEY` in the VPS `.env.local` (backup
-`/root/env.local.bak-2026-10-17-maps-key`; unused until the race is built and `next build` runs);
-quota caps 2,000/day on Maps JS loads and both Street View daily request quotas; budget "Maps balloon race
-($20 alert)" at 50/90/100 %. Done through a Playwright-driven Chrome window the owner signed into
-(`tools/browser-driver/driver.mjs`, JSON ops on 127.0.0.1:47120); the key was written to the server
-without being printed. Verified: Street View request 200 with the site Referer, 403 with a wrong one.
-**Race game: not planned in detail yet.** Next step is the staged plan (3D road from the owner's street +
-drivable car, then the bounty finish with the balloons, then nearby players and live opponents).
-
-**Update (2026-10-17, night): Bounty Run stage 1 is LIVE — drive your real street.** Plan at
-`~/.claude/plans/balloon-race-game.md` (owner said go). `/d/race/demo` (`?lat=&lng=`, `&debug=1`; no
-start → "Use my location" / "Drive Lagos Island"). Streets come from OpenStreetMap through the Overpass API
-(`lib/race/osm.ts`): one fetch per ~100 m tile, 2.5 km of roads + 1.4 km of buildings, cached in
-`road_tiles` (migration 075, psql) for 30 days; the fetch runs in the background and
-`GET /api/race/tiles` answers 202 "pending" until it is in (Overpass took 37 s for Lagos Island and
-answers 502 when busy; 3 retries with backoff; `OVERPASS_URL` may list several instances, comma
-separated — the other public mirrors were broken on 2026-10-17). `lib/race/graph.ts` turns the roads into
-a graph the car never leaves (steering picks the branch at a junction); `lib/race/city.ts` builds the
-low-poly city (ribbon roads with kerbs and markings, extruded footprints with winding fixed, 1,500 trees,
-sky dome) in a few merged draw calls; `lib/race/car.ts` is the arcade car (wheel + GO/STOP pedals + N
-nitro, drift feel). A Street View Static photo of each junction slides in the first time it is reached
-(key `NEXT_PUBLIC_GOOGLE_MAPS_KEY`, max 20 per session). The race path shares the AR page's
-Permissions-Policy rule (`/d/:game(ar|race)/:path*`). Verified live: 2 Playwright tests + phone-emulated
-screenshots (Lagos Island tile: 769 roads, 2,500 buildings, 142 KB compressed). **Not yet done on a real
-phone.** Stage 2 (bounty, prizes, finish in the AR viewer) and stage 3 (live opponents) are not started.
-
-**Update (2026-10-17, late night): Bounty Run stage 2 is LIVE — the hunt and the prize.** A campaign is a
-bounty: the AR checkout asks how many prize codes (0–200, default 10; 0 = balloons only) and what a prize
-is; `lib/ar/fulfil.ts` makes cashier-readable codes (`lib/race/bounty.ts` `prizeCode`, no 0/O/1/I/8/B) in
-`race_prizes` and sets `ar_campaigns.prize_label` (migration 076 by psql; `max_races` default 300). The hunt
-is `/d/race/<campaign token>` (`app/d/race/[token]`): name → Hunt → `POST /api/race/[token]/start` picks a
-drop node 900 m–2.2 km of real road from the pin (Dijkstra in `lib/race/route.ts`, 202 "pending" while the
-tile is fetched) → the shared `components/race/RaceCanvas.tsx` shows three branded balloons + a light
-beam at the pin, a clock and "x m to the prize" → within 22 m the page posts `finish`; the server
-(`finishRace`, one transaction, `FOR UPDATE`) refuses a hunt that is not running, a time faster than
-70 m/s over the route or a clock ahead of its own, else claims the next unclaimed prize
-(`SKIP LOCKED`) and ranks the time; three taps pop the balloon and show the code; leaderboard at
-`GET /api/race/[token]/leaderboard`. Studio and `/admin/ar` show the race link, prizes left and hunts.
-Verified live: `scripts/test-bounty.mjs` on the test campaign (too fast → 409, plausible → prize
-9ENG-YFRT, twice → 409, board) and 2 Playwright tests (bad token; a hunt starts on a real street with the
-prize in sight). The test campaign `7972301f` now has 10 test prizes (1 claimed). **Not yet done on a real
-phone; the owner has not driven a full hunt to the finish.** Stage 3 (live opponents) not started.
-
-**Update (2026-10-18): Bounty Run stage 3 is LIVE — race others, and a ghost when alone.** On the bounty
-page "Race others" opens a lobby per bounty over **Supabase Realtime** (`lib/race/realtime.ts`: presence on
-`race-lobby-<token>`, 5 Hz position broadcasts on `race-room-<group>`; the anon key and the CSP's
-`wss://…supabase.co` already allowed it, nothing in Supabase was configured). Anyone taps "Start the race":
-`POST /api/race/[token]/group` makes a shared start (one drop, `starts_at` 12 s ahead; migration 077
-`race_groups`, `races.group_id`, `races.path`) and the lobby broadcasts "go"; every hunter then starts
-with the group, the canvas holds the pedals and shows a countdown until the server's start time, the
-other cars appear (`buildCarBody` in `lib/race/car.ts`, eased toward the last pose and nudged by their
-speed, HTML name labels projected over the canvas), group members are spread across the road, and the
-finish ranks within the group (prizes stay first-come on the server). Each hunt keeps a path sample every
-0.5 s; alone, the fastest run on the bounty is replayed as a see-through ghost (`GET /api/race/[token]/ghost`).
-Verified live: 5 Playwright tests, including two browsers meeting in the lobby, starting together and each
-seeing the other racing. **Still not driven on a real phone by the owner.** Known limits: lobby is per bounty
-(no "near me" filter yet); the race clock trusts each phone's clock against the server's start time within
-the 15 s rule; Supabase concurrent-connection limits apply (check the plan before a big event).
-
-**Update (2026-10-18, later): the hunt now drives through REAL Google Street View (owner: "it looks like a
-cartoon… I want real Street View, no animation").** `components/race/StreetViewRace.tsx` replaces the 3D
-canvas for `/d/race/<token>`: the Maps JavaScript API panorama (`lib/race/gmaps.ts` loader, key
-`NEXT_PUBLIC_GOOGLE_MAPS_KEY`) is the world; GO builds speed into hops along the panorama's own links in
-the direction faced (one hop at a time, 450 ms dwell after `pano_changed` so the view never goes black;
-max ~1.5 hops/s), the wheel turns the view and biases the branch at a junction, STOP/N as before. Finish =
-within 28 m of the pin by GPS distance; path samples are [lat, lng, heading]; poses in Realtime are now
-lat/lng; the other hunters, the ghost and the balloons are `google.maps.Marker`s inside the panorama
-(deprecated-but-supported API; AdvancedMarkerElement is the eventual replacement); the minimap still
-comes from the OSM tile. **Cost:** one "Dynamic Street View" load per hunt per player ($14/1,000 after
-5,000 free a month), nothing per step. **Only `/d/race/*` gets a CSP that allows Google's script**
-(second headers rule in `next.config.ts`; the site-wide CSP is unchanged). Coverage: Lagos Island has
-panoramas within metres of the test pin; an uncovered drop says so and offers another street. The 3D
-demo (`/d/race/demo`) stays as it was. Verified live: hunt + lobby Playwright tests, screenshots (HUD above
-Google's layers after a z-index fix; a single hop renders the next real photo). **Not yet driven on a real
-phone by the owner.** Known: Google's logo/terms strip stays (required by Google's terms).
-
-**Update (2026-10-18, night): hunt speed + the owner's test pin.** Owner: "location is not correct, I am at
-28 Daniel Gemena, Abuja" and "the game is slow and taking so much time to load". (1) The TEST campaign
-(`7972301f`, token `a4945c4d…`) is now pinned at **Daniel Gemana Close, Gwarinpa, Abuja (9.1178501, 7.3929415)**
-— Google Maps spells it "Gemana"; OSM does not know the street at all (geocoded through the owner's signed-in
-Chrome via `tools/browser-driver`). Street View covers the close (June 2022 photos) and the Abuja tile is cached
-(1091 roads). Hunts drop 900–2200 m by ROAD from the pin, so a hunter is never dropped where they stand; if the
-owner wants "start from where I am", that is a product change (drop at the phone's GPS when within the tile),
-not built. (2) Load time: the tile was 817 KB (246 KB on the wire, ~9 s on a slow link) and everything ran in
-series (start → tile → ghost → Google script → panorama). Now: `/api/race/tiles?lite=1` drops the buildings
-(the Street View hunt never draws them; `fetchTile(at, deadline, lite)` gained the flag, demo unchanged); the
-hunt page warms the lite tile AND Google's script while the landing page is open; start posts the ghost
-request in parallel and shows what it is waiting for; `lib/ar/fulfil.ts` asks OpenStreetMap for the streets the
-moment a bounty is created so the first hunter never waits 30–120 s on Overpass. (3) Hop gating: a hop now counts
-as settled when the new photo's tiles have landed (resource timing: 3+ new `streetviewpixels`/`ggpht`
-entries, 250 ms after `pano_changed`, 3 s cap), `HOPS_PER_SEC = 1.6`; in the headless browser the view now
-stays a real street while driving (Google's own zoom-blur between photos). (4) The hunt page had been bundling three.js only because it imported `fetchTile` from the 3D demo; the fetcher now lives in `lib/race/tile-client.ts` (demo re-exports it): first-load JS 336 → 177 KB. On a 1.5 Mbit/s link: landing 8.9 → 6.4 s (the rest is the root layout's 163 KB font + 95 KB CSS, not touched), tap-to-first-photo 1.6 s. 5 live Playwright tests pass. **Still unproven on the owner's
-phone.** The last Playwright hunt at the Abuja pin dropped 373 m straight-line from the prize (roads wind).
-
-**Update (2026-10-18, late night): choose your start, route preload, our own traffic, sprite layer.** Owner asked
-for Street View "captured and loaded from us" and for the photos' cars/people to move — both would copy or alter
-Google's imagery, which the Maps terms forbid (key + Cloud project at risk; explained to the owner, who chose
-"preload + our own traffic"). Built instead: (1) **Start chooser** on the hunt landing (`BountyRace.tsx`): Random
-drop / Where I am (phone GPS; the race path already allows geolocation) / Pick on the map (`ArLocationPicker`,
-Leaflet). A chosen start is sent as `from` to `POST /api/race/[token]/start` → `startRace(..., from)` snaps it to
-the nearest road node (≤250 m, else 409 "nostart") and refuses a start under 500 m by road from the prize (409
-"tooclose"); groups ignore it. **Fairness caveat:** leaderboard times are no longer over equal distances. (2) **The
-route** (`shortestPath` in `lib/race/route.ts`, ≤400 points) comes back with every start (`route`), is drawn on the
-minimap and drives a **rolling preload**: a hidden second `StreetViewPanorama` (one extra Dynamic Street View
-load per hunt, nothing per step) is pointed 35/70/105 m ahead along the route in turn (`setPosition`), or at the
-most likely next link when off-route, so the next photos are in the browser cache before the hop. A hop now counts
-as settled only when tiles whose URL carries the CURRENT pano id have landed (the preloader's tiles no longer
-fool it). (3) **Our own traffic** (`lib/race/traffic.ts`): 3 cars + 2 people driving/walking along the OSM road
-polylines near the player (right-hand traffic offset, pavement offset), SVG sprites by view (back/front/side).
-(4) **Google's markers did not draw in the panorama** (not even a default marker 25 m ahead, in the headless
-test) — the prize balloon, rivals, ghost and traffic are now `<img>`s in our own layer (`lib/race/sprite-layer.ts`,
-`.sprites` z-index 5) placed with an `OverlayView` projection (`fromLatLngToContainerPixel`, verified: 10° off
-centre = 26 px at 393 px wide), sized by the projected size of one metre at that spot (balloon min 44 px as a
-beacon). Verified live: API (too close → 409; 1 km north → route of 117 points), landing map picker renders,
-"Where I am" drops at the phone's position, sprites visible at rest (balloon + person at the right scale), 5
-Playwright race tests pass. `?debug=1` exposes `window.__svr = { pano, pre, traffic, layer, g }`. **Open:** the
-owner's real-phone test; whether Google markers render on real phones is moot now. Unreal Engine was asked
-about: not needed and would not fix the rights issue (own 360 photos → Polycam/Luma splats, or Google
-Photorealistic 3D Tiles, are the legal 3D routes).
-
-**Update (2026-10-18, final): the hunt runs on roads PLAYERS RECORD THEMSELVES; Google Street View is gone
-from the hunt** (owner: "I don't want us to use Google's Street View anymore. Create a camera in the web app").
-**Recorder** `/d/road/<campaign token>/record` (`app/d/road/[token]/record/Recorder.tsx`): rear camera at 720p
-via MediaRecorder (mp4 on iPhone, webm on Android), the GPS logged while recording ([seconds, lat, lng, acc]),
-6 s–3 min, review, name it, then an upload in 8 MB parts (nginx allows 32 MB a request):
-`POST /api/road/<token>/create` → `PUT …/part?id&n` → `POST …/done` (parts + track). Parts wait in
-`/home/aluxart/road-uploads/<id>/` (`ROAD_UPLOAD_DIR`). **Converter** `scripts/road-transcode.mjs`, root cron
-every minute, `flock` + `systemd-run MemoryMax=1200M` (crontab backup `/root/crontab.bak-2026-10-18-road`;
-log `/home/aluxart/road-transcode.log`): ffmpeg one thread → H.264 mp4 ≤1280 px + poster, length from the GPS
-track (≥30 m, else duration×8 m/s), into the `template-images` bucket `roads/<id>/` (never purged); table
-`road_tracks` (migration 078, applied with psql; status uploading → uploaded → processing → ready | failed |
-hidden; `races.road_id`, `race_groups.road_id`). `GET /api/road/<token>/list` (ready roads + pending count),
-`GET …/file/<id>` → 302 to a one-hour R2 link (range requests work there; **the race/road CSP has
-`media-src self blob: https://*.r2.cloudflarestorage.com`** — without it the video is blocked and the page
-says "could not be played"). `scripts/road-delete.mjs <id>|--name` removes a road and its files. **The hunt
-page** (`BountyRace.tsx`) lists the roads (poster, length, time, recorder, runs; polls every 15 s), a "Record a
-road" link, Hunt / Race others on the chosen road; `POST start` takes `roadId` (route_m = road length, the 70
-m/s rule still applies), `POST group` takes `roadId` (the lobby races that road), `ghost` and `leaderboard`
-take `?road=`. **The race** (`components/race/VideoRace.tsx`): the video is the road; GO = playback (full
-throttle 1.3× the recording, nitro to 2×, STOP pauses), position = `lib/race/track.ts` TrackGeom (GPS samples →
-metres along the road; a recording without GPS gets a straight synthetic line), finish = end of the video; the
-prize balloon, our traffic (`lib/race/track-traffic.ts`, by metres along the road) and rivals/ghost are <img>s
-placed by a simple pinhole projection (horizon at 46 %, camera 1.5 m up). Removed: `StreetViewRace.tsx`,
-`sprite-layer.ts`, Google script/CSP entries on the race pages (the Maps key is now used only by the 3D demo's
-junction photos). Permissions-Policy rule covers `/d/(ar|race|road)`. **Verified live (Google Chrome, fake
-camera, moving geolocation):** record → upload → converted in 6 s (12.3 s, 89 m, 1280×720) → listed. **The
-bundled Playwright Chromium cannot decode H.264, so the race tests use `channel: "chrome"`.** Not yet done: the
-owner recording a real road on a real phone (iPhone Safari MediaRecorder = mp4; Android Chrome = webm). Known
-limits: no moderation UI (set `status=hidden` by SQL); one road at a time in the converter; a landscape video
-on a portrait phone shows its middle (object-fit cover); leaderboard is per road.
+**Update (2026-10-20, night): the race game (Bounty Run) and the AR Balloon Campaigns are REMOVED (owner:
+"delete everything about the game … I have another idea for a game").** Commit `4e9259f`; both were built 17–18 Oct
+(commits `c2127f7`…`99d2410`) and never sold. Gone: 79 files (app/d/{ar,race,road}, app/api/{ar,race,road}, the
+admin AR page, lib/{ar,race,road}, components/race, ArQr, ArLocationPicker, their scripts and Playwright tests,
+migrations 074–078). Files only the game had touched were restored to their pre-AR versions (`c2127f7^`): booking
+route, template allow-lists, CheckoutPanel, checkout-resume, types, the 7 dictionaries; targeted removals in start,
+regenerate, generate.ts (the AR fork), studio, admin and next.config.ts (camera/location rule, race-page CSP).
+Data: migration 081 (psql) dropped ar_campaigns, ar_campaign_events, race_prizes, races, race_groups, road_tracks,
+road_tiles and `app_config.ar_campaign_days`; the AR template `43df341b` and the owner's one free test booking are
+deleted; R2 `template-images/ar/` (1 logo) deleted; the road-transcode cron is removed (backup
+`/root/crontab.bak-2026-10-20-games`); the Maps key "Alux Art website (balloon race)" is deleted in Google Cloud
+`fegorson-studio` (Maps JS / Street View APIs left enabled — the Firebase browser key may use them; the "$20 alert"
+budget is left) and `NEXT_PUBLIC_GOOGLE_MAPS_KEY` is out of `.env.local` (backup `/root/env.local.bak-2026-10-20-games`).
+Everything removed is in `/root/games-removal-backup-2026-10-20/` (table dump, row CSVs, code tar, logo, old
+.next/types) and in git history. `three` and `leaflet` stay installed but unused (the VPS package-lock differs from
+the laptop's). **Deploy note that still holds:** the VPS git history has diverged from the laptop's — deploy by copying
+committed files after checking the server copies match `git show HEAD:<file>`.
 
 **Update (2026-10-18): default image model is Nano Banana Pro** (`fal-ai/nano-banana-pro/edit`, owner's call;
 safety_tolerance "6" = the least strict of 1–6; resolution 4K unless a caller asks for less). `lib/fal-edit.ts`
@@ -734,9 +554,7 @@ downgrade — "remove it").** Commit `99d2410`, deployed and proven live. What r
 - **Middleware** checks only the cookie signature (`lib/auth-edge.ts`). **Edge-sandbox hazard:** Node's crypto rejects
   an ArrayBuffer built inside Next's middleware sandbox, so `subtle.verify` on a decoded cookie failed EVERY session —
   it now signs and compares as text. The Supabase "stray OAuth code rescue" was removed.
-- **Race lobby** = server-sent events + POST on `/api/race/live/<race-lobby-TOKEN|race-room-GROUP>`
-  (`lib/race/live-hub.ts`, in memory — fine with ONE PM2 instance; caps 300 channels × 60 listeners, rate limits);
-  `lib/race/realtime.ts` keeps its Lobby/Room API. Through Cloudflare joins/leaves arrive in ~0.4 s.
+- The race lobby that ran on our own server-sent events was removed with the game the same night.
 - CSP no longer lists supabase.co. Proof: throwaway DB copy (38 route checks + 5 chat-account checks), then live.
 - **Everyone signs in once more** (old Supabase cookies mean nothing now). Rollback: `.next-old` on the VPS.
 - **Supabase project DELETED and the org moved to FREE (same day, owner asked, done through the driver Chrome).**
