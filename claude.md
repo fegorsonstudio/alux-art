@@ -600,6 +600,25 @@ Alux's OWN products in every story; kept separate from Photo Wahala; first test 
   admin page to produce/approve/post, the first AOLiveTV test. Also from the same session: the laptop cannot run Unreal
   (UHD 620, 8 GB, 7 GB free); UE 5.8's official Unreal MCP is loopback-only — reach a cloud VM through an SSH tunnel.
 
+**Update (2026-10-20, late): Alux Micro Drama stage 2 LIVE (commit `d6df2d0`; owner OK'd the shared-file changes).**
+- **Designed episodes** `lib/drama/slides.ts`: 8 slides 4:5 in the cover look, each slide 2–7 with a `scene` line (≤8 words, checked).
+  The first test episode uses no generated pictures (owner: "without generating pictures, use carousel and design style").
+- **Posting** `lib/drama/episodes.ts`: /admin/drama → Preview → Approve (freezes the episode + caption in drama_episodes) →
+  Schedule (Lagos time) → slides in R2 `generated-4k/carousels/<date>/drama-<episode id>/NN.jpg` + a scheduled_carousels row
+  (local_id `drama-<id>`) — the existing publisher posts it; nothing else changed there. `syncPosted()` copies the media id back.
+- **Votes** `lib/drama/votes.ts`, one block in `app/api/webhooks/instagram/route.ts` right after the own-comment guard: first
+  word of a comment on a drama episode = vote; one per voter per episode (unique index); first word to `min_votes` (2) closes it
+  under a row lock; one private reply per voter (button → story page); Telegram on the decision. Non-votes fall through.
+  @aolivetv is subscribed to comments only (not messages) — enough for votes.
+- **Payments** `lib/drama/payments.ts` + a branch in `app/api/webhooks/paystack/route.ts` (metadata.type drama_cast /
+  drama_placement, beside the licence shop): amount/currency checked, once per reference, photo/product copied to
+  `generated-4k/drama/{cast,brands}/<id>/` (out of the 48 h bucket); return page verifies via Paystack; admin joins free.
+  Pages `/d/drama/<slug>/join/<role>`, `/d/drama/<slug>/brand/<ep>-<slot>` (Google sign-in, upload, consent).
+- Proven on a throwaway DB (30 checks), then live. **Not built yet:** the character sheet for a paid cast member (owner
+  approves the photo in /admin/drama today; making the sheet is paid fal — needs a button + OK), episode 2 writing from the
+  winning branch, a public comment reply on decision. **Next:** the owner approves + schedules Ep 1 on @aolivetv and two OTHER
+  accounts comment.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
