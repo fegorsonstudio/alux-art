@@ -619,6 +619,17 @@ Alux's OWN products in every story; kept separate from Photo Wahala; first test 
   winning branch, a public comment reply on decision. **Next:** the owner approves + schedules Ep 1 on @aolivetv and two OTHER
   accounts comment.
 
+**Update (2026-10-20, night): Episode 1 POSTED on @aolivetv + the Unreal path built (commit `4c4c299`).**
+- *The Silent Partner* Ep 1 (designed slides) posted 22:10 Lagos by the normal publisher: https://www.instagram.com/p/DeuxFr6lTyn/
+  (media 18422890021159284, drama_episodes posted). Owner tests votes from two other accounts; no votes yet at commit time.
+- **Picture slides:** `lib/drama/slides.ts` draws a slide over its picture (white words, fade top or bottom); `drama_art` (migration
+  083) holds one picture per slide; /admin/drama → Pictures uploads/moves/removes (`/api/admin/drama/art`); Approve freezes them.
+- **Unreal studio** `tools/unreal/`: README (rent a GPU machine, setup, Epic Unreal MCP via `tunnel.sh` SSH tunnel — add the .mcp.json
+  entry ONLY once the machine exists), `vm-bootstrap.ps1`, `python/alux_drama.py` (4:5 CineCamera, lens by framing,
+  take_high_res_screenshot at 2160x2700 — UNTESTED until the machine exists), `CREDITS.md` (apply: Microsoft for Startups → AWS
+  Activate Founders → Google Start; owner signs in; company legal name per CAC still to fill). Brief per episode:
+  `node tools/drama/shotlist.mjs <story> <n>`; renders in with `scripts/drama-attach-art.mjs <story> <n> <folder>`.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
