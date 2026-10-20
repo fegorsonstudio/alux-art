@@ -571,6 +571,35 @@ downgrade — "remove it").** Commit `99d2410`, deployed and proven live. What r
   admin Creators list errored and approving a creator errored before its welcome email. Both read `profiles` now;
   verified live as admin (11 creators, all with email). The admin page's "Supabase SQL" link is dead.
 
+**Update (2026-10-20, night): Alux Micro Drama — stage 1 LIVE at /d/drama (commit `e2f3d6d`).** Owner's brief:
+interactive PICTURE dramas on Instagram (no video, no Reels, nothing paid without per-run OK), classy and short, all
+genres, all of Nigeria, hot cliffhangers, viewers vote by comment (2 votes decide to start, raise later), fans join the
+cast with one photo (character sheet keeps the face consistent), brands buy a place in a scene from the game page,
+Alux's OWN products in every story; kept separate from Photo Wahala; first test on **@aolivetv**. Built:
+- **Engine** `tools/drama/ENGINE.md` (picture first, ≤12 words a slide, ≤70 an episode, 8-slide rhythm cover→time→4
+  beats→cliff→choice, six cliff shapes, two-rights choices with one-word comment keywords, 5–6 roles on twelve archetypes
+  in our own words — the owner's Pip Decks Archetypes PDF is ideas only, never its text — tiers lead/main/cameo, a role
+  open only until its first appearance, genre looks, brand slots each with an Alux `house` product + one Alux moment per
+  story). `node tools/drama/check.mjs` enforces it.
+- **Stories** `tools/drama/stories/*.mjs`: 8 (The Silent Partner, Third Mainland — Lagos; Garden City — Port Harcourt;
+  The Fourth Floor — Abuja; Coal City, 1962 — Enugu; What the River Keeps — Asaba; Aso Ebi — Ibadan; Harmattan Letters
+  — Kano), episode 1 + both branch outlines each. Loaded by `scripts/drama-seed.mjs` (never rewrites a started story).
+- **Data** migration 082 (psql): drama_stories (content jsonb via sql.json), drama_episodes, drama_votes (unique per
+  voter per episode), drama_cast (one person per role), drama_placements (one brand per slot); prices in app_config
+  `drama_price_lead/main/cameo/slot` = 10000/5000/2000/10000 (owner may change).
+- **Covers** `lib/drama/cover.ts` + `GET /api/drama/cover/<slug>?w=`: typographic 2:3 posters per genre (text measured
+  by drawing); fonts Bodoni Moda, Cormorant Garamond, Pinyon Script, Oswald (SIL OFL) in `deploy/fonts/drama`,
+  installed by `deploy/install-fonts.sh`. Cover art, once made, goes in `drama_stories.cover_bucket/path`.
+- **Pages** `/d/drama` (shelf) and `/d/drama/<slug>` (story), `app/d/drama/drama.module.css`: Netflix shelves in a
+  Tesla-calm cabin, brand teal/mint/cream, light + dark (studio-theme, dark by default here), floating dock. The page sits
+  at z-index 95 to cover the root LanguageSelector/InstallAppButton (English-only game) without touching them.
+  **Interim:** "Play <name>" and brand "Reserve" open the @aolivetv DM (owner handles by hand).
+- **Not built yet (stage 2, needs owner OK):** comment votes on drama posts + DM reply (shared IG webhook), photo
+  upload + Paystack for roles and brand slots (shared Paystack webhook), character sheets and episode pictures (paid fal,
+  or Unreal once cloud credits exist — applications to Microsoft for Startups / AWS Activate not yet submitted), an
+  admin page to produce/approve/post, the first AOLiveTV test. Also from the same session: the laptop cannot run Unreal
+  (UHD 620, 8 GB, 7 GB free); UE 5.8's official Unreal MCP is loopback-only — reach a cloud VM through an SSH tunnel.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
