@@ -739,12 +739,19 @@ downgrade — "remove it").** Commit `99d2410`, deployed and proven live. What r
   `lib/race/realtime.ts` keeps its Lobby/Room API. Through Cloudflare joins/leaves arrive in ~0.4 s.
 - CSP no longer lists supabase.co. Proof: throwaway DB copy (38 route checks + 5 chat-account checks), then live.
 - **Everyone signs in once more** (old Supabase cookies mean nothing now). Rollback: `.next-old` on the VPS.
-- **Owner to do:** after a few days of normal sign-ins, DELETE the Supabase project `owdfoxglbxrqhgqbvkon` (and check
-  Supabase Billing for any other project/org still on Pro — Supabase bills after the month, so one more invoice after
-  a downgrade is expected). Then remove `NEXT_PUBLIC_SUPABASE_*` / `SUPABASE_SERVICE_ROLE_KEY` from `.env.local`.
-  The test app on port 3001 (`/var/www/aluxart-story-test`) still uses Supabase and will lose sign-in then.
-- **Not touched (older bug):** `app/api/admin/creators/route.ts` joins `auth.users`, which does not exist in this
-  database — the admin Creators list errors. The admin page's "Supabase SQL" link will go dead.
+- **Supabase project DELETED and the org moved to FREE (same day, owner asked, done through the driver Chrome).**
+  The org "fegorsonphotography@gmail.com's Org" (`xkyyjcklveqysuewphva`) had still been on **Pro $25/month** — the
+  owner's earlier downgrade never completed (the plan change has a SECOND step: a survey with a "Downgrade Now" button).
+  Before deleting: Supabase's own database copy saved via its REST API (20 tables, 1,461 rows, 7.6 MB) to
+  `/root/supabase-export-2026-10-20/db/` (root-only, next to users.json and the storage files). Project "Aluxart"
+  `owdfoxglbxrqhgqbvkon` deleted ("Successfully deleted Aluxart"); org shows FREE with no upcoming invoice. The 11 Oct
+  invoice was cut from $25.00 to **$7.26 and is still OUTSTANDING — owner's call whether to pay; we never pay.**
+  The daily `/home/aluxart/supabase-keepalive.sh` cron is removed (backup `/root/crontab.bak-2026-10-20-supabase`).
+  The `NEXT_PUBLIC_SUPABASE_*` / `SUPABASE_SERVICE_ROLE_KEY` lines in `.env.local` are now dead (nothing reads them);
+  left in place. The port-3001 test app (`/var/www/aluxart-story-test`) has no working sign-in any more.
+- **Fixed same day (`d468e80`):** `app/api/admin/creators/route.ts` joined `auth.users` (never in this database) — the
+  admin Creators list errored and approving a creator errored before its welcome email. Both read `profiles` now;
+  verified live as admin (11 creators, all with email). The admin page's "Supabase SQL" link is dead.
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
