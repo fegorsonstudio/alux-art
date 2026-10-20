@@ -630,6 +630,17 @@ Alux's OWN products in every story; kept separate from Photo Wahala; first test 
   Activate Founders → Google Start; owner signs in; company legal name per CAC still to fill). Brief per episode:
   `node tools/drama/shotlist.mjs <story> <n>`; renders in with `scripts/drama-attach-art.mjs <story> <n> <folder>`.
 
+**Update (2026-10-20, night, later): votes from our other accounts count; PLAY sends the game link (commit `2330cfa`).**
+- The owner's "Speak" from @fegorson_studio got no answer: that handle is in IG_ACCOUNTS, so the own-comment guard dropped it
+  before the vote check. The drama block now runs BEFORE that guard; only the post's own account (`handleForAccount`) never
+  votes. The owner's comment was re-delivered to the webhook from the log: SPEAK 1 of 2, private reply accepted.
+- **A caption link is never tappable on Instagram** (and captions cannot be edited by the API). Captions now say "link in bio,
+  or comment PLAY"; PLAY / GAME / LINK as a comment's first word on an episode gets the story page as a DM button
+  (`LINK_WORDS` in `lib/drama/votes.ts`). Episode 1's caption still has the old line — the owner edits it in the app, and sets
+  @aolivetv's bio link to https://aluxartandframes.shop/d/drama (no API for the bio either).
+- Company legal name (CAC): **Aluxartandframes Enterprises**, trades as Alux Art (in `tools/unreal/CREDITS.md`).
+- Verified live with signed made-up comments (PLAY answered; a @fegorson_studio vote counted; test row removed).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
