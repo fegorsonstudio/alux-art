@@ -1,18 +1,17 @@
 "use client";
 
-import { createClient } from "@/lib/supabase";
-import type { RealtimeChannel } from "@supabase/supabase-js";
-
 /**
- * Racing others, over Supabase Realtime (already part of the site and allowed
- * by its security policy). Two channels per bounty:
+ * Racing others, over this site's own live channel (/api/race/live, run by
+ * lib/race/live-hub.ts — Supabase Realtime was removed on 2026-10-20). Two
+ * channels per bounty:
  *
  *  - the lobby: who is waiting (presence) and the "go" message that carries
  *    the shared start the server made;
- *  - the room: everyone's position five times a second (broadcast), so the
- *    other cars show up on your streets.
+ *  - the room: everyone's position five times a second, so the other cars
+ *    show up on your streets.
  *
- * Nothing here decides anything: the finish and the prize are the server's.
+ * Phones listen with EventSource (it reconnects by itself) and send with a
+ * POST. Nothing here decides anything: the finish and the prize are the server's.
  */
 
 export type Hunter = { id: string; name: string; joinedAt: number };
@@ -28,47 +27,59 @@ export const clientId = (): string => {
   } catch { return crypto.randomUUID(); }
 };
 
+const post = (url: string, body: unknown) =>
+  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
+
 export class Lobby {
-  private ch: RealtimeChannel;
+  private es: EventSource;
+  private url: string;
   hunters: Hunter[] = [];
   constructor(token: string, private me: Hunter, private onChange: (h: Hunter[]) => void, private onGo: (m: GoMessage) => void) {
-    const supabase = createClient();
-    this.ch = supabase.channel(`race-lobby-${token}`, { config: { presence: { key: me.id }, broadcast: { self: true } } });
-    this.ch.on("presence", { event: "sync" }, () => {
-      const state = this.ch.presenceState<Hunter>();
-      this.hunters = Object.values(state).flat().map((h) => ({ id: h.id, name: h.name, joinedAt: h.joinedAt }))
-        .sort((a, b) => a.joinedAt - b.joinedAt);
-      this.onChange(this.hunters);
+    this.url = `/api/race/live/race-lobby-${encodeURIComponent(token)}`;
+    const q = new URLSearchParams({ key: me.id, name: me.name, joinedAt: String(me.joinedAt) });
+    this.es = new EventSource(`${this.url}?${q}`);
+    this.es.addEventListener("presence", (e) => {
+      try {
+        const list = JSON.parse((e as MessageEvent).data) as Hunter[];
+        this.hunters = list.map((h) => ({ id: h.id, name: h.name, joinedAt: h.joinedAt })).sort((a, b) => a.joinedAt - b.joinedAt);
+        this.onChange(this.hunters);
+      } catch { /* a bad frame is skipped */ }
     });
-    this.ch.on("broadcast", { event: "go" }, ({ payload }) => this.onGo(payload as GoMessage));
-    this.ch.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") await this.ch.track(me);
+    this.es.addEventListener("go", (e) => {
+      try { this.onGo(JSON.parse((e as MessageEvent).data) as GoMessage); } catch { /* skipped */ }
     });
   }
-  async go(m: GoMessage) { await this.ch.send({ type: "broadcast", event: "go", payload: m }); }
-  async leave() { try { await this.ch.untrack(); await this.ch.unsubscribe(); } catch { /* gone anyway */ } }
+  async go(m: GoMessage) { await post(this.url, { event: "go", key: this.me.id, payload: m }); }
+  async leave() {
+    try { this.es.close(); await post(this.url, { event: "leave", key: this.me.id }); } catch { /* gone anyway */ }
+  }
 }
 
 export class Room {
-  private ch: RealtimeChannel;
+  private es: EventSource;
+  private url: string;
   /** The latest pose of everyone else, by client id. */
   readonly others = new Map<string, Pose>();
   private lastSent = 0;
+  private sending = false;
   constructor(groupId: string, private me: { id: string; name: string }) {
-    const supabase = createClient();
-    this.ch = supabase.channel(`race-room-${groupId}`, { config: { broadcast: { self: false, ack: false } } });
-    this.ch.on("broadcast", { event: "pose" }, ({ payload }) => {
-      const p = payload as Pose;
-      if (p.id !== me.id) this.others.set(p.id, { ...p, t: performance.now() });
+    this.url = `/api/race/live/race-room-${encodeURIComponent(groupId)}`;
+    this.es = new EventSource(`${this.url}?${new URLSearchParams({ key: me.id })}`);
+    this.es.addEventListener("pose", (e) => {
+      try {
+        const p = JSON.parse((e as MessageEvent).data) as Pose;
+        if (p && p.id !== me.id) this.others.set(p.id, { ...p, t: performance.now() });
+      } catch { /* skipped */ }
     });
-    this.ch.subscribe();
   }
-  /** Call every frame; sends five times a second. */
+  /** Call every frame; sends five times a second (skips a beat while the last one is still on its way). */
   send(lat: number, lng: number, h: number, v: number) {
     const now = performance.now();
-    if (now - this.lastSent < 200) return;
+    if (now - this.lastSent < 200 || this.sending) return;
     this.lastSent = now;
-    void this.ch.send({ type: "broadcast", event: "pose", payload: { id: this.me.id, name: this.me.name, lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, h: Math.round(h * 10) / 10, v: Math.round(v * 10) / 10 } });
+    this.sending = true;
+    const payload = { id: this.me.id, name: this.me.name, lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, h: Math.round(h * 10) / 10, v: Math.round(v * 10) / 10 };
+    post(this.url, { event: "pose", key: this.me.id, payload }).catch(() => {}).finally(() => { this.sending = false; });
   }
-  async leave() { try { await this.ch.unsubscribe(); } catch { /* gone anyway */ } }
+  async leave() { try { this.es.close(); } catch { /* gone anyway */ } }
 }

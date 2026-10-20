@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               // The beacon POSTs its measurements back to the same host.
-              "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://api.anthropic.com https://fal.run https://fal.media https://region1.google-analytics.com https://owdfoxglbxrqhgqbvkon.supabase.co wss://owdfoxglbxrqhgqbvkon.supabase.co",
+              "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://api.anthropic.com https://fal.run https://fal.media https://region1.google-analytics.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },
@@ -76,7 +76,7 @@ const nextConfig: NextConfig = {
               "media-src 'self' blob: https://*.r2.cloudflarestorage.com",
               "font-src 'self' data:",
               "worker-src 'self' blob:",
-              "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com https://owdfoxglbxrqhgqbvkon.supabase.co wss://owdfoxglbxrqhgqbvkon.supabase.co",
+              "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },
