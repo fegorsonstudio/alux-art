@@ -4,6 +4,10 @@ import sql from "@/lib/db";
 import { r2Download, r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 import { signedMediaUrl } from "@/lib/media-url";
 
+// One build per shoot at a time (PM2 runs one process). Two clicks used to
+// build two ZIPs of up to ten 20–50 MB photos in memory at once.
+const building = new Map<string, Promise<Response>>();
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -13,8 +17,34 @@ export async function GET(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [shoot] = await sql`SELECT id, user_id FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
+  const [shoot] = await sql`SELECT id, user_id, expires_at, zip_status, zip_storage_bucket, zip_storage_path, zip_ready_at FROM shoots WHERE id = ${id} AND user_id = ${user.id}`;
   if (!shoot) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (shoot.expires_at && new Date(shoot.expires_at as string).getTime() <= Date.now()) {
+    return NextResponse.json({ error: "This order's photos were removed after 7 days." }, { status: 410 });
+  }
+  const zipFilename = `aluxart-portraits-${id.slice(0, 8)}.zip`;
+
+  // A ZIP built after the newest photo finished is still current: hand it out
+  // instead of building it again on every click.
+  if (shoot.zip_status === "ready" && shoot.zip_storage_bucket && shoot.zip_storage_path && shoot.zip_ready_at) {
+    const [newest] = await sql<{ at: string | null }[]>`
+      SELECT max(updated_at) AS at FROM shoot_images WHERE shoot_id = ${id} AND status = 'COMPLETE'`;
+    if (newest?.at && new Date(shoot.zip_ready_at as string) >= new Date(newest.at)) {
+      const reuse =
+        (await signedMediaUrl(shoot.zip_storage_bucket as string, shoot.zip_storage_path as string, { filename: zipFilename }).catch(() => null))
+        ?? (await r2SignedDownloadUrl(shoot.zip_storage_bucket as string, shoot.zip_storage_path as string, 3600, zipFilename).catch(() => null));
+      if (reuse) return NextResponse.redirect(reuse, 302);
+    }
+  }
+
+  const inFlight = building.get(id);
+  if (inFlight) return (await inFlight).clone();
+  const job = buildZip(id, user.id, zipFilename);
+  building.set(id, job);
+  try { return (await job).clone(); } finally { building.delete(id); }
+}
+
+async function buildZip(id: string, userId: string, zipFilename: string): Promise<Response> {
 
   const completedImages = await sql`
     SELECT slot, kind, download_storage_bucket, download_storage_path, fal_url FROM shoot_images
@@ -72,19 +102,19 @@ export async function GET(
     return NextResponse.json({ error: "Could not read any image files for this shoot." }, { status: 500 });
   }
 
-  const zipBuf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
-
-  const zipFilename = `aluxart-portraits-${id.slice(0, 8)}.zip`;
+  // Photos are already compressed; deflating them again only costs time.
+  const zipBuf = await zip.generateAsync({ type: "nodebuffer", compression: "STORE" });
 
   // Upload the ZIP to R2, then redirect the browser to a signed URL so it downloads
   // straight from R2 — resumable, correct Content-Length, no multi-hundred-MB
   // response held open through Node/nginx (which truncated large transfers on
   // flaky connections).
   try {
-    const zipPath = `${user.id}/${id}/shoot-${id}.zip`;
+    const zipPath = `${userId}/${id}/shoot-${id}.zip`;
     await r2Upload("shoot-zips", zipPath, zipBuf, "application/zip");
     await sql`
-      UPDATE shoots SET zip_storage_bucket = 'shoot-zips', zip_storage_path = ${zipPath}, zip_status = 'ready'
+      UPDATE shoots SET zip_storage_bucket = 'shoot-zips', zip_storage_path = ${zipPath}, zip_status = 'ready',
+        zip_ready_at = NOW(), zip_file_size = ${zipBuf.byteLength}
       WHERE id = ${id}
     `;
     // Our own media hostname when the Worker is configured, otherwise the R2

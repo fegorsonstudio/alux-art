@@ -92,7 +92,7 @@ export async function POST(
         INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
         VALUES (
           ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
-          'base_approved', ${JSON.stringify({ base_id: cached.id, source: "cache" })}, ${ts()}
+          'base_approved', ${sql.json({ base_id: cached.id, source: "cache" } as never)}, ${ts()}
         )
       `;
 
@@ -146,7 +146,7 @@ export async function POST(
     INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
     VALUES (
       ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
-      'base_locking', ${JSON.stringify({ attempt, base_id: baseId })}, ${ts()}
+      'base_locking', ${sql.json({ attempt, base_id: baseId } as never)}, ${ts()}
     )
   `;
 
@@ -273,7 +273,7 @@ export async function POST(
       INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
       VALUES (
         ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
-        'base_approved', ${JSON.stringify({ base_id: baseId, base_url: signedBaseUrl, auto: true })}, ${ts()}
+        'base_approved', ${sql.json({ base_id: baseId, base_url: signedBaseUrl, auto: true } as never)}, ${ts()}
       )
     `;
 
@@ -304,7 +304,7 @@ export async function POST(
     VALUES (
       ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
       'base_review_required',
-      ${JSON.stringify({ base_id: baseId, base_url: signedBaseUrl, gate: gateResult, attempts_made: attempt, attempts_remaining: Math.max(0, 5 - attempt) })},
+      ${sql.json({ base_id: baseId, base_url: signedBaseUrl, gate: gateResult, attempts_made: attempt, attempts_remaining: Math.max(0, 5 - attempt) } as never)},
       ${ts()}
     )
   `;

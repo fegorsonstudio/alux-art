@@ -104,7 +104,11 @@ export async function GET(
           `;
 
           for (const event of events) {
-            enqueue({ type: event.type, ...event.payload });
+            // Rows written before 2026-10-20 hold the payload as a JSON string.
+            const payload = typeof event.payload === "string"
+              ? (() => { try { return JSON.parse(event.payload); } catch { return {}; } })()
+              : event.payload;
+            enqueue({ type: event.type, ...(payload as Record<string, unknown>) });
             lastEventCreatedAt = event.created_at;
           }
 

@@ -316,7 +316,8 @@ export default function WorkspacePage() {
         setCurrentShoot(prev => {
           if (!prev) return prev;
           const imgs = getShootImages(prev).map(img =>
-            img.id === event.image?.id ? { ...img, ...event.image } : img
+            (event.image?.id ? img.id === event.image.id : (event.image?.slot != null && img.slot === event.image.slot))
+              ? { ...img, ...event.image } : img
           );
           const nextStage = event.stage ?? event.error ?? prev.pipelineStage ?? (prev as unknown as Record<string, string>).pipeline_stage;
           return { ...prev, images: imgs, shoot_images: imgs, progress: event.progress ?? prev.progress, pipelineStage: nextStage } as unknown as Shoot;

@@ -52,7 +52,7 @@ export async function POST(
       VALUES (
         ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
         'failed',
-        ${JSON.stringify({ reason: "Base lock rejected after maximum attempts. Please re-upload identity photos or contact support for a refund." })},
+        ${sql.json({ reason: "Base lock rejected after maximum attempts. Please re-upload identity photos or contact support for a refund." } as never)},
         ${ts()}
       )
     `;
@@ -70,7 +70,7 @@ export async function POST(
     VALUES (
       ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
       'base_rerolling',
-      ${JSON.stringify({ attempt: usedAttempts + 1, attempts_remaining: 5 - usedAttempts - 1 })},
+      ${sql.json({ attempt: usedAttempts + 1, attempts_remaining: 5 - usedAttempts - 1 } as never)},
       ${ts()}
     )
   `;

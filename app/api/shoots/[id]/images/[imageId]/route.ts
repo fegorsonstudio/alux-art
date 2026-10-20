@@ -21,10 +21,14 @@ export async function GET(
   `;
   if (!img) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const [shoot] = await sql`SELECT user_id FROM shoots WHERE id = ${id}`;
+  const [shoot] = await sql`SELECT user_id, expires_at FROM shoots WHERE id = ${id}`;
   const isAdmin = isAdminEmail(user.email);
   if (!shoot || (!isAdmin && shoot.user_id !== user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  // Past retention the files are gone; never hand out a link that outlived them.
+  if (!isAdmin && shoot.expires_at && new Date(shoot.expires_at as string).getTime() <= Date.now()) {
+    return NextResponse.json({ error: "This order's photos were removed after 7 days." }, { status: 410 });
   }
 
   const storagePath = img.download_storage_path ?? img.preview_storage_path;

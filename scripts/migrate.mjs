@@ -1,3 +1,10 @@
+// RETIRED 2026-10-20 — do not run. This script talks to the old Supabase
+// database through the Management API; the live database is PostgreSQL on
+// the VPS, where new migrations are applied by hand with
+//   psql "$DATABASE_URL" -f migrations/NNN_name.sql
+// It also enforces package_size IN (5,10), which rejects every 1-image shoot.
+console.error("scripts/migrate.mjs is retired — apply migrations with psql -f on the server (see the header).");
+process.exit(1);
 const PAT = process.env.SUPABASE_ACCESS_TOKEN;
 const PROJECT_REF = process.env.SUPABASE_PROJECT_REF ?? "owdfoxglbxrqhgqbvkon";
 

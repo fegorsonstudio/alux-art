@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       await sql`
         INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
         VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
-                'slot_complete', ${JSON.stringify({ image: { slot: image.slot, status: "COMPLETE" } })}::jsonb, NOW())
+                'slot_complete', ${sql.json({ image: { slot: image.slot, status: "COMPLETE" } } as never)}, NOW())
       `;
     } catch (error) {
       failed.push({ slot: image.slot, error: error instanceof Error ? error.message : String(error) });
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     await sql`
       INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
       VALUES (${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
-              'complete', ${JSON.stringify({ progress: 100, stage: "Complete" })}::jsonb, NOW())
+              'complete', ${sql.json({ progress: 100, stage: "Complete" } as never)}, NOW())
     `;
   }
 

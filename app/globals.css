@@ -4,6 +4,9 @@ html, body {
   overflow-x: hidden;
   max-width: 100%;
   width: 100%;
+  /* The browser's default 8px body margin made every page 8px wider than the
+     window (content shifted right, the right edge clipped). */
+  margin: 0;
 }
 
 /* Prevent 300ms tap delay on older iOS; remove grey tap flash */

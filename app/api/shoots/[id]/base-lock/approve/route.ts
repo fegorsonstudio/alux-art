@@ -47,7 +47,7 @@ export async function POST(
     VALUES (
       ${crypto.randomUUID()}, ${shootId}, ${shoot.user_id},
       'base_approved',
-      ${JSON.stringify({ base_id: shoot.character_base_id, approved_by: "user" })},
+      ${sql.json({ base_id: shoot.character_base_id, approved_by: "user" } as never)},
       ${ts()}
     )
   `;

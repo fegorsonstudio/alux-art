@@ -19,7 +19,9 @@ function isValidReference(ref: Record<string, unknown>, userId: string) {
     typeof ref.storageBucket === "string" &&
     ALLOWED_BUCKETS.has(ref.storageBucket) &&
     typeof ref.storagePath === "string" &&
-    ref.storagePath.startsWith(`${userId}/`);
+    ref.storagePath.startsWith(`${userId}/`) &&
+    // A prefix check alone lets "<me>/../<someone else>/photo.jpg" through.
+    !ref.storagePath.includes("..") && !ref.storagePath.includes("//");
 }
 
 function normalizeTag(ref: ReferenceRecord) {
@@ -43,8 +45,11 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(Number(searchParams.get("limit") ?? "20"), 100);
-  const cursor = searchParams.get("cursor");
+  // A non-number, negative or huge limit used to reach the database and 500.
+  const rawLimit = parseInt(searchParams.get("limit") ?? "20", 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 20;
+  const rawCursor = searchParams.get("cursor");
+  const cursor = rawCursor && !Number.isNaN(Date.parse(rawCursor)) ? rawCursor : null;
 
   const shoots = cursor
     ? await sql`
@@ -76,7 +81,9 @@ export async function GET(request: NextRequest) {
     const imagesByShoot: Record<string, unknown[]> = {};
     for (const img of allImages) {
       if (!imagesByShoot[img.shoot_id]) imagesByShoot[img.shoot_id] = [];
-      imagesByShoot[img.shoot_id].push(img);
+      // fal's own link never goes to the browser (the detail route already strips it).
+      const { fal_url: _falUrl, ...safeImg } = img;
+      imagesByShoot[img.shoot_id].push(safeImg);
     }
     const rowsWithImages = rows.map((s) => ({
       ...s,
@@ -181,7 +188,7 @@ export async function POST(request: NextRequest) {
       identity_profile, group_identity, no_smile, created_at, updated_at
     ) VALUES (
       ${shootId}, ${user.id}, ${user.email ?? ""}, ${mode}, ${aspectRatio},
-      ${currency}, ${packageSize}, ${initialStatus}, 0, ${JSON.stringify(quote)},
+      ${currency}, ${packageSize}, ${initialStatus}, 0, ${sql.json(quote as never)},
       ${resolvedBaseId}, ${resolvedBaseId ? "USER_APPROVED" : null},
       ${baseIdentityProfile ?? ""}, ${groupPicture === true}, ${noSmile === true}, ${now}, ${now}
     ) RETURNING *

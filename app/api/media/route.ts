@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     // Ownership check: path must begin with the user's own ID, or caller is admin.
     const isAdmin = isAdminEmail(user.email);
-    if (!isAdmin && !path.startsWith(`${user.id}/`)) {
+    if (!isAdmin && (!path.startsWith(`${user.id}/`) || path.includes("..") || path.includes("//"))) {
       return new NextResponse("Forbidden", { status: 403 });
     }
   }
