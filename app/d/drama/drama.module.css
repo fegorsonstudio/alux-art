@@ -1,0 +1,183 @@
+/*
+ * Alux Micro Drama — the game page. A cinema shelf (Netflix) inside a calm,
+ * spacious cabin (Tesla): one accent at a time, large quiet type, a floating
+ * dock. Brand colours from DESIGN.md: teal for action, mint for "live",
+ * cream/champagne for the premium touch. Light and dark, chosen by the person
+ * (localStorage studio-theme); dark is the default here because a shelf of
+ * posters reads like a cinema.
+ */
+.app {
+  --ground: #070b0c;
+  --ground-2: #0d1517;
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.085);
+  --line: rgba(255, 255, 255, 0.09);
+  --ink: #eef5f4;
+  --muted: #93a9ab;
+  --faint: #62787a;
+  --teal: #2f8e9a;
+  --teal-hover: #37a3b0;
+  --accent-ink: #9be8de;
+  --live: #55cdbc;
+  --cream: #ead9b6;
+  --btn-ink: #ffffff;
+  --shadow: 0 22px 44px rgba(0, 0, 0, 0.5);
+  --dock-bg: rgba(14, 21, 23, 0.74);
+  min-height: 100dvh;
+  /* Above the site-wide language and install buttons (fixed, z-index 90): this page is in English and has its own dock. */
+  position: relative;
+  z-index: 95;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(47, 142, 154, 0.16), transparent 60%),
+    linear-gradient(180deg, var(--ground-2), var(--ground) 420px);
+  background-color: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding-bottom: 120px;
+}
+.app[data-theme="light"] {
+  --ground: #f6f4ef;
+  --ground-2: #e9f4f2;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-2: #ffffff;
+  --line: rgba(38, 50, 53, 0.1);
+  --ink: #1f2a2c;
+  --muted: #587074;
+  --faint: #8aa0a4;
+  --teal: #2f8e9a;
+  --teal-hover: #267a85;
+  --accent-ink: #2d727b;
+  --live: #1d8f80;
+  --cream: #8c6d3a;
+  --btn-ink: #ffffff;
+  --shadow: 0 18px 36px rgba(48, 74, 78, 0.18);
+  --dock-bg: rgba(255, 255, 255, 0.82);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(85, 205, 188, 0.18), transparent 60%),
+    linear-gradient(180deg, #fff8ea, var(--ground) 420px);
+  background-color: var(--ground);
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+
+/* ── header ── */
+.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 8px; gap: 12px; }
+.mark { font-size: 12px; font-weight: 600; letter-spacing: 0.34em; text-transform: uppercase; color: var(--ink); text-decoration: none; }
+.mark span { color: var(--accent-ink); }
+.iconBtn {
+  width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); display: grid; place-items: center; cursor: pointer;
+}
+.iconBtn:hover { background: var(--surface-2); }
+.iconBtn:focus-visible, .btn:focus-visible, .card:focus-visible, .dockItem:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+
+/* ── hero ── */
+.hero { position: relative; margin-top: 10px; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.heroBack { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(38px) saturate(1.1); opacity: 0.45; transform: scale(1.1); }
+.app[data-theme="light"] .heroBack { opacity: 0.3; }
+.heroInner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; padding: 22px; }
+.heroPoster { width: min(64vw, 300px); height: auto; aspect-ratio: 2 / 3; border-radius: 10px; box-shadow: var(--shadow); display: block; justify-self: center; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+.live { color: var(--live); }
+.heroTitle { font-size: clamp(34px, 8vw, 56px); line-height: 1.02; font-weight: 300; letter-spacing: -0.015em; margin: 10px 0 8px; text-wrap: balance; }
+.tagline { font-size: 17px; color: var(--cream); margin: 0 0 12px; }
+.logline { font-size: 15px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; max-width: 58ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.chipLive { color: var(--live); border-color: color-mix(in srgb, var(--live) 40%, transparent); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px;
+  border-radius: 12px; font: inherit; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; border: 1px solid transparent;
+}
+.primary { background: var(--teal); color: var(--btn-ink); }
+.primary:hover { background: var(--teal-hover); }
+.quiet { background: var(--surface-2); color: var(--ink); border-color: var(--line); }
+.quiet:hover { border-color: color-mix(in srgb, var(--live) 45%, var(--line)); }
+
+@media (min-width: 820px) {
+  .heroInner { grid-template-columns: 300px minmax(0, 1fr); align-items: center; padding: 34px; gap: 40px; }
+  .heroPoster { width: 300px; justify-self: start; }
+}
+
+/* ── shelves ── */
+.section { margin-top: 38px; scroll-margin-top: 20px; }
+.sectionHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.sectionTitle { font-size: 12px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.sectionNote { font-size: 13px; color: var(--faint); }
+.row {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 148px; gap: 14px;
+  overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 16px; scrollbar-width: none;
+}
+.row::-webkit-scrollbar { display: none; }
+@media (min-width: 820px) { .row { grid-auto-columns: 190px; gap: 18px; } }
+.card { scroll-snap-align: start; text-decoration: none; color: inherit; display: block; border-radius: 10px; }
+.cardImg { width: 100%; height: auto; aspect-ratio: 2 / 3; border-radius: 10px; display: block; box-shadow: var(--shadow); background: var(--surface); transition: transform 260ms ease; }
+.card:hover .cardImg { transform: translateY(-4px); }
+.cardMeta { margin-top: 9px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.cardOpen { color: var(--accent-ink); white-space: nowrap; }
+
+/* ── how it works, brands, Alux ── */
+.panel { border: 1px solid var(--line); background: var(--surface); border-radius: 18px; padding: 22px; }
+.steps { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); counter-reset: s; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 820px) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.step { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+.step::before {
+  content: counter(s); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 14px; font-weight: 600; color: var(--accent-ink); border: 1px solid color-mix(in srgb, var(--live) 40%, var(--line));
+}
+.stepTitle { font-size: 15px; font-weight: 600; margin: 4px 0 4px; }
+.stepText { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0; }
+.split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 820px) { .split { grid-template-columns: 1.2fr 1fr; } }
+.h2 { font-size: 22px; font-weight: 400; letter-spacing: -0.01em; margin: 0 0 8px; text-wrap: balance; }
+.p { font-size: 14.5px; line-height: 1.6; color: var(--muted); margin: 0 0 16px; }
+.price { font-variant-numeric: tabular-nums; color: var(--cream); font-weight: 600; }
+
+/* ── story page ── */
+.back { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); text-decoration: none; padding: 8px 0; }
+.back:hover { color: var(--ink); }
+.grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.role { border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.roleTop { display: flex; gap: 12px; align-items: center; }
+.avatar {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+  font-size: 15px; font-weight: 600; color: var(--accent-ink); background: color-mix(in srgb, var(--teal) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--live) 30%, var(--line));
+}
+.roleName { font-size: 16px; font-weight: 600; margin: 0; }
+.roleJob { font-size: 13px; color: var(--muted); margin: 2px 0 0; }
+.roleLook { font-size: 13.5px; line-height: 1.55; color: var(--muted); margin: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 11.5px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.tagTier { color: var(--cream); }
+.roleFoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 4px; }
+.taken { font-size: 13px; color: var(--faint); }
+.small { min-height: 40px; padding: 0 16px; font-size: 14px; border-radius: 10px; }
+.slotList { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.slot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.slotWhat { font-size: 14.5px; margin: 0; }
+.slotWhen { font-size: 12.5px; color: var(--muted); margin: 3px 0 0; }
+.episode { display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.epNum { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 20px; font-weight: 300; background: var(--surface-2); color: var(--ink); }
+.epTitle { font-size: 16px; font-weight: 600; margin: 0; }
+.epNote { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+.product { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* ── dock ── */
+.dock {
+  position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 50;
+  display: flex; gap: 4px; padding: 6px; border-radius: 22px; background: var(--dock-bg); border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: var(--shadow);
+}
+.dockItem {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 72px; height: 54px;
+  border-radius: 16px; color: var(--muted); text-decoration: none; font-size: 10.5px; font-weight: 500; letter-spacing: 0.04em;
+}
+.dockItem:hover, .dockActive { color: var(--ink); background: var(--surface-2); }
+.foot { margin-top: 48px; font-size: 12.5px; color: var(--faint); text-align: center; line-height: 1.7; }
+.foot a { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { .cardImg { transition: none; } .card:hover .cardImg { transform: none; } }

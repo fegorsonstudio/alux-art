@@ -28,6 +28,8 @@ fi
 
 install -d /usr/share/fonts/truetype/aluxart
 install -m 644 "$HERE"/fonts/outfit/*.ttf "$HERE"/fonts/outfit/OFL.txt /usr/share/fonts/truetype/aluxart/
+# Alux Micro Drama covers: Bodoni Moda, Cormorant Garamond, Pinyon Script, Oswald (all SIL OFL, licences beside them).
+install -m 644 "$HERE"/fonts/drama/*.ttf "$HERE"/fonts/drama/OFL-*.txt /usr/share/fonts/truetype/aluxart/
 install -m 644 "$HERE"/fonts/99-emoji-no-digits.conf /etc/fonts/conf.d/99-emoji-no-digits.conf
 fc-cache -f
 
