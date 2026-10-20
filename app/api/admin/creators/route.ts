@@ -16,12 +16,12 @@ export async function GET() {
   const creators = await sql`
     SELECT c.id, c.user_id, c.display_name, c.is_active, c.status, c.created_at,
            (c.paystack_subaccount_code IS NOT NULL AND c.paystack_subaccount_code != '') AS payout_connected,
-           u.email,
+           p.email,
            COUNT(t.id)::int AS "templateCount"
     FROM creators c
-    LEFT JOIN auth.users u ON u.id = c.user_id
+    LEFT JOIN profiles p ON p.id = c.user_id
     LEFT JOIN templates t ON t.creator_id = c.id
-    GROUP BY c.id, u.email
+    GROUP BY c.id, p.email
     ORDER BY c.created_at DESC
   `;
 
@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest) {
     // Send welcome email via Resend if configured
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
-      const [profile] = await sql`SELECT email FROM auth.users WHERE id = ${creator.user_id}`;
+      const [profile] = await sql`SELECT email FROM profiles WHERE id = ${creator.user_id}`;
       if (profile?.email) {
         fetch("https://api.resend.com/emails", {
           method: "POST",
