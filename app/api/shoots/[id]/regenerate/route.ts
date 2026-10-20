@@ -48,7 +48,7 @@ export async function POST(
   // The buyer's own photos are deleted 48 hours after a shoot for privacy.
   // Without them the regeneration fails at once and, worse, used to wipe the
   // photos they already had. Say so instead.
-  const needsIdentity = shoot.category !== "gif_loop" && shoot.category !== "ar_experience" && !shoot.character_base_id;
+  const needsIdentity = shoot.category !== "gif_loop" && !shoot.character_base_id;
   if (needsIdentity) {
     const [{ n } = { n: 0 }] = await sql<{ n: number }[]>`
       SELECT count(*)::int AS n FROM shoot_references WHERE shoot_id = ${id} AND purpose = 'identity'`;

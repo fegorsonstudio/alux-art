@@ -231,8 +231,7 @@ export type TemplateCategory =
   | "maternity" | "fantasy" | "boudoir" | "street" | "other" | "story"
   | "asset_extract"
   | "call_to_bar" | "nursing_induction" | "photo_upgrade" | "trending"
-  | "fashion_brand"
-  | "ar_experience";
+  | "fashion_brand";
 
 // Story Photoshoot types
 export type StoryType = "solo" | "duo" | "group" | "brand" | "group_brand";

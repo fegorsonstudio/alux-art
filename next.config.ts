@@ -50,38 +50,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // The AR balloon viewer (/d/ar/<token>) and the race (/d/race/...) need the phone's camera, its
-      // position and its motion sensors. Everything else on the site keeps the
-      // rule above; Next applies the later matching rule's value for a key both
-      // rules set, so this one only loosens that single header on that one path.
-      {
-        source: "/d/:game(ar|race|road)/:path*",
-        headers: [
-          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), gyroscope=(self), accelerometer=(self), magnetometer=(self), microphone=()" },
-        ],
-      },
-      // The race plays roads the players recorded (video on R2, blob previews in
-      // the recorder), so these pages alone may load media from there. The
-      // site-wide policy above is untouched everywhere else.
-      {
-        source: "/d/:game(race|road)/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https: blob:",
-              "media-src 'self' blob: https://*.r2.cloudflarestorage.com",
-              "font-src 'self' data:",
-              "worker-src 'self' blob:",
-              "connect-src 'self' https://www.google.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com",
-              "frame-ancestors 'none'",
-            ].join("; "),
-          },
-        ],
-      },
     ];
   },
 };

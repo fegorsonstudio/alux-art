@@ -2228,16 +2228,6 @@ export async function startGenerationWorker(
     return { done: true, completed: 1, failed: 0, remaining: 0, total: 1 };
   }
 
-  // ── ar_experience ──────────────────────────────────────────────────────────
-  // A branded AR balloon campaign: the "generation" is copying the logo and
-  // writing the campaign row. Same early return as the loop, for the same
-  // reason — nothing below (identity, planner, fal, the shortfall refund) may
-  // see an order that has no photographs in it.
-  if (shoot.category === "ar_experience") {
-    const { fulfilArCampaign } = await import("@/lib/ar/fulfil");
-    return fulfilArCampaign(shootId, shoot.user_id as string, (shoot.enhance ?? null) as Record<string, unknown> | null);
-  }
-
   // Per-image products — the Gear Equalizer and the Asset Extractor — are
   // booked as exactly as many images as the buyer sent (two takes doubles the
   // rows), never as a 1/5/10 package. Normalising their count turned a 2-photo
