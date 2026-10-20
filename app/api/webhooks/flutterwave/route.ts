@@ -3,7 +3,10 @@ import { createHash } from "crypto";
 import sql from "@/lib/db";
 import { notifyCreatorOfSale } from "@/lib/creator-sale-email";
 import { verifyFlutterwaveWebhookSignature, verifyFlutterwavePayment } from "@/lib/flutterwave";
-import { SITE_URL } from "@/lib/site-url";
+import { INTERNAL_BASE_URL } from "@/lib/site-url";
+import { paidEnough, reportPaymentMismatch } from "@/lib/payment-checks";
+import { fulfilTemplatePurchase } from "@/lib/template-purchase";
+import { normalizePackageSize } from "@/lib/types";
 
 function computeIdempotencyKey(rawBody: string): string {
   return createHash("sha256").update(rawBody).digest("hex");
@@ -89,15 +92,45 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 5. Dispatch on payment type via meta ───────────────────────────────────
+  // As in the Paystack route: if the work fails after the duplicate gate was
+  // written, remove the gate so Flutterwave's retry is processed, not dropped.
+  try {
+    return await handleCharge(event, txRef, now, verified);
+  } catch (e) {
+    console.error("[flutterwave webhook] processing failed — the retry will run it again:",
+      e instanceof Error ? e.message : e);
+    await sql`DELETE FROM payment_events WHERE id = ${loggedEvent.id}`.catch(() => {});
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+  }
+}
+
+async function handleCharge(
+  event: ReturnType<typeof JSON.parse>,
+  txRef: string,
+  now: string,
+  verified: Awaited<ReturnType<typeof verifyFlutterwavePayment>>,
+): Promise<NextResponse> {
   // Flutterwave uses `data.meta` (not `data.metadata`)
   const meta = (event.data.meta ?? {}) as Record<string, string>;
   const { amount, currency } = event.data;
+  // What Flutterwave itself confirmed was paid, in major units — the re-verify,
+  // not the webhook body, is what the amount checks below trust.
+  const paidMajor = Number(verified.amountNgn);
+  const paidCurrency = verified.currency;
 
   // ── Creator showcase generation ────────────────────────────────────────────
   if (meta.type === "creator_showcase") {
     const showcaseShootId = meta.shoot_id;
     const userId = meta.user_id;
     if (!showcaseShootId) return NextResponse.json({ ok: true });
+
+    const [sc] = await sql`SELECT package_size FROM shoots WHERE id = ${showcaseShootId}`;
+    const showcaseExpected = sc ? normalizePackageSize(sc.package_size) * 1000 : null;
+    if (showcaseExpected == null || !paidEnough(paidMajor, paidCurrency, showcaseExpected, "NGN")) {
+      await reportPaymentMismatch({ where: "Flutterwave webhook (creator showcase)", reference: txRef, paidMajor, paidCurrency,
+        expectedMajor: showcaseExpected, expectedCurrency: "NGN", order: `showcase shoot ${showcaseShootId}` });
+      return NextResponse.json({ ok: true });
+    }
 
     const activated = await sql`
       UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
@@ -117,7 +150,7 @@ export async function POST(request: NextRequest) {
       )
     `;
 
-    fetch(`${SITE_URL}/api/shoots/${showcaseShootId}/start`, {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${showcaseShootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     }).catch(() => {});
@@ -146,37 +179,28 @@ export async function POST(request: NextRequest) {
     const { purchase_id, template_id, shoot_id: existingShootId, user_id, coupon_id } = meta;
     if (!purchase_id) return NextResponse.json({ ok: true });
 
+    const [tp] = await sql`SELECT amount_ngn, amount_usd, currency, shoot_id FROM template_purchases WHERE id = ${purchase_id}`;
+    const tpCurrency = String(tp?.currency || "NGN").toUpperCase();
+    const tpExpected = tp ? (tpCurrency === "USD" ? Number(tp.amount_usd ?? 0) : Number(tp.amount_ngn ?? 0)) : null;
+    if (tpExpected == null || (existingShootId && tp?.shoot_id && tp.shoot_id !== existingShootId)
+        || !paidEnough(paidMajor, paidCurrency, tpExpected, tpCurrency)) {
+      await reportPaymentMismatch({ where: "Flutterwave webhook (marketplace)", reference: txRef, paidMajor, paidCurrency,
+        expectedMajor: tpExpected, expectedCurrency: tpCurrency, order: `purchase ${purchase_id}${existingShootId ? ` / shoot ${existingShootId}` : ""}` });
+      return NextResponse.json({ ok: true });
+    }
+
     // New booking flow: shoot already exists — just queue it
     if (existingShootId) {
-      const locked = await sql`
-        UPDATE template_purchases
-        SET status = 'success', shoot_id = ${existingShootId},
-            payment_provider = 'flutterwave', provider_reference = ${txRef}
-        WHERE id = ${purchase_id} AND status != 'success'
-        RETURNING id
-      `;
-      if (!locked.length) {
-        console.log(`[flutterwave webhook] Template purchase ${purchase_id} already marked success`);
-        return NextResponse.json({ ok: true });
+      const { newlyPaid, queued } = await fulfilTemplatePurchase({
+        purchaseId: purchase_id, shootId: existingShootId, provider: "flutterwave", providerReference: txRef,
+      });
+      if (!newlyPaid) console.log(`[flutterwave webhook] Template purchase ${purchase_id} already marked success`);
+      if (queued) {
+        fetch(`${INTERNAL_BASE_URL}/api/shoots/${existingShootId}/start`, {
+          method: "POST",
+          headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
+        }).catch(() => {});
       }
-
-      await sql`
-        UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
-        WHERE id = ${existingShootId} AND status = 'PENDING_PAYMENT'
-      `;
-      await sql`UPDATE templates SET purchase_count = purchase_count + 1 WHERE id = ${template_id}`;
-      // Same as the Paystack path: creators paid through Flutterwave must get
-      // the same notification, and it must not delay fulfilment.
-      void notifyCreatorOfSale(purchase_id);
-      if (coupon_id) {
-        await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
-      }
-
-      fetch(`${SITE_URL}/api/shoots/${existingShootId}/start`, {
-        method: "POST",
-        headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
-      }).catch(() => {});
-
       return NextResponse.json({ ok: true });
     }
 
@@ -263,7 +287,7 @@ export async function POST(request: NextRequest) {
       await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
     }
 
-    fetch(`${SITE_URL}/api/shoots/${shootId}/start`, {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${shootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     }).catch(() => {});
@@ -276,31 +300,43 @@ export async function POST(request: NextRequest) {
   const userId = meta.user_id;
   if (!shootId) return NextResponse.json({ ok: true });
 
-  const [shoot] = await sql`SELECT id, user_id FROM shoots WHERE id = ${shootId}`;
+  const [shoot] = await sql`SELECT id, user_id, currency FROM shoots WHERE id = ${shootId}`;
   const ownerId = shoot?.user_id ?? userId;
+
+  const [pay] = await sql`SELECT amount_ngn, shoot_id FROM payments WHERE provider_reference = ${txRef}`;
+  if (!shoot || !pay || pay.shoot_id !== shootId
+      || !paidEnough(paidMajor, paidCurrency, Number(pay.amount_ngn), shoot.currency ?? "NGN")) {
+    await reportPaymentMismatch({ where: "Flutterwave webhook (studio shoot)", reference: txRef, paidMajor, paidCurrency,
+      expectedMajor: pay ? Number(pay.amount_ngn) : null, expectedCurrency: shoot?.currency ?? "NGN", order: `shoot ${shootId}` });
+    if (pay) await sql`UPDATE payments SET status = 'mismatch' WHERE provider_reference = ${txRef} AND status <> 'success'`;
+    return NextResponse.json({ ok: true });
+  }
 
   await sql`
     UPDATE payments SET status = 'success', paid_at = ${now}, metadata = ${JSON.stringify(event.data)}
     WHERE provider_reference = ${txRef}
   `;
 
-  await sql`
+  const queued = await sql`
     UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
     WHERE id = ${shootId} AND status = 'PENDING_PAYMENT'
+    RETURNING id
   `;
 
   await sql`
     INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
     VALUES (
       ${crypto.randomUUID()}, ${shootId}, ${ownerId},
-      'payment_confirmed', ${JSON.stringify({ reference: txRef, amount, currency })}, ${now}
+      'payment_confirmed', ${sql.json({ reference: txRef, amount, currency })}, ${now}
     )
   `;
 
-  fetch(`${SITE_URL}/api/shoots/${shootId}/start`, {
-    method: "POST",
-    headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
-  }).catch(() => {});
+  if (queued.length) {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${shootId}/start`, {
+      method: "POST",
+      headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }

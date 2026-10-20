@@ -25,6 +25,8 @@ import crypto from "node:crypto";
 const DRY = process.argv.includes("--dry-run");
 const KEY = process.env.PAYSTACK_SECRET_KEY;
 const SITE = process.env.PUBLIC_SITE_URL || "https://aluxartandframes.shop";
+// The worker is started on this server directly, not out through Cloudflare (see lib/site-url.ts).
+const INTERNAL = process.env.INTERNAL_BASE_URL || `http://127.0.0.1:${process.env.PORT || "3000"}`;
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TG_ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
@@ -48,7 +50,7 @@ async function main() {
 
   const pending = await sql`
     SELECT p.id, p.provider_reference AS ref, p.shoot_id, p.amount_ngn, p.user_id,
-           s.status AS shoot_status, s.owner_email
+           s.status AS shoot_status, s.owner_email, s.currency AS shoot_currency
     FROM payments p
     LEFT JOIN shoots s ON s.id = p.shoot_id
     WHERE p.status = 'pending'
@@ -67,6 +69,19 @@ async function main() {
     const status = r?.data?.status;
     if (status !== "success") { log(`${p.ref}: ${status ?? r?.message ?? "unknown"} — leaving alone`); continue; }
 
+    // The charge must cover the order: same rule as the webhook (lib/payment-checks.ts).
+    const paidMajor = Number(r.data.amount) / 100;
+    const paidCur = String(r.data.currency || "NGN").toUpperCase();
+    const wantCur = String(p.shoot_currency || "NGN").toUpperCase();
+    if (paidCur !== wantCur || paidMajor + 0.01 < Number(p.amount_ngn)) {
+      log(`${p.ref}: paid ${paidMajor} ${paidCur} but the order is ${p.amount_ngn} ${wantCur} — NOT released`);
+      if (!DRY) {
+        await sql`UPDATE payments SET status = 'mismatch' WHERE id = ${p.id} AND status = 'pending'`;
+        await tellAdmin(`⚠️ <b>Payment did not match its order — nothing was released</b>\nReference: <code>${p.ref}</code>\nPaid: ${paidMajor} ${paidCur}\nExpected: ${p.amount_ngn} ${wantCur}\nShoot: ${p.shoot_id}`);
+      }
+      continue;
+    }
+
     log(`${p.ref}: PAID and never processed — recovering`);
     if (DRY) { rescued.push(`${p.ref} (dry run)`); continue; }
 
@@ -84,11 +99,11 @@ async function main() {
 
     await sql`INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
               VALUES (${crypto.randomUUID()}, ${p.shoot_id}, ${p.user_id},
-                      'payment_confirmed', ${JSON.stringify({ reference: p.ref, recoveredBy: "reconciler" })}, ${now})`
+                      'payment_confirmed', ${sql.json({ reference: p.ref, recoveredBy: "reconciler" })}, ${now})`
       .catch(() => {});
 
     if (queued) {
-      await fetch(`${SITE}/api/shoots/${p.shoot_id}/start`, {
+      await fetch(`${INTERNAL}/api/shoots/${p.shoot_id}/start`, {
         method: "POST", headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
       }).catch(() => {});
       log(`${p.ref}: shoot ${p.shoot_id} queued and worker fired`);

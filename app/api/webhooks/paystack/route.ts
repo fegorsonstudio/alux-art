@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual, createHash } from "crypto";
 import sql from "@/lib/db";
 import { notifyCreatorOfSale } from "@/lib/creator-sale-email";
-import { SITE_URL } from "@/lib/site-url";
+import { INTERNAL_BASE_URL } from "@/lib/site-url";
+import { paidEnough, reportPaymentMismatch } from "@/lib/payment-checks";
+import { fulfilTemplatePurchase } from "@/lib/template-purchase";
+import { normalizePackageSize } from "@/lib/types";
 import { deliverRetouch } from "@/lib/whatsapp-retouch";
 import { deliverRetouch as deliverRetouchIg } from "@/lib/instagram-retouch";
 import { creditWallet } from "@/lib/wallet";
@@ -76,7 +79,24 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 6. Event is NEW → proceed with business logic ──────────────────────────
+  // The event row above is the duplicate gate and is written BEFORE the work.
+  // If the work then fails (a database blip), Paystack's retry used to be
+  // thrown away as a duplicate. Now the row is removed so the retry runs. Every
+  // step below is guarded to act once, so a re-run never doubles anything.
+  try {
+    return await handleCharge(event, reference, now);
+  } catch (e) {
+    console.error("[paystack webhook] processing failed — Paystack's retry will run it again:",
+      e instanceof Error ? e.message : e);
+    await sql`DELETE FROM payment_events WHERE id = ${loggedEvent.id}`.catch(() => {});
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+  }
+}
+
+async function handleCharge(event: ReturnType<typeof JSON.parse>, reference: string, now: string): Promise<NextResponse> {
   const { metadata, amount, currency } = event.data;
+  // Paystack amounts are in kobo / cents.
+  const paidMajor = Number(amount) / 100;
 
   // ── Fegorson Studio licence ──────────────────────────────────────────────
   // The licence code is made inside fulfilLicencePayment, which checks the
@@ -92,6 +112,14 @@ export async function POST(request: NextRequest) {
   if (metadata?.type === "creator_showcase") {
     const { shoot_id: showcaseShootId, user_id } = metadata as Record<string, string>;
     if (!showcaseShootId) return NextResponse.json({ ok: true });
+
+    const [sc] = await sql`SELECT package_size FROM shoots WHERE id = ${showcaseShootId}`;
+    const showcaseExpected = sc ? normalizePackageSize(sc.package_size) * 1000 : null;
+    if (showcaseExpected == null || !paidEnough(paidMajor, currency, showcaseExpected, "NGN")) {
+      await reportPaymentMismatch({ where: "Paystack webhook (creator showcase)", reference, paidMajor, paidCurrency: currency,
+        expectedMajor: showcaseExpected, expectedCurrency: "NGN", order: `showcase shoot ${showcaseShootId}` });
+      return NextResponse.json({ ok: true });
+    }
 
     // No need to check for duplicate here — we already did it via idempotency_key
     const activated = await sql`
@@ -113,7 +141,7 @@ export async function POST(request: NextRequest) {
       )
     `;
 
-    fetch(`${SITE_URL}/api/shoots/${showcaseShootId}/start`, {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${showcaseShootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     }).catch(() => {});
@@ -128,6 +156,13 @@ export async function POST(request: NextRequest) {
   if (metadata?.type === "retouch_payment") {
     const { shoot_id: retouchShootId, user_id: retouchUserId } = metadata as Record<string, string>;
     if (!retouchShootId) return NextResponse.json({ ok: true });
+
+    const [rt] = await sql`SELECT price_ngn FROM shoot_retouch WHERE shoot_id = ${retouchShootId}`;
+    if (!rt || !paidEnough(paidMajor, currency, Number(rt.price_ngn ?? 0), "NGN")) {
+      await reportPaymentMismatch({ where: "Paystack webhook (retouch)", reference, paidMajor, paidCurrency: currency,
+        expectedMajor: rt ? Number(rt.price_ngn ?? 0) : null, expectedCurrency: "NGN", order: `retouch for shoot ${retouchShootId}` });
+      return NextResponse.json({ ok: true });
+    }
 
     const unlocked = await sql`
       UPDATE shoot_retouch
@@ -176,6 +211,11 @@ export async function POST(request: NextRequest) {
   if (metadata?.type === "wallet_topup") {
     const { user_id: topupUserId } = metadata as Record<string, string>;
     if (!topupUserId) return NextResponse.json({ ok: true });
+    if (String(currency || "NGN").toUpperCase() !== "NGN") {
+      await reportPaymentMismatch({ where: "Paystack webhook (wallet top-up)", reference, paidMajor, paidCurrency: currency,
+        expectedMajor: paidMajor, expectedCurrency: "NGN", order: `wallet top-up for ${topupUserId}` });
+      return NextResponse.json({ ok: true });
+    }
 
     // amount arrives in kobo. creditWallet carries a unique index on reference,
     // so a replayed webhook adds nothing the second time.
@@ -232,34 +272,30 @@ export async function POST(request: NextRequest) {
     const { purchase_id, template_id, shoot_id: existingShootId, user_id, coupon_id } = metadata as Record<string, string>;
     if (!purchase_id) return NextResponse.json({ ok: true });
 
+    // The price this purchase was created at, in its own currency.
+    const [tp] = await sql`SELECT amount_ngn, amount_usd, currency, shoot_id FROM template_purchases WHERE id = ${purchase_id}`;
+    const tpCurrency = String(tp?.currency || "NGN").toUpperCase();
+    const tpExpected = tp ? (tpCurrency === "USD" ? Number(tp.amount_usd ?? 0) : Number(tp.amount_ngn ?? 0)) : null;
+    if (tpExpected == null || (existingShootId && tp?.shoot_id && tp.shoot_id !== existingShootId)
+        || !paidEnough(paidMajor, currency, tpExpected, tpCurrency)) {
+      await reportPaymentMismatch({ where: "Paystack webhook (marketplace)", reference, paidMajor, paidCurrency: currency,
+        expectedMajor: tpExpected, expectedCurrency: tpCurrency, order: `purchase ${purchase_id}${existingShootId ? ` / shoot ${existingShootId}` : ""}` });
+      return NextResponse.json({ ok: true });
+    }
+
     // New booking flow: shoot already created with refs — just queue it
     if (existingShootId) {
-      const locked = await sql`
-        UPDATE template_purchases SET status = 'success', shoot_id = ${existingShootId}
-        WHERE id = ${purchase_id} AND status != 'success'
-        RETURNING id
-      `;
-      if (!locked.length) {
-        console.log(`[paystack webhook] Template purchase ${purchase_id} already marked success`);
-        return NextResponse.json({ ok: true });
-      }
+      const { newlyPaid, queued } = await fulfilTemplatePurchase({ purchaseId: purchase_id, shootId: existingShootId });
+      if (!newlyPaid) console.log(`[paystack webhook] Template purchase ${purchase_id} already marked success`);
 
-      await sql`
-        UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
-        WHERE id = ${existingShootId} AND status = 'PENDING_PAYMENT'
-      `;
-      await sql`UPDATE templates SET purchase_count = purchase_count + 1 WHERE id = ${template_id}`;
-      // Tell the creator they earned. Deliberately not awaited: a slow or
-      // bouncing mail provider must never delay fulfilment of a paid booking.
-      void notifyCreatorOfSale(purchase_id);
-      if (coupon_id) {
-        await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
+      // Only when this call moved the shoot out of PENDING_PAYMENT. If the
+      // buyer's "verify payment" got there first it already started the worker.
+      if (queued) {
+        fetch(`${INTERNAL_BASE_URL}/api/shoots/${existingShootId}/start`, {
+          method: "POST",
+          headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
+        }).catch(() => {});
       }
-
-      fetch(`${SITE_URL}/api/shoots/${existingShootId}/start`, {
-        method: "POST",
-        headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
-      }).catch(() => {});
 
       return NextResponse.json({ ok: true });
     }
@@ -345,7 +381,7 @@ export async function POST(request: NextRequest) {
       await sql`UPDATE coupons SET use_count = use_count + 1 WHERE id = ${coupon_id}`;
     }
 
-    fetch(`${SITE_URL}/api/shoots/${shootId}/start`, {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${shootId}/start`, {
       method: "POST",
       headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
     }).catch(() => {});
@@ -359,8 +395,18 @@ export async function POST(request: NextRequest) {
   const { shoot_id, user_id } = metadata ?? {};
   if (!shoot_id) return NextResponse.json({ ok: true });
 
-  const [shoot] = await sql`SELECT id, user_id FROM shoots WHERE id = ${shoot_id}`;
+  const [shoot] = await sql`SELECT id, user_id, currency FROM shoots WHERE id = ${shoot_id}`;
   const ownerId = shoot?.user_id ?? user_id;
+
+  // The charge must be the one this shoot's pay step created, for the full price.
+  const [pay] = await sql`SELECT amount_ngn, shoot_id FROM payments WHERE provider_reference = ${reference}`;
+  if (!shoot || !pay || pay.shoot_id !== shoot_id
+      || !paidEnough(paidMajor, currency, Number(pay.amount_ngn), shoot.currency ?? "NGN")) {
+    await reportPaymentMismatch({ where: "Paystack webhook (studio shoot)", reference, paidMajor, paidCurrency: currency,
+      expectedMajor: pay ? Number(pay.amount_ngn) : null, expectedCurrency: shoot?.currency ?? "NGN", order: `shoot ${shoot_id}` });
+    if (pay) await sql`UPDATE payments SET status = 'mismatch' WHERE provider_reference = ${reference} AND status <> 'success'`;
+    return NextResponse.json({ ok: true });
+  }
 
   // Update payment record with final status
   await sql`
@@ -369,9 +415,10 @@ export async function POST(request: NextRequest) {
   `;
 
   // Queue the shoot for processing
-  await sql`
+  const queued = await sql`
     UPDATE shoots SET status = 'QUEUED', updated_at = ${now}
     WHERE id = ${shoot_id} AND status = 'PENDING_PAYMENT'
+    RETURNING id
   `;
 
   // Log payment confirmation in generation timeline
@@ -379,15 +426,17 @@ export async function POST(request: NextRequest) {
     INSERT INTO generation_events (id, shoot_id, user_id, type, payload, created_at)
     VALUES (
       ${crypto.randomUUID()}, ${shoot_id}, ${ownerId},
-      'payment_confirmed', ${JSON.stringify({ reference, amount, currency })}, ${now}
+      'payment_confirmed', ${sql.json({ reference, amount, currency })}, ${now}
     )
   `;
 
-  // Fire the generation worker
-  fetch(`${SITE_URL}/api/shoots/${shoot_id}/start`, {
-    method: "POST",
-    headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
-  }).catch(() => {});
+  // Fire the generation worker — only if this call queued the shoot.
+  if (queued.length) {
+    fetch(`${INTERNAL_BASE_URL}/api/shoots/${shoot_id}/start`, {
+      method: "POST",
+      headers: { "x-internal-secret": process.env.INTERNAL_API_SECRET ?? "" },
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }
