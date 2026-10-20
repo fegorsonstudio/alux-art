@@ -46,6 +46,15 @@ line (with `who`); `text` is a message, letter or note shown as an object;
 `time` is place and hour. A story may break the rhythm only on purpose, and
 the checker will say so.
 
+### Designed episodes (no pictures yet)
+
+An episode can go out before its pictures exist, as designed slides in the
+story's cover look (lib/drama/slides.ts). Then each slide from 2 to 7 carries
+a `scene` line — **eight words or fewer**, set small above the caption — that
+does the camera's job: "Her hand. A pen. A brass key." The caption stays the
+star; the scene line only tells the eye where to look. Same word budget for
+the captions, and the scene lines are kept just as spare.
+
 ## 3. Cliffhangers — every episode ends hot
 
 End the episode one breath **before** the answer. Use one of six shapes and

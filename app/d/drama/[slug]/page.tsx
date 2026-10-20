@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import styles from "../drama.module.css";
 import DramaShell from "../DramaShell";
+import PaidNotice from "../PaidNotice";
 import { badgeFor, dramaPrices, houseProducts, igLinks, soldSlots, storyBySlug, takenRoles } from "@/lib/drama/data";
+import { syncPosted } from "@/lib/drama/episodes";
+import sql from "@/lib/db";
 
 /**
  * One story (/d/drama/<slug>): the poster, the cast and which roles are open,
@@ -33,10 +36,18 @@ const callName = (name: string) => {
   return w.find((x) => !TITLES.test(x)) ?? w[0] ?? "";
 };
 
-export default async function StoryPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function StoryPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  await syncPosted().catch(() => {});
   const story = await storyBySlug((await params).slug);
   if (!story) notFound();
-  const [taken, sold, prices] = await Promise.all([takenRoles([story.id]), soldSlots(story.id), dramaPrices()]);
+  const sp = await searchParams;
+  const paidKind = sp.paid === "cast" || sp.paid === "brand" ? sp.paid : null;
+  const paidRef = typeof sp.reference === "string" ? sp.reference : typeof sp.trxref === "string" ? sp.trxref : "";
+  const [taken, sold, prices, madeRows] = await Promise.all([
+    takenRoles([story.id]), soldSlots(story.id), dramaPrices(),
+    sql<{ n: number }[]>`SELECT n FROM drama_episodes WHERE story_id = ${story.id} AND status IN ('ready', 'posted', 'closed')`,
+  ]);
+  const made = new Set(madeRows.map((r) => r.n));
   const cast = story.content.cast ?? [];
   const episodes = story.content.episodes ?? [];
   const house = await houseProducts(episodes.map((e) => e.alux?.product));
@@ -77,6 +88,8 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           </div>
         </div>
       </section>
+
+      {paidKind && paidRef && <PaidNotice kind={paidKind} reference={paidRef} />}
 
       <section className={styles.section} id="episodes">
         <div className={styles.sectionHead}>
@@ -129,7 +142,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
                   {canJoin ? (
                     <>
                       <span className={styles.price}>{naira(priceOf(r.tier))}</span>
-                      <a className={`${styles.btn} ${styles.primary} ${styles.small}`} href={ig.dm} target="_blank" rel="noopener noreferrer">Play {callName(r.name)}</a>
+                      <Link className={`${styles.btn} ${styles.primary} ${styles.small}`} href={`/d/drama/${story.slug}/join/${r.key}`}>Play {callName(r.name)}</Link>
                     </>
                   ) : (
                     <span className={styles.taken}>{isTaken ? "Taken" : "Cast"}</span>
@@ -153,15 +166,15 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
         </div>
         <ul className={styles.slotList}>
           {episodes.flatMap((e) => (e.slots ?? []).map((s) => {
-            const isSold = sold.has(`${e.n}:${s.key}`);
+            const isSold = sold.has(`${e.n}:${s.key}`) || made.has(e.n);
             return (
               <li key={`${e.n}-${s.key}`} className={styles.slot}>
                 <div>
                   <p className={styles.slotWhat}>{s.object[0].toUpperCase() + s.object.slice(1)}</p>
                   <p className={styles.slotWhen}>Episode {e.n} · {e.title} · picture {s.slide}</p>
                 </div>
-                {isSold ? <span className={styles.taken}>Taken</span> : (
-                  <a className={`${styles.btn} ${styles.quiet} ${styles.small}`} href={ig.dm} target="_blank" rel="noopener noreferrer">Reserve</a>
+                {isSold ? <span className={styles.taken}>{made.has(e.n) ? "Made" : "Taken"}</span> : (
+                  <Link className={`${styles.btn} ${styles.quiet} ${styles.small}`} href={`/d/drama/${story.slug}/brand/${e.n}-${s.key}`}>Reserve</Link>
                 )}
               </li>
             );

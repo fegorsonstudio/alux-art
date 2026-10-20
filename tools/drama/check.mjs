@@ -73,6 +73,10 @@ export function checkStory(s, file) {
       if (x.kind === "line" && !/[“"]/.test(x.say)) bad(`${at}: a line is spoken — put it in quotes`);
       if (x.kind !== "line" && x.kind !== "cliff" && /!/.test(x.say)) bad(`${at}: no exclamation marks outside speech`);
       if (EMOJI.test(x.say)) bad(`${at}: no emoji`);
+      if (x.scene !== undefined) {
+        if (words(x.scene) > 8) bad(`${at}: scene line ${words(x.scene)} words (max 8): ${x.scene}`);
+        if (EMOJI.test(x.scene) || /!/.test(x.scene)) bad(`${at}: scene line takes no emoji or exclamation marks`);
+      }
     });
     if (total > 70) bad(`${tag}: ${total} caption words (max 70)`);
     e._words = total;

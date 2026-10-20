@@ -181,3 +181,26 @@
 .foot a { color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) { .cardImg { transition: none; } .card:hover .cardImg { transform: none; } }
+
+/* ── forms (join a role, reserve a brand slot) ── */
+.field { display: grid; gap: 8px; }
+.fieldLabel { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.input {
+  font: inherit; font-size: 16px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 13px 14px; width: 100%; box-sizing: border-box; resize: vertical;
+}
+.input:focus { outline: none; border-color: color-mix(in srgb, var(--live) 60%, var(--line)); }
+.drop {
+  display: grid; place-items: center; text-align: center; min-height: 180px; padding: 16px; border-radius: 14px; cursor: pointer;
+  border: 1.5px dashed color-mix(in srgb, var(--live) 40%, var(--line)); background: var(--surface); color: var(--muted); font-size: 14px; line-height: 1.5;
+}
+.drop:hover { border-color: var(--live); }
+.dropImg { max-height: 320px; max-width: 100%; border-radius: 10px; display: block; }
+.check { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--teal); }
+.error { margin: 0; font-size: 14px; color: #ff9d8f; }
+.app[data-theme="light"] .error { color: #a7463c; }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+.notice { border: 1px solid color-mix(in srgb, var(--live) 40%, var(--line)); background: color-mix(in srgb, var(--teal) 12%, transparent); border-radius: 14px; padding: 14px 16px; font-size: 14.5px; margin: 10px 0 0; }
+.formWrap { max-width: 620px; margin: 0 auto; }
+.p a, .foot a, .sectionNote a, .logline a { color: var(--accent-ink); text-underline-offset: 3px; }

@@ -18,14 +18,14 @@ import sharp from "sharp";
 export const COVER_W = 1000;
 export const COVER_H = 1500;
 
-type Look = {
+export type Look = {
   bg: [string, string]; ink: string; accent: string; muted: string;
   titleFont: string; titleWeight: number; titleCase: "upper" | "as-is"; titleTrack: number;
   subFont: string; motif: "slit" | "bands" | "arch" | "moon" | "rule" | "tab" | "curve" | "diagonal";
   light?: boolean;
 };
 
-const OUTFIT = "Outfit, 'DejaVu Sans', sans-serif";
+export const OUTFIT = "Outfit, 'DejaVu Sans', sans-serif";
 const LOOKS: Record<string, Look> = {
   power:     { bg: ["#07090a", "#1a2427"], ink: "#f4f1ea", accent: "#55cdbc", muted: "#9fb3b5", titleFont: "Bodoni Moda", titleWeight: 600, titleCase: "upper", titleTrack: 0.02, subFont: "Cormorant Garamond", motif: "slit" },
   political: { bg: ["#0c1013", "#262e33"], ink: "#eef2f3", accent: "#c4423a", muted: "#a2adb2", titleFont: "Bodoni Moda", titleWeight: 600, titleCase: "upper", titleTrack: 0.02, subFont: "Oswald", motif: "tab" },
@@ -40,15 +40,15 @@ const LOOKS: Record<string, Look> = {
 };
 export const lookOf = (genre: string): Look => LOOKS[genre] ?? LOOKS.power;
 
-const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const fam = (f: string) => `'${f}', ${OUTFIT}`;
+export const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+export const fam = (f: string) => `'${f}', ${OUTFIT}`;
 
 // ---- measuring -------------------------------------------------------------
 const PROBE = 100;
 const widthCache = new Map<string, number>();
 
 /** Drawn width (px) of one line at font-size PROBE. */
-async function inkWidth(text: string, font: string, weight: number, track: number): Promise<number> {
+export async function inkWidth(text: string, font: string, weight: number, track: number): Promise<number> {
   const key = `${font}|${weight}|${track}|${text}`;
   const hit = widthCache.get(key);
   if (hit !== undefined) return hit;
@@ -95,7 +95,7 @@ async function fitTitle(text: string, look: Look, maxW: number, maxSize: number,
   return best;
 }
 
-function motif(look: Look): string {
+export function motif(look: Look): string {
   const a = look.accent;
   switch (look.motif) {
     case "slit": return `<rect x="${COVER_W / 2 - 1}" y="150" width="2" height="560" fill="${a}" opacity="0.55"/>

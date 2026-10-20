@@ -17,6 +17,7 @@ import { retouchPriceNgn } from "@/lib/retouch-pricing";
 import type { IgCreds } from "@/lib/instagram";
 import type { IgSession } from "@/lib/instagram-bot";
 import { isEmailish, saveContactEmail, contactEmailSaved } from "@/lib/chat-contact-email";
+import { handleDramaComment } from "@/lib/drama/votes";
 
 /**
  * Instagram comment webhook — the "comment STUDIO and I'll send you the link" bot.
@@ -288,6 +289,20 @@ export async function POST(request: NextRequest) {
       if (from.username && mine.has(from.username.toLowerCase())) {
         console.log(`[ig webhook] ignoring our own comment from @${from.username} — test from a different account`);
         continue;
+      }
+
+      // Alux Micro Drama: on a drama episode, a comment whose first word is one
+      // of that episode's two choices is a vote (lib/drama/votes.ts), taken
+      // before the shop keywords so a vote word is never read as one of them.
+      // Any other comment — and any comment on any other post — falls through
+      // to everything below, unchanged.
+      const commentMediaId = String(((v.media ?? {}) as { id?: string }).id ?? "");
+      if (commentMediaId) {
+        const voted = await handleDramaComment(
+          { mediaId: commentMediaId, commentId, text, fromId: from.id ? String(from.id) : undefined, fromUsername: from.username },
+          credsForAccount(igUserId),
+        ).catch((e) => { console.error("[ig webhook] drama vote failed:", (e as Error).message); return false; });
+        if (voted) continue;
       }
 
       // A bare lighting look number, from a carousel slide that asked for one.

@@ -11,6 +11,7 @@ import { deliverRetouch as deliverRetouchIg } from "@/lib/instagram-retouch";
 import { creditWallet } from "@/lib/wallet";
 import { notifyWalletTopUp } from "@/lib/wallet-notify";
 import { fulfilLicencePayment } from "@/lib/fegorson-licence";
+import { fulfilDramaPayment } from "@/lib/drama/payments";
 
 /**
  * Compute a deterministic idempotency key from the webhook body.
@@ -105,6 +106,14 @@ async function handleCharge(event: ReturnType<typeof JSON.parse>, reference: str
   // owner on Telegram, and Paystack still gets its 200.
   if (metadata?.type === "fegorson_licence") {
     await fulfilLicencePayment({ reference, amountKobo: Number(amount), currency, via: "webhook" });
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Alux Micro Drama: a role or a brand slot ─────────────────────────────
+  // Same shape as the licence: fulfilDramaPayment checks the amount and
+  // currency against the order, finishes it once, and never throws.
+  if (metadata?.type === "drama_cast" || metadata?.type === "drama_placement") {
+    await fulfilDramaPayment({ reference, amountKobo: Number(amount), currency, via: "webhook" });
     return NextResponse.json({ ok: true });
   }
 
