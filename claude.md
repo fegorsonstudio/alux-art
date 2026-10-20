@@ -712,6 +712,40 @@ relight end to end, refunds, lock, webhook amounts, retry/regenerate/delete/list
   MySQL-compatible (a rewrite) and Alibaba's Supabase-compatible service is paid after a one-month trial, so the
   Alibaba switch was not made.
 
+**Update (2026-10-20, later): Supabase is NO LONGER USED by the live site (owner: it kept charging after the
+downgrade — "remove it").** Commit `99d2410`, deployed and proven live. What replaced it:
+- **Sign-in is ours.** `/api/auth/google` (state + PKCE + nonce in a signed 10-min `aa_oauth` cookie on /api/auth)
+  → Google → `/api/auth/callback` (code swapped with our client secret, ID-token iss/aud/exp/nonce/email_verified
+  checked) → session. `lib/auth-session.ts`: cookie `aa_session` = random id + HMAC(`AUTH_SECRET`); table
+  `auth_sessions` stores only SHA-256 of the id; 180 days from last use (renewed at most daily); sign-out revokes the
+  row. **Changing `AUTH_SECRET` signs everyone out.** `lib/auth.ts` is still ONLY `isAdminEmail` (45 importers).
+- **Google client:** project **`alux-art`** (NOT fegorson-studio), client "Alux Art website (own sign-in)", redirect
+  `https://aluxartandframes.shop/api/auth/callback`; its branding "Alux Art" was already Google-verified, so the
+  sign-in screen says "to continue to Alux Art". `GOOGLE_OAUTH_CLIENT_ID`/`_SECRET` + `AUTH_SECRET` in the VPS
+  `.env.local` (backups `/root/env.local.bak-2026-10-20-own-auth`, `…-google-oauth`). "Web client 2" in the same
+  project is Supabase's; left untouched.
+- **Accounts:** `auth_users` (migration 080, psql) — the 91 Supabase accounts copied with the SAME ids
+  (`scripts/supabase-final-export.mjs`, re-runnable; export incl. 7 unreferenced custom-references files in
+  `/root/supabase-export-2026-10-20/`, root-only). Google sign-in matches by Google id, then email, so the owner landed
+  in their existing account (356 orders, admin). Chat customers get rows via the same `createUser` call.
+- **`lib/supabase-server.ts` / `lib/supabase.ts` are shims** keeping the old call shapes (getUser, admin.createUser,
+  storage download → "not found", signInWithOAuth, signOut) with nothing Supabase behind them — ~110 callers unchanged.
+  Do not reintroduce @supabase imports.
+- **Middleware** checks only the cookie signature (`lib/auth-edge.ts`). **Edge-sandbox hazard:** Node's crypto rejects
+  an ArrayBuffer built inside Next's middleware sandbox, so `subtle.verify` on a decoded cookie failed EVERY session —
+  it now signs and compares as text. The Supabase "stray OAuth code rescue" was removed.
+- **Race lobby** = server-sent events + POST on `/api/race/live/<race-lobby-TOKEN|race-room-GROUP>`
+  (`lib/race/live-hub.ts`, in memory — fine with ONE PM2 instance; caps 300 channels × 60 listeners, rate limits);
+  `lib/race/realtime.ts` keeps its Lobby/Room API. Through Cloudflare joins/leaves arrive in ~0.4 s.
+- CSP no longer lists supabase.co. Proof: throwaway DB copy (38 route checks + 5 chat-account checks), then live.
+- **Everyone signs in once more** (old Supabase cookies mean nothing now). Rollback: `.next-old` on the VPS.
+- **Owner to do:** after a few days of normal sign-ins, DELETE the Supabase project `owdfoxglbxrqhgqbvkon` (and check
+  Supabase Billing for any other project/org still on Pro — Supabase bills after the month, so one more invoice after
+  a downgrade is expected). Then remove `NEXT_PUBLIC_SUPABASE_*` / `SUPABASE_SERVICE_ROLE_KEY` from `.env.local`.
+  The test app on port 3001 (`/var/www/aluxart-story-test`) still uses Supabase and will lose sign-in then.
+- **Not touched (older bug):** `app/api/admin/creators/route.ts` joins `auth.users`, which does not exist in this
+  database — the admin Creators list errors. The admin page's "Supabase SQL" link will go dead.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
@@ -765,10 +799,11 @@ improve surrounding code. Follow them exactly.
 | AI Engine  | fal.ai primary, Gemini fallback    |
 | Prompting  | Claude via Anthropic API           |
 | Frontend   | Next.js App Router, TypeScript     |
-| Storage    | Supabase Storage                   |
-| Database   | Supabase Postgres                  |
+| Storage    | Cloudflare R2                      |
+| Database   | PostgreSQL 16 on the VPS           |
+| Sign-in    | Own Google OAuth (lib/auth-session) |
 | Payments   | Paystack                           |
-| Deployment | Vercel                             |
+| Deployment | VPS (PM2, nginx, Cloudflare)       |
 
 ---
 
