@@ -659,6 +659,59 @@ is at rest (state IDLE/DONE). The full pitch goes once (`instagram_sessions.fego
 reported on Telegram. Verified live with a signed made-up webhook message: the branch ran and Instagram
 answered "user not found" for the fake id (row removed). Quiet mode for everything else is unchanged.
 
+**Update (2026-10-20): senior review + fixes of the order and payment pipeline (owner: "fix all the problems").**
+A read-only review (15-point checklist in this file's tail) found three High and ten Medium problems; all fixed,
+proven on a THROWAWAY restore of the nightly backup with mock images and every paid key blanked (34 checks:
+relight end to end, refunds, lock, webhook amounts, retry/regenerate/delete/list/expiry), then deployed (commits
+`46cfba8` orders, `f57dde5` payments, `d742471` housekeeping, plus a CSP follow-up). Files backed up first in
+`/root/fix-deploy-backup-2026-10-20/`. What changed:
+- **One remedy per missing photo** (`lib/shortfall.ts` `settleShortfall`): a paid short shoot is refunded to the
+  wallet; only a FREE short shoot gets the one-time free regeneration. Per-image retry and regenerate refuse once
+  a shortfall refund exists (admins exempt). Before, a buyer could be refunded AND retry the photos into existence.
+- **Retry** (`slots/[slot]/retry`): refused after expiry, capped at 3 per photo (`generation_events` type
+  `retry_requested`), a GENERATING slot only when quiet for 10 min, and it now continues the chain (a second queued
+  photo used to wait forever). **Regenerate** keeps COMPLETE photos and refuses once the identity refs were purged.
+- **/start**: per-shoot advisory lock (`lib/worker-lock.ts`, reserved connection, released on crash) so the
+  webhook, verify button, studio page and retry can never run two workers; `safeResolution` whitelist
+  (`lib/internal-auth.ts`); a buyer cannot restart a FAILED order; a worker that THROWS (identity analysis, brief,
+  missing refs) now fails the remaining slots, settles the refund and alerts on Telegram (it used to leave the
+  slots queued, no refund, no message). Internal secret compared in constant time.
+- **Self-calls go to `INTERNAL_BASE_URL`** (`lib/site-url.ts`, default `http://127.0.0.1:$PORT`): webhook → /start,
+  continuations, regenerate, reconciler — the secret no longer crosses Cloudflare, no 100 s cut-off.
+- **`scripts/resume-stalled-shoots.mjs`** (root cron `*/5`, flock, log `/home/aluxart/resume-stalled.log`, state
+  `/home/aluxart/resume-stalled-state.json`, crontab backup `/root/crontab.bak-2026-10-20-resume`): orders in
+  PROCESSING/QUEUED untouched for 10 min (last 24 h only, not photo_retouch) get /start; Telegram on the first
+  restart; after 3 restarts without progress it stops and alerts. Three orders frozen since May/July are outside
+  the window and were left alone.
+- **Payments**: `lib/payment-checks.ts` `paidEnough` — every path that releases an order (Paystack AND Flutterwave
+  webhooks, verify button, reconciler) requires amount ≥ price in the order's currency; mismatch → nothing
+  released, `payments.status='mismatch'` where a row exists, Telegram. Checked against all 39 past webhook
+  payments: all pass. `lib/template-purchase.ts` `fulfilTemplatePurchase` is the ONE marketplace fulfilment (sale
+  count, coupon use, creator email once, whichever of webhook/verify arrives first). Webhook failures delete their
+  duplicate-gate row so the gateway's retry runs. A worker starts only if the call moved the shoot out of
+  PENDING_PAYMENT. Showcase price rule = ₦1,000 × package size (as in generate-showcase).
+- **JSON stored as strings** (postgres.js stringifies jsonb params; `JSON.stringify()` double-encoded): all writers of
+  `generation_events.payload`, `shoots.identity_attributes`, `shoots.quote` now use `sql.json()`; 465 quotes, 74
+  identity profiles, 3,591 events repaired in one transaction (backup CSVs in
+  `/home/aluxart/backups/json-repair-live-2026-10-20T07-10-20Z/`). The 10-image quote card and live progress work
+  again; the identity cache now hits. The events route also parses any string payload.
+- **generate.ts** no longer deletes inspiration/tagged files on completion (the 48 h purge does, with guards).
+- **Housekeeping**: order list strips `fal_url`, survives junk `limit`/`cursor`; delete refused while running,
+  all-or-nothing (a paid order is kept whole — FK on template_purchases), output files removed; ZIP refused after
+  expiry, STORE not DEFLATE, reused when newer than the last photo (`zip_ready_at`), one build at a time; photo
+  download refused after expiry; retention counts from `completed_at`, BASE_REJECTED included; studio matches slot
+  events by id or slot; media proxy + upload refs reject `..`/`//`; `scripts/migrate.mjs` RETIRED (exits);
+  `body { margin: 0 }` (every page was 8 px too wide; checkout panel was cut off); CSP connect-src allows
+  www.google.com + www.googletagmanager.com (GA4 hits were blocked).
+- **Not code:** 27 finished orders 21 Aug–6 Oct have no payment/free/wallet record (3 completed while their Paystack
+  row said pending) — none since 6 Oct; owner to check against Paystack. The live model switch reads
+  `nano-banana` (Nano Banana 2) since 2026-10-18 08:32 UTC — set in admin after the Pro switch; left as is.
+- **Supabase**: only Google sign-in (91 users, 6 active/month), chat-customer accounts and the race lobby's Realtime
+  use it; the database is our own PostgreSQL on the VPS; Supabase storage holds 67 MB. The free plan covers this —
+  the owner pays $25/month and was told to downgrade in the Supabase dashboard (no code change). PolarDB-X is
+  MySQL-compatible (a rewrite) and Alibaba's Supabase-compatible service is paid after a one-month trial, so the
+  Alibaba switch was not made.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
