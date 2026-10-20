@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { matchKeyword, lookNumberReply } from "@/lib/instagram-keywords";
 import { findLookByNumber } from "@/lib/whatsapp-triggers";
-import { sendText, sendTextWithReplies, sendTextWithButtons, credsForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
+import { sendText, sendTextWithReplies, sendTextWithButtons, credsForAccount, handleForAccount, usernameForScopedId, ourHandles as ourIgHandles, linksAsButtons, buttonMessage } from "@/lib/instagram";
 import { loadSession, markInbound, offerLook, handlePhoto, confirmBatch, prettyLook, armLookSession, patchSession, ensureUser, offerRetouch, isRetouchSession, batchQuestion, BATCH_REPLIES } from "@/lib/instagram-bot";
 import { tellAdmin, sendAdminImage } from "@/lib/telegram";
 import {
@@ -282,6 +282,25 @@ export async function POST(request: NextRequest) {
       const from = (v.from ?? {}) as { id?: string; username?: string };
 
       if (!commentId || !text) continue;
+      // Alux Micro Drama: on a drama episode, a comment whose first word is one
+      // of that episode's two choices is a vote, and PLAY / GAME / LINK asks for
+      // the game link (lib/drama/votes.ts). Taken before the shop keywords so a
+      // vote word is never read as one of them — and before the own-account
+      // guard below, because a vote from one of our OTHER accounts is a real
+      // vote (the owner tests from @fegorson_studio; that comment was silently
+      // dropped on 2026-10-20). Only the post's own account never votes. Any
+      // other comment, and any comment on any other post, falls through to
+      // everything below, unchanged.
+      const commentMediaId = String(((v.media ?? {}) as { id?: string }).id ?? "");
+      const byPostOwner = !!from.username && from.username.toLowerCase() === handleForAccount(igUserId).toLowerCase();
+      if (commentMediaId && !byPostOwner) {
+        const voted = await handleDramaComment(
+          { mediaId: commentMediaId, commentId, text, fromId: from.id ? String(from.id) : undefined, fromUsername: from.username },
+          credsForAccount(igUserId),
+        ).catch((e) => { console.error("[ig webhook] drama vote failed:", (e as Error).message); return false; });
+        if (voted) continue;
+      }
+
       // Never answer ourselves. Worth logging: testing the automation by
       // commenting from the account that owns the post is the obvious thing to
       // try, and it can never work — Instagram usually does not even deliver a
@@ -289,20 +308,6 @@ export async function POST(request: NextRequest) {
       if (from.username && mine.has(from.username.toLowerCase())) {
         console.log(`[ig webhook] ignoring our own comment from @${from.username} — test from a different account`);
         continue;
-      }
-
-      // Alux Micro Drama: on a drama episode, a comment whose first word is one
-      // of that episode's two choices is a vote (lib/drama/votes.ts), taken
-      // before the shop keywords so a vote word is never read as one of them.
-      // Any other comment — and any comment on any other post — falls through
-      // to everything below, unchanged.
-      const commentMediaId = String(((v.media ?? {}) as { id?: string }).id ?? "");
-      if (commentMediaId) {
-        const voted = await handleDramaComment(
-          { mediaId: commentMediaId, commentId, text, fromId: from.id ? String(from.id) : undefined, fromUsername: from.username },
-          credsForAccount(igUserId),
-        ).catch((e) => { console.error("[ig webhook] drama vote failed:", (e as Error).message); return false; });
-        if (voted) continue;
       }
 
       // A bare lighting look number, from a carousel slide that asked for one.

@@ -43,11 +43,21 @@ async function episodeForMedia(mediaId: string): Promise<Hit | null> {
   return hit ?? null;
 }
 
-/** The vote word, if the comment is one: its first real word, any case, @handles ignored. */
+/** A comment's first real word, upper case, @handles ignored. */
+const firstWord = (text: string) => text.replace(/@[A-Za-z0-9._]+/g, " ").trim().split(/[\s,.!?:;]+/)[0]?.toUpperCase() ?? "";
+
+/** The vote word, if the comment is one. */
 function wordOf(text: string, options: string[]): string | null {
-  const first = text.replace(/@[A-Za-z0-9._]+/g, " ").trim().split(/[\s,.!?:;]+/)[0]?.toUpperCase() ?? "";
+  const first = firstWord(text);
   return options.includes(first) ? first : null;
 }
+
+/**
+ * Words that ask for the game link instead of voting. A link in an Instagram
+ * caption is never tappable, so the caption says "comment PLAY" and the link
+ * arrives in the DMs as a button.
+ */
+const LINK_WORDS = ["PLAY", "GAME", "LINK"];
 
 /** One private reply to the comment, with the story link as a button when Instagram allows it. */
 async function answer(creds: IgCreds, commentId: string, text: string, url: string, title = "Open the story") {
@@ -71,10 +81,20 @@ export async function handleDramaComment(
   if (!hit) return false;
   const options = hit.content.choice.options.map((o) => o.word);
   const word = wordOf(c.text, options);
-  if (!word) return false; // a comment, not a vote — leave it to everything else
   const voter = `ig:${c.fromId}`;
   const who = c.fromUsername ? `@${c.fromUsername}` : voter;
   const url = storyUrl(hit.slug);
+  if (!word) {
+    if (!LINK_WORDS.includes(firstWord(c.text))) return false; // a comment, not a vote — leave it to everything else
+    console.log(`[drama vote] ${who} asked for the game link on ${hit.slug} ep ${hit.n}`);
+    if (creds) {
+      const [a, b] = hit.content.choice.options;
+      await answer(creds, c.commentId,
+        `Here's the game: every story, the roles you can play, and how to vote.\nTo vote on Episode ${hit.n} of ${hit.title}, comment ${a.word} or ${b.word} on the post.`,
+        url, "Open the game");
+    }
+    return true;
+  }
 
   // Count and decide in one transaction, with the episode row locked, so two
   // votes arriving together cannot both "win" or both miss the threshold.

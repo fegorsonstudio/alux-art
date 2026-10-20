@@ -22,7 +22,7 @@ Use one at a time: the studio machine is switched on only while pictures are mad
 
 ## Answers to paste
 
-- **Company:** Alux Art and Frames — _[legal name as on the CAC certificate]_, Nigeria.
+- **Company (legal name, as on the CAC certificate):** Aluxartandframes Enterprises, Nigeria. Trades as Alux Art.
 - **Website:** https://aluxartandframes.shop
 - **Stage:** live product, self-funded, paying customers (AI photo studio,
   photo templates marketplace, photo retouching, WhatsApp and Instagram booking).

@@ -1,7 +1,6 @@
 import "server-only";
 import sql from "@/lib/db";
 import { r2Download, r2Upload } from "@/lib/r2";
-import { SITE_URL } from "@/lib/site-url";
 import { renderEpisodeSlides, type DEpisode, type DStory, type SlideArt } from "@/lib/drama/slides";
 import type { StoryRow } from "@/lib/drama/data";
 
@@ -16,7 +15,6 @@ import type { StoryRow } from "@/lib/drama/data";
 
 export const SLIDE_BUCKET = "generated-4k";
 export const localIdOf = (episodeId: string) => `drama-${episodeId}`;
-const GAME_URL = `${SITE_URL.replace(/\/$/, "").replace(/^https?:\/\//, "")}/d/drama`;
 
 export type EpisodeRow = {
   id: string; story_id: string; n: number; from_word: string | null; status: string;
@@ -72,7 +70,9 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
     `Comment ${b.word} — ${b.label.toLowerCase()}`,
     `The first word to reach ${s.min_votes} votes writes Episode ${ep.n + 1}.`,
     "",
-    `Want to play a role in the next story? ${GAME_URL}`,
+    // Instagram never makes a caption link tappable: the link lives in the bio,
+    // and "comment PLAY" sends it to the DMs as a button (lib/drama/votes.ts).
+    "Play the game, see every story and join the cast: link in bio, or comment PLAY and we'll send it to your DMs.",
     partners.length ? `\nPartner: ${partners.join(", ")}` : "",
     house ? `In this scene: ${house} by Alux.` : "",
     "",
