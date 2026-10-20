@@ -1,8 +1,8 @@
 import "server-only";
 import sql from "@/lib/db";
-import { r2Upload } from "@/lib/r2";
+import { r2Download, r2Upload } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
-import { renderEpisodeSlides, type DEpisode, type DStory } from "@/lib/drama/slides";
+import { renderEpisodeSlides, type DEpisode, type DStory, type SlideArt } from "@/lib/drama/slides";
 import type { StoryRow } from "@/lib/drama/data";
 
 /**
@@ -20,9 +20,27 @@ const GAME_URL = `${SITE_URL.replace(/\/$/, "").replace(/^https?:\/\//, "")}/d/d
 
 export type EpisodeRow = {
   id: string; story_id: string; n: number; from_word: string | null; status: string;
-  content: DEpisode & { caption: string; approvedAt: string; slides: DEpisode["slides"] };
+  content: DEpisode & { caption: string; approvedAt: string; slides: DEpisode["slides"]; art?: ArtRef[] };
   ig_media_id: string | null; posted_at: string | null; decided_word: string | null; decided_at: string | null;
 };
+
+/** A picture attached to one slide (drama_art), by reference. */
+export type ArtRef = { slide: number; bucket: string; path: string; captionAt: "top" | "bottom" };
+
+/** The pictures attached to an episode that is not frozen yet. */
+export async function artFor(storyId: string, n: number): Promise<ArtRef[]> {
+  return sql<ArtRef[]>`SELECT slide, bucket, path, caption_at AS "captionAt" FROM drama_art WHERE story_id = ${storyId} AND episode_n = ${n} ORDER BY slide`;
+}
+
+/** Fetch the pictures themselves, ready for the slide designer. */
+export async function loadArt(refs: ArtRef[] | undefined): Promise<Map<number, SlideArt>> {
+  const out = new Map<number, SlideArt>();
+  for (const r of refs ?? []) {
+    const { buffer } = await r2Download(r.bucket, r.path);
+    out.set(r.slide, { buffer, captionAt: r.captionAt });
+  }
+  return out;
+}
 
 export const storyForSlides = (s: StoryRow): DStory => ({
   title: s.title, tagline: s.tagline, genre: s.genre, city: s.city, minVotes: s.min_votes,
@@ -64,14 +82,15 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
 
 /** Draw the slides of an approved (frozen) episode. */
 export async function slidesForEpisode(s: StoryRow, e: EpisodeRow): Promise<Buffer[]> {
-  return renderEpisodeSlides(storyForSlides(s), e.content);
+  return renderEpisodeSlides(storyForSlides(s), e.content, await loadArt(e.content.art));
 }
 
 /** Freeze the written episode as approved. Refused once it is on Instagram. */
 export async function approveEpisode(s: StoryRow, n: number, caption: string): Promise<EpisodeRow> {
   const ep = writtenEpisode(s, n);
   if (!ep) throw new Error(`Episode ${n} is not written yet.`);
-  const content = { ...ep, caption: caption.trim(), approvedAt: new Date().toISOString() };
+  // The pictures are frozen with the words: what was previewed is what posts.
+  const content = { ...ep, caption: caption.trim(), approvedAt: new Date().toISOString(), art: await artFor(s.id, n) };
   const [row] = await sql<EpisodeRow[]>`
     INSERT INTO drama_episodes (story_id, n, content, status)
     VALUES (${s.id}, ${n}, ${sql.json(JSON.parse(JSON.stringify(content)))}, 'ready')

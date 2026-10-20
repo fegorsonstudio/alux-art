@@ -17,6 +17,7 @@ const PROBE = 100; // inkWidth measures at font-size 100
 
 export type DSlide = { kind: string; say: string; scene?: string; who?: string };
 export type DEpisode = { n: number; title: string; slides: DSlide[]; choice: { question: string; options: { word: string; label: string }[] } };
+export type SlideArt = { buffer: Buffer; captionAt: "top" | "bottom" };
 export type DStory = { title: string; tagline: string; genre: string; city: string; minVotes: number; cast: { key: string; name: string; role: string }[] };
 
 type Font = { font: string; weight: number; track: number };
@@ -85,8 +86,105 @@ const jpeg = (svg: string) => sharp(Buffer.from(svg)).jpeg({ quality: 90, mozjpe
 
 const unquote = (s: string) => s.trim().replace(/^[“"]/, "").replace(/[”"]$/, "");
 
-/** The eight slides of one episode, in order. */
-export async function renderEpisodeSlides(story: DStory, ep: DEpisode): Promise<Buffer[]> {
+/**
+ * A slide drawn over its picture (an Unreal render, or any other). The picture
+ * fills the frame; a soft fade where the caption sits keeps the words readable
+ * on any image; the type is the episode's own, in white. The picture is the
+ * scene, so the scene line is left out. The choice slide darkens its picture
+ * and keeps the two comment words as designed panels.
+ */
+async function photoSlide(a: {
+  look: Look; story: DStory; ep: DEpisode; s: DSlide; page: number; total: number; footer: string;
+  picture: SlideArt; captionFont: Font; display: Font; nameOf: (k?: string) => { name: string; role: string } | undefined;
+}): Promise<Buffer> {
+  const { look, story, ep, s, page, total, footer, picture, captionFont, display } = a;
+  const W = SLIDE_W, H = SLIDE_H;
+  const white = "#ffffff", soft = "rgba(255,255,255,0.82)";
+  const atTop = picture.captionAt === "top";
+  const base = await sharp(picture.buffer).rotate().resize(W, H, { fit: "cover", position: "attention" })
+    .modulate(s.kind === "choice" ? { brightness: 0.38 } : { brightness: 1 }).toBuffer();
+
+  const fade = atTop
+    ? `<linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.92"/><stop offset="0.6" stop-color="#000" stop-opacity="0"/></linearGradient>`
+    : `<linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0.36" stop-color="#000" stop-opacity="0"/><stop offset="0.72" stop-color="#000" stop-opacity="0.62"/><stop offset="1" stop-color="#000" stop-opacity="0.92"/></linearGradient>`;
+  const chrome = `
+    <defs>${fade}<linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient></defs>
+    ${s.kind === "choice" ? "" : `<rect width="${W}" height="${H}" fill="url(#f)"/>`}
+    <rect width="${W}" height="200" fill="url(#t)"/>
+    <text x="84" y="104" font-family="${esc(OUTFIT)}" font-size="20" font-weight="600" letter-spacing="0.32em" fill="${white}" opacity="0.92">ALUX MICRO DRAMA</text>
+    <text x="${W - 84}" y="104" text-anchor="end" font-family="${esc(OUTFIT)}" font-size="20" font-weight="400" letter-spacing="0.18em" fill="${soft}">${page} / ${total}</text>
+    <text x="${W / 2}" y="${H - 66}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="19" font-weight="500" letter-spacing="0.24em" fill="${soft}">${esc(footer.toUpperCase())}</text>`;
+
+  let words = "";
+  if (s.kind === "cover") {
+    const title = look.titleCase === "upper" ? story.title.toUpperCase() : story.title;
+    const isScript = look.titleFont === "Pinyon Script";
+    const t = await fit(title, display, W - 200, isScript ? 190 : 130, 56, 3);
+    const lh = Math.round(t.size * (isScript ? 1.05 : 1.08));
+    const block = lh * t.lines.length + 150;
+    const top = atTop ? 190 : H - 150 - block;
+    words = `${textLines(t.lines, W / 2, top + lh * 0.8, lh, display, t.size, white)}
+      <text x="${W / 2}" y="${top + lh * t.lines.length + 52}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="24" font-weight="600" letter-spacing="0.3em" fill="${look.accent}">${esc(`EPISODE ${ep.n} · ${ep.title.toUpperCase()}`)}</text>
+      <text x="${W / 2}" y="${top + lh * t.lines.length + 112}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="38" font-weight="500" fill="${soft}">${esc(story.tagline)}</text>`;
+  } else if (s.kind === "choice") {
+    const q = await fit(ep.choice.question, captionFont, W - 240, 64, 40, 3);
+    const qlh = Math.round(q.size * 1.18);
+    const panel = (o: { word: string; label: string }, y: number) => `
+      <rect x="150" y="${y}" width="${W - 300}" height="220" rx="26" fill="rgba(0,0,0,0.45)" stroke="${look.accent}" stroke-opacity="0.75" stroke-width="1.5"/>
+      <text x="${W / 2}" y="${y + 56}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="20" font-weight="600" letter-spacing="0.32em" fill="${soft}">COMMENT</text>
+      <text x="${W / 2}" y="${y + 145}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="86" font-weight="700" letter-spacing="0.08em" fill="${look.accent}">${esc(o.word)}</text>
+      <text x="${W / 2}" y="${y + 192}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="30" font-weight="400" fill="${white}">${esc(o.label)}</text>`;
+    const y0 = 250 + qlh * q.lines.length + 40;
+    words = `<text x="${W / 2}" y="190" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="22" font-weight="600" letter-spacing="0.3em" fill="${look.accent}">YOU DECIDE</text>
+      ${textLines(q.lines, W / 2, 250 + qlh * 0.8, qlh, captionFont, q.size, white)}
+      ${panel(ep.choice.options[0], y0)}
+      <text x="${W / 2}" y="${y0 + 285}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="38" font-weight="500" fill="${soft}">or</text>
+      ${panel(ep.choice.options[1], y0 + 330)}
+      <text x="${W / 2}" y="${Math.min(H - 130, y0 + 650)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="25" font-weight="400" fill="${soft}">${esc(`The first word to reach ${story.minVotes} votes writes Episode ${ep.n + 1}.`)}</text>`;
+  } else if (s.kind === "text") {
+    const m = /^([^:“"]{1,30}):\s*(.+)$/.exec(s.say.trim());
+    const sender = m ? m[1].trim() : (a.nameOf(s.who)?.name ?? "Message");
+    const msg = unquote(m ? m[2] : s.say);
+    const msgFont: Font = { font: "Outfit", weight: 400, track: 0 };
+    const t = await fit(msg, msgFont, 720, 48, 32, 5);
+    const lh = Math.round(t.size * 1.3);
+    const cardH = 140 + lh * t.lines.length + 36;
+    const cardY = atTop ? 180 : H - 150 - cardH;
+    words = `<rect x="140" y="${cardY}" width="${W - 280}" height="${cardH}" rx="34" fill="rgba(18,22,24,0.72)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+      <circle cx="210" cy="${cardY + 70}" r="28" fill="${look.accent}"/>
+      <text x="210" y="${cardY + 80}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="26" font-weight="600" fill="#0b1214">${esc(sender[0] ?? "•")}</text>
+      <text x="258" y="${cardY + 64}" font-family="${esc(OUTFIT)}" font-size="27" font-weight="600" fill="${white}">${esc(sender)}</text>
+      <text x="258" y="${cardY + 98}" font-family="${esc(OUTFIT)}" font-size="21" font-weight="400" fill="${soft}">now</text>
+      ${textLines(t.lines, 180, cardY + 140 + lh * 0.75, lh, msgFont, t.size, white, "start")}`;
+  } else {
+    const isSpoken = s.kind === "line" || (s.kind === "cliff" && /^[“"]/.test(s.say.trim()));
+    const t = await fit(s.say, s.kind === "cliff" && !isSpoken ? display : captionFont, W - 200, s.kind === "time" ? 60 : 66, 40, 4);
+    const lh = Math.round(t.size * 1.2);
+    const speaker = isSpoken ? a.nameOf(s.who) : undefined;
+    const blockH = lh * t.lines.length + (speaker ? 64 : 0) + (s.kind === "cliff" ? 70 : 0);
+    const top = atTop ? 190 : H - 150 - blockH;
+    // White on pictures, always: an accent colour cannot be trusted on an image it has never seen.
+    const fill = white;
+    words = textLines(t.lines, W / 2, top + lh * 0.8, lh, s.kind === "cliff" && !isSpoken ? display : captionFont, t.size, fill);
+    let y = top + lh * t.lines.length;
+    if (speaker) {
+      words += `<text x="${W / 2}" y="${y + 48}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="21" font-weight="600" letter-spacing="0.24em" fill="${soft}">${esc(`— ${speaker.name} · ${speaker.role}`.toUpperCase())}</text>`;
+      y += 64;
+    }
+    if (s.kind === "cliff") {
+      words += `<text x="${W / 2}" y="${y + 56}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="21" font-weight="600" letter-spacing="0.3em" fill="${look.accent}">SWIPE · YOU DECIDE WHAT HAPPENS</text>`;
+    }
+  }
+  const overlay = Buffer.from(svgDoc(chrome + words));
+  return sharp(base).composite([{ input: overlay }]).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
+}
+
+/**
+ * The eight slides of one episode, in order. `art` holds the pictures made for
+ * it (slide number → picture): those slides are drawn over the picture, the
+ * rest stay designed.
+ */
+export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map<number, SlideArt>): Promise<Buffer[]> {
   const look = lookOf(story.genre);
   const total = ep.slides.length;
   const footer = `${story.title} · Episode ${ep.n}`;
@@ -99,6 +197,11 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode): Promise<
   for (let i = 0; i < ep.slides.length; i++) {
     const s = ep.slides[i];
     const page = i + 1;
+    const picture = art?.get(page);
+    if (picture) {
+      out.push(await photoSlide({ look, story, ep, s, page, total, footer, picture, captionFont, display, nameOf }));
+      continue;
+    }
     let body = "";
 
     if (s.kind === "cover") {

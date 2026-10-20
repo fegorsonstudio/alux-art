@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/carousel/posts";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import { shelfStories, storyBySlug } from "@/lib/drama/data";
 import {
-  approveEpisode, captionFor, queueState, scheduleEpisode, slidesForEpisode, syncPosted, unscheduleEpisode, writtenEpisode,
+  approveEpisode, artFor, captionFor, loadArt, queueState, scheduleEpisode, slidesForEpisode, syncPosted, unscheduleEpisode, writtenEpisode,
   storyForSlides, type EpisodeRow,
 } from "@/lib/drama/episodes";
 import { renderEpisodeSlides } from "@/lib/drama/slides";
@@ -24,6 +24,8 @@ export async function GET() {
   await syncPosted().catch(() => {});
   const stories = await shelfStories();
   const ids = stories.map((s) => s.id);
+  const artRows = await sql<{ story_id: string; episode_n: number; slide: number; bucket: string; path: string; caption_at: string; source: string }[]>`
+    SELECT story_id, episode_n, slide, bucket, path, caption_at, source FROM drama_art WHERE story_id = ANY(${ids}::uuid[])`;
   const [eps, votes, cast, places] = await Promise.all([
     sql<EpisodeRow[]>`SELECT * FROM drama_episodes WHERE story_id = ANY(${ids}::uuid[]) ORDER BY n`,
     sql<{ episode_id: string; word: string; voter: string; created_at: string }[]>`
@@ -39,7 +41,7 @@ export async function GET() {
   const out = await Promise.all(stories.map(async (s) => ({
     slug: s.slug, title: s.title, status: s.status, igAccount: s.ig_account, minVotes: s.min_votes,
     cast: (s.content.cast ?? []).map((c) => ({ key: c.key, name: c.name, tier: c.tier })),
-    written: (s.content.episodes ?? []).map((w) => {
+    written: await Promise.all((s.content.episodes ?? []).map(async (w) => {
       const made = eps.find((e) => e.story_id === s.id && e.n === w.n);
       const q = made ? queue.get(made.id) : undefined;
       const v = made ? votes.filter((x) => x.episode_id === made.id) : [];
@@ -48,8 +50,11 @@ export async function GET() {
         made: made ? { id: made.id, status: made.status, decided: made.decided_word, postedAt: made.posted_at, caption: made.content.caption } : null,
         queue: q ? { status: q.status, at: q.scheduled_for, error: q.last_error } : null,
         votes: v.map((x) => ({ word: x.word, voter: x.voter, at: x.created_at })),
+        art: await Promise.all(artRows.filter((a) => a.story_id === s.id && a.episode_n === w.n).map(async (a) => ({
+          slide: a.slide, captionAt: a.caption_at, source: a.source, url: await sign(a.bucket, a.path),
+        }))),
       };
-    }),
+    })),
     claims: await Promise.all(cast.filter((c) => c.story_id === s.id).map(async (c) => ({
       id: c.id, role: c.role_key, name: c.display_name, status: c.status, price: c.price_ngn, at: c.created_at, photo: await sign(c.photo_bucket, c.photo_path),
     }))),
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
       // What will post: the frozen copy once approved, else the written episode as it stands.
       const written = writtenEpisode(story, n);
       if (!written && !frozen) return fail(404, `Episode ${n} is not written yet.`);
-      const slides = frozen && frozen.status !== "draft" ? await slidesForEpisode(story, frozen) : await renderEpisodeSlides(storyForSlides(story), written!);
+      const slides = frozen && frozen.status !== "draft" ? await slidesForEpisode(story, frozen) : await renderEpisodeSlides(storyForSlides(story), written!, await loadArt(await artFor(story.id, n)));
       return NextResponse.json({
         slides: slides.map((x) => `data:image/jpeg;base64,${x.toString("base64")}`),
         caption: frozen?.content.caption || (await captionFor(story, written)),

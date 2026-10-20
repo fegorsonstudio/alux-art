@@ -17,6 +17,7 @@ type Written = {
   made: { id: string; status: string; decided: string | null; postedAt: string | null; caption: string } | null;
   queue: { status: string; at: string; error: string | null } | null;
   votes: { word: string; voter: string; at: string }[];
+  art: { slide: number; captionAt: string; source: string; url: string | null }[];
 };
 type Story = {
   slug: string; title: string; status: string; igAccount: string; minVotes: number;
@@ -153,6 +154,66 @@ function Decide({ kind, id, status, reload, live }: { kind: "cast" | "placement"
   );
 }
 
+/**
+ * One picture per slide: an Unreal render (or any image). A slide with a
+ * picture is drawn over it; one without stays designed. Press Preview again to
+ * see the change, and Approve again to freeze it.
+ */
+function Pictures({ story, w, reload }: { story: Story; w: Written; reload: () => Promise<void> }) {
+  const [busy, setBusy] = useState<number | null>(null);
+  const [msg, setMsg] = useState("");
+  const send = async (method: "POST" | "PATCH" | "DELETE", slide: number, extra: { file?: File; captionAt?: string } = {}) => {
+    setBusy(slide); setMsg("");
+    try {
+      let r: Response;
+      if (method === "POST") {
+        const fd = new FormData();
+        fd.append("slug", story.slug); fd.append("n", String(w.n)); fd.append("slide", String(slide));
+        fd.append("captionAt", extra.captionAt ?? "bottom"); fd.append("file", extra.file!);
+        r = await fetch("/api/admin/drama/art", { method, body: fd });
+      } else {
+        r = await fetch("/api/admin/drama/art", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: story.slug, n: w.n, slide, captionAt: extra.captionAt }) });
+      }
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
+      setMsg(w.made?.status === "ready" ? "Saved. Preview again, then Approve again to use it." : "Saved. Preview again to see it.");
+      await reload();
+    } catch (e) { setMsg((e as Error).message); }
+    finally { setBusy(null); }
+  };
+  return (
+    <div style={{ margin: "6px 0 16px" }}>
+      <div className={styles.fieldLabel} style={{ marginBottom: 8 }}>Pictures · {w.art.length} of 8 · slides without one stay designed</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8 }}>
+        {Array.from({ length: 8 }, (_, i) => i + 1).map((slide) => {
+          const a = w.art.find((x) => x.slide === slide);
+          return (
+            <div key={slide} style={{ display: "grid", gap: 4 }}>
+              <label className={styles.drop} style={{ minHeight: 0, aspectRatio: "4 / 5", padding: 0, overflow: "hidden", fontSize: 12 }}>
+                {a?.url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={a.url} alt={`Slide ${slide} picture`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span>{busy === slide ? "…" : `+ ${slide}`}</span>}
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={busy !== null}
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void send("POST", slide, { file: f, captionAt: a?.captionAt ?? "bottom" }); }} />
+              </label>
+              {a && (
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button type="button" className={styles.chip} style={{ cursor: "pointer", font: "inherit", fontSize: 11, padding: "3px 7px" }} disabled={busy !== null}
+                    onClick={() => send("PATCH", slide, { captionAt: a.captionAt === "top" ? "bottom" : "top" })}>Words {a.captionAt === "top" ? "↑" : "↓"}</button>
+                  <button type="button" className={styles.chip} style={{ cursor: "pointer", font: "inherit", fontSize: 11, padding: "3px 7px" }} disabled={busy !== null}
+                    onClick={() => send("DELETE", slide)}>✕</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {msg && <p className={styles.sectionNote} style={{ marginTop: 8 }}>{msg}</p>}
+    </div>
+  );
+}
+
 function EpisodeDesk({ story, w, reload }: { story: Story; w: Written; reload: () => Promise<void> }) {
   const [slides, setSlides] = useState<string[] | null>(null);
   const [caption, setCaption] = useState(w.made?.caption ?? "");
@@ -195,6 +256,7 @@ function EpisodeDesk({ story, w, reload }: { story: Story; w: Written; reload: (
       {posted && w.votes.length > 0 && (
         <p className={styles.sectionNote}>Votes: {w.votes.map((v) => `${v.word} (${v.voter.replace(/^ig:/, "ig ")})`).join(", ")}</p>
       )}
+      {!posted && <Pictures story={story} w={w} reload={reload} />}
       {!posted && (
         <>
           <div className={styles.actions} style={{ marginBottom: 14 }}>
