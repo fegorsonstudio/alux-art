@@ -690,6 +690,17 @@ in `lib/drama/data.ts` — so model cost stays under the price).
   light/dark. **Not yet:** a real paying fan; brand slots for not-yet-made episodes can't be bought in a live story (drafts
   differ per road).
 
+**Update (2026-10-21, night): The Silent Partner is written to the end of season one, for every vote road (commit `f5f0ef8`).**
+Owner: "I want all the stories to be ready, regardless of their votes." Splitting every episode in two doubles each time
+(Episode 6 alone would be 16 versions), so the roads split and **meet again** ("branch and bottleneck"): Episode 5 exists for
+all 8 roads, each opening on its own night and ending in the same boardroom with the same EXPOSE / SPARE vote (shared slides
+`EP5_ENDING` in the story file), so the finale needs 2 versions (`*.EXPOSE`, `*.SPARE`) ending on one season-two hook
+(OPEN / LEAVE, the key's "Box 2"). Checked by walking all **32 roads** from Episode 1 to the finale through `draftFor`: none
+missing, none unused. `finale: true` on an episode → its last slide/caption say the vote "decides how season two begins"
+(`voteLine`), and when that vote closes `advance.ts` sets the story `finished` and tells the owner (no Episode 7 lookup).
+Mrs Funke Adebayo appears on slides only in Episode 4 (her cameo package); later episodes mention her without a `who`.
+**Other 7 stories: only Episode 1 written** — write each season the same way (about 10 episodes) before the story starts.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
