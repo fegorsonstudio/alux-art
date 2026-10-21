@@ -49,7 +49,9 @@ export default function CheckoutForm(p: Props) {
   const accept = (f: File | null): Picked | null => {
     setError("");
     if (!f) return null;
-    if (!f.type.startsWith("image/") || /svg/.test(f.type)) { setError("Choose a photo (JPEG, PNG or HEIC)."); return null; }
+    // Windows browsers send an iPhone HEIC with no type; the server turns it into a JPEG.
+    const heic = /\.(heic|heif)$/i.test(f.name);
+    if ((!f.type.startsWith("image/") && !heic) || /svg/.test(f.type)) { setError("Choose a photo (JPEG, PNG or HEIC)."); return null; }
     if (f.size > MAX) { setError("That photo is over 30 MB. Choose a smaller one."); return null; }
     return { file: f, preview: URL.createObjectURL(f) };
   };

@@ -848,8 +848,11 @@ export default function CheckoutPanel({
       setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: msg } : u));
       return;
     }
-    const { storagePath } = await res.json();
-    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images" } : u));
+    const { storagePath, converted } = await res.json();
+    // An iPhone HEIC was turned into a JPEG on the server; the browser could not
+    // draw the original, so the thumbnail comes from the stored copy.
+    const preview = converted ? `/api/media?b=identity-images&p=${encodeURIComponent(storagePath)}` : undefined;
+    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images", ...(preview ? { preview } : {}) } : u));
   };
 
   const addIdentityFiles = (files: FileList) => {
@@ -1761,7 +1764,7 @@ export default function CheckoutPanel({
               <div className={styles.uploadGrid}>
                 {newUploads.map(u => (
                   <div key={u.localId} className={styles.uploadItem}>
-                    <ImagePreview src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
+                    <ImagePreview key={u.preview} src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
                     {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
                     {u.error && <div className={styles.uploadError}>{u.error}</div>}
                     <button type="button" className={styles.removeBtn} onClick={() => setNewUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
