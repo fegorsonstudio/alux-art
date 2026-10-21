@@ -741,6 +741,18 @@ the cloud credits arrive; no investment schemes (licensed banks and fintechs fin
 - Verified live: brand word checks (8), caption line + product card drawn, a made-up brand's word answered with the button,
   tap counted, report shown (rows removed); tutorial opens on a first visit, stays closed after, reopens from the button.
 
+**Update (2026-10-21, night): ALL 8 stories are written to the end of season one, for every vote road** (owner: "write full
+seasons for the other 7 … posters not yet"). Commits `9eec9e0` Third Mainland, `f4504f4` Garden City, `115b52c` Harmattan
+Letters, `0b8f960` Aso Ebi, `0d88c92` The Fourth Floor, `d7f82bc` What the River Keeps, `e4516a4` Coal City, 1962; each
+copied to the server and seeded (10 drafts each; The Silent Partner has 17). Same shape everywhere: two versions per episode,
+each playing out the last vote, then a shared ending (`EPn_ENDING` + `EPn_VOTE` constants spread into both drafts); Ep 6 is
+`finale: true` with a season-two hook; Ep 1 now has scene lines. Product words sit in Ep 2/4/6 only (never two in a row):
+LIGHT where a dark photo must be relit for the plot (Coal City does it in a 1962 darkroom), GIF for a moving save-the-date
+or a first photo together, BOOK for a portrait the story needs (call-to-bar, Eid, funeral navy gele, record sleeve…).
+Aso Ebi has a new **guest** role, Sade Bankole the rival planner (cameo, enters Ep 2 — open to buy until Ep 2 is made).
+`node tools/drama/check.mjs` → "8 stories, 0 with problems", 32 roads complete for each. **Posters for the 7 un-started
+stories are still NOT made** (owner: "not yet").
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
