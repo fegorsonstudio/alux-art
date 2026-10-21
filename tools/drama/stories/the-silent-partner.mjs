@@ -1,3 +1,40 @@
+// Episode 5 (Storm) is written for all eight roads, and every road ends in the
+// same room with the same choice, so the finale (Episode 6) needs only two
+// versions — the roads split, then meet again. These are the shared parts.
+const EP5_ENDING = [
+  { kind: "line", who: "damola", see: "Damola standing at the far end of the boardroom, rimless glasses in his hand, every face turned to him; Chief Eze very still at the head.", say: "“The buyer is Lagoon Holdings. Its owner is at this table.”", scene: "Damola stops lying. Quietly." },
+  { kind: "cliff", who: "eze", see: "Chief Eze rising slowly, his walking stick laid flat on the second will; Adaeze standing opposite with the brass key in her fist.", say: "“Then do it, Adaeze. End me in front of them all.”", scene: "The Chairman stands. The stick lies down." },
+  { kind: "choice", see: "Close on the second will on the glass table, the brass key beside it, seven men's hands flat on the wood.", say: "" },
+];
+const EP5_VOTE = {
+  cliff: { type: "reveal" },
+  choice: {
+    question: "What does Adaeze do with Chief Eze?",
+    options: [{ word: "EXPOSE", label: "Expose him to everyone" }, { word: "SPARE", label: "Let him leave quietly" }],
+  },
+  branches: {
+    EXPOSE: "Adaeze reads the second will aloud to the board and the waiting press. The sale dies; Chief Eze is voted out before lunch.",
+    SPARE: "Adaeze offers Chief Eze a quiet exit: repay the debt, resign today, and the will stays in the room. He signs.",
+  },
+};
+// The finale ends both ways on the same hook for season two.
+const EP6_ENDING = [
+  { kind: "cliff", see: "Close on the brass key in Adaeze's palm, turned over: on its back, a second number engraved — Box 2.", say: "The brass key has a second number on its back.", scene: "The key, turned over." },
+  { kind: "choice", see: "Close on the engraved 2 on the key, Adaeze's thumb over it, the lagoon blurred behind.", say: "" },
+];
+const EP6_VOTE = {
+  finale: true, // the last episode of the season: its vote decides how season two begins
+  cliff: { type: "reveal" },
+  choice: {
+    question: "Does Adaeze open the second box?",
+    options: [{ word: "OPEN", label: "Open the second box" }, { word: "LEAVE", label: "Leave the past alone" }],
+  },
+  branches: {
+    OPEN: "Season two: the second box holds a photograph of the old man with a child nobody knew he had — and a will of her own.",
+    LEAVE: "Season two: Adaeze leaves the box shut and runs the company. Six months later, someone else opens it.",
+  },
+};
+
 export default {
   slug: "the-silent-partner",
   title: "The Silent Partner",
@@ -268,6 +305,181 @@ export default {
         { key: "handbag", object: "Funke's cloth handbag", slide: 7, house: "Regal Burgundy & Gold Tapestry Ensemble" },
       ],
       alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "the old photo of Funke with the late mentor on her phone, brought back to life, slide 6" },
+    },
+
+    // ── Episode 5 (Storm): one per road. Each opens on its own night and ends in the same boardroom.
+    {
+      n: 5,
+      after: "SPEAK.STAY.TRUST.BOARD",
+      title: "One Minute Alone",
+      slides: [
+        { kind: "cover", see: "The boardroom's glass door from the corridor: inside, Chief Eze and a small woman in white lace face each other; Adaeze outside, one hand flat on the glass. Caption space: top third.", say: "" },
+        { kind: "time", see: "The Marina tower boardroom at nine in the morning, hard light on the lagoon, the board filing in with coffee.", say: "Marina. 9 a.m. The board returns to sign.", scene: "Morning light on the lagoon." },
+        { kind: "beat", who: "adaeze", see: "Adaeze outside the glass door, watching two silhouettes inside; the corridor clock above her.", say: "One minute alone, he asked. It has been eleven.", scene: "Outside the glass. Two silhouettes." },
+        { kind: "line", who: "eze", see: "The door opening; Chief Eze coming out grey-faced, reading glasses in his hand, looking at no one; the old woman still seated inside, upright.", say: "“She will not forget. Bring the board in.”", scene: "The door opens. He looks older." },
+        { kind: "beat", see: "The second will laid on the boardroom table, its last page signed twice; Tunde reading over a director's shoulder, his smile gone. Executive portraits on the wall behind.", say: "The second will is on the table. His signature is on it.", scene: "The will, in the light." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "coffee", object: "the coffee cups the board carries in", slide: 2, house: "Noir Director Editorial" }],
+      alux: { product: "Noir Director Editorial", where: "the executive portraits on the boardroom wall, slide 5" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.STAY.TRUST.HIDE",
+      title: "We Know Where",
+      slides: [
+        { kind: "cover", see: "Ifeoma's small Yaba flat at dawn: a folded note on the floor inside the door, Adaeze crouched over it, the old woman watching from a chair. Caption space: top third.", say: "" },
+        { kind: "time", see: "Ifeoma's flat in Yaba at dawn, a folded note on the floor inside the door, a nursing induction portrait on the fridge.", say: "Yaba. 6:40 a.m. The note is still on the floor.", scene: "A folded note. A cold kettle." },
+        { kind: "text", see: "Close on the note in block capitals, no name, no signature.", say: "Note: “We know where she is. Bring nothing to the board.”", scene: "Block letters, no name." },
+        { kind: "line", who: "guard", see: "Sunday in his navy uniform at the flat door, car keys in hand, out of breath from the stairs.", say: "“I finished my shift, madam. I will drive you myself.”", scene: "Sunday at the door, keys out." },
+        { kind: "beat", who: "adaeze", see: "Adaeze walking into the morning boardroom with the second will held against her chest; the board already seated; Chief Eze at the head.", say: "Nine a.m. She brings the will, not the witness.", scene: "She walks in. Every chair turns." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [
+        { key: "kettle", object: "the kettle on Ifeoma's stove", slide: 2, house: "Noir Director Editorial" },
+        { key: "car", object: "Sunday's car waiting outside the flat", slide: 4, house: "Penthouse Dusk Paparazzi" },
+      ],
+      alux: { product: "Nursing Induction", where: "the nursing induction portrait on the fridge door in Ifeoma's flat, slide 2" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.STAY.HOLD.FORGIVE",
+      title: "Clause Fourteen",
+      slides: [
+        { kind: "cover", see: "The empty boardroom before the meeting: Adaeze and Ifeoma at the far end, a contract between them on the glass, the lagoon pale behind. Caption space: top third.", say: "" },
+        { kind: "time", see: "The boardroom at ten to nine, empty but for the two women, the chairs still pushed in.", say: "Marina. 8:50 a.m. Ten minutes before the board.", scene: "Two women. One contract." },
+        { kind: "line", who: "ifeoma", see: "Ifeoma sliding the job contract across the glass, her hand shaking, one page folded down.", say: "“I signed nothing, madam. But read clause fourteen.”", scene: "Her hand, still shaking." },
+        { kind: "text", see: "Close on the contract page: clause 14 naming the employer, Lagoon Holdings Ltd, a stamp half over it.", say: "Clause 14: “Employer — Lagoon Holdings Ltd.”", scene: "Page six. Clause fourteen." },
+        { kind: "beat", who: "adaeze", see: "Adaeze at the window with the second will in one hand and the contract in the other, the lift doors opening behind her on the arriving board.", say: "The buyer and her job offer. The same company.", scene: "The lift doors open behind her." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "pen", object: "the pen Ifeoma lays on the contract", slide: 3, house: "Noir Director Editorial" }],
+      alux: { product: "Noir Director Editorial", where: "the executive portraits on the boardroom wall, slide 2" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.STAY.HOLD.CUT",
+      title: "The Empty Chair",
+      slides: [
+        { kind: "cover", see: "The boardroom at nine: every chair filled but one, a lanyard lying on it; Adaeze sitting down beside it. Caption space: top third.", say: "" },
+        { kind: "time", see: "Wide on the full boardroom in morning light, one chair empty with a lanyard on the seat.", say: "Marina. 9 a.m. Every chair is taken but one.", scene: "One empty chair. A lanyard." },
+        { kind: "beat", who: "adaeze", see: "Adaeze taking her seat beside the empty chair and setting the brass key on the table; a small woman in white lace seated by the wall behind her; the board murmuring.", say: "Adaeze sits beside it. She does not look down.", scene: "She sits. The lanyard waits." },
+        { kind: "beat", who: "tunde", see: "Tunde leaning back, the gold pen spinning between his fingers, grinning at the empty chair.", say: "Tunde smiles at the chair. He thinks she is alone.", scene: "The gold pen spins." },
+        { kind: "beat", see: "Adaeze's hand laying the second will on the table, its last page signed twice, the Chairman's name visible. Executive portraits on the wall beyond.", say: "She lays the second will down. His name is on it.", scene: "The will, face up." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "pen", object: "Tunde's gold pen", slide: 4, house: "Noir Director Editorial" }],
+      alux: { product: "Noir Director Editorial", where: "the executive portraits on the boardroom wall, slide 5" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.CHASE.ASK.READ",
+      title: "Ten Years Owing",
+      slides: [
+        { kind: "cover", see: "Ifeoma's kitchen past midnight: the will unfolded under a bare bulb, Adaeze reading, Ifeoma's hand over her mouth. Caption space: top third.", say: "" },
+        { kind: "time", see: "The kitchen table in Yaba past midnight, three cups of tea gone cold, a nursing induction portrait pinned above the stove.", say: "Yaba. 12:30 a.m. Three cups of tea, all cold.", scene: "The kitchen table. A bare bulb." },
+        { kind: "text", see: "Close on the will's last page: a schedule of debts, one line underlined twice in old ink.", say: "The will: “Chief Obinna Eze owes the company ₦2.1 billion.”", scene: "One line, underlined twice." },
+        { kind: "line", who: "ifeoma", see: "Ifeoma reading over Adaeze's shoulder, one hand over her mouth.", say: "“Ten years, madam. And he wants to sell before anyone counts.”", scene: "Ifeoma reads it twice." },
+        { kind: "beat", who: "adaeze", see: "Morning: Adaeze walking into the boardroom with the will folded in her jacket, Chief Eze at the head of the table looking up.", say: "Nine a.m. She walks in knowing the number.", scene: "Morning. The boardroom. Every chair turns." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "tea", object: "the cups of tea on the kitchen table", slide: 2, house: "Noir Director Editorial" }],
+      alux: { product: "Nursing Induction", where: "the nursing induction portrait pinned above Ifeoma's stove, slide 2" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.CHASE.ASK.KEEP",
+      title: "Open It Yourself",
+      slides: [
+        { kind: "cover", see: "The boardroom at nine: a sealed envelope in the centre of the glass table, seven men around it, Adaeze standing. Caption space: top third.", say: "" },
+        { kind: "time", see: "Wide on the seated board in morning light, the sealed envelope alone in the middle of the table.", say: "Marina. 9 a.m. The envelope sits where everyone can see it.", scene: "One sealed envelope. Seven men." },
+        { kind: "line", who: "adaeze", see: "Adaeze sliding the sealed envelope down the table to Chief Eze, the way Tunde once slid the contract to her. Executive portraits on the wall behind.", say: "“You knew what it says, Chief. Open it yourself.”", scene: "She slides it down the table." },
+        { kind: "beat", who: "eze", see: "Chief Eze's hands resting on the envelope, reading glasses on, the seal unbroken; the room holding its breath.", say: "His hands rest on the seal. He does not open it.", scene: "His hands. The seal. Silence." },
+        { kind: "beat", who: "tunde", see: "Tunde snatching the envelope, tearing it open and reading the last page; the colour leaving his face.", say: "Tunde tears it open. Then he stops smiling.", scene: "Paper tears. Tunde reads." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "envelope", object: "the sealed envelope on the glass table", slide: 2, house: "Noir Director Editorial" }],
+      alux: { product: "Noir Director Editorial", where: "the executive portraits on the boardroom wall, slide 3" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.CHASE.WATCH.TRUST",
+      title: "The Piano",
+      slides: [
+        { kind: "cover", see: "A dark old house in Ikoyi at night: dust sheets over the furniture, a grand piano by the window in moonlight, Adaeze lifting its lid. Caption space: top third.", say: "" },
+        { kind: "time", see: "The Ikoyi house at night, dust sheets, moonlight across the floor, a faded portrait of an old man on the piano.", say: "Ikoyi. 1 a.m. The old man's house still smells of him.", scene: "Dust sheets. Moonlight. A piano." },
+        { kind: "beat", who: "adaeze", see: "Adaeze lifting the piano lid; inside, papers tied with black ribbon and a second envelope.", say: "Under the piano lid: the papers, and a second will.", scene: "The lid lifts. Black ribbon." },
+        { kind: "text", see: "Close on a note in an old man's shaky hand, clipped to the will.", say: "His note: “For my silent partner. Read it in front of Obinna.”", scene: "His handwriting, shaking." },
+        { kind: "beat", who: "adaeze", see: "Morning: Adaeze walking into the boardroom with the will and the note, the board turning; Chief Eze at the head.", say: "Nine a.m. She reads it in front of Obinna.", scene: "Morning. She walks in." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "piano", object: "the grand piano in the Ikoyi house", slide: 3, house: "Noir Director Editorial" }],
+      alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "the old man's faded portrait on the piano, brought back to life, slide 2" },
+    },
+    {
+      n: 5,
+      after: "SPEAK.CHASE.WATCH.DOUBT",
+      title: "His Silent Partner",
+      slides: [
+        { kind: "cover", see: "The car park under the Marina tower at midnight: Adaeze and an old woman in white lace face to face under a flickering lamp. Caption space: top third.", say: "" },
+        { kind: "time", see: "The car park under the tower at midnight, the broken lamp flickering over a pillar, puddles on the concrete.", say: "Marina car park. Midnight. One question only his house would know.", scene: "Under the broken lamp." },
+        { kind: "line", who: "adaeze", see: "Adaeze close to the old woman, voice low, testing her.", say: "“What did he call me, when I was not there?”", scene: "One question. No second chance." },
+        { kind: "beat", see: "The old woman smiling for the first time and answering softly; Adaeze's eyes filling.", say: "She smiles. “His silent partner.” Then she names Chief Eze.", scene: "The answer. Then the name." },
+        { kind: "beat", who: "adaeze", see: "Morning: Adaeze walking into the boardroom with the papers tied in black ribbon, Chief Eze at the head looking up. Executive portraits on the wall.", say: "Nine a.m. She walks in with the papers, and his name.", scene: "Morning. The boardroom. She walks in." },
+        ...EP5_ENDING,
+      ],
+      ...EP5_VOTE,
+      slots: [{ key: "lamp", object: "the flickering car park lamp", slide: 2, house: "Luma lux" }],
+      alux: { product: "Noir Director Editorial", where: "the executive portraits on the boardroom wall, slide 5" },
+    },
+
+    // ── Episode 6 (Crown), the season finale: two versions, whichever road led here.
+    {
+      n: 6,
+      after: "*.EXPOSE",
+      title: "Bring the Cheque Book",
+      slides: [
+        { kind: "cover", see: "The boardroom at noon: Adaeze seated at the head of the table for the first time, the brass key on its ribbon at her wrist, half the chairs empty. Caption space: top third.", say: "" },
+        { kind: "time", see: "The Marina tower lobby at ten in the morning, reporters with cameras pressed to the glass doors, Sunday holding them back.", say: "Marina. 10 a.m. The press is already in the lobby.", scene: "Cameras at the glass doors." },
+        { kind: "beat", who: "adaeze", see: "Adaeze standing at the head of the table reading the second will aloud, the board silent, Chief Eze looking out at the lagoon.", say: "She reads it aloud. Every word. Nobody interrupts her now.", scene: "She reads. Nobody interrupts." },
+        { kind: "beat", who: "eze", see: "Chief Eze rising, leaving his red cap on the table, walking out between the directors without his stick.", say: "The board votes him out before lunch. He leaves his cap.", scene: "His red cap, left behind." },
+        { kind: "beat", who: "tunde", see: "Tunde alone by the window, loosening his agbada, the gold pen on the floor at his feet.", say: "The sale is dead. So is Tunde's bonus.", scene: "The gold pen, on the floor." },
+        { kind: "line", who: "adaeze", see: "Adaeze in the Chairman's chair, sliding the cheque book down the table to Tunde with one finger; a new executive portrait of her waiting to be hung on the wall.", say: "“Tunde, bring the cheque book. The grown-ups have decided.”", scene: "She slides it back to him." },
+        ...EP6_ENDING,
+      ],
+      ...EP6_VOTE,
+      slots: [
+        { key: "cameras", object: "the press cameras at the lobby doors", slide: 2, house: "Penthouse Dusk Paparazzi" },
+        { key: "cheque", object: "the cheque book on the boardroom table", slide: 6, house: "Noir Director Editorial" },
+      ],
+      alux: { product: "Noir Director Editorial", where: "Adaeze's new executive portrait waiting to be hung on the boardroom wall, slide 6" },
+    },
+    {
+      n: 6,
+      after: "*.SPARE",
+      title: "A Quiet Exit",
+      slides: [
+        { kind: "cover", see: "The long boardroom table with only two people at it, Adaeze and Chief Eze, a single sheet of paper between them, the board waiting in the corridor beyond the glass. Caption space: top third.", say: "" },
+        { kind: "time", see: "The boardroom at twenty past nine, the directors sent out to the corridor, their shapes behind the glass.", say: "Marina. 9:20 a.m. She sends the board out.", scene: "Two chairs. One long table." },
+        { kind: "line", who: "adaeze", see: "Adaeze sliding a single sheet across to Chief Eze: a resignation letter and a repayment schedule.", say: "“Repay it. Resign today. The will stays in this room.”", scene: "One sheet of paper." },
+        { kind: "beat", who: "eze", see: "Chief Eze reading the letter, reading glasses on their chain, reaching slowly for his pen.", say: "He reads it twice. Then he signs, and thanks her.", scene: "He signs. His hand is steady." },
+        { kind: "beat", who: "tunde", see: "The board filing back in, Tunde first, stopping when he sees Chief Eze's chair empty and Adaeze in it.", say: "Tunde walks in first. The Chairman's chair is hers now.", scene: "The Chairman's chair, taken." },
+        { kind: "line", who: "adaeze", see: "Adaeze at the head of the table, sliding the cheque book down to Tunde with one finger; a new executive portrait of her waiting by the wall.", say: "“Tunde, bring the cheque book. The grown-ups have decided.”", scene: "She slides it back to him." },
+        ...EP6_ENDING,
+      ],
+      ...EP6_VOTE,
+      slots: [
+        { key: "pen", object: "the pen Chief Eze signs with", slide: 4, house: "Noir Director Editorial" },
+        { key: "cheque", object: "the cheque book on the boardroom table", slide: 6, house: "Noir Director Editorial" },
+      ],
+      alux: { product: "Noir Director Editorial", where: "Adaeze's new executive portrait waiting by the boardroom wall, slide 6" },
     },
   ],
 };

@@ -49,6 +49,7 @@ const lagosTime = (d: Date) =>
 
 export type Advance =
   | { kind: "idle" }
+  | { kind: "finished" }
   | { kind: "busy" }
   | { kind: "unwritten"; n: number; road: string }
   | { kind: "queued"; n: number; title: string; at: string; slides: number };
@@ -70,6 +71,17 @@ export async function advanceStory(storyId: string): Promise<Advance> {
     const eps = await sql<EpisodeRow[]>`SELECT * FROM drama_episodes WHERE story_id = ${storyId} ORDER BY n`;
     const last = eps[eps.length - 1];
     if (!last || last.status !== "closed" || !last.decided_word) return { kind: "idle" };
+    // The season finale's vote picks how season two begins: the story is finished, not continued.
+    if ((last.content as { finale?: boolean }).finale) {
+      const done = await sql`UPDATE drama_stories SET status = 'finished', updated_at = now() WHERE id = ${storyId} AND status = 'live' RETURNING id`;
+      if (done.length) {
+        const next = (last.content as { branches?: Record<string, string> }).branches?.[last.decided_word] ?? "";
+        await tellAdmin(`🎬 <b>${esc(story.title)}</b> — season one is complete. ${esc(last.decided_word)} won the last vote.
+${esc(next)}
+Ask Claude to write season two from there.`).catch(() => false);
+      }
+      return { kind: "finished" };
+    }
     const n = last.n + 1;
     const road = eps.map((e) => e.decided_word ?? "");
     if (road.some((w) => !w)) return { kind: "idle" }; // an earlier episode was never decided
