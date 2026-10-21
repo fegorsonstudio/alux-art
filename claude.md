@@ -712,6 +712,35 @@ a 4 p.m. close still makes 7 p.m. Slides/captions say "Most votes by 4 p.m. tomo
 SPEAK** (decided under the old rule, voters were told; the WAIT road was never written). Episode 2 (queued for 7 p.m. 21 Oct)
 was redrawn with the new wording, same time and row; its vote closes 4 p.m. Thu 22 Oct.
 
+**Update (2026-10-21, evening): our products and brands inside the stories, posters, film lighting, first-visit tutorial
+(commits `5d53443`, `48e6a12`; owner approved the plan).** Owner's decisions: RETOUCH is NOT public; @aolivetv is the TEST
+account — the series moves to @fegorson_studio (already subscribed to comments + messages) once the game design is finished and
+the cloud credits arrive; no investment schemes (licensed banks and fintechs fine); AI posters for stories without paid cast.
+- **Our products:** an episode's `alux` may carry `word` (LIGHT / GIF / BOOK) + `line` (the caption's only invitation). The
+  product must do something the story needs (The Silent Partner: the relit CCTV frame IS the reveal in "Camera Four" → LIGHT;
+  Ifeoma's mother's induction portrait → BOOK; Adaeze's executive portrait in both finales → BOOK). check.mjs: right word for
+  the product, never a vote word, never on slides 7–8, never on a slide, never two episodes in a row on any road (`walkRoads`,
+  which also prints how many roads are complete). The words reach the existing shop keywords; **@aolivetv was subscribed to
+  messages** (Instagram API) so the LIGHT DM flow works there too.
+- **Brands:** product link (https, opened to check) + their own comment word (`checkBrandWord`: 3–14 letters, never a bot,
+  game or vote word) + a "we don't place" box (`NOT_PLACED`, `NO_CLAIMS` in `lib/drama/brands.ts`); **approved on payment**
+  (no owner step). A running story sells "a scene in the next episode" (`/d/drama/<slug>/brand/<n>-next`, slot_key `next`);
+  `partnersFor()` puts each brand in a slot (next → first free slot of whichever version is made) and feeds the caption line
+  ("Partner: X — <object> in this episode. Comment WORD to see it.") and a framed product card on the slot's designed slide;
+  frozen with the episode and marked `placed`. The word → private reply with a button to `/d/go/<code>` (counts taps, 302 to
+  the product); `asks`/`taps` on the private report `/d/drama/report/<token>` (emailed to the brand). Migration 085 (psql).
+- **Posters** (`lib/drama/poster.ts`): 2:3 key art at 2K behind the same title design (cover.ts sets the title in the lower
+  third over a picture); paid lead/main faces when they say "this is me" (story upcoming), else fictional people
+  (`fal-ai/nano-banana-pro` text-to-image); max 3 per story (`cover_renders`); prompt + light kept in `cover_meta`; every later
+  episode's cover slide uses it (frozen in approveEpisode). Make one: `POST /api/cron/drama-poster?slug=` (internal secret).
+  **The Silent Partner's poster is made** (1 of 3, fictional cast). The other 7 wait for the owner's OK.
+- **Lighting** (`lib/drama/lighting.ts`): per-genre key/fill ratio/rim/colour temperatures/practicals/haze + a named grade;
+  sheets get studio reference light, portraits and posters the genre recipe; recorded with each image (`render_notes`).
+- **Tutorial:** `GameTour` ("How it works" in the top bar of the shelf and story pages, once per browser, keys
+  `drama-tour-shelf` / `drama-tour-story`), and a "Words you can comment" box on each story page.
+- Verified live: brand word checks (8), caption line + product card drawn, a made-up brand's word answered with the button,
+  tap counted, report shown (rows removed); tutorial opens on a first visit, stays closed after, reopens from the button.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
