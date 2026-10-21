@@ -701,6 +701,17 @@ missing, none unused. `finale: true` on an episode → its last slide/caption sa
 Mrs Funke Adebayo appears on slides only in Episode 4 (her cameo package); later episodes mention her without a `who`.
 **Other 7 stories: only Episode 1 written** — write each season the same way (about 10 episodes) before the story starts.
 
+**Update (2026-10-21, later still): votes are counted until 4 p.m. the next day — the MOST votes wins (commit `346e26c`).**
+Owner: "what if more than two people vote … before the time for the post, it has to change". Before, the first word to 2
+votes closed the vote at once. Now `lib/drama/vote-rules.ts`: voting closes at 4 p.m. Lagos on the first day ≥12 h after the
+episode posts (4 p.m. the day after a 7 p.m. post); most votes wins; a tie goes to the word that reached that number first;
+fewer than `min_votes` in total → stays open until there are enough (one Telegram). `votes.ts` only counts and replies with the
+score and the deadline (a comment after the deadline is told it is closed); `advance.ts` `closeDueVotes()` runs first in the
+ten-minute sweep (after `syncPosted()`), closes under a row lock, then the winning road is queued; `nextSlot` now needs 2 h so
+a 4 p.m. close still makes 7 p.m. Slides/captions say "Most votes by 4 p.m. tomorrow writes Episode N". **Episode 1 keeps
+SPEAK** (decided under the old rule, voters were told; the WAIT road was never written). Episode 2 (queued for 7 p.m. 21 Oct)
+was redrawn with the new wording, same time and row; its vote closes 4 p.m. Thu 22 Oct.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
