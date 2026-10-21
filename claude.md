@@ -753,6 +753,22 @@ Aso Ebi has a new **guest** role, Sade Bankole the rival planner (cameo, enters 
 `node tools/drama/check.mjs` → "8 stories, 0 with problems", 32 roads complete for each. **Posters for the 7 un-started
 stories are still NOT made** (owner: "not yet").
 
+**Update (2026-10-22): Character Sheet is a marketplace template (owner OK'd the shared-file changes; ₦2,000).** Commits
+`8ac27c2`, `cf0c957`; live at https://aluxartandframes.shop/marketplace/11598116-0910-4abe-adb1-c84ff63c6f0a (category
+`character_sheet`, published, public, one sheet per order: `price_1_ngn` 2000, `price_5_ngn` NULL, `price_ngn` 0 so no
+package picker and 5/10 are refused; `platform_fee_exempt`). The buyer uploads several photos of one person (the normal
+identity uploader); `lib/character-sheet-order.ts` makes ONE 16:9 4K sheet through `nanoBananaEdit` (follows the admin
+model switch — live says Nano Banana 2): five views on plain grey, the layout of the owner's reference with their one fix —
+(1) medium front, head to mid-thigh, BOTH HANDS IN FRAME; (2) full body front, head cropped under the chin (outfit view);
+(3) full body back; (4) three-quarter close-up; (5) profile close-up. Up to 8 photos; Advanced-options OUTFIT / HAIRSTYLE /
+MAKEUP / ACCESSORY references are honoured (max 2), otherwise the outfit is the one in their fullest photo; prompt saved on
+the slot. `lib/generate.ts` hands the order over right after the gif_loop fork (4 lines); a failure marks the slot FAILED and
+`settleShortfall` refunds a paid order. Checkout hides "Shot type" and shows `sheetPhotosHint`; `categories.character_sheet`
+in all 7 dictionaries. Cover drawn by `scripts/create-character-sheet-template.mjs [price]` (re-runnable, no AI). **Not
+proven yet — the owner's own test order is the first real run.** `characterSheetPrompt()` is meant to become the layout for
+the drama cast sheets too (`lib/drama/character.ts` still uses its own 4-panel prompt) — switch it once the owner is happy.
+Do not edit this template's category in the creator dashboard (its picker has no character_sheet option).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
