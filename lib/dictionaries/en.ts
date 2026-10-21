@@ -471,6 +471,8 @@ const en = {
     contentFilterLabel: "Content filter:",
     retryIn: "Retry in {time}",
     regenerate: "Regenerate",
+    runAgain: "Run again",
+    runAgainFailed: "Could not run this photo again.",
     copyPromptBtn: "📋 Copy prompt",
     downloadAllZip: "Download All {count} (ZIP)",
     retouchedTitle: "Retouched",

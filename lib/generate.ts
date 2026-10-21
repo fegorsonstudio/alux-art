@@ -421,6 +421,8 @@ type SlotRow = {
   status: string;
   /** Which engine this row belongs to. Null means the shoot-wide default. */
   configured_model?: string | null;
+  /** "earlier take of #N" marks a photo kept by Run again — never a booked slot. */
+  kind?: string | null;
 };
 
 type FalOutput = {
@@ -2205,7 +2207,7 @@ export async function startGenerationWorker(
   // configured_model is how a slot says which engine it belongs to. Per-image
   // shoots book two rows per photo — one per model — so the row, not a global
   // setting, decides what generates it.
-  const shootImages = await sql`SELECT id, slot, status, configured_model FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
+  const shootImages = await sql`SELECT id, slot, status, configured_model, kind FROM shoot_images WHERE shoot_id = ${shootId}` as unknown as SlotRow[];
 
   // ── gif_loop ───────────────────────────────────────────────────────────────
   // Handled entirely elsewhere and returned before any of the photograph
@@ -2244,8 +2246,10 @@ export async function startGenerationWorker(
   // on an order delivered in full — 8 orders and ₦15,700 by 2026-10-06. For
   // these, the rows booked are the order.
   const perImageOrder = shoot.category === "photo_upgrade" || shoot.category === "asset_extract";
-  const total = perImageOrder && shootImages.length > 0
-    ? shootImages.length
+  // A photo kept by "Run again" (kind "earlier take of #N") is not a booked image.
+  const bookedRows = shootImages.filter((r) => !/^earlier take/.test(String(r.kind ?? ""))).length;
+  const total = perImageOrder && bookedRows > 0
+    ? bookedRows
     : normalizePackageSize(shoot.package_size);
   const hasQuote = !!(shoot.quote as { text?: string } | null)?.text && total === 10;
 

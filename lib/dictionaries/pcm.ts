@@ -472,6 +472,8 @@ const pcm: AppDictionary = {
     contentFilterLabel: "Content filter:",
     retryIn: "Retry for {time}",
     regenerate: "Regenerate",
+    runAgain: "Run am again",
+    runAgainFailed: "We no fit run this photo again.",
     copyPromptBtn: "📋 Copy prompt",
     downloadAllZip: "Download All {count} (ZIP)",
     retouchedTitle: "Retouched",

@@ -264,7 +264,11 @@ export async function runCharacterSheet(shootId: string, userId: string, refs: R
 export async function finishCharacterSheet(shootId: string, userId: string, refs: Ref[]): Promise<SheetResult> {
   const res = await runCharacterSheet(shootId, userId, refs);
   if (res.remaining > 0) return res; // another worker holds the slot
-  const ok = res.completed === 1;
+  // A sheet kept by "Run again" means the order still has its sheet even when
+  // the new take failed: it stays complete and nothing is refunded.
+  const [kept] = res.completed === 1 ? [] : await sql`
+    SELECT 1 FROM shoot_images WHERE shoot_id = ${shootId} AND kind LIKE 'earlier take%' AND status = 'COMPLETE' LIMIT 1`;
+  const ok = res.completed === 1 || !!kept;
   await sql`UPDATE shoots SET status = ${ok ? "COMPLETE" : "FAILED"}, progress = 100,
       pipeline_stage = ${ok ? "Complete" : "No images could be generated"},
       completed_at = NOW(), updated_at = NOW()

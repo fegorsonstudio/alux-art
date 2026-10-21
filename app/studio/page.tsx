@@ -139,6 +139,8 @@ export default function WorkspacePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedShootId, setCopiedShootId] = useState<string | null>(null);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  // "Run again" (admins): the slot being re-queued, so a second tap waits.
+  const [runAgainSlot, setRunAgainSlot] = useState<number | null>(null);
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null);
   const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState("");
@@ -568,6 +570,29 @@ export default function WorkspacePage() {
       await fetch(`/api/shoots/${currentShoot.id}/slots/${slot}/retry`, { method: "POST" });
       // SSE will deliver slot_update → QUEUED then COMPLETE, updating UI automatically
     } catch { /* ignore */ }
+  };
+
+  // Run a finished photo again from the same prompt and references. The photo
+  // already there is kept as an "earlier take"; the slot is re-made in place.
+  const handleRunAgain = async (slot: number) => {
+    if (!currentShoot || runAgainSlot !== null) return;
+    setRunAgainSlot(slot);
+    try {
+      const res = await fetch(`/api/shoots/${currentShoot.id}/slots/${slot}/again`, { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatus({ type: "error", message: (json as { error?: string }).error || t("runAgainFailed") });
+        return;
+      }
+      // Reload so the kept take appears and the live progress starts again.
+      const data = await fetch(`/api/shoots/${currentShoot.id}`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+      if (data?.shoot) {
+        setCurrentShoot(data.shoot);
+        setShoots(prev => prev.map(s => s.id === data.shoot.id ? data.shoot : s));
+      }
+    } finally {
+      setRunAgainSlot(null);
+    }
   };
 
   const handleRecompositeQuote = async () => {
@@ -1547,6 +1572,17 @@ export default function WorkspacePage() {
                             {img.kind === "quote" && currentShoot.quote?.text && (
                               <button className={styles.dlBtn} onClick={handleRecompositeQuote} title={t("recompositeQuote")}>
                                 ✦
+                              </button>
+                            )}
+                            {isAdmin && currentShoot.status === "COMPLETE" && !/^earlier take|gif|mp4/.test(String(img.kind ?? "")) && (
+                              <button
+                                className={styles.dlBtn}
+                                onClick={() => handleRunAgain(Number(img.slot))}
+                                disabled={runAgainSlot !== null}
+                                title={t("runAgain")}
+                                aria-label={t("runAgain")}
+                              >
+                                {runAgainSlot === Number(img.slot) ? "…" : `↻ ${t("runAgain")}`}
                               </button>
                             )}
                           </div>

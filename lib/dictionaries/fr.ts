@@ -472,6 +472,8 @@ const fr: AppDictionary = {
     contentFilterLabel: "Filtre de contenu :",
     retryIn: "Nouvel essai dans {time}",
     regenerate: "Régénérer",
+    runAgain: "Relancer",
+    runAgainFailed: "Impossible de relancer cette photo.",
     copyPromptBtn: "📋 Copier le prompt",
     downloadAllZip: "Télécharger tout {count} (ZIP)",
     retouchedTitle: "Retouchées",

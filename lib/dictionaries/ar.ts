@@ -472,6 +472,8 @@ const ar: AppDictionary = {
     contentFilterLabel: "فلتر المحتوى:",
     retryIn: "إعادة المحاولة خلال {time}",
     regenerate: "إعادة الإنشاء",
+    runAgain: "توليد مرة أخرى",
+    runAgainFailed: "تعذّر توليد هذه الصورة مرة أخرى.",
     copyPromptBtn: "📋 نسخ الطلب",
     downloadAllZip: "تنزيل الكل {count} (ZIP)",
     retouchedTitle: "المنقّحة",

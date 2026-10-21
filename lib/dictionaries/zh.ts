@@ -472,6 +472,8 @@ const zh: AppDictionary = {
     contentFilterLabel: "内容过滤：",
     retryIn: "{time} 后重试",
     regenerate: "重新生成",
+    runAgain: "再生成一次",
+    runAgainFailed: "无法再次生成这张照片。",
     copyPromptBtn: "📋 复制提示词",
     downloadAllZip: "下载全部 {count} 张（ZIP）",
     retouchedTitle: "精修",

@@ -36,8 +36,10 @@ export async function settleShortfall(
       LEFT JOIN templates t ON t.id = COALESCE(s.template_showcase_id, s.template_id)
       WHERE s.id = ${shootId}`;
     if (!s) return { total: 0, completed: 0, refundedNgn: 0, regenerationOffered: false };
+    // A photo kept by "Run again" ("earlier take of #N") is not a booked image.
     const [c] = await sql<{ rows: number; done: number }[]>`
-      SELECT count(*)::int AS rows, count(*) FILTER (WHERE status = 'COMPLETE')::int AS done
+      SELECT count(*) FILTER (WHERE kind NOT LIKE 'earlier take%')::int AS rows,
+             count(*) FILTER (WHERE status = 'COMPLETE')::int AS done
       FROM shoot_images WHERE shoot_id = ${shootId}`;
     // Same rule as lib/generate.ts: per-image products are as many images as were booked.
     const perImageOrder = s.category === "photo_upgrade" || s.category === "asset_extract";

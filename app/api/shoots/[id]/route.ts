@@ -65,7 +65,11 @@ function withPreviewUrls(shoot: Record<string, unknown> | null) {
     const { fal_url: _fal_url, ...safeImg } = img as Record<string, unknown>;
     if (safeImg.status === "COMPLETE") {
       if (safeImg.preview_storage_bucket && safeImg.preview_storage_path) {
-        return { ...safeImg, previewUrl: r2ProxyUrl(safeImg.preview_storage_bucket as string, safeImg.preview_storage_path as string) };
+        // The media proxy is cached for an hour; a photo re-made under the same
+        // file name ("Run again") must not show the old picture, so the link
+        // carries the row's last change.
+        const v = safeImg.updated_at ? `&v=${new Date(safeImg.updated_at as string).getTime()}` : "";
+        return { ...safeImg, previewUrl: r2ProxyUrl(safeImg.preview_storage_bucket as string, safeImg.preview_storage_path as string) + v };
       }
     }
     return safeImg;
