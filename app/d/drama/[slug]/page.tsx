@@ -84,7 +84,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
             <div className={styles.chips}>
               <span className={styles.chip}>{genreName(story.genre)}</span>
               <span className={styles.chip}>{cast.length} characters</span>
-              <span className={`${styles.chip} ${styles.chipLive}`}>{story.min_votes} votes decide each episode</span>
+              <span className={`${styles.chip} ${styles.chipLive}`}>Most votes by 4 p.m. decides each episode</span>
             </div>
             <div className={styles.actions}>
               <a className={`${styles.btn} ${styles.primary}`} href={ig.profile} target="_blank" rel="noopener noreferrer">Follow @{story.ig_account}</a>

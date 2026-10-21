@@ -1,7 +1,7 @@
 import "server-only";
 import sql from "@/lib/db";
 import { r2Download, r2Upload } from "@/lib/r2";
-import { renderEpisodeSlides, voteLine, type DEpisode, type DStory, type SlideArt } from "@/lib/drama/slides";
+import { renderEpisodeSlides, type DEpisode, type DStory, type SlideArt } from "@/lib/drama/slides";
 import type { StoryRow } from "@/lib/drama/data";
 
 /**
@@ -77,7 +77,7 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
     "What happens next is yours.",
     `Comment ${a.word} — ${a.label.toLowerCase()}`,
     `Comment ${b.word} — ${b.label.toLowerCase()}`,
-    voteLine(s.min_votes, ep),
+    `Voting closes at 4 p.m. tomorrow, Lagos time. The word with the most votes ${(ep as { finale?: boolean }).finale ? "decides how season two begins" : `writes Episode ${ep.n + 1}`}.`,
     "",
     // Instagram never makes a caption link tappable: the link lives in the bio,
     // and "comment PLAY" sends it to the DMs as a button (lib/drama/votes.ts).

@@ -85,7 +85,13 @@ for that road posts by itself at the next 7 p.m. (lib/drama/advance.ts). A road
 with no draft waits, and the owner is told; so keep the drafts at least one vote
 ahead of the story.
 
-**The vote:** the first option to reach the story's `minVotes` distinct
+**The vote (since 2026-10-21):** voting stays open until 4 p.m. Lagos the day
+after the episode posts — three hours before the next 7 p.m. post — and the word
+with the **most** votes wins; a tie goes to the word that reached that number
+first. With fewer than the story's `minVotes` in total, voting stays open until
+there are enough (lib/drama/vote-rules.ts). One vote per person per episode.
+
+*Before 2026-10-21 the rule was:* the first option to reach the story's `minVotes` distinct
 commenters wins (start at 2; raise it as the audience grows). A tie at the
 deadline goes to the option that reached its count first.
 

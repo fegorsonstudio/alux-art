@@ -72,7 +72,7 @@ export default async function DramaShelf() {
               <div className={styles.chips}>
                 <span className={styles.chip}>{genreName(hero.genre)}</span>
                 <span className={styles.chip}>{(hero.content.cast ?? []).length} characters</span>
-                <span className={`${styles.chip} ${styles.chipLive}`}>{hero.min_votes} votes decide</span>
+                <span className={`${styles.chip} ${styles.chipLive}`}>Your votes decide</span>
               </div>
               <div className={styles.actions}>
                 <Link className={`${styles.btn} ${styles.primary}`} href={`/d/drama/${hero.slug}`}>See the story</Link>
@@ -110,7 +110,7 @@ export default async function DramaShelf() {
         <div className={styles.panel}>
           <ol className={styles.steps}>
             <li className={styles.step}><div><p className={styles.stepTitle}>Read the episode</p><p className={styles.stepText}>Eight pictures on Instagram, a few words each. It always stops at the worst moment.</p></div></li>
-            <li className={styles.step}><div><p className={styles.stepTitle}>Comment one word</p><p className={styles.stepText}>Each episode ends with two choices. The first to reach its votes decides the next episode.</p></div></li>
+            <li className={styles.step}><div><p className={styles.stepTitle}>Comment one word</p><p className={styles.stepText}>Each episode ends with two choices. Voting closes at 4 p.m. the next day; the word with the most votes decides the next episode.</p></div></li>
             <li className={styles.step}><div><p className={styles.stepTitle}>Play a role</p><p className={styles.stepText}>Send one clear photo and your face plays a character, the same in every episode. From <span className={styles.price}>{naira(prices.cameo)}</span>.</p></div></li>
           </ol>
         </div>

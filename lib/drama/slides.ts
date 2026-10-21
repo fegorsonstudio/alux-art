@@ -1,4 +1,5 @@
 import "server-only";
+import { CLOSES_TEXT } from "@/lib/drama/vote-rules";
 import sharp from "sharp";
 import { esc, fam, inkWidth, lookOf, motif, OUTFIT, type Look } from "./cover";
 
@@ -19,8 +20,8 @@ export type DSlide = { kind: string; say: string; scene?: string; who?: string }
 export type DEpisode = { n: number; title: string; slides: DSlide[]; choice: { question: string; options: { word: string; label: string }[] };
   /** The season's last episode: its vote picks how season two begins. */ finale?: boolean };
 /** The line under the two words on the last slide. */
-export const voteLine = (minVotes: number, ep: Pick<DEpisode, "n" | "finale">) =>
-  ep.finale ? `The first word to reach ${minVotes} votes decides how season two begins.` : `The first word to reach ${minVotes} votes writes Episode ${ep.n + 1}.`;
+export const voteLine = (ep: Pick<DEpisode, "n" | "finale">) =>
+  `Most votes by ${CLOSES_TEXT} tomorrow ${ep.finale ? "decides how season two begins" : `writes Episode ${ep.n + 1}`}.`;
 export type SlideArt = { buffer: Buffer; captionAt: "top" | "bottom" };
 export type DStory = { title: string; tagline: string; genre: string; city: string; minVotes: number; cast: { key: string; name: string; role: string }[] };
 
@@ -144,7 +145,7 @@ async function photoSlide(a: {
       ${panel(ep.choice.options[0], y0)}
       <text x="${W / 2}" y="${y0 + 285}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="38" font-weight="500" fill="${soft}">or</text>
       ${panel(ep.choice.options[1], y0 + 330)}
-      <text x="${W / 2}" y="${Math.min(H - 130, y0 + 650)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="25" font-weight="400" fill="${soft}">${esc(voteLine(story.minVotes, ep))}</text>`;
+      <text x="${W / 2}" y="${Math.min(H - 130, y0 + 650)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="25" font-weight="400" fill="${soft}">${esc(voteLine(ep))}</text>`;
   } else if (s.kind === "text") {
     const m = /^([^:“"]{1,30}):\s*(.+)$/.exec(s.say.trim());
     const sender = m ? m[1].trim() : (a.nameOf(s.who)?.name ?? "Message");
@@ -237,7 +238,7 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map
         ${panel(a, y0)}
         <text x="${SLIDE_W / 2}" y="${y0 + 300}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="40" font-weight="500" fill="${look.muted}">or</text>
         ${panel(b, y0 + 350)}
-        <text x="${SLIDE_W / 2}" y="${Math.min(SLIDE_H - 150, y0 + 690)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="26" font-weight="400" fill="${look.muted}">${esc(voteLine(story.minVotes, ep))}</text>`;
+        <text x="${SLIDE_W / 2}" y="${Math.min(SLIDE_H - 150, y0 + 690)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="26" font-weight="400" fill="${look.muted}">${esc(voteLine(ep))}</text>`;
     } else if (s.kind === "text") {
       // A message on a phone: "Sender: “words”" → a notification card.
       const m = /^([^:“"]{1,30}):\s*(.+)$/.exec(s.say.trim());

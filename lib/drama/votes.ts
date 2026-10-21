@@ -2,9 +2,8 @@ import "server-only";
 import sql from "@/lib/db";
 import { SITE_URL } from "@/lib/site-url";
 import { buttonMessage, replyToComment, type IgCreds } from "@/lib/instagram";
-import { tellAdmin } from "@/lib/telegram";
 import { syncPosted } from "@/lib/drama/episodes";
-import { advanceStory } from "@/lib/drama/advance";
+import { closesLabel, tally, voteClosesAt } from "@/lib/drama/vote-rules";
 
 /**
  * A comment on an Alux Micro Drama episode is a vote. Called by the Instagram
@@ -13,14 +12,16 @@ import { advanceStory } from "@/lib/drama/advance";
  * never read as shop words there). Anything else returns false and the webhook
  * carries on exactly as it always has.
  *
- * Rules (tools/drama/ENGINE.md §4): the comment's first word must be one of the
- * episode's two words; one vote per person per episode; the first word to reach
- * the story's min_votes distinct voters wins and closes the vote. Every voter
- * gets one private reply. The owner hears the result on Telegram.
+ * Rules (tools/drama/ENGINE.md §4, lib/drama/vote-rules.ts): the comment's first
+ * word must be one of the episode's two words; one vote per person per episode;
+ * voting stays open until 4 p.m. Lagos the day after the episode posts, and the
+ * word with the most votes then wins (the ten-minute sweep closes it —
+ * lib/drama/advance.ts). Every voter gets one private reply with the score so far.
  */
 
 type Hit = {
-  episode_id: string; n: number; status: string; decided_word: string | null; content: { title: string; choice: { options: { word: string; label: string }[] } };
+  episode_id: string; n: number; status: string; decided_word: string | null; posted_at: string | null;
+  content: { title: string; finale?: boolean; choice: { options: { word: string; label: string }[] } };
   story_id: string; slug: string; title: string; min_votes: number;
 };
 
@@ -29,7 +30,7 @@ const storyUrl = (slug: string) => `${SITE_URL.replace(/\/$/, "")}/d/drama/${slu
 
 async function episodeForMedia(mediaId: string): Promise<Hit | null> {
   const find = () => sql<Hit[]>`
-    SELECT e.id AS episode_id, e.n, e.status, e.decided_word, e.content, s.id AS story_id, s.slug, s.title, s.min_votes
+    SELECT e.id AS episode_id, e.n, e.status, e.decided_word, e.posted_at, e.content, s.id AS story_id, s.slug, s.title, s.min_votes
     FROM drama_episodes e JOIN drama_stories s ON s.id = e.story_id
     WHERE e.ig_media_id = ${mediaId}`;
   let [hit] = await find();
@@ -97,12 +98,18 @@ export async function handleDramaComment(
     return true;
   }
 
-  // Count and decide in one transaction, with the episode row locked, so two
-  // votes arriving together cannot both "win" or both miss the threshold.
+  // Voting closes at 4 p.m. the day after the episode posts; after that a comment
+  // is told it is closed even if the ten-minute sweep has not counted it yet.
+  const closesAt = voteClosesAt(hit.posted_at ? new Date(hit.posted_at) : new Date());
+  const late = Date.now() >= closesAt.getTime();
+
   const out = await sql.begin(async (tx) => {
-    const [ep] = await tx<{ status: string; decided_word: string | null }[]>`
-      SELECT status, decided_word FROM drama_episodes WHERE id = ${hit.episode_id} FOR UPDATE`;
+    const [ep] = await tx<{ decided_word: string | null }[]>`
+      SELECT decided_word FROM drama_episodes WHERE id = ${hit.episode_id} FOR UPDATE`;
     if (ep.decided_word) return { kind: "closed" as const, winner: ep.decided_word };
+    const counted = await tx<{ word: string }[]>`SELECT word FROM drama_votes WHERE episode_id = ${hit.episode_id}`;
+    // Past the deadline with enough votes: the sweep is about to close it; take no more.
+    if (late && counted.length >= hit.min_votes) return { kind: "late" as const };
     const ins = await tx`
       INSERT INTO drama_votes (episode_id, word, voter, source) VALUES (${hit.episode_id}, ${word}, ${voter}, 'instagram')
       ON CONFLICT (episode_id, voter) DO NOTHING RETURNING id`;
@@ -110,41 +117,24 @@ export async function handleDramaComment(
       const [mine] = await tx<{ word: string }[]>`SELECT word FROM drama_votes WHERE episode_id = ${hit.episode_id} AND voter = ${voter}`;
       return { kind: "again" as const, mine: mine?.word ?? word };
     }
-    const [{ n }] = await tx<{ n: number }[]>`SELECT count(*)::int AS n FROM drama_votes WHERE episode_id = ${hit.episode_id} AND word = ${word}`;
-    if (n >= hit.min_votes) {
-      await tx`UPDATE drama_episodes SET decided_word = ${word}, decided_at = now(), status = 'closed', updated_at = now() WHERE id = ${hit.episode_id}`;
-      return { kind: "decided" as const, count: n };
-    }
-    return { kind: "counted" as const, count: n };
+    return { kind: "counted" as const, score: tally([...counted, { word }], hit.content.choice.options.map((o) => o.word)) };
   });
 
   console.log(`[drama vote] ${who} → ${word} on ${hit.slug} ep ${hit.n}: ${out.kind}`);
   if (creds) {
     const label = hit.content.choice.options.find((o) => o.word === word)?.label ?? "";
+    const decides = hit.content.finale ? "decides how season two begins" : `writes Episode ${hit.n + 1}`;
     if (out.kind === "counted") {
-      const left = hit.min_votes - out.count;
+      const score = out.score.map((x) => `${x.word} ${x.n}`).join(" · ");
       await answer(creds, c.commentId,
-        `Your vote is in: ${word} — ${label.toLowerCase()}.\n${left} more ${left === 1 ? "vote decides" : "votes decide"} it. Watch Episode ${hit.n + 1} take shape, and play a role in the next story:`, url);
-    } else if (out.kind === "decided") {
-      await answer(creds, c.commentId,
-        `Your vote decided it. ${word} wins — Episode ${hit.n + 1} of ${hit.title} is on its way. Want to be in the next one?`, url, "Play a role");
+        `Your vote is in: ${word} — ${label.toLowerCase()}.\nSo far: ${score}. Voting closes at ${closesLabel(closesAt)} (Lagos time); the word with the most votes ${decides}.`, url);
     } else if (out.kind === "closed") {
-      await answer(creds, c.commentId, `This vote has closed: ${out.winner} won. Episode ${hit.n + 1} is on its way.`, url);
+      await answer(creds, c.commentId, `This vote has closed: ${out.winner} won. ${hit.content.finale ? "Season two is on its way." : `Episode ${hit.n + 1} is on its way.`}`, url);
+    } else if (out.kind === "late") {
+      await answer(creds, c.commentId, `Voting on this episode closed at ${closesLabel(closesAt)}. The next episode opens a new vote — see you there.`, url);
     } else {
       await answer(creds, c.commentId, `You've already voted ${out.mine} on this episode — one vote each. See how it is going:`, url);
     }
-  }
-  if (out.kind === "decided") {
-    // The story moves on by itself (lib/drama/advance.ts): the episode written
-    // for this road is frozen and queued for the next 7 p.m., and the owner is
-    // told what posts and when. Not awaited, so Instagram gets its answer fast;
-    // the ten-minute sweep (/api/cron/drama-advance) catches any run that fails.
-    void advanceStory(hit.story_id)
-      .then((r) => console.log(`[drama advance] ${hit.slug} after ${word} (${out.count} votes, last by ${who}): ${JSON.stringify(r)}`))
-      .catch((e) => {
-        console.error(`[drama advance] ${hit.slug} failed:`, (e as Error).message);
-        void tellAdmin(`🎬 <b>${hit.title}</b> — ${word} won Episode ${hit.n}, but queuing Episode ${hit.n + 1} failed: ${String((e as Error).message).slice(0, 200).replace(/</g, "&lt;")}\nIt tries again by itself every 10 minutes.`).catch(() => false);
-      });
   }
   return true;
 }

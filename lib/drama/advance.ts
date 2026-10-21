@@ -3,7 +3,8 @@ import sql from "@/lib/db";
 import { tellAdmin } from "@/lib/telegram";
 import { withShootLock } from "@/lib/worker-lock";
 import type { DramaDraft, StoryRow } from "@/lib/drama/data";
-import { approveEpisode, captionFor, scheduleEpisode, writtenEpisode, type EpisodeRow } from "@/lib/drama/episodes";
+import { approveEpisode, captionFor, scheduleEpisode, syncPosted, writtenEpisode, type EpisodeRow } from "@/lib/drama/episodes";
+import { tally, voteClosesAt, winnerOf } from "@/lib/drama/vote-rules";
 
 /**
  * The story moves on by itself (the owner, 2026-10-21: "I don't want a
@@ -35,11 +36,15 @@ export function draftFor(drafts: DramaDraft[] | undefined, n: number, road: stri
   return fits[0]?.d ?? null;
 }
 
-/** The next 7 p.m. in Lagos (UTC+1, no daylight saving) at least three hours away. */
+/**
+ * The next 7 p.m. in Lagos (UTC+1, no daylight saving) at least two hours away.
+ * A vote closes at 4 p.m. (lib/drama/vote-rules.ts) and is counted by the sweep
+ * a few minutes later; two hours keeps that evening's 7 p.m.
+ */
 export function nextSlot(now = new Date()): Date {
   const lagos = new Date(now.getTime() + 60 * 60_000);
   const at = new Date(Date.UTC(lagos.getUTCFullYear(), lagos.getUTCMonth(), lagos.getUTCDate(), 18, 0, 0)); // 19:00 Lagos
-  if (at.getTime() - now.getTime() < 3 * 60 * 60_000) at.setUTCDate(at.getUTCDate() + 1);
+  if (at.getTime() - now.getTime() < 2 * 60 * 60_000) at.setUTCDate(at.getUTCDate() + 1);
   return at;
 }
 
@@ -56,6 +61,12 @@ export type Advance =
 
 /** Tell the owner about a missing episode once per process, not every ten minutes. */
 const toldUnwritten = new Set<string>();
+
+/** "SPEAK 5 · WAIT 3" for an episode's vote. */
+async function scoreOf(e: EpisodeRow): Promise<string> {
+  const votes = await sql<{ word: string }[]>`SELECT word FROM drama_votes WHERE episode_id = ${e.id}`;
+  return tally(votes, (e.content.choice?.options ?? []).map((o) => o.word)).map((x) => `${x.word} ${x.n}`).join(" · ");
+}
 
 async function storyById(id: string): Promise<StoryRow | null> {
   const [row] = await sql<StoryRow[]>`
@@ -76,9 +87,7 @@ export async function advanceStory(storyId: string): Promise<Advance> {
       const done = await sql`UPDATE drama_stories SET status = 'finished', updated_at = now() WHERE id = ${storyId} AND status = 'live' RETURNING id`;
       if (done.length) {
         const next = (last.content as { branches?: Record<string, string> }).branches?.[last.decided_word] ?? "";
-        await tellAdmin(`🎬 <b>${esc(story.title)}</b> — season one is complete. ${esc(last.decided_word)} won the last vote.
-${esc(next)}
-Ask Claude to write season two from there.`).catch(() => false);
+        await tellAdmin(`🎬 <b>${esc(story.title)}</b> — season one is complete. ${esc(last.decided_word)} won the last vote (${esc(await scoreOf(last))}).\n${esc(next)}\nAsk Claude to write season two from there.`).catch(() => false);
       }
       return { kind: "finished" };
     }
@@ -122,7 +131,7 @@ Ask Claude to write season two from there.`).catch(() => false);
       throw e;
     }
     await tellAdmin(
-      `🎬 <b>${esc(story.title)}</b> — ${esc(last.decided_word)} won Episode ${last.n}.\n` +
+      `🎬 <b>${esc(story.title)}</b> — ${esc(last.decided_word)} won Episode ${last.n} (${esc(await scoreOf(last))}).\n` +
       `Episode ${n}, “${esc(written.title)}”, posts by itself on @${esc(story.ig_account)} at ${esc(lagosTime(when))} (Lagos). Nothing for you to do.\n` +
       `To hold it back: /admin/drama → Unschedule.`,
     ).catch(() => false);
@@ -138,6 +147,7 @@ Ask Claude to write season two from there.`).catch(() => false);
  * was written, or a run that failed half way.
  */
 export async function advanceStories(): Promise<{ slug: string; result: Advance | { kind: "error"; message: string } }[]> {
+  await closeDueVotes().catch((e) => console.error("[drama advance] closing votes failed:", (e as Error).message));
   const due = await sql<{ id: string; slug: string }[]>`
     SELECT s.id, s.slug FROM drama_stories s
     JOIN LATERAL (SELECT n, status, decided_word FROM drama_episodes e WHERE e.story_id = s.id ORDER BY n DESC LIMIT 1) last ON true
@@ -146,6 +156,44 @@ export async function advanceStories(): Promise<{ slug: string; result: Advance 
   for (const s of due) {
     try { out.push({ slug: s.slug, result: await advanceStory(s.id) }); }
     catch (e) { out.push({ slug: s.slug, result: { kind: "error" as const, message: (e as Error).message.slice(0, 300) } }); }
+  }
+  return out;
+}
+
+/** Tell the owner once per process when a vote reaches its deadline without enough votes. */
+const toldThin = new Set<string>();
+
+/**
+ * Close every vote whose time is up (lib/drama/vote-rules.ts): at 4 p.m. the
+ * day after the episode posted, the word with the most votes wins. With fewer
+ * than the story's min_votes in total it stays open, and closes on the first
+ * sweep after there are enough. Each close is one locked update, so a vote
+ * arriving at the same moment is either counted or told it came too late.
+ */
+export async function closeDueVotes(): Promise<{ episode: string; result: string }[]> {
+  await syncPosted(); // the publisher's "posted" and its time, which the deadline counts from
+  const open = await sql<{ id: string; n: number; posted_at: string; min_votes: number; title: string; content: EpisodeRow["content"] }[]>`
+    SELECT e.id, e.n, e.posted_at, s.min_votes, s.title, e.content FROM drama_episodes e JOIN drama_stories s ON s.id = e.story_id
+    WHERE s.status = 'live' AND e.status = 'posted' AND e.decided_word IS NULL AND e.posted_at IS NOT NULL`;
+  const out = [];
+  for (const e of open) {
+    if (Date.now() < voteClosesAt(new Date(e.posted_at)).getTime()) continue;
+    const options = (e.content.choice?.options ?? []).map((o) => o.word);
+    const result = await sql.begin(async (tx) => {
+      const [locked] = await tx<{ decided_word: string | null }[]>`SELECT decided_word FROM drama_episodes WHERE id = ${e.id} FOR UPDATE`;
+      if (locked.decided_word) return "already closed";
+      const votes = await tx<{ word: string; created_at: string }[]>`SELECT word, created_at FROM drama_votes WHERE episode_id = ${e.id}`;
+      if (votes.length < e.min_votes) return `waiting: ${votes.length} of ${e.min_votes} votes`;
+      const word = winnerOf(votes, options);
+      if (!word) return "no winner";
+      await tx`UPDATE drama_episodes SET decided_word = ${word}, decided_at = now(), status = 'closed', updated_at = now() WHERE id = ${e.id}`;
+      return `closed: ${word}`;
+    });
+    if (result.startsWith("waiting") && !toldThin.has(e.id)) {
+      toldThin.add(e.id);
+      await tellAdmin(`🎬 <b>${esc(e.title)}</b> — voting on Episode ${e.n} reached 4 p.m. with ${esc(result.replace("waiting: ", ""))}. It stays open and closes as soon as there are enough; the next episode posts at the next 7 p.m. after that.`).catch(() => false);
+    }
+    out.push({ episode: e.id, result });
   }
   return out;
 }

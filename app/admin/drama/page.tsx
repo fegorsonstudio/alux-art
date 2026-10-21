@@ -83,7 +83,7 @@ function StoryDesk({ story, reload }: { story: Story; reload: () => Promise<void
     <>
       <p className={styles.p}>
         Plays on <a href={`https://www.instagram.com/${story.igAccount}/`} target="_blank" rel="noopener noreferrer">@{story.igAccount}</a> ·{" "}
-        {story.minVotes} votes decide · <Link href={`/d/drama/${story.slug}`} target="_blank">open the story page</Link>
+        most votes by 4 p.m. the day after posting wins (at least {story.minVotes}) · <Link href={`/d/drama/${story.slug}`} target="_blank">open the story page</Link>
       </p>
       <section className={styles.section} id="episodes">
         <div className={styles.sectionHead}><h2 className={styles.sectionTitle}>Episodes</h2></div>
@@ -257,7 +257,7 @@ function EpisodeDesk({ story, w, reload }: { story: Story; w: Written; reload: (
       <h3 className={styles.h2} style={{ marginTop: 6 }}>{w.title}</h3>
       {posted && (
         <div className={styles.chips}>
-          {counts.map((c) => <span key={c.word} className={`${styles.chip} ${w.made?.decided === c.word ? styles.chipLive : ""}`}>{c.word}: {c.n} of {story.minVotes}</span>)}
+          {counts.map((c) => <span key={c.word} className={`${styles.chip} ${w.made?.decided === c.word ? styles.chipLive : ""}`}>{c.word}: {c.n}</span>)}
         </div>
       )}
       {posted && w.votes.length > 0 && (
