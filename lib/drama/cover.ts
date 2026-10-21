@@ -148,7 +148,10 @@ export async function renderCover(c: CoverInput): Promise<Buffer> {
   const fit = await fitTitle(title, look, COVER_W - 220, isScript ? 230 : 150, 3);
   const lineH = Math.round(fit.size * (isScript ? 1.05 : 1.08));
   const blockH = lineH * fit.lines.length;
-  const titleTop = 1010 - blockH; // the title's block ends just above the tagline
+  // The title's block ends just above the tagline. Over a poster picture it sits in
+  // the lower third, as on a film one-sheet, so it never crosses the faces.
+  const low = c.art ? 230 : 0;
+  const titleTop = 1010 + low - blockH;
   const ink = c.art ? "#ffffff" : look.ink;
   const muted = c.art ? "rgba(255,255,255,0.78)" : look.muted;
 
@@ -171,8 +174,8 @@ export async function renderCover(c: CoverInput): Promise<Buffer> {
     <text x="${COVER_W / 2}" y="104" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="21" font-weight="600" letter-spacing="0.34em" fill="${c.art ? "#ffffff" : look.accent}">ALUX MICRO DRAMA</text>
     <text x="${COVER_W / 2}" y="140" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="19" font-weight="400" letter-spacing="0.22em" fill="${muted}">${esc(`${c.city} · ${genreLabel}`.toUpperCase())}</text>
     ${titleSvg}
-    <text x="${COVER_W / 2}" y="1080" text-anchor="middle" font-family="${esc(fam(look.subFont === "Pinyon Script" ? "Cormorant Garamond" : look.subFont))}" font-size="${look.subFont === "Oswald" ? 30 : 38}" font-weight="${look.subFont === "Oswald" ? 400 : 500}" letter-spacing="${look.subFont === "Oswald" ? "0.12em" : "0.02em"}" fill="${muted}">${esc(look.subFont === "Oswald" ? c.tagline.toUpperCase() : c.tagline)}</text>
-    <rect x="${COVER_W / 2 - 30}" y="1128" width="60" height="1.5" fill="${c.art ? "#ffffff" : look.accent}" opacity="0.7"/>
+    <text x="${COVER_W / 2}" y="${1080 + low}" text-anchor="middle" font-family="${esc(fam(look.subFont === "Pinyon Script" ? "Cormorant Garamond" : look.subFont))}" font-size="${look.subFont === "Oswald" ? 30 : 38}" font-weight="${look.subFont === "Oswald" ? 400 : 500}" letter-spacing="${look.subFont === "Oswald" ? "0.12em" : "0.02em"}" fill="${muted}">${esc(look.subFont === "Oswald" ? c.tagline.toUpperCase() : c.tagline)}</text>
+    <rect x="${COVER_W / 2 - 30}" y="${1128 + low - (c.art ? 10 : 0)}" width="60" height="1.5" fill="${c.art ? "#ffffff" : look.accent}" opacity="0.7"/>
     <text x="${COVER_W / 2}" y="${COVER_H - 92}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="20" font-weight="600" letter-spacing="0.28em" fill="${c.art ? "#ffffff" : look.accent}">${esc(c.badge.toUpperCase())}</text>
   </svg>`;
 

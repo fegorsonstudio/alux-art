@@ -236,7 +236,7 @@
 .topRight { display: flex; align-items: center; gap: 8px; }
 .tour { position: fixed; inset: 0; z-index: 200; }
 .tourHole { position: fixed; border-radius: 16px; border: 2px solid var(--live); box-shadow: 0 0 0 9999px rgba(4, 10, 12, 0.72); transition: top .3s, left .3s, width .3s, height .3s; pointer-events: none; }
-.tourNote { position: fixed; z-index: 201; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); }
+.tourNote { position: fixed; z-index: 201; box-sizing: border-box; background: var(--ground-2); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); }
 .tourCount { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-ink); }
 .tourTitle { font-size: 18px; font-weight: 600; margin: 6px 0 6px; text-wrap: balance; }
 .tourBody { font-size: 14.5px; line-height: 1.55; color: var(--muted); margin: 0 0 14px; }

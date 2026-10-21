@@ -51,7 +51,7 @@ function posterPrompt(story: StoryRow, lead: DramaRole, others: DramaRole[], pla
       ? `THE ATTACHED IMAGES — ${imageMap}. ${LIKENESS}` +
         (players.length < 1 + others.length ? " The characters without images are fictional Nigerian people." : "")
       : "The cast are fictional Nigerian people — not anyone famous or real.",
-    `COMPOSITION — the lead chest-up in the lower two-thirds, three-quarter to camera, eyes to the lens, a composed, intense expression; the others further back; a hint of ${story.city} behind them. Keep the TOP THIRD of the frame dark, clean and empty for the title, and the bottom tenth plain.`,
+    `COMPOSITION — like a film one-sheet: every face in the UPPER HALF of the frame — the lead largest, chest-up, three-quarter to camera, eyes to the lens, a composed, intense expression; the others further back and smaller; a hint of ${story.city} behind them. The LOWER 45% of the frame is darker and uncluttered (bodies falling into shadow), because the title is set there; keep the top tenth plain too.`,
     lightingBlock(lightFor(story.genre)),
     PHOTO_REAL, NO_TEXT,
   ].join("\n\n");
