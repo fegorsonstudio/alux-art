@@ -45,6 +45,18 @@ for (const { story } of list) {
     const [back] = await sql`SELECT jsonb_typeof(content->'drafts') AS kind, jsonb_array_length(content->'drafts') AS n FROM drama_stories WHERE slug = ${story.slug}`;
     if (back.kind !== "array" || back.n !== drafts.length) throw new Error(`${story.slug}: drafts read back as ${back.kind} ${back.n}, expected array ${drafts.length}`);
     if (drafts.length) console.log(`${story.slug}: started — ${drafts.length} episode(s) written ahead loaded`);
+    // New guest roles are added too (a guest is sold until their first episode is
+    // made). Nobody already in the cast is changed or removed.
+    const [cur] = await sql`SELECT content->'cast' AS cast FROM drama_stories WHERE slug = ${story.slug}`;
+    const have = new Set((cur.cast ?? []).map((c) => c.key));
+    const guests = (story.cast ?? []).filter((c) => c.guest && !have.has(c.key)).map((c) => JSON.parse(JSON.stringify(c)));
+    if (guests.length) {
+      const cast = [...(cur.cast ?? []), ...guests];
+      await sql`UPDATE drama_stories SET content = jsonb_set(content, '{cast}', ${sql.json(cast)}::jsonb), updated_at = now() WHERE slug = ${story.slug}`;
+      const [chk] = await sql`SELECT jsonb_typeof(content->'cast') AS kind, jsonb_array_length(content->'cast') AS n FROM drama_stories WHERE slug = ${story.slug}`;
+      if (chk.kind !== "array" || chk.n !== cast.length) throw new Error(`${story.slug}: cast read back as ${chk.kind} ${chk.n}, expected array ${cast.length}`);
+      console.log(`${story.slug}: started — guest role(s) added: ${guests.map((g) => g.key).join(", ")}`);
+    }
   }
   else if (row.inserted) added++;
   else refreshed++;

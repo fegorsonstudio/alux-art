@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import styles from "../drama.module.css";
 import DramaShell from "../DramaShell";
 import PaidNotice from "../PaidNotice";
-import { badgeFor, dramaPrices, houseProducts, igLinks, soldSlots, storyBySlug, takenRoles } from "@/lib/drama/data";
+import { badgeFor, dramaPrices, houseProducts, igLinks, roleIsOpen, soldSlots, storyBySlug, takenRoles } from "@/lib/drama/data";
 import { syncPosted } from "@/lib/drama/episodes";
 import sql from "@/lib/db";
 
@@ -56,7 +56,9 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
   const house = await houseProducts(episodes.map((e) => e.alux?.product));
   const ig = igLinks(story.ig_account);
   const cover = `/api/drama/cover/${story.slug}?v=${new Date(story.updated_at).getTime()}`;
+  const lastMade = madeRows.reduce((m, r) => Math.max(m, r.n), 0);
   const castOpen = story.status === "upcoming";
+  const guestsOpen = cast.some((r) => roleIsOpen(story, r, lastMade));
   const priceOf = (tier: "lead" | "main" | "cameo") => prices[tier];
 
   return (
@@ -86,7 +88,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
             </div>
             <div className={styles.actions}>
               <a className={`${styles.btn} ${styles.primary}`} href={ig.profile} target="_blank" rel="noopener noreferrer">Follow @{story.ig_account}</a>
-              {castOpen && <a className={`${styles.btn} ${styles.quiet}`} href="#cast">Play a role</a>}
+              {(castOpen || guestsOpen) && <a className={`${styles.btn} ${styles.quiet}`} href="#cast">Play a role</a>}
             </div>
           </div>
         </div>
@@ -121,12 +123,12 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
       <section className={styles.section} id="cast">
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>The cast</h2>
-          <span className={styles.sectionNote}>{castOpen ? "Open until each character first appears" : "Cast locked"}</span>
+          <span className={styles.sectionNote}>{castOpen ? "Open until each character first appears" : guestsOpen ? "Guest roles open" : "Cast locked"}</span>
         </div>
         <div className={styles.grid}>
           {cast.map((r) => {
             const isTaken = taken.get(story.id)?.has(r.key);
-            const canJoin = castOpen && r.open && !isTaken;
+            const canJoin = roleIsOpen(story, r, lastMade) && !isTaken;
             return (
               <article key={r.key} className={styles.role}>
                 <div className={styles.roleTop}>
@@ -139,7 +141,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
                 <p className={styles.roleLook}>{r.want}</p>
                 <div className={styles.tags}>
                   <span className={`${styles.tag} ${styles.tagTier}`}>{tierName[r.tier]}</span>
-                  <span className={styles.tag}>{r.archetype}</span>
+                  {r.guest && r.enters ? <span className={styles.tag}>Guest · joins in Episode {r.enters}</span> : <span className={styles.tag}>{r.archetype}</span>}
                 </div>
                 <div className={styles.roleFoot}>
                   {canJoin ? (
@@ -155,9 +157,9 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
             );
           })}
         </div>
-        {castOpen && (
+        {(castOpen || guestsOpen) && (
           <p className={styles.p} style={{ marginTop: 14 }}>
-            To play a role, send one clear, well-lit photo of your face. Our engine draws your character sheet — front, side and full length — so you look the same in every episode.
+            To play a role, send three photos — your face, your face turned a little, and your whole body. We draw your character portrait and your character sheet from them, so you look the same every time you appear.
           </p>
         )}
       </section>
@@ -183,6 +185,9 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
             );
           }))}
         </ul>
+        <p className={styles.p} style={{ marginTop: 14 }}>
+          Want more than a product in a scene — an episode presented by your brand, or your brand written into the story? <Link href={`/d/drama/partner?story=${story.slug}`}>Talk to us about a partnership</Link>.
+        </p>
       </section>
 
       {episodes.some((e) => house.has(e.alux?.product)) && (

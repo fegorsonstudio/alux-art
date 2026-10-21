@@ -23,7 +23,7 @@ type Story = {
   slug: string; title: string; status: string; igAccount: string; minVotes: number;
   cast: { key: string; name: string; tier: string }[];
   written: Written[];
-  claims: { id: string; role: string; name: string; status: string; price: number; at: string; photo: string | null }[];
+  claims: { id: string; role: string; name: string; status: string; price: number; at: string; photo: string | null; portrait: string | null; renders: number; error: string | null }[];
   placements: { id: string; episode: number; slot: string; brand: string; contact: string; note: string | null; status: string; price: number; at: string; picture: string | null }[];
 };
 
@@ -98,13 +98,15 @@ function StoryDesk({ story, reload }: { story: Story; reload: () => Promise<void
           <div className={styles.grid}>
             {story.claims.map((c) => (
               <article key={c.id} className={styles.role}>
-                {c.photo
+                {c.portrait || c.photo
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={c.photo} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 12 }} />
+                  ? <img src={(c.portrait || c.photo)!} alt="" style={{ width: "100%", aspectRatio: c.portrait ? "4 / 5" : "1", objectFit: "cover", borderRadius: 12 }} />
                   : <div className={styles.avatar}>?</div>}
                 <p className={styles.roleName}>{c.name}</p>
-                <p className={styles.roleJob}>as {story.cast.find((x) => x.key === c.role)?.name ?? c.role} · {c.price ? naira(c.price) : "free"} · {c.status.replace("_", " ")}</p>
-                <Decide kind="cast" id={c.id} status={c.status} reload={reload} live={["submitted"]} />
+                <p className={styles.roleJob}>as {story.cast.find((x) => x.key === c.role)?.name ?? c.role} · {c.price ? naira(c.price) : "free"} · {CAST_STEP[c.status] ?? c.status.replace("_", " ")}{c.renders ? ` · ${c.renders} model runs` : ""}</p>
+                {c.error && c.status !== "sheet_ready" && c.status !== "accepted" && <p className={styles.sectionNote}>Last problem: {c.error}</p>}
+                {/* Nothing to approve: the character is made by itself. Approve marks a failed one finished by hand; Reject removes someone. */}
+                <Decide kind="cast" id={c.id} status={c.status} reload={reload} live={["sheet_ready", "failed", "submitted", "photos_needed", "making", "accepted"]} approve={c.status === "failed"} />
               </article>
             ))}
           </div>
@@ -135,7 +137,12 @@ function StoryDesk({ story, reload }: { story: Story; reload: () => Promise<void
   );
 }
 
-function Decide({ kind, id, status, reload, live }: { kind: "cast" | "placement"; id: string; status: string; reload: () => Promise<void>; live: string[] }) {
+const CAST_STEP: Record<string, string> = {
+  pending_payment: "not paid yet", submitted: "checking photos", photos_needed: "asked for a new photo", making: "character being made",
+  sheet_ready: "waiting for them to say “this is me”", accepted: "accepted", approved: "finished by hand", failed: "FAILED — needs your hands",
+};
+
+function Decide({ kind, id, status, reload, live, approve = true }: { kind: "cast" | "placement"; id: string; status: string; reload: () => Promise<void>; live: string[]; approve?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   if (!live.includes(status)) return null;
@@ -147,7 +154,7 @@ function Decide({ kind, id, status, reload, live }: { kind: "cast" | "placement"
   };
   return (
     <div className={styles.roleFoot}>
-      <button type="button" className={`${styles.btn} ${styles.primary} ${styles.small}`} disabled={busy} onClick={() => go("approve")}>Approve</button>
+      {approve && <button type="button" className={`${styles.btn} ${styles.primary} ${styles.small}`} disabled={busy} onClick={() => go("approve")}>{kind === "cast" ? "Finished by hand" : "Approve"}</button>}
       <button type="button" className={`${styles.btn} ${styles.quiet} ${styles.small}`} disabled={busy} onClick={() => go("reject")}>Reject</button>
       {msg && <span className={styles.sectionNote}>{msg}</span>}
     </div>

@@ -37,7 +37,12 @@ export function checkStory(s, file) {
   if (!Number.isInteger(s.minVotes) || s.minVotes < 2) bad("minVotes must be a whole number, 2 or more");
 
   const cast = Array.isArray(s.cast) ? s.cast : [];
-  if (cast.length < 5 || cast.length > 6) bad(`cast has ${cast.length} roles (5 or 6)`);
+  const regulars = cast.filter((c) => !c.guest);
+  if (regulars.length < 5 || regulars.length > 6) bad(`cast has ${regulars.length} roles (5 or 6, guests not counted)`);
+  for (const g of cast.filter((c) => c.guest)) {
+    if (g.tier !== "cameo") bad(`${g.key}: a guest is a cameo`);
+    if (!Number.isInteger(g.enters) || g.enters < 2) bad(`${g.key}: a guest needs enters: the episode they first appear in (2 or later)`);
+  }
   const keys = new Set();
   for (const c of cast) {
     if (keys.has(c.key)) bad(`duplicate role key ${c.key}`);
@@ -78,6 +83,18 @@ export function checkStory(s, file) {
     const last = roadWords[roadWords.length - 1];
     if (!parents.some((p) => (p.choice?.options ?? []).some((o) => o.word === last))) bad(`${tag}: no episode ${d.n - 1} offers the word ${last}`);
     checkEpisode(d, tag, keys, bad);
+  }
+
+  // A guest is sold until their first episode is made, so that episode must
+  // show them on every road, and nothing before it may show them at all.
+  const appears = (e, key) => (e.slides ?? []).some((x) => x.who === key);
+  for (const g of cast.filter((c) => c.guest && Number.isInteger(c.enters))) {
+    for (const e of [...eps, ...drafts]) {
+      const tag = e.after ? `draft ${e.n} after ${e.after}` : `episode ${e.n}`;
+      if (e.n < g.enters && appears(e, g.key)) bad(`${tag}: guest ${g.key} appears before episode ${g.enters}`);
+      if (e.n === g.enters && !appears(e, g.key)) bad(`${tag}: guest ${g.key} enters in this episode but has no slide (who: "${g.key}")`);
+    }
+    if (![...eps, ...drafts].some((e) => e.n === g.enters)) bad(`${g.key}: episode ${g.enters} is not written on any road yet`);
   }
   return errs;
 }

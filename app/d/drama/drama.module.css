@@ -204,3 +204,27 @@
 .notice { border: 1px solid color-mix(in srgb, var(--live) 40%, var(--line)); background: color-mix(in srgb, var(--teal) 12%, transparent); border-radius: 14px; padding: 14px 16px; font-size: 14.5px; margin: 10px 0 0; }
 .formWrap { max-width: 620px; margin: 0 auto; }
 .p a, .foot a, .sectionNote a, .logline a { color: var(--accent-ink); text-underline-offset: 3px; }
+.notice a { color: var(--accent-ink); text-underline-offset: 3px; font-weight: 600; }
+
+/* Joining the cast: three photos, the character page, the partnership form. */
+.photoGrid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.photoTile { min-height: 0; aspect-ratio: 3 / 4; padding: 10px; gap: 4px; align-content: end; position: relative; overflow: hidden; }
+.photoImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.photoEmpty { font-size: 34px; line-height: 1; color: var(--live); align-self: center; }
+.photoLabel, .photoHint { position: relative; z-index: 1; display: block; }
+.photoLabel { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.photoHint { font-size: 11px; color: var(--muted); line-height: 1.35; }
+.photoTile:has(img) .photoLabel, .photoTile:has(img) .photoHint { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 420px) { .photoHint { display: none; } }
+.portrait { width: 100%; max-width: 420px; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 16px; display: block; border: 1px solid var(--line); }
+.sheet { width: 100%; border-radius: 12px; display: block; border: 1px solid var(--line); }
+.castActions { display: flex; flex-wrap: wrap; gap: 10px; }
+.problem { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: #ff9d8f; }
+.app[data-theme="light"] .problem { color: #a7463c; }
+.pkgList { display: grid; gap: 10px; }
+.pkg { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: var(--surface); cursor: pointer; }
+.pkg:has(input:checked) { border-color: var(--live); background: color-mix(in srgb, var(--teal) 10%, var(--surface)); }
+.pkg input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--teal); }
+.pkgName { font-size: 15px; font-weight: 600; color: var(--ink); margin: 0; }
+.pkgNote { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

@@ -25,6 +25,11 @@ export default {
     { key: "guard", name: "Sunday", age: 52, role: "Night guard at the Marina tower", archetype: "The Innocent", side: "light", tier: "cameo", open: true,
       look: "Navy security uniform, cap held in both hands, kind tired eyes.",
       want: "To finish his shift.", secret: "He saw who opened the safe last night." },
+    // A guest, written in while the story runs: open to play until Episode 4 is made.
+    { key: "funke", name: "Mrs Funke Adebayo", age: 63, role: "The late mentor's housekeeper", archetype: "The Guardian", side: "light", tier: "cameo", open: true,
+      guest: true, enters: 4,
+      look: "Small and upright, grey hair in a neat bun, white lace blouse over a blue wrapper, reading glasses on a cord, a cloth handbag held in both hands.",
+      want: "To tell the truth she promised the old man she would keep.", secret: "She witnessed him sign a second will the night he died." },
   ],
   episodes: [
     {
@@ -145,6 +150,124 @@ export default {
         { key: "tea", object: "the flask of tea on Sunday's desk", slide: 3, house: "Noir Director Editorial" },
       ],
       alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "Sunday's faded 1998 staff photo pinned above the monitors, brought back to life, slide 3" },
+    },
+
+    // ── Episode 4 (Cost): one per road. Mrs Funke Adebayo, the guest, enters in all four.
+    {
+      n: 4,
+      after: "SPEAK.STAY.TRUST",
+      title: "The Bank Box",
+      slides: [
+        { kind: "cover", see: "A bank vault at morning: Ifeoma alone at a steel table, an open safe-deposit box, the brass key still in its lock. Caption space: top third.", say: "" },
+        { kind: "time", see: "Broad Street on Lagos Island at eight in the morning, the bank's bronze doors opening, a guard unlocking them.", say: "Broad Street. 8 a.m. The bank opens for one customer.", scene: "Bronze doors. A guard with keys." },
+        { kind: "beat", who: "ifeoma", see: "Ifeoma turning the brass key in the box; the lid lifting on papers; a restored photo of an old man taped inside the lid.", say: "Ifeoma turns the brass key. The box is not empty.", scene: "The vault. One box. One key." },
+        { kind: "text", see: "Close on the deed in Ifeoma's hands: a signature line reading 'Witness: Damola Adeyemi', dated 2014.", say: "Deed of Trust: “Witness: Damola Adeyemi. Signed 2014.”", scene: "The deed, flat on steel." },
+        { kind: "line", who: "ifeoma", see: "Ifeoma on her phone in the vault, whispering, the deed pressed flat on the table.", say: "“He wrote it, madam. He has always known it was you.”", scene: "A phone call, in a whisper." },
+        { kind: "beat", who: "funke", see: "By the bank's bronze doors, a small older woman in white lace and a blue wrapper, cloth handbag in both hands, waiting.", say: "At the door, a woman in white lace has waited since dawn.", scene: "By the door, a cloth handbag." },
+        { kind: "cliff", who: "funke", see: "The woman stepping close to Ifeoma, reading glasses on their cord, speaking low; Ifeoma frozen with the deed.", say: "“I witnessed the second will. Chief Eze told me to forget.”", scene: "She speaks before anyone asks." },
+        { kind: "choice", see: "Close on Funke's hands on her handbag clasp, the deed on the steel table beside them.", say: "" },
+      ],
+      cliff: { type: "arrival" },
+      choice: {
+        question: "Does Adaeze bring Funke to the board?",
+        options: [{ word: "BOARD", label: "Bring her to them" }, { word: "HIDE", label: "Keep her hidden" }],
+      },
+      branches: {
+        BOARD: "Adaeze walks Funke into the boardroom. Chief Eze's stick stops tapping; he asks for one minute alone with her.",
+        HIDE: "Adaeze hides Funke at Ifeoma's flat in Yaba. By evening a note is under the door: we know where she is.",
+      },
+      slots: [
+        { key: "box", object: "the safe-deposit box on the steel table", slide: 3, house: "Noir Director Editorial" },
+        { key: "handbag", object: "Funke's cloth handbag", slide: 6, house: "Regal Burgundy & Gold Tapestry Ensemble" },
+      ],
+      alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "the restored photo of the late mentor taped inside the box lid, slide 3" },
+    },
+    {
+      n: 4,
+      after: "SPEAK.STAY.HOLD",
+      title: "Broad Street",
+      slides: [
+        { kind: "cover", see: "Adaeze on the Broad Street pavement at morning, the brass key on its ribbon at her wrist, a grey car blurred across the road. Caption space: top third.", say: "" },
+        { kind: "time", see: "The bank's bronze doors at dawn, Adaeze alone in the queue, the street still empty.", say: "Broad Street. 7:55 a.m. Adaeze is first in the queue.", scene: "The bank doors. One woman waiting." },
+        { kind: "beat", who: "damola", see: "Across the road, a grey car parked; behind the wheel, a man in rimless glasses watching the bank.", say: "A grey car parks across the road. Rimless glasses behind the wheel.", scene: "Across the road, a grey car." },
+        { kind: "text", who: "ifeoma", see: "Close on Adaeze's phone: a message from Ifeoma, sent at 6:12 a.m.", say: "Ifeoma: “Forgive me. I told him where you are going.”", scene: "Her phone. A message from Ifeoma." },
+        { kind: "beat", who: "adaeze", see: "Inside the vault, Adaeze reading a deed from the box; the witness line names Damola Adeyemi. Framed portraits of the bank's founders in the banking hall behind the glass.", say: "The box holds a newer deed. His name is on it.", scene: "The vault. The deed. His name." },
+        { kind: "beat", who: "funke", see: "Outside on the pavement, a small woman in white lace steps between Adaeze and the grey car, handbag held up like a shield.", say: "Outside, a woman in white lace steps between her and the car.", scene: "On the pavement, white lace." },
+        { kind: "cliff", who: "funke", see: "Funke facing the grey car's open window, chin raised; Damola half out of the car, a hand on the door.", say: "“Not this time, Damola. I saw the second will.”", scene: "She faces the car. He stops." },
+        { kind: "choice", see: "Close on Adaeze's phone, Ifeoma's message still on the screen, the deed folded in her other hand.", say: "" },
+      ],
+      cliff: { type: "arrival" },
+      choice: {
+        question: "Does Adaeze forgive Ifeoma?",
+        options: [{ word: "FORGIVE", label: "Let her back in" }, { word: "CUT", label: "Cut her off" }],
+      },
+      branches: {
+        FORGIVE: "Adaeze calls Ifeoma back to the tower. Ifeoma brings the job contract Damola gave her, and the clause that names the real buyer.",
+        CUT: "Adaeze walks into the board meeting alone with Funke. Ifeoma's chair is empty; her lanyard lies on it.",
+      },
+      slots: [
+        { key: "car", object: "the grey car parked across Broad Street", slide: 3, house: "Penthouse Dusk Paparazzi" },
+        { key: "phone", object: "Adaeze's phone showing Ifeoma's message", slide: 4, house: "Instagram GIF Maker" },
+      ],
+      alux: { product: "Noir Director Editorial", where: "the framed portraits of the bank's founders in the banking hall, slide 5" },
+    },
+    {
+      n: 4,
+      after: "SPEAK.CHASE.ASK",
+      title: "Where She Hid Them",
+      slides: [
+        { kind: "cover", see: "A small Yaba flat at night: a bed pushed aside, one floorboard lifted, Adaeze and Ifeoma in the doorway. Caption space: top third.", say: "" },
+        { kind: "time", see: "A Yaba street at night, a block of flats, one window lit on the second floor.", say: "Yaba. 11:20 p.m. Ifeoma's flat. The light is already on.", scene: "One window lit. Second floor." },
+        { kind: "line", who: "ifeoma", see: "Ifeoma at her own front door, key in hand, staring at the light under it; Adaeze one step behind.", say: "“I left it locked, madam. I left the light off.”", scene: "Her own door. Her own key." },
+        { kind: "beat", see: "Inside, the bed pulled away from the wall; one floorboard lifted; the space beneath it empty.", say: "The floorboard under the bed is lifted. The envelope is gone.", scene: "Under the bed, one loose board." },
+        { kind: "beat", who: "funke", see: "In the tiny kitchen, a small older woman in white lace sits upright on a stool, cloth handbag on her knees, a kettle steaming.", say: "In the kitchen sits an old woman, handbag on her knees.", scene: "The kitchen. A stranger, perfectly calm." },
+        { kind: "line", who: "funke", see: "Funke looking up at both women, unhurried, reading glasses on their cord.", say: "“I took them before he came. I am Funke. I was there.”", scene: "She does not stand up." },
+        { kind: "cliff", who: "funke", see: "Funke opening the handbag: the trust papers and a second sealed envelope; a nursing induction photo of a young woman tucked in the bag's pocket.", say: "“And this is the second will. Chief Eze signed it too.”", scene: "The handbag opens. Two envelopes." },
+        { kind: "choice", see: "Close on the sealed envelope on the kitchen table under a bare bulb.", say: "" },
+      ],
+      cliff: { type: "reveal" },
+      choice: {
+        question: "Does Adaeze open the will tonight?",
+        options: [{ word: "READ", label: "Open it now" }, { word: "KEEP", label: "Keep it sealed" }],
+      },
+      branches: {
+        READ: "The will leaves the company to Adaeze — and leaves Chief Eze a debt he has hidden for ten years.",
+        KEEP: "Adaeze takes the sealed will to the board unopened, and dares Chief Eze to open it in front of everyone.",
+      },
+      slots: [
+        { key: "kettle", object: "the kettle on Ifeoma's stove", slide: 5, house: "Noir Director Editorial" },
+        { key: "handbag", object: "Funke's cloth handbag", slide: 7, house: "Regal Burgundy & Gold Tapestry Ensemble" },
+      ],
+      alux: { product: "Nursing Induction", where: "the nursing induction portrait of Funke's granddaughter in her handbag pocket, slide 7" },
+    },
+    {
+      n: 4,
+      after: "SPEAK.CHASE.WATCH",
+      title: "The Car Park",
+      slides: [
+        { kind: "cover", see: "A concrete car park under the Marina tower at night, one lamp out, a grey car's tail lights, Adaeze half hidden behind a pillar. Caption space: top third.", say: "" },
+        { kind: "time", see: "Rows of parked cars under strip lights, one lamp dead, puddles on the concrete.", say: "Marina car park. 11:05 p.m. One lamp is out.", scene: "Concrete, puddles, one dead lamp." },
+        { kind: "beat", who: "ifeoma", see: "Ifeoma at the window of a grey car, passing a thick envelope inside; Adaeze watching from behind a pillar.", say: "Ifeoma's envelope disappears through the window of a grey car.", scene: "Between pillars, Adaeze watches, unseen." },
+        { kind: "line", who: "damola", see: "Inside the car, Damola taking the envelope without looking at it, speaking up to Ifeoma.", say: "“Thank you, Ifeoma. Your new office is ready on Monday.”", scene: "He does not open it." },
+        { kind: "beat", who: "ifeoma", see: "The car pulling away; Ifeoma alone under the broken lamp, wiping her face.", say: "The car pulls away. Ifeoma does not watch it go.", scene: "Ifeoma, alone under the broken lamp." },
+        { kind: "beat", who: "funke", see: "From behind the next pillar, a small woman in white lace and a blue wrapper touches Adaeze's arm; on her phone, an old photo of her with the late mentor, brought back to life.", say: "Behind her, an old woman in white lace touches her arm.", scene: "Behind a pillar, white lace." },
+        { kind: "cliff", who: "funke", see: "Funke holding her cloth handbag open just enough to show a bundle of papers tied with black ribbon.", say: "“That envelope was empty. The real papers are with me.”", scene: "Black ribbon, inside a handbag." },
+        { kind: "choice", see: "Close on the black ribbon around the papers in Funke's handbag, Adaeze's hand reaching toward it.", say: "" },
+      ],
+      cliff: { type: "reveal" },
+      choice: {
+        question: "Does Adaeze trust the old woman?",
+        options: [{ word: "TRUST", label: "Go with her" }, { word: "DOUBT", label: "Test her first" }],
+      },
+      branches: {
+        TRUST: "Funke takes Adaeze to the late mentor's house in Ikoyi, where the papers lie inside his piano, beside a second will.",
+        DOUBT: "Adaeze asks one question only the old man's household could answer. Funke answers it, and names Chief Eze.",
+      },
+      slots: [
+        { key: "car", object: "the grey car in the Marina car park", slide: 3, house: "Penthouse Dusk Paparazzi" },
+        { key: "handbag", object: "Funke's cloth handbag", slide: 7, house: "Regal Burgundy & Gold Tapestry Ensemble" },
+      ],
+      alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "the old photo of Funke with the late mentor on her phone, brought back to life, slide 6" },
     },
   ],
 };

@@ -78,6 +78,13 @@ one uppercase word people comment (`SPEAK`, `WAIT`), with a label of four words
 or fewer. Both next-episode directions are written in advance (`branches`), so
 the winning road can be produced the moment the vote closes.
 
+**Episodes are written ahead, one per road** (`drafts` in the story file): each
+draft is a full episode with `after: "SPEAK.STAY"` — the winning words so far —
+or `after: "*.STAY"` for any road ending that way. When a vote closes, the draft
+for that road posts by itself at the next 7 p.m. (lib/drama/advance.ts). A road
+with no draft waits, and the owner is told; so keep the drafts at least one vote
+ahead of the story.
+
 **The vote:** the first option to reach the story's `minVotes` distinct
 commenters wins (start at 2; raise it as the audience grows). A tie at the
 deadline goes to the option that reached its count first.
@@ -111,10 +118,25 @@ what the house version of the character looks like — so the story can be made
 before anyone joins.
 
 **Fans join the cast** of a story that has not started yet: they claim an open
-role and send one clear photo; the engine makes a character sheet (front,
-three-quarter, profile, full body) and that face plays the role in every
-episode. A role is open only until its first appearance, so nobody's face is
-swapped halfway through a story.
+role and send three photos (face straight on, face turned a little, whole
+body); the engine makes a character sheet (front, three-quarter, profile, full
+body) and that face plays the role in every episode. A role is open only until
+its first appearance, so nobody's face is swapped halfway through a story.
+
+**Guest roles** let fans join a story that is already running. A guest is a
+`cameo` with `guest: true` and `enters: <n>` — the episode they first appear in.
+They are sold until that episode is made, so the guest must appear (as `who` on
+a slide) in **every** written version of episode `n`, and in nothing before it;
+the checker enforces both. Guests are not counted in the five-or-six cast.
+
+**What happens after someone pays** (lib/drama/character.ts, all automatic):
+the three photos are checked for free (one person, a clear face, a whole body
+for the third — tools/drama/photo_check.py); a failed photo is explained on the
+member's page and they send another; then the engine makes the sheet and a
+portrait in costume at 2K, the member sees them at /d/drama/cast/<id>, says
+"this is me" or asks once for it to be made again, and is credited
+"<Role> — played by <name>" in the caption of every episode their character is
+in. Paid model runs are capped at six per member.
 
 ## 6. Nigeria, all of it
 

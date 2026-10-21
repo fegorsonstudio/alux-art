@@ -5,7 +5,8 @@ import { paidEnough, reportPaymentMismatch } from "@/lib/payment-checks";
 import { r2Copy, r2SignedDownloadUrl } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
 import { sendAdminImage, tellAdmin } from "@/lib/telegram";
-import { dramaPrices, storyBySlug } from "@/lib/drama/data";
+import { dramaPrices, lastMadeEpisode, roleIsOpen, storyBySlug } from "@/lib/drama/data";
+import { PHOTO_KINDS, keepCastPhotos, runCastSoon } from "@/lib/drama/character";
 
 /**
  * Paying to play a role, and paying for a brand slot. Both start here (a row
@@ -32,15 +33,20 @@ export class DramaError extends Error {
 type Who = { id: string; email: string; admin: boolean };
 
 // ── Play a role ──────────────────────────────────────────────────────────────
-export async function startCastPayment(input: { slug: string; roleKey: string; displayName: string; photoPath: string; who: Who }) {
+export async function startCastPayment(input: { slug: string; roleKey: string; displayName: string; photos: { kind: string; path: string }[]; who: Who }) {
   const story = await storyBySlug(input.slug);
   if (!story) throw new DramaError("No such story.", 404);
-  if (story.status !== "upcoming") throw new DramaError("This story has started; its cast is locked. Pick a story that is coming soon.");
   const role = (story.content.cast ?? []).find((r) => r.key === input.roleKey);
-  if (!role || !role.open) throw new DramaError("That role is not open.");
+  if (!role) throw new DramaError("That role is not open.");
+  if (!roleIsOpen(story, role, await lastMadeEpisode(story.id))) {
+    throw new DramaError(story.status === "upcoming" ? "That role is not open." : "This character has already appeared, so the role is locked. Look for a guest role, or a story that is coming soon.");
+  }
   const name = input.displayName.trim().slice(0, 60);
   if (name.length < 2) throw new DramaError("Tell us the name to credit you by.");
-  if (!input.photoPath.startsWith(`${input.who.id}/`)) throw new DramaError("Upload your photo again.");
+  // Exactly the three photos the character sheet is drawn from, each the member's own upload.
+  const photos = PHOTO_KINDS.map(({ kind }) => input.photos.find((p) => p.kind === kind));
+  if (photos.some((p) => !p || !p.path.startsWith(`${input.who.id}/`))) throw new DramaError("Add all three photos, then try again.");
+  const kept = photos.map((p) => ({ kind: p!.kind, bucket: "identity-images", path: p!.path }));
   const price = (await dramaPrices())[role.tier];
 
   // Someone who opened checkout and walked away does not hold a role for ever.
@@ -50,8 +56,8 @@ export async function startCastPayment(input: { slug: string; roleKey: string; d
   let row: { id: string } | undefined;
   try {
     [row] = await sql<{ id: string }[]>`
-      INSERT INTO drama_cast (story_id, role_key, user_id, display_name, photo_bucket, photo_path, price_ngn, status)
-      VALUES (${story.id}, ${role.key}, ${input.who.id}, ${name}, 'identity-images', ${input.photoPath},
+      INSERT INTO drama_cast (story_id, role_key, user_id, display_name, email, photo_bucket, photo_path, photos, price_ngn, status)
+      VALUES (${story.id}, ${role.key}, ${input.who.id}, ${name}, ${input.who.email}, 'identity-images', ${kept[0].path}, ${sql.json(kept)},
               ${input.who.admin ? 0 : price}, ${input.who.admin ? "submitted" : "pending_payment"})
       RETURNING id`;
   } catch (e) {
@@ -61,9 +67,10 @@ export async function startCastPayment(input: { slug: string; roleKey: string; d
 
   // The owner tests for free: no checkout, straight to the photo check.
   if (input.who.admin || price === 0) {
-    await keepCastPhoto(row.id);
+    await keepCastPhotos(row.id);
     await announceCast(row.id, "free (admin)");
-    return { done: true as const };
+    runCastSoon(row.id);
+    return { done: true as const, castId: row.id };
   }
   const pay = await initializePaystackPayment({
     email: input.who.email, amountNgn: price, currency: "NGN",
@@ -74,21 +81,14 @@ export async function startCastPayment(input: { slug: string; roleKey: string; d
   return { done: false as const, url: pay.authorizationUrl };
 }
 
-async function keepCastPhoto(castId: string) {
-  const [r] = await sql<{ photo_bucket: string; photo_path: string }[]>`SELECT photo_bucket, photo_path FROM drama_cast WHERE id = ${castId}`;
-  if (!r || r.photo_bucket === KEEP_BUCKET) return;
-  const to = `drama/cast/${castId}/photo.${ext(r.photo_path)}`;
-  await r2Copy(r.photo_bucket, r.photo_path, KEEP_BUCKET, to);
-  await sql`UPDATE drama_cast SET photo_bucket = ${KEEP_BUCKET}, photo_path = ${to}, updated_at = now() WHERE id = ${castId}`;
-}
-
 async function announceCast(castId: string, paid: string) {
   const [r] = await sql<{ display_name: string; role_key: string; title: string; content: { cast: { key: string; name: string }[] }; photo_bucket: string; photo_path: string }[]>`
     SELECT c.display_name, c.role_key, s.title, s.content, c.photo_bucket, c.photo_path
     FROM drama_cast c JOIN drama_stories s ON s.id = c.story_id WHERE c.id = ${castId}`;
   if (!r) return;
   const role = r.content.cast.find((x) => x.key === r.role_key)?.name ?? r.role_key;
-  await tellAdmin(`🎭 <b>New cast member</b> — ${esc(r.display_name)} wants to play <b>${esc(role)}</b> in ${esc(r.title)} (${esc(paid)}).\nCheck the photo in /admin/drama, then make the character sheet.`).catch(() => false);
+  // For the owner's information only: the photo check and the character run by themselves (lib/drama/character.ts).
+  await tellAdmin(`🎭 <b>New cast member</b> — ${esc(r.display_name)} plays <b>${esc(role)}</b> in ${esc(r.title)} (${esc(paid)}).\nTheir photos are checked and their character is made by itself; the portrait comes to you when it is ready.`).catch(() => false);
   const url = await r2SignedDownloadUrl(r.photo_bucket, r.photo_path, 3600).catch(() => null);
   if (url) await sendAdminImage(url, `${r.display_name} as ${role}`).catch(() => false);
 }
@@ -174,8 +174,9 @@ export async function fulfilDramaPayment(opts: { reference: string; amountKobo: 
       }
       const moved = await sql`UPDATE drama_cast SET status = 'submitted', updated_at = now() WHERE id = ${cast.id} AND status = 'pending_payment' RETURNING id`;
       if (!moved.length) return "nothing";
-      await keepCastPhoto(cast.id);
+      await keepCastPhotos(cast.id);
       await announceCast(cast.id, `₦${cast.price_ngn.toLocaleString("en-NG")} paid`);
+      runCastSoon(cast.id);
       return "done";
     }
     const [pl] = await sql<{ id: string; price_ngn: number; status: string }[]>`
@@ -194,6 +195,13 @@ export async function fulfilDramaPayment(opts: { reference: string; amountKobo: 
     await tellAdmin(`⚠️ <b>Drama payment needs a look</b> — reference <code>${esc(opts.reference)}</code> was paid but could not be finished: ${esc((e as Error).message.slice(0, 200))}`).catch(() => false);
     return "nothing";
   }
+}
+
+/** The cast member a payment reference belongs to, so the return page can link to their character. */
+export async function castIdForReference(reference: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_.=-]{6,100}$/.test(reference)) return null;
+  const [r] = await sql<{ id: string }[]>`SELECT id FROM drama_cast WHERE payment_reference = ${reference}`;
+  return r?.id ?? null;
 }
 
 /** The return page's check: ask Paystack directly, then finish if the webhook has not. */

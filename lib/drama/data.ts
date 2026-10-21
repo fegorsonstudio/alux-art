@@ -6,7 +6,28 @@ import sql from "@/lib/db";
 export type DramaRole = {
   key: string; name: string; age: number; role: string; archetype: string; side: string;
   tier: "lead" | "main" | "cameo"; open: boolean; look: string; want: string; secret: string;
+  /** A guest written into a story that is already running; `enters` is the episode they first appear in. */
+  guest?: boolean; enters?: number;
 };
+
+/**
+ * Can someone still join as this role? Before a story starts, every open role
+ * can be played. Once it is running, only a guest whose first episode has not
+ * been made yet (made = frozen, queued or posted) — so nobody's face is ever
+ * swapped after the character has been seen.
+ */
+export function roleIsOpen(story: Pick<StoryRow, "status">, role: DramaRole, lastMadeEpisode: number): boolean {
+  if (!role.open) return false;
+  if (story.status === "upcoming") return true;
+  if (story.status !== "live") return false;
+  return !!role.guest && Number.isInteger(role.enters) && (role.enters as number) > lastMadeEpisode;
+}
+
+/** The highest episode number already made for a story (0 when none). */
+export async function lastMadeEpisode(storyId: string): Promise<number> {
+  const [r] = await sql<{ n: number | null }[]>`SELECT max(n)::int AS n FROM drama_episodes WHERE story_id = ${storyId}`;
+  return r?.n ?? 0;
+}
 export type DramaSlot = { key: string; object: string; slide: number; house: string };
 export type DramaEpisode = {
   n: number; title: string; cliff: { type: string };
@@ -67,16 +88,27 @@ export async function soldSlots(storyId: string): Promise<Set<string>> {
   return new Set(rows.map((r) => `${r.episode_n}:${r.slot_key}`));
 }
 
-export type DramaPrices = { lead: number; main: number; cameo: number; slot: number };
+export type DramaPrices = { lead: number; main: number; cameo: number; slot: number; sponsor: number };
 export async function dramaPrices(): Promise<DramaPrices> {
   const rows = await sql<{ key: string; value: string }[]>`
-    SELECT key, value FROM app_config WHERE key IN ('drama_price_lead', 'drama_price_main', 'drama_price_cameo', 'drama_price_slot')`;
+    SELECT key, value FROM app_config WHERE key IN ('drama_price_lead', 'drama_price_main', 'drama_price_cameo', 'drama_price_slot', 'drama_price_sponsor')`;
   const get = (k: string, d: number) => {
     const n = parseInt(rows.find((r) => r.key === k)?.value ?? "", 10);
     return Number.isFinite(n) && n >= 0 ? n : d;
   };
-  return { lead: get("drama_price_lead", 10000), main: get("drama_price_main", 5000), cameo: get("drama_price_cameo", 2000), slot: get("drama_price_slot", 10000) };
+  // Defaults are the prices the owner set on 2026-10-21 (migration 084).
+  return {
+    lead: get("drama_price_lead", 90000), main: get("drama_price_main", 30000), cameo: get("drama_price_cameo", 10000),
+    slot: get("drama_price_slot", 30000), sponsor: get("drama_price_sponsor", 100000),
+  };
 }
+
+/** What each tier includes — the picture counts that keep the model cost below the price. */
+export const TIER_PACKAGE = {
+  cameo: { episodes: "one episode", pictures: 2 },
+  main: { episodes: "up to three episodes", pictures: 6 },
+  lead: { episodes: "every episode of the season", pictures: 24 },
+} as const;
 
 export type HouseProduct = { title: string; id: string; fromNgn: number };
 /** Alux's own products named in stories, resolved to their marketplace pages (public ones only). */

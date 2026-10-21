@@ -59,6 +59,15 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
     WHERE story_id = ${s.id} AND episode_n = ${ep.n} AND status IN ('approved', 'placed')`;
   const partners = sold.map((p) => p.brand_name);
   const house = ep.alux?.product ? ep.alux.product.split(/[:—]/)[0].trim() : null;
+  // Fans who play a character in this episode are credited by name.
+  const inScene = new Set((ep.slides ?? []).map((x) => (x as { who?: string }).who).filter(Boolean));
+  const players = await sql<{ role_key: string; display_name: string }[]>`
+    SELECT role_key, display_name FROM drama_cast
+    WHERE story_id = ${s.id} AND status IN ('submitted', 'photos_needed', 'making', 'sheet_ready', 'accepted', 'approved', 'failed')`;
+  const credits = players.filter((p) => inScene.has(p.role_key)).map((p) => {
+    const role = (s.content.cast ?? []).find((c) => c.key === p.role_key);
+    return `${role?.name ?? p.role_key} — played by ${p.display_name}`;
+  });
   const tag = (t: string) => `#${t.replace(/[^A-Za-z0-9]/g, "")}`;
   return [
     `${s.title} — Episode ${ep.n}: ${ep.title}`,
@@ -74,6 +83,7 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
     // and "comment PLAY" sends it to the DMs as a button (lib/drama/votes.ts).
     "Play the game, see every story and join the cast: link in bio, or comment PLAY and we'll send it to your DMs.",
     partners.length ? `\nPartner: ${partners.join(", ")}` : "",
+    credits.length ? `\nCast: ${credits.join("; ")}` : "",
     house ? `In this scene: ${house} by Alux.` : "",
     "",
     [tag("AluxMicroDrama"), tag(s.city), tag(`${s.title}`), "#NigerianStories", "#MicroDrama"].join(" "),

@@ -31,8 +31,8 @@ export async function GET() {
     sql<{ episode_id: string; word: string; voter: string; created_at: string }[]>`
       SELECT v.episode_id, v.word, v.voter, v.created_at FROM drama_votes v JOIN drama_episodes e ON e.id = v.episode_id
       WHERE e.story_id = ANY(${ids}::uuid[]) ORDER BY v.created_at`,
-    sql<{ id: string; story_id: string; role_key: string; display_name: string; status: string; price_ngn: number; photo_bucket: string | null; photo_path: string | null; created_at: string }[]>`
-      SELECT id, story_id, role_key, display_name, status, price_ngn, photo_bucket, photo_path, created_at FROM drama_cast
+    sql<{ id: string; story_id: string; role_key: string; display_name: string; status: string; price_ngn: number; photo_bucket: string | null; photo_path: string | null; portrait_bucket: string | null; portrait_path: string | null; renders: number; last_error: string | null; created_at: string }[]>`
+      SELECT id, story_id, role_key, display_name, status, price_ngn, photo_bucket, photo_path, portrait_bucket, portrait_path, renders, last_error, created_at FROM drama_cast
       WHERE story_id = ANY(${ids}::uuid[]) AND status <> 'withdrawn' ORDER BY created_at DESC`,
     sql<{ id: string; story_id: string; episode_n: number; slot_key: string; brand_name: string; contact_name: string | null; contact_email: string | null; contact_phone: string | null; note: string | null; status: string; price_ngn: number; product_bucket: string | null; product_path: string | null; created_at: string }[]>`
       SELECT * FROM drama_placements WHERE story_id = ANY(${ids}::uuid[]) ORDER BY created_at DESC`,
@@ -57,6 +57,7 @@ export async function GET() {
     })),
     claims: await Promise.all(cast.filter((c) => c.story_id === s.id).map(async (c) => ({
       id: c.id, role: c.role_key, name: c.display_name, status: c.status, price: c.price_ngn, at: c.created_at, photo: await sign(c.photo_bucket, c.photo_path),
+      portrait: await sign(c.portrait_bucket, c.portrait_path), renders: c.renders, error: c.last_error,
     }))),
     placements: await Promise.all(places.filter((p) => p.story_id === s.id).map(async (p) => ({
       id: p.id, episode: p.episode_n, slot: p.slot_key, brand: p.brand_name, contact: [p.contact_name, p.contact_email, p.contact_phone].filter(Boolean).join(" · "),
@@ -76,7 +77,9 @@ export async function POST(req: NextRequest) {
     const to = b.decision === "approve" ? (action === "cast" ? "approved" : "approved") : b.decision === "reject" ? "rejected" : null;
     if (!/^[0-9a-f-]{36}$/i.test(id) || !to) return fail(400, "Bad request.");
     const rows = action === "cast"
-      ? await sql`UPDATE drama_cast SET status = ${to}, updated_at = now() WHERE id = ${id} AND status IN ('submitted', 'approved', 'sheet_ready') RETURNING id`
+      ? (to === "approved"
+        ? await sql`UPDATE drama_cast SET status = 'approved', updated_at = now() WHERE id = ${id} AND status IN ('sheet_ready', 'failed') RETURNING id`
+        : await sql`UPDATE drama_cast SET status = 'rejected', updated_at = now() WHERE id = ${id} AND status IN ('submitted', 'photos_needed', 'making', 'sheet_ready', 'accepted', 'approved', 'failed') RETURNING id`)
       : await sql`UPDATE drama_placements SET status = ${to}, updated_at = now() WHERE id = ${id} AND status IN ('paid', 'approved') RETURNING id`;
     if (!rows.length) return fail(409, "That one has moved on — refresh.");
     return NextResponse.json({ ok: true, status: to, note: to === "rejected" ? "Rejected. If they paid, refund them in Paystack." : undefined });
