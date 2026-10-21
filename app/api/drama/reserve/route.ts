@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { isAdminEmail } from "@/lib/auth";
 import { DramaError, startPlacementPayment } from "@/lib/drama/payments";
 
-/** POST { slug, episode, slot, brandName, contactName, phone, productPath, note } → { done } or { url }. Signed-in only. */
+/** POST { slug, episode, slot ("next" = the next episode of a running story), brandName, contactName, phone, productPath, note, productUrl, keyword, rulesOk } → { done, report } or { url }. Signed-in only. */
 export async function POST(req: NextRequest) {
   const { data: { user } } = await (await createClient()).auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       slug: String(b.slug ?? ""), episodeN: Number(b.episode), slotKey: String(b.slot ?? ""),
       brandName: String(b.brandName ?? ""), contactName: String(b.contactName ?? ""), phone: String(b.phone ?? ""),
       productPath: String(b.productPath ?? ""), note: String(b.note ?? ""),
+      productUrl: String(b.productUrl ?? ""), keyword: String(b.keyword ?? ""), rulesOk: b.rulesOk === true,
       who: { id: user.id, email: user.email, admin: isAdminEmail(user.email) },
     });
     return NextResponse.json(out);

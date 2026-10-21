@@ -32,7 +32,9 @@ export type DramaSlot = { key: string; object: string; slide: number; house: str
 export type DramaEpisode = {
   n: number; title: string; cliff: { type: string };
   choice: { question: string; options: { word: string; label: string }[] };
-  slots: DramaSlot[]; alux: { product: string; where: string };
+  slots: DramaSlot[];
+  /** Alux's own product in the scene; `word` + `line` invite viewers in the caption ("Comment LIGHT …"). */
+  alux: { product: string; where: string; word?: string; line?: string };
 };
 /** An episode written ahead for one road of the votes ("SPEAK.STAY", or "*.STAY" for any road ending so). */
 export type DramaDraft = DramaEpisode & { after: string };

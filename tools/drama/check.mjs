@@ -21,6 +21,14 @@ export const HOUSE = [
   "Navy Regal Gele & structured capes (Color-Shift)", "Amethyst Opulence: Embellished Traditional Gown", "Emerald Onyx / Matrix Lux",
   "THE CANON G7x iii", "The Asset Extractor",
 ];
+// Alux's own products a viewer can ask for by commenting a word (ENGINE.md §8).
+// The word lives in the caption only, never on a slide. null = any studio template
+// in HOUSE that is not tied to another word. RETOUCH is not public yet.
+export const PRODUCT_WORDS = {
+  LIGHT: ["The Gear Equalizer — Pro Studio Upgrade"],
+  GIF: ["Instagram GIF Maker"],
+  BOOK: null,
+};
 export const words = (s) => (String(s ?? "").match(/[\p{L}\p{N}'’%.-]+/gu) ?? []).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 const EMOJI = /\p{Extended_Pictographic}/u;
 
@@ -96,6 +104,10 @@ export function checkStory(s, file) {
     }
     if (![...eps, ...drafts].some((e) => e.n === g.enters)) bad(`${g.key}: episode ${g.enters} is not written on any road yet`);
   }
+
+  const roads = walkRoads(s);
+  for (const p of roads.problems) bad(p);
+  s._roads = roads;
   return errs;
 }
 
@@ -145,8 +157,58 @@ function checkEpisode(e, tag, keys, bad) {
       if (!HOUSE.includes(sl2.house)) bad(`${tag}: slot ${sl2.key} house product "${sl2.house}" is not an Alux product`);
     }
     if (!HOUSE.includes(e.alux?.product) || !String(e.alux?.where ?? "").trim()) bad(`${tag}: needs an Alux moment (alux.product + where)`);
+    const a = e.alux ?? {};
+    const onSlide = /slide (\d+)\s*$/.exec(String(a.where ?? ""));
+    if (onSlide && Number(onSlide[1]) >= 7) bad(`${tag}: the Alux moment must not be on the cliff or the vote slide`);
+    if (a.word !== undefined) {
+      const tied = Object.values(PRODUCT_WORDS).filter(Boolean).flat();
+      if (!(a.word in PRODUCT_WORDS)) bad(`${tag}: alux.word "${a.word}" is not a product word (${Object.keys(PRODUCT_WORDS).join(", ")})`);
+      else if (PRODUCT_WORDS[a.word] && !PRODUCT_WORDS[a.word].includes(a.product)) bad(`${tag}: ${a.word} sells ${PRODUCT_WORDS[a.word].join(" / ")}, not ${a.product}`);
+      else if (!PRODUCT_WORDS[a.word] && tied.includes(a.product)) bad(`${tag}: ${a.product} has its own word, not ${a.word}`);
+      if (!String(a.line ?? "").includes(`Comment ${a.word}`)) bad(`${tag}: alux.line must invite them with "Comment ${a.word}"`);
+      if (words(a.line) > 25) bad(`${tag}: alux.line ${words(a.line)} words (max 25)`);
+      if (EMOJI.test(String(a.line ?? ""))) bad(`${tag}: alux.line takes no emoji`);
+      if ((e.choice?.options ?? []).some((o) => o.word === a.word)) bad(`${tag}: ${a.word} is also one of this episode's vote words`);
+      if ((e.slides ?? []).some((x) => new RegExp(`\\b${a.word}\\b`).test(String(x.say ?? "")))) bad(`${tag}: the product word belongs in the caption, not on a slide`);
+    }
   }
   return e._words;
+}
+
+/** The written episode for road `road` at episode n: the exact road, else the longest "*." ending that fits. */
+export function draftFor(drafts, n, road) {
+  const list = (drafts ?? []).filter((d) => d.n === n);
+  const exact = list.find((d) => d.after === road.join("."));
+  if (exact) return exact;
+  return list.filter((d) => String(d.after).startsWith("*."))
+    .map((d) => ({ d, tail: d.after.slice(2).split(".") }))
+    .filter(({ tail }) => tail.length <= road.length && tail.every((w, i) => road[road.length - tail.length + i] === w))
+    .sort((x, y) => y.tail.length - x.tail.length)[0]?.d ?? null;
+}
+
+/**
+ * Every road the votes can take from Episode 1, through the written episodes.
+ * A road is complete when it reaches a finale, open when the next episode is
+ * not written yet. Along each road, two episodes in a row never both sell.
+ */
+export function walkRoads(s) {
+  const first = (s.episodes ?? [])[0];
+  const out = { complete: 0, open: [], problems: [] };
+  if (!first) return out;
+  const visit = (road, ep, prevSold) => {
+    const sold = !!ep.alux?.word;
+    if (sold && prevSold) out.problems.push(`episode ${ep.n} after ${road.join(".")}: a product word two episodes in a row`);
+    if (ep.finale) { out.complete++; return; }
+    for (const o of ep.choice?.options ?? []) {
+      const next = [...road, o.word];
+      const played = (s.episodes ?? []).find((x) => x.n === ep.n + 1);
+      const d = played ?? draftFor(s.drafts, ep.n + 1, next);
+      if (!d) { out.open.push(`episode ${ep.n + 1} after ${next.join(".")}`); continue; }
+      visit(next, d, sold);
+    }
+  };
+  visit([], first, false);
+  return out;
 }
 
 export async function loadStories(only) {
@@ -167,6 +229,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const w = [...(story.episodes ?? []).map((e) => `ep${e.n} ${e._words ?? "?"}w`),
       ...(story.drafts ?? []).map((d) => `ep${d.n} after ${d.after} ${d._words ?? "?"}w`)].join(", ");
     console.log(`${errs.length ? "FAIL" : "ok  "}  ${story.slug} (${story.genre}, ${story.city}) — ${w}`);
+    const r = story._roads;
+    if (r) console.log(`        roads: ${r.complete} complete to the finale, ${r.open.length} not written yet${r.open.length && r.open.length <= 4 ? ` (${r.open.join("; ")})` : ""}`);
     for (const e of errs) console.log(`        - ${e}`);
     if (errs.length) failed++;
   }

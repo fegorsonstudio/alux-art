@@ -13,7 +13,7 @@ import { PHOTO_KINDS, type PhotoKind } from "@/lib/drama/photo-kinds";
  */
 type Props =
   | { mode: "cast"; slug: string; role: string; roleName: string; priceLabel: string; admin: boolean; defaultName: string; includes: string }
-  | { mode: "brand"; slug: string; episode: number; slot: string; slotLabel: string; priceLabel: string; admin: boolean; defaultName: string };
+  | { mode: "brand"; slug: string; episode: number; slot: string; slotLabel: string; priceLabel: string; admin: boolean; defaultName: string; notPlaced: string[]; noClaims: string };
 
 type Picked = { file: File; preview: string };
 const MAX = 30 * 1024 * 1024;
@@ -33,12 +33,18 @@ export default function CheckoutForm(p: Props) {
   const [brand, setBrand] = useState("");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
+  const [productUrl, setProductUrl] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [rulesOk, setRulesOk] = useState(false);
   const [product, setProduct] = useState<Picked | null>(null);
   const [photos, setPhotos] = useState<Partial<Record<PhotoKind, Picked>>>({});
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ castId?: string } | null>(null);
+  const [done, setDone] = useState<{ castId?: string; report?: string } | null>(null);
+  // The brand's comment word: suggested from the brand name until they type their own.
+  const suggested = brand.toUpperCase().replace(/[^A-Z ]/g, "").split(" ").filter((w) => w.length >= 3)[0]?.slice(0, 14) ?? "";
+  const word = (keyword || suggested).toUpperCase().replace(/[^A-Z]/g, "").slice(0, 14);
 
   const accept = (f: File | null): Picked | null => {
     setError("");
@@ -55,6 +61,9 @@ export default function CheckoutForm(p: Props) {
       if (missing) { setError(`Add the photo: ${missing.label.toLowerCase()}.`); return; }
     } else if (!product) { setError("Add a picture of your product or logo."); return; }
     if (p.mode === "brand" && brand.trim().length < 2) { setError("Add your brand name."); return; }
+    if (p.mode === "brand" && !/^https:\/\/[^\s.]+\.[^\s]+$/.test(productUrl.trim())) { setError("Add the full link to your product, starting with https://"); return; }
+    if (p.mode === "brand" && !/^[A-Z]{3,14}$/.test(word)) { setError("Choose a comment word of 3 to 14 letters, no spaces."); return; }
+    if (p.mode === "brand" && !rulesOk) { setError("Tick the box to confirm your product is not on the list we can't place."); return; }
     if (name.trim().length < 2) { setError(p.mode === "cast" ? "Add the name to credit you by." : "Add a contact name."); return; }
     if (!agree) { setError("Tick the box to confirm."); return; }
     try {
@@ -68,7 +77,7 @@ export default function CheckoutForm(p: Props) {
         body = { slug: p.slug, role: p.role, displayName: name, photos: sent };
       } else {
         setBusy("Sending your picture…");
-        body = { slug: p.slug, episode: p.episode, slot: p.slot, brandName: brand, contactName: name, phone, productPath: await upload(product!.file), note };
+        body = { slug: p.slug, episode: p.episode, slot: p.slot, brandName: brand, contactName: name, phone, productPath: await upload(product!.file), note, productUrl: productUrl.trim(), keyword: word, rulesOk };
       }
       setBusy("Working…");
       const res = await fetch(p.mode === "cast" ? "/api/drama/join" : "/api/drama/reserve", {
@@ -77,7 +86,7 @@ export default function CheckoutForm(p: Props) {
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error ?? "Something went wrong.");
       if (out.url) { window.location.href = out.url; return; }
-      setDone({ castId: typeof out.castId === "string" ? out.castId : undefined });
+      setDone({ castId: typeof out.castId === "string" ? out.castId : undefined, report: typeof out.report === "string" ? out.report : undefined });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -91,9 +100,9 @@ export default function CheckoutForm(p: Props) {
         <h2 className={styles.h2}>{p.mode === "cast" ? "You're in the cast" : "Your slot is held"}</h2>
         <p className={styles.p}>{p.mode === "cast"
           ? "We're checking your photos and making your character now — it usually takes a few minutes."
-          : "We check your picture and place your product in the scene. You'll see it before the episode posts."}</p>
-        <a className={`${styles.btn} ${styles.primary}`} href={p.mode === "cast" && done.castId ? `/d/drama/cast/${done.castId}` : `/d/drama/${p.slug}`}>
-          {p.mode === "cast" && done.castId ? "See your character" : "Back to the story"}
+          : "Your product goes into the episode by itself. When it posts, the caption credits you and invites viewers to comment your word."}</p>
+        <a className={`${styles.btn} ${styles.primary}`} href={p.mode === "cast" && done.castId ? `/d/drama/cast/${done.castId}` : done.report ?? `/d/drama/${p.slug}`}>
+          {p.mode === "cast" && done.castId ? "See your character" : done.report ? "Open your report" : "Back to the story"}
         </a>
       </div>
     );
@@ -154,9 +163,32 @@ export default function CheckoutForm(p: Props) {
         </div>
       )}
       {p.mode === "brand" && (
+        <>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Link to your product</span>
+            <input className={styles.input} value={productUrl} maxLength={400} inputMode="url" placeholder="https://yourshop.com/the-product" onChange={(e) => setProductUrl(e.target.value)} />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Your comment word</span>
+            <input className={styles.input} value={keyword || suggested} maxLength={14} onChange={(e) => setKeyword(e.target.value.toUpperCase().replace(/[^A-Za-z]/g, ""))} placeholder="WAIST" />
+            <span className={styles.sectionNote}>Viewers comment this word under the episode and get a button to your product.</span>
+          </label>
+          <div className={styles.notice} style={{ margin: 0 }}>
+            <span className={styles.fieldLabel} style={{ display: "block", marginBottom: 6 }}>In the caption</span>
+            Partner: {brand.trim() || "Your brand"}. Comment {word || "WORD"} to see it.
+          </div>
+        </>
+      )}
+      {p.mode === "brand" && (
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Anything we should know (optional)</span>
           <textarea className={styles.input} rows={3} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+        </label>
+      )}
+      {p.mode === "brand" && (
+        <label className={styles.check}>
+          <input type="checkbox" checked={rulesOk} onChange={(e) => setRulesOk(e.target.checked)} />
+          <span>My product is not one of these, which we don’t place: {p.notPlaced.join("; ")}. {p.noClaims}</span>
         </label>
       )}
       <label className={styles.check}>

@@ -87,7 +87,22 @@ export async function handleDramaComment(
   const who = c.fromUsername ? `@${c.fromUsername}` : voter;
   const url = storyUrl(hit.slug);
   if (!word) {
-    if (!LINK_WORDS.includes(firstWord(c.text))) return false; // a comment, not a vote — leave it to everything else
+    const asked = firstWord(c.text);
+    // A brand's own word for this episode: a button to their product, through our link that counts the taps.
+    const [brand] = asked ? await sql<{ id: string; brand_name: string; link_code: string; placed_slot: string | null }[]>`
+      SELECT id, brand_name, link_code, placed_slot FROM drama_placements
+      WHERE story_id = ${hit.story_id} AND episode_n = ${hit.n} AND keyword = ${asked} AND status = 'placed' AND link_code IS NOT NULL LIMIT 1` : [];
+    if (brand) {
+      await sql`UPDATE drama_placements SET asks = asks + 1 WHERE id = ${brand.id}`;
+      console.log(`[drama vote] ${who} asked for ${brand.brand_name} (${asked}) on ${hit.slug} ep ${hit.n}`);
+      if (creds) {
+        await answer(creds, c.commentId,
+          `Here it is — ${brand.brand_name}, from Episode ${hit.n} of ${hit.title}. Tap to see it.`,
+          `${SITE_URL.replace(/\/$/, "")}/d/go/${brand.link_code}`, `See ${brand.brand_name}`.slice(0, 20));
+      }
+      return true;
+    }
+    if (!LINK_WORDS.includes(asked)) return false; // a comment, not a vote — leave it to everything else (LIGHT, BOOK…)
     console.log(`[drama vote] ${who} asked for the game link on ${hit.slug} ep ${hit.n}`);
     if (creds) {
       const [a, b] = hit.content.choice.options;

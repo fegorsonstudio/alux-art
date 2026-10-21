@@ -189,7 +189,22 @@ async function photoSlide(a: {
  * it (slide number → picture): those slides are drawn over the picture, the
  * rest stay designed.
  */
-export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map<number, SlideArt>): Promise<Buffer[]> {
+/**
+ * A brand's product on a designed slide: a small framed picture low on the
+ * slide with "Partner" and the brand under it. (On a picture slide the product
+ * belongs in the picture itself, so no card is drawn there.)
+ */
+async function partnerCard(card: { buffer: Buffer; brand: string }, look: Look): Promise<string> {
+  const size = 230;
+  const png = await sharp(card.buffer).rotate().resize(size * 2, size * 2, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 1 } }).png().toBuffer();
+  const x = (SLIDE_W - size) / 2, y = 965;
+  return `<defs><clipPath id="pc"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="18"/></clipPath></defs>
+    <rect x="${x - 4}" y="${y - 4}" width="${size + 8}" height="${size + 8}" rx="21" fill="#ffffff" opacity="0.92"/>
+    <image x="${x}" y="${y}" width="${size}" height="${size}" href="data:image/png;base64,${png.toString("base64")}" clip-path="url(#pc)" preserveAspectRatio="xMidYMid meet"/>
+    <text x="${SLIDE_W / 2}" y="${y + size + 34}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="19" font-weight="600" letter-spacing="0.24em" fill="${look.muted}">${esc(`PARTNER · ${card.brand.toUpperCase()}`)}</text>`;
+}
+
+export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map<number, SlideArt>, cards?: Map<number, { buffer: Buffer; brand: string }>): Promise<Buffer[]> {
   const look = lookOf(story.genre);
   const total = ep.slides.length;
   const footer = `${story.title} · Episode ${ep.n}`;
@@ -293,6 +308,8 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map
       }
       body = `${ground(look, { page, total, footer })}${inner}`;
     }
+    const card = cards?.get(page);
+    if (card && s.kind !== "cover" && s.kind !== "choice") body += await partnerCard(card, look);
     out.push(await jpeg(svgDoc(body)));
   }
   return out;

@@ -4,6 +4,7 @@ import styles from "../drama.module.css";
 import DramaShell from "../DramaShell";
 import PartnerForm from "./PartnerForm";
 import { dramaPrices, shelfStories } from "@/lib/drama/data";
+import { NOT_PLACED, NO_CLAIMS } from "@/lib/drama/brands";
 
 /** For companies that want more than one product in a scene. */
 export const dynamic = "force-dynamic";
@@ -39,7 +40,9 @@ export default async function PartnerPage({ searchParams }: { searchParams: Prom
             { key: "other", name: "Something else", note: "Tell us below." },
           ]}
         />
-        <p className={styles.foot}>Every partner is credited in the caption. The story always comes first: your brand has to belong in the scene.</p>
+        <p className={styles.foot}>
+          Every partner is credited in the caption. The story always comes first: your brand has to belong in the scene. We don’t place {NOT_PLACED.join("; ")}. {NO_CLAIMS}
+        </p>
       </div>
     </DramaShell>
   );

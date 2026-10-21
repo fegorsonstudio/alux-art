@@ -138,7 +138,7 @@ export default {
         { kind: "cover", see: "Adaeze seated alone at the head of the long table; the board standing by the dark windows; a wall clock above the door reads 11:40. Caption space: top third.", say: "" },
         { kind: "time", see: "The wall clock above the boardroom door at 11:40, the men's reflections in the night glass below it.", say: "Marina. 11:40 p.m. The board is standing. She is not.", scene: "The same room, two hours later." },
         { kind: "line", who: "adaeze", see: "Adaeze, calm, both hands folded over the brass key on the contract; Tunde pacing behind her chair.", say: "“Nobody signs until the registry answers. I can wait all night.”", scene: "She has not moved her key." },
-        { kind: "text", who: "damola", see: "Close on Ifeoma's second phone lighting up in her hand under the table, a message from Damola on the screen.", say: "Damola, to Ifeoma: “The offer ends at midnight. So does her company.”", scene: "Ifeoma's second phone lights up." },
+        { kind: "text", who: "damola", see: "Close on Ifeoma's second phone lighting up in her hand under the table: a message from Damola over her lock screen, a portrait of an older woman in a nurse's cap and white uniform.", say: "Damola, to Ifeoma: “The offer ends at midnight. So does her company.”", scene: "Ifeoma's second phone lights up." },
         { kind: "beat", who: "ifeoma", see: "Ifeoma looking up from the phone at the scrap of black ribbon lying on the table in front of Chief Eze.", say: "Ifeoma reads it twice. Then she looks at the ribbon.", scene: "The ribbon scrap, on the table." },
         { kind: "line", who: "ifeoma", see: "Behind the glass door in the corridor, Ifeoma close to Adaeze, whispering, one phone pressed face down against her chest.", say: "“I took the papers last night. To keep them from him.”", scene: "A whisper, behind the glass door." },
         { kind: "cliff", see: "Close on Adaeze's own phone in her palm: one new message from the registry, the screen the only light on her face.", say: "Registry: “No trust is filed under that name.”", scene: "Her own phone. One line." },
@@ -157,7 +157,10 @@ export default {
         { key: "phone", object: "the second phone lighting up in Ifeoma's hand", slide: 4, house: "Instagram GIF Maker" },
         { key: "clock", object: "the wall clock above the boardroom door", slide: 2, house: "Noir Director Editorial" },
       ],
-      alux: { product: "Noir Director Editorial", where: "the executive portraits along the boardroom wall, slide 1" },
+      alux: {
+        product: "Nursing Induction", where: "Ifeoma's lock screen: her mother's nursing induction portrait, slide 4",
+        word: "BOOK", line: "Ifeoma keeps her mother's induction portrait where she sees it every day. Comment BOOK and we'll make you one worth keeping.",
+      },
     },
     {
       n: 3,
@@ -167,10 +170,10 @@ export default {
         { kind: "cover", see: "A cramped security room, a wall of grey monitors; Adaeze and Sunday lit only by the screens, his cap in his hands. Caption space: top third.", say: "" },
         { kind: "time", see: "The concrete service stairs going down, one strip light, Adaeze's heels and Sunday's boots on the steps.", say: "Basement, Marina tower. 10:05 p.m. Sunday knows the way.", scene: "Down the service stairs. Monitors hum." },
         { kind: "line", who: "guard", see: "Sunday at the desk rewinding footage, his hands unsteady; a flask of tea and a faded staff photo of him from 1998 pinned above the monitors.", say: "“Last night, madam. Camera four. I saw, but nobody asked me.”", scene: "He rewinds the tape with shaking hands." },
-        { kind: "beat", see: "Grey CCTV footage on one monitor: the corridor safe, a timestamp reading 02:14, a figure in a red cap bent at the lock.", say: "2:14 a.m. A figure at the safe, in a red cap.", scene: "Grey footage. The corridor safe." },
+        { kind: "beat", see: "Grey CCTV footage on one monitor: the corridor safe, a timestamp reading 02:14, a figure in a red cap bent at the lock, two phones in one hand.", say: "2:14 a.m. A figure at the safe, two phones in hand.", scene: "Grey footage. The corridor safe." },
         { kind: "line", who: "guard", see: "Sunday leaning close to the screen, pointing at the figure; Adaeze behind him, very still.", say: "“That is the Chairman's cap. It is not his walk.”", scene: "Sunday leans close to the screen." },
-        { kind: "beat", see: "Frame by frame on the monitor: the slim figure moving quickly away from the safe, an envelope under one arm, two phones in one hand.", say: "The figure is slim. Quick. An envelope, and two phones.", scene: "Frame by frame, the figure moves." },
-        { kind: "cliff", see: "The footage paused: the figure turned toward the camera, the red cap pushed back, braids gathered in a low bun beneath it, face half in shadow.", say: "The figure turns to the camera. Braids, under the red cap.", scene: "Paused. The face, half in shadow." },
+        { kind: "beat", who: "adaeze", see: "Adaeze photographing the paused, too-dark frame with her phone and relighting it on the screen: the black shadow under the red cap slowly turning into detail.", say: "Too dark to see a face. She relights the frame.", scene: "Her phone. The frame, relit." },
+        { kind: "cliff", see: "The relit frame on Adaeze's phone: the figure turned toward the camera, the red cap pushed back, braids gathered in a low bun beneath it.", say: "Relit, the shadow has a face. Braids, under the red cap.", scene: "The shadow becomes a face." },
         { kind: "choice", see: "Close on Adaeze's face lit grey by the paused screen, her hand closing around the brass key.", say: "" },
       ],
       cliff: { type: "reveal" },
@@ -186,7 +189,10 @@ export default {
         { key: "screens", object: "the CCTV monitors in the security room", slide: 1, house: "The Gear Equalizer — Pro Studio Upgrade" },
         { key: "tea", object: "the flask of tea on Sunday's desk", slide: 3, house: "Noir Director Editorial" },
       ],
-      alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "Sunday's faded 1998 staff photo pinned above the monitors, brought back to life, slide 3" },
+      alux: {
+        product: "The Gear Equalizer — Pro Studio Upgrade", where: "Adaeze relights the dark security-camera frame on her phone, slide 6",
+        word: "LIGHT", line: "Saw how Adaeze lit up that frame? Comment LIGHT and we'll relight one of your photos too.",
+      },
     },
 
     // ── Episode 4 (Cost): one per road. Mrs Funke Adebayo, the guest, enters in all four.
@@ -257,9 +263,9 @@ export default {
         { kind: "time", see: "A Yaba street at night, a block of flats, one window lit on the second floor.", say: "Yaba. 11:20 p.m. Ifeoma's flat. The light is already on.", scene: "One window lit. Second floor." },
         { kind: "line", who: "ifeoma", see: "Ifeoma at her own front door, key in hand, staring at the light under it; Adaeze one step behind.", say: "“I left it locked, madam. I left the light off.”", scene: "Her own door. Her own key." },
         { kind: "beat", see: "Inside, the bed pulled away from the wall; one floorboard lifted; the space beneath it empty.", say: "The floorboard under the bed is lifted. The envelope is gone.", scene: "Under the bed, one loose board." },
-        { kind: "beat", who: "funke", see: "In the tiny kitchen, a small older woman in white lace sits upright on a stool, cloth handbag on her knees, a kettle steaming.", say: "In the kitchen sits an old woman, handbag on her knees.", scene: "The kitchen. A stranger, perfectly calm." },
+        { kind: "beat", who: "funke", see: "In the tiny kitchen, a small older woman in white lace sits upright on a stool, cloth handbag on her knees, a nursing induction photo of a young woman tucked in its outer pocket, a kettle steaming.", say: "In the kitchen sits an old woman, handbag on her knees.", scene: "The kitchen. A stranger, perfectly calm." },
         { kind: "line", who: "funke", see: "Funke looking up at both women, unhurried, reading glasses on their cord.", say: "“I took them before he came. I am Funke. I was there.”", scene: "She does not stand up." },
-        { kind: "cliff", who: "funke", see: "Funke opening the handbag: the trust papers and a second sealed envelope; a nursing induction photo of a young woman tucked in the bag's pocket.", say: "“And this is the second will. Chief Eze signed it too.”", scene: "The handbag opens. Two envelopes." },
+        { kind: "cliff", who: "funke", see: "Funke opening the handbag: the trust papers and a second sealed envelope.", say: "“And this is the second will. Chief Eze signed it too.”", scene: "The handbag opens. Two envelopes." },
         { kind: "choice", see: "Close on the sealed envelope on the kitchen table under a bare bulb.", say: "" },
       ],
       cliff: { type: "reveal" },
@@ -275,7 +281,7 @@ export default {
         { key: "kettle", object: "the kettle on Ifeoma's stove", slide: 5, house: "Noir Director Editorial" },
         { key: "handbag", object: "Funke's cloth handbag", slide: 7, house: "Regal Burgundy & Gold Tapestry Ensemble" },
       ],
-      alux: { product: "Nursing Induction", where: "the nursing induction portrait of Funke's granddaughter in her handbag pocket, slide 7" },
+      alux: { product: "Nursing Induction", where: "the nursing induction portrait of Funke's granddaughter in her handbag pocket, slide 5" },
     },
     {
       n: 4,
@@ -459,7 +465,10 @@ export default {
         { key: "cameras", object: "the press cameras at the lobby doors", slide: 2, house: "Penthouse Dusk Paparazzi" },
         { key: "cheque", object: "the cheque book on the boardroom table", slide: 6, house: "Noir Director Editorial" },
       ],
-      alux: { product: "Noir Director Editorial", where: "Adaeze's new executive portrait waiting to be hung on the boardroom wall, slide 6" },
+      alux: {
+        product: "Noir Director Editorial", where: "Adaeze's new executive portrait waiting to be hung on the boardroom wall, slide 6",
+        word: "BOOK", line: "Every boardroom wall starts with one portrait. Comment BOOK and we'll make yours.",
+      },
     },
     {
       n: 6,
@@ -479,7 +488,10 @@ export default {
         { key: "pen", object: "the pen Chief Eze signs with", slide: 4, house: "Noir Director Editorial" },
         { key: "cheque", object: "the cheque book on the boardroom table", slide: 6, house: "Noir Director Editorial" },
       ],
-      alux: { product: "Noir Director Editorial", where: "Adaeze's new executive portrait waiting by the boardroom wall, slide 6" },
+      alux: {
+        product: "Noir Director Editorial", where: "Adaeze's new executive portrait waiting by the boardroom wall, slide 6",
+        word: "BOOK", line: "Every boardroom wall starts with one portrait. Comment BOOK and we'll make yours.",
+      },
     },
   ],
 };

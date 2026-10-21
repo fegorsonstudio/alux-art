@@ -3,20 +3,34 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import styles from "./drama.module.css";
+import GameTour, { type TourStep } from "./GameTour";
 
 /**
  * The frame both game pages share: the wordmark, the light/dark switch
  * (localStorage studio-theme, as on every App-look page; dark by default
- * here, a cinema shelf) and the floating dock.
+ * here, a cinema shelf), the floating dock and, when a page passes `tour`,
+ * the "How it works" mini tutorial — shown by itself on a first visit.
  */
-export default function DramaShell({ children, dock }: { children: ReactNode; dock: { href: string; label: string; icon: keyof typeof ICONS }[] }) {
+export default function DramaShell({ children, dock, tour }: {
+  children: ReactNode; dock: { href: string; label: string; icon: keyof typeof ICONS }[];
+  tour?: { steps: TourStep[]; seenKey: string };
+}) {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [touring, setTouring] = useState(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("studio-theme");
       if (saved === "light" || saved === "dark") setTheme(saved);
     } catch { /* private mode */ }
   }, []);
+  useEffect(() => {
+    if (!tour) return;
+    let seen = true;
+    try { seen = localStorage.getItem(tour.seenKey) === "1"; } catch { /* private mode: never pop up */ }
+    if (seen) return;
+    const t = window.setTimeout(() => setTouring(true), 700); // after the page has laid out
+    return () => window.clearTimeout(t);
+  }, [tour]);
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -28,12 +42,16 @@ export default function DramaShell({ children, dock }: { children: ReactNode; do
       <div className={styles.wrap}>
         <header className={styles.top}>
           <Link href="/d/drama" className={styles.mark}>Alux <span>Micro Drama</span></Link>
-          <button type="button" className={styles.iconBtn} onClick={toggle} aria-label={theme === "dark" ? "Switch to light" : "Switch to dark"}>
-            {theme === "dark" ? ICONS.sun : ICONS.moon}
-          </button>
+          <div className={styles.topRight}>
+            {tour && <button type="button" className={styles.helpBtn} onClick={() => setTouring(true)} data-tour="help">How it works</button>}
+            <button type="button" className={styles.iconBtn} onClick={toggle} aria-label={theme === "dark" ? "Switch to light" : "Switch to dark"}>
+              {theme === "dark" ? ICONS.sun : ICONS.moon}
+            </button>
+          </div>
         </header>
         {children}
       </div>
+      {tour && <GameTour steps={tour.steps} seenKey={tour.seenKey} open={touring} onClose={() => setTouring(false)} />}
       <nav className={styles.dock} aria-label="Sections">
         {dock.map((d) => (
           <a key={d.href} href={d.href} className={styles.dockItem}>

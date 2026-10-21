@@ -12,6 +12,8 @@ import { withShootLock } from "@/lib/worker-lock";
 import type { DramaRole, StoryRow } from "@/lib/drama/data";
 import { emailCastMember } from "@/lib/drama/notify";
 import { PHOTO_KINDS, type PhotoKind } from "@/lib/drama/photo-kinds";
+import { SHEET_LIGHT, lightFor, lightingBlock } from "@/lib/drama/lighting";
+import { makePosterSoon } from "@/lib/drama/poster";
 
 /**
  * A cast member's character, made by itself (owner, 2026-10-21: no approving).
@@ -62,7 +64,7 @@ const ext = (p: string) => (/\.(jpe?g|png|webp|heic)$/i.exec(p)?.[1] ?? "jpg").t
 async function loadCast(id: string) {
   const [c] = await sql<CastRow[]>`SELECT * FROM drama_cast WHERE id = ${id}`;
   if (!c) return null;
-  const [s] = await sql<StoryRow[]>`SELECT id, slug, title, city, genre, content FROM drama_stories WHERE id = ${c.story_id}`;
+  const [s] = await sql<StoryRow[]>`SELECT id, slug, title, city, genre, status, content FROM drama_stories WHERE id = ${c.story_id}`;
   const role = (s?.content.cast ?? []).find((r) => r.key === c.role_key);
   return s && role ? { c, story: s, role } : null;
 }
@@ -145,7 +147,8 @@ function sheetPrompt(role: DramaRole, story: StoryRow): string {
     "feet, standing, facing the camera, arms relaxed, a small margin above the head and below the feet. Exactly four panels: " +
     "do not repeat a view, do not add one, do not leave one empty.",
     LIKENESS, wardrobe(role),
-    "STUDIO — plain mid-grey seamless backdrop, soft even light from the front, gentle shadow, the face sharp in every panel.",
+    "BACKDROP — plain mid-grey seamless studio backdrop, the face sharp in every panel.",
+    lightingBlock(SHEET_LIGHT, false),
     PHOTO_REAL, NO_TEXT,
   ].join("\n\n");
 }
@@ -157,8 +160,8 @@ function portraitPrompt(role: DramaRole, story: StoryRow): string {
     "copy them exactly. The other attached photographs are the same person and support the likeness.",
     "FRAMING — from the waist up, body turned slightly, face toward the camera, a quiet, composed expression, eyes to the lens.",
     LIKENESS, wardrobe(role),
-    "LIGHT — a dark editorial portrait: deep charcoal backdrop with a soft gradient, one soft key light from the front left, a " +
-    "faint rim light on the shoulder, shallow depth of field. Calm, classy, cinematic. Keep the top fifth of the frame dark and plain.",
+    `SETTING — a dark, simple background that suits ${story.city} and the story's world, softly out of focus. Keep the top fifth of the frame dark and plain.`,
+    lightingBlock(lightFor(story.genre)),
     PHOTO_REAL, NO_TEXT,
   ].join("\n\n");
 }
@@ -209,7 +212,10 @@ async function makeCharacter(c: CastRow, story: StoryRow, role: DramaRole): Prom
   const portrait = await paidImage(c.id, { prompt: portraitPrompt(role, story), aspect_ratio: "4:5", output_format: "jpeg", image_urls: [sheet.url, ...urls.slice(0, 5)] });
   const portraitPath = `drama/cast/${c.id}/portrait-${stamp}.jpg`;
   await r2Upload(KEEP_BUCKET, portraitPath, portrait.buffer, "image/jpeg");
-  await sql`UPDATE drama_cast SET portrait_bucket = ${KEEP_BUCKET}, portrait_path = ${portraitPath}, status = 'sheet_ready', last_error = NULL, updated_at = now()
+  // Every image keeps the lighting and grade it was made with.
+  const notes = { sheet: SHEET_LIGHT, portrait: lightFor(story.genre), model: portrait.model, at: new Date().toISOString() };
+  await sql`UPDATE drama_cast SET portrait_bucket = ${KEEP_BUCKET}, portrait_path = ${portraitPath}, render_notes = ${sql.json(notes)},
+            status = 'sheet_ready', last_error = NULL, updated_at = now()
             WHERE id = ${c.id} AND status = 'making'`;
 }
 
@@ -277,8 +283,15 @@ export async function processCast(): Promise<{ id: string; result: string }[]> {
 /** The member's own actions on their page. */
 export async function castAction(castId: string, action: "accept" | "redo"): Promise<string> {
   if (action === "accept") {
-    const r = await sql`UPDATE drama_cast SET status = 'accepted', updated_at = now() WHERE id = ${castId} AND status = 'sheet_ready' RETURNING id`;
-    return r.length ? "accepted" : "unchanged";
+    const r = await sql<{ story_id: string; role_key: string }[]>`
+      UPDATE drama_cast SET status = 'accepted', updated_at = now() WHERE id = ${castId} AND status = 'sheet_ready' RETURNING story_id, role_key`;
+    if (!r.length) return "unchanged";
+    // A lead or main role, before the story starts: the poster is remade with their face.
+    const got = await loadCast(castId);
+    if (got && got.story.status === "upcoming" && (got.role.tier === "lead" || got.role.tier === "main")) {
+      makePosterSoon(r[0].story_id, `${got.c.display_name} plays ${got.role.name}`);
+    }
+    return "accepted";
   }
   // Both images are made again (the old files stay in storage, unreferenced).
   const r = await sql`UPDATE drama_cast SET status = 'making', redo_used = true, sheet_path = NULL, portrait_path = NULL, updated_at = now()

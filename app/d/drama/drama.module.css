@@ -228,3 +228,23 @@
 .pkgName { font-size: 15px; font-weight: 600; color: var(--ink); margin: 0; }
 .pkgNote { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* The mini tutorial (GameTour.tsx): the page dims, one part is lit, a note explains it. */
+.helpBtn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.helpBtn:hover { border-color: var(--live); }
+.helpBtn:focus-visible, .tourSkip:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+.topRight { display: flex; align-items: center; gap: 8px; }
+.tour { position: fixed; inset: 0; z-index: 200; }
+.tourHole { position: fixed; border-radius: 16px; border: 2px solid var(--live); box-shadow: 0 0 0 9999px rgba(4, 10, 12, 0.72); transition: top .3s, left .3s, width .3s, height .3s; pointer-events: none; }
+.tourNote { position: fixed; z-index: 201; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); }
+.tourCount { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-ink); }
+.tourTitle { font-size: 18px; font-weight: 600; margin: 6px 0 6px; text-wrap: balance; }
+.tourBody { font-size: 14.5px; line-height: 1.55; color: var(--muted); margin: 0 0 14px; }
+.tourBtns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tourSkip { margin-left: auto; background: none; border: 0; color: var(--faint); font: inherit; font-size: 13.5px; cursor: pointer; padding: 6px 4px; }
+@media (prefers-reduced-motion: reduce) { .tourHole { transition: none; } }
+.wordList { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .wordList { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wordItem { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--surface); }
+.wordKey { font-weight: 700; letter-spacing: 0.08em; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.wordWhat { font-size: 14px; line-height: 1.45; color: var(--muted); }

@@ -197,6 +197,38 @@ Equalizer), a moving picture on a phone (Instagram GIF Maker). It is never
 named in the slide text — the picture shows it, and the game page's "In this
 scene" panel links to it. The story must stay better than the advert.
 
+**Products the viewer can ask for (since 2026-10-21).** An episode's `alux`
+moment may carry a `word` and a `line`: the word a viewer comments to get the
+product, and one quiet caption line that invites them (`alux.line` must say
+"Comment <WORD>"). Rules the checker enforces:
+- The product **does something the story needs** — the relit camera frame
+  that reveals the face, the restored photo, the portrait on the new
+  chairman's wall. Shown, never sold; the word is in the caption, never on a slide.
+- Words: `LIGHT` (The Gear Equalizer relight), `GIF` (Instagram GIF Maker),
+  `BOOK` (any studio template). **No RETOUCH** — it is not public yet.
+- Never on the cliff (slide 7) or the vote (slide 8); never the same as a vote word.
+- **Never two episodes in a row** on any road of the votes.
+
+**Brands beyond a picture.** A brand that buys a spot gets its product in the
+scene (on a designed slide, a small framed picture with "Partner · Brand"),
+"Partner: <Brand> — <object> in this episode. Comment <WORD> to see it." in the
+caption, and its **own comment word** for that episode: commenting it sends the
+viewer a button to the brand's product page through `/d/go/<code>`, which counts
+the taps for the brand's private report (`/d/drama/report/<token>`). In a story
+that is already running, a brand buys "a scene in the next episode" and takes
+the first slot of whichever version the votes make. Brands are approved by
+themselves when they pay (link and word checked first) — the owner approves
+nothing. **We never place:** skin lightening or bleaching, gambling or betting,
+investment schemes ("double your money" — licensed banks and fintechs are fine),
+weapons, adult products, political campaigns; and our story never makes health,
+slimming or money-making claims for anything (lib/drama/brands.ts).
+
+**Lighting.** Every generated picture carries a written lighting and colour
+grade recipe for its genre (lib/drama/lighting.ts) — key, fill ratio, rim,
+colour temperatures, practicals, haze, and a named grade — and keeps it with
+the image. When episodes get pictures, each slide's `see` should say how the
+shot is lit in the same terms.
+
 ## 9. Seasons
 
 Six episodes a season. A suggested spine (bend it when the votes demand):

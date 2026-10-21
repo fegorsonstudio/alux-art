@@ -6,6 +6,8 @@ import { r2Copy, r2SignedDownloadUrl } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
 import { sendAdminImage, tellAdmin } from "@/lib/telegram";
 import { dramaPrices, lastMadeEpisode, roleIsOpen, storyBySlug } from "@/lib/drama/data";
+import { checkBrandWord, checkProductUrl, newLinkCode, newReportToken } from "@/lib/drama/brands";
+import { emailBrand } from "@/lib/drama/notify";
 import { PHOTO_KINDS, keepCastPhotos, runCastSoon } from "@/lib/drama/character";
 
 /**
@@ -94,57 +96,88 @@ async function announceCast(castId: string, paid: string) {
 }
 
 // ── A brand slot ─────────────────────────────────────────────────────────────
+/** The vote words episode n can have on any road: a brand word must never be one of them. */
+function voteWordsFor(story: NonNullable<Awaited<ReturnType<typeof storyBySlug>>>, n: number): string[] {
+  const all = [...(story.content.episodes ?? []), ...(story.content.drafts ?? [])].filter((e) => e.n === n);
+  return all.flatMap((e) => (e.choice?.options ?? []).map((o) => o.word));
+}
+
 export async function startPlacementPayment(input: {
   slug: string; episodeN: number; slotKey: string; brandName: string; contactName: string; phone: string;
-  productPath: string; note: string; who: Who;
+  productPath: string; note: string; productUrl: string; keyword: string; rulesOk: boolean; who: Who;
 }) {
   const story = await storyBySlug(input.slug);
   if (!story) throw new DramaError("No such story.", 404);
-  const ep = (story.content.episodes ?? []).find((e) => e.n === input.episodeN);
-  const slot = ep?.slots?.find((s) => s.key === input.slotKey);
-  if (!ep || !slot) throw new DramaError("That slot does not exist.");
-  const [posted] = await sql`SELECT 1 FROM drama_episodes WHERE story_id = ${story.id} AND n = ${ep.n} AND status IN ('ready', 'posted', 'closed')`;
+  // A spot in the next episode of a story that is already running: the slot is
+  // chosen when that episode is made (whichever road the votes took).
+  const next = input.slotKey === "next";
+  let label: string;
+  if (next) {
+    if (story.status !== "live") throw new DramaError("That spot is for a story that is already running.");
+    if (input.episodeN !== (await lastMadeEpisode(story.id)) + 1) throw new DramaError("That episode is already made. Reserve the next one.");
+    label = `Episode ${input.episodeN}`;
+  } else {
+    const ep = (story.content.episodes ?? []).find((e) => e.n === input.episodeN);
+    const slot = ep?.slots?.find((s) => s.key === input.slotKey);
+    if (!ep || !slot) throw new DramaError("That slot does not exist.");
+    label = `Episode ${ep.n}, ${slot.object}`;
+  }
+  const [posted] = await sql`SELECT 1 FROM drama_episodes WHERE story_id = ${story.id} AND n = ${input.episodeN} AND status IN ('ready', 'posted', 'closed')`;
   if (posted) throw new DramaError("That episode is already made. Choose a slot in a later episode or another story.");
-  const [sold] = await sql`SELECT 1 FROM drama_placements WHERE story_id = ${story.id} AND episode_n = ${ep.n} AND slot_key = ${slot.key} AND status IN ('paid', 'approved', 'placed')`;
-  if (sold) throw new DramaError("Another brand has this slot.", 409);
+  const [sold] = await sql`SELECT 1 FROM drama_placements WHERE story_id = ${story.id} AND episode_n = ${input.episodeN} AND slot_key = ${input.slotKey} AND status IN ('paid', 'approved', 'placed')`;
+  if (sold) throw new DramaError("Another brand has this spot.", 409);
   const brand = input.brandName.trim().slice(0, 60);
   if (brand.length < 2) throw new DramaError("Add your brand name.");
   if (!input.productPath.startsWith(`${input.who.id}/`)) throw new DramaError("Upload your product picture again.");
+  if (!input.rulesOk) throw new DramaError("Tick the box to confirm your product is not on the list we can't place.");
+  const word = checkBrandWord(input.keyword, voteWordsFor(story, input.episodeN));
+  if (!word.ok) throw new DramaError(word.why);
+  const [wordTaken] = await sql`SELECT 1 FROM drama_placements WHERE story_id = ${story.id} AND episode_n = ${input.episodeN} AND keyword = ${word.word} AND status IN ('paid', 'approved', 'placed')`;
+  if (wordTaken) throw new DramaError(`Another brand in this episode uses ${word.word}. Choose another word.`, 409);
+  const link = await checkProductUrl(input.productUrl);
+  if (!link.ok) throw new DramaError(link.why);
   const price = (await dramaPrices()).slot;
 
   const [row] = await sql<{ id: string }[]>`
     INSERT INTO drama_placements (story_id, episode_n, slot_key, brand_name, contact_name, contact_email, contact_phone,
-                                  product_bucket, product_path, note, price_ngn, status, user_id)
-    VALUES (${story.id}, ${ep.n}, ${slot.key}, ${brand}, ${input.contactName.trim().slice(0, 60) || null}, ${input.who.email},
+                                  product_bucket, product_path, note, price_ngn, status, user_id, product_url, keyword, link_code, report_token)
+    VALUES (${story.id}, ${input.episodeN}, ${input.slotKey}, ${brand}, ${input.contactName.trim().slice(0, 60) || null}, ${input.who.email},
             ${input.phone.trim().slice(0, 30) || null}, 'identity-images', ${input.productPath}, ${input.note.trim().slice(0, 500) || null},
-            ${input.who.admin ? 0 : price}, 'pending_payment', ${input.who.id})
+            ${input.who.admin ? 0 : price}, 'pending_payment', ${input.who.id}, ${link.url}, ${word.word}, ${newLinkCode()}, ${newReportToken()})
     RETURNING id`;
   if (input.who.admin || price === 0) {
     await markPlacementPaid(row.id, null);
-    return { done: true as const };
+    return { done: true as const, report: await reportPath(row.id) };
   }
   const pay = await initializePaystackPayment({
     email: input.who.email, amountNgn: price, currency: "NGN",
-    metadata: { type: "drama_placement", placement_id: row.id, user_id: input.who.id, story: story.slug, slot: `${ep.n}:${slot.key}` },
+    metadata: { type: "drama_placement", placement_id: row.id, user_id: input.who.id, story: story.slug, slot: `${input.episodeN}:${input.slotKey}`, label },
     callbackUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/${story.slug}?paid=brand`,
   });
   await sql`UPDATE drama_placements SET payment_reference = ${pay.reference}, updated_at = now() WHERE id = ${row.id}`;
   return { done: false as const, url: pay.authorizationUrl };
 }
 
+/** The brand's private report page. */
+export async function reportPath(placementId: string): Promise<string | null> {
+  const [r] = await sql<{ report_token: string | null }[]>`SELECT report_token FROM drama_placements WHERE id = ${placementId}`;
+  return r?.report_token ? `/d/drama/report/${r.report_token}` : null;
+}
+
 async function markPlacementPaid(id: string, reference: string | null): Promise<boolean> {
   try {
-    const rows = await sql`UPDATE drama_placements SET status = 'paid', payment_reference = COALESCE(${reference}, payment_reference), updated_at = now()
+    // Approved on payment: the word, the link and the rules were checked before the brand paid (owner: no approving).
+    const rows = await sql`UPDATE drama_placements SET status = 'approved', payment_reference = COALESCE(${reference}, payment_reference), updated_at = now()
                            WHERE id = ${id} AND status = 'pending_payment' RETURNING id`;
     if (!rows.length) return false;
   } catch (e) {
     if ((e as { code?: string }).code !== "23505") throw e;
-    // Two brands paid for one slot within seconds of each other: this one keeps its money owed.
-    await tellAdmin(`⚠️ <b>Brand slot paid twice</b> — placement ${id} was paid but another brand already has the slot. Refund it in Paystack (reference ${esc(reference ?? "?")}).`).catch(() => false);
+    // Two brands paid for one slot (or one word) within seconds of each other: this one keeps its money owed.
+    await tellAdmin(`⚠️ <b>Brand slot paid twice</b> — placement ${id} was paid but another brand already has the slot or the word. Refund it in Paystack (reference ${esc(reference ?? "?")}).`).catch(() => false);
     return false;
   }
-  const [r] = await sql<{ product_bucket: string; product_path: string; brand_name: string; title: string; episode_n: number; slot_key: string }[]>`
-    SELECT p.product_bucket, p.product_path, p.brand_name, s.title, p.episode_n, p.slot_key
+  const [r] = await sql<{ product_bucket: string; product_path: string; brand_name: string; title: string; episode_n: number; slot_key: string; keyword: string | null; product_url: string | null; contact_email: string | null; report_token: string | null }[]>`
+    SELECT p.product_bucket, p.product_path, p.brand_name, s.title, p.episode_n, p.slot_key, p.keyword, p.product_url, p.contact_email, p.report_token
     FROM drama_placements p JOIN drama_stories s ON s.id = p.story_id WHERE p.id = ${id}`;
   if (r && r.product_bucket !== KEEP_BUCKET) {
     const to = `drama/brands/${id}/product.${ext(r.product_path)}`;
@@ -152,9 +185,10 @@ async function markPlacementPaid(id: string, reference: string | null): Promise<
     await sql`UPDATE drama_placements SET product_bucket = ${KEEP_BUCKET}, product_path = ${to} WHERE id = ${id}`;
   }
   if (r) {
-    await tellAdmin(`🏷️ <b>Brand slot sold</b> — ${esc(r.brand_name)} in ${esc(r.title)}, episode ${r.episode_n} (${esc(r.slot_key)}).\nApprove it in /admin/drama.`).catch(() => false);
+    await tellAdmin(`🏷️ <b>Brand spot sold</b> — ${esc(r.brand_name)} in ${esc(r.title)}, episode ${r.episode_n}${r.slot_key === "next" ? "" : ` (${esc(r.slot_key)})`}. Comment word: ${esc(r.keyword ?? "—")} → ${esc(r.product_url ?? "—")}.\nIt goes into the episode by itself; nothing to approve.`).catch(() => false);
     const url = await r2SignedDownloadUrl(KEEP_BUCKET, `drama/brands/${id}/product.${ext(r.product_path)}`, 3600).catch(() => null);
     if (url) await sendAdminImage(url, r.brand_name).catch(() => false);
+    if (r.report_token) await emailBrand({ to: r.contact_email, brand: r.brand_name, storyTitle: r.title, episode: r.episode_n, word: r.keyword ?? "", reportUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/report/${r.report_token}` });
   }
   return true;
 }

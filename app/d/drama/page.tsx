@@ -34,6 +34,13 @@ export default async function DramaShelf() {
   const upcoming = stories.filter((s) => s.status === "upcoming");
   const house = await houseProducts(stories.flatMap((s) => (s.content.episodes ?? []).map((e) => e.alux?.product)));
   const ig = igLinks(hero?.ig_account ?? "aolivetv");
+  const tourSteps = [
+    { target: "shelf-hero", title: "Welcome to Alux Micro Drama", body: "Picture stories from across Nigeria, on Instagram. This one is showing now — a new episode every evening at 7 p.m." },
+    { target: "stories", title: "Stories coming soon", body: "These haven't started yet, so every role is still open. Tap one to meet the cast." },
+    { target: "play", title: "How you play", body: "Read the episode, comment one word under it, and the word with the most votes by 4 p.m. the next day writes the next episode." },
+    { target: "brands", title: "For brands", body: "Put your product in a scene, or talk to us about a bigger partnership." },
+    { target: "help", title: "That's it", body: "Press How it works any time to see this again. Enjoy the story." },
+  ];
 
   const Card = ({ s }: { s: StoryRow }) => {
     const open = openRoles(s);
@@ -50,14 +57,14 @@ export default async function DramaShelf() {
   };
 
   return (
-    <DramaShell dock={[
+    <DramaShell tour={{ steps: tourSteps, seenKey: "drama-tour-shelf" }} dock={[
       { href: "#top", label: "Home", icon: "home" },
       { href: "#stories", label: "Stories", icon: "stories" },
       { href: "#play", label: "Play", icon: "join" },
       { href: "#brands", label: "Brands", icon: "brands" },
     ]}>
       {hero && (
-        <section className={styles.hero} aria-label="Featured story">
+        <section className={styles.hero} aria-label="Featured story" data-tour="shelf-hero">
           <div className={styles.heroBack} style={{ backgroundImage: `url(${coverSrc(hero, 480)})` }} />
           <div className={styles.heroInner}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,7 +90,7 @@ export default async function DramaShelf() {
         </section>
       )}
 
-      <section className={styles.section} id="stories">
+      <section className={styles.section} id="stories" data-tour="stories">
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Coming soon · join the cast</h2>
           <span className={styles.sectionNote}>{upcoming.length} stories</span>
@@ -105,18 +112,18 @@ export default async function DramaShelf() {
         );
       })}
 
-      <section className={styles.section} id="play">
+      <section className={styles.section} id="play" data-tour="play">
         <div className={styles.sectionHead}><h2 className={styles.sectionTitle}>How it plays</h2></div>
         <div className={styles.panel}>
           <ol className={styles.steps}>
             <li className={styles.step}><div><p className={styles.stepTitle}>Read the episode</p><p className={styles.stepText}>Eight pictures on Instagram, a few words each. It always stops at the worst moment.</p></div></li>
             <li className={styles.step}><div><p className={styles.stepTitle}>Comment one word</p><p className={styles.stepText}>Each episode ends with two choices. Voting closes at 4 p.m. the next day; the word with the most votes decides the next episode.</p></div></li>
-            <li className={styles.step}><div><p className={styles.stepTitle}>Play a role</p><p className={styles.stepText}>Send one clear photo and your face plays a character, the same in every episode. From <span className={styles.price}>{naira(prices.cameo)}</span>.</p></div></li>
+            <li className={styles.step}><div><p className={styles.stepTitle}>Play a role</p><p className={styles.stepText}>Send three photos and your face plays a character, the same in every episode. From <span className={styles.price}>{naira(prices.cameo)}</span>.</p></div></li>
           </ol>
         </div>
       </section>
 
-      <section className={styles.section} id="brands">
+      <section className={styles.section} id="brands" data-tour="brands">
         <div className={styles.split}>
           <div className={styles.panel}>
             <div className={styles.eyebrow}>For brands</div>

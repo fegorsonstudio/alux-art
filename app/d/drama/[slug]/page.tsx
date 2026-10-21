@@ -60,16 +60,27 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
   const castOpen = story.status === "upcoming";
   const guestsOpen = cast.some((r) => roleIsOpen(story, r, lastMade));
   const priceOf = (tier: "lead" | "main" | "cameo") => prices[tier];
+  // The episode whose vote is open now, for the words box.
+  const openVote = (story.content.episodes ?? []).filter((e) => madeRows.some((r) => r.n === e.n && r.status === "posted")).sort((a, b) => b.n - a.n)[0];
+  const tourSteps = [
+    { target: "story-hero", title: "Welcome to Alux Micro Drama", body: "Short picture stories from across Nigeria. A new episode posts on Instagram every evening at 7 p.m." },
+    { target: "story-follow", title: "Read it on Instagram", body: `Follow @${story.ig_account}. Each episode is eight pictures — swipe through, and it always stops at the worst moment.` },
+    { target: "episodes", title: "You decide what happens next", body: "Every episode ends on a choice of two words. Comment one under the post. The word with the most votes by 4 p.m. the next day writes the next episode." },
+    { target: "words", title: "More words you can comment", body: "Under any episode: PLAY sends you this page, LIGHT relights one of your own photos, BOOK books a studio portrait." },
+    { target: "cast", title: "Play a role", body: "Choose an open role, send three photos, and we make your character portrait. Your name goes in the credits." },
+    { target: "brands", title: "For brands", body: "Put your product in a scene, or talk to us about a bigger partnership." },
+    { target: "help", title: "That's it", body: "Press How it works any time to see this again." },
+  ];
 
   return (
-    <DramaShell dock={[
+    <DramaShell tour={{ steps: tourSteps, seenKey: "drama-tour-story" }} dock={[
       { href: "/d/drama", label: "Shelf", icon: "home" },
       { href: "#episodes", label: "Episodes", icon: "stories" },
       { href: "#cast", label: "Cast", icon: "cast" },
       { href: "#brands", label: "Brands", icon: "brands" },
     ]}>
       <Link href="/d/drama" className={styles.back}>← All stories</Link>
-      <section className={styles.hero} aria-label={story.title}>
+      <section className={styles.hero} aria-label={story.title} data-tour="story-hero">
         <div className={styles.heroBack} style={{ backgroundImage: `url(${cover}&w=480)` }} />
         <div className={styles.heroInner}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -87,7 +98,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
               <span className={`${styles.chip} ${styles.chipLive}`}>Most votes by 4 p.m. decides each episode</span>
             </div>
             <div className={styles.actions}>
-              <a className={`${styles.btn} ${styles.primary}`} href={ig.profile} target="_blank" rel="noopener noreferrer">Follow @{story.ig_account}</a>
+              <a className={`${styles.btn} ${styles.primary}`} href={ig.profile} target="_blank" rel="noopener noreferrer" data-tour="story-follow">Follow @{story.ig_account}</a>
               {(castOpen || guestsOpen) && <a className={`${styles.btn} ${styles.quiet}`} href="#cast">Play a role</a>}
             </div>
           </div>
@@ -96,7 +107,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
 
       {paidKind && paidRef && <PaidNotice kind={paidKind} reference={paidRef} />}
 
-      <section className={styles.section} id="episodes">
+      <section className={styles.section} id="episodes" data-tour="episodes">
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Episodes</h2>
           <span className={styles.sectionNote}>Eight pictures each · ends on a choice</span>
@@ -120,7 +131,22 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
         </div>
       </section>
 
-      <section className={styles.section} id="cast">
+      <section className={styles.section} id="words" data-tour="words">
+        <div className={styles.sectionHead}>
+          <h2 className={styles.sectionTitle}>Words you can comment</h2>
+          <span className={styles.sectionNote}>Under any episode on Instagram</span>
+        </div>
+        <div className={styles.wordList}>
+          {openVote?.choice.options.map((o) => (
+            <div key={o.word} className={styles.wordItem}><span className={styles.wordKey}>{o.word}</span><span className={styles.wordWhat}>Your vote on Episode {openVote.n}: {o.label.toLowerCase()}.</span></div>
+          ))}
+          <div className={styles.wordItem}><span className={styles.wordKey}>PLAY</span><span className={styles.wordWhat}>We send you this page in your DMs.</span></div>
+          <div className={styles.wordItem}><span className={styles.wordKey}>LIGHT</span><span className={styles.wordWhat}>Send us one of your own photos and we relight it like a studio shot — ₦1,000.</span></div>
+          <div className={styles.wordItem}><span className={styles.wordKey}>BOOK</span><span className={styles.wordWhat}>Book an Alux studio portrait, like the ones on the walls in these stories.</span></div>
+        </div>
+      </section>
+
+      <section className={styles.section} id="cast" data-tour="cast">
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>The cast</h2>
           <span className={styles.sectionNote}>{castOpen ? "Open until each character first appears" : guestsOpen ? "Guest roles open" : "Cast locked"}</span>
@@ -164,12 +190,24 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
         )}
       </section>
 
-      <section className={styles.section} id="brands">
+      <section className={styles.section} id="brands" data-tour="brands">
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Your brand in this story</h2>
           <span className={styles.sectionNote}>{naira(prices.slot)} an episode</span>
         </div>
         <ul className={styles.slotList}>
+          {story.status === "live" && (
+            // A running story: the next episode isn't chosen yet, so a brand buys "a scene in Episode N" on whichever road wins.
+            <li className={styles.slot}>
+              <div>
+                <p className={styles.slotWhat}>A scene in the next episode</p>
+                <p className={styles.slotWhen}>Episode {lastMade + 1} · placed on whichever road the votes choose · your own comment word</p>
+              </div>
+              {sold.has(`${lastMade + 1}:next`) ? <span className={styles.taken}>Taken</span> : (
+                <Link className={`${styles.btn} ${styles.quiet} ${styles.small}`} href={`/d/drama/${story.slug}/brand/${lastMade + 1}-next`}>Reserve</Link>
+              )}
+            </li>
+          )}
           {episodes.flatMap((e) => (e.slots ?? []).map((s) => {
             const isSold = sold.has(`${e.n}:${s.key}`) || made.has(e.n);
             return (
