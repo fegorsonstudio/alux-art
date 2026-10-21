@@ -769,6 +769,18 @@ proven yet — the owner's own test order is the first real run.** `characterShe
 the drama cast sheets too (`lib/drama/character.ts` still uses its own 4-panel prompt) — switch it once the owner is happy.
 Do not edit this template's category in the creator dashboard (its picker has no character_sheet option).
 
+**Update (2026-10-22, later): iPhone HEIC photos upload everywhere `/api/upload/file` is used (commit `a2e53e0`; owner chose
+"accept them automatically").** The owner's first 5 Character Sheet photos failed: Chrome on Windows sends a HEIC with no
+type, so the route answered 400 "file must be an image" (nginx logs that as `400 44`). `lib/heic.ts`: `isHeic` (ftyp HEVC
+brands; AVIF excluded — sharp reads AVIF), `heicToJpeg` (libheif `heif-convert` → lossless PNG under `ulimit -v 1.5GB` and a
+60 s limit → sharp JPEG at full resolution, q95 4:4:4, ICC kept, EXIF/GPS dropped; only the quality steps down past 30 MB;
+the largest picture wins when a HEIC holds several), `sniffImageType` for typeless JPEG/PNG/WebP/GIF/AVIF. The route
+converts first (name becomes .jpg, response adds `converted: true`), then trusts bytes over a missing type. **apt on the VPS:**
+libheif-examples, libheif-plugin-libde265, libde265-0 (the app's own sharp is untouched; its build still cannot decode HEVC).
+Checkout swaps a converted photo's thumbnail to `/api/media` (ImagePreview remembers a failed image, so it is keyed by
+`preview`); the drama join form lets a .heic through. Verified live through nginx with a public libheif sample (typeless and
+image/heic both → JPEG + thumbnail; typeless JPEG and normal JPEG unchanged), test session and files removed.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
