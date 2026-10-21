@@ -33,7 +33,19 @@ for (const { story } of list) {
       logline = EXCLUDED.logline, min_votes = EXCLUDED.min_votes, content = EXCLUDED.content, updated_at = now()
       WHERE drama_stories.status = 'upcoming'
     RETURNING (xmax = 0) AS inserted`;
-  if (!row) kept++;
+  if (!row) {
+    kept++;
+    // A started story still takes the episodes written ahead (`drafts`): none of
+    // them is on Instagram — the one a vote picks is copied into `episodes` and
+    // frozen at that moment (lib/drama/advance.ts), so replacing the list
+    // never touches anything posted.
+    const drafts = JSON.parse(JSON.stringify(story.drafts ?? []));
+    await sql`UPDATE drama_stories SET content = jsonb_set(content, '{drafts}', ${sql.json(drafts)}::jsonb, true), updated_at = now()
+      WHERE slug = ${story.slug} AND status <> 'upcoming'`;
+    const [back] = await sql`SELECT jsonb_typeof(content->'drafts') AS kind, jsonb_array_length(content->'drafts') AS n FROM drama_stories WHERE slug = ${story.slug}`;
+    if (back.kind !== "array" || back.n !== drafts.length) throw new Error(`${story.slug}: drafts read back as ${back.kind} ${back.n}, expected array ${drafts.length}`);
+    if (drafts.length) console.log(`${story.slug}: started — ${drafts.length} episode(s) written ahead loaded`);
+  }
   else if (row.inserted) added++;
   else refreshed++;
 }

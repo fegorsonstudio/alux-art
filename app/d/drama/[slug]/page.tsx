@@ -45,11 +45,14 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
   const paidRef = typeof sp.reference === "string" ? sp.reference : typeof sp.trxref === "string" ? sp.trxref : "";
   const [taken, sold, prices, madeRows] = await Promise.all([
     takenRoles([story.id]), soldSlots(story.id), dramaPrices(),
-    sql<{ n: number }[]>`SELECT n FROM drama_episodes WHERE story_id = ${story.id} AND status IN ('ready', 'posted', 'closed')`,
+    sql<{ n: number; status: string }[]>`SELECT n, status FROM drama_episodes WHERE story_id = ${story.id} AND status IN ('ready', 'posted', 'closed')`,
   ]);
   const made = new Set(madeRows.map((r) => r.n));
   const cast = story.content.cast ?? [];
-  const episodes = story.content.episodes ?? [];
+  // Once a story is live, an episode shows here only after it is on Instagram:
+  // the next one is queued ahead of its 7 p.m. post and must not spoil it.
+  const onInstagram = new Set(madeRows.filter((r) => r.status === "posted" || r.status === "closed").map((r) => r.n));
+  const episodes = (story.content.episodes ?? []).filter((e) => story.status === "upcoming" || onInstagram.has(e.n));
   const house = await houseProducts(episodes.map((e) => e.alux?.product));
   const ig = igLinks(story.ig_account);
   const cover = `/api/drama/cover/${story.slug}?v=${new Date(story.updated_at).getTime()}`;

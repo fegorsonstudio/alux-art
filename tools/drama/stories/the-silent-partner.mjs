@@ -56,4 +56,95 @@ export default {
       alux: { product: "Noir Director Editorial", where: "the framed executive portraits on the boardroom wall, slide 3" },
     },
   ],
+
+  // Written ahead: the episode that posts by itself when a vote closes on that road.
+  drafts: [
+    {
+      n: 2,
+      after: "SPEAK",
+      title: "The Empty Safe",
+      slides: [
+        { kind: "cover", see: "The boardroom from the doorway: Adaeze standing alone at the far end, every man turned toward her, the brass key lying on the open contract. Caption space: top third, dark glass.", say: "" },
+        { kind: "time", see: "Wide on the boardroom, chairs pushed back, nobody seated, the lagoon lights smeared by rain on the glass.", say: "Marina. 9:52 p.m. Nobody has sat down.", scene: "The boardroom. Every chair pushed back." },
+        { kind: "line", who: "adaeze", see: "Adaeze at the head of the table now, one hand flat beside the key, voice low; Tunde's smile frozen halfway.", say: "“The trust is mine. Fifty-one percent. You cannot sell without me.”", scene: "She says it once. Quietly." },
+        { kind: "beat", who: "damola", see: "Damola slowly folds his rimless glasses and sets them on the table; the buyer's side of the table has gone completely still.", say: "The buyer's lawyer folds his glasses. He does not argue.", scene: "Across the table, Damola goes quiet." },
+        { kind: "text", who: "ifeoma", see: "Close on Ifeoma's phone face up on the glass table, a message glowing; her hand hovering, not touching it.", say: "Ifeoma: “The trust's lawyer has left. His car is gone.”", scene: "Her phone, face up on the glass." },
+        { kind: "beat", who: "guard", see: "The corridor outside: Sunday kneels at an open wall safe, torch in hand; the shelves are bare except for a short scrap of black ribbon. Framed executive portraits line the corridor wall.", say: "Sunday opens the safe. Inside: a scrap of black ribbon.", scene: "The corridor safe. One torch." },
+        { kind: "cliff", who: "eze", see: "Chief Eze back in the boardroom doorway, holding the scrap of black ribbon up between two fingers, looking from it to the ribbon at Adaeze's wrist.", say: "“No papers, Ms Okafor. You have lied to this board.”", scene: "The Chairman holds up the ribbon." },
+        { kind: "choice", see: "Close on the scrap of black ribbon in Chief Eze's fingers, the brass key still on the contract behind it.", say: "" },
+      ],
+      cliff: { type: "loss" },
+      choice: {
+        question: "Does Adaeze fight here or chase the papers?",
+        options: [{ word: "STAY", label: "Fight in the room" }, { word: "CHASE", label: "Chase the papers" }],
+      },
+      branches: {
+        STAY: "She sits and makes them wait for the registry to confirm the trust. A message lights Ifeoma's second phone — from Damola: the job offer ends at midnight. Ifeoma confesses she took the papers to keep them from him.",
+        CHASE: "She goes down with Sunday to the CCTV room. Last night's footage shows the safe opened at 2:14 a.m. by a slim figure in Chief Eze's red cap — who turns to the camera: braids under the cap.",
+      },
+      slots: [
+        { key: "glasses", object: "the glasses Damola folds onto the table", slide: 4, house: "Noir Director Editorial" },
+        { key: "phone", object: "Ifeoma's phone face up on the glass table", slide: 5, house: "Instagram GIF Maker" },
+      ],
+      alux: { product: "Noir Director Editorial", where: "the framed executive portraits along the corridor beside the safe, slide 6" },
+    },
+    {
+      n: 3,
+      after: "SPEAK.STAY",
+      title: "Twenty to Midnight",
+      slides: [
+        { kind: "cover", see: "Adaeze seated alone at the head of the long table; the board standing by the dark windows; a wall clock above the door reads 11:40. Caption space: top third.", say: "" },
+        { kind: "time", see: "The wall clock above the boardroom door at 11:40, the men's reflections in the night glass below it.", say: "Marina. 11:40 p.m. The board is standing. She is not.", scene: "The same room, two hours later." },
+        { kind: "line", who: "adaeze", see: "Adaeze, calm, both hands folded over the brass key on the contract; Tunde pacing behind her chair.", say: "“Nobody signs until the registry answers. I can wait all night.”", scene: "She has not moved her key." },
+        { kind: "text", who: "damola", see: "Close on Ifeoma's second phone lighting up in her hand under the table, a message from Damola on the screen.", say: "Damola, to Ifeoma: “The offer ends at midnight. So does her company.”", scene: "Ifeoma's second phone lights up." },
+        { kind: "beat", who: "ifeoma", see: "Ifeoma looking up from the phone at the scrap of black ribbon lying on the table in front of Chief Eze.", say: "Ifeoma reads it twice. Then she looks at the ribbon.", scene: "The ribbon scrap, on the table." },
+        { kind: "line", who: "ifeoma", see: "Behind the glass door in the corridor, Ifeoma close to Adaeze, whispering, one phone pressed face down against her chest.", say: "“I took the papers last night. To keep them from him.”", scene: "A whisper, behind the glass door." },
+        { kind: "cliff", see: "Close on Adaeze's own phone in her palm: one new message from the registry, the screen the only light on her face.", say: "Registry: “No trust is filed under that name.”", scene: "Her own phone. One line." },
+        { kind: "choice", see: "Close on the brass key on its black ribbon, Adaeze's fingers half open around it, Ifeoma's hand waiting below.", say: "" },
+      ],
+      cliff: { type: "message" },
+      choice: {
+        question: "Does Adaeze hand Ifeoma the brass key?",
+        options: [{ word: "TRUST", label: "Hand her the key" }, { word: "HOLD", label: "Keep the key" }],
+      },
+      branches: {
+        TRUST: "Ifeoma takes the key to the bank box the trust deed names. Inside is a newer deed than anyone has seen — witnessed by Damola, years ago, as the trust's first lawyer.",
+        HOLD: "Adaeze keeps the key and drives to the bank box herself. Alone in the boardroom, Ifeoma answers Damola's call — and tells him where Adaeze is going.",
+      },
+      slots: [
+        { key: "phone", object: "the second phone lighting up in Ifeoma's hand", slide: 4, house: "Instagram GIF Maker" },
+        { key: "clock", object: "the wall clock above the boardroom door", slide: 2, house: "Noir Director Editorial" },
+      ],
+      alux: { product: "Noir Director Editorial", where: "the executive portraits along the boardroom wall, slide 1" },
+    },
+    {
+      n: 3,
+      after: "SPEAK.CHASE",
+      title: "Camera Four",
+      slides: [
+        { kind: "cover", see: "A cramped security room, a wall of grey monitors; Adaeze and Sunday lit only by the screens, his cap in his hands. Caption space: top third.", say: "" },
+        { kind: "time", see: "The concrete service stairs going down, one strip light, Adaeze's heels and Sunday's boots on the steps.", say: "Basement, Marina tower. 10:05 p.m. Sunday knows the way.", scene: "Down the service stairs. Monitors hum." },
+        { kind: "line", who: "guard", see: "Sunday at the desk rewinding footage, his hands unsteady; a flask of tea and a faded staff photo of him from 1998 pinned above the monitors.", say: "“Last night, madam. Camera four. I saw, but nobody asked me.”", scene: "He rewinds the tape with shaking hands." },
+        { kind: "beat", see: "Grey CCTV footage on one monitor: the corridor safe, a timestamp reading 02:14, a figure in a red cap bent at the lock.", say: "2:14 a.m. A figure at the safe, in a red cap.", scene: "Grey footage. The corridor safe." },
+        { kind: "line", who: "guard", see: "Sunday leaning close to the screen, pointing at the figure; Adaeze behind him, very still.", say: "“That is the Chairman's cap. It is not his walk.”", scene: "Sunday leans close to the screen." },
+        { kind: "beat", see: "Frame by frame on the monitor: the slim figure moving quickly away from the safe, an envelope under one arm, two phones in one hand.", say: "The figure is slim. Quick. An envelope, and two phones.", scene: "Frame by frame, the figure moves." },
+        { kind: "cliff", see: "The footage paused: the figure turned toward the camera, the red cap pushed back, braids gathered in a low bun beneath it, face half in shadow.", say: "The figure turns to the camera. Braids, under the red cap.", scene: "Paused. The face, half in shadow." },
+        { kind: "choice", see: "Close on Adaeze's face lit grey by the paused screen, her hand closing around the brass key.", say: "" },
+      ],
+      cliff: { type: "reveal" },
+      choice: {
+        question: "Does Adaeze ask Ifeoma tonight?",
+        options: [{ word: "ASK", label: "Ask her tonight" }, { word: "WATCH", label: "Watch her quietly" }],
+      },
+      branches: {
+        ASK: "Adaeze asks. Ifeoma admits she took the papers to hide them from Damola — and that Damola knows exactly where she hid them.",
+        WATCH: "Adaeze says nothing and follows Ifeoma to the car park, where Ifeoma passes a thick envelope through the window of Damola's car.",
+      },
+      slots: [
+        { key: "screens", object: "the CCTV monitors in the security room", slide: 1, house: "The Gear Equalizer — Pro Studio Upgrade" },
+        { key: "tea", object: "the flask of tea on Sunday's desk", slide: 3, house: "Noir Director Editorial" },
+      ],
+      alux: { product: "The Gear Equalizer — Pro Studio Upgrade", where: "Sunday's faded 1998 staff photo pinned above the monitors, brought back to life, slide 3" },
+    },
+  ],
 };

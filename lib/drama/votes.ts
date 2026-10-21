@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site-url";
 import { buttonMessage, replyToComment, type IgCreds } from "@/lib/instagram";
 import { tellAdmin } from "@/lib/telegram";
 import { syncPosted } from "@/lib/drama/episodes";
+import { advanceStory } from "@/lib/drama/advance";
 
 /**
  * A comment on an Alux Micro Drama episode is a vote. Called by the Instagram
@@ -126,7 +127,7 @@ export async function handleDramaComment(
         `Your vote is in: ${word} — ${label.toLowerCase()}.\n${left} more ${left === 1 ? "vote decides" : "votes decide"} it. Watch Episode ${hit.n + 1} take shape, and play a role in the next story:`, url);
     } else if (out.kind === "decided") {
       await answer(creds, c.commentId,
-        `Your vote decided it. ${word} wins — Episode ${hit.n + 1} of ${hit.title} is being written now. Want to be in the next one?`, url, "Play a role");
+        `Your vote decided it. ${word} wins — Episode ${hit.n + 1} of ${hit.title} is on its way. Want to be in the next one?`, url, "Play a role");
     } else if (out.kind === "closed") {
       await answer(creds, c.commentId, `This vote has closed: ${out.winner} won. Episode ${hit.n + 1} is on its way.`, url);
     } else {
@@ -134,7 +135,16 @@ export async function handleDramaComment(
     }
   }
   if (out.kind === "decided") {
-    await tellAdmin(`🎬 <b>${hit.title}</b> — Episode ${hit.n} decided: <b>${word}</b> (${out.count} votes, last by ${who}).\nEpisode ${hit.n + 1} follows that road. Open /admin/drama to make it.`).catch(() => false);
+    // The story moves on by itself (lib/drama/advance.ts): the episode written
+    // for this road is frozen and queued for the next 7 p.m., and the owner is
+    // told what posts and when. Not awaited, so Instagram gets its answer fast;
+    // the ten-minute sweep (/api/cron/drama-advance) catches any run that fails.
+    void advanceStory(hit.story_id)
+      .then((r) => console.log(`[drama advance] ${hit.slug} after ${word} (${out.count} votes, last by ${who}): ${JSON.stringify(r)}`))
+      .catch((e) => {
+        console.error(`[drama advance] ${hit.slug} failed:`, (e as Error).message);
+        void tellAdmin(`🎬 <b>${hit.title}</b> — ${word} won Episode ${hit.n}, but queuing Episode ${hit.n + 1} failed: ${String((e as Error).message).slice(0, 200).replace(/</g, "&lt;")}\nIt tries again by itself every 10 minutes.`).catch(() => false);
+      });
   }
   return true;
 }

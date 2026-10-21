@@ -13,7 +13,9 @@ export type DramaEpisode = {
   choice: { question: string; options: { word: string; label: string }[] };
   slots: DramaSlot[]; alux: { product: string; where: string };
 };
-export type DramaContent = { cast: DramaRole[]; episodes: DramaEpisode[] };
+/** An episode written ahead for one road of the votes ("SPEAK.STAY", or "*.STAY" for any road ending so). */
+export type DramaDraft = DramaEpisode & { after: string };
+export type DramaContent = { cast: DramaRole[]; episodes: DramaEpisode[]; drafts?: DramaDraft[] };
 export type StoryRow = {
   id: string; slug: string; title: string; tagline: string; genre: string; city: string; logline: string;
   status: "upcoming" | "live" | "finished" | "hidden"; featured: boolean; min_votes: number;

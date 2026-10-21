@@ -53,8 +53,38 @@ export function checkStory(s, file) {
   const eps = Array.isArray(s.episodes) ? s.episodes : [];
   if (!eps.length) bad("no episodes");
   eps.forEach((e, i) => {
-    const tag = `episode ${e.n ?? "?"}`;
-    if (e.n !== i + 1) bad(`${tag}: episodes must be numbered 1, 2, 3…`);
+    if (e.n !== i + 1) bad(`episode ${e.n ?? "?"}: episodes must be numbered 1, 2, 3…`);
+    checkEpisode(e, `episode ${e.n ?? "?"}`, keys, bad);
+  });
+
+  // Episodes written ahead, one per road the votes can take (ENGINE.md §4).
+  // `after` is the winning words so far, oldest first ("SPEAK.STAY"), or a
+  // "*."-prefixed ending that fits any earlier road ("*.STAY").
+  const drafts = s.drafts === undefined ? [] : Array.isArray(s.drafts) ? s.drafts : (bad("drafts must be a list"), []);
+  const seen = new Set();
+  for (const d of drafts) {
+    const tag = `draft ${d.n ?? "?"} after ${d.after ?? "?"}`;
+    const parts = String(d.after ?? "").split(".");
+    const wild = parts[0] === "*";
+    const roadWords = wild ? parts.slice(1) : parts;
+    if (!Number.isInteger(d.n) || d.n < 2) bad(`${tag}: n must be 2 or more`);
+    if (!roadWords.length || roadWords.some((w) => !/^[A-Z]{2,10}$/.test(w))) bad(`${tag}: after must be words like SPEAK.STAY or *.STAY`);
+    if (!wild && roadWords.length !== d.n - 1) bad(`${tag}: after must name one word for each episode before it (${d.n - 1})`);
+    if (wild && roadWords.length > d.n - 1) bad(`${tag}: after names more words than there are episodes before it`);
+    if (seen.has(`${d.n}:${d.after}`)) bad(`${tag}: written twice`);
+    seen.add(`${d.n}:${d.after}`);
+    // The last word must be one the episode before it actually offers.
+    const parents = d.n === 2 ? eps.filter((e) => e.n === 1) : drafts.filter((p) => p.n === d.n - 1);
+    const last = roadWords[roadWords.length - 1];
+    if (!parents.some((p) => (p.choice?.options ?? []).some((o) => o.word === last))) bad(`${tag}: no episode ${d.n - 1} offers the word ${last}`);
+    checkEpisode(d, tag, keys, bad);
+  }
+  return errs;
+}
+
+/** The rules every episode follows, posted or written ahead. Returns its caption word count. */
+function checkEpisode(e, tag, keys, bad) {
+  {
     if (!String(e.title ?? "").trim() || words(e.title) > 4) bad(`${tag}: title missing or over 4 words`);
     const sl = Array.isArray(e.slides) ? e.slides : [];
     if (sl.length !== 8) bad(`${tag}: ${sl.length} slides (must be 8)`);
@@ -98,8 +128,8 @@ export function checkStory(s, file) {
       if (!HOUSE.includes(sl2.house)) bad(`${tag}: slot ${sl2.key} house product "${sl2.house}" is not an Alux product`);
     }
     if (!HOUSE.includes(e.alux?.product) || !String(e.alux?.where ?? "").trim()) bad(`${tag}: needs an Alux moment (alux.product + where)`);
-  });
-  return errs;
+  }
+  return e._words;
 }
 
 export async function loadStories(only) {
@@ -117,7 +147,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const errs = checkStory(story, file);
     if (slugs.has(story.slug)) errs.push("slug used by another story");
     slugs.add(story.slug);
-    const w = (story.episodes ?? []).map((e) => `ep${e.n} ${e._words ?? "?"}w`).join(", ");
+    const w = [...(story.episodes ?? []).map((e) => `ep${e.n} ${e._words ?? "?"}w`),
+      ...(story.drafts ?? []).map((d) => `ep${d.n} after ${d.after} ${d._words ?? "?"}w`)].join(", ");
     console.log(`${errs.length ? "FAIL" : "ok  "}  ${story.slug} (${story.genre}, ${story.city}) — ${w}`);
     for (const e of errs) console.log(`        - ${e}`);
     if (errs.length) failed++;
