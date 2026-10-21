@@ -782,6 +782,11 @@ libheif-examples, libheif-plugin-libde265, libde265-0 (the app's own sharp is un
 Checkout swaps a converted photo's thumbnail to `/api/media` (ImagePreview remembers a failed image, so it is keyed by
 `preview`); the drama join form lets a .heic through. Verified live through nginx with a public libheif sample (typeless and
 image/heic both → JPEG + thumbnail; typeless JPEG and normal JPEG unchanged), test session and files removed.
+**Same day, later (commit `457bdfe`): Ubuntu's libheif 1.17.6 refuses iOS 18+ Portrait/depth photos** ("Non-existing
+depth image referenced", libheif #1213, fixed in 1.18) — 4 of the owner's 5 failed again. `tools/heic/convert.py` reads
+with pillow-heif 1.8.1 / libheif 1.23.6 (venv `/home/aluxart/heic-venv`, `HEIC_PY` overrides) first, heif-convert second;
+at most 2 conversions at once (~250 MB each). Proven on the libheif issue's own failing sample (5712x4284, ICC kept),
+live through nginx. Checkout: a failed tile shows the file name and a **Try again** button (re-sends the same file).
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
