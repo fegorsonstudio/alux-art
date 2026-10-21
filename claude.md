@@ -660,6 +660,36 @@ It should just be automatic"; commit `333980a`).**
   checked in R2). Ep 3 written for SPEAK.STAY and SPEAK.CHASE. **Ep 4 onward is NOT written** — write drafts ahead of each vote.
 - Exception to "nothing posts without approval": drama episodes only. Carousels still need Approve + Schedule.
 
+**Update (2026-10-21, later): joining the cast runs by itself; guest roles; partnership requests; new prices (commit `b63cfde`).**
+Owner: prices up, "episode pictures: not yet", build the rest. Prices (migration 084, `app_config`): cameo ₦10,000, main
+₦30,000, lead ₦90,000, product slot ₦30,000, episode sponsor ₦100,000 (each tier has a fixed picture count — `TIER_PACKAGE`
+in `lib/drama/data.ts` — so model cost stays under the price).
+- **Join:** three photos (face, face turned, whole body) via the normal upload route, originals ≤30 MB kept; `photos` jsonb on
+  `drama_cast`, copied to `generated-4k/drama/cast/<id>/` once paid.
+- **`lib/drama/character.ts`** (no owner step): free photo check `tools/drama/photo_check.py` (OpenCV YuNet, venv
+  `/home/aluxart/drama-venv`, model `/home/aluxart/models/yunet.onnx`, run with `ulimit -v`) → `photos_needed` (plain reasons on
+  the member page + email) or `making` → character sheet (4 views in costume, 16:9) + portrait (4:5), 2K, through
+  `nanoBananaEdit` (follows the admin model switch) → `sheet_ready` → member says "this is me" (`accepted`) or asks ONCE to
+  make it again. Paid runs counted in `drama_cast.renders`, capped at 6; a sheet without a portrait is reused; a content refusal
+  or the cap → `failed` + Telegram. Started by payment (`runCastSoon`), swept by `/api/cron/drama-advance` (3 per run; the
+  cron script's curl timeout is now 280 s). **`DRAMA_FAKE_RENDER=1` = stand-in images, tests only.** HEIC can't be decoded here
+  → "send it as a JPEG".
+- **Member page** `/d/drama/cast/<id>` (signed in as that member, or admin) + `GET/POST /api/drama/cast/[id]`; the Paystack
+  return notice links to it; emails via Resend (`lib/drama/notify.ts`).
+- **Credits:** `captionFor` adds "Cast: <Role> — played by <name>" for members whose character is on a slide (`who`).
+- **Guest roles:** cast entries `guest: true, enters: n` (cameo) are open in a LIVE story until episode `n` is made
+  (`roleIsOpen`); check.mjs makes them appear on every road of episode `n` and nowhere before; the seed adds new guests to a
+  started story without touching existing roles. The Silent Partner: **Mrs Funke Adebayo** (enters Episode 4, ₦10,000) and
+  **Episode 4 written for all four roads** (SPEAK.STAY.TRUST/HOLD, SPEAK.CHASE.ASK/WATCH). Episode 5+ NOT written.
+- **Partnerships:** `/d/drama/partner` (+ link on every story's brand section) → `drama_partner_requests` + Telegram; owner
+  replies with a price. Episode-sponsor rendering ("Presented by" on the cover) is NOT built — quote and place by hand for now.
+- **Admin desk:** cast cards show the portrait and a plain step; "Finished by hand" (failed only) and "Reject".
+- An **admin "Add it free" test join makes a REAL paid render** (~₦500); my tests used DRAMA_FAKE_RENDER.
+- Verified live: 18 pipeline checks (fake render, made-up member, cleaned up), 10 member-page checks (temporary session,
+  deleted), partner-form checks (one real request sent to the owner's Telegram marked TEST, row deleted), phone screenshots
+  light/dark. **Not yet:** a real paying fan; brand slots for not-yet-made episodes can't be bought in a live story (drafts
+  differ per road).
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
