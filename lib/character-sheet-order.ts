@@ -143,9 +143,11 @@ export function characterSheetPrompt(opts: {
         "clothing (prefer a full-length photograph), reproduced element for element: the same garments, colours, prints, " +
         "neckline, sleeves, hemline, belts, jewellery and shoes, nothing added, removed or redesigned. If no photograph " +
         "shows their shoes, give them plain, simple shoes that suit that outfit.";
+  // Subject first (owner, 2026-10-22): with the layout leading, the first test
+  // sheet did not look exactly like the person — the likeness is read first now.
   return [
-    `Scene: a professional character reference sheet shot in a photography studio.\n\n${SHEET_LAYOUT}\n\n${SHEET_BACKDROP}\n\n${SHEET_CAMERA}\n\n${SHEET_LIGHT}`,
     `Subject: ${personWord}. ${LIKENESS}${styleLines.length ? `\n\n${styleLines.join("\n")}` : ""}`,
+    `Scene: a professional character reference sheet shot in a photography studio.\n\n${SHEET_LAYOUT}\n\n${SHEET_BACKDROP}\n\n${SHEET_CAMERA}\n\n${SHEET_LIGHT}`,
     `Important Details: ${outfit}\n\n${SAME_LOOK}\n\n${REAL_PHOTO}`,
     "Use Case: a character model sheet — the reference used to keep this person identical in every later picture.",
     "Constraints: preserve the person's identity exactly and the outfit exactly; change only the pose and camera angle " +
