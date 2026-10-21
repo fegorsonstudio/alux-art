@@ -641,6 +641,25 @@ Alux's OWN products in every story; kept separate from Photo Wahala; first test 
 - Company legal name (CAC): **Aluxartandframes Enterprises**, trades as Alux Art (in `tools/unreal/CREDITS.md`).
 - Verified live with signed made-up comments (PLAY answered; a @fegorson_studio vote counted; test row removed).
 
+**Update (2026-10-21): drama episodes post AUTOMATICALLY after each vote (owner: "I don't want … to approve everything.
+It should just be automatic"; commit `333980a`).**
+- Story files carry `drafts`: one episode per road of the votes, `after` = the winning words so far (`SPEAK.STAY`) or a
+  `*.`-ending that fits any earlier road (`*.STAY`); `tools/drama/check.mjs` checks them like posted episodes (road length,
+  the parent offers the word, written once). `scripts/drama-seed.mjs` loads drafts into a LIVE story (jsonb_set on
+  `content.drafts` only — posted episodes untouched), read back and checked.
+- `lib/drama/advance.ts`: vote closes → the draft for that road is copied into `content.episodes`, frozen with
+  `approveEpisode`, `from_word` set, queued with `scheduleEpisode` for the next 7 p.m. Lagos at least 3 h away; Telegram says
+  what posts and when (nothing to approve). Per-story advisory lock; a failed queue deletes the freeze so the sweep retries; an
+  episode the owner takes back with Unschedule stays frozen and is left alone. No draft for the road → one Telegram
+  "not written yet"; it posts as soon as the draft is written and seeded.
+- Sweep: `/api/cron/drama-advance` (internal secret), root cron `*/10` → `/home/aluxart/drama-advance.sh`, log
+  `/home/aluxart/drama-advance.log` (crontab backup `/root/crontab.bak-2026-10-21-drama-advance`).
+- The story page lists only episodes already on Instagram once a story is live (no spoiler for the queued one).
+- **The Silent Partner:** SPEAK won Ep 1 (2 votes: @fegorson_studio and @nvidia_studio — both the owner's accounts; a DM
+  "Speak" from @queenbstudios to @fegorson_studio does not count). Ep 2 "The Empty Safe" queued 2026-10-21 18:00 UTC (slides
+  checked in R2). Ep 3 written for SPEAK.STAY and SPEAK.CHASE. **Ep 4 onward is NOT written** — write drafts ahead of each vote.
+- Exception to "nothing posts without approval": drama episodes only. Carousels still need Approve + Schedule.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
