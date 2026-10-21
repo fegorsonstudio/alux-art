@@ -790,6 +790,22 @@ with pillow-heif 1.8.1 / libheif 1.23.6 (venv `/home/aluxart/heic-venv`, `HEIC_P
 at most 2 conversions at once (~250 MB each). Proven on the libheif issue's own failing sample (5712x4284, ICC kept),
 live through nginx. Checkout: a failed tile shows the file name and a **Try again** button (re-sends the same file).
 
+**Update (2026-10-22, night): "Run again" on a finished photo — admins only (owner's call; commit `541696f`).** The owner
+wanted a new take without setting the shoot up again. `POST /api/shoots/[id]/slots/[slot]/again`: refuses non-admins (403),
+gif_loop / photo_retouch, a running order, an expired one (410), an order whose customer photos were purged (48 h), a
+failed photo ("use Retry"), and a kept take itself. Under the shoot lock it COPIES the finished file to
+`…/slot-N-take-<stamp>.<ext>`, inserts a COMPLETE row `kind = 'earlier take of #N'` after the last slot (same prompt,
+model, sizes), re-queues slot N and runs the worker like Retry — the shoot's cached brief means the SAME per-slot prompt,
+refs, lighting and choices; character sheets use their fixed prompt. `lib/generate.ts` (SELECT adds `kind`) and
+`lib/shortfall.ts` leave earlier-take rows out of a per-image order's booked count; `finishCharacterSheet` keeps an order
+COMPLETE and unrefunded when the re-run fails but an earlier take exists. Studio: "↻ Run again" on finished photos for
+admins (`runAgain`/`runAgainFailed` ×7); `/api/shoots/[id]` preview links carry `&v=<updated_at>` (the media proxy is
+cached an hour). Proven free on a throwaway restore with copied orders under new ids and fake images (27/27: character
+sheet failure path, 5-photo package, per-photo relight, five refusals), test files and db removed. **First real press =
+first real proof.** Not built: customers using it (owner: admins only for now) — it would need a price or a free cap.
+Note "Convert to template" (`/api/shoots/[id]/to-template`) makes a creator DRAFT template from a shoot; the owner
+reported it "isn't working" — no requests in the logs; not investigated yet.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
