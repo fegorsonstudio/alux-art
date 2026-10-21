@@ -852,7 +852,15 @@ export default function CheckoutPanel({
     // An iPhone HEIC was turned into a JPEG on the server; the browser could not
     // draw the original, so the thumbnail comes from the stored copy.
     const preview = converted ? `/api/media?b=identity-images&p=${encodeURIComponent(storagePath)}` : undefined;
-    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, storagePath, storageBucket: "identity-images", ...(preview ? { preview } : {}) } : u));
+    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, uploading: false, error: undefined, storagePath, storageBucket: "identity-images", ...(preview ? { preview } : {}) } : u));
+  };
+
+  // A failed tile keeps its file, so it can be sent again without choosing it again.
+  const retryIdentityUpload = (localId: string) => {
+    const item = newUploads.find(u => u.localId === localId);
+    if (!item) return;
+    setNewUploads(prev => prev.map(u => u.localId === localId ? { ...u, error: undefined } : u));
+    uploadIdentityFile(item.file, localId);
   };
 
   const addIdentityFiles = (files: FileList) => {
@@ -1766,7 +1774,21 @@ export default function CheckoutPanel({
                   <div key={u.localId} className={styles.uploadItem}>
                     <ImagePreview key={u.preview} src={u.preview} alt="" className={styles.uploadImg} preferredWidth={140} />
                     {u.uploading && <div className={styles.uploadOverlay}>{t("uploading")}</div>}
-                    {u.error && <div className={styles.uploadError}>{u.error}</div>}
+                    {u.error && (
+                      <div className={styles.uploadError} style={{ flexDirection: "column", gap: 3 }}>
+                        <span>{u.error}</span>
+                        <span style={{ fontWeight: 500, opacity: 0.9, wordBreak: "break-all" }}>{u.file.name}</span>
+                        {!signedOut && (
+                          <button
+                            type="button"
+                            onClick={() => retryIdentityUpload(u.localId)}
+                            style={{ marginTop: 2, padding: "2px 8px", border: 0, borderRadius: 999, background: "#fff", color: "#b43232", font: "inherit", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            {t("gifRetry")}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <button type="button" className={styles.removeBtn} onClick={() => setNewUploads(prev => prev.filter(x => x.localId !== u.localId))}>✕</button>
                   </div>
                 ))}
