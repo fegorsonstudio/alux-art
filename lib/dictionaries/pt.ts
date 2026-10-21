@@ -246,6 +246,7 @@ const pt: AppDictionary = {
     upgradeHint: "Envie exatamente {n} foto(s) para o pacote de {n} imagens — cada uma volta reiluminada e melhorada. JPEGs direto da câmera são perfeitos; qualquer câmera, qualquer ano.",
     identityHint1: "Selecione fotos salvas ou envie novas. Pelo menos 1 obrigatória.",
     identityHint2: "Para melhores resultados envie: 1 foto de corpo inteiro · 1 da cintura para cima em fundo liso · 1 close · pelo menos uma foto sorrindo de verdade (mostrando os dentes) para criarmos sorrisos naturais · e se quiser fotos de costas, uma foto mostrando suas costas/silhueta — nunca adivinhamos como você é de costas.",
+    sheetPhotosHint: "Para uma ficha de personagem, envie várias fotos da mesma pessoa — quanto mais ângulos, maior a semelhança: o rosto de frente, o rosto de perfil e o corpo inteiro, da cabeça aos pés. A roupa da sua foto de corpo inteiro é a que aparece na ficha.",
     clearing: "Limpando...",
     clearSaved: "Limpar fotos salvas",
     uploadNew: "+ Enviar nova",
@@ -522,6 +523,7 @@ const pt: AppDictionary = {
     photo_upgrade: "📸 Upgrade de foto",
     trending: "🔥 Em alta",
     gif_loop: "🎞️ GIF do Instagram",
+    character_sheet: "🧍 Ficha de personagem",
     other: "Outros",
   },
   chatUpload: {

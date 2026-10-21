@@ -2228,6 +2228,14 @@ export async function startGenerationWorker(
     return { done: true, completed: 1, failed: 0, remaining: 0, total: 1 };
   }
 
+  // ── character_sheet ────────────────────────────────────────────────────────
+  // One deterministic prompt, one image, handled in lib/character-sheet-order.ts
+  // before any of the photo machinery runs (same reason as gif_loop above).
+  if (shoot.category === "character_sheet") {
+    const { finishCharacterSheet } = await import("@/lib/character-sheet-order");
+    return finishCharacterSheet(shootId, shoot.user_id as string, rawRefs as never);
+  }
+
   // Per-image products — the Gear Equalizer and the Asset Extractor — are
   // booked as exactly as many images as the buyer sent (two takes doubles the
   // rows), never as a 1/5/10 package. Normalising their count turned a 2-photo

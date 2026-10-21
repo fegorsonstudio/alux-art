@@ -246,6 +246,7 @@ const pcm: AppDictionary = {
     upgradeHint: "Upload exactly {n} photo(s) for di {n}-image package — each one go come back relit and upgraded. Straight-from-camera JPEGs dey perfect; any camera, any year.",
     identityHint1: "Select saved photos or upload new ones. At least 1 dey required.",
     identityHint2: "For best results upload: 1 full-body photo · 1 waist-up photo for plain background · 1 close-up · at least one photo wey you dey genuinely smile (teeth dey show) so we fit create natural smiling shots · and if you want back shots, one photo wey show your back/figure from behind — we no dey guess how you look from behind.",
+    sheetPhotosHint: "For character sheet, upload plenty photos of the same person — more angles, better likeness: your face from front, your face from side, and your full body from head reach leg. The outfit wey dey your full-body photo na im go dey the sheet.",
     clearing: "E dey clear...",
     clearSaved: "Clear saved photos",
     uploadNew: "+ Upload new",
@@ -522,6 +523,7 @@ const pcm: AppDictionary = {
     photo_upgrade: "📸 Photo Upgrade",
     trending: "🔥 Trending",
     gif_loop: "🎞️ Instagram GIF",
+    character_sheet: "🧍 Character Sheet",
     other: "Others",
   },
   chatUpload: {

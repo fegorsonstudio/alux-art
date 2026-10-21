@@ -246,6 +246,7 @@ const fr: AppDictionary = {
     upgradeHint: "Téléchargez exactement {n} photo(s) pour la formule {n} images — chacune revient rééclairée et améliorée. Les JPEG bruts de l'appareil sont parfaits ; tout appareil, toute année.",
     identityHint1: "Sélectionnez des photos enregistrées ou ajoutez-en. Au moins 1 requise.",
     identityHint2: "Pour de meilleurs résultats : 1 photo en pied · 1 photo buste sur fond uni · 1 gros plan · au moins une photo où vous souriez vraiment (dents visibles) pour des sourires naturels · et pour des photos de dos, une photo montrant votre dos/silhouette — nous ne devinons jamais votre apparence de dos.",
+    sheetPhotosHint: "Pour une fiche personnage, envoyez plusieurs photos de la même personne — plus il y a d'angles, plus la ressemblance est fidèle : le visage de face, le visage de profil et le corps entier, de la tête aux pieds. La tenue de votre photo en pied est celle de la fiche.",
     clearing: "Suppression...",
     clearSaved: "Effacer les photos enregistrées",
     uploadNew: "+ Ajouter",
@@ -522,6 +523,7 @@ const fr: AppDictionary = {
     photo_upgrade: "📸 Amélioration photo",
     trending: "🔥 Tendances",
     gif_loop: "🎞️ GIF Instagram",
+    character_sheet: "🧍 Fiche personnage",
     other: "Autres",
   },
   chatUpload: {

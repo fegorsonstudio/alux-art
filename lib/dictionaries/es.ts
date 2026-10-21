@@ -246,6 +246,7 @@ const es: AppDictionary = {
     upgradeHint: "Sube exactamente {n} foto(s) para el paquete de {n} imágenes: cada una vuelve reiluminada y mejorada. Los JPEG directos de cámara son perfectos; cualquier cámara, cualquier año.",
     identityHint1: "Selecciona fotos guardadas o sube nuevas. Se requiere al menos 1.",
     identityHint2: "Para mejores resultados sube: 1 foto de cuerpo entero · 1 de medio cuerpo sobre fondo liso · 1 primer plano · al menos una foto sonriendo de verdad (con dientes) para crear sonrisas naturales · y si quieres fotos de espaldas, una foto que muestre tu espalda/silueta; nunca adivinamos cómo te ves por detrás.",
+    sheetPhotosHint: "Para una hoja de personaje, sube varias fotos de la misma persona — cuantos más ángulos, más parecido: la cara de frente, la cara de perfil y el cuerpo entero, de la cabeza a los pies. El conjunto de tu foto de cuerpo entero es el que aparece en la hoja.",
     clearing: "Borrando...",
     clearSaved: "Borrar fotos guardadas",
     uploadNew: "+ Subir nueva",
@@ -522,6 +523,7 @@ const es: AppDictionary = {
     photo_upgrade: "📸 Mejora de fotos",
     trending: "🔥 Tendencias",
     gif_loop: "🎞️ GIF de Instagram",
+    character_sheet: "🧍 Hoja de personaje",
     other: "Otros",
   },
   chatUpload: {

@@ -245,6 +245,7 @@ const en = {
     upgradeHint: "Upload exactly {n} photo(s) for the {n}-image package — each one comes back relit and upgraded. Straight-out-of-camera JPEGs are perfect; any camera, any year.",
     identityHint1: "Select saved photos or upload new ones. At least 1 required.",
     identityHint2: "For the best results upload: 1 full-body photo · 1 waist-up photo on a plain background · 1 close-up · at least one photo where you're genuinely smiling (teeth showing) so we can create natural smiling shots · and if you want back shots, one photo showing your back/figure from behind — we never guess how you look from behind.",
+    sheetPhotosHint: "For a character sheet, upload several photos of the same person — the more angles, the closer the likeness: your face from the front, your face from the side, and your whole body from head to feet. The outfit in your full-length photo is the one on the sheet.",
     clearing: "Clearing...",
     clearSaved: "Clear saved photos",
     uploadNew: "+ Upload new",
@@ -521,6 +522,7 @@ const en = {
     photo_upgrade: "📸 Photo Upgrade",
     trending: "🔥 Trending",
     gif_loop: "🎞️ Instagram GIF",
+    character_sheet: "🧍 Character Sheet",
     other: "Other",
   },
   chatUpload: {

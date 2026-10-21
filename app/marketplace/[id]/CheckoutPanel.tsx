@@ -579,6 +579,8 @@ export default function CheckoutPanel({
   // they tap one lighting rig + one camera look, and optionally swap the background.
   const photoUpgradeActive = template.category === "photo_upgrade";
   const gifLoopActive = template.category === "gif_loop";
+  // Character Sheet — one fixed five-view layout, so there is no shot type to pick.
+  const sheetActive = template.category === "character_sheet";
   const t = useT("checkout");
   const tc = useT("common");
   // Plural-aware "image(s)" word used inside interpolated sentences.
@@ -1699,6 +1701,11 @@ export default function CheckoutPanel({
                   </p>
                 )}
               </>
+            ) : sheetActive ? (
+              <>
+                <p className={styles.sectionHint}>{t("identityHint1")}</p>
+                <p className={styles.sectionHint}>{t("sheetPhotosHint")}</p>
+              </>
             ) : (
               <>
                 <p className={styles.sectionHint}>{t("identityHint1")}</p>
@@ -1943,7 +1950,7 @@ export default function CheckoutPanel({
 
           {/* Shot type (1-image package only) — meaningless for a loop: the buyer
               brings their own two pictures already framed. */}
-          {!perImagePricing && !gifLoopActive && selectedPkg === 1 && (
+          {!perImagePricing && !gifLoopActive && !sheetActive && selectedPkg === 1 && (
             <div className={styles.pkgRow}>
               <span className={styles.pkgLabel}>{t("shotType")}</span>
               <div className={styles.shotTypeRow}>

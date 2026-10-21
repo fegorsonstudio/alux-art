@@ -246,6 +246,7 @@ const zh: AppDictionary = {
     upgradeHint: "为 {n} 张套餐上传正好 {n} 张照片——每张都会重新打光并升级。相机直出的 JPEG 最合适；任何相机、任何年代都行。",
     identityHint1: "选择已保存的照片或上传新照片。至少需要 1 张。",
     identityHint2: "最佳效果请上传：1 张全身照 · 1 张纯色背景的半身照 · 1 张特写 · 至少一张真心微笑（露齿）的照片以便生成自然笑容 · 想要背影照的话，再来一张展示背面/身形的照片——我们绝不凭空猜测你的背面。",
+    sheetPhotosHint: "制作角色设定图，请上传同一个人的多张照片——角度越多，越像本人：正面脸部、侧面脸部，以及从头到脚的全身照。全身照中的服装就是设定图上的服装。",
     clearing: "清除中...",
     clearSaved: "清除已保存照片",
     uploadNew: "+ 上传新照片",
@@ -522,6 +523,7 @@ const zh: AppDictionary = {
     photo_upgrade: "📸 照片升级",
     trending: "🔥 热门",
     gif_loop: "🎞️ Instagram 动图",
+    character_sheet: "🧍 角色设定图",
     other: "其他",
   },
   chatUpload: {
