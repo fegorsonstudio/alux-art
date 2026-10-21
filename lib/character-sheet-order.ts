@@ -64,15 +64,32 @@ export const SHEET_LAYOUT =
   "THE COUNT IS FIXED: five panels, no more and no fewer. Do not repeat a view, do not add a view, do not leave a panel empty.";
 
 export const SHEET_BACKDROP =
-  "BACKDROP — every panel is photographed against the same plain mid-grey seamless studio backdrop: flat neutral grey, no " +
-  "gradient, no texture, no floor line, no props, no furniture, no other people. The grey is identical in all five panels.";
+  "BACKDROP — every panel is photographed against the same plain seamless studio paper in a neutral mid-grey (about 18% " +
+  "grey, like a photographer's grey card): smooth, no texture, no floor line, no props, no furniture, no other people. The " +
+  "grey is identical in all five panels.";
+
+// The camera and lens per panel. Long lenses from a distance keep a body's
+// proportions true — a short lens close up makes the head big and the legs
+// short, which a reference sheet must never do.
+export const SHEET_CAMERA =
+  "CAMERA — a high-end studio session on a medium-format digital camera on a tripod, ISO 100, 1/160 s with studio flash, " +
+  "the camera always level. Full-length panels (2 and 3): an 85mm lens at f/8 from about five metres, the camera at hip " +
+  "height, so the proportions stay true — no wide-angle stretch, no oversized head, no shortened legs. Medium shot " +
+  "(panel 1): an 85mm lens at f/8, the camera at chest height. Close-ups (panels 4 and 5): a 105mm lens at f/5.6 at eye " +
+  "level, focus on the nearest eye. Everything sharp from the hair to the shoes: fabric weave, hair strands and skin pores " +
+  "resolved, no motion blur, no noise.";
 
 export const SHEET_LIGHT =
-  "LIGHTING — professional studio reference light, identical in every panel: a large soft octabox key at 45 degrees to one " +
-  "side and slightly above eye level, a white fill on the other side at about a 2:1 ratio, a soft rim light behind for " +
-  "separation from the grey; 5600K daylight balance; the face evenly lit and sharp in every panel, soft natural shadows.\n\n" +
-  "COLOUR — neutral, true-to-life colour with accurate skin tones and no stylised grade: this sheet is the reference that " +
-  "later pictures of this person are drawn from.";
+  "LIGHTING — a professional studio set, identical in every panel: a large 150 cm octabox as the key, 45 degrees to one " +
+  "side of the camera and a little above eye level, feathered so the light falls evenly from head to shoes; a large white " +
+  "V-flat as fill on the other side, one stop under the key (about 2:1); two tall strip softboxes behind the person, one on " +
+  "each side, as rim lights that outline the shoulders, arms and hair against the grey; the backdrop lit on its own by two " +
+  "lights so the grey is smooth and even from edge to edge — no hotspot, no vignette, no shadow of the person on the paper; " +
+  "soft round catchlights in both eyes. The same light, exposure and white balance in all five panels.\n\n" +
+  "COLOUR — 5600K daylight, white-balanced on the grey backdrop, true-to-life skin tones and undertones, a gentle contrast " +
+  "curve with open shadows and clean, unclipped highlights, no stylised grade, no colour cast, no haze. A clean high-end " +
+  "studio finish — even exposure and clean grey — with the skin's real texture kept, never smoothed: this sheet is the " +
+  "reference that later pictures of this person are drawn from.";
 
 const LIKENESS =
   "THE SAME PERSON — all the photographs of the person attached are of one real individual. Face shape, eye shape and " +
@@ -87,8 +104,8 @@ const SAME_LOOK =
 
 const REAL_PHOTO =
   "A real studio photograph: realistic skin texture, natural asymmetry, realistic fabric folds, physically plausible light, " +
-  "a 50mm lens feel for the full-length panels and an 85mm feel for the close-ups, sharp focus. No illustration, no painting, " +
-  "no 3D render, no plastic sheen, no beauty filter.";
+  "the polish of a professional photographer's studio session. No illustration, no painting, no 3D render, no plastic " +
+  "sheen, no beauty filter.";
 
 const NO_TEXT =
   "PRINT NO TEXT ANYWHERE: no panel labels, captions, names, numbers, arrows, measurement scale, colour swatches, logos or " +
@@ -113,8 +130,8 @@ export function characterSheetPrompt(opts: {
   const styleLines = styles.map((s, i) => {
     const at = n + i + 1;
     const note = s.note?.trim() ? ` Buyer's note: "${s.note.trim().replace(/"/g, "'").slice(0, 200)}".` : "";
-    return `Image ${at} is a ${s.tag} reference: take ${STYLE_TAGS[s.tag] ?? "its styling only"} from it, reproduced ` +
-      `element for element, and nothing else — not its face, body, background or light.${note}`;
+    return `Image ${at} is the ${s.tag} reference. From it take ${STYLE_TAGS[s.tag] ?? "its styling only"}, reproduced ` +
+      `element for element — nothing else: not its face, body, background or light.${note}`;
   });
   const outfit = opts.wardrobe
     ? opts.wardrobe
@@ -127,7 +144,7 @@ export function characterSheetPrompt(opts: {
         "neckline, sleeves, hemline, belts, jewellery and shoes, nothing added, removed or redesigned. If no photograph " +
         "shows their shoes, give them plain, simple shoes that suit that outfit.";
   return [
-    `Scene: a professional character reference sheet shot in a photography studio.\n\n${SHEET_LAYOUT}\n\n${SHEET_BACKDROP}\n\n${SHEET_LIGHT}`,
+    `Scene: a professional character reference sheet shot in a photography studio.\n\n${SHEET_LAYOUT}\n\n${SHEET_BACKDROP}\n\n${SHEET_CAMERA}\n\n${SHEET_LIGHT}`,
     `Subject: ${personWord}. ${LIKENESS}${styleLines.length ? `\n\n${styleLines.join("\n")}` : ""}`,
     `Important Details: ${outfit}\n\n${SAME_LOOK}\n\n${REAL_PHOTO}`,
     "Use Case: a character model sheet — the reference used to keep this person identical in every later picture.",
