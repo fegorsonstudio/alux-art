@@ -43,30 +43,56 @@ function coverSvg() {
   const col = (i) => sx + i * (cw + g);
   const half = (sh - g) / 2;
   const rect = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${panel}"/>`;
-  // Simple figure marks: a head circle + body capsule, enough to read the views.
-  const figure = (cx, top, h, opts = {}) => {
-    const head = h * 0.12, bodyW = h * 0.2;
-    const parts = [];
-    if (!opts.noHead) parts.push(`<circle cx="${cx}" cy="${top + head}" r="${head}" fill="${soft}"/>`);
-    const by = top + head * 2.15;
-    parts.push(`<rect x="${cx - bodyW / 2}" y="${by}" width="${bodyW}" height="${h - (by - top)}" rx="${bodyW / 2.4}" fill="${soft}"/>`);
-    return parts.join("");
+  // Each panel clips its own figure, framed the way the real sheet frames it.
+  const clips = [];
+  const clip = (id, x, y, w, h) => { clips.push(`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath>`); return `clip-path="url(#${id})"`; };
+  const cap = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w / 2}" fill="${soft}"/>`;
+  // A plain standing figure `h` tall from the top of the head: head, torso,
+  // arms hanging with the hands showing, legs.
+  const figure = (cx, top, h) => {
+    const r = h * 0.062, neckY = top + r * 2.1;
+    const tw = h * 0.2, th = h * 0.34, aw = h * 0.05, ah = h * 0.32, lw = h * 0.078, lh = h * 0.46;
+    return [
+      `<circle cx="${cx}" cy="${top + r}" r="${r}" fill="${soft}"/>`,
+      cap(cx - tw / 2, neckY, tw, th),
+      cap(cx - tw / 2 - aw - h * 0.012, neckY + h * 0.02, aw, ah),
+      cap(cx + tw / 2 + h * 0.012, neckY + h * 0.02, aw, ah),
+      `<circle cx="${cx - tw / 2 - aw / 2 - h * 0.012}" cy="${neckY + h * 0.02 + ah + aw * 0.3}" r="${aw * 0.62}" fill="${soft}"/>`,
+      `<circle cx="${cx + tw / 2 + aw / 2 + h * 0.012}" cy="${neckY + h * 0.02 + ah + aw * 0.3}" r="${aw * 0.62}" fill="${soft}"/>`,
+      cap(cx - lw - h * 0.006, neckY + th - lw, lw, lh),
+      cap(cx + h * 0.006, neckY + th - lw, lw, lh),
+    ].join("");
+  };
+  // Head and shoulders for the close-ups; `side` turns it into a profile.
+  const bust = (cx, top, h, side = false) => {
+    const r = h * 0.27;
+    const head = side
+      ? `<ellipse cx="${cx}" cy="${top + r * 1.15}" rx="${r * 0.86}" ry="${r}" fill="${soft}"/><circle cx="${cx - r * 0.88}" cy="${top + r * 1.25}" r="${r * 0.16}" fill="${soft}"/>`
+      : `<ellipse cx="${cx}" cy="${top + r * 1.15}" rx="${r * 0.82}" ry="${r}" fill="${soft}"/>`;
+    return `${head}<rect x="${cx - r * 1.9}" y="${top + r * 2.35}" width="${r * 3.8}" height="${h}" rx="${r * 0.9}" fill="${soft}"/>`;
   };
   const label = (x, y, text) =>
     `<text x="${x}" y="${y}" font-family="Outfit, DejaVu Sans, sans-serif" font-size="30" font-weight="500" fill="${ink}" text-anchor="middle" letter-spacing="1">${text}</text>`;
+  const fullH = sh * 0.9;
+  const panels = [
+    // Medium: head to mid-thigh, so the hands are well inside the frame.
+    `<g ${clip("p1", col(0), sy, cw, sh)}>${figure(col(0) + cw / 2, sy + sh * 0.06, sh * 1.25)}</g>`,
+    // Outfit: the head sits above the top edge; chin to shoes.
+    `<g ${clip("p2", col(1), sy, cw, sh)}>${figure(col(1) + cw / 2, sy - sh * 0.15, sh * 1.06)}</g>`,
+    // Back: the whole figure.
+    `<g ${clip("p3", col(2), sy, cw, sh)}>${figure(col(2) + cw / 2, sy + (sh - fullH) / 2, fullH)}</g>`,
+    `<g ${clip("p4", col(3), sy, cw, half)}>${bust(col(3) + cw / 2, sy + half * 0.16, half)}</g>`,
+    `<g ${clip("p5", col(3), sy + half + g, cw, half)}>${bust(col(3) + cw / 2, sy + half + g + half * 0.16, half, true)}</g>`,
+  ].join("\n  ");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>${clips.join("")}</defs>
   <rect width="${W}" height="${H}" fill="${ground}"/>
   <text x="${W / 2}" y="300" font-family="Outfit, DejaVu Sans, sans-serif" font-size="128" font-weight="600" fill="${ink}" text-anchor="middle">Character Sheet</text>
   <text x="${W / 2}" y="400" font-family="Outfit, DejaVu Sans, sans-serif" font-size="48" font-weight="400" fill="${soft}" text-anchor="middle">Five views of you, on grey</text>
   <rect x="${sx - g}" y="${sy - g}" width="${sw + 2 * g}" height="${sh + 2 * g}" fill="${gutter}"/>
   ${rect(col(0), sy, cw, sh)}${rect(col(1), sy, cw, sh)}${rect(col(2), sy, cw, sh)}
   ${rect(col(3), sy, cw, half)}${rect(col(3), sy + half + g, cw, half)}
-  ${figure(col(0) + cw / 2, sy + 40, sh * 1.25)}
-  ${figure(col(1) + cw / 2, sy + 10, sh - 30, { noHead: true })}
-  ${figure(col(2) + cw / 2, sy + 40, sh - 70)}
-  <circle cx="${col(3) + cw / 2}" cy="${sy + half * 0.45}" r="${half * 0.26}" fill="${soft}"/>
-  <circle cx="${col(3) + cw / 2}" cy="${sy + half + g + half * 0.45}" r="${half * 0.26}" fill="${soft}"/>
-  <rect x="${sx - g}" y="${sy + sh}" width="${sw + 2 * g}" height="${H}" fill="${ground}"/>
+  ${panels}
   ${label(col(0) + cw / 2, sy + sh + 70, "Medium")}
   ${label(col(1) + cw / 2, sy + sh + 70, "Outfit")}
   ${label(col(2) + cw / 2, sy + sh + 70, "Back")}
