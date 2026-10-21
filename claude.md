@@ -762,7 +762,9 @@ model switch — live says Nano Banana 2): five views on plain grey, the layout 
 (1) medium front, head to mid-thigh, BOTH HANDS IN FRAME; (2) full body front, head cropped under the chin (outfit view);
 (3) full body back; (4) three-quarter close-up; (5) profile close-up. **Camera + light (commit `45c56bf`, owner asked for a premium studio look):**
 full length on an 85mm at f/8 from ~5 m at hip height (true proportions), medium on 85mm at chest height, close-ups on 105mm
-at eye level; 150 cm octabox key, V-flat fill 2:1, two strip rims, the 18%-grey paper lit separately and evenly, 5600K neutral. Up to 8 photos; Advanced-options OUTFIT / HAIRSTYLE /
+at eye level; 150 cm octabox key, V-flat fill 2:1, two strip rims, the 18%-grey paper lit separately and evenly, 5600K neutral.
+**Owner's first test (order `1d0b48e5`, 9 photos, Nano Banana 2, 5504x3072, 50 s): likeness not exact → the Subject
+(identity) block now comes FIRST, before Scene/layout (commit `3db880a`, owner's call; overrides the usual Scene-first order).** Up to 8 photos; Advanced-options OUTFIT / HAIRSTYLE /
 MAKEUP / ACCESSORY references are honoured (max 2), otherwise the outfit is the one in their fullest photo; prompt saved on
 the slot. `lib/generate.ts` hands the order over right after the gif_loop fork (4 lines); a failure marks the slot FAILED and
 `settleShortfall` refunds a paid order. Checkout hides "Shot type" and shows `sheetPhotosHint`; `categories.character_sheet`
