@@ -20,6 +20,17 @@ each page's current rules before submitting.
 
 Use one at a time: the studio machine is switched on only while pictures are made.
 
+## Status
+
+- **2026-10-21 — AWS Activate: application SUBMITTED** by the owner in their own browser ("we will get back to you in
+  5 to 7 business days"). New accounts start with 0 GPU quota: once credits arrive, request "Running On-Demand G and
+  VT instances" in Service Quotas before launching a machine.
+- **2026-10-21 — Microsoft for Startups: Azure account made** (aluxartandframes@gmail.com); the portal offers $200 for
+  "Verify with LinkedIn". The owner has no LinkedIn yet and is making one. The earlier account on
+  fegorsonphotography@gmail.com was locked at sign-up.
+- **Sign-ups must be done in the owner's own browser.** Both Microsoft and AWS blocked the sign-ups made in the
+  Playwright-driven Chrome window (Microsoft: "prove you're human" lock; AWS: Builder ID "ERR-837 account issue").
+
 ## Answers to paste
 
 - **Company (legal name, as on the CAC certificate):** Aluxartandframes Enterprises, Nigeria. Trades as Alux Art.
