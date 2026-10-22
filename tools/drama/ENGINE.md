@@ -11,6 +11,27 @@ This is a NEW engine. It is not Photo Wahala (that series keeps its own rules in
 
 ---
 
+## 0. The telling: a recap narrator (owner, 2026-10-22)
+
+The owner's house style for telling every story — slides and soundtrack alike —
+is the drama-recap narrator: **people must understand it at once, digest it,
+enjoy it and need the next one.**
+
+- Short, direct, declarative sentences. One fact each. Tell, don't show: say
+  plainly what happens and what it means.
+- Third person, with **labels instead of names** in narration — "the quiet
+  finance director", "the CEO", "her assistant", "the old housekeeper". Names
+  live in what characters say to each other.
+- One or two spoken lines an episode — the sharpest ones, like a trailer's
+  dialogue stab. The rest is narration.
+- Slide 2 tells a newcomer where we are, including what the last vote decided
+  ("8 a.m. Her assistant carries the brass key into the bank.").
+- A twist in the middle, the cliffhanger at the end, then the vote.
+- The soundtrack (tools/drama/sound/) tells the same episode the same way, with
+  a narrator who carries it; the pictures and designs add to it.
+
+Everything below still holds (12 words a slide, 70 an episode, the rhythm).
+
 ## 1. The picture tells the story. The words only point.
 
 Every slide is one photograph that a person can read in two seconds. The image
