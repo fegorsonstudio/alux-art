@@ -846,6 +846,20 @@ failed check → post the silent carousel as today + Telegram. Not posted anythi
   db removed). **First real run: The Silent Partner Ep 3** — queued when its vote closes 4 p.m. Lagos 22 Oct, posts 7 p.m.;
   the owner gets "🔊 … has its soundtrack" with a link, or "🔇 … will post without sound" and why.
 
+**Update (2026-10-22, later): Nigerian DESIGNED voices, mixed with foreign ones per story (owner; commit `761f250`).**
+Gemini 3.8 voice design (POST /v1beta/voices, type "prompted", language en-NG accepted) makes a persistent voice from a
+description (1-year TTL, 200 per project). `voices.mjs`: a role is a standard name or `{ nigerian: "…", gender }`;
+`design-voices.mjs <slug>` makes missing ones (sample to R2 `admin/sound-tests/voice-designs/<slug>/`, accent judged by
+gemini-3.1-pro — gemini-2.5-flash is NOT reliable on accents), ids in `designed-voices.json` (committed); `cast.mjs`
+`resolveVoices` fails loudly if a designed role is missing or its description changed (→ episode silent + Telegram).
+**The Silent Partner** is fully designed (adaeze, tunde, ifeoma, eze, guard, funke: all judged Nigerian English),
+damola = British-educated standard voice (algieba), narrator international (algenib). **Other 7 stories still on
+standard voices** — design them (and decide each narrator: Nigerian for family/romance/romcom/period, international for
+power/thriller/political/mystery) before they start. `try.mjs <slug> <n> [road] --cover <key>` = the automatic path for
+listening (nothing attached). Learnt: whispered lines fail transcription → writer forbids whispers ("hushed but clear");
+Lyria can refuse a written prompt "for an unspecified policy reason" → one retry with a plain prompt in the mood (refused
+text kept in the report); music cap 4. Ep 3 (SPEAK.STAY) listening test passed every check, supervisor 9/10, ~$0.19.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
