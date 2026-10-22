@@ -44,14 +44,17 @@ export const MODELS = {
   director: process.env.SOUND_DIRECTOR_MODEL || "gemini-3.1-pro-preview",
 };
 /** Per episode, so a fault can never run up a bill. */
-const CAP = { tts: 56, music: 4, director: 20 };
+const CAP = { tts: 76, music: 4, director: 20 };
 /** What each call costs (USD), roughly, for the record kept with the episode. */
 const PRICE = { tts: 0.003, music: 0.08, director: 0.012 };
 const BUCKET = "generated-4k";
 export const KIT_BASE = "drama/sound-kit";
 /** Performance marks the voice model understands (Gemini TTS docs). No <whispers>: half-heard in tests. */
 export const TAGS = ["<gasp>", "<short pause>", "<long pause>", "<breath>", "<sigh>", "<exhales>", "<chuckle>", "<laugh>", "<sob>", "<tsk>"];
-const TAKES = 4, RETAKES = 3;
+// Takes are cheap and the director is the gate: the narrator, who carries the whole
+// soundtrack, gets the most (second real run: characters passed every time, the
+// narrator about one take in four).
+const TAKES = { narrator: 6, character: 4 }, RETAKES = { narrator: 4, character: 3 };
 // A narrator sentence with no delivery note still drives on (first real run: most
 // bare takes came back "too slow, lacks urgency").
 const NARRATOR_DEFAULT = "brisk, gripping storytelling";
@@ -216,13 +219,29 @@ export function blocksOf(S) {
     if (breakHere) { cur = { who: b.who, beats: [] }; blocks.push(cur); }
     cur.beats.push(n);
   });
-  return blocks.map((bl, i) => ({ ...bl, i: i + 1, items: bl.beats.map((n) => ({ text: B[n - 1].text, style: B[n - 1].style || (bl.who === "narrator" ? NARRATOR_DEFAULT : "") })),
+  // A mark at the very end of a line ("It is EMPTY. <short pause>") only confuses the
+  // take — the silence there is trimmed anyway — so it goes.
+  const lineText = (t) => String(t).replace(/\s*<[^>]+>\s*([.…!?]*)\s*$/, "$1");
+  return blocks.map((bl, i) => ({ ...bl, i: i + 1, items: bl.beats.map((n) => ({ text: lineText(B[n - 1].text), style: narratorStyle(bl.who, B[n - 1].style) })),
     twist: bl.beats[0] === T, cliff: bl.beats[0] === C, ask: bl.beats.includes(A) }));
+}
+/**
+ * The narrator is always urgent and alive: it changes intensity, never speed. The
+ * second real run failed exactly where a script asked it to be "flat, direct" or
+ * "stunned, slow" (the director: "lacks urgency"), so those words are taken out.
+ * A style left untouched keeps its block's take reusable.
+ */
+export function narratorStyle(who, style) {
+  if (who !== "narrator") return style || "";
+  const s = String(style || "").split(",").map((x) => x.replace(/\b(flat|flatly|monotone|slow|slowly|drawn[- ]out|deadpan)\b/gi, "").replace(/\s+/g, " ").trim()).filter(Boolean).join(", ");
+  return s || NARRATOR_DEFAULT;
 }
 const SERIOUS = /glitch|artifact|artefact|robot|garble|cut off|cut-off|clipped off|noise|distort|wrong word|missing word|skipped|mispronoun/i;
 function takePasses(t) {
-  return t.match >= 0.88 && Number(t.life) >= 7 && Number(t.clarity) >= 8 && Number(t.direction) >= 6
-    && !(t.problems ?? []).some((p) => SERIOUS.test(String(p)));
+  const clean = !(t.problems ?? []).some((p) => SERIOUS.test(String(p)));
+  // Clarity 8+, or 7 when every word was heard and the director found nothing wrong.
+  const clear = Number(t.clarity) >= 8 || (Number(t.clarity) >= 7 && t.match >= 0.95 && !(t.problems ?? []).length);
+  return t.match >= 0.88 && Number(t.life) >= 7 && Number(t.direction) >= 6 && clear && clean;
 }
 
 /** Record `n` takes of a block, let the director judge them, return the takes with verdicts. */
@@ -330,12 +349,13 @@ export async function makeSound(S, opts) {
           continue;
         } catch (e) { log(`    could not reuse ${again}: ${e.message} — recording it again`); }
       }
-      let round = await takesFor(api, dir, bl, voice, TAKES, null, log);
+      const role = bl.who === "narrator" ? "narrator" : "character";
+      let round = await takesFor(api, dir, bl, voice, TAKES[role], null, log);
       let best = pick(round.takes, round.best);
       const tried = [...round.takes];
       if (!best) {
         log(`    no take good enough — one more round${round.note ? ` with the note "${round.note}"` : ""}`);
-        round = await takesFor(api, dir, bl, voice, RETAKES, round.note || "more alive, every word clear", log);
+        round = await takesFor(api, dir, bl, voice, RETAKES[role], round.note || "more alive, every word clear", log);
         tried.push(...round.takes);
         best = pick(round.takes, round.best);
       }

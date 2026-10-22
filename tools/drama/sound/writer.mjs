@@ -89,6 +89,8 @@ export function checkScript(S, { episode, cast, story = {} }) {
     const style = String(b.style ?? "");
     if (style.length > 60) p.push(`${n}: style must be a few words (at most 60 characters)`);
     if (/accent/i.test(style)) p.push(`${n}: style must not ask for an accent`);
+    if (b.who === "narrator" && /\b(flat|flatly|monotone|slow|slowly|drawn[- ]out|deadpan)\b/i.test(style)) p.push(`${n}: the narrator stays urgent — change the intensity, never "flat" or "slow"`);
+    if (/<[^>]+>\s*[.…!?]*\s*$/.test(b.text ?? "")) p.push(`${n}: a mark like <short pause> goes inside a beat, not at its end`);
     // Whispers were half-understood in both real tests: secrets are "hushed but clear".
     if (/whisper/i.test(style)) p.push(`${n}: no whispering — use "hushed but clear" so every word is heard`);
     const tags = b.text.match(/<[^>]+>/g) ?? [];
@@ -175,7 +177,8 @@ function prompt(story, episode, problems) {
     "- \"cliff\": the number of the beat that is the cliffhanger (after the twist). A riser leads into it and a hit lands after it.\n" +
     `- The last beat is the narrator: a short question, then the vote, e.g. "What does she do? Comment ${opts.map((o) => o.word).join("… or ")}." (at most 14 words).`,
     "THE PERFORMANCE (this is what makes it cinematic):\n" +
-    "- \"style\" on a beat: 2–6 words of delivery, only where it should change — e.g. \"cold, clipped\", \"rising disbelief\", \"quiet menace\", \"urgent, faster\", \"stunned, slow\", \"hushed but clear\". Leave it \"\" when the narrator just drives on.\n" +
+    "- \"style\" on a beat: 2–6 words of delivery, only where it should change — e.g. \"cold, clipped\", \"rising disbelief\", \"quiet menace\", \"urgent, faster\", \"stunned\", \"hushed but clear\". Leave it \"\" when the narrator just drives on.\n" +
+    "- The narrator is ALWAYS alive and urgent: change the intensity (colder, quieter, sharper), never the speed — never \"flat\", never \"slow\". Characters may be anything.\n" +
     `- You may put ONE of these marks in a beat where a breath or a beat of silence makes it land: ${TAGS.join(" ")}.\n` +
     "- At most TWO words in CAPITALS in the whole script, only where the stress must fall hardest (e.g. \"The safe is EMPTY.\"). Write the vote words in capitals too; they do not count.\n" +
     "- Use punctuation for rhythm: full stops for punches, an ellipsis (…) for suspense, a dash for a cut-off.\n" +
