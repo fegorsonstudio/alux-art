@@ -806,6 +806,24 @@ first real proof.** Not built: customers using it (owner: admins only for now) �
 Note "Convert to template" (`/api/shoots/[id]/to-template`) makes a creator DRAFT template from a shoot; the owner
 reported it "isn't working" — no requests in the logs; not investigated yet.
 
+**Update (2026-10-22, late): drama episode SOUND — first test made, automation NOT built (commit `f4f3bd7`).** Owner: a
+30-second film soundtrack per episode, Lyria 3 Pro for music/backgrounds/effects, Gemini 3.8 TTS for voices, mixed
+automatically, "no room for errors". Owner's decisions after the first try: **sound on the COVER** (slide 1 posted as a
+30-s video inside the carousel; Instagram's API cannot put audio on a picture carousel — in-app music is 5–90 s from IG's
+library only, not automatable; carousel video items up to 60 s in the app), **Google's standard voices** (the 2,089-voice
+library has NO Nigerian English or Nigerian-language voice; a "Nigerian accent" style gave American/British/other 7 of 9
+times; voice replication from a 10–30 s consented recording exists for 3.8 TTS if wanted later), **30 s with few words**
+(dramatic TTS runs ~1.4 words/s: 4–5 short lines, ~30 words). `tools/drama/sound/make.mjs <script> <r2 slide prefix>`:
+per-line TTS (Interactions API, `speech_metadata.style`, silence trimmed, must fit `at`→`by`, re-made faster then ≤1.12×
+tempo, transcribed back by gemini-2.5-flash ≥85% words), Lyria `lyria-3-pro-preview` score + effects (returned ~55–60 s,
+trimmed), ducking, two-pass loudnorm −14 LUFS / −1.5 dBTP, exact length, a Gemini "sound supervisor" listen, preview MP4,
+everything to R2 `generated-4k/admin/sound-tests/…` (7-day links). Caps: 20 TTS, 3 Lyria, 24 checks per run. Test on The
+Silent Partner Ep 2 (`tools/drama/sound/the-silent-partner-ep2.mjs`): 5/5 lines first try, −14.1 LUFS, peak −1.5,
+supervisor 9/10, ≈$0.18; mix ended 0.8 s short — FIXED (voice bus on a full-length silent base), not re-run (paid).
+**Next, needs the owner's OK (shared files):** a `sound` block per episode in the story files + check.mjs rules; the sound
+job when advance.ts queues an episode; the publisher posting slide 1 as a VIDEO carousel item (wait for FINISHED); any
+failed check → post the silent carousel as today + Telegram. Not posted anything with sound yet.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
