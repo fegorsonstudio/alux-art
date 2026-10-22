@@ -14,6 +14,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { writeScript } from "./writer.mjs";
 import { makeSound } from "./engine.mjs";
 import { resolveVoices } from "./cast.mjs";
+import VOICES from "./voices.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -29,17 +30,23 @@ const episode = story.episodes.find((e) => e.n === n)
 if (!episode) { console.error(`no episode ${n}${road ? ` for ${road}` : ""}`); process.exit(1); }
 console.log(`${story.title} — Episode ${n} "${episode.title}"${episode.after ? ` (after ${episode.after})` : ""}`);
 
-const voices = resolveVoices(slug);
-const { script, problems } = await writeScript({ story, episode, voices });
+let voices;
+try { voices = resolveVoices(slug); } catch (e) {
+  if (!args.includes("--fake")) throw e;
+  voices = Object.fromEntries(Object.keys(VOICES[slug]).map((k) => [k, "fake"])); // a free run needs no real voice
+}
+const fake = args.includes("--fake"); // free: stand-in script and ffmpeg sounds
+const { script, problems } = await writeScript({ story, episode, voices, fake });
 if (!script) { console.log(`NO SCRIPT: ${problems.join(" | ")}`); process.exit(1); }
-console.log("\nScript:");
-for (const l of script.lines) console.log(`  ${l.at.toFixed(1)}–${l.by.toFixed(1)} s  ${l.who} (${voices[l.who]}): "${l.text}"  [${l.style}]`);
+console.log(`\nScript (twist = beat ${script.twist}, cliff = beat ${script.cliff}):`);
+script.beats.forEach((b, i) => console.log(`  ${String(i + 1).padStart(2)}. ${b.who} (${voices[b.who]}): ${b.text}${b.style ? `  [${b.style}]` : ""}`));
+console.log(`  score: ${script.score_style}\n  scene: ${script.scene_sound}\n  moments: ${script.moments.map((m) => `beat ${m.beat}: ${m.sound}`).join("; ")}`);
 
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-const res = await makeSound(script, { coverKey, outBase: `admin/sound-tests/${slug}-ep${n}-${stamp}` });
+const res = await makeSound(script, { coverKey, outBase: `admin/sound-tests/${slug}-ep${n}-${fake ? "fake-" : ""}${stamp}`, fake });
 console.log(`\n${res.ok ? "OK — every check passed" : "NOT OK"} — calls ${JSON.stringify(res.report.calls)}, about $${res.report.usd}`);
 if (res.problems.length) console.log(`Problems: ${res.problems.join(" | ")}`);
-if (res.report.supervisor) console.log(`Listening check: ${JSON.stringify(res.report.supervisor)}`);
+if (res.report.supervisor) console.log(`Release check: ${JSON.stringify(res.report.supervisor)}`);
 for (const r of res.report.refused ?? []) console.log(`Lyria refused this ${r.kind} prompt:\n${r.prompt}`);
 if (res.keys.preview) console.log(`PREVIEW ${res.keys.preview}`);
 process.exit(res.ok ? 0 : 1);

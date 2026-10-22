@@ -15,7 +15,11 @@
  *      publisher then posts slide 1 as that video. Anything else and the episode
  *      posts silent, as before, and the owner gets one Telegram line saying why.
  *
- * Switch: app_config drama_sound = 'on'. Caps: one episode per run, 8 per 24 h,
+ * Switch: app_config drama_sound = 'on' (attach), 'preview' (make it after the vote
+ * and send the owner the link, but post silent — owner, 2026-10-22: the new sound
+ * must pass their listen first), anything else = off. Sound is only ever made for
+ * an episode the vote has already chosen (a queued post), never for both versions.
+ * Caps: one episode per run, 8 per 24 h,
  * and the engine's own per-episode call caps. --fake (test databases only)
  * makes every sound with ffmpeg instead of the paid models.
  */
@@ -25,7 +29,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeSound } from "../tools/drama/sound/engine.mjs";
-import { writeScript, checkScript } from "../tools/drama/sound/writer.mjs";
+import { writeScript, checkScript, toScript } from "../tools/drama/sound/writer.mjs";
 import { resolveVoices } from "../tools/drama/sound/cast.mjs";
 
 const FAKE = process.argv.includes("--fake");
@@ -50,7 +54,8 @@ async function main() {
     throw new Error("--fake runs only against a test database");
   }
   const [cfg] = await sql`SELECT value FROM app_config WHERE key = 'drama_sound'`;
-  if (cfg?.value !== "on") { log("switched off (app_config drama_sound)"); return; }
+  const MODE = cfg?.value;
+  if (MODE !== "on" && MODE !== "preview") { log("switched off (app_config drama_sound)"); return; }
   const [{ n: today }] = await sql`SELECT count(*)::int AS n FROM drama_sound WHERE created_at > now() - interval '24 hours'`;
   if (today >= DAILY_MAX) { log(`daily cap reached (${today})`); return; }
 
@@ -107,9 +112,9 @@ async function main() {
     if (existsSync(hand)) {
       const h = (await import(pathToFileURL(hand).href)).default;
       if (h.title === episode.title) {
-        const s = { ...h, voices: Object.fromEntries(Object.entries(voices).map(([k, v]) => [k, { voice: v }])) };
-        const p = checkScript({ mood: h.mood ?? `a ${story.genre} drama`, ...s }, { episode, cast: story.cast });
-        if (!p.length) { script = { mood: `a ${story.genre} drama`, ...s }; log("using the hand-written script"); }
+        const s = toScript(h, { story, episode, voices });
+        const p = checkScript(s, { episode, cast: story.cast, story });
+        if (!p.length) { script = s; log("using the hand-written script"); }
         else log(`hand-written script set aside: ${p.join(" | ")}`);
       }
     }
@@ -130,6 +135,14 @@ async function main() {
       await tellAdmin(`🔇 <b>${esc(name)}</b> will post without sound (it posts ${esc(lagos(due.scheduled_for))} as usual).\nWhy: ${esc(res.problems.slice(0, 3).join("; "))}`);
       return;
     }
+    const s = res.report.supervisor ?? {};
+    if (MODE === "preview") {
+      // Made after the vote, for the owner's ear only: the post goes out silent.
+      await finish("skipped", { script, report: res.report, video: res.keys.video, problems: ["preview only — not attached to the post"], usd: res.report.usd });
+      await tellAdmin(`🎧 <b>${esc(name)}</b> — the NEW soundtrack (preview, not on the post; it posts ${esc(lagos(due.scheduled_for))} silent).\nRelease check ${esc(s.overall ?? "?")}/10. About $${res.report.usd}.\n<a href="${res.keys.preview}">Hear it</a>`);
+      log(`preview made: ${res.keys.video}`);
+      return;
+    }
     const attached = await sql`
       UPDATE scheduled_carousels SET cover_video_path = ${res.keys.video}, updated_at = now()
       WHERE id = ${due.carousel_id} AND status = 'queued' AND cover_video_path IS NULL RETURNING id`;
@@ -139,8 +152,7 @@ async function main() {
       return;
     }
     await finish("ready", { script, report: res.report, video: res.keys.video, usd: res.report.usd });
-    const s = res.report.supervisor ?? {};
-    await tellAdmin(`🔊 <b>${esc(name)}</b> has its soundtrack — it posts ${esc(lagos(due.scheduled_for))} with the sound on the cover.\nListening check ${esc(s.score_1_to_10 ?? "?")}/10. About $${res.report.usd}.\n<a href="${res.keys.preview}">Hear it</a>`);
+    await tellAdmin(`🔊 <b>${esc(name)}</b> has its soundtrack — it posts ${esc(lagos(due.scheduled_for))} with the sound on the cover.\nRelease check ${esc(s.overall ?? "?")}/10. About $${res.report.usd}.\n<a href="${res.keys.preview}">Hear it</a>`);
     log(`ready: ${res.keys.video}`);
   } catch (e) {
     await finish("failed", { problems: [String(e.message).slice(0, 400)] }).catch(() => {});

@@ -64,5 +64,16 @@
       "accent": "Nigerian English",
       "is_nigerian_english": "yes"
     }
+  },
+  "the-silent-partner/narrator": {
+    "id": "voice_uovnk5cfv7xd",
+    "description": "A man in his forties with the voice of a premium film-trailer and drama-recap narrator: a deep, rich, slightly gravelly baritone, close to the microphone; gripping, urgent storytelling with controlled intensity and crisp consonants, so every short sentence lands. Neutral international English.",
+    "gender": "male",
+    "created": "2026-10-22T07:12:36.064Z",
+    "expires": "2027-10-22T07:12:29.006598839Z",
+    "accent_check": {
+      "accent": "American",
+      "is_nigerian_english": "no"
+    }
   }
 }

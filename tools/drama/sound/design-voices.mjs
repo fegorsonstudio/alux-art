@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Makes a story's designed (Nigerian) voices with Gemini 3.8 voice design, once.
+ * Makes a story's designed voices (Nigerian ones, and designed narrators) with Gemini 3.8 voice design, once.
  *
  *   node --env-file=.env.local tools/drama/sound/design-voices.mjs <story slug>
  *
- * For each role in voices.mjs written as { nigerian: "…", gender } that has no
- * voice yet (or whose description changed): POST /v1beta/voices (type "prompted",
- * language en-NG), keep the sample in R2 (admin/sound-tests/voice-designs/<slug>/),
+ * For each role in voices.mjs written as { nigerian: "…", gender } or
+ * { designed: "…", gender, language } that has no voice yet (or whose description
+ * changed): POST /v1beta/voices (type "prompted", language en-NG or the role's own), keep the sample in R2 (admin/sound-tests/voice-designs/<slug>/),
  * ask gemini-3.1-pro-preview what accent it hears (advice only — the owner's ear
  * decides), and record the id in designed-voices.json. Voices last a year from
  * last use; 200 per project. Standard-voice roles are left alone.
@@ -40,10 +40,11 @@ let made = 0;
 for (const [role, v] of Object.entries(VOICES[slug])) {
   if (typeof v === "string") continue;
   const k = `${slug}/${role}`;
-  if (reg[k]?.id && reg[k].description === v.nigerian) { console.log(`${role}: already designed (${reg[k].id})`); continue; }
+  const description = v.nigerian ?? v.designed;
+  if (reg[k]?.id && reg[k].description === description) { console.log(`${role}: already designed (${reg[k].id})`); continue; }
   const r = await fetch(`${API}/voices`, { method: "POST", headers: { "x-goog-api-key": KEY, "content-type": "application/json" },
     body: JSON.stringify({ store: true, voice: { model: "gemini-3.8-flash-tts", type: "prompted", display_name: `alux-${slug}-${role}`.slice(0, 60),
-      gender: v.gender, language_code: "en-NG", prompted: { input: v.nigerian } } }) });
+      gender: v.gender, language_code: v.nigerian ? "en-NG" : (v.language ?? "en-US"), prompted: { input: description } } }) });
   const t = await r.text();
   if (!r.ok) { console.log(`${role}: REFUSED ${r.status} ${t.slice(0, 200)}`); continue; }
   const j = JSON.parse(t);
@@ -55,7 +56,7 @@ for (const [role, v] of Object.entries(VOICES[slug])) {
     link = await getSignedUrl(s3, new GetObjectCommand({ Bucket: "generated-4k", Key: key }), { expiresIn: 7 * 24 * 3600 });
     heard = await judge(sample);
   }
-  reg[k] = { id: j.id, description: v.nigerian, gender: v.gender, created: new Date().toISOString(), expires: j.expire_time ?? null, accent_check: heard };
+  reg[k] = { id: j.id, description, gender: v.gender, created: new Date().toISOString(), expires: j.expire_time ?? null, accent_check: heard };
   await writeFile(REGISTRY, JSON.stringify(reg, null, 2) + "\n");
   made++;
   console.log(`${role}: ${j.id} — heard ${heard?.accent ?? "?"} (${heard?.is_nigerian_english ?? "?"})`);

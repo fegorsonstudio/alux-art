@@ -26,7 +26,7 @@ export function resolveVoices(slug) {
   const out = {}, missing = [];
   for (const [role, v] of Object.entries(spec)) {
     if (typeof v === "string") out[role] = v;
-    else if (reg[`${slug}/${role}`]?.id && reg[`${slug}/${role}`].description === v.nigerian) out[role] = reg[`${slug}/${role}`].id;
+    else if (reg[`${slug}/${role}`]?.id && reg[`${slug}/${role}`].description === (v.nigerian ?? v.designed)) out[role] = reg[`${slug}/${role}`].id;
     else missing.push(role);
   }
   if (missing.length) throw new Error(`voices not designed yet for ${slug}: ${missing.join(", ")} (run tools/drama/sound/design-voices.mjs ${slug})`);

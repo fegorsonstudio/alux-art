@@ -8,6 +8,11 @@
 //                                  language en-NG) from that description, made once by
 //                                  tools/drama/sound/design-voices.mjs; its id is kept in
 //                                  designed-voices.json and reused for every episode.
+//   { designed: "…", gender, language } — a designed voice in another English (e.g. the
+//                                  international trailer narrator, language en-US).
+// The narrator carries every soundtrack (the recap style), so a story's narrator is
+// best DESIGNED as a trailer/recap voice rather than a stock one (Gemini TTS docs:
+// build a character through voice design, keep the per-line styles short).
 // Narrators: international for the corporate, thriller, political and mystery stories;
 // Nigerian for family, romance, romcom and the 1962 period story (as each is designed).
 //
@@ -23,7 +28,8 @@
 
 export default {
   "the-silent-partner": {
-    narrator: "algenib", // international film-trailer narrator
+    // International film-trailer / drama-recap narrator (was the stock "algenib").
+    narrator: { gender: "male", language: "en-US", designed: "A man in his forties with the voice of a premium film-trailer and drama-recap narrator: a deep, rich, slightly gravelly baritone, close to the microphone; gripping, urgent storytelling with controlled intensity and crisp consonants, so every short sentence lands. Neutral international English." },
     adaeze: { gender: "female", nigerian: "A 36-year-old Nigerian woman from Lagos, an Igbo finance director educated in Nigeria: a warm, low, composed voice with a clear Nigerian English accent — Nigerian vowels and rhythm — speaking quietly and precisely." },
     tunde: { gender: "male", nigerian: "A 47-year-old Yoruba man from Lagos, a chief executive: a big, warm, booming baritone with a strong Lagos Nigerian English accent, confident and charming, a laugh never far away." },
     ifeoma: { gender: "female", nigerian: "A 28-year-old Igbo woman from Enugu working in a Lagos office: a bright, quick, slightly breathy young voice with a natural Nigerian English accent, polite and nervous." },
