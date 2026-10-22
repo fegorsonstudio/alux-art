@@ -76,7 +76,7 @@ export function checkScript(S, { episode, cast, story = {} }) {
   const names = new Set(cast.flatMap(nameWords));
   const narr = beats.filter((b) => b.who === "narrator");
   const punches = beats.filter((b) => b.who !== "narrator");
-  let total = 0, nameHits = 0, fromEp = 0, contentAll = 0;
+  let total = 0, nameHits = 0, fromEp = 0, contentAll = 0, capsAll = 0;
 
   if (narr.length < RULES.minNarration || narr.length > RULES.maxNarration) p.push(`the narrator needs ${RULES.minNarration}–${RULES.maxNarration} sentences, not ${narr.length}`);
   if (punches.length < RULES.minPunches || punches.length > RULES.maxPunches) p.push(`${RULES.minPunches}–${RULES.maxPunches} character lines are needed, not ${punches.length}`);
@@ -97,6 +97,7 @@ export function checkScript(S, { episode, cast, story = {} }) {
     const caps = spoken(b.text).split(/\s+/).map((x) => x.replace(/[^A-Za-z]/g, ""))
       .filter((x) => /^[A-Z]{2,}$/.test(x) && !ACRONYMS.has(x) && !vote.includes(x.toLowerCase()));
     if (caps.length > 1) p.push(`${n}: at most one word in CAPITALS for stress`);
+    capsAll += caps.length;
     const ws = words(spoken(b.text)).filter((x) => !SMALL.has(x));
     if (b.who === "narrator") {
       if (/[“”"]/.test(b.text)) p.push(`${n}: the narrator does not quote dialogue — retell it`);
@@ -116,6 +117,8 @@ export function checkScript(S, { episode, cast, story = {} }) {
       }
     }
   });
+  // First real run: a stressed word in every sentence made the voice over-stress ("wrong stress").
+  if (capsAll > 2) p.push(`${capsAll} words in CAPITALS — at most two in the whole script (the vote words do not count)`);
   if (total < RULES.minWords || total > RULES.maxWords) p.push(`${total} spoken words in all (needs ${RULES.minWords}–${RULES.maxWords})`);
   if (contentAll && fromEp / contentAll < RULES.narrationFromEpisode) p.push(`only ${Math.round((fromEp / contentAll) * 100)}% of the narration comes from the episode (needs ${Math.round(RULES.narrationFromEpisode * 100)}%) — retell, do not invent`);
   if (nameHits > RULES.maxNamesInNarration) p.push(`the narrator says names ${nameHits} times — use labels ("the finance director"), at most ${RULES.maxNamesInNarration} names`);
@@ -174,7 +177,7 @@ function prompt(story, episode, problems) {
     "THE PERFORMANCE (this is what makes it cinematic):\n" +
     "- \"style\" on a beat: 2–6 words of delivery, only where it should change — e.g. \"cold, clipped\", \"rising disbelief\", \"quiet menace\", \"urgent, faster\", \"stunned, slow\", \"hushed but clear\". Leave it \"\" when the narrator just drives on.\n" +
     `- You may put ONE of these marks in a beat where a breath or a beat of silence makes it land: ${TAGS.join(" ")}.\n` +
-    "- You may put ONE word per beat in CAPITALS where the stress must fall (e.g. \"The safe is EMPTY.\").\n" +
+    "- At most TWO words in CAPITALS in the whole script, only where the stress must fall hardest (e.g. \"The safe is EMPTY.\"). Write the vote words in capitals too; they do not count.\n" +
     "- Use punctuation for rhythm: full stops for punches, an ellipsis (…) for suspense, a dash for a cut-off.\n" +
     "- Never whisper. Never ask for an accent.",
     "THE SOUND:\n" +

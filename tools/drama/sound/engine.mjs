@@ -32,6 +32,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -43,14 +44,17 @@ export const MODELS = {
   director: process.env.SOUND_DIRECTOR_MODEL || "gemini-3.1-pro-preview",
 };
 /** Per episode, so a fault can never run up a bill. */
-const CAP = { tts: 40, music: 4, director: 18 };
+const CAP = { tts: 56, music: 4, director: 20 };
 /** What each call costs (USD), roughly, for the record kept with the episode. */
 const PRICE = { tts: 0.003, music: 0.08, director: 0.012 };
 const BUCKET = "generated-4k";
 export const KIT_BASE = "drama/sound-kit";
 /** Performance marks the voice model understands (Gemini TTS docs). No <whispers>: half-heard in tests. */
 export const TAGS = ["<gasp>", "<short pause>", "<long pause>", "<breath>", "<sigh>", "<exhales>", "<chuckle>", "<laugh>", "<sob>", "<tsk>"];
-const TAKES = 3;
+const TAKES = 4, RETAKES = 3;
+// A narrator sentence with no delivery note still drives on (first real run: most
+// bare takes came back "too slow, lacks urgency").
+const NARRATOR_DEFAULT = "brisk, gripping storytelling";
 
 const s3 = () => new S3Client({ region: "auto", endpoint: process.env.R2_ENDPOINT,
   credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY } });
@@ -212,7 +216,7 @@ export function blocksOf(S) {
     if (breakHere) { cur = { who: b.who, beats: [] }; blocks.push(cur); }
     cur.beats.push(n);
   });
-  return blocks.map((bl, i) => ({ ...bl, i: i + 1, items: bl.beats.map((n) => ({ text: B[n - 1].text, style: B[n - 1].style || "" })),
+  return blocks.map((bl, i) => ({ ...bl, i: i + 1, items: bl.beats.map((n) => ({ text: B[n - 1].text, style: B[n - 1].style || (bl.who === "narrator" ? NARRATOR_DEFAULT : "") })),
     twist: bl.beats[0] === T, cliff: bl.beats[0] === C, ask: bl.beats.includes(A) }));
 }
 const SERIOUS = /glitch|artifact|artefact|robot|garble|cut off|cut-off|clipped off|noise|distort|wrong word|missing word|skipped|mispronoun/i;
@@ -277,7 +281,8 @@ function curve(points) {
  * Make, check and mix one episode's soundtrack and its cover video.
  * @param S    sound script (writer.mjs): { story, episode, title, length, mood, voices: {who: {voice}},
  *             beats: [{who, text, style}], twist, cliff (beat numbers from 1), score_style, scene_sound, moments }
- * @param opts { coverKey: R2 key of slide 1, outBase: R2 folder for the results, fake?: boolean, log?: fn }
+ * @param opts { coverKey: R2 key of slide 1, outBase: R2 folder for the results, fake?: boolean, log?: fn,
+ *             reuse?: { blockHash: R2 key } — takes the director passed in an earlier run (takes.json) }
  */
 export async function makeSound(S, opts) {
   const log = opts.log ?? ((m) => console.log(m));
@@ -294,30 +299,52 @@ export async function makeSound(S, opts) {
   const dir = await mkdtemp(path.join(tmpdir(), "drama-sound-"));
   const api = caller({ fake: !!opts.fake, dir, used });
   const keys = {};
+  const kept = {}; // block hash → R2 key of the take the director passed
   try {
     const kit = await loadKit(dir, !!opts.fake);
     const logoLen = kit.logo ? await seconds(kit.logo) : 0;
     report.kit = kit.source;
 
-    // 1. Voices: every block three takes, the director keeps the best (one more round on a note).
+    // 1. Voices: every block four takes, the director keeps the best (one more round on a note).
+    // A take the director already passed (same voice, words and delivery) is reused, never paid twice.
     log("1. Voices");
     const blocks = blocksOf(S);
     const chosen = [];
+    const client0 = s3();
     for (const bl of blocks) {
       const voice = S.voices[bl.who]?.voice;
       if (!voice) { ok(`block ${bl.i}: a voice for "${bl.who}"`, false); continue; }
+      const hash = createHash("sha1").update(`${MODELS.tts}|${voice}|${JSON.stringify(bl.items)}`).digest("hex").slice(0, 16);
       log(`  block ${bl.i} (${bl.who}${bl.twist ? ", twist" : ""}${bl.cliff ? ", cliff" : ""}${bl.ask ? ", vote" : ""}): ${bl.items.map((it) => spoken(it.text)).join(" ")}`);
+      const again = opts.reuse?.[hash];
+      if (again) {
+        try {
+          const f = path.join(dir, `b${bl.i}-reused.wav`);
+          await writeFile(f, Buffer.from(await (await client0.send(new GetObjectCommand({ Bucket: BUCKET, Key: again }))).Body.transformToByteArray()));
+          const sec = await seconds(f);
+          log(`    reused the take the director passed before (${sec.toFixed(2)} s)`);
+          report.blocks.push({ block: bl.i, who: bl.who, voice, beats: bl.beats, hash, reused: again });
+          kept[hash] = again;
+          chosen.push({ ...bl, file: f, seconds: sec });
+          ok(`block ${bl.i} (${bl.who}) performed, said right and alive`, true, "reused");
+          continue;
+        } catch (e) { log(`    could not reuse ${again}: ${e.message} — recording it again`); }
+      }
       let round = await takesFor(api, dir, bl, voice, TAKES, null, log);
       let best = pick(round.takes, round.best);
       const tried = [...round.takes];
       if (!best) {
         log(`    no take good enough — one more round${round.note ? ` with the note "${round.note}"` : ""}`);
-        round = await takesFor(api, dir, bl, voice, 2, round.note || "more alive, every word clear", log);
+        round = await takesFor(api, dir, bl, voice, RETAKES, round.note || "more alive, every word clear", log);
         tried.push(...round.takes);
         best = pick(round.takes, round.best);
       }
-      report.blocks.push({ block: bl.i, who: bl.who, voice, beats: bl.beats, takes: tried.map(({ file: _f, ...t }) => t), kept: best ? { take: best.take, retake: !!best.note } : null });
+      report.blocks.push({ block: bl.i, who: bl.who, voice, beats: bl.beats, hash, takes: tried.map(({ file: _f, ...t }) => t), kept: best ? { take: best.take, retake: !!best.note } : null });
       if (!ok(`block ${bl.i} (${bl.who}) performed, said right and alive`, !!best, best ? `take ${best.take}${best.note ? " of the retake" : ""}, life ${best.life}` : "no take passed the director")) continue;
+      // Kept at once, so a later run can reuse it even if this one stops.
+      const k = `${opts.outBase}/voices/block${bl.i}-${bl.who}-${hash}.wav`;
+      await client0.send(new PutObjectCommand({ Bucket: BUCKET, Key: k, Body: await readFile(best.file), ContentType: "audio/wav" }));
+      kept[hash] = k;
       chosen.push({ ...bl, file: best.file, seconds: best.seconds });
     }
     if (chosen.length !== blocks.length) throw new Error("a voice block could not be made: stopping before the paid music");
@@ -512,12 +539,15 @@ export async function makeSound(S, opts) {
     keys.master = await put("mix.wav", wav, "audio/wav");
     keys.score = await put(`score.${path.extname(beds.score).slice(1)}`, beds.score, "audio/mpeg");
     keys.scene = await put(`scene.${path.extname(beds.scene).slice(1)}`, beds.scene, "audio/mpeg");
-    for (const b of timeline) await put(`voices/block${b.i}-${b.who}.wav`, b.file, "audio/wav");
     keys.preview = await getSignedUrl(client, new GetObjectCommand({ Bucket: BUCKET, Key: keys.video }), { expiresIn: 7 * 24 * 3600 });
   } catch (e) {
     problems.push(String(e.message).slice(0, 400));
     log(`  STOPPED  ${e.message}`);
   } finally {
+    // The script and the passed takes are kept even when the run stops, so
+    // `try.mjs --again <outBase>` re-records only what failed.
+    await s3().send(new PutObjectCommand({ Bucket: BUCKET, Key: `${opts.outBase}/script.json`, Body: JSON.stringify(S, null, 2), ContentType: "application/json" })).catch(() => {});
+    await s3().send(new PutObjectCommand({ Bucket: BUCKET, Key: `${opts.outBase}/takes.json`, Body: JSON.stringify({ ...(opts.reuse ?? {}), ...kept }, null, 2), ContentType: "application/json" })).catch(() => {});
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
   report.calls = { ...used };
