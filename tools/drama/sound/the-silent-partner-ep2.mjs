@@ -22,15 +22,15 @@ export default {
 
   // `at` = when the line starts; it must be finished by `by`.
   lines: [
-    { who: "narrator", at: 0.8, by: 4.4, text: "Marina. Nine fifty-two p.m.",
+    { who: "narrator", at: 0.8, by: 4.6, text: "Marina. Nine fifty-two p.m.",
       style: "Low, unhurried film-trailer narration, close to the microphone." },
-    { who: "adaeze", at: 4.6, by: 10.5, text: "The trust is mine. You cannot sell without me.",
+    { who: "adaeze", at: 4.9, by: 11.5, text: "The trust is mine. You cannot sell without me.",
       style: "Quiet, controlled and absolutely certain; she never raises her voice." },
-    { who: "ifeoma", at: 13.0, by: 16.4, text: "The trust's lawyer has left.",
+    { who: "ifeoma", at: 13.0, by: 16.8, text: "The trust's lawyer has left.",
       style: "Urgent and hushed, frightened, but every word clear." },
-    { who: "eze", at: 17.6, by: 24.6, text: "No papers, Ms Okafor. You have lied to this board.",
+    { who: "eze", at: 17.6, by: 24.9, text: "No papers, Ms Okafor. You have lied to this board.",
       style: "An old chairman, slow, cold and final, a judge passing sentence." },
-    { who: "narrator", at: 26.8, by: 29.6, text: "Stay... or chase?",
+    { who: "narrator", at: 26.8, by: 29.4, text: "Stay... or chase?",
       style: "A low, intimate question straight to the listener, left hanging." },
   ],
 

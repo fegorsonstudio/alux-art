@@ -25,7 +25,35 @@ const MAX_ATTEMPTS = 3;
 type Row = {
   id: string; ig_account: string; caption: string;
   slide_paths: string[]; attempts: number; scheduled_for: Date;
+  /** Drama episodes with a soundtrack (scripts/drama-sound.mjs): slide 1 posts as this video. */
+  cover_video_path: string | null;
 };
+
+/** Instagram processes a video container before it can be used; this waits for it. */
+async function waitFinished(containerId: string, token: string, limitMs: number): Promise<void> {
+  const until = Date.now() + limitMs;
+  for (;;) {
+    const s = await fetch(`${GRAPH}/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(token)}`)
+      .then((r) => r.json()).catch(() => ({}));
+    if (s?.status_code === "FINISHED") return;
+    if (s?.status_code === "ERROR" || s?.status_code === "EXPIRED") throw new Error(`video ${s.status_code}: ${String(s?.status ?? "").slice(0, 160)}`);
+    if (Date.now() > until) throw new Error(`video still ${s?.status_code ?? "processing"} after ${Math.round(limitMs / 1000)} s`);
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+}
+
+/** The cover video as a carousel item, ready to use, or an error saying why not. */
+async function videoChild(path: string, igUserId: string, token: string): Promise<string> {
+  const url = await r2SignedDownloadUrl("generated-4k", path, 3600);
+  if (!url || !/^https?:\/\//i.test(url)) throw new Error(`video url is not publicly fetchable: ${path}`);
+  const b = await fetch(`${GRAPH}/${igUserId}/media`, {
+    method: "POST",
+    body: new URLSearchParams({ media_type: "VIDEO", video_url: url, is_carousel_item: "true", access_token: token }),
+  }).then((r) => r.json()).catch(() => ({}));
+  if (!b?.id) throw new Error(`video container: ${JSON.stringify(b?.error ?? b).slice(0, 200)}`);
+  await waitFinished(b.id, token, 150_000);
+  return b.id;
+}
 
 /** Where scripts/instagram-refresh.mjs keeps the tokens it renews every week. */
 const TOKEN_STORE = `${process.env.INSTAGRAM_DATA_DIR || "/home/aluxart/instagram-data"}/tokens.json`;
@@ -89,7 +117,7 @@ export async function GET(request: NextRequest) {
   }
 
   const due = await sql<Row[]>`
-    SELECT id, ig_account, caption, slide_paths, attempts, scheduled_for
+    SELECT id, ig_account, caption, slide_paths, attempts, scheduled_for, cover_video_path
     FROM scheduled_carousels
     WHERE status = 'queued'
       AND scheduled_for <= NOW()
@@ -138,8 +166,7 @@ export async function GET(request: NextRequest) {
     try {
       // 1 — one container per slide. is_carousel_item keeps them out of the feed
       // on their own.
-      const childIds: string[] = [];
-      for (const path of post.slide_paths) {
+      const imageChild = async (path: string): Promise<string> => {
         // A SIGNED url, not the proxy one: r2ProxyUrl returns "/api/media?..."
         // which is relative, and Instagram fetches these itself from the open
         // internet. An hour is far longer than the fetch needs.
@@ -153,27 +180,62 @@ export async function GET(request: NextRequest) {
         });
         const b = await r.json().catch(() => ({}));
         if (!b?.id) throw new Error(`slide container: ${JSON.stringify(b?.error ?? b).slice(0, 200)}`);
-        childIds.push(b.id);
+        return b.id;
+      };
+      // 2 and 3 — the carousel holding them in order, then publish. Instagram
+      // needs a moment to finish assembling the container; publishing too early
+      // answers "media not ready". With a video inside, wait until it is finished.
+      // `refused` marks a failure Instagram answered, so nothing went up.
+      const assembleAndPublish = async (children: string[], withVideo: boolean): Promise<string> => {
+        const parent = await fetch(`${GRAPH}/${igUserId}/media`, {
+          method: "POST",
+          body: new URLSearchParams({
+            media_type: "CAROUSEL", children: children.join(","),
+            caption: post.caption ?? "", access_token: token,
+          }),
+        }).then(r => r.json()).catch(() => ({}));
+        if (!parent?.id) throw Object.assign(new Error(`carousel container: ${JSON.stringify(parent?.error ?? parent).slice(0, 200)}`), { refused: true });
+        if (withVideo) await waitFinished(parent.id, token, 90_000).catch(() => {});
+        await new Promise(r => setTimeout(r, 4000));
+        const out = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
+          method: "POST",
+          body: new URLSearchParams({ creation_id: parent.id, access_token: token }),
+        }).then(r => r.json()).catch(() => ({}));
+        if (!out?.id) throw Object.assign(new Error(`publish: ${JSON.stringify(out?.error ?? out).slice(0, 200)}`), { refused: !!out?.error });
+        return out.id as string;
+      };
+
+      // 1 — one container per slide. is_carousel_item keeps them out of the feed
+      // on their own. A drama episode with a soundtrack: slide 1 goes up as its
+      // video. If the video fails in any way — refused, or the carousel refused
+      // with it inside — slide 1 goes up as the picture it always was. The post
+      // is never late or lost for want of its sound.
+      let videoId: string | null = null;
+      if (post.cover_video_path) {
+        try {
+          videoId = await videoChild(post.cover_video_path, igUserId, token);
+        } catch (e) {
+          console.error(`[carousel] ${post.id.slice(0, 8)} cover video refused, posting the picture: ${(e as Error).message}`);
+          await tellAdmin(`🔇 A drama episode is posting without its sound: Instagram refused the cover video (${(e as Error).message.slice(0, 160)}). The pictures go up as usual.`).catch(() => {});
+        }
       }
-
-      // 2 — the carousel itself, holding them in order.
-      const parent = await fetch(`${GRAPH}/${igUserId}/media`, {
-        method: "POST",
-        body: new URLSearchParams({
-          media_type: "CAROUSEL", children: childIds.join(","),
-          caption: post.caption ?? "", access_token: token,
-        }),
-      }).then(r => r.json()).catch(() => ({}));
-      if (!parent?.id) throw new Error(`carousel container: ${JSON.stringify(parent?.error ?? parent).slice(0, 200)}`);
-
-      // 3 — publish. Instagram needs a moment to finish assembling the
-      // container; publishing too early answers "media not ready".
-      await new Promise(r => setTimeout(r, 4000));
-      const out = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
-        method: "POST",
-        body: new URLSearchParams({ creation_id: parent.id, access_token: token }),
-      }).then(r => r.json()).catch(() => ({}));
-      if (!out?.id) throw new Error(`publish: ${JSON.stringify(out?.error ?? out).slice(0, 200)}`);
+      const rest: string[] = [];
+      for (const path of post.slide_paths.slice(videoId ? 1 : 0)) rest.push(await imageChild(path));
+      let mediaId: string;
+      if (videoId) {
+        try {
+          mediaId = await assembleAndPublish([videoId, ...rest], true);
+        } catch (e) {
+          // Only when Instagram said no: an unclear answer may mean it is already up.
+          if (!(e as { refused?: boolean }).refused) throw e;
+          console.error(`[carousel] ${post.id.slice(0, 8)} refused with the cover video, posting the picture: ${(e as Error).message}`);
+          await tellAdmin(`🔇 A drama episode is posting without its sound: Instagram refused the carousel with the video in it (${(e as Error).message.slice(0, 160)}). The pictures go up as usual.`).catch(() => {});
+          mediaId = await assembleAndPublish([await imageChild(post.slide_paths[0]), ...rest], false);
+        }
+      } else {
+        mediaId = await assembleAndPublish(rest, false);
+      }
+      const out = { id: mediaId };
 
       await sql`UPDATE scheduled_carousels
                 SET status = 'published', ig_media_id = ${out.id}, published_at = NOW(),

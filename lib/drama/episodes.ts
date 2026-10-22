@@ -167,10 +167,14 @@ export async function scheduleEpisode(s: StoryRow, e: EpisodeRow, when: Date): P
     VALUES (${local}, ${s.ig_account}, ${e.content.caption}, ${paths}, ${when})
     ON CONFLICT (local_id) WHERE local_id IS NOT NULL
     DO UPDATE SET ig_account = EXCLUDED.ig_account, caption = EXCLUDED.caption, slide_paths = EXCLUDED.slide_paths,
-                  scheduled_for = EXCLUDED.scheduled_for, status = 'queued', attempts = 0, last_error = NULL, updated_at = NOW()
+                  scheduled_for = EXCLUDED.scheduled_for, status = 'queued', attempts = 0, last_error = NULL,
+                  cover_video_path = NULL, updated_at = NOW()
       WHERE scheduled_carousels.status NOT IN ('publishing', 'published')
     RETURNING id`;
   if (!queued) throw new Error("This episode is already on Instagram.");
+  // Queued again (new slides or a new time): any soundtrack made for the old
+  // version is let go, and scripts/drama-sound.mjs makes it afresh.
+  await sql`DELETE FROM drama_sound WHERE episode_id = ${e.id} AND status <> 'making'`.catch(() => {});
   return slides.length;
 }
 
