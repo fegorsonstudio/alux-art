@@ -824,6 +824,28 @@ supervisor 9/10, ≈$0.18; mix ended 0.8 s short — FIXED (voice bus on a full-
 job when advance.ts queues an episode; the publisher posting slide 1 as a VIDEO carousel item (wait for FINISHED); any
 failed check → post the silent carousel as today + Telegram. Not posted anything with sound yet.
 
+**Update (2026-10-22, morning): drama soundtracks are AUTOMATIC and switched ON (owner: "Continue"; commit `b4a5542`).**
+- **Job** `scripts/drama-sound.mjs`, root cron `5-59/10` → `/home/aluxart/drama-sound.sh` (flock, systemd-run 1500M, as
+  aluxart; log `/home/aluxart/drama-sound.log`; crontab backup `/root/crontab.bak-2026-10-22-drama-sound`). Switch
+  `app_config.drama_sound` ('on' since 2026-10-22 06:01 UTC; anything else = every episode silent). Per run: ONE queued
+  drama episode due in 20 min–30 h without a soundtrack; cover slide must exist; script from
+  `tools/drama/sound/writer.mjs` (Gemini `gemini-3.1-pro-preview` draft, `checkScript` referee: 3–6 lines, ≤32 words,
+  1.45 w/s + 0.35 s per window, hook ≤1.5 s, ends ≤29.6, last line = narrator with both vote words, character words
+  ≥75% from the episode / narration ≥50%, no accent directions, Lyria prompts timed from [0:00]; 3 drafts max) — a
+  hand-written `tools/drama/sound/<slug>-ep<n>.mjs` with the same title wins; then `engine.mjs` (TTS per line fixed by
+  `voices.mjs`, every role in all 8 stories cast; Lyria 3 Pro score + effects; −14 LUFS/−1.5 dBTP; listening check;
+  cover video H.264/AAC 1080×1350 30 s) into `carousels/<date>/drama-<id>/sound/`. ONLY if every check passes is
+  `scheduled_carousels.cover_video_path` set; otherwise silent + one Telegram line. Caps: 1/run, 8/day, per-episode
+  20 TTS / 3 Lyria / 24 checks. Rows in `drama_sound` (migration 086, psql). Cost ≈ $0.20/episode.
+- **Publisher** (`app/api/cron/publish-carousel`): a row with `cover_video_path` posts slide 1 as a VIDEO carousel item
+  (waits for FINISHED); a refused video, or a carousel refused with it inside, falls back to slide 1's picture at once
+  (Telegram FYI); an unclear publish answer is never rebuilt. Rows without it post exactly as before.
+  `scheduleEpisode` clears `cover_video_path` and the episode's finished `drama_sound` row on re-queue.
+- **Proven free:** 21 rule checks; the job on a throwaway restore with fake sounds (10/10); the publisher with simulated
+  Instagram answers (8/8); Instagram processed a cover video on @aolivetv (FINISHED; nothing published; test files and
+  db removed). **First real run: The Silent Partner Ep 3** — queued when its vote closes 4 p.m. Lagos 22 Oct, posts 7 p.m.;
+  the owner gets "🔊 … has its soundtrack" with a link, or "🔇 … will post without sound" and why.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
