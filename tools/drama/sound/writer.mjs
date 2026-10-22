@@ -55,6 +55,8 @@ export function checkScript(S, { episode, cast }) {
     if (typeof l.text !== "string" || !l.text.trim() || l.text.length > 110) p.push(`${n}: text must be 1–110 characters`);
     if (typeof l.style !== "string" || !l.style.trim() || l.style.length > 260) p.push(`${n}: style must be one short sentence`);
     if (/accent/i.test(l.style ?? "")) p.push(`${n}: style must not ask for an accent`);
+    // Whispers were half-understood in both real tests (56–78%): secrets are "hushed but clear".
+    if (/whisper/i.test(l.style ?? "")) p.push(`${n}: no whispering — use "hushed but clear" so every word is heard`);
     if (!Number.isFinite(l.at) || !Number.isFinite(l.by) || l.by <= l.at) { p.push(`${n}: at/by must be numbers with by after at`); return; }
     const w = lineWords(l.text);
     total += w;
@@ -106,7 +108,7 @@ function prompt(story, episode, problems) {
     "- Line 1 starts between 0.4 and 1.2 seconds.\n" +
     `- The last line is the narrator asking the vote question with both vote words, e.g. "${(episode.choice?.options ?? []).map((o) => o.word[0] + o.word.slice(1).toLowerCase()).join("... or ")}?"\n` +
     "- Timing: each line's window (by minus at) is at least (its words ÷ 1.3) + 0.6 seconds, at most 9; lines never overlap and leave at least 0.3 s between them; everything ends by 29.6.\n" +
-    "- style: one sentence directing the performance (emotion, pace, volume, closeness). Never mention an accent.\n" +
+    "- style: one sentence directing the performance (emotion, pace, volume, closeness). Never mention an accent. Never whisper: for a secret, ask for \"hushed but clear\" — every word must be heard.\n" +
     "- score: a prompt for Google Lyria. Begin exactly \"Instrumental only, no vocals.\" Describe a cinematic underscore fitting the genre and the city, with one subtle Nigerian instrument used sparingly, \"Total length exactly 30 seconds.\", then timestamped sections from [0:00 - ...] to [... - 0:30]: quiet under every spoken line, one impact at the cliffhanger moment, ending in near silence.\n" +
     "- effects: a prompt for Google Lyria. Begin exactly \"Sound design only. No music, no melody, no instruments, no vocals.\" The scene's ambience for the whole 30 seconds plus 3–6 timestamped sound effects at the story's moments.\n" +
     "- mood: a short phrase for the mood (e.g. \"a dark boardroom thriller at night\").",

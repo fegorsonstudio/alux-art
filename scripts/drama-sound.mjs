@@ -26,7 +26,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeSound } from "../tools/drama/sound/engine.mjs";
 import { writeScript, checkScript } from "../tools/drama/sound/writer.mjs";
-import VOICES from "../tools/drama/sound/voices.mjs";
+import { resolveVoices } from "../tools/drama/sound/cast.mjs";
 
 const FAKE = process.argv.includes("--fake");
 const DAILY_MAX = 8;
@@ -92,19 +92,28 @@ async function main() {
       return;
     }
 
-    // 1. The script: a hand-written one for this very episode wins, if it passes the rules.
+    // 1. The voices (standard or designed Nigerian ones), then the script: a
+    // hand-written one for this very episode wins, if it passes the rules.
+    let voices;
+    try {
+      voices = resolveVoices(due.slug);
+    } catch (e) {
+      await finish("failed", { problems: [String(e.message)] });
+      await tellAdmin(`🔇 <b>${esc(name)}</b> will post without sound — ${esc(e.message)}`);
+      return;
+    }
     let script = null, problems = [];
     const hand = path.join(HERE, "..", "tools", "drama", "sound", `${due.slug}-ep${episode.n ?? due.n}.mjs`);
     if (existsSync(hand)) {
       const h = (await import(pathToFileURL(hand).href)).default;
       if (h.title === episode.title) {
-        const s = { ...h, voices: Object.fromEntries(Object.entries(VOICES[due.slug] ?? {}).map(([k, v]) => [k, { voice: v }])) };
+        const s = { ...h, voices: Object.fromEntries(Object.entries(voices).map(([k, v]) => [k, { voice: v }])) };
         const p = checkScript({ mood: h.mood ?? `a ${story.genre} drama`, ...s }, { episode, cast: story.cast });
         if (!p.length) { script = { mood: `a ${story.genre} drama`, ...s }; log("using the hand-written script"); }
         else log(`hand-written script set aside: ${p.join(" | ")}`);
       }
     }
-    if (!script) ({ script, problems } = await writeScript({ story, episode, voices: VOICES[due.slug], fake: FAKE, log }));
+    if (!script) ({ script, problems } = await writeScript({ story, episode, voices, fake: FAKE, log }));
     if (!script) {
       await finish("failed", { problems });
       await tellAdmin(`🔇 <b>${esc(name)}</b> will post without sound — the sound script could not be written.\n${esc(problems.slice(0, 4).join("; "))}`);

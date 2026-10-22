@@ -32,7 +32,7 @@ export const MODELS = {
   check: process.env.SOUND_CHECK_MODEL || "gemini-2.5-flash",
 };
 /** Per episode, so a fault can never run up a bill. */
-const CAP = { tts: 20, music: 3, check: 24 };
+const CAP = { tts: 20, music: 4, check: 24 };
 /** What each call costs (USD), for the record kept with the episode. */
 const PRICE = { tts: 0.002, music: 0.08, check: 0.002 };
 const BUCKET = "generated-4k";
@@ -204,9 +204,27 @@ export async function makeSound(S, opts) {
     // 2. Score and effects.
     log("2. Score and effects");
     const beds = {};
+    // Lyria sometimes refuses a prompt "for an unspecified policy reason" (the
+    // second real test: the effects for Ep 3). One retry with a plain request in
+    // the episode's mood; the refused text is kept in the report to learn from.
+    const plain = {
+      score: `Instrumental only, no vocals. A restrained cinematic underscore for ${S.mood ?? "a drama series"}: low strings, soft piano and a deep pulse. Total length exactly 30 seconds.\n[0:00 - 0:10] A quiet, tense opening.\n[0:10 - 0:24] Slowly building tension, kept quiet under voices.\n[0:24 - 0:26] One deep cinematic impact.\n[0:26 - 0:30] A single held note fading to near silence.`,
+      effects: `Sound design only. No music, no melody, no instruments, no vocals. A calm, realistic room ambience for ${S.mood ?? "a drama series"}, 30 seconds.\n[0:00 - 0:30] Soft room tone and gentle background air.\n[0:12] A quiet door closing.\n[0:24] A deep, soft low rumble.\n[0:28 - 0:30] The ambience fades out.`,
+    };
+    report.refused = [];
+    const lyria = async (prompt, name) => {
+      try {
+        return await api.music(prompt, name);
+      } catch (e) {
+        if (!/content_blocked|policy/i.test(String(e.message))) throw e;
+        report.refused.push({ kind: name, prompt });
+        log(`  ${name}: Lyria refused the written prompt; trying a plain one`);
+        return api.music(plain[name], name);
+      }
+    };
     for (const [name, prompt] of [["score", S.score], ["effects", S.effects]]) {
       try {
-        const bytes = await api.music(prompt, name);
+        const bytes = await lyria(prompt, name);
         const f = path.join(dir, `${name}.${ext(bytes)}`);
         await writeFile(f, bytes);
         const dur = await seconds(f), vol = await meanVolume(f);

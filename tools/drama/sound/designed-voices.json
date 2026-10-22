@@ -1,0 +1,68 @@
+{
+  "the-silent-partner/adaeze": {
+    "id": "voice_0vy2mftdv8hm",
+    "description": "A 36-year-old Nigerian woman from Lagos, an Igbo finance director educated in Nigeria: a warm, low, composed voice with a clear Nigerian English accent — Nigerian vowels and rhythm — speaking quietly and precisely.",
+    "gender": "female",
+    "created": "2026-10-22T06:05:00.000Z",
+    "expires": null,
+    "accent_check": {
+      "accent": "Nigerian English",
+      "is_nigerian_english": "yes"
+    }
+  },
+  "the-silent-partner/tunde": {
+    "id": "voice_c7p3km372nkg",
+    "description": "A 47-year-old Yoruba man from Lagos, a chief executive: a big, warm, booming baritone with a strong Lagos Nigerian English accent, confident and charming, a laugh never far away.",
+    "gender": "male",
+    "created": "2026-10-22T06:09:59.351Z",
+    "expires": "2027-10-22T06:09:50.568158038Z",
+    "accent_check": {
+      "accent": "Nigerian English",
+      "is_nigerian_english": "yes"
+    }
+  },
+  "the-silent-partner/ifeoma": {
+    "id": "voice_hyp85dde24bu",
+    "description": "A 28-year-old Igbo woman from Enugu working in a Lagos office: a bright, quick, slightly breathy young voice with a natural Nigerian English accent, polite and nervous.",
+    "gender": "female",
+    "created": "2026-10-22T06:10:26.635Z",
+    "expires": "2027-10-22T06:10:18.234816171Z",
+    "accent_check": {
+      "accent": "Nigerian English",
+      "is_nigerian_english": "yes"
+    }
+  },
+  "the-silent-partner/eze": {
+    "id": "voice_72tizm91gul9",
+    "description": "A 69-year-old Igbo chief who chairs a company board: a deep, slow, grave voice with an old-school Nigerian English accent, every word weighed and commanding.",
+    "gender": "male",
+    "created": "2026-10-22T06:11:13.051Z",
+    "expires": "2027-10-22T06:11:01.543669105Z",
+    "accent_check": {
+      "accent": "Nigerian English",
+      "is_nigerian_english": "yes"
+    }
+  },
+  "the-silent-partner/guard": {
+    "id": "voice_zl7dkm8kkoj9",
+    "description": "A 52-year-old night security guard in Lagos: a soft, tired, kind voice with a strong everyday Yoruba-influenced Nigerian accent, humble and gentle.",
+    "gender": "male",
+    "created": "2026-10-22T06:11:42.277Z",
+    "expires": "2027-10-22T06:11:34.708300953Z",
+    "accent_check": {
+      "accent": "Nigerian English",
+      "is_nigerian_english": "yes"
+    }
+  },
+  "the-silent-partner/funke": {
+    "id": "voice_m2e3pajjfha4",
+    "description": "A 63-year-old Yoruba housekeeper from Lagos: a small, firm, dignified older woman's voice with a strong Yoruba Nigerian English accent, careful and honest.",
+    "gender": "female",
+    "created": "2026-10-22T06:12:19.634Z",
+    "expires": "2027-10-22T06:12:07.335107270Z",
+    "accent_check": {
+      "accent": "Nigerian English",
+      "is_nigerian_english": "yes"
+    }
+  }
+}
