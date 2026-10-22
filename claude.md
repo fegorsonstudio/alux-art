@@ -860,6 +860,29 @@ listening (nothing attached). Learnt: whispered lines fail transcription → wri
 Lyria can refuse a written prompt "for an unspecified policy reason" → one retry with a plain prompt in the mood (refused
 text kept in the report); music cap 4. Ep 3 (SPEAK.STAY) listening test passed every check, supervisor 9/10, ~$0.19.
 
+**Update (2026-10-22, day): drama SOUND v2 — the owner's recap-narrator style, directed takes, trailer score (commit
+`eddb59f`).** Owner read-through of their two pinned Gemini chats: the telling style is a fast third-person RECAP
+NARRATOR (short declarative sentences, labels not names, no dialogue in narration, twist, cliffhanger) and the SOUND is
+the priority — "cinematic, premium, Hollywood … giving the voice life, emotions … as good as the graphics". Built:
+`writer.mjs` (narrator-led scripts: 6–12 sentences, 1–2 character stabs from the slides, 40–60 words, per-beat delivery,
+TTS marks <gasp>/<long pause>/… and ONE CAPS stress word, twist/cliff beat numbers, score_style/scene_sound/moments;
+`checkScript` referee incl. ≤2 names in narration); `engine.mjs` (narrator blocks = one continuous take with per-sentence
+turn styles; 3 takes per block judged by a voice director gemini-3.1-pro that transcribes + scores life/direction/clarity,
+one retake round with its note; timeline from the real takes; Lyria score + scene composed to that timeline; mixer
+enforces the drop before the twist, riser into the cliff, boom after it, the series sting at the end; studio voice chain
+EQ/de-ess/compression + convolution room; release check by gemini-3.1-pro: every score ≥7 and overall ≥8 or the episode
+posts silent); `kit.mjs` (one-time kit, R2 `generated-4k/drama/sound-kit/kit.json`; Lyria ignored the asked-for silences,
+so `--derive` cut the riser/boom out of a 14.7-s riser and trimmed sting-1 to 3.6 s — **the owner has NOT heard the sting
+yet; `--list` gives links, `--use logo=<key>` swaps it free**). The Silent Partner narrator is now a DESIGNED trailer voice
+(`voice_uovnk5cfv7xd`, en-US). **Owner's rules: sound is made only for the version the vote chose (never both); the old
+sound is off; `app_config.drama_sound = 'preview'`** — the job makes the soundtrack after the vote, sends a 🎧 Telegram
+link, attaches NOTHING (episode posts silent). Owner approves → attach by hand (`scheduled_carousels.cover_video_path`) and
+set 'on'. First real run = The Silent Partner Ep 3 once its vote closes (Ep 2 had 0 votes at 07:00 UTC; needs ≥2).
+Free proofs: 27/27 rule checks over all 8 stories; engine runs with stand-in sounds (built-in and real kit) pass every
+check (30.00 s, −14 LUFS). Spent today on v2: narrator design + kit ≈ $0.20. **Gemini prepay balance was $2.16 with
+auto-reload OFF — customer shoots use the same key; the owner was asked to top up.** Other 7 stories still need designed
+narrators before they start.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---
