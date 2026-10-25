@@ -7,6 +7,7 @@ import styles from "./drama.module.css";
 export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand" | "sponsor"; reference: string }) {
   const [state, setState] = useState<"checking" | "done" | "unpaid" | "mismatch" | "nothing">("checking");
   const [castId, setCastId] = useState<string | null>(null);
+  const [sponsorshipId, setSponsorshipId] = useState<string | null>(null);
   useEffect(() => {
     let stop = false;
     const check = async (tries: number) => {
@@ -14,6 +15,7 @@ export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand"
         .then((x) => x.json()).catch(() => ({ state: "nothing" }));
       if (stop) return;
       if (typeof r.castId === "string") setCastId(r.castId);
+      if (typeof r.sponsorshipId === "string") setSponsorshipId(r.sponsorshipId);
       // "nothing" right after paying usually means the webhook got there first — that is a success.
       if (r.state === "unpaid" && tries < 4) { setTimeout(() => check(tries + 1), 3000); return; }
       setState(r.state === "nothing" ? "done" : r.state);
@@ -25,7 +27,7 @@ export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand"
   const text = {
     checking: "Checking your payment…",
     done: kind === "cast" ? "Payment received — you're in the cast. We're checking your photos and making your character now."
-      : kind === "sponsor" ? "Payment received — you present season one. We'll email the plan for your credits and your report."
+      : kind === "sponsor" ? "Payment received — you present season one. Your name goes on every episode from now on, and every episode's files are yours to download."
       : "Payment received — your slot is held. We'll check your picture and place it in the scene.",
     unpaid: "Paystack has not confirmed this payment yet. If money left your account, it will show here within a few minutes.",
     mismatch: "The amount paid did not match the price, so nothing was released. We have been told and will sort it out with you.",
@@ -36,6 +38,7 @@ export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand"
     <p className={styles.notice} role="status">
       {text}
       {state === "done" && kind === "cast" && castId && <> <a href={`/d/drama/cast/${castId}`}>See your character →</a></>}
+      {state === "done" && kind === "sponsor" && sponsorshipId && <> <a href={`/d/drama/sponsor/${sponsorshipId}`}>Open your files page →</a></>}
     </p>
   );
 }

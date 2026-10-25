@@ -4,6 +4,7 @@ import { r2Download, r2Upload } from "@/lib/r2";
 import { renderEpisodeSlides, type DEpisode, type DStory, type SlideArt } from "@/lib/drama/slides";
 import type { StoryRow } from "@/lib/drama/data";
 import { brandLine } from "@/lib/drama/brands";
+import { presenterFor } from "@/lib/drama/sponsor";
 
 /**
  * From written episode to Instagram post. The owner previews, approves (which
@@ -19,7 +20,7 @@ export const localIdOf = (episodeId: string) => `drama-${episodeId}`;
 
 export type EpisodeRow = {
   id: string; story_id: string; n: number; from_word: string | null; status: string;
-  content: DEpisode & { caption: string; approvedAt: string; slides: DEpisode["slides"]; art?: ArtRef[]; partners?: PartnerRef[] };
+  content: DEpisode & { caption: string; approvedAt: string; slides: DEpisode["slides"]; art?: ArtRef[]; partners?: PartnerRef[]; presentedBy?: string };
   ig_media_id: string | null; posted_at: string | null; decided_word: string | null; decided_at: string | null;
 };
 
@@ -91,10 +92,12 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
     return `${role?.name ?? p.role_key} — played by ${p.display_name}`;
   });
   const tag = (t: string) => `#${t.replace(/[^A-Za-z0-9]/g, "")}`;
+  const presenter = await presenterFor(s.id);
   return [
     `${s.title} — Episode ${ep.n}: ${ep.title}`,
     "",
     s.tagline,
+    presenter ? `Presented by ${presenter.brand_name}.` : "",
     "",
     "What happens next is yours.",
     `Comment ${a.word} — ${a.label.toLowerCase()}`,
@@ -119,7 +122,7 @@ export async function slidesForEpisode(s: StoryRow, e: EpisodeRow): Promise<Buff
   for (const p of e.content.partners ?? []) {
     try { cards.set(p.slide, { buffer: (await r2Download(p.bucket, p.path)).buffer, brand: p.brand }); } catch { /* a missing picture leaves the slide as written */ }
   }
-  return renderEpisodeSlides(storyForSlides(s), e.content, await loadArt(e.content.art), cards);
+  return renderEpisodeSlides({ ...storyForSlides(s), presentedBy: e.content.presentedBy }, e.content, await loadArt(e.content.art), cards);
 }
 
 /** Freeze the written episode as approved. Refused once it is on Instagram. */
@@ -134,7 +137,9 @@ export async function approveEpisode(s: StoryRow, n: number, caption: string): P
     art.unshift({ slide: 1, bucket: poster.cover_bucket, path: poster.cover_path, captionAt: "bottom" });
   }
   const partners = await partnersFor(s, ep);
-  const content = { ...ep, caption: caption.trim(), approvedAt: new Date().toISOString(), art, partners };
+  // The season's sponsor is credited on the slides of every episode frozen after they paid.
+  const presenter = await presenterFor(s.id);
+  const content = { ...ep, caption: caption.trim(), approvedAt: new Date().toISOString(), art, partners, presentedBy: presenter?.brand_name };
   const [row] = await sql<EpisodeRow[]>`
     INSERT INTO drama_episodes (story_id, n, content, status)
     VALUES (${s.id}, ${n}, ${sql.json(JSON.parse(JSON.stringify(content)))}, 'ready')

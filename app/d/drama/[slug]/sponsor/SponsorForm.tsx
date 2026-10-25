@@ -10,9 +10,9 @@ const naira = (n: number) => `₦${Math.round(n).toLocaleString("en-NG")}`;
  * (the quote is frozen on their sponsorship row); anyone can instead send the
  * owner a request (package season_funder) and get the payment link by email.
  */
-export default function SponsorForm({ story, storyTitle, format, formatName, priceNgn, episodes, signedIn, admin, loginHref, defaultName }: {
+export default function SponsorForm({ story, storyTitle, format, formatName, priceNgn, episodes, signedIn, admin, loginHref, defaultName, payable }: {
   story: string; storyTitle: string; format: string; formatName: string; priceNgn: number; episodes: number;
-  signedIn: boolean; admin: boolean; loginHref: string; defaultName: string;
+  signedIn: boolean; admin: boolean; loginHref: string; defaultName: string; payable: boolean;
 }) {
   const [f, setF] = useState({ company: "", contactName: defaultName, email: "", phone: "", message: "", website: "" });
   const [busy, setBusy] = useState("");
@@ -93,19 +93,19 @@ export default function SponsorForm({ story, storyTitle, format, formatName, pri
       <label className={styles.hp} aria-hidden="true">Website<input tabIndex={-1} autoComplete="off" value={f.website} onChange={set("website")} /></label>
       {error && <p className={styles.error} role="alert">{error}</p>}
       <div className={styles.actions}>
-        {signedIn ? (
+        {!payable && !admin ? null : signedIn ? (
           <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || !ready} onClick={pay}>
             {busy === "pay" ? "Opening Paystack…" : admin ? "Sponsor it (free, admin)" : `Pay ${naira(priceNgn)} now`}
           </button>
         ) : (
           <a className={`${styles.btn} ${styles.primary}`} href={loginHref}>Sign in with Google to pay now</a>
         )}
-        <button type="button" className={`${styles.btn} ${styles.quiet}`} disabled={!!busy || !ready} onClick={ask}>
+        <button type="button" className={`${styles.btn} ${payable ? styles.quiet : styles.primary}`} disabled={!!busy || !ready} onClick={ask}>
           {busy === "ask" ? "Sending…" : "Ask us first"}
         </button>
       </div>
       <p className={styles.small} style={{ margin: 0 }}>
-        Paying holds the season for you at this price. “Ask us first” sends your details to the studio; we reply with the plan and a payment link.
+        {payable ? "Paying holds the season for you at this price. “Ask us first” sends your details to the studio; we reply with the plan and a payment link." : "This format is coming: the estimate is real, but we only take payment for it once we can deliver it. “Ask us first” sends your details to the studio."}
       </p>
     </div>
   );

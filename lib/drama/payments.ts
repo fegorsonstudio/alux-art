@@ -209,6 +209,8 @@ export async function startSponsorPayment(input: {
   if (!story) throw new DramaError("No such story.", 404);
   if (story.status === "finished") throw new DramaError("This season is already complete.");
   const format: DramaFormat = input.format === "pictures" || input.format === "video" ? input.format : "carousel";
+  // Only what we can deliver is sold (owner, 2026-10-25): pictures and video are shown with their estimate, "coming".
+  if (format !== "carousel" && !input.who.admin) throw new DramaError("Episodes with pictures and video episodes are coming. Choose designed carousels, or ask us first.");
   const brand = input.brandName.trim().slice(0, 80);
   if (brand.length < 2) throw new DramaError("Add your company or brand name.");
   const [taken] = await sql`SELECT 1 FROM drama_sponsorships WHERE story_id = ${story.id} AND season = 1 AND status IN ('paid', 'producing', 'delivered')`;
@@ -257,11 +259,13 @@ async function markSponsorPaid(id: string, reference: string | null): Promise<bo
     : r.format === "pictures"
       ? "Carousels WITH PICTURES: the picture engine (phase 2) is not built yet — produce the pictures by hand or build lib/drama/pictures.ts before the next episode."
       : "VIDEO episodes: phase 3 is not built yet — this needs a plan before the next episode.";
+  const files = `${SITE_URL.replace(/\/$/, "")}/d/drama/sponsor/${id}`;
   await tellAdmin(
     `🎬 <b>Season sponsored</b> — ${esc(r.brand_name)} funds season ${r.season} of <b>${esc(r.title)}</b> (${esc(r.format)}) for ₦${r.price_ngn.toLocaleString("en-NG")}.\n` +
-    `${esc(how)}\n"Presented by ${esc(r.brand_name)}" on the covers is not automatic yet — add it by hand in the captions until it is built.`,
+    `${esc(how)}\n"Presented by ${esc(r.brand_name)}" goes on the cover, the last slide and the caption of every episode approved from now on; episodes already made keep their slides.\n` +
+    `Their files page (also yours as admin): ${files}`,
   ).catch(() => false);
-  await emailSponsor({ to: r.contact_email, brand: r.brand_name, storyTitle: r.title, priceNgn: r.price_ngn, storyUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/${r.slug}` });
+  await emailSponsor({ to: r.contact_email, brand: r.brand_name, storyTitle: r.title, priceNgn: r.price_ngn, storyUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/${r.slug}`, filesUrl: files });
   return true;
 }
 
@@ -311,6 +315,13 @@ export async function fulfilDramaPayment(opts: { reference: string; amountKobo: 
     await tellAdmin(`⚠️ <b>Drama payment needs a look</b> — reference <code>${esc(opts.reference)}</code> was paid but could not be finished: ${esc((e as Error).message.slice(0, 200))}`).catch(() => false);
     return "nothing";
   }
+}
+
+/** The sponsorship a payment reference belongs to, so the return page can link to the files page. */
+export async function sponsorshipIdForReference(reference: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_.=-]{6,100}$/.test(reference)) return null;
+  const [r] = await sql<{ id: string }[]>`SELECT id FROM drama_sponsorships WHERE payment_reference = ${reference}`;
+  return r?.id ?? null;
 }
 
 /** The cast member a payment reference belongs to, so the return page can link to their character. */

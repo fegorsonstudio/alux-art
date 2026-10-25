@@ -31,10 +31,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: `Fund ${story.title} — Alux Micro Drama`, description: `The cast, the story arc and the production budget of ${story.title}.` };
 }
 
-const FORMATS: { key: DramaFormat; name: string; note: string }[] = [
-  { key: "carousel", name: "Designed carousels", note: "Eight designed slides an episode in the story's look, with a 30-second soundtrack on the cover. How every story posts today." },
-  { key: "pictures", name: "Carousels with pictures", note: "The same eight slides, each with a generated picture of the cast in the scene, drawn from their character sheets." },
-  { key: "video", name: "Video episodes", note: "A one-minute film an episode, cut from generated clips with the cast's voices. Phase three — the per-second rate is an estimate until the first clip is billed." },
+const FORMATS: { key: DramaFormat; name: string; note: string; payable: boolean }[] = [
+  { key: "carousel", name: "Designed carousels", note: "Eight designed slides an episode in the story's look, with a 30-second soundtrack on the cover. How every story posts today. Yours to download and post on your own page too.", payable: true },
+  { key: "pictures", name: "Carousels with pictures — coming", note: "The same eight slides, each with a generated picture of the cast in the scene, drawn from their character sheets. The estimate is real; ask us first.", payable: false },
+  { key: "video", name: "Video episodes — coming", note: "A one-minute film an episode, cut from generated clips with the cast's voices. The per-second rate is an estimate until the first clip is billed; ask us first.", payable: false },
 ];
 
 const tierName = { lead: "Lead", main: "Main role", cameo: "Cameo" } as const;
@@ -78,9 +78,9 @@ export default async function SponsorPage({ params, searchParams }: { params: Pr
         <h1 className={styles.heroTitle} style={{ fontSize: "clamp(30px, 7vw, 44px)" }}>Fund season one of {story.title}</h1>
         <p className={styles.logline}>{story.logline}</p>
         <p className={styles.p}>
-          A sponsor pays for the whole first season to be produced. In return: “Presented by” your brand on every cover and in every
-          caption, both product spots in every episode, your logo on the last picture of each one, and a report of every comment and tap.
-          The story always comes first — your brand has to belong in the scene.
+          A sponsor pays for the whole first season to be produced. In return: “Presented by” your brand on the cover, the last slide and
+          the caption of every episode, both product spots in every episode, and every episode’s files — slides, caption, cover video and
+          soundtrack — to download and post on your own page as well as ours. The story always comes first — your brand has to belong in the scene.
         </p>
 
         <section className={styles.section} id="cast">
@@ -180,6 +180,7 @@ export default async function SponsorPage({ params, searchParams }: { params: Pr
           ) : (
             <SponsorForm story={story.slug} storyTitle={story.title} format={format} formatName={FORMATS.find((f) => f.key === format)?.name ?? format} priceNgn={budget.priceNgn} episodes={spec.episodes}
               signedIn={!!user} admin={!!user && isAdminEmail(user.email)} loginHref={`/login?next=${encodeURIComponent(here)}`}
+              payable={FORMATS.find((f) => f.key === format)?.payable ?? false}
               defaultName={typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : ""} />
           )}
           <p className={styles.foot}>

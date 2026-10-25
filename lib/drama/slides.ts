@@ -23,7 +23,13 @@ export type DEpisode = { n: number; title: string; slides: DSlide[]; choice: { q
 export const voteLine = (ep: Pick<DEpisode, "n" | "finale">) =>
   `Most votes by ${CLOSES_TEXT} tomorrow ${ep.finale ? "decides how season two begins" : `writes Episode ${ep.n + 1}`}.`;
 export type SlideArt = { buffer: Buffer; captionAt: "top" | "bottom" };
-export type DStory = { title: string; tagline: string; genre: string; city: string; minVotes: number; cast: { key: string; name: string; role: string }[] };
+export type DStory = { title: string; tagline: string; genre: string; city: string; minVotes: number; cast: { key: string; name: string; role: string }[];
+  /** The season sponsor, credited on the cover and the last slide (lib/drama/sponsor.ts). */
+  presentedBy?: string };
+/** The sponsor's credit line, small and spaced, above the footer. */
+const presentedLine = (brand: string | undefined, y: number, fill: string) => brand
+  ? `<text x="${SLIDE_W / 2}" y="${y}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="20" font-weight="600" letter-spacing="0.28em" fill="${fill}">${esc(`PRESENTED BY ${brand}`.toUpperCase())}</text>`
+  : "";
 
 type Font = { font: string; weight: number; track: number };
 
@@ -130,7 +136,8 @@ async function photoSlide(a: {
     const top = atTop ? 190 : H - 150 - block;
     words = `${textLines(t.lines, W / 2, top + lh * 0.8, lh, display, t.size, white)}
       <text x="${W / 2}" y="${top + lh * t.lines.length + 52}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="24" font-weight="600" letter-spacing="0.3em" fill="${look.accent}">${esc(`EPISODE ${ep.n} · ${ep.title.toUpperCase()}`)}</text>
-      <text x="${W / 2}" y="${top + lh * t.lines.length + 112}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="38" font-weight="500" fill="${soft}">${esc(story.tagline)}</text>`;
+      <text x="${W / 2}" y="${top + lh * t.lines.length + 112}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="38" font-weight="500" fill="${soft}">${esc(story.tagline)}</text>
+      ${presentedLine(story.presentedBy, H - 112, soft)}`;
   } else if (s.kind === "choice") {
     const q = await fit(ep.choice.question, captionFont, W - 240, 64, 40, 3);
     const qlh = Math.round(q.size * 1.18);
@@ -145,7 +152,8 @@ async function photoSlide(a: {
       ${panel(ep.choice.options[0], y0)}
       <text x="${W / 2}" y="${y0 + 285}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="38" font-weight="500" fill="${soft}">or</text>
       ${panel(ep.choice.options[1], y0 + 330)}
-      <text x="${W / 2}" y="${Math.min(H - 130, y0 + 650)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="25" font-weight="400" fill="${soft}">${esc(voteLine(ep))}</text>`;
+      <text x="${W / 2}" y="${Math.min(H - 130, y0 + 650)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="25" font-weight="400" fill="${soft}">${esc(voteLine(ep))}</text>
+      ${presentedLine(story.presentedBy, H - 104, soft)}`;
   } else if (s.kind === "text") {
     const m = /^([^:“"]{1,30}):\s*(.+)$/.exec(s.say.trim());
     const sender = m ? m[1].trim() : (a.nameOf(s.who)?.name ?? "Message");
@@ -235,7 +243,8 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map
         <text x="${SLIDE_W / 2}" y="905" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="26" font-weight="600" letter-spacing="0.3em" fill="${look.accent}">${esc(`EPISODE ${ep.n} · ${ep.title.toUpperCase()}`)}</text>
         <rect x="${SLIDE_W / 2 - 34}" y="945" width="68" height="1.5" fill="${look.accent}" opacity="0.7"/>
         <text x="${SLIDE_W / 2}" y="1020" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="40" font-weight="500" fill="${look.muted}">${esc(story.tagline)}</text>
-        <text x="${SLIDE_W / 2}" y="1130" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="20" font-weight="500" letter-spacing="0.28em" fill="${look.muted}">${esc(story.city.toUpperCase())}</text>`;
+        <text x="${SLIDE_W / 2}" y="1130" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="20" font-weight="500" letter-spacing="0.28em" fill="${look.muted}">${esc(story.city.toUpperCase())}</text>
+        ${presentedLine(story.presentedBy, 1195, look.accent)}`;
     } else if (s.kind === "choice") {
       const q = await fit(ep.choice.question, captionFont, SLIDE_W - 240, 66, 40, 3);
       const qlh = Math.round(q.size * 1.18);
@@ -253,7 +262,8 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map
         ${panel(a, y0)}
         <text x="${SLIDE_W / 2}" y="${y0 + 300}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="40" font-weight="500" fill="${look.muted}">or</text>
         ${panel(b, y0 + 350)}
-        <text x="${SLIDE_W / 2}" y="${Math.min(SLIDE_H - 150, y0 + 690)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="26" font-weight="400" fill="${look.muted}">${esc(voteLine(ep))}</text>`;
+        <text x="${SLIDE_W / 2}" y="${Math.min(SLIDE_H - 150, y0 + 690)}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="26" font-weight="400" fill="${look.muted}">${esc(voteLine(ep))}</text>
+        ${presentedLine(story.presentedBy, SLIDE_H - 112, look.accent)}`;
     } else if (s.kind === "text") {
       // A message on a phone: "Sender: “words”" → a notification card.
       const m = /^([^:“"]{1,30}):\s*(.+)$/.exec(s.say.trim());

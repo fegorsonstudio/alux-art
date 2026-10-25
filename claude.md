@@ -924,7 +924,16 @@ first, so `max_tokens` must cover reasoning + answer). Then built with the owner
   (`INVITE_WORDS` in `lib/drama/votes.ts`; no webhook change needed — the drama block runs first). The creator studio proper
   (own stories, `drama_invites`, collaborator shares) is still NOT built.
 - First screenwriter run started on "The New Cleaner" (Calabar, power) → `tools/drama/stories/the-new-cleaner.mjs` when done.
-**Not built:** the creator studio, earnings split + payouts, deliverables zips, `lib/drama/pictures.ts`, the sister app.
+**Step one (owner, same day): a sponsor's season is DELIVERABLE for the carousel format.** `lib/drama/sponsor.ts`:
+`presenterFor` (the paid sponsor), `episodeFiles` (slides from the queue row, cover video from drama_sound / cover_video_path,
+`mix.m4a` next to it), `sponsorshipForViewer` (the paying Google account or an admin). "Presented by BRAND" is frozen into every
+episode approved after payment (`approveEpisode` → `content.presentedBy` → cover slide, last slide, and the caption via
+`captionFor`; episodes already made keep their slides). Files page `/d/drama/sponsor/<id>` (7-day links, caption, slides,
+cover video, soundtrack) + `GET /api/drama/sponsor/<id>/episode/<n>` = one zip (slides/NN.jpg, caption.txt,
+cover-with-sound.mp4, soundtrack.m4a, README). The sponsor page SELLS ONLY `carousel`; pictures and video show their
+estimate as "coming" and only "Ask us first" (`startSponsorPayment` refuses them unless admin). Proven free: cover + choice
+slide rendered with a presenter via an esbuild bundle; no real sponsor has paid yet.
+**Not built:** the creator studio, earnings split + payouts, `lib/drama/pictures.ts` (phase 2), video (phase 3), the sister app.
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 

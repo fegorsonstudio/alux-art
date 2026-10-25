@@ -74,7 +74,7 @@ export async function emailBrand(input: { to: string | null; brand: string; stor
   }
 }
 
-export async function emailSponsor(input: { to: string | null; brand: string; storyTitle: string; priceNgn: number; storyUrl: string }): Promise<boolean> {
+export async function emailSponsor(input: { to: string | null; brand: string; storyTitle: string; priceNgn: number; storyUrl: string; filesUrl: string }): Promise<boolean> {
   try {
     const key = process.env.RESEND_API_KEY;
     const from = process.env.RESEND_FROM_EMAIL ?? "support@aluxartandframes.shop";
@@ -87,8 +87,9 @@ export async function emailSponsor(input: { to: string | null; brand: string; st
         subject: `${input.brand} presents ${input.storyTitle} — season one`,
         html: `<div style="font-family:Arial,sans-serif;color:#13201f;max-width:520px">
           <p style="font-size:15px">Thank you — <strong>${esc(input.brand)}</strong> now presents season one of <em>${esc(input.storyTitle)}</em>. We received ₦${input.priceNgn.toLocaleString("en-NG")}.</p>
-          <p style="font-size:15px">Every episode's caption credits you as the presenter, your product spots are yours in every episode, and we will send you the plan for your logo on the covers and the report of every comment and tap.</p>
-          <p><a href="${input.storyUrl}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">Open the story</a></p>
+          <p style="font-size:15px">"Presented by ${esc(input.brand)}" goes on the cover, the last slide and the caption of every episode from now on. Every episode's files — the slides, the caption, the cover video with its soundtrack — are yours to download from your files page, to post on your own page as well as ours.</p>
+          <p><a href="${input.filesUrl}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">Open your files page</a> &nbsp; <a href="${input.storyUrl}" style="font-size:14px">The story</a></p>
+          <p style="font-size:12px;color:#5b6b69">The files page opens with the Google account you paid with.</p>
           <p style="font-size:12px;color:#5b6b69">Alux Micro Drama · aluxartandframes.shop</p></div>`,
       }),
     });
