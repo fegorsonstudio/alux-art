@@ -4,6 +4,7 @@ import { tellAdmin } from "@/lib/telegram";
 import { withShootLock } from "@/lib/worker-lock";
 import type { DramaDraft, StoryRow } from "@/lib/drama/data";
 import { approveEpisode, captionFor, scheduleEpisode, syncPosted, writtenEpisode, type EpisodeRow } from "@/lib/drama/episodes";
+import { makePicturesForAdvance } from "@/lib/drama/pictures";
 import { tally, voteClosesAt, winnerOf } from "@/lib/drama/vote-rules";
 
 /**
@@ -117,6 +118,11 @@ export async function advanceStory(storyId: string): Promise<Advance> {
     }
 
     const written = writtenEpisode(story, n)!;
+    // A season sold with pictures (lib/drama/budget.ts formats): the slides get their
+    // AI pictures first, so the freeze below carries them. A refused picture leaves
+    // that slide designed; the owner hears either way.
+    const [fmt] = await sql<{ format: string }[]>`SELECT format FROM drama_stories WHERE id = ${storyId}`;
+    if (fmt?.format === "pictures") await makePicturesForAdvance(story, n);
     const frozen = await approveEpisode(story, n, await captionFor(story, written));
     await sql`UPDATE drama_episodes SET from_word = ${last.decided_word} WHERE id = ${frozen.id} AND from_word IS NULL`;
     const when = nextSlot();

@@ -37,7 +37,7 @@ export class DramaError extends Error {
 type Who = { id: string; email: string; admin: boolean };
 
 // ── Play a role ──────────────────────────────────────────────────────────────
-export async function startCastPayment(input: { slug: string; roleKey: string; displayName: string; photos: { kind: string; path: string }[]; who: Who }) {
+export async function startCastPayment(input: { slug: string; roleKey: string; displayName: string; photos: { kind: string; path: string }[]; who: Who; sheetMode?: string }) {
   const story = await storyBySlug(input.slug);
   if (!story) throw new DramaError("No such story.", 404);
   const role = (story.content.cast ?? []).find((r) => r.key === input.roleKey);
@@ -60,9 +60,9 @@ export async function startCastPayment(input: { slug: string; roleKey: string; d
   let row: { id: string } | undefined;
   try {
     [row] = await sql<{ id: string }[]>`
-      INSERT INTO drama_cast (story_id, role_key, user_id, display_name, email, photo_bucket, photo_path, photos, price_ngn, status)
+      INSERT INTO drama_cast (story_id, role_key, user_id, display_name, email, photo_bucket, photo_path, photos, price_ngn, status, sheet_mode)
       VALUES (${story.id}, ${role.key}, ${input.who.id}, ${name}, ${input.who.email}, 'identity-images', ${kept[0].path}, ${sql.json(kept)},
-              ${input.who.admin ? 0 : price}, ${input.who.admin ? "submitted" : "pending_payment"})
+              ${input.who.admin ? 0 : price}, ${input.who.admin ? "submitted" : "pending_payment"}, ${input.sheetMode === "ai" ? "ai" : "real"})
       RETURNING id`;
   } catch (e) {
     if ((e as { code?: string }).code === "23505") throw new DramaError("Someone has just taken this role. Pick another one.", 409);

@@ -31,6 +31,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeSound } from "../tools/drama/sound/engine.mjs";
 import { writeScript, checkScript, toScript } from "../tools/drama/sound/writer.mjs";
 import { resolveVoices } from "../tools/drama/sound/cast.mjs";
+import { designMissing, missingVoices } from "../tools/drama/sound/design.mjs";
 
 const FAKE = process.argv.includes("--fake");
 const DAILY_MAX = 8;
@@ -99,9 +100,19 @@ async function main() {
 
     // 1. The voices (standard or designed Nigerian ones), then the script: a
     // hand-written one for this very episode wins, if it passes the rules.
+    // A fan who recorded their voice plays their role with it (lib/drama/voice.ts); the
+    // story's designed voices are made here if any is still missing.
     let voices;
     try {
-      voices = resolveVoices(due.slug);
+      const fans = await sql`SELECT role_key, voice_id FROM drama_cast WHERE story_id = ${due.story_id} AND voice_id IS NOT NULL AND status IN ('sheet_ready', 'accepted', 'approved')`;
+      const overrides = Object.fromEntries(fans.map((f) => [f.role_key, f.voice_id]));
+      const missing = missingVoices(due.slug).filter((r) => !overrides[r]);
+      if (missing.length && !FAKE) {
+        log(`designing voices for ${due.slug}: ${missing.join(", ")}`);
+        const made = await designMissing(due.slug, { log, only: missing });
+        if (made.length) await tellAdmin(`🎙 <b>${esc(due.title)}</b> — ${made.length} voice(s) designed by the sound job: ${esc(made.map((m) => `${m.role} (${m.heard?.accent ?? "accent unknown"})`).join(", "))}.`);
+      }
+      voices = resolveVoices(due.slug, overrides);
     } catch (e) {
       await finish("failed", { problems: [String(e.message)] });
       await tellAdmin(`🔇 <b>${esc(name)}</b> will post without sound — ${esc(e.message)}`);

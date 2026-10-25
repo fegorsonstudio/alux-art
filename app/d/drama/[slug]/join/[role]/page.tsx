@@ -61,7 +61,7 @@ export default async function JoinPage({ params }: { params: Promise<{ slug: str
               <h2 className={styles.h2}>What you get — {naira(prices[role.tier])}</h2>
               <ul className={styles.p} style={{ paddingLeft: 18, margin: 0, display: "grid", gap: 6 }}>
                 <li>Your character portrait: you, dressed as {first}, made from your photos — yours to keep and share.</li>
-                <li>Your character sheet (front, side and full length), so {first} looks like you, the same way, every time.</li>
+                <li>Your character sheet — your full-length photo and your portrait as shot, plus a generated view from behind (or all three generated, your choice) — so {first} looks like you, the same way, every time.</li>
                 <li>Your name in the credits of every episode {first} is in — {pkg.episodes}.</li>
                 <li>When the episodes get pictures, your face plays {first} in up to {pkg.pictures} of them.</li>
                 <li>You see your character before anyone else, and can ask for it to be made again once.</li>

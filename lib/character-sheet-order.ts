@@ -2,7 +2,8 @@ import "server-only";
 import sharp from "sharp";
 import sql from "@/lib/db";
 import { nanoBananaEdit } from "@/lib/fal-edit";
-import { r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
+import { r2Download, r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
+import { composeSheet, tellApart } from "@/lib/drama/sheet-compose";
 
 /**
  * The `character_sheet` marketplace product (owner, 2026-10-22): a buyer sends
@@ -206,36 +207,61 @@ export async function runCharacterSheet(shootId: string, userId: string, refs: R
   if (!personUrls.length) return fail(shootId, slot.id, "none of the photos could be opened");
   const styled = (await Promise.all(styleRefs.map(async (r) => ({ r, url: await sign(r) })))).filter((x) => x.url);
 
-  const prompt = characterSheetPrompt({
-    personImages: personUrls.length,
-    styles: styled.map(({ r }) => ({ tag: r.tag as string, note: r.note ?? null })),
-  });
-  await sql`UPDATE shoot_images SET prompt = ${prompt}, updated_at = NOW() WHERE id = ${slot.id}`;
+  // "Character Sheet — from your photos" (owner, 2026-10-25): the buyer's own
+  // front full-body photo and front portrait ARE the sheet; only the back view
+  // is generated (lib/drama/sheet-compose.ts). The template says so with
+  // worker_options.sheet = 'real'.
+  const [tpl] = await sql<{ worker_options: { sheet?: string } | null }[]>`
+    SELECT t.worker_options FROM shoots s JOIN templates t ON t.id = s.template_id WHERE s.id = ${shootId}`;
+  const real = tpl?.worker_options?.sheet === "real";
 
   let url: string | undefined, model: string;
-  try {
-    const out = await nanoBananaEdit({
-      prompt,
-      image_urls: [...personUrls, ...styled.map((x) => x.url)],
-      num_images: 1, aspect_ratio: "16:9", resolution: "4K", output_format: "jpeg",
-      safety_tolerance: "6", limit_generations: false,
+  let bytes: Buffer | undefined;
+  if (real) {
+    if (personRefs.length !== 2) return fail(shootId, slot.id, `this sheet needs exactly two photos — your whole body from the front, and your face from the front — not ${personRefs.length}`);
+    try {
+      const [a, b] = await Promise.all(personRefs.map((r) => r2Download(r.storage_bucket as string, r.storage_path as string).then((x) => x.buffer)));
+      const pair = await tellApart(a, b);
+      if (!pair) return fail(shootId, slot.id, "we could not tell which photo is your whole body and which is your face — send one full-length photo and one portrait");
+      const urls = pair.body === a ? { body: personUrls[0], face: personUrls[1] } : { body: personUrls[1], face: personUrls[0] };
+      const made = await composeSheet({ body: pair.body, face: pair.face, urls });
+      bytes = made.sheet;
+      model = made.model;
+      url = "";
+      await sql`UPDATE shoot_images SET prompt = ${`real-photo sheet: front and portrait as shot, back view generated (${made.model})`}, updated_at = NOW() WHERE id = ${slot.id}`;
+    } catch (e) {
+      const err = e as { message?: string; body?: unknown };
+      return fail(shootId, slot.id, `${err?.message ?? String(e)}${err?.body ? " — " + JSON.stringify(err.body).slice(0, 200) : ""}`);
+    }
+  } else {
+    const prompt = characterSheetPrompt({
+      personImages: personUrls.length,
+      styles: styled.map(({ r }) => ({ tag: r.tag as string, note: r.note ?? null })),
     });
-    url = out.data.images?.[0]?.url;
-    model = out.model;
-  } catch (e) {
-    const err = e as { message?: string; body?: unknown };
-    return fail(shootId, slot.id, `${err?.message ?? String(e)}${err?.body ? " — " + JSON.stringify(err.body).slice(0, 200) : ""}`);
+    await sql`UPDATE shoot_images SET prompt = ${prompt}, updated_at = NOW() WHERE id = ${slot.id}`;
+    try {
+      const out = await nanoBananaEdit({
+        prompt,
+        image_urls: [...personUrls, ...styled.map((x) => x.url)],
+        num_images: 1, aspect_ratio: "16:9", resolution: "4K", output_format: "jpeg",
+        safety_tolerance: "6", limit_generations: false,
+      });
+      url = out.data.images?.[0]?.url;
+      model = out.model;
+    } catch (e) {
+      const err = e as { message?: string; body?: unknown };
+      return fail(shootId, slot.id, `${err?.message ?? String(e)}${err?.body ? " — " + JSON.stringify(err.body).slice(0, 200) : ""}`);
+    }
+    if (!url) return fail(shootId, slot.id, "the model returned no image");
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`download failed: ${res.status}`);
+      bytes = Buffer.from(await res.arrayBuffer());
+    } catch (e) {
+      return fail(shootId, slot.id, (e as Error).message);
+    }
   }
-  if (!url) return fail(shootId, slot.id, "the model returned no image");
-
-  let bytes: Buffer;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`download failed: ${res.status}`);
-    bytes = Buffer.from(await res.arrayBuffer());
-  } catch (e) {
-    return fail(shootId, slot.id, (e as Error).message);
-  }
+  if (!bytes) return fail(shootId, slot.id, "no sheet was made");
   const meta = await sharp(bytes).metadata().catch(() => ({ width: undefined, height: undefined }));
   const path = `${userId}/${shootId}/slot-1.jpg`;
   try {
@@ -252,7 +278,7 @@ export async function runCharacterSheet(shootId: string, userId: string, refs: R
       provider = 'vercel-fal', configured_model = ${model},
       preview_storage_bucket = 'generated-4k', preview_storage_path = ${path},
       download_storage_bucket = 'generated-4k', download_storage_path = ${path},
-      fal_url = ${url}, provider_error = NULL,
+      fal_url = ${url || null}, provider_error = NULL,
       updated_at = NOW()
     WHERE id = ${slot.id}`;
   logEvent("slot_complete", { image: { id: slot.id, slot: 1, status: "COMPLETE" } });

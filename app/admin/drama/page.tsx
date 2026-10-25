@@ -188,9 +188,28 @@ function Pictures({ story, w, reload }: { story: Story; w: Written; reload: () =
     } catch (e) { setMsg((e as Error).message); }
     finally { setBusy(null); }
   };
+  const makeAi = async () => {
+    const missing = [2, 3, 4, 5, 6, 7].filter((s) => !w.art.some((a) => a.slide === s));
+    if (!missing.length) { setMsg("Slides 2–7 all have pictures. Remove one to make it again."); return; }
+    if (!confirm(`Make ${missing.length} picture(s) with AI for slides ${missing.join(", ")}? About $0.13 each, plus the location and any house character sheet the first time.`)) return;
+    setBusy(0); setMsg("Making the pictures — a minute or two…");
+    try {
+      const r = await fetch("/api/admin/drama/pictures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: story.slug, n: w.n }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
+      setMsg(`${j.made} made, ${j.failed} refused, about $${j.usd}. ${(j.log ?? []).slice(-3).join(" · ")} Preview again to see them.`);
+      await reload();
+    } catch (e) { setMsg((e as Error).message); }
+    finally { setBusy(null); }
+  };
   return (
     <div style={{ margin: "6px 0 16px" }}>
-      <div className={styles.fieldLabel} style={{ marginBottom: 8 }}>Pictures · {w.art.length} of 8 · slides without one stay designed</div>
+      <div className={styles.fieldLabel} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <span>Pictures · {w.art.length} of 8 · slides without one stay designed</span>
+        <button type="button" className={styles.chip} style={{ cursor: "pointer", font: "inherit", fontSize: 11, padding: "3px 8px" }} disabled={busy !== null} onClick={makeAi}>
+          {busy === 0 ? "Making…" : "Make the missing ones with AI"}
+        </button>
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8 }}>
         {Array.from({ length: 8 }, (_, i) => i + 1).map((slide) => {
           const a = w.art.find((x) => x.slide === slide);

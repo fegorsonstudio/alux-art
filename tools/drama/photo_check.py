@@ -2,7 +2,7 @@
 
     photo_check.py <kind> <jpeg path>      kind: face | angle | body
 
-Prints one JSON line: {"ok": bool, "problems": [...], "faces": n, "face_h": 0.0-1.0, "sharp": float}.
+Prints one JSON line: {"ok": bool, "problems": [...], "faces": n, "face_h": 0.0-1.0, "sharp": float, "box": [x, y, w, h]}.
 Uses OpenCV's YuNet face finder (MIT, 230 KB) — no network, no paid call.
 Called by lib/drama/character.ts with a memory cap (ulimit -v). Lenient on
 purpose: it turns away only photos the sheet cannot use (no face, two people,
@@ -55,6 +55,8 @@ def main() -> None:
     fx, fy, fw, fh = (float(v) / scale for v in big[:4])
     face_h = fh / h
     out["face_h"] = round(face_h, 3)
+    # The face box in the original image's pixels, for the real-photo sheet (lib/drama/sheet-compose.ts).
+    out["box"] = [round(fx), round(fy), round(fw), round(fh)]
     if face_h < MIN_FACE.get(kind, 0.1):
         out["problems"].append("face_small")
     if kind == "body" and face_h > MAX_FACE_BODY:

@@ -39,6 +39,8 @@ export default function CheckoutForm(p: Props) {
   const [product, setProduct] = useState<Picked | null>(null);
   const [photos, setPhotos] = useState<Partial<Record<PhotoKind, Picked>>>({});
   const [agree, setAgree] = useState(false);
+  // Real photos first (owner, 2026-10-25): the sheet is their own front and portrait as shot; only the back view is generated.
+  const [sheetMode, setSheetMode] = useState<"real" | "ai">("real");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ castId?: string; report?: string } | null>(null);
@@ -76,7 +78,7 @@ export default function CheckoutForm(p: Props) {
           setBusy(`Sending photo ${i + 1} of ${PHOTO_KINDS.length}…`);
           sent.push({ kind: k.kind, path: await upload(photos[k.kind]!.file) });
         }
-        body = { slug: p.slug, role: p.role, displayName: name, photos: sent };
+        body = { slug: p.slug, role: p.role, displayName: name, photos: sent, sheetMode };
       } else {
         setBusy("Sending your picture…");
         body = { slug: p.slug, episode: p.episode, slot: p.slot, brandName: brand, contactName: name, phone, productPath: await upload(product!.file), note, productUrl: productUrl.trim(), keyword: word, rulesOk };
@@ -128,10 +130,25 @@ export default function CheckoutForm(p: Props) {
           <input className={styles.input} value={phone} maxLength={30} inputMode="tel" onChange={(e) => setPhone(e.target.value)} />
         </label>
       )}
+      {p.mode === "cast" && (
+        <div className={styles.field}>
+          <span className={styles.fieldLabel}>Your character sheet</span>
+          <div className={styles.pkgList} role="radiogroup">
+            <label className={styles.pkg}>
+              <input type="radio" name="sheetMode" value="real" checked={sheetMode === "real"} onChange={() => setSheetMode("real")} />
+              <span><p className={styles.pkgName}>Made from your photos</p><p className={styles.pkgNote}>Your full-length photo and your portrait are the sheet, as shot. Only the view from behind is generated. Real photos make the best sheets — wear what your character would wear.</p></span>
+            </label>
+            <label className={styles.pkg}>
+              <input type="radio" name="sheetMode" value="ai" checked={sheetMode === "ai"} onChange={() => setSheetMode("ai")} />
+              <span><p className={styles.pkgName}>Generated from your photos</p><p className={styles.pkgNote}>All three views are drawn from your photos, in the character’s costume.</p></span>
+            </label>
+          </div>
+        </div>
+      )}
       {p.mode === "cast" ? (
         <div className={styles.field}>
           <span className={styles.fieldLabel}>Three photos of you</span>
-          <p className={styles.sectionNote} style={{ margin: 0 }}>Send the originals from your camera — no filters, no screenshots. They are kept at full quality.</p>
+          <p className={styles.sectionNote} style={{ margin: 0 }}>Send the originals from your camera — no filters, no screenshots. They are kept at full quality.{sheetMode === "real" ? " Your whole-body photo and your face photo go on the sheet exactly as you send them: straight on, good light, a plain background if you can." : ""}</p>
           <div className={styles.photoGrid}>
             {PHOTO_KINDS.map((k) => {
               const got = photos[k.kind];

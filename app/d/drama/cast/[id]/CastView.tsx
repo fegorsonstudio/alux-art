@@ -62,6 +62,7 @@ export default function CastView({ initial }: { initial: View }) {
   };
 
   const failed = v.photos.filter((p) => p.problems.length);
+  const canRecord = ["submitted", "making", "photos_needed", "sheet_ready", "accepted", "approved", "failed"].includes(v.status);
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -137,6 +138,8 @@ export default function CastView({ initial }: { initial: View }) {
         </div>
       )}
 
+      {canRecord && <VoiceRecorder castId={v.id} voice={v.voice} roleName={v.role.name} onChange={reload} />}
+
       {v.status === "failed" && (
         <div className={styles.panel}>
           <h2 className={styles.h2}>A person is finishing your character</h2>
@@ -147,6 +150,94 @@ export default function CastView({ initial }: { initial: View }) {
         <div className={styles.panel}><p className={styles.p} style={{ margin: 0 }}>This role is no longer yours. If you paid, the studio will contact you about a refund.</p></div>
       )}
       {error && <p className={styles.error} role="alert">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * The member's own voice (owner, 2026-10-25): two clips recorded in the browser —
+ * the consent line and a reading sample — sent to /api/drama/voice; the voice is
+ * copied by itself once both are there, and their episodes use it. Without it,
+ * the role keeps the story's designed voice.
+ */
+function VoiceRecorder({ castId, voice, roleName, onChange }: { castId: string; voice: View["voice"]; roleName: string; onChange: () => Promise<void> }) {
+  const [rec, setRec] = useState<{ kind: "consent" | "sample"; r: MediaRecorder; chunks: Blob[]; started: number } | null>(null);
+  const [seconds, setSeconds] = useState(0);
+  const [sending, setSending] = useState("");
+  const [err, setErr] = useState("");
+  const supported = typeof window !== "undefined" && typeof MediaRecorder !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+
+  useEffect(() => {
+    if (!rec) return;
+    const t = setInterval(() => setSeconds(Math.round((Date.now() - rec.started) / 1000)), 500);
+    return () => clearInterval(t);
+  }, [rec]);
+
+  const start = async (kind: "consent" | "sample") => {
+    setErr("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
+      const r = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const chunks: Blob[] = [];
+      r.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      r.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks, { type: r.mimeType || "audio/webm" });
+        setRec(null); setSeconds(0);
+        if (blob.size < 2000) { setErr("Nothing was recorded. Check the microphone and try again."); return; }
+        setSending(kind);
+        try {
+          const fd = new FormData();
+          fd.append("castId", castId); fd.append("kind", kind);
+          fd.append("file", new File([blob], `${kind}.${/mp4/.test(blob.type) ? "m4a" : /ogg/.test(blob.type) ? "ogg" : "webm"}`, { type: blob.type }));
+          const res = await fetch("/api/drama/voice", { method: "POST", body: fd });
+          const j = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(j.error ?? "The clip did not go through.");
+          await onChange();
+        } catch (e) { setErr((e as Error).message); } finally { setSending(""); }
+      };
+      r.start();
+      setRec({ kind, r, chunks, started: Date.now() });
+    } catch { setErr("We could not use the microphone. Allow it in the browser and try again."); }
+  };
+  const stop = () => rec?.r.stop();
+  const max = (k: "consent" | "sample") => (k === "consent" ? 20 : 45);
+  useEffect(() => { if (rec && seconds >= max(rec.kind)) rec.r.stop(); }, [rec, seconds]);
+
+  const clip = (kind: "consent" | "sample", title: string, text: string, done: boolean) => (
+    <div className={styles.notice} style={{ margin: 0, display: "grid", gap: 8 }}>
+      <span className={styles.fieldLabel}>{title} {done ? "✓" : ""}</span>
+      <p className={styles.p} style={{ margin: 0 }}>{text}</p>
+      <div className={styles.castActions}>
+        {rec?.kind === kind ? (
+          <button type="button" className={`${styles.btn} ${styles.primary} ${styles.small}`} onClick={stop}>Stop ({seconds}s)</button>
+        ) : (
+          <button type="button" className={`${styles.btn} ${done ? styles.quiet : styles.primary} ${styles.small}`} disabled={!!rec || !!sending} onClick={() => start(kind)}>
+            {sending === kind ? "Sending…" : done ? "Record again" : "Record"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={styles.panel} style={{ display: "grid", gap: 12 }}>
+      <h2 className={styles.h2}>Your voice (optional)</h2>
+      <p className={styles.p} style={{ margin: 0 }}>
+        {voice.ready
+          ? `Your voice is ready. When ${roleName} speaks in an episode's soundtrack, it is your voice.`
+          : `Record two short clips and ${roleName} will speak with your voice in every episode. Skip this and we give the character a designed voice instead.`}
+      </p>
+      {!supported && <p className={styles.sectionNote} style={{ margin: 0 }}>Recording needs a phone or computer browser with a microphone (Chrome, Safari or Firefox).</p>}
+      {supported && (
+        <>
+          {clip("consent", "1. Permission", `Read this aloud: “${voice.lines.consent}”`, voice.consent)}
+          {clip("sample", "2. Your voice — read for 20 to 40 seconds", voice.lines.sample, voice.sample)}
+        </>
+      )}
+      {voice.error && !voice.ready && <p className={styles.problem}>{voice.error} — record the clip again.</p>}
+      {err && <p className={styles.error} role="alert">{err}</p>}
     </div>
   );
 }

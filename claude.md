@@ -933,7 +933,28 @@ cover video, soundtrack) + `GET /api/drama/sponsor/<id>/episode/<n>` = one zip (
 cover-with-sound.mp4, soundtrack.m4a, README). The sponsor page SELLS ONLY `carousel`; pictures and video show their
 estimate as "coming" and only "Ask us first" (`startSponsorPayment` refuses them unless admin). Proven free: cover + choice
 slide rendered with a presenter via an esbuild bundle; no real sponsor has paid yet.
-**Not built:** the creator studio, earnings split + payouts, `lib/drama/pictures.ts` (phase 2), video (phase 3), the sister app.
+**Step two + real-photo sheets + voices (owner, same day; commit pending, migration 088 to apply with psql):**
+- **Pictures** `lib/drama/pictures.ts`: one AI picture per slide 2–7 from the cast's sheets (a fan's accepted sheet, else a
+  HOUSE sheet made once per role into `drama_sheets`) + the story's location image (made once, `drama_stories.location_*`),
+  prompt in the house structure with the genre light, the frame read from `see`, a quiet third for the caption; judged by
+  gemini-3.1-pro (likeness/frame/quiet/text) with one retake; rows in `drama_picture_runs` (cost); cap
+  `app_config.drama_pictures_daily_cap` (60). `/admin/drama` → Pictures → "Make the missing ones with AI" (`POST
+  /api/admin/drama/pictures`); `advance.ts` makes them before the freeze when `drama_stories.format = 'pictures'`
+  (a sponsor bought pictures). About $0.13 a picture. `DRAMA_FAKE_RENDER=1` = stand-ins. **No real run yet.**
+- **Real-photo character sheets** `lib/drama/sheet-compose.ts` (owner is a photographer: "real pictures make a better
+  sheet"): the person's front full-body photo (face ERASED to a skin-tone oval; YuNet box from `photo_check.py`, now
+  printing `box`) and their front portrait are the two real panels; ONLY the back view is generated, WITHOUT THE HEAD
+  (nano-banana-2/edit 9:16, cropped below the neck), everything cut out with fal BiRefNet v2 onto one grey, composed
+  with sharp at 3840×2160. Drama join: `drama_cast.sheet_mode` ('real' default, 'ai' = all three generated) chosen on
+  the join form; marketplace: a SECOND template "Character Sheet — from your photos" (`templates.worker_options.sheet =
+  'real'`, `scripts/create-character-sheet-real-template.mjs`, exactly two photos; `lib/character-sheet-order.ts` picks
+  the mode by that flag). Proven free with stand-ins (layout OK). **No real run yet.**
+- **Voices** `lib/drama/voice.ts`: a member records the CONSENT line and a 20–40 s SAMPLE on `/d/drama/cast/<id>`
+  (MediaRecorder → `POST /api/drama/voice`, ffmpeg → 24 kHz WAV) → Gemini voice replication (`POST /v1beta/voices`,
+  type `replicated`, fields `source_audio` + `consent_audio` — learnt from the API's own errors) → `drama_cast.voice_id`;
+  `scripts/drama-sound.mjs` passes fan voices as overrides to `resolveVoices(slug, overrides)` and **designs any missing
+  designed voice by itself** (`tools/drama/sound/design.mjs`, shared with `design-voices.mjs`). No real replication yet.
+**Not built:** the creator studio, earnings split + payouts, video (phase 3), the sister app.
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 

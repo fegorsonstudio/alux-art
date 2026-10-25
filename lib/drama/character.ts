@@ -7,6 +7,7 @@ import sharp from "sharp";
 import sql from "@/lib/db";
 import { nanoBananaEdit } from "@/lib/fal-edit";
 import { SHEET_LAYOUT } from "@/lib/character-sheet-order";
+import { composeSheet } from "@/lib/drama/sheet-compose";
 import { r2Copy, r2Download, r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 import { sendAdminImage, tellAdmin } from "@/lib/telegram";
 import { withShootLock } from "@/lib/worker-lock";
@@ -15,6 +16,7 @@ import { emailCastMember } from "@/lib/drama/notify";
 import { PHOTO_KINDS, type PhotoKind } from "@/lib/drama/photo-kinds";
 import { SHEET_LIGHT, lightFor, lightingBlock } from "@/lib/drama/lighting";
 import { makePosterSoon } from "@/lib/drama/poster";
+import { processVoices, voiceLines } from "@/lib/drama/voice";
 
 /**
  * A cast member's character, made by itself (owner, 2026-10-21: no approving).
@@ -55,7 +57,7 @@ export const problemText = (code: string) => PROBLEM_TEXT[code] ?? "This photo c
 
 type CastRow = {
   id: string; story_id: string; role_key: string; display_name: string; email: string | null; status: string;
-  photos: CastPhoto[]; renders: number; redo_used: boolean; updated_at: string;
+  photos: CastPhoto[]; renders: number; redo_used: boolean; updated_at: string; sheet_mode?: "real" | "ai";
   sheet_bucket: string | null; sheet_path: string | null; portrait_bucket: string | null; portrait_path: string | null;
 };
 
@@ -201,6 +203,23 @@ async function makeCharacter(c: CastRow, story: StoryRow, role: DramaRole): Prom
   let sheet: { url: string };
   if (c.sheet_path && !c.portrait_path) {
     sheet = { url: await r2SignedDownloadUrl(c.sheet_bucket ?? KEEP_BUCKET, c.sheet_path, 3600) };
+  } else if (c.sheet_mode === "real") {
+    // Their own photos are the sheet (owner, 2026-10-25): the full body as shot with the
+    // face erased, the portrait as shot; only the back view is generated, without the head.
+    const body = (c.photos ?? []).find((p) => p.kind === "body"), face = (c.photos ?? []).find((p) => p.kind === "face");
+    if (!body || !face) throw new Error("a real-photo sheet needs the whole-body photo and the face photo");
+    const [bodyBytes, faceBytes] = await Promise.all([r2Download(body.bucket, body.path), r2Download(face.bucket, face.path)]);
+    // The back view is a paid call: counted against the member's cap like any other.
+    const [n] = await sql<{ renders: number }[]>`UPDATE drama_cast SET renders = renders + 1, updated_at = now() WHERE id = ${c.id} AND renders < ${MAX_RENDERS} RETURNING renders`;
+    if (!n) throw new CapReached();
+    const made = await composeSheet({
+      body: bodyBytes.buffer, face: faceBytes.buffer,
+      urls: { body: await r2SignedDownloadUrl(body.bucket, body.path, 3600), face: await r2SignedDownloadUrl(face.bucket, face.path, 3600) },
+    });
+    const sheetPath = `drama/cast/${c.id}/sheet-${stamp}.jpg`;
+    await r2Upload(KEEP_BUCKET, sheetPath, made.sheet, "image/jpeg");
+    await sql`UPDATE drama_cast SET sheet_bucket = ${KEEP_BUCKET}, sheet_path = ${sheetPath}, render_model = ${made.model}, updated_at = now() WHERE id = ${c.id}`;
+    sheet = { url: await r2SignedDownloadUrl(KEEP_BUCKET, sheetPath, 3600) };
   } else {
     const made = await paidImage(c.id, { prompt: sheetPrompt(role, story), aspect_ratio: "16:9", output_format: "png", image_urls: urls.slice(0, 6) });
     const sheetPath = `drama/cast/${c.id}/sheet-${stamp}.png`;
@@ -277,6 +296,8 @@ export async function processCast(): Promise<{ id: string; result: string }[]> {
     ORDER BY created_at LIMIT 3`; // a make is two model calls of up to a minute each: three fit in one sweep
   const out = [];
   for (const d of due) out.push({ id: d.id, result: await runCast(d.id).catch((e) => `error: ${(e as Error).message.slice(0, 120)}`) });
+  // Voices recorded on the member page are copied here too (a retry after a failure).
+  for (const v of await processVoices().catch(() => [])) out.push({ id: v.id, result: `voice: ${v.result}` });
   return out;
 }
 
@@ -327,6 +348,8 @@ export type CastView = {
   story: { slug: string; title: string }; role: { name: string; job: string; enters: number | null };
   photos: { kind: PhotoKind; label: string; url: string | null; problems: string[] }[];
   portraitUrl: string | null; sheetUrl: string | null;
+  sheetMode: "real" | "ai";
+  voice: { sample: boolean; consent: boolean; ready: boolean; error: string | null; lines: { consent: string; sample: string } };
 };
 
 /** The member's view of their character, or null if this visitor is not them (admins see everyone's). */
@@ -335,7 +358,7 @@ export async function castView(castId: string, viewer: { id: string; admin: bool
   const got = await loadCast(castId);
   if (!got) return null;
   const { story, role } = got;
-  const [row] = await sql<(CastRow & { user_id: string | null; photo_check: { results?: Check[] } | null })[]>`SELECT * FROM drama_cast WHERE id = ${castId}`;
+  const [row] = await sql<(CastRow & { user_id: string | null; photo_check: { results?: Check[] } | null; voice_sample_path: string | null; voice_consent_path: string | null; voice_id: string | null; voice_meta: { error?: string } | null })[]>`SELECT * FROM drama_cast WHERE id = ${castId}`;
   if (!row || (!viewer.admin && row.user_id !== viewer.id)) return null;
   if (row.status === "pending_payment" && !viewer.admin) return null;
   const sign = (b: string | null, p: string | null) => (b && p ? r2SignedDownloadUrl(b, p, 3600).catch(() => null) : Promise.resolve(null));
@@ -351,5 +374,7 @@ export async function castView(castId: string, viewer: { id: string; admin: bool
     })),
     portraitUrl: row.status === "sheet_ready" || row.status === "accepted" || row.status === "approved" ? await sign(row.portrait_bucket, row.portrait_path) : null,
     sheetUrl: row.status === "sheet_ready" || row.status === "accepted" || row.status === "approved" ? await sign(row.sheet_bucket, row.sheet_path) : null,
+    sheetMode: row.sheet_mode === "real" ? "real" : "ai",
+    voice: { sample: !!row.voice_sample_path, consent: !!row.voice_consent_path, ready: !!row.voice_id, error: row.voice_meta?.error ?? null, lines: voiceLines(row.display_name, story.title, role.name) },
   };
 }

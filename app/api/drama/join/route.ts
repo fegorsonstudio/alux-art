@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     const out = await startCastPayment({
       slug: String(b.slug ?? ""), roleKey: String(b.role ?? ""), displayName: String(b.displayName ?? ""),
-      photos, who: { id: user.id, email: user.email, admin: isAdminEmail(user.email) },
+      photos, who: { id: user.id, email: user.email, admin: isAdminEmail(user.email) }, sheetMode: String(b.sheetMode ?? "real"),
     });
     return NextResponse.json(out);
   } catch (e) {

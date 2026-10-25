@@ -19,13 +19,15 @@ export function registry() {
   return existsSync(REGISTRY) ? JSON.parse(readFileSync(REGISTRY, "utf8")) : {};
 }
 
-export function resolveVoices(slug) {
+/** `overrides` = { role: voiceId } for roles a fan plays with their own replicated voice (drama_cast.voice_id); they win. */
+export function resolveVoices(slug, overrides = {}) {
   const spec = VOICES[slug];
   if (!spec) throw new Error(`no voices for the story "${slug}"`);
   const reg = registry();
   const out = {}, missing = [];
   for (const [role, v] of Object.entries(spec)) {
-    if (typeof v === "string") out[role] = v;
+    if (overrides[role]) out[role] = overrides[role];
+    else if (typeof v === "string") out[role] = v;
     else if (reg[`${slug}/${role}`]?.id && reg[`${slug}/${role}`].description === (v.nigerian ?? v.designed)) out[role] = reg[`${slug}/${role}`].id;
     else missing.push(role);
   }
