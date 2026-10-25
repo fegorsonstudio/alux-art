@@ -1,0 +1,3662 @@
+Ever caught yourself watching one short drama after another at 2 a.m.?
+But you probably didn't suspect how many collaborations, followers and clients they bring to the people who make them.
+
+The secret is that they're actually really easy to make. We've prepared the special skills we use to make our own short dramas, the ones that get millions of views.
+
+In this article we break down how we made a short drama that passed 60 million views in one ChatGPT chat with the Higgsfield plugin, and share every prompt so you can recreate it. 
+We'll reveal the whole secret of short dramas and how to make them, so you can make your own. And at the end, we'll show how exactly creators monetize them.
+
+Download the two skills
+
+Attach both files to your chat and you get the same package we used: asset prompts, a full script and a ready prompt for every clip.
+
+The Short Drama Screenwriter writes the script. It has 100 story ideas built in and picks the strongest one if you don't have your own, then builds the episode around the hook, the context, the escalation and the cliffhanger, writes every line of dialogue and gives each character a voice.
+
+Higgsfield - Short Drama Screenwriter.md
+MD
+
+The Prompt Writer handles the camera, the lighting and all the cinematic work, so your generation win rate goes way up.
+
+Higgsfield - Seedance 2.5 Prompt Writer.md
+MD
+0:00 / 2:01
+
+Connect the Higgsfield plugin to ChatGPT, start a chat with your idea and keep working in that same chat as you build the episode.
+
+Step 1: Pick a story people get in seconds
+
+For a short drama, pick a situation people understand quickly. Here are three starting points:
+
+A Cinderella story: someone ordinary gets an unexpected opportunity.
+Love against the odds: two people want to be together, but something stands in their way.
+A rivalry: two people want the same thing, and only one can get it.
+
+We went with the first one. Our story is about Lucy, an accountant at a fashion house. She interrupts a casting, trips, and catches the director's attention. He thinks she could become the face of the house.
+
+A familiar storyline is only the beginning. Aim for one to three minutes, and build the story around the four parts every short drama is built on:
+
+The hook
+The context
+The escalation
+The cliffhanger
+Step 2: Create your characters
+
+Using Higgsfield and SOUL 2.0, generate a 6 single face-reference portraits of a young adult woman with 2000s supermodel looks — brunette, like she's straight off a magazine cover. Include the vibe: shot on a professional camera from the 2000s, with that era's film look and effects.
+
+Copy prompt
+Recreate
+
+A straight-on, tightly framed portrait photograph features a young adult white woman with striking, model-like facial features, including prominent cheekbones, clear light skin, and smooth, symmetrical contours. She has long brown hair, parted to the side, falling naturally over her shoulder, with a subtle glossy sheen. Her gaze is focused directly at the camera, revealing light-colored eyes, slightly parted lips, and well-defined eyebrows. She wears a sharply tailored black blazer over a dark collared shirt, both in slightly different shades of black. The clothing provides a matte texture contrasted with the soft, diffused ambient lighting that creates gentle highlights and subtle, gradual shadows across her face, revealing natural skin texture. In the background there’s a section of beige curtain that adds a vertical pattern and a neutral backdrop, with minimal detail evident beyond that due to the shallow depth of field. Dominant colors are the neutral tones of her outfit, light brown hair, and natural skin tones, with the ambiguous setting offering little context for time or location. The image appears to be shot on mid-1990s professional film photography equipment, as indicated by mild grain and the lack of digital sharpness or post-processing artifacts. Overall, the mood is reserved and intimate, suitable for either an editorial or candid event setting.
+
+HEX VALUES: ["#1e2027", "#2b2b2c", "#12141f", "#3e3b34", "#666059", "#534e47", "#766f65", "#7d7c73", "#070607", "#d6b093", "#1d1711", "#e9c5a7", "#9f8775", "#be9c84"]
+
+See all
+Copy prompt
+Recreate
+
+Pro tip: every time you pick an image, tell ChatGPT what it's for (her face, her outfit or the location) and give it a clear name like @LucyFace. Use the same names throughout the chat, so it's always clear which references belong in each scene. Once you have several characters and scenes, you don't want to pull an old version by accident.
+
+The outfit (@LucyOutfit)
+
+Now give her that office-siren outfit. Describe the clothes in the chat and ask for an outfit reference. You can also upload a reference image and explain which details you want to keep.
+
+Using Higgsfield and SOUL 2.0, generate an outfit reference for an early-2000s office-siren look: an open light-blue cardigan, a pale-pink tank top, a dark knee-length pencil skirt with thin red checks, a silver chain necklace, and black pointed shoes with low heels.
+
+
+
+
+Show the outfit from shoulders to feet against a plain beige wall. Warm colors, flash photography, a little film grain. No bag or props. Save it as @⁠LucyOutfit.
+
+See all
+Copy prompt
+Recreate
+
+A straight-on fashion photograph focuses on the outfit worn by a young adult woman, framed from shoulders to feet with her face out of frame, against a plain beige wall. She wears a fitted, textured light blue cardigan, open over a pale pink cotton tank top, paired with a high-waisted, knee-length plaid pencil skirt in black with a subtle dark red check pattern. A simple silver chain necklace adds an elegant accent. She wears black pointed-toe shoes with low heels, fully visible in the frame. Her hands are empty, with no bag, card or other props. The lighting is bright and direct, like on-camera flash, creating clear highlights on the fabrics and a faint shadow behind her. The color palette is dominated by neutrals, pastel blue, soft pink and muted black. The composition is centered, with the entire outfit visible from the shoulders down and enough space below both shoes; deep focus keeps the clothing and footwear crisp. The overall image quality suggests a late 1990s–early 2000s film photograph, with subtle grain and slight color desaturation, creating a casual, put-together and slightly nostalgic atmosphere.
+
+HEX VALUES: ["#a5a290", "#9a9785", "#afac9a", "#262424", "#8d8876", "#171312", "#bcb7a5", "#669ba8", "#cecac7", "#7d6c5e", "#4e1a1a", "#4f403a", "#aa8571"]
+
+See all
+Copy prompt
+Recreate
+The character sheet (@Lucy)
+
+Once you have the face and the outfit, combine them into one character sheet for the video. Three rules make it work:
+
+Plain gray background, not white or black.
+Three views: full-body front, full-body back and a close-up of the face.
+Erase the face from the full-body front view. Otherwise the video model may take her face from the close-up in one shot and from the full-body view in another, and she starts to look like a different person. The goal is one clear face reference.
+
+To combine the face and the outfit we used GPT Image 2, because it works really well with references and preserves the details.
+
+Make a character sheet for Lucy. Take her exact face, hair color and hair texture from @⁠LucyFace, but restyle her hair into a loose, messy low bun with a few strands around her face. Add narrow rectangular prescription glasses with thin frames and clear lenses. Take the clothing from @⁠LucyOutfit: the light blue cardigan worn open, the pale pink tank top, the checked pencil skirt and the thin chain necklace. Ignore the bag, card and any other props in that reference. Give her a slim, 175 cm body, like a model who doesn't know she's a model yet. Make three panels: full-body front view, full-body back view and a head-and-shoulders portrait. Use a neutral grey backdrop, a neutral standing pose and empty hands. Keep the warm, slightly faded early-2000s film-still color grade of @⁠LucyOutfit so she belongs to the world of the show. Save it as @⁠Lucy.
+
+See all
+Copy prompt
+Recreate
+
+Three-panel character sheet of one woman in a single 16:9 image: two full-body figures side by side in the left half and one large head-and-shoulders portrait filling the right half, all on one continuous seamless backdrop with no gutters, borders or frames. Same woman, same outfit, same backdrop, same light and same color grade in every panel; she is the only person in the image.
+
+
+
+
+Face and hair: take the face exactly from @Image 1 — facial structure, eyes, brows, nose, lips, skin tone — and the hair color and texture from @Image 1, restyled into a loose, messy low bun with a few soft strands falling around the face and nape. Neutral expression, lips relaxed, direct gaze into the lens in the portrait panel.
+
+
+
+
+Front view face: erase her face on the full-body front view and leave a smooth, blank, softly blurred oval in a muted skin tone, with no eyes, nose or mouth. The hair and bun stay visible around it, so the portrait is the only face reference in the sheet.
+
+
+
+
+Glasses: narrow rectangular prescription eyeglasses with thin slim frames and clear lenses, eyes fully visible through the glass, sitting low on the nose, brows visible above the frame.
+
+
+
+
+Outfit: take only the clothing and necklace from @Image 2 — the knit cardigan worn open the same way, the fitted tank top underneath, the checked skirt and the thin chain necklace, with the same colors, fabrics, fit and length, refitted to her body. Ignore the bag, card and any other props in that reference. Keep her hands empty. Footwear: plain black leather mules with a pointed closed toe, open back and a low slim heel. The back view shows the same garments from behind, continuous with the front, bare heels visible in the mules.
+
+
+
+
+Body: 175 cm tall, slim, narrow frame, long legs, long slender neck, small head-to-body ratio, natural model proportions; the clothes hang on this body the way they hang in @Image 2. The same tall, thin, long-necked build is kept in all three panels.
+
+
+
+
+Panels:
+
+
+
+
+Panel 1 (left half, first figure): full body, front view, from above the bun to below the mules with a little floor in frame, face erased.
+
+
+
+
+Panel 2 (left half, second figure): full body, back view, same distance and scale as panel 1, the messy bun and nape visible, back of the cardigan and skirt fully visible.
+
+
+
+
+Panel 3 (right half): large head-and-shoulders portrait cropped at the upper chest so the full length of the neck shows, face filling the center of the panel, eyeglasses, chain necklace and cardigan neckline visible.
+
+
+
+
+Pose: neutral standing pose, facing the camera squarely, weight even on both feet, feet hip-width apart, spine straight, shoulders level, arms relaxed at her sides, hands open and empty. The back view is the same stance turned 180°. Portrait: shoulders square to the camera, chin level.
+
+
+
+
+Background: seamless neutral studio backdrop in a cool mid grey, floor blending into the wall, a soft contact shadow under the mules, no other objects in frame besides her.
+
+
+
+
+Look and color: keep the early-2000s film-still color grading of @Image 2 in all three panels — slightly lifted blacks, soft medium contrast, gently muted saturation, warm skin tones, cool grey-green in the shadows, a faint fine grain and a touch of softness in the highlights, like a frame pulled from a 2000s TV drama. Even, soft frontal key light with gentle falloff.
+
+
+
+
+Camera: full-body panels at eye level with a standard normal lens about 3 meters away; portrait panel with a short telephoto portrait lens at eye level. Identical body proportions, hair, glasses, garments and color across all three panels, sharp focus on her throughout.
+
+
+
+
+Color grade references: backdrop #8D8F91, floor #7A7C7E, shadow tint #5E6660, highlight warmth #E8D9C3.
+
+See all
+Copy prompt
+Recreate
+
+We need two versions of Lucy: one with her hair in a bun and her glasses on, and one for after the fall, with her hair down and no glasses. Don't build the second one from scratch. Ask ChatGPT to edit the first sheet with Seedream 5.0, so her face and outfit stay exactly the same.
+
+Edit @Image 1: let her hair down so it falls below her shoulders, and remove her glasses. Keep her face, outfit, body proportions, grey backdrop and character-sheet layout the same, with the face still erased on the full-body front view.
+
+Copy prompt
+Recreate
+The rest of the cast (@Raphael, @Rebecca, @Luca)
+
+Same workflow for the rest of the cast: Raphael, the director; Rebecca, his assistant; and Luca, the stylist. Each one starts with a face and an outfit, then gets a sheet with the same three rules.
+
+Raphael
+
+Raphael's sheet combines four references: his face, an outfit reference, a wardrobe study and a jewellery close-up.
+
+A straight-on, chest-up portrait of a man in his mid-fifties, positioned against a plain, softly out-of-focus neutral grey background. The subject features a long face with softly defined cheekbones, smooth full cheeks with fine freckles across the nose and cheeks, gently defined jaw, narrow chin, heavy straight dark brows set low over pale grey-green eyes, straight narrow nose, and a wide mouth with full lips. His skin has a fair tone with visible fine lines fanning from the outer corners of the eyes, soft creases from nose to mouth, and a faint line across the brow, showing mature skin detail with visible pores and real texture. His dark brown hair is thick, voluminous, and wavy, brushed up and back with height at the crown and fullness along the sides, with a single loose curl falling over the forehead and a few grey strands at the temples. He is clean-shaven with a faint jaw shadow. The man is dressed in a plain black shirt with an open collar, exposing the neck and upper chest. His expression is calm, still, and neutral, with his head, chin, and gaze directed toward the camera, brow smooth, jaw relaxed, and mouth closed. The lighting is achieved with one large diffused softbox set 45 degrees to his left and slightly above, producing soft shadow on the opposite side, with fill light on the right side two stops down. This creates gentle sculpting of the face with no hard edges or dramatic contrast; soft shadow is visible beneath the nose, along one cheek, and under the jaw onto the neck, with no deep black areas or harsh highlights, and no distinct shadow behind the subject. The color palette is neutral and contemporary, showing authentic natural skin tones, neutral white balance, and no visible color cast. The medium captures minute skin texture crisply and in high resolution on a digital camera at 105mm focal length and f/4 aperture, approximately 3 meters from the subject. The background is softly blurred by a mild shallow depth of field. The composition centers the upper chest, shoulders, neck, and head in the upper half of the frame with soft breathing room around the figure. The photographic style is editorial and contemporary, with no visible grain, noise, or compression artifacts. The mood is tranquil, honest, and natural.
+
+See all
+Copy prompt
+Recreate
+
+The Soul 2.0 prompt for the outfit reference:
+
+A straight-on, square fashion photograph focuses on the outfit worn by a young adult man, cropped just below the nose so his eyes stay out of frame, the composition running from his lips down to his hips. He wears an oversized black double-breasted suit jacket with sharp peak lapels, strong structured shoulders and a long, slightly sculptural cut, over a pale sky-blue shirt with a long pointed collar. Under the shirt, a white knit turtleneck with a black grid pattern and small yellow squares shows at the neck. His right hand is raised to the collar as if adjusting it, the blue shirt cuff visible at the wrist. He stands against a plain bright white studio wall, with a thin dark vertical edge of the set at the right side of the frame. The light is bright and direct, like on-camera flash, giving crisp highlights on the fabrics, clean even exposure and deep, rich blacks in the suit. The color palette is deep black, pale sky blue, white and small yellow accents. The image has a contemporary high-end editorial lookbook aesthetic, with sharp garment detail and realistic fabric texture.
+
+See all
+Copy prompt
+Recreate
+
+The Soul 2.0 prompt for the wardrobe study:
+
+A centered, straight-on medium-length fashion photograph focuses exclusively on the outfit worn by a young adult man, with his face completely cropped out of the frame. The composition begins around the shoulders and extends to approximately mid-thigh, keeping the clothing and layered styling as the primary subject.
+
+
+
+
+He wears a sharply tailored oversized black blazer with a structured, slightly sculptural silhouette, layered over a pale blue collared shirt. Beneath it, a white knit turtleneck is visible, featuring a distinctive grid-like graphic pattern in yellow, purple, and black that creates a bold statement accent against the otherwise monochromatic outfit. The blazer is worn naturally, with the arms crossed across the torso to emphasize its oversized proportions, structured shoulders, and clean tailoring.
+
+
+
+
+The subject stands against a plain, smooth light-gray studio wall with no visible decorations or distracting elements. The neutral background creates a strong contrast with the deep black blazer and allows the pale blue, creamy white, yellow, and purple details to remain clearly visible.
+
+
+
+
+The lighting is crisp and directional, creating defined yet controlled shadows across the garments and emphasizing the structure, folds, knit texture, and layered construction of the outfit. The camera is positioned at approximately chest level with a straight-on perspective. The image has a high-end editorial fashion and contemporary lookbook aesthetic, with sharp garment details, realistic fabric textures, subtle depth of field, and a clean, sculptural composition.
+
+
+
+
+The overall color palette combines deep black, pale sky blue, creamy white, and graphic accents of yellow and purple against a muted gray background.
+
+
+
+
+HEX VALUES: ["#fafafc", "#0a1117", "#f5f6f7", "#070e14", "#eff0f1", "#12151a", "#000000", "#2b2526"]
+
+See all
+Copy prompt
+Recreate
+
+Pro tip: for small details like jewellery, generate a separate close-up with Soul 2.0 and attach it along with the face and outfit references when you make the character sheet. That's how we got Raphael's necklaces right.
+
+A straight-on close-up shot encompasses the chest and neck area of a young adult, ambiguously gendered, exhibiting a fair skin tone. The subject is adorned in a textured black blazer layered over a powder blue collared shirt and a white crewneck T-shirt featuring a black grid pattern with a yellow square detail. Around the neck, there are three prominent silver-toned chain necklaces of varying thicknesses; the shortest chain holds a small circular pendant with a textured setting, while the two thicker, longer chains display a square pendant featuring a glossy black stone in a decorative silver frame. The metal of the chains and pendants provides a stark, polished contrast to the soft, matte textiles of the clothing. The background consists solely of clothing layers, creating a sense of fashionable formality. Balanced and even lighting accentuates the sharp glint of the metallic jewelry, with impeccable focus providing deep clarity and crisp detailing throughout. Dominant colors include black, light blue, white, and metallic silver. The framing is tight and centered, with the camera situated at chest height, compressing the scene to focus primarily on the jewelry and shirt details. Image resolution is high, with a digital, editorial look, evoking a contemporary, stylish, and confident atmosphere.
+
+
+
+
+HEX VALUES: ["#0c0f12", "#111417", "#030505", "#96b1d2", "#cdd3d9", "#809bbd", "#5d6570", "#4a515b", "#383e44"]
+
+See all
+Copy prompt
+Recreate
+
+Then all four go into his sheet:
+
+Make a character sheet of the man in @Image 1: full-body front view, full-body back view and a portrait, on a grey background with no text or frames. Erase his face on the full-body front view and leave a smooth blank oval, so the portrait is the only face reference.
+
+
+
+
+Use @Image 2 and @Image 3 for his outfit. Add leather gloves and the jewellery from @Image 4.
+
+Copy prompt
+Recreate
+
+Make a simple character sheet of the woman in @Image 1: full-body front view, full-body back view and a portrait, on a grey background. Keep her face and hair the same. Erase her face on the full-body front view and leave a smooth blank oval, so the portrait is the only face reference. No lines, text or frames.
+
+
+
+
+Dress her in the outfit from @Image 2.
+
+Copy prompt
+Recreate
+Luca
+
+ONE WIDE 16:9 CHARACTER SHEET containing THREE panels of the same man, arranged across the frame.
+
+
+
+
+COMPOSITION — read carefully, the three are NOT the same size:
+
+The LEFT HALF of the frame holds TWO full-length figures standing side by side, evenly
+
+spaced, both the same height and the same scale, both pairs of feet on exactly the same
+
+ground line, each running from near the top edge to near the bottom edge of the image.
+
+  1. FRONT — body facing the camera straight on, head facing the camera, the face erased.
+
+  2. BACK — turned fully away, seen from behind, the back of his head to the camera.
+
+The RIGHT HALF of the frame holds a single large tight CLOSE-UP of the same man, facing the
+
+camera, cropped from the top of his head down to the middle of his chest only. A head-and-
+
+shoulders portrait, filling the full height of the frame — his face large and dominant, the
+
+neckline of the knit and the texture of the fabric clearly readable.
+
+
+
+
+One continuous seamless backdrop behind all three panels. No panel borders, no dividing lines,
+
+no frames.
+
+
+
+
+THE FRONT FIGURE'S FACE: erase it and leave a smooth, blank, softly blurred oval in neutral grey, with no
+
+eyes, nose or mouth. The close-up is the only face reference in the sheet.
+
+
+
+
+THE TOP — THE MATERIAL IS THE KEY THING: a thin, fine-gauge knitted top in a narrow vertical rib,
+
+with a fine metallic gold film lying over its surface. The metal follows each narrow rib closely
+
+and evenly, in a continuous smooth sheet that covers the whole garment, broken only by very small
+
+hairline cracks and tiny fine creases where the fabric flexes. The scale of this texture is small
+
+and delicate — no large sheets of leaf, no big flaking patches, no torn or chunky pieces. It has
+
+the bright, hard, mirror-like sheen of real metal foil rather than the soft glow of dyed yarn,
+
+but it reads as one smooth even gold surface across the body. Rich yellow gold, never khaki,
+
+never beige, never brown.
+
+THE CUT OF THE TOP: skin-tight and clinging, following every line of his chest, waist and arms
+
+like a second skin. A deep V neckline with a short buttoned placket at the centre, left open.
+
+Long sleeves pushed up to the middle of the forearm. The hem sits at the hip.
+
+
+
+
+THE TROUSERS: soft woven metallic gold cloth — a supple lamé fabric with a visible textile weave
+
+that creases, drapes and folds like cloth. Not leather, not vinyl, not a stiff coated surface.
+
+Over the gold, large bold leopard rosettes in dark brown and black, each spot broad and widely
+
+spaced, a big confident print, never small or dense. Cut on the waist, flat fronted, narrow and
+
+close through the thigh and knee, then flaring out very dramatically from just below the knee
+
+into a deep wide bell.
+
+THE LENGTH: the legs are extremely long. Each hem reaches all the way down to the floor, fully
+
+covering the heel and the whole back of the boot and brushing the ground behind it, so only the
+
+pointed toe of the boot shows from under the front of the hem. The fabric stacks into heavy folds
+
+where it meets the boot.
+
+
+
+
+THE BOOTS: black polished leather western ankle boots with a sharply pointed toe finished in a
+
+polished silver metal cap and an angled Cuban heel. Almost entirely hidden under the long hems —
+
+only the toes are visible.
+
+
+
+
+THE JEWELLERY: his throat and upper chest are bare skin inside the open V of the knit, with
+
+nothing worn around his neck. He keeps the single small earring from the face reference. Several
+
+plain gold rings on his fingers.
+
+
+
+
+THE POSE of the two full-length figures: a glamorous high-fashion editorial stance. The weight
+
+thrown fully onto one leg, the hip pushed out to the side, the other leg relaxed and turned out.
+
+Shoulders dropped and angled, spine in a long easy S-curve. One hand loose at his side, the other
+
+resting at his hip. Chin lifted, neck long. Confident, languid, elegant. Not a stiff symmetrical
+
+standing pose.
+
+
+
+
+THE MAN: a grown man in his thirties, 192 cm, towering. Very long legs, a high waist, a long
+
+neck. Lean and strong with real width through the shoulders and chest — neither skinny nor bulky.
+
+Broad square shoulders.
+
+
+
+
+THE FACE: @Image 1 — his face, head and hair 100% match the face reference, the same man in all three
+
+panels. Ignore everything else in that reference: its clothing, background, lighting and crop do
+
+not carry over. Do not idealise him. A well-proportioned, symmetrical, anatomically normal face.
+
+
+
+
+LIGHT: soft, even, neutral light reaching the figures from every side at once, as though they are
+
+standing inside a huge white tent. No single strong direction. Shadows are barely present and
+
+very soft-edged, with just enough gentle gradation around the jaw, the arms and the folds to keep
+
+the body looking round rather than flat. Neutral white balance. Exposed for his skin so it holds
+
+full detail and rich colour, never crushed. The gold keeps its bright metallic sheen while the
+
+highlights stay broad and controlled, holding gold rather than burning out to white.
+
+
+
+
+THE FRAME CONTAINS ONLY the three figures and the plain backdrop. No studio equipment appears
+
+anywhere in the image — no softbox, no umbrella, no lamp, no stand, no reflector, no cable — not
+
+in the corners, not at the edges, not in the background. Every corner of the image is clean empty
+
+backdrop.
+
+
+
+
+BACKGROUND: plain mid-grey seamless studio, evenly lit, a soft shadow under each pair of feet.
+
+
+
+
+CAMERA: the two full-length figures shot from hip height looking slightly upward so they tower.
+
+50mm, f/5.6. Sharp fabric and face detail throughout.
+
+
+
+
+Again: TWO full-length figures across the left half — front with the face erased, and back — and ONE
+
+tight head-and-shoulders close-up filling the right half, all in one 16:9 frame.
+
+See all
+Copy prompt
+Recreate
+The casting models (@Models)
+
+For the casting models, ask ChatGPT to generate the whole group together with Soul 2.0: different faces, different poses, everyone dressed in black. That one image becomes the reference for every casting scene.
+
+A medium-wide group shot shows nine young women, all aged 20 years old, standing and sitting in relaxed poses spread unevenly along a plain, warm gray plaster wall inside a real room with a bare concrete floor. Each woman wears a tight, form-fitting, solid black ensemble—either black leggings, black skirts, tight black tops, black dresses, or black shorts, all made from non-sheer, stretchy, opaque materials. All their clothing is black, as emphasized visually and by context, fitting close to the skin and left unadorned. Each woman has a different face, skin tone, and hairstyle, unified by model-like features: glowing clear skin, symmetrical bone structure, full brows, and healthy, glossy, differently styled hair. The women have runway model body types with very long legs, small heads, and graceful hands with five fingers. Most stand at or lean against the wall, with two sitting on the floor with knees drawn up, creating a natural but not symmetrical arrangement. On their feet, each woman wears pointy-toed stiletto heels, each pair a unique bright color. The setting is brightly lit with soft, uneven daylight from an out-of-frame window, resulting in gentle, slightly directional shadows on their faces, legs, and the floor. The photo has a wide 16:9 aspect ratio and is visibly shot with a 35mm lens from hip level, giving a natural perspective and clean, modern feeling. The color palette is dominated by the black clothing and gray of the wall and floor, with accent colors from the heels, and a slightly warm, saturated look typical of high-resolution contemporary digital editorial photography. The overall mood is quietly stylish and confident.
+
+See all
+Copy prompt
+Recreate
+Step 3: Build the location (@CastingRoom)
+
+Now the location. This is a casting room inside a fashion house, so it needs a table for Raphael, a clear path for the models and space for Lucy to walk in. Describe the room in the same chat and ask for a three-quarter view, so the whole layout reads in one frame.
+
+A straight-on, eye-level wide shot of an empty model-casting room inside a mid-2000s fashion house headquarters, captured moments before the models walk in. The space is a double-height loft with tall white-painted brick walls, a row of huge arched steel-framed windows flooding it with warm late-afternoon light, and a full-height glass partition wall on one side that looks out onto the sleek white corridor of the design offices. Two crystal chandeliers hang from the high ceiling above a long glossy white casting table set with a row of white leather chairs, stacks of composite cards, an instant camera, a fanned pile of glossy magazines, a slim silver laptop and a small vase of pink peonies. In front of the table a strip of white seamless paper is taped down the pale wooden floor as a runway, with numbered tape marks and a white backdrop stand at its far end for casting snapshots, a camera on a tripod beside it, and an open stretch of floor at the center of the frame. Along the walls stand rolling garment racks packed with sample dresses in tissue, dress forms pinned with half-finished toiles, and tall mood boards layered with tearsheets, instant photos, fabric swatches and handwritten notes; a mirrored wardrobe panel reflects the chandelier light. Details fill the corners: a red leather swivel chair, a bowl of clear plastic hangers, shoe boxes stacked by the mirror, a glass desk with a chrome lamp and a rotary phone, pale pink vertical blinds half-drawn on the far window, low sun casting long soft stripes across the floor. The lighting is warm and slightly hazy, tungsten mixing with daylight, with soft contrast and gently lifted blacks. The color palette centers on warm whites, pale wood, chrome and crystal, offset by pink, red and camel accents. Shot on a high-end digital camera with a standard normal lens, natural perspective and straight verticals, the image has the soft, warm, film-still look of a mid-2000s fashion drama, glossy, aspirational and slightly nostalgic.
+
+HEX VALUES: ["#efe9dd", "#c9a97a", "#b8bcc0", "#fff8e7", "#e8b4b0", "#a8322b", "#b98a5e", "#c8d3d6", "#6b5f55", "#2e2a28"]
+
+See all
+Copy prompt
+Recreate
+Step 4: Write the script
+
+Now that the assets are ready, attach the two skills from the top of this post, give ChatGPT your story outline and ask it to build a scene-by-scene script around the cast and location you selected: the dialogue, the action and a generation prompt for every scene.
+
+Write a complete short drama from this idea, using the character and location references we selected in this chat:
+
+
+
+
+In a fashion house with an early-2000s feel, Raphael (speaks English with a French accent) is bored by a casting. Lucy, a junior accountant, walks in with paperwork and magazines. An awkward interruption makes him notice her, and he offers her a chance to become the face of the house. His assistant Rebecca reacts to the unexpected choice. Luca, the head stylist, arrives to begin Lucy's transformation.
+
+
+
+
+Break the story into scenes. For each scene, include the action, exact dialogue, camera shots, character and location references, and a generation prompt for Higgsfield to use in this chat. Keep each character's appearance and voice consistent. End on a moment that makes us want to see the transformation.
+
+See all
+Copy prompt
+Recreate
+Step 5: Generate the scenes
+
+Time for the fun part. For every scene, ask ChatGPT to generate it with Higgsfield using Seedance 2.5:
+
+Generate scene 1 with Higgsfield using Seedance 2.5. Use the approved prompt and our saved assets.
+
+Copy prompt
+Recreate
+Why one line is enough to generate a scene
+
+You never write a video prompt by hand here. Every clip prompt from the script already carries the decisions a director makes on set:
+
+Locked references: every character and the room are attached by name, with face, hair and outfit matched 100%.
+A location map and a first frame
+The same voice everywhere:
+Scene 1: the hook and the context
+
+The first scene covers two parts of the drama: the hook and the context. The hook starts with the peak of the scene: an emotional outburst, a conflict, a fall. The viewer sees the loudest moment without knowing how it got there, so they keep watching to find out. 
+In the context, keep the emotional swings coming every 20 to 30 seconds: a starting point, then hope, then another hit, then a chance.
+
+0:00 / 0:30
+
+SCENE CONTEXT
+
+
+
+
+Late-afternoon casting at the house. The head of the house, a Frenchman, sits weary at the corner of his table in the red chair; his assistant stands at his shoulder and marks everything on her clipboard; the models wait in a line on the paper runway and, one by one, walk the last meters to the mark and strike the same pose. The first one can barely walk in her heels: she teeters toward the mark with the queue standing behind her, he watches with a raised eyebrow and murmurs a sarcastic "Eww. What is this?", and then, planting her foot for the pose, she catches her heel on the runway's edge and goes down. He winces for her and softens at once, sends her off gently. Three more walk the same walk and hit the identical pose, identical timing, identical smile, and with each one his "Next" comes quieter and flatter; to him they are one girl. He stops the last one a stride short of the mark and asks whether she has already been in; she says it is her first time; he says softly that he swears he has seen her, and sends her away with the same word. Then, to nobody, almost a whisper: they all have the same face.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 1 — LOCATION LOCK: the exact room from this image, unchanged.
+
+
+
+
+@Image 2 RAPHAEL: French man, mid-50s, lean, head of the house; speaks English with a strong, elegant Parisian French accent, always quietly; seated in the red chair at the north corner of the white Parsons table, the chair turned out toward the room, the tabletop beside him at his left elbow, in a mannered pose — legs crossed knee over knee, left elbow on the tabletop, fingertips resting at his temple, a slim silver pen turning slowly in his right fingers, an open portfolio on the table beside him; sarcastic by reflex, gentle by nature, his patience thinning one girl at a time without his voice ever rising; stays seated throughout. Face, hair and suit 100% match the reference.
+
+
+
+
+@Image 3 REBECCA — THE ASSISTANT ONLY: woman, about 30, American, standing at the table right at his shoulder beside the red chair, clipboard held against her chest, pen in hand; eager to please, unsure of herself in front of him; she ticks the list after every girl and after everything he says; inside his close-up every time and a small figure beside the table in every wide and model frame; she stays at the table for the entire clip. This woman is never on the runway, never in the waiting line, never on the mark, never among the models; her face, hair and dress belong to no model. 100% matches the reference.
+
+
+
+
+@Image 4 — THE MODELS, and only the women in this image are models: each 100% matching her own figure in the reference, tall model build, early 20s. MODEL ONE: the woman in the black strapless romper with slicked-back hair, fourth standing figure from the left; her heels are too high for her; she falls. MODEL TWO: the blonde with shoulder-length hair in the long-sleeve black top and black mini skirt, second from left. MODEL THREE: the brunette with long straight hair in the black cap-sleeve mini dress, third from left. MODEL FOUR: the woman at the far right, slicked-back hair, black cap-sleeve fitted dress, a different person from REBECCA in face, hair and dress. The remaining women from this image stand in a waiting line on the runway behind the mark, from the mark back toward the north door, still, hands at their sides; one model walking at a time, the next stepping out of the line only after the previous one has left.
+
+
+
+
+THE ROUTINE (every model, identical)
+
+
+
+
+From the head of the line, four strides of a runway walk south along the paper toward the table: one foot placed in front of the other, hips carrying the step, shoulders still, arms loose and swinging a little, chin level, eyes on the table. On the fourth stride she plants on the mark, shifts her weight back onto the rear leg, the right hand lands on the right hip, shoulders open, chin lifts a finger's width, and the practiced smile goes to the table. She holds the pose. The walk and the pose are large, clear, full-body movements; no turning.
+
+
+
+
+LOCATION MAP (compass as in @Image 1)
+
+
+
+
+West wall: the tall arched windows with sconces, racks, dummy and mirror in front of them. North wall: the glass partition with moodboards and the open double door. East side: the white seamless backdrop and the camera on its tripod. South end: the white Parsons table. RAPHAEL sits at the table's north corner in the red chair, the chair turned out to face north toward the runway; the table is beside him and behind him, and in front of him lies only open oak floor to the runway. REBECCA stands at the table at his shoulder and never leaves that spot. The cream paper runway runs north from the table toward the partition; the models' mark is on the runway 4 m north of RAPHAEL, inside the brightest pool of window light; the head of the waiting line stands 3 m north of the mark, the rest spaced a meter apart back to the door. Each model walks south from the line to the mark and afterwards leaves along the window side of the runway toward the door. All cameras stay on the east side of the RAPHAEL–mark line: RAPHAEL, REBECCA and the table screen-left, the mark and the line screen-right, windows behind them. RAPHAEL faces north toward the mark, so his gaze to the mark is screen-right; the models walk screen-left toward him and face him in the pose, their faces in profile-to-three-quarter toward screen-left.
+
+
+
+
+FIRST FRAME AND SPATIAL BLOCKING
+
+
+
+
+Frame one is the wide: RAPHAEL in the red chair at the table corner screen-left, x 22% y 55%, legs crossed, elbow on the tabletop, fingertips at his temple, pen turning; REBECCA standing at his shoulder with the clipboard, x 30%, at the table; MODEL ONE on the runway two unsteady strides north of the mark, x 68% y 45%; behind her the waiting line of five models from @Image 4 stretching back toward the north door, x 74% to x 88%, smaller with distance, standing still; the windows glowing behind everything. Two separate women at the table side: RAPHAEL and REBECCA; everyone on the runway is from @Image 4.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Controlled twelve-segment sequence in two beats. Beat one, 0.0s to 9.0s: the teetering walk, the sarcasm, the fall and the gentle verdict, four segments with HARD CUTs. Beat two, 9.0s to 25.8s: three identical model frames joined by MATCH CUTs with his voice going quieter off screen, then shot and reverse shot in close-up for every line, HARD CUTs throughout. Real-time motion. Dialogue clip.
+
+
+
+
+OPTICS
+
+
+
+
+Wide (segments 1, 3): 47° standard normal lens character, camera 5 m east of the runway at 1.4 m height beside the white backdrop, looking west; both planes readable, the waiting line readable but soft with distance, windows blooming.
+
+
+
+
+RAPHAEL close-up (segments 2, 4, 8, 10, 12): 29° short telephoto portrait, camera 2.5 m east of him at seated eye level; a tight two-shot: his face, shoulders and the hand at his temple razor-sharp, turned screen-right toward the mark, a warm window rim on his shoulder, the pink peonies a soft blur at the frame edge; REBECCA standing at his shoulder screen-right, in frame from the waist up, clipboard, pen and face readable, a touch softer than his; the room melting into warm bokeh behind them. Identical framing every time.
+
+
+
+
+Model frame (segments 5–7): 29° short telephoto portrait, camera 5 m east of the runway at chest height, looking west, framed from the knees to just above the head, the mark at x 45%; the model enters from the right frame edge walking screen-left, stops on the mark and poses; the windows dissolving into glowing discs behind her, the table with RAPHAEL seated and REBECCA standing beside him compressed into warm bokeh far screen-left. LENS LOCK segments 5–7 = 29°, identical framing.
+
+
+
+
+MODEL FOUR close-up (segments 9, 11): 29° short telephoto portrait, camera 4 m south-east of her at her eye level; her face razor-sharp in front three-quarter, turned screen-left toward the table, the moodboards and open door a soft blur behind her, window glow blooming at the frame edge. Identical framing both times.
+
+
+
+
+CAMERA
+
+
+
+
+Locked-off tripod in all twelve segments, horizon level. The wide, the RAPHAEL close-up, the model frame and the MODEL FOUR close-up each reuse the same frame every time they return, without any change.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0s to 2.2s — wide. MODEL ONE takes her strides toward the mark barely able to walk in her heels: short stiff steps, knees locked, ankles rolling in and out, arms drifting up from her sides for balance, her eyes on her own feet; the line behind her stands still; RAPHAEL watches her from under his fingertips, the pen slowing; REBECCA, at the table, ticks the list.
+
+
+
+
+2.2s HARD CUT
+
+
+
+
+2.2s to 3.8s — RAPHAEL close-up, fingertips at his temple. One eyebrow lifts as he follows the wobble screen-right; without turning to REBECCA, murmured, dry, more amused than cruel, a small curl of the lip: "Eww. What is this?" (2.5s to 3.5s). REBECCA writes something down.
+
+
+
+
+3.8s HARD CUT
+
+
+
+
+3.8s to 6.0s — wide. MODEL ONE reaches the mark on her last stride and plants her foot to shift into the pose (3.8s to 4.6s); her heel catches the lifted edge of the paper runway, the paper bunches under her shoe, her ankle rolls out (4.6s to 5.0s); she pitches sideways toward the windows, arms flying out, and goes down onto her hip and both palms across the runway's west edge (5.0s to 5.6s); she stays down, head bowed, hair over her face (5.6s to 6.0s); in the line behind her two heads turn, nobody moves; REBECCA stays at the table. The rucked paper edge stays rucked at the mark for the rest of the scene.
+
+
+
+
+6.0s HARD CUT
+
+
+
+
+6.0s to 9.0s — RAPHAEL close-up. The sarcasm falls off his face; he winces for her, a small pained breath in, the hand slides down from his temple to the tabletop, he leans forward an inch, the beginning of a kind smile (6.0s to 6.4s); very soft, tender, almost apologetic, to the girl on the floor: "Oh — it's all right. Take your time." (6.5s to 7.9s); then, gently, to the room: "Next." (8.2s to 8.6s). REBECCA ticks the list; off screen, heels hurry north away across the oak. His fingertips return to his temple (8.6s to 9.0s).
+
+
+
+
+9.0s HARD CUT
+
+
+
+
+9.0s to 11.0s — model frame. MODEL TWO walks in from the right edge, four strides of the runway walk screen-left along the paper (9.0s to 10.2s), plants on the mark over the rucked edge, weight back, hand to hip, chin up, smile to the table (10.2s to 10.6s), holds (10.6s to 11.0s); REBECCA a soft standing shape beside the seated RAPHAEL far screen-left. RAPHAEL off screen, soft, polite: "Thank you. Next." (10.5s to 11.0s).
+
+
+
+
+11.0s MATCH CUT
+
+
+
+
+11.0s to 13.0s — MODEL THREE, identical frame, identical walk, identical pose, identical timing: four strides in (11.0s to 12.2s), plant and pose (12.2s to 12.6s), hold (12.6s to 13.0s). RAPHAEL off screen, quieter, flatter: "Next." (12.6s to 12.9s).
+
+
+
+
+13.0s MATCH CUT
+
+
+
+
+13.0s to 15.0s — MODEL FOUR, identical frame; she walks in, three strides (13.0s to 13.9s). RAPHAEL off screen, quiet and level: "Wait." (13.9s to 14.2s). She stops one stride short of the mark, front foot planted, weight still moving, hand nowhere near the hip; her head turns toward the table screen-left (14.2s to 15.0s).
+
+
+
+
+15.0s HARD CUT
+
+
+
+
+15.0s to 17.0s — RAPHAEL close-up. The hand leaves his temple and presses thumb and forefinger into the bridge of his nose, then he looks at her screen-right, calm, tired, the "h" dropped: "Haven't you already been in?" (15.4s to 16.8s). REBECCA's pen stops over the list.
+
+
+
+
+17.0s HARD CUT
+
+
+
+
+17.0s to 18.5s — MODEL FOUR close-up. The held smile, eyes on him screen-left, flat: "No. It's my first time." (17.2s to 18.3s).
+
+
+
+
+18.5s HARD CUT
+
+
+
+
+18.5s to 20.8s — RAPHAEL close-up. One slow blink, then low, soft, certain, eyes on the model: "Non. I swear I've seen you." (18.8s to 20.0s). He holds her with his eyes, still, unhurried (20.0s to 20.8s). REBECCA's eyes go down the list twice, a tiny shake of the head to herself, and she marks the page anyway.
+
+
+
+
+20.8s HARD CUT
+
+
+
+
+20.8s to 22.3s — MODEL FOUR close-up. One beat of nothing behind the smile (20.8s to 21.1s). RAPHAEL off screen, quiet and final: "Next." (21.1s to 21.5s). The smile lets go; one blink; she turns her head away screen-right and steps out of frame toward the door (21.6s to 22.3s); heels click away.
+
+
+
+
+22.3s HARD CUT
+
+
+
+
+22.3s to 25.8s — RAPHAEL close-up. He closes the portfolio on the tabletop with a soft slap of his left hand (22.5s to 23.1s); his eyes drop; whatever was left of the edge drains away and leaves only tiredness; the hand comes back up and the fingertips settle at his temple; without looking at REBECCA, barely above a whisper, half to himself: "Bon. Same face. All of them." (23.6s to 25.2s). Hold on his face to 25.8s; REBECCA gives a small nod and ticks the page one more time.
+
+
+
+
+ACTING TASK — RAPHAEL (fully invested; the work is in his eyes): DIRECTION: get through another empty day without anyone making a scene. MOTIVE: everything around him is fake and he is tired of it; he is a kind man who hates this part of the job, sarcasm is his reflex and kindness is his nature, and today the sameness is wearing the kindness thin one girl at a time. GOAL: find one thing in one of these girls that was not rehearsed. OBSTACLE: the walk is perfect, the pose is perfect, and every face is the same face. TACTIC: he does everything from the chair, mannered and unhurried, fingertips at the temple like a man watching a clock; he never raises his voice — his irritation shows only as the voice getting quieter, flatter and slower; the "Eww" is a murmured reflex he is ashamed of a second later, which is why the softness that follows the fall is real — he calms her like a startled bird; each "Next" after that is shorter and quieter than the last; with MODEL FOUR the tiredness comes out as gentle certainty — he would swear he has seen her — and since nothing can prove it either way he ends it with the same soft word; the last line is not to her or to REBECCA but to the day itself, and it comes out as a whisper.
+
+
+
+
+ACTING TASK — REBECCA: DIRECTION: the same. MOTIVE: his mood is her job and she is afraid of him. GOAL: guess what he wants, keep the line moving, and have a mark on the page for everything, so nothing can be her fault later. OBSTACLE: the list says the girl is new and he says she is not. TACTIC: she never leaves the table; she writes down the wobble, the fall and every "Next"; as his voice gets quieter she stands a little straighter; at his question she checks the list twice, shakes her head only to herself, marks the page anyway and keeps her mouth closed because she is not sure which of them is right; at the end she agrees with a nod because agreeing is safest.
+
+
+
+
+ACTING TASK — THE MODELS: MODEL ONE: DIRECTION: the same. MOTIVE: first real casting, borrowed heels a size too high, five girls watching her back. GOAL: reach the mark and hit the pose without looking at her feet. OBSTACLE: her ankles. TACTIC: she fights the shoes step by step, stays down a beat too long after the fall, then leaves without looking at the table or the line. THE LINE: they wait like a queue at a counter, still, eyes forward, two heads turning at the fall and turning back. MODEL TWO and MODEL THREE walk and pose cleanly, mechanically, with nothing behind the smile. MODEL FOUR: DIRECTION: the same. MOTIVE: the twelfth casting this week. GOAL: get her two seconds and leave. TACTIC: she holds the smile like a held breath and answers him flat, because arguing has never once helped; the "Next" lands in her eyes for exactly one blink before she turns.
+
+
+
+
+(Safety: gazes engaged, natural blink cadence, listeners' mouths closed.)
+
+
+
+
+PHYSICS
+
+
+
+
+The table is solid and stays where it is; RAPHAEL's body stays clear of it apart from the elbow on the tabletop. Heels too high: the weight sits on the toes, ankles roll in and out with each step, knees lock, arms lift to balance, each step lands short. The runway walk: heel strikes on the paper, one foot placed in front of the other, hips swinging with the stride, hair and hem swaying with each step and settling when she plants; the pose is a real weight shift onto the rear leg, the front knee softening, the hand landing on the hip bone. The paper runway lifts at its taped edge under the heel and bunches; the tape pulls; the ankle rolls and the body follows its weight sideways with arms out; hip and palms take the floor. The rucked edge stays where it was pushed; later heels step over it. The line shifts weight from foot to foot. The pen rotates with finger weight and stops when the fingers stop. The hand slides from temple to tabletop and back with its own weight. The clipboard pen scratches short ticks and stops mid-stroke. The portfolio cover is stiff and glossy and closes with a soft slap.
+
+
+
+
+LIGHTING
+
+
+
+
+Exactly the light of @Image 1: warm low evening sun through the west windows, pink-gold sky, brass sconces and the chandelier lit and glowing; the mark inside the brightest pool of window light, the models side-lit from the windows as they walk into the pool, soft bounce from the white walls on their faces; the waiting line in the softer light toward the door; the table in softer light with bounce fill from the white walls and the white tabletop lifting light onto RAPHAEL's and REBECCA's faces; in the close-ups RAPHAEL's face in soft warm bounce with a warm window rim on cheek and shoulder, REBECCA's face in even soft fill, MODEL FOUR's face in the window pool with a warm rim in her hair. Exposed for skin, the windows allowed to bloom.
+
+
+
+
+AUDIO
+
+
+
+
+A quiet studio: soft room tone, faint murmur from the office beyond the glass partition, heels on oak and paper, the small shifts of the waiting line; no one speaks before 2.5s. Voices close and clean. RAPHAEL: a native French speaker speaking English with a strong, clearly audible Parisian French accent — soft uvular "r", dropped "h" ("'aven't you"), rounded vowels, stress falling on the last syllable of words, a melodic French rise and fall; his voice low, soft, calm and unhurried from the first word to the last, never raised; the "Eww" a small murmured vowel under his breath; tender and warm for the fall; each "Next" shorter and quieter than the last; "Wait" and "Non. I swear I've seen you" quiet, level and certain rather than sharp; "Non" and "Bon" spoken in French; the last line barely above a whisper. MODEL FOUR: American English, flat, bored. Lips move only for the scripted lines; off-screen lines are spoken by RAPHAEL only, in the same soft French accent. SFX: the uneven heels, the runway walk on the paper, the paper runway tearing and bunching under the heel, the thud of the fall, heels hurrying away, the pen stopping, the scratch of the clipboard pen and its stop, the soft slap of the portfolio cover. Score is added in the edit.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+The room is identical to @Image 1 in every shot. The woman from @Image 3 is REBECCA and only REBECCA: she stands at the table beside RAPHAEL's chair in every frame where she appears, holding the clipboard, and she is never on the runway, never in the line, never on the mark; the mark and the waiting line hold only women from @Image 4. One model walking at a time; the others wait in the line and stay in it. The routine is a walk to the mark and a held pose; nobody turns in place. Segments 5–7 show one model each in an identical frame with RAPHAEL and REBECCA soft at the table far screen-left; RAPHAEL's lines in those segments are off screen. Every close-up returns to its identical frame: RAPHAEL always looking screen-right with REBECCA at his shoulder, MODEL FOUR always looking screen-left, all cameras east of the RAPHAEL–mark line. RAPHAEL sits at the table corner, legs crossed, throughout, the chair turned toward the runway, the table beside and behind him; his hands stay on the tabletop, at his temple, on the pen and on the portfolio cover only; he never looks at REBECCA; RAPHAEL speaks every line quietly, with a strong French accent, and never raises his voice. REBECCA marks the clipboard in every close-up and speaks no line. MODEL ONE is out of frame before 9.0s. MODEL FOUR stays a stride short of the mark from 14.2s to 21.6s and is gone before the last line. Only the quoted lines are spoken. Clean picture without on-screen text.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography. Fine Kodak Vision2 negative grain, warm-timed print: honey-caramel skin and wood, clean slightly cool daylight at the windows, gently lifted blacks, glossy fashion-magazine saturation on black fabric, chrome and lips. Light diffusion-filter glow: window highlights, sconces, chandelier crystals and chrome bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a face is the subject. Real 24 fps motion blur. Fully photoreal live action, mid-2000s New York.
+
+See all
+Copy prompt
+Recreate
+Scene 2: the twist
+
+Here Lucy walks in with her paperwork, trips, and catches Raphael's attention.
+
+0:00 / 0:30
+
+SCENE CONTEXT
+
+
+
+
+The accountant carries the stack of magazines toward the table, trips on the paper runway and goes down. Her glasses fly off, the hair tie snaps, and her hair falls completely loose. The head of the house gives a tired "here we go again" look. Then she lifts her face into the evening light, and she is beautiful. He looks at her and thinks, the pen stops, and he closes the portfolio. She brushes the hair from her mouth and reaches for a page.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 1 — LOCATION LOCK: the exact room from this image, unchanged.
+
+
+
+
+@Image 2 RAPHAEL: French man, mid-50s, lean, head of the house; seated in the red chair at the north corner of the white Parsons table, chair turned out toward the room, legs crossed knee over knee, an open portfolio on the table at his left elbow, a slim silver pen turning slowly in his right fingers; weary, gentle, unhurried; stays seated throughout. Face, hair and suit 100% match the reference.
+
+
+
+
+ @Image 3 REBECCA: woman, about 30, his secretary, standing at the table at his shoulder, clipboard against her chest, pen in hand; never leaves the table. 100% matches the reference.
+
+
+
+
+ @Image 4 LUCY: woman, 23, junior accountant, glasses on at the start, wearing the same open pale-blue cardigan over a light tank, checked skirt, shoes and necklace as @Image 4; face, glasses and outfit 100% match the reference. Her hair stays in the low bun until 3.6s; the bun comes apart from 3.6s to 4.8s; from 4.8s to the end her hair is completely loose around her face and over her shoulders. Her glasses begin sliding off at 3.3s, leave her face by 4.0s and have landed on the paper by 5.5s.
+
+
+
+
+The room holds only these three people; the wall by the glass partition is empty and the door is open with nobody in it.
+
+
+
+
+LOCATION MAP (compass as in @Image 1)
+
+
+
+
+West wall: tall arched windows with sconces, racks, dummy and mirror. North wall: the glass partition with moodboards and the open double door, cardboard boxes just east of the door. East side: white seamless backdrop and camera on tripod. South end: the white Parsons table; RAPHAEL in the red chair at its north corner facing north, REBECCA at his shoulder. The cream paper runway runs north from the table toward the door. LUCY walks south along the west side of the runway and goes down at its west edge, 5 m north of RAPHAEL, in the brightest pool of window light, falling toward the windows. All cameras stay east of the north–south axis except shot 2. East-side rule: RAPHAEL, REBECCA and the table screen-left, LUCY screen-right with the windows behind her; RAPHAEL's gaze to LUCY is screen-right.
+
+
+
+
+FIRST FRAME
+
+
+
+
+WIDE from the east: RAPHAEL seated at the table screen-left, x 20%, REBECCA at his shoulder; LUCY screen-right, x 75%, two steps south of the boxes, the magazine stack chin-high against her folder, glasses on, hair in the loose bun; windows glowing behind her.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Six segments with HARD CUTs. Shot 1 and shot 3 at normal speed; shots 2, 4, 5, 6 at 30% slow motion. No dialogue.
+
+
+
+
+SHOT LIST — OPTICS AND CAMERA (all locked-off tripod, horizon level)
+
+
+
+
+1. 0.0–2.5s — WIDE. 47° standard normal, camera 5 m east of the runway at 1.4 m beside the white backdrop, looking west; the table with RAPHAEL and REBECCA screen-left, LUCY screen-right, windows blooming.
+
+
+
+
+2. 2.5–5.5s — THE FALL FROM THE WINDOW SIDE, 30% speed. 29°, the only west-side camera: 2 m west of her landing point, lens 0.6 m above the floor, looking east; LUCY alone in frame, framed from head to hips, falling toward the lens; her face and the flying glasses sharp, the racks and the white backdrop a warm blur behind her.
+
+
+
+
+3. 5.5–7.0s — CLOSE-UP RAPHAEL, normal speed. 29°, camera 2.5 m east of him at seated eye level; his face and the pen sharp, REBECCA a soft shape at the frame edge screen-right.
+
+
+
+
+4. 7.0–10.0s — CLOSE-UP LUCY LIFTING HER FACE, 30% speed. 29° short telephoto, camera 2.5 m east of her, lens at her eye level; a tight head close-up framed from the top of her head down to her collarbones, the open cardigan and light tank neckline at the bottom of the frame; the windows a warm glowing blur behind her.
+
+
+
+
+5. 10.0–12.5s — CLOSE-UP RAPHAEL, 30% speed. Same camera as shot 3; his face, the pen and the open portfolio sharp.
+
+
+
+
+6. 12.5–15.0s — CLOSE-UP LUCY ON THE FLOOR, 30% speed. 29°, camera 2.5 m east of her at 0.8 m; framed from her head down to her hands on the floor, cardigan worn open; her face, hands and the nearest pages sharp.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0s to 2.5s — WIDE. LUCY walks south along the west side of the runway with quick uneven steps, the stack chin-high, glancing over it at the table (0.0s to 1.2s). The top magazine slides sideways off the stack (1.2s to 1.5s); she tries to save it with her elbow and the whole stack tips (1.5s to 2.0s); her shoe catches the taped edge of the paper runway, the paper tears at the tape, and she pitches forward toward the windows, arms opening (2.0s to 2.5s). REBECCA watches from the table, frozen.
+
+
+
+
+2.5s HARD CUT — SLOW MOTION
+
+
+
+
+2.5s to 5.5s — THE FALL, 30% speed. LUCY comes down toward the lens: the stack leaves her arms and the magazines fan open in the air, the folder yawns and white pages lift around her (2.5s to 3.3s); the glasses slide off her nose, hang for a beat and tumble past the lens out of frame (3.3s to 4.0s); the hair tie snaps and flies off, the bun comes completely apart, and all her hair falls free in one slow heavy wave, forward around her face and over her shoulders (3.6s to 4.8s); her palms reach the floor, then her knees (4.8s to 5.5s). She ends on her hands and knees, head down, her loose hair hanging like a curtain around her face. Pages settle around her like leaves.
+
+
+
+
+5.5s HARD CUT — NORMAL SPEED
+
+
+
+
+5.5s to 7.0s — CLOSE-UP RAPHAEL. The tired "here we go again" face: he looks screen-right at the noise, his eyelids drop halfway, a slow exhale through the nose, the corners of his mouth pull down, and his head tilts a few degrees in weary resignation; the pen keeps turning in his fingers, lazily. REBECCA at the frame edge presses the clipboard to her chest.
+
+
+
+
+7.0s HARD CUT — SLOW MOTION
+
+
+
+
+7.0s to 10.0s — CLOSE-UP LUCY, 30% speed. Slowly and gracefully she lifts her head: the loose hair slides back off her face and settles over her shoulders, strands backlit with a golden rim (7.0s to 8.5s); her face rises into the low evening sun — flushed cheeks, parted lips, wide clear eyes without glasses, window catchlights in them; soft, unguarded, luminous, completely beautiful, completely unaware of it (8.5s to 10.0s). She looks down at the scattered pages, not at anyone.
+
+
+
+
+10.0s HARD CUT
+
+
+
+
+10.0s to 12.5s — CLOSE-UP RAPHAEL, 30% speed. The weariness drains out of his face. The pen slows and stops between his fingers (10.0s to 10.6s). He looks at LUCY screen-right, eyes narrowing slightly, thinking, as if seeing something for the first time (10.6s to 11.4s); his eyes drop to the open portfolio (11.4s to 11.8s), rise back to her (11.8s to 12.1s); his left hand closes the portfolio slowly, the cover settling under its own weight (12.1s to 12.5s). REBECCA at the frame edge has gone completely still.
+
+
+
+
+12.5s HARD CUT
+
+
+
+
+12.5s to 15.0s — CLOSE-UP LUCY, 30% speed. A shaft of low sun lies across her face. Loose strands cling to her lip; she brushes them away with the back of her hand (12.5s to 13.5s). A page slides across the floor toward her; she reaches for it and the long cardigan sleeve slips down over her fingers; she tugs it back and gathers the page, fully occupied with the mess (13.5s to 15.0s). Her glasses lie on the runway paper beside her, out of reach. Hold.
+
+
+
+
+ACTING TASK — RAPHAEL: DIRECTION: get through another empty day. MOTIVE: everything in this room is rehearsed and he has stopped seeing it. GOAL: find something real to look at. OBSTACLE: he expects nothing from this room. TACTIC: the fall is just one more small disaster — a tired look, an exhale, the pen still turning; when she lifts her face his tiredness is gone before he notices it; he studies her like a question, and closing the portfolio is a decision made in silence.
+
+
+
+
+ACTING TASK — REBECCA: DIRECTION: the same. MOTIVE: his mood is her job. GOAL: stay invisible. TACTIC: she freezes at his shoulder, because she does not yet know whose fault this is.
+
+
+
+
+ACTING TASK — LUCY: DIRECTION: nobody makes a scene. MOTIVE: she is new and only came for a signature. GOAL: fix it and get out. OBSTACLE: her arms, the magazine, the paper edge, her own sleeves. TACTIC: in the fall she protects nothing; lifting her face is simply checking whether the world is still there; then she goes straight to cleaning up; she has no idea she is being looked at.
+
+
+
+
+(Safety: gazes engaged, natural blink cadence, mouths closed, nobody speaks.)
+
+
+
+
+PHYSICS
+
+
+
+
+The stack has weight: her arms sink under it and she rebalances with her chin. The top magazine slides on the glossy cover below it; the elbow save tips the stack; the shoe catches the taped edge and the paper tears. The magazines fan out and slap the floor; the folder opens and light pages plane and scatter. The glasses leave her face in one piece, tumble and skid on the paper. The elastic hair tie snaps free and the bun uncoils under its own weight; the hair falls fully loose in one heavy wave and swings as her head lifts. Palms then knees take the floor with weight. Hair strands stick to her lip and lift with the back of her hand; the sleeve slides down over her knuckles. In slow motion everything keeps its weight: pages settling, hair swaying, the pen stopping, the portfolio cover falling closed.
+
+
+
+
+LIGHTING
+
+
+
+
+Exactly the light of @Image 1: warm low evening sun through the west windows, pink-gold sky, brass sconces and chandelier glowing. The table in softer light with bounce fill from the white walls and tabletop onto RAPHAEL's face, a warm window rim on cheek and shoulder. LUCY's fall inside the brightest pool of window light; in shot 2 the sun is behind the camera and lights her face straight on, her falling hair glowing. In shots 4 and 6 a single shaft of low sun across her face, loose strands backlit with a golden rim, window catchlights in her eyes. Exposed for skin, windows allowed to bloom.
+
+
+
+
+AUDIO
+
+
+
+
+Quiet studio room tone, faint murmur beyond the glass. SFX: LUCY's uneven steps, the slide of the top magazine, the paper runway tearing at the tape. From 2.5s the sound stretches with the picture: slow flutter and slap of magazines and pages, the glasses skidding, knees on oak. Shot 3 at normal speed: RAPHAEL's soft exhale through the nose, the pen ticking. Shots 4–6: low stretched room tone, the pen stopping, the soft thud of the portfolio cover, a page sliding on oak. Nobody speaks. Score is added in the edit.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+The room is identical to @Image 1 in every shot and holds only RAPHAEL, REBECCA and LUCY. LUCY's glasses begin sliding off at 3.3s and leave her face by 4.0s; they have landed on the runway paper out of her reach by 5.5s and stay there. Her bun starts coming apart at 3.6s, and her hair is fully loose from 4.8s onward. LUCY wears the same open pale-blue cardigan and light tank as @Image 4 throughout. Only shot 4 is framed from her head to her collarbones at eye level; shot 6 includes her hands on the floor as specified in the shot list. From 5.5s LUCY is on her knees at the runway's west edge, 5 m north of the table. RAPHAEL stays seated; his gaze to LUCY is screen-right; the portfolio is open until 12.1s and closed from 12.5s on. REBECCA stays at his shoulder. Shot 2 is the only west-side camera and shows LUCY alone. Shots 2, 4, 5, 6 run at 30% speed; shots 1 and 3 at normal speed. Clean picture without on-screen text.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography. Fine Kodak Vision2 negative grain, warm-timed print: honey-caramel skin and wood, clean slightly cool daylight at the windows, gently lifted blacks. Light diffusion-filter glow: window highlights, sconces and chandelier crystals bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a face is the subject. Real 24 fps motion blur. Fully photoreal live action, mid-2000s New York.
+
+See all
+Copy prompt
+Recreate
+
+How to write your own twist: start with a feeling your audience recognizes. For Lucy it's "I don't belong here. I just embarrassed myself, and now I'm going to get in trouble." But instead, she gets an opportunity. You don't have to work in fashion to recognize that feeling, and it works in a completely different story too: a waiter sings along to the music in a café, not realizing a famous producer is listening. Different situation, same emotional idea: someone who usually goes unnoticed suddenly gets a chance to be seen.
+
+Scene 3: the escalation
+
+In scene three, Raphael wants to find out who Lucy is, so he gets up and walks over to her. This is the escalation, where you need an unexpected turn: new characters show up, the conflict grows, things happen that the viewer doesn't see coming.
+
+And here's the biggest secret behind viral short dramas: they let you catch every little reaction. The tension comes from how differently the two characters read the situation. Lucy thinks she's in trouble. Raphael thinks he's found someone interesting. So describe both performances, and spell out the movement too:
+
+0:00 / 0:29
+
+SCENE CONTEXT
+
+
+
+
+The accountant, on her knees among scattered papers, pushes her loose hair out of her 
+
+
+
+
+face and starts gathering her pages; the head of the house, a Frenchman, weary at the 
+
+
+
+
+corner of his table, notices her and his boredom turns into interest; he asks his 
+
+
+
+
+assistant who she is and is timidly offered the option of firing her; he gets up and 
+
+
+
+
+goes to the girl. His polished shoes stop in front of her; she apologizes to the floor; 
+
+
+
+
+he gently stops her apology and asks her name; she tells him; he praises it warmly, 
+
+
+
+
+offers his hand and helps her up. Face to face, he asks if she has ever modeled.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 1 — LOCATION LOCK: the exact room from this image, unchanged. Same double-
+
+
+
+
+height white loft studio: tall white-framed arched sash windows along one long wall with 
+
+
+
+
+a warm pink-gold evening sky and city skyline; brass candle sconces lit between the 
+
+
+
+
+windows; chrome clothing racks (whites and red on one, dark browns and blacks on the 
+
+
+
+
+other); tailor's dummy with a cream tulle skirt; tall silver-framed floor mirror; cardboard
+
+
+
+
+boxes and a radiator under the windows; black and white gowns on stands; the long glass 
+
+
+
+
+partition wall with white mullions, three tall moodboard panels of photos and sketches, 
+
+
+
+
+an open glass double door to a lit office beyond; crystal chandelier high on the right; 
+
+
+
+
+white seamless paper backdrop on a rolling stand with a camera on a tripod; pale 
+
+
+
+
+bleached-oak floor; the cream paper runway strip with black tape marks; the white 
+
+
+
+
+Parsons table with a laptop, pink peonies in a glass vase, a glass bowl of clear 
+
+
+
+
+hangers, magazines and contact sheets; the red upholstered chair at the table. Same 
+
+
+
+
+materials, same props, same positions, same warm window light.
+
+
+
+
+@Image 2 RAPHAEL: French man, mid-50s, lean, head of the house; speaks English with 
+
+
+
+
+a strong, elegant Parisian French accent; seated in the red chair at the north corner of 
+
+
+
+
+the white Parsons table, the chair turned out toward the room, the tabletop beside him 
+
+
+
+
+at his left elbow, in a mannered pose — legs crossed knee over knee, left elbow on the 
+
+
+
+
+tabletop, fingertips resting at his temple; later standing over the girl, gentle, warm, 
+
+
+
+
+unhurried. Face, hair and suit 100% match the reference.
+
+
+
+
+@Image 3 REBECCA: woman, about 30, his assistant, American, standing at the table 
+
+
+
+
+beside his chair, clipboard held against her chest; eager to please, unsure of herself 
+
+
+
+
+in front of him; stays at the table throughout. 100% matches the reference.
+
+
+
+
+@Image 4 LUCY: woman, 23, junior accountant, American, her hair worn loose and 
+
+
+
+
+down, falling around her face and over her shoulders; empty-handed except for the pages 
+
+
+
+
+and magazines she gathers; on her knees on the window side of the paper runway, 5 m 
+
+
+
+
+from the table, among scattered pages and glossy magazines; braced for trouble. Face 
+
+
+
+
+and outfit 100% match the reference; hair loose throughout.
+
+
+
+
+@Image 5 — other people: one or two staff seen through the open glass door in the 
+
+
+
+
+office beyond the partition, seated, working, out of focus; they stay in that office.
+
+
+
+
+LOCATION MAP (compass as in @Image 1)
+
+
+
+
+West wall: the tall arched windows with sconces, racks, dummy and mirror in front of 
+
+
+
+
+them. North wall: the glass partition with moodboards and the open double door. East 
+
+
+
+
+side: the white seamless backdrop and the camera on its tripod. South end: the white 
+
+
+
+
+Parsons table. RAPHAEL sits at the table's north corner in the red chair, the chair 
+
+
+
+
+turned out to face north toward the runway; the table is beside him and behind him, 
+
+
+
+
+and in front of him lies only open oak floor all the way to the runway. The cream paper 
+
+
+
+
+runway runs north from the table toward the partition. LUCY kneels at the runway's west 
+
+
+
+
+edge, 5 m north of RAPHAEL, inside a warm pool of window light. His path to her is a 
+
+
+
+
+straight line of open floor. All cameras stay on the east side of the RAPHAEL–LUCY 
+
+
+
+
+line: RAPHAEL and the table screen-left, LUCY screen-right, windows behind them. From 
+
+
+
+
+12.5s RAPHAEL stands 60 cm south of her pile, facing north, looking down at her.
+
+
+
+
+FIRST FRAME
+
+
+
+
+Close-up of LUCY alone, kneeling, x 50% y 55%: her face and hands fill the frame, loose 
+
+
+
+
+hair falling forward over her cheek, scattered pages at the bottom edge, the arched 
+
+
+
+
+windows glowing soft and blurred behind her. Nobody else is in frame.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Ten segments with HARD CUTs, weighted toward close-ups. Beat one, 0.0s to 12.5s: the 
+
+
+
+
+girl alone, then the table. Beat two, 12.5s to 28.0s: at the girl on the floor. 
+
+
+
+
+Real-time motion. Dialogue clip.
+
+
+
+
+SHOT LIST — OPTICS AND CAMERA (all locked-off tripod, horizon level, except segment 10)
+
+
+
+
+1. 0.0–3.0s — CLOSE-UP LUCY. 29° short telephoto, camera 2 m east of her at 0.8 m, 
+
+
+
+
+face and hands sharp, windows a warm blur.
+
+
+
+
+2. 3.0–5.0s — CLOSE-UP RAPHAEL AT THE TABLE CORNER. 29°, camera 2.5 m east of him at 
+
+
+
+
+seated eye level; his face, shoulders and the hand at his temple sharp, the pink peonies 
+
+
+
+
+a soft blur at the frame edge, windows a warm blur behind.
+
+
+
+
+3. 5.0–7.4s — MEDIUM TWO-SHOT. 29°, camera 4 m east of the table; RAPHAEL seated at the 
+
+
+
+
+table corner, the tabletop with laptop and peonies beside him, REBECCA standing at the 
+
+
+
+
+table next to him, both sharp.
+
+
+
+
+4. 7.4–9.0s — CLOSE-UP REBECCA. 29°, camera 2 m east of her at eye level; her face and 
+
+
+
+
+the top of the clipboard, RAPHAEL a soft shape at the frame edge screen-left.
+
+
+
+
+5. 9.0–12.5s — MEDIUM SHOT AT THE TABLE. 29°, camera 4 m east of the table, same side as 
+
+
+
+
+segment 3; RAPHAEL rises and steps out of frame screen-right; REBECCA and the table stay 
+
+
+
+
+in frame.
+
+
+
+
+6. 12.5–14.0s — EXTREME CLOSE-UP, SHOES. 47°, lens 0.3 m above the floor at LUCY's eye 
+
+
+
+
+line looking south along the runway; pages sharp, floor and the distant table in soft 
+
+
+
+
+warm depth.
+
+
+
+
+7. 14.0–17.5s — CLOSE-UP LUCY, OVER RAPHAEL'S HIP. 29°, camera 1.2 m high just past his 
+
+
+
+
+right hip, tilted down; her face and hands razor-sharp, his dark suit a soft shape in 
+
+
+
+
+the foreground screen-left.
+
+
+
+
+8. 17.5–19.5s — TIGHT CLOSE-UP LUCY LOOKING UP. 29°, camera at his chest height looking 
+
+
+
+
+down into her face; eyes sharp, floor a warm blur.
+
+
+
+
+9. 19.5–22.0s — CLOSE-UP RAPHAEL FROM BELOW. 29°, camera at her kneeling eye line, 
+
+
+
+
+tilted up; his face against the soft high windows and the chandelier glow.
+
+
+
+
+10. 22.0–28.0s — LOW TWO-SHOT. 47°, camera 3 m east of the pair, slow pedestal rise from 
+
+
+
+
+0.9 m to 1.4 m timed to her standing, then locked; both kept in frame, their joined 
+
+
+
+
+hands and faces readable.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0s to 3.0s — CLOSE-UP LUCY, alone. Loose hair has fallen over her face; she pushes it 
+
+
+
+
+back with the back of her wrist and tucks one strand behind her ear (0.0s to 1.4s); 
+
+
+
+
+then she starts gathering pages with both hands, quick and careful, the hair slipping 
+
+
+
+
+forward again over one shoulder (1.4s to 3.0s).
+
+
+
+
+3.0s HARD CUT
+
+
+
+
+3.0s to 5.0s — CLOSE-UP RAPHAEL at the table corner, fingertips at his temple. His face 
+
+
+
+
+is tired, heavy-lidded, close to despair, eyes resting screen-right on the girl across 
+
+
+
+
+the room (3.0s to 4.0s); something catches — the brow lifts a few millimeters, the hand 
+
+
+
+
+slides slowly down from his temple to the tabletop, the eyes sharpen and soften at 
+
+
+
+
+once, weariness turns into quiet, tender interest (4.0s to 5.0s). Mouth closed.
+
+
+
+
+5.0s HARD CUT
+
+
+
+
+5.0s to 7.4s — MEDIUM TWO-SHOT. RAPHAEL still seated at the table corner, legs crossed, 
+
+
+
+
+one hand resting on the tabletop; keeping his eyes on the girl, he turns his head only 
+
+
+
+
+slightly toward REBECCA, about fifteen degrees, without really looking at her; in his 
+
+
+
+
+French accent, lazy and soft: "What's her name?" (5.2s to 6.0s). REBECCA blinks, caught 
+
+
+
+
+off guard, clipboard tighter to her chest; soft, hesitant, obedient: "Uh... she's — 
+
+
+
+
+she's new." (6.2s to 7.3s).
+
+
+
+
+7.4s HARD CUT
+
+
+
+
+7.4s to 9.0s — CLOSE-UP REBECCA. She glances down at him, then away, a small nervous 
+
+
+
+
+swallow; quieter, eager to please, unsure, rising like a question: "Should I... fire 
+
+
+
+
+her?" (7.6s to 8.8s).
+
+
+
+
+9.0s HARD CUT
+
+
+
+
+9.0s to 12.5s — MEDIUM SHOT AT THE TABLE. Without answering, RAPHAEL uncrosses his legs 
+
+
+
+
+and rises from the red chair, his left hand lifting off the tabletop (9.0s to 9.9s); the 
+
+
+
+
+table stays behind him; he takes two unhurried steps forward onto the open floor, away 
+
+
+
+
+from the table, and walks out of frame screen-right toward the girl (9.9s to 11.3s). 
+
+
+
+
+REBECCA stays at the table, alone in frame with the empty red chair, clipboard to her 
+
+
+
+
+chest, watching him go screen-right, her question unanswered (11.3s to 12.5s).
+
+
+
+
+12.5s HARD CUT
+
+
+
+
+12.5s to 14.0s — EXTREME CLOSE-UP, LUCY's point of view: scattered white pages sharp in 
+
+
+
+
+the foreground; a pair of polished black leather oxfords takes the last stride toward 
+
+
+
+
+the lens from the top of the frame and stops softly 60 cm from the nearest page, careful 
+
+
+
+
+not to step on the papers (12.5s to 13.3s). The shoes stay still (13.3s to 14.0s).
+
+
+
+
+14.0s HARD CUT
+
+
+
+
+14.0s to 17.5s — CLOSE-UP LUCY over RAPHAEL's hip. She gathers the glossy magazines into 
+
+
+
+
+her arms, talking fast to the floor through a curtain of loose hair: "I'm really sorry, 
+
+
+
+
+forgive me, I'll pick it all up—" (14.3s to 16.1s). RAPHAEL stops her softly, his face 
+
+
+
+
+above the frame, voice warm and gentle, the French accent soft and rounded: "What's 
+
+
+
+
+your name, my dear?" (16.1s to 17.1s). Her hands slow and stop on the magazines (17.1s 
+
+
+
+
+to 17.5s).
+
+
+
+
+17.5s HARD CUT
+
+
+
+
+17.5s to 19.5s — TIGHT CLOSE-UP LUCY. She looks up, screen-left and up, her loose hair 
+
+
+
+
+falling back from her face and revealing it fully in the window light, surprised by the 
+
+
+
+
+kindness in his voice, a small breath (17.5s to 18.2s); then, quietly: "Lucy." (18.3s to 
+
+
+
+
+18.7s). She holds his gaze, mouth closed, the fear starting to leave her face (18.7s to 
+
+
+
+
+19.5s).
+
+
+
+
+19.5s HARD CUT
+
+
+
+
+19.5s to 22.0s — CLOSE-UP RAPHAEL from below. He looks down at her with warm, kind eyes, 
+
+
+
+
+a soft smile forming slowly (19.5s to 19.9s); tender, savoring the word the French way, 
+
+
+
+
+"Lu-cie", stress on the last syllable: "Lucy. A beautiful name." (20.0s to 21.3s). He 
+
+
+
+
+leans down slightly, his open hand entering the bottom of the frame toward her, palm up 
+
+
+
+
+(21.3s to 22.0s).
+
+
+
+
+22.0s HARD CUT
+
+
+
+
+22.0s to 28.0s — LOW TWO-SHOT against the windows. RAPHAEL screen-left, bending slightly 
+
+
+
+
+toward her, his open palm offered at her level. LUCY, the magazines and papers held to 
+
+
+
+
+her chest with one arm, hesitates, then places her free hand in his (22.0s to 23.0s). 
+
+
+
+
+He helps her up gently — her hand in his, his other hand lightly steadying her elbow — 
+
+
+
+
+she rises one knee, then the other, a small wobble, her loose hair swaying and settling 
+
+
+
+
+over her shoulders, he steadies her (23.0s to 25.0s); the camera rises with them into a 
+
+
+
+
+balanced standing two-shot. One loose sheet slides off the top of her stack and settles 
+
+
+
+
+on the floor between them (25.0s to 25.6s). He lets go of her hand softly and looks at 
+
+
+
+
+her face with warm curiosity (25.6s to 26.1s); then, quietly, unhurried, the "h" 
+
+
+
+
+dropped in his French accent: "Have you ever modeled?" (26.2s to 27.1s). LUCY blinks, 
+
+
+
+
+lips parting in disbelief, the magazines pressed tighter to her chest; she does not 
+
+
+
+
+answer, mouth closed (27.1s to 28.0s).
+
+
+
+
+ACTING TASK — RAPHAEL: DIRECTION: get through another empty day. MOTIVE: everything 
+
+
+
+
+around him is fake and he is tired of it; the girl on the floor is the first real thing 
+
+
+
+
+he has seen. GOAL: find out who she is without frightening her away. OBSTACLE: she is 
+
+
+
+
+scared, folded around a pile of paper, her face hidden behind her hair, expecting 
+
+
+
+
+punishment. TACTIC: the question to REBECCA is thrown sideways while his eyes stay on 
+
+
+
+
+the girl; he ignores the offer to fire her and simply gets up and goes; at the floor he 
+
+
+
+
+stops her apology softly, like calming a startled bird; he gives her name back to her 
+
+
+
+
+as a compliment, pronounced the French way, so she feels safe; he offers his hand 
+
+
+
+
+instead of an order and lifts her carefully; only when she is standing and calm does 
+
+
+
+
+he ask the question he crossed the room for.
+
+
+
+
+ACTING TASK — REBECCA: DIRECTION: the same. MOTIVE: his mood is her job and she is afraid 
+
+
+
+
+of him. GOAL: guess what he wants and give it to him first. OBSTACLE: she cannot read 
+
+
+
+
+him and does not know the girl's name. TACTIC: she stalls with "uh", gives the only 
+
+
+
+
+fact she has, and offers the standard solution softly, like a question, ready to take 
+
+
+
+
+it back; when he walks away without a word she understands she guessed wrong.
+
+
+
+
+ACTING TASK — LUCY: DIRECTION: nobody makes a scene. MOTIVE: she is new and afraid of 
+
+
+
+
+losing the job. GOAL: clean up before anyone judges her. OBSTACLE: his shoes will not 
+
+
+
+
+move. TACTIC: she apologizes to the floor, hiding behind her hair so she does not have 
+
+
+
+
+to see the verdict; his gentle voice disarms her, so she looks up and answers her name 
+
+
+
+
+simply; the compliment and the offered hand confuse her into trust, and she takes it; 
+
+
+
+
+the last question is so far from what she feared that she has no answer for it.
+
+
+
+
+(Safety: gazes engaged, natural blink cadence, listeners' mouths closed.)
+
+
+
+
+PHYSICS
+
+
+
+
+The table is solid and stays where it is; RAPHAEL's body stays clear of it at all times. 
+
+
+
+
+Loose hair: strands fall forward when she bends, slide back when she lifts her head, 
+
+
+
+
+sway and settle when she stands. His hand lifts off the tabletop as he rises; the red 
+
+
+
+
+chair rolls back a few centimeters on the oak floor; his trouser crease falls straight 
+
+
+
+
+as he uncrosses his legs. His walk has weight: heel contact, unhurried stride, jacket 
+
+
+
+
+settling; leather soles settle softly on the oak floor. Pages rustle and slide under 
+
+
+
+
+LUCY's palms and crinkle the paper runway; glossy magazines slap softly as she stacks 
+
+
+
+
+them. Helping her up: her fingers close around his palm, he takes part of her weight 
+
+
+
+
+through his arm, his hand at her elbow; she pushes off one knee, hip shift, a small 
+
+
+
+
+wobble, and settles on her feet. The loose sheet planes off the stack and lands flat.
+
+
+
+
+LIGHTING
+
+
+
+
+Exactly the light of @Image 1: warm low evening sun through the west windows, pink-gold 
+
+
+
+
+sky, brass sconces and the chandelier lit and glowing; LUCY inside the brightest pool of 
+
+
+
+
+window light, her loose hair backlit with a warm glowing rim; the table in softer light 
+
+
+
+
+with bounce fill from the white walls and the white tabletop lifting light onto 
+
+
+
+
+RAPHAEL's and REBECCA's faces. Close-ups: LUCY's face bright and flushed, window 
+
+
+
+
+catchlights in her eyes; RAPHAEL's face in soft warm bounce with a warm window rim on 
+
+
+
+
+cheek and shoulder; REBECCA's face in even soft fill. Exposed for skin, the windows 
+
+
+
+
+allowed to bloom.
+
+
+
+
+AUDIO
+
+
+
+
+A quiet studio: soft room tone, faint murmur from the office beyond the glass partition. 
+
+
+
+
+Voices close and clean. RAPHAEL: a native French speaker speaking English with a strong, 
+
+
+
+
+clearly audible Parisian French accent — soft uvular "r", dropped "h" ("'ave you"), 
+
+
+
+
+rounded vowels, stress falling on the last syllable of words, a melodic French rise and 
+
+
+
+
+fall; low, precise, unhurried, weary at the table, then warm, soft and tender with the 
+
+
+
+
+girl. REBECCA: American English, soft, hesitant, obedient, a nervous "uh", the last line 
+
+
+
+
+quieter, rising like a question. LUCY: American English, quick, breathless, apologetic, 
+
+
+
+
+mid-register; "Lucy." quiet and simple. Lips move only for the scripted lines. SFX: 
+
+
+
+
+pages and the paper runway, magazines, the chair rolling back, his shoes on the oak 
+
+
+
+
+floor and stopping, the soft rustle of her skirt and his suit as he helps her up. Score 
+
+
+
+
+is added in the edit.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+The room is identical to @Image 1 in every shot. Segment 1 shows only LUCY. LUCY's face 
+
+
+
+
+is bare, her hair is worn loose and down, and she carries only the pages and magazines 
+
+
+
+
+in every shot. RAPHAEL speaks every line with a strong French accent. RAPHAEL sits at 
+
+
+
+
+the table corner, legs crossed, until 9.0s; his head turns only slightly toward REBECCA 
+
+
+
+
+while his eyes stay on LUCY. When he rises, the table stays behind him and he walks 
+
+
+
+
+forward over open floor only, clear of the table; he leaves the frame screen-right in 
+
+
+
+
+segment 5. RAPHAEL's gaze to LUCY is screen-right; LUCY looks up screen-left. Segment 6 
+
+
+
+
+shows only shoes and floor. RAPHAEL's face stays above the frame in segment 7. RAPHAEL 
+
+
+
+
+is gentle and warm with LUCY throughout; he helps her up by the hand. REBECCA stays at 
+
+
+
+
+the table. Only the quoted lines are spoken. The clip ends on LUCY's silent, stunned 
+
+
+
+
+reaction to "Have you ever modeled?". Clean picture without on-screen text.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography. Fine Kodak Vision2 negative grain, warm-
+
+
+
+
+timed print: honey-caramel skin and wood, clean slightly cool daylight at the windows, 
+
+
+
+
+gently lifted blacks, glossy fashion-magazine saturation on black fabric, chrome and 
+
+
+
+
+lips. Light diffusion-filter glow: window highlights, sconces, chandelier crystals and 
+
+
+
+
+chrome bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear 
+
+
+
+
+lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a 
+
+
+
+
+face is the subject. Real 24 fps motion blur. Fully photoreal live action, mid-2000s 
+
+
+
+
+New York.
+
+See all
+Copy prompt
+Recreate
+Scene 4: the offer
+0:00 / 0:30
+
+SCENE CONTEXT
+
+
+
+
+Standing face to face in the afternoon sun, the head of the fashion house asks the junior accountant whether she has ever been photographed and offers her the chance to become the face of his next campaign. He is warm with her throughout, careful, almost tender, looking at her the way one looks at something rare. She thinks he is being kind about a mistake and objects that she is an accountant. He steps back, considers her from head to shoes, asks where she has been hiding, gets a literal answer, and tells his assistant to call Luca.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 1 — location reference: the room's geometry, its furniture and where that furniture stands, its materials and its window-light direction.
+
+
+
+
+@Image 2 RAPHAEL: man, mid-50s, lean, head of the house. Standing, hands at his sides. Face, hair and suit are a 100% match to the reference.
+
+
+
+
+@Image 3 LUCY: woman, 23, junior accountant. Loose, slightly messy mid-length hair falling to her shoulder blades, hair down and uncovered, no glasses on her face and no glasses anywhere on her body. Pale blue cardigan worn open over a light tank, dark checked pencil skirt, the same length as @Image 3, and the same black shoes and thin silver chain as that reference. Both arms are wrapped around a stack of glossy magazines held flat against her chest. Her hands are otherwise empty: nothing hangs from either elbow, nothing hangs from either shoulder, both forearms are free of straps of any kind. Face, hair and outfit are a 100% match to the reference.
+
+
+
+
+@Image 4 REBECCA: woman, about 30, his assistant. The black dress, outfit details and loose brunette hair with a blunt fringe from @Image 4, carrying a slim clipboard. A 100% match to the reference.
+
+
+
+
+HOW TO USE THE CHARACTER REFERENCES
+
+
+
+
+Take from each character reference only the face, the hair and the clothing. Do not take the lighting, the background, the wall colour or the camera angle of any character reference. All three people are lit by this scene's own afternoon window light and stand in the room from @Image 1.
+
+
+
+
+THE TABLE
+
+
+
+
+Keep the long pale work table exactly where @Image 1 puts it: in the near foreground of the room on the screen-LEFT side, running away from the camera, with its scatter of magazines, a desk lamp, a vase of peonies and a corded telephone on it. Same position in the room, same angle, same objects on top of it as in the location reference. The table stays there for the whole clip and nothing about it changes.
+
+
+
+
+THE MAGAZINES
+
+
+
+
+The magazines in LUCY's arms are glossy fashion issues seen mostly edge-on as a stack. Where a cover shows, the paper is plain and empty: a photographed face and smooth blank paper where a title would sit, with no letters, words, numerals, logos or printed marks anywhere on any cover, spine or page. The magazines on the table are the same: photographs on blank paper. REBECCA's clipboard holds one sheet of plain unprinted paper.
+
+
+
+
+LOCATION MAP
+
+
+
+
+The showroom from @Image 1: pale walls, a pale bleached-oak floor, the cream paper runway strip down the middle of the room, tall arched windows with the evening city skyline beyond them along the far side, clothing racks, a dress form, a mirror.
+
+
+
+
+RAPHAEL and LUCY stand 1.2 m apart out on the open floor in the middle of the room, deeper in than the table, inside a shaft of afternoon sun. Camera is on the east side of them for every segment. RAPHAEL is screen-LEFT facing screen-right. LUCY is screen-RIGHT facing screen-left.
+
+
+
+
+REBECCA stands three steps behind RAPHAEL, further into the room on the screen-left side, holding her clipboard against her body. She is behind him and small in the frame whenever the shot is wide enough to include her.
+
+
+
+
+The table is in the foreground on the screen-left side, between the camera and nobody — closer to the lens than all three of them.
+
+
+
+
+FIRST FRAME AND SPATIAL BLOCKING
+
+
+
+
+Frame one already holds both of them in a standing two-shot in profile: RAPHAEL at x 30%, LUCY at x 70%, three-quarter figures, eyes on each other. Behind RAPHAEL, deeper in the room, REBECCA standing with her clipboard, small and out of focus. Beyond them the bright arched windows.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Aspect ratio 4:3, 1440 x 1080, landscape. Controlled eleven-segment dialogue sequence, total 30 seconds, real-time motion, no slow motion and no speed ramps. Segments 1 to 6 alternate by REVERSE CUT; segments 7 to 11 use HARD CUTs.
+
+
+
+
+OPTICS
+
+
+
+
+Segment 1: 47° standard normal, camera 4.5 m east of the pair at 1.4 m height, both sharp, REBECCA soft behind RAPHAEL.
+
+
+
+
+Setup A, on LUCY (segments 2, 4): 29° short telephoto portrait, camera 4.5 m away just behind RAPHAEL's right shoulder; his shoulder and jaw sit in the foreground screen-left as a soft dark shape occupying no more than a quarter of the frame width. LUCY's eyes razor-sharp, the room behind her creamy bokeh.
+
+
+
+
+Setup B, on RAPHAEL (segments 3, 5): 29° short telephoto portrait, camera 4.5 m away just behind LUCY's left shoulder; her hair and cardigan sit in the foreground screen-right as a soft shape occupying no more than a quarter of the frame width. RAPHAEL sharp, the room a warm blur behind him.
+
+
+
+
+Setup C, on REBECCA (segment 6): 29° short telephoto portrait, camera 3.5 m from her where she stands on the open floor, REBECCA centred at x 50%, sharp, her eyes directed just past the lens toward the pair, the room soft behind her.
+
+
+
+
+Segment 7: 47°, camera 4.5 m east, the two-shot frame again.
+
+
+
+
+Segment 8: 47°, camera 5.5 m east, full figures, the room readable around them.
+
+
+
+
+Segment 9: 47°, camera 4.5 m east, the two-shot frame again.
+
+
+
+
+Segment 10: 29° short telephoto single on LUCY, camera 4.5 m east and stepped clear of RAPHAEL so no foreground shoulder enters the frame; LUCY at x 60%, head and shoulders, sharp.
+
+
+
+
+Segment 11: 47°, camera 3 m from the table, framing REBECCA standing at it with the corded telephone, the table surface and its objects across the bottom of the frame, the room soft behind her.
+
+
+
+
+CAMERA
+
+
+
+
+Every segment is locked off on a tripod, horizon level, eye level 1.5 m. No handheld, no dolly, no zoom, no push-in.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0s to 2.4s — segment 1, two-shot. He looks at her with open, unhurried interest, his head tilted a degree. She reads his face for the size of the trouble, arms tight around the stack. RAPHAEL, gently: "Have you ever been photographed?" (0.5s to 2.0s).
+
+
+
+
+2.4s REVERSE CUT
+
+
+
+
+2.4s to 5.0s — segment 2, setup A on LUCY. She thinks about it seriously, genuinely searching for the accurate answer (2.4s to 3.3s), then: "For my employee eye-dee." (3.4s to 4.7s).
+
+
+
+
+5.0s REVERSE CUT
+
+
+
+
+5.0s to 8.8s — segment 3, setup B on RAPHAEL. A soft breath of a laugh and a warm smile that arrives slowly and stays (5.0s to 5.8s). "I want you…" (5.9s to 6.6s). He holds her eyes through the pause (6.6s to 7.3s). "…to model for SOUL." (7.4s to 8.7s).
+
+
+
+
+8.8s REVERSE CUT
+
+
+
+
+8.8s to 10.2s — segment 4, setup A on LUCY. Her eyes widen a fraction: "Me?" (9.4s to 9.8s).
+
+
+
+
+10.2s REVERSE CUT
+
+
+
+
+10.2s to 13.8s — segment 5, setup B on RAPHAEL, both lines spoken on camera with his face fully in frame. Warmly and without hesitation: "Yes, Lucy." (10.4s to 11.1s). A short beat while he holds her eyes (11.1s to 11.6s). Then, plainly, so she cannot mistake it: "I want you to be the face of it." (11.7s to 13.6s). He finishes the sentence completely and holds still until 13.8s.
+
+
+
+
+13.8s REVERSE CUT
+
+
+
+
+13.8s to 15.8s — segment 6, setup C on REBECCA standing on the open floor with her clipboard. Nobody speaks at all in this segment: a silent reaction with only room tone under it. She is not against any of this and is not hostile; she simply cannot follow what is happening. Polite bewilderment: her eyes move between the two of them, two blinks, a small lift of the eyebrows, a shift of weight from one foot to the other. Her lips stay closed for the whole segment.
+
+
+
+
+15.8s HARD CUT
+
+
+
+
+15.8s to 18.8s — segment 7, two-shot. LUCY, apologetic, trying to correct a kind mistake: "But… I'm an accountant." (16.0s to 17.4s). RAPHAEL, amused and affectionate, not dismissive: "I've already heard that, darling." (17.6s to 18.8s).
+
+
+
+
+18.8s HARD CUT
+
+
+
+
+18.8s to 21.8s — segment 8, wider. He takes one unhurried pace back screen-left and looks at her from her hair to her shoes with open admiration (18.8s to 19.4s), a small laugh in the voice: "Where have you been hiding?" (19.5s to 20.6s). LUCY, literal and helpful: "The third floor." (20.8s to 21.7s).
+
+
+
+
+21.8s HARD CUT
+
+
+
+
+21.8s to 24.2s — segment 9, two-shot. He clears his throat softly, still smiling at her (21.8s to 22.4s), then turns his head back over his shoulder toward REBECCA behind him and lifts two fingers in a small, calm gesture (22.5s to 22.9s): "Get Luca." (23.0s to 23.9s). His eyes come straight back to LUCY and he holds still until 24.2s.
+
+
+
+
+24.2s HARD CUT
+
+
+
+
+24.2s to 25.6s — segment 10, single on LUCY. Her head stays where it is, still angled toward RAPHAEL; only her eyes move, following REBECCA across the room, one small blink, then coming back to him. She does not turn around and does not turn her head. Nobody speaks. Off camera we hear heels crossing the oak floor.
+
+
+
+
+25.6s HARD CUT
+
+
+
+
+25.6s to 30.0s — segment 11, at the table. This is the final shot of the clip, one unbroken continuous take with no cut inside it, running all the way to the last frame. REBECCA walks the last two steps up to the table and stops at it (25.6s to 26.3s), lays the clipboard flat on the table top (26.3s to 26.9s), lifts the corded handset (26.9s to 27.6s), presses the keypad with one finger, one button at a time, four separate visible presses (27.6s to 29.1s), raises the handset to her ear and waits, listening (29.1s to 30.0s). Her lips stay closed. The clip ends with her still listening.
+
+
+
+
+REBECCA MOVEMENT RULE
+
+
+
+
+For the first 24 seconds REBECCA stays where she is, standing on the open floor behind RAPHAEL with her clipboard; she does not walk anywhere during the conversation. She moves exactly once, on his order: she turns and crosses the room to the table in the foreground, which is the only place the telephone is, and makes the call standing at it. That single walk is the only time she changes position in the whole clip.
+
+
+
+
+DIALOGUE PLACEMENT RULE
+
+
+
+
+Every spoken line in this clip belongs entirely to one segment and is delivered on camera by the person speaking, with their face in frame and their lips moving. No line begins in one segment and finishes in another, and no line is heard while the speaker is out of frame. Each sentence starts and finishes completely inside its own shot at one steady close recording level, with no fade, no drop in volume and no trailing off at any cut. Segments 6, 10 and 11 contain no dialogue whatsoever.
+
+
+
+
+ACTING TASK — RAPHAEL (warm, delighted, protective; the work is in his eyes):
+
+
+
+
+MOTIVE: he has just seen the first true face all day and he does not want to frighten it away.
+
+
+
+
+GOAL: make her understand she is not in trouble, and get her to yes before she can talk herself out of it.
+
+
+
+
+OBSTACLE: she keeps apologising and answering literally, as if he has made an administrative error.
+
+
+
+
+TACTIC: he keeps his voice low and kind and his body still, so nothing about him reads as a threat. He hunts both her eyes after each answer, looking for the expression he saw. Then he stops persuading and starts arranging — the step back is measuring, the glance over his shoulder is casting — but his eyes come back to her each time.
+
+
+
+
+— "Have you ever been photographed?" — an invitation, not a test.
+
+
+
+
+— "I want you… to model for SOUL." — said slowly, so she has room to hear it.
+
+
+
+
+— "Yes, Lucy." — reassurance; her name is the whole point of the line.
+
+
+
+
+— "I want you to be the face of it." — plain and certain, no persuasion left in it.
+
+
+
+
+— "I've already heard that, darling." — affectionate, forgiving the objection.
+
+
+
+
+— "Get Luca." — the decision, given softly, backwards, without really leaving her.
+
+
+
+
+ACTING TASK — LUCY:
+
+
+
+
+MOTIVE: she was sent from the third floor with papers and expects to be reprimanded.
+
+
+
+
+GOAL: leave with her job; politely correct what she is sure is a misunderstanding.
+
+
+
+
+OBSTACLE: he is not misunderstanding anything, and kindness is harder to answer than anger.
+
+
+
+
+TACTIC: she searches his face for the catch, answers every question with the most accurate fact available, and grips the stack a little tighter each time he speaks. In segment 10 she follows REBECCA with her eyes to find out whether this is really happening — with her eyes only, because her head does not leave him.
+
+
+
+
+— "For my employee eye-dee." — the exact truth, because exact answers are safe.
+
+
+
+
+— "Me?" — checking whether anyone is joking.
+
+
+
+
+— "The third floor." — the most accurate fact available.
+
+
+
+
+ACTING TASK — REBECCA: she is not opposed to any of this and she is not hostile; she simply cannot follow what is happening. Politely bewildered while she listens: eyes moving between the two of them, two blinks, a small lift of the eyebrows, weight shifting from one foot to the other. Then she hears her cue and becomes pure competence — she crosses to the table and makes the call without a wasted movement.
+
+
+
+
+(Safety: gazes engaged, natural blink cadence, listeners' mouths closed.)
+
+
+
+
+PHYSICS
+
+
+
+
+The magazine stack stays firmly clamped in both of LUCY's arms for the entire 30 seconds. The stack never slips, never shifts down, never slides, and nothing at all falls from her arms at any moment. Nothing is dropped by anyone in this scene. The stack rises and falls a few millimetres with her breathing only. Loose strands of her hair move with her head turns. His step back has real weight transfer, heel then toe. REBECCA's walk has real weight and real heel contact on the oak floor. The telephone handset lifts with a coiled cord that stretches and hangs.
+
+
+
+
+The air in the room is completely still. Nothing is blowing, lifting, floating, flying or caught in a breeze.
+
+
+
+
+LIGHTING
+
+
+
+
+Afternoon sun through the tall arched windows is the only source. Faces are lit by soft bounce off the pale walls and floor, even and gentle from both sides, with a warm rim along hair and shoulders. Setup A has the window glow behind LUCY and soft fill on her face; setup B has the shaft raking RAPHAEL from screen-right; REBECCA is lit by the same daylight, a stop softer, her face clearly readable in both her shots. Exposure is honest: the windows are not blown out, the city skyline outside remains visible. No studio lamp, softbox, reflector, stand, flag, cable or crew is visible anywhere in the frame, in any corner, at any moment.
+
+
+
+
+AUDIO
+
+
+
+
+Voices close and clean, room tone low underneath them. RAPHAEL: low, dry, precise, unhurried, warm; English spoken with a French accent in every line. LUCY: soft, quick, mid-register, earnest. REBECCA: silent for the entire clip. Lips move only for the scripted lines. Every spoken line sits at the same close recording level from its first word to its last.
+
+
+
+
+PRONUNCIATION: in LUCY's line "For my employee eye-dee." the two syllables are voiced exactly as written — "eye" as in the English word eye, then "dee" as in the letter D, with the stress on "dee". They are never merged into a single word and never spoken as any other word.
+
+
+
+
+SFX: paper shifting against wool, his shoes on the floor, heels crossing oak, a clipboard set on the table, a handset lifted from its cradle, four soft keypad tones.
+
+
+
+
+NO MUSIC: there is no music of any kind in this clip. No score, no soundtrack, no underscore, no piano, no strings, no pads, no ambient musical tone, no hum, no drone and no rhythm. The only sounds are the voices, the room tone and the listed effects.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+RAPHAEL stays screen-left facing screen-right and LUCY stays screen-right facing screen-left in every segment they share. The table stays exactly where the location reference puts it, in the foreground on the screen-left side, for all 30 seconds. REBECCA stands behind RAPHAEL until his order and then walks to that table, and this is the only movement she makes. LUCY never turns around. Segments 2 to 5 use only the two over-the-shoulder setups. LUCY has no glasses on her face and no glasses in her hands at any moment. LUCY's forearms and shoulders stay clear: nothing is slung, strapped or hanging from them, and both arms stay wrapped around the magazines. Only the quoted lines are spoken and nothing else is said. Clean picture with no on-screen text, no subtitles, no captions, no titles, no watermark and no lettering on any surface, garment, wall, page or object in the room.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography. Fine Kodak Vision2 negative grain, warm-timed print: honey-caramel skin and wood, clean daylight at the windows, gently lifted blacks, glossy fashion-magazine saturation on dark fabric, chrome and lips. Light diffusion-filter glow: highlights and chrome bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a face is the subject. Real 24 fps motion blur. Fully photoreal live action, mid-2000s New York: the only telephones in this world are corded landlines and slim silver flip phones.
+
+See all
+Copy prompt
+Recreate
+
+We also asked ChatGPT for a separate close-up of Rebecca calling Luca to cut into the scene. Her side-eye says a lot.
+
+Now generate a separate close-up of Rebecca calling Luca: she puts down her clipboard, dials the desk phone and says, “Luca. Raphael’s asking for you.”
+
+Copy prompt
+Recreate
+0:00 / 0:09
+
+SCENE CONTEXT
+
+
+
+
+At the long work table in the afternoon sun, the assistant sets down her clipboard, lifts the corded telephone, dials four digits and, when the line picks up, tells Luca that Raphael is asking for him. Brisk, quiet, competent. Nothing else happens.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 1 — location reference: the room's geometry, its furniture and where that furniture stands, its materials and its window-light direction.
+
+
+
+
+@Image 2 REBECCA: woman, about 30, the assistant. The black dress, outfit details and loose brunette hair with a blunt fringe from @Image 2, a slim clipboard in her hand at the start. Face, hair and outfit are a 100% match to the reference; take only the face, the hair and the clothing from it, not its lighting, background or camera angle. She is lit by this room's afternoon window light.
+
+
+
+
+THE TABLE
+
+
+
+
+Keep the long pale work table exactly where @Image 1 puts it, with its scatter of magazines, a desk lamp, a vase of peonies and a corded telephone on it. The telephone is a cream desk phone of the mid-2000s: a handset on a cradle, a coiled cord, a numeric keypad on the base. The magazines on the table are glossy fashion issues with photographs on plain blank paper, no letters, words, numerals or logos anywhere. REBECCA's clipboard holds one sheet of plain unprinted paper.
+
+
+
+
+LOCATION MAP
+
+
+
+
+The showroom from @Image 1: pale walls, pale bleached-oak floor, the cream paper runway strip, tall arched windows with the evening city skyline beyond them along the far side, clothing racks, a dress form, a mirror. REBECCA stands at the table's near end, facing the table, the telephone directly in front of her, the windows to her right. Camera on the east side of her for every segment: REBECCA screen-centre to screen-right, the table surface across the bottom of the frame, the windows glowing beyond her screen-right. Only REBECCA is visible in this insert; RAPHAEL and LUCY remain elsewhere in the room, outside the frame.
+
+
+
+
+FIRST FRAME
+
+
+
+
+Close-up of the table top: the corded telephone at x 45% y 55%, the vase of peonies soft at the left frame edge, REBECCA's hand and the clipboard entering from the top right, the room a warm blur beyond. Her face is not yet in frame.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Aspect ratio 4:3, 1440 x 1080, landscape. Controlled three-segment sequence, total 10.5 seconds, real-time motion, HARD CUTs, no slow motion.
+
+
+
+
+OPTICS
+
+
+
+
+Segment 1: 29° short telephoto insert, camera 1.5 m from the table at the height of the table top plus 30 cm, angled slightly down; the telephone, the clipboard and her hands sharp, the room soft.
+
+
+
+
+Segment 2: 29° short telephoto insert, camera 1 m from the telephone base, tighter still, angled down at 40°; the keypad and her index finger razor-sharp, everything else soft.
+
+
+
+
+Segment 3: 29° short telephoto portrait, camera 2 m east of her at her eye level; REBECCA sharp from the chest up with the handset at her ear, the coiled cord running down out of frame, the arched windows a warm glowing blur behind her screen-right.
+
+
+
+
+CAMERA
+
+
+
+
+Every segment is locked off on a tripod, horizon level. No handheld, no dolly, no zoom, no push-in.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0s to 2.4s — segment 1, insert at the table. Her hand lays the clipboard flat on the table top beside the telephone (0.0s to 0.7s); her right hand lifts the handset from its cradle, the coiled cord stretching and hanging (0.8s to 1.6s); her left index finger comes down toward the keypad (1.6s to 2.4s).
+
+
+
+
+2.4s HARD CUT
+
+
+
+
+2.4s to 5.2s — segment 2, insert on the keypad. Her index finger presses four buttons, one at a time, four separate visible presses, each key travelling and returning (2.4s to 4.6s); the finger lifts away (4.6s to 5.2s). Four soft keypad tones.
+
+
+
+
+5.2s HARD CUT
+
+
+
+
+5.2s to 10.5s — segment 3, portrait. The handset at her ear, she stands straight and waits, eyes resting on the table top, one blink, the ring tone faint in the earpiece (5.2s to 6.6s); a click as the line picks up; her eyes lift and fix straight ahead, past the lens (6.6s to 6.9s); brisk, low, plain: "Luca. Raphael's asking for you." (7.0s to 8.6s). She listens, one small nod (8.6s to 9.5s), then lowers the handset from her ear and sets it back on the cradle, the cord folding, her eyes already going back to the room (9.5s to 10.5s). The clip ends on her face as the handset lands.
+
+
+
+
+ACTING TASK — REBECCA: MOTIVE: his order was two words and she has no idea what any of this is about. GOAL: get Luca here fast and cleanly, the way she does everything for him. OBSTACLE: none she can name, which is what unsettles her. TACTIC: pure competence — clipboard down, handset up, four digits from memory, the message delivered like a fact with nothing added; the one small nod is the only sign that she is listening to something she was not told; she hangs up before the other end can ask a question.
+
+
+
+
+— "Luca. Raphael's asking for you." — a message passed, not a conversation; the name first so he stops whatever he is doing, the rest flat.
+
+
+
+
+(Safety: gaze engaged, natural blink cadence, lips closed except for the scripted line.)
+
+
+
+
+PHYSICS
+
+
+
+
+The clipboard lands flat with a soft tap. The handset has weight; it lifts off the cradle with a small click and the coiled cord stretches, swings once and hangs. Each key presses down and springs back under the fingertip. The handset returns to the cradle with a click and the cord folds back on itself. The air in the room is still.
+
+
+
+
+LIGHTING
+
+
+
+
+Afternoon sun through the tall arched windows is the only source: a warm rim along her hair and shoulder from screen-right, her face lit by soft bounce off the pale walls and the pale table top, even and gentle, the keypad and the handset catching a soft window highlight. Exposure is honest: the windows are not blown out, the city skyline outside remains visible. No studio lamp, softbox, reflector, stand, flag, cable or crew is visible anywhere in the frame.
+
+
+
+
+AUDIO
+
+
+
+
+Room tone low, the studio quiet. REBECCA: American English, low, brisk, flat, efficient; the line delivered at one steady close recording level from its first word to its last. Lips move only for the scripted line. SFX: the clipboard set on the table, the handset lifted from its cradle, the coiled cord, four soft keypad tones, a faint ring tone and a click in the earpiece, the handset returning to the cradle.
+
+
+
+
+NO MUSIC: there is no music of any kind in this clip. No score, no soundtrack, no underscore, no piano, no strings, no pads, no ambient musical tone, no hum, no drone and no rhythm. The only sounds are her voice, the room tone and the listed effects.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+The table stays exactly where the location reference puts it, with the same objects on it, for the whole clip. REBECCA is the only person visible in the clip; she stands at the table's near end and does not walk anywhere. The telephone is a corded desk phone with a cradle, a coiled cord and a keypad; four separate key presses are visible in segment 2. Only the quoted line is spoken and nothing else is said. Clean picture with no on-screen text, no subtitles, no captions, no titles, no watermark and no lettering on any surface, garment, page, keypad or object in the room.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography. Fine Kodak Vision2 negative grain, warm-timed print: honey-caramel skin and wood, clean daylight at the windows, gently lifted blacks, glossy fashion-magazine saturation on dark fabric, chrome and lips. Light diffusion-filter glow: highlights and chrome bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a face is the subject. Real 24 fps motion blur. Fully photoreal live action, mid-2000s New York: the only telephones in this world are corded landlines and slim silver flip phones.
+
+See all
+Copy prompt
+Recreate
+Scene 5: Luca's entrance
+0:00 / 0:26
+
+
+
+
+There is no music anywhere in this clip, at any second, under any shot, including under the slow-motion shots. No score, no soundtrack, no underscore, no piano, no strings, no pads, no ambient musical tone, no hum, no drone, no rhythm, and no swell on the entrance. Only the spoken lines, quiet room tone and the listed effects.
+
+
+
+
+PACE — SPEECH RIDES ON TOP OF ACTION
+
+
+
+
+Nothing in this clip waits for anything else. Every line begins while the movement that goes with it is still happening, not after it finishes: he speaks as he arrives, as his hands close, as he turns away, as he walks. Nobody completes a gesture, pauses, and then talks. There is no dead air anywhere — no gap between one person finishing and the next starting, and no held silence between a movement and a line. The whole clip is brisk and overlapped.
+
+
+
+
+SCENE CONTEXT
+
+
+
+
+The head stylist walks into the showroom still on a phone call, shown from behind first — the phone at his ear, the walk, the hand — before we ever see his face. As he reaches them the room rearranges around him: the girl turns, the boss gets up off his table, the assistant gathers her papers and quietly leaves. The stylist announces himself with both arms thrown open, on the move. Nobody welcomes him: the head of the house crosses to the girl, places both hands over hers while she supports the magazines against her chest and talks about her to the other man, then lets go and walks out mid-sentence. Left alone with her, the stylist reads her head to foot in one quick look, lifts a strand of her hair, holds out his hands for the stack she has been clutching all morning, takes it off her, tells her his name, and walks her out.
+
+
+
+
+LUCY'S LINE THROUGH THE CLIP
+
+
+
+
+Everything that happens to her happens in her face, her breathing and her hands. She never protests and never says anything she is not scripted to say.
+
+
+
+
+ - While LUCA arrives and announces himself — she has no idea who this man is and no idea whether the arms-open thing is a joke she is supposed to laugh at. She does not smile. She watches him the way you watch a dog you have not been introduced to.
+
+
+
+
+ - When RAPHAEL places his hands over hers — for about a second something real happens: her shoulders drop, her eyes soften, she is genuinely touched, because this is the first time all morning anyone has treated her like a person. Then he starts speaking about her in the third person to the other man, and the warmth goes out of her face while his hands are still resting over hers. She does not pull away. She just stops being warm.
+
+
+
+
+ - On "Find her something beautiful to wear" — her eyes drop to her own cardigan and skirt and come straight back up.
+
+
+
+
+ - While RAPHAEL walks out — she watches him the whole way. Her lips part very slightly as if to say something to stop him, and she does not.
+
+
+
+
+ - Under LUCA's quick look up and down — her arms tighten around the magazines and her weight shifts a fraction back onto her heels.
+
+
+
+
+ - When he lifts the strand of her hair — she goes completely still and stops breathing for a beat, eyes fixed forward, not daring to move her head.
+
+
+
+
+ - When he holds out his hands for the stack — the hardest thing in the clip for her. The magazines are her errand, her job, her reason to be allowed in this room; handing them over is handing over the third floor. She hesitates, then gives it up, and something visibly goes out of her as the weight leaves her arms.
+
+
+
+
+ - With her arms empty — she does not know what to do with her hands. They hang, half rise, and settle.
+
+
+
+
+ - On "Luca." / "Lucy." — the first kind thing in two minutes. Something eases a fraction; the first moment she has been spoken to rather than about.
+
+
+
+
+ - On the last step after him — a decision, and it is visible: one breath, then she moves.
+
+
+
+
+EVERYTHING IS BLANK AND UNBRANDED
+
+
+
+
+Every surface that could carry a mark is smooth and empty. The magazines in LUCY's arms and the magazines on the table all carry a photographed face on smooth empty paper and nothing else — no title, masthead, word, letter, numeral, logo, barcode or cover line anywhere on any cover, spine, edge or page. REBECCA's papers are plain unprinted sheets. The pinned photographs on the mood board are pictures on blank paper. Phone casings, rings, garments, boots and furniture are plain and unmarked. No real product or company appears anywhere in any frame.
+
+
+
+
+ONE TABLE ONLY
+
+
+
+
+There is exactly one table in this room: the long pale work table from @Image 1, in the near foreground screen-LEFT, running away from camera, with magazines, a desk lamp, peonies, a corded telephone and a chair. No second desk, side table or workstation exists anywhere, and nothing stands against the walls.
+
+
+
+
+LUCA'S ENTRANCE — FIVE SHOTS, IN THIS ORDER, BACK BEFORE FRONT
+
+
+
+
+1. FROM BEHIND, WALKING AND TALKING. Three-quarter rear at head height: the back of his head, his shoulder, his raised arm, the slim silver flip phone at his right ear, the near edge of his cheek and jaw visible past his shoulder as he speaks. He is walking the whole time. REAL TIME.
+
+
+
+
+2. FROM BEHIND, LOWER AND WIDER. The back of his hips and the line of his trousers fill the centre of the frame as he keeps walking away down the room, the weight rolling from one hip to the other. He walks like a man who is being photographed. SLOW MOTION, silent.
+
+
+
+
+3. HIS HAND at his hip, the rings catching the light. SLOW MOTION, silent.
+
+
+
+
+4. HIS EYES, from the front — a horizontal strip across both eyes, the sharp black winged liner fully legible. SLOW MOTION, silent.
+
+
+
+
+5. HIS FACE, from the front, whole for the first time, pocketing the phone. REAL TIME.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 1 — location: the room's geometry, its furniture and where it stands, its doorway at the far end, its materials, its window-light direction.
+
+
+
+
+@Image 2 LUCY: woman, 23, junior accountant. Loose messy mid-length hair to her shoulder blades, hair down, no glasses on her face and none anywhere on her body. Pale blue cardigan over a light tank, dark plaid mini skirt, bare legs, black pointed kitten heels, one thin silver chain. Until 20.1s she securely supports a stack of glossy magazines against her chest with her arms and hands. RAPHAEL can briefly place his hands over hers without interrupting her support of the stack. She deliberately transfers the stack to LUCA from 20.1s to 21.7s; her hands are empty after 21.7s. Nothing hangs from either elbow or shoulder; both forearms are free of straps. Face, hair and outfit 100% match the reference.
+
+
+
+
+@Image 3 RAPHAEL: man, mid-50s, lean, head of the house. Warm, dry, contained; his mouth is mostly still and he does not smile in this clip. Face, hair and suit 100% match the reference.
+
+
+
+
+@Image 4 REBECCA: woman, about 30, the assistant. Starts seated at the long table with her back to camera, head down over a stack of plain unprinted sheets. Soft and out of focus, never the subject of a shot, never speaks. She gathers the papers, stands and walks out, always seen from behind. Hair and clothing 100% match the reference.
+
+
+
+
+@Image 5 LUCA: man, early 30s, head stylist, beautiful and entirely aware of it. Sharp black winged eyeliner, one clean flick at each outer corner. Rings on the fingers of both hands. Black boots. He arrives carrying nothing but a slim silver flip phone at his right ear, which he snaps shut and pockets. Face, hair and outfit 100% match the reference.
+
+
+
+
+These four are the only people in this clip. Nobody else is ever visible anywhere in it.
+
+
+
+
+HOW TO USE THE CHARACTER REFERENCES
+
+
+
+
+Take only the face, the hair and the clothing from each reference. Do not take its lighting, background, wall colour or camera angle. All four are lit by this scene's own window light, in the room from @Image 1.
+
+
+
+
+LOCATION MAP
+
+
+
+
+The showroom from @Image 1: pale walls, clean pale stone floor, a long cream runner down the middle, tall arched windows with trees beyond them on the far side, chrome racks of garments, a dress form, a tall leaning mirror, a mood board, a doorway at the far end.
+
+
+
+
+Camera on the east side throughout.
+
+
+
+
+AT THE START: RAPHAEL sits on the edge of the long table in the near foreground screen-LEFT with his arms folded; LUCY stands alone on the open floor in the middle of the room, screen-RIGHT of him and deeper in, facing screen-left toward him; REBECCA is a blurred back seated at that table. LUCA comes from the doorway at the far end, behind LUCY.
+
+
+
+
+THE REGROUPING at 7.6s: LUCY turns her body away from RAPHAEL to face the space between the two men; RAPHAEL pushes up off the table edge and comes forward onto the floor to stand; LUCA arrives and stops. From 9.8s the arrangement is fixed: RAPHAEL screen-LEFT, LUCY CENTRE, LUCA screen-RIGHT, all three standing.
+
+
+
+
+REBECCA leaves during the regrouping, quietly and in the background.
+
+
+
+
+From 17.5s RAPHAEL is gone and only LUCY and LUCA remain, facing each other about a metre apart, LUCY screen-left of frame centre and LUCA screen-right. LUCY does not take a step until the very last second of the clip.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Aspect ratio 4:3, 1440 x 1080, landscape. Ten segments, 26.2 seconds. Real-time motion everywhere except segments 2, 3 and 4, which are in slow motion and silent. The shot size changes at every cut. All cuts are HARD CUTS.
+
+
+
+
+OPTICS AND CAMERA
+
+
+
+
+Seg 1: 29°, camera behind LUCA at 2 m, head height 1.6 m, three-quarter rear. The camera MOVES with him at his walking pace, steady as a Steadicam, holding the same distance.
+
+
+
+
+Seg 2: 29° from behind at 2.5 m, camera at 1.0 m height. Locked. Slow motion.
+
+
+
+
+Seg 3: 18° tight on his hand at his hip, camera 2 m, the rings sharp. Locked. Slow motion.
+
+
+
+
+Seg 4: 18° extreme close-up from the front, camera 3 m — a horizontal strip across both eyes. Locked. Slow motion.
+
+
+
+
+Seg 5: 29° from the front, camera 3 m at 1.4 m — his whole face, head and shoulders. Locked.
+
+
+
+
+Seg 6: 47° wide, camera 5 m at 1.4 m, wide enough to hold his fully opened arms inside the frame and to keep the table and REBECCA's exit readable. Locked.
+
+
+
+
+Seg 7: 47°, camera 4 m at 1.4 m, three-quarter figures of the standing three, close enough that the joined hands are clearly readable and LUCY's face is fully legible. Locked.
+
+
+
+
+Seg 8: 47° wide, camera 5.5 m at 1.4 m, holding the depth of the room so RAPHAEL can recede toward the far doorway, with LUCY in frame watching him go. Locked.
+
+
+
+
+Seg 9: 29° OVER-THE-SHOULDER on LUCA, camera 2 m, just past LUCY's right shoulder — her shoulder and the edge of her hair a soft dark shape filling the near screen-left quarter, LUCA's face razor-sharp beyond it. Locked.
+
+
+
+
+Seg 10: 29° tight two-shot in profile, camera 2.5 m at 1.5 m, LUCY screen-left and LUCA screen-right, both faces sharp and both mouths clearly visible. Locked.
+
+
+
+
+No zoom anywhere. The camera moves only in segment 1.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0–2.6 — seg 1, FROM BEHIND. LUCA walks in with the phone at his right ear, finishing a call that started long before this scene, warm and offhand: "Yes, handsome. Eight o'clock. I remember." (0.2–2.4). He walks throughout and never breaks stride.
+
+
+
+
+2.6 HARD CUT
+
+
+
+
+2.6–4.0 — seg 2, FROM BEHIND, his hips and the line of his trousers as he keeps walking away down the room. Slow motion, silent.
+
+
+
+
+4.0 HARD CUT
+
+
+
+
+4.0–4.9 — seg 3, HIS HAND at his hip, the rings catching the light. Slow motion, silent.
+
+
+
+
+4.9 HARD CUT
+
+
+
+
+4.9–5.9 — seg 4, HIS EYES from the front, the winged liner sharp. They lift, one blink, and travel across the room. Slow motion, silent.
+
+
+
+
+5.9 HARD CUT
+
+
+
+
+5.9–7.6 — seg 5, HIS FACE from the front, whole for the first time. Still walking, he brings the phone down, snaps it shut one-handed with a crisp click (6.5–6.9) and slides it into his trouser pocket (6.9–7.3). Both hands free, eyes on the two of them.
+
+
+
+
+7.6 HARD CUT
+
+
+
+
+7.6–10.8 — seg 6, wide, one continuous overlapping action. LUCA is still walking the last few metres (7.6–8.6). While he does, LUCY turns her body away from RAPHAEL to face the space between the two men (7.7–8.4), RAPHAEL pushes up off the table edge and comes forward onto the floor (7.9–9.0), and behind them, unwatched, REBECCA squares her papers, stands and walks out of the room, seen only from behind (7.8–10.3).
+
+
+
+
+LUCA does not stop and then announce himself — the arms come open on the move: both swing wide from the shoulders, palms forward and empty, chest lifting, chin up, as he takes his last step (8.5–8.9). He says it with the arms already out, languidly, unhurried, in the third person, entirely pleased with himself and entirely aware that it is funny: "Luca is here." (9.0–10.1). The arms drop after (10.1–10.8). He is looking at LUCY while he says it, not at RAPHAEL. She does not smile.
+
+
+
+
+10.8 HARD CUT
+
+
+
+
+10.8–14.5 — seg 7. Nobody welcomes him. RAPHAEL steps across to LUCY and his palms close warmly over the backs of her hands where they hold the stack against her chest (10.8–11.5). For a second she is genuinely touched — shoulders down, eyes soft. He does not wait for the gesture to finish before speaking: the line starts while his hands are still closing, and he speaks past her, to LUCA: "Our new face. My muse." (11.2–12.3). The warmth drains out of her face while he is still holding on. He lets go (12.3–12.6), and straight on, already beginning to turn: "Find her something beautiful to wear." (12.6–13.9). On those words her eyes drop to her own cardigan and skirt and come back up (13.4–13.8). He turns his back on both of them (13.9–14.5).
+
+
+
+
+14.5 HARD CUT
+
+
+
+
+14.5–17.5 — seg 8, wide. RAPHAEL is already walking away down the length of the room toward the far doorway, unhurried, never looking back, and the line comes while he walks: without stopping and without turning his body he turns his head back over his shoulder so his face is clearly visible to camera and adds it as an afterthought, lifting the end into a question: "And do something with her hair, yes?" (14.9–16.1). He does not wait for an answer, reaches the doorway and goes out (16.1–17.5). LUCY watches him the whole way; her lips part very slightly as if to stop him, and she does not.
+
+
+
+
+17.5 HARD CUT
+
+
+
+
+17.5–21.7 — seg 9, over LUCY's shoulder onto LUCA. They are alone. Nobody speaks in this segment, and the four beats run straight into each other with no pauses between them.
+
+
+
+
+ - 17.5–18.4 — he reads her in one quick pass: his eyes drop from her hair down the cardigan, the skirt, the bare legs, the shoes, and come straight back to her face. Fast and unembarrassed, the way you check a garment on a rail. Everything he thinks about the outfit stays in his eyes. Her arms tighten around the magazines.
+
+
+
+
+ - 18.4–19.6 — he reaches up and lifts one strand of her hair away from her shoulder between two fingers, turns it once in the window light, and lets it fall back. She goes completely still and stops breathing for a beat.
+
+
+
+
+ - 19.6–20.1 — his hands come out toward her, palms up and open, asking without a word for the stack.
+
+
+
+
+ - 20.1–21.7 — she looks at his hands, then at the stack, hesitates, and gives it up.
+
+
+
+
+21.7 HARD CUT
+
+
+
+
+21.7–26.2 — seg 10, tight two-shot in profile, the final shot of the clip. LUCA has the stack tucked under one arm. LUCY's arms are empty for the first time all morning and she does not know where to put them; they hang, half rise, settle, and something has visibly gone out of her with the weight (21.7–22.5). LUCA, offering it rather than announcing it: "Luca." (22.6–23.0). She works out that this is her turn — something eases a fraction — and answers, small: "Lucy." (23.3–23.8). He tips his head toward the far end of the room, warm and matter-of-fact, and is already turning as he says it: "Come with me, Lucy." (24.1–25.2). He walks. She takes one breath, and takes one first step after him, and the clip ends there (25.2–26.2).
+
+
+
+
+DIALOGUE PLACEMENT RULE
+
+
+
+
+Every spoken line belongs entirely to one segment and is delivered on camera by the speaker. No line starts in one segment and finishes in another, and no line is heard while the speaker is out of frame. In segment 1 LUCA is seen from behind in three-quarter rear with the phone at his ear; the near edge of his cheek and jaw is visible past his shoulder and his line is delivered there, with his jaw moving as he speaks. In segment 8 RAPHAEL stays inside the frame and turns his head back toward camera so his mouth is visible while he says his line. In segment 10 both mouths are clearly visible in profile. Each sentence starts and finishes inside its own shot at one steady close recording level, with no fade and no trailing off at any cut. Segments 2, 3, 4, 5 and 9 contain no dialogue whatsoever. REBECCA never speaks.
+
+
+
+
+ACTING
+
+
+
+
+LUCA — the most beautiful thing that has walked into this room today, and he has never once had to wonder about it. He finishes his own life on the phone before giving the room a second of attention. "Luca is here" is a joke he is making about himself and he knows exactly how funny it is: wide, slow and delighted, not mad. Alone with her he stops performing and starts working — the fast look, the strand of hair and the open hands are all one act, a man taking inventory. He is not cruel about the outfit and does not need to be; he has already replaced it in his head. Taking the stack off her is the first kind thing anyone has done for her in this scene and he does not make a speech about it. He is the only person here who tells her his name.
+
+
+
+
+RAPHAEL — he decided long ago and is no longer selling anything. He does not greet Luca and does not answer him. Taking her hands is meant kindly and it is: he is genuinely fond of her and this is how he says congratulations. And while he holds her hands he talks about her to another man in the third person, and does not notice that the two things do not go together. He is already leaving while he finishes his last order. No smile.
+
+
+
+
+REBECCA — she reads the room, decides she is not needed, and takes herself out of it without being asked.
+
+
+
+
+(Safety: gazes engaged, natural blink cadence, listeners' mouths closed.)
+
+
+
+
+PHYSICS
+
+
+
+
+Until 20.1s the magazine stack stays securely supported against LUCY's chest, including while RAPHAEL places his hands over hers. There is no accidental slipping or dropping. At 20.1–21.7 she deliberately transfers the stack with real weight out of her arms into LUCA's hands, glossy covers sliding against each other, and he settles it under one arm. Her arms rise a couple of centimetres when the weight leaves them. When she turns her hair swings across her shoulder and settles. RAPHAEL's hands close over hers with real contact and part cleanly. The strand of hair LUCA lifts has real weight: it separates, hangs from his fingers, falls back against her shoulder and settles. LUCA's boots land with real weight on stone; when his arms swing open his jacket opens with them. The flip phone snaps shut with a real spring. REBECCA's chair slides back on stone as she stands. In the slow-motion shots the movement is smooth and weighted, never floaty.
+
+
+
+
+The air in the room is completely still. Nothing is blowing, lifting, floating, flying or caught in a breeze.
+
+
+
+
+LIGHTING
+
+
+
+
+Afternoon sun through the tall arched windows is the only source. Faces are lit by soft bounce off the pale walls and floor with a warm rim along hair and shoulders. LUCA's rear shots are backlit so his shoulders carry a bright rim; his close-ups are lit by the same warm daylight, eyes clean and open with the liner crisply readable, rings catching a hard little highlight. The far doorway is in softer shade, so RAPHAEL darkens as he walks out. LUCY stands inside a shaft of sun, rim-lit along her hair and shoulders, her face filled by bounce off the pale floor so every change in it is readable; when LUCA lifts the strand of hair it glows against the window light. Exposure is honest: the windows are not blown out, the trees outside stay visible and keep their colour. No studio lamp, softbox, reflector, stand, flag, cable or crew is visible anywhere in the frame, in any corner, at any moment.
+
+
+
+
+AUDIO
+
+
+
+
+Voices close and clean over quiet room tone. Lips move only for the scripted lines. Every spoken line sits at the same close recording level from its first word to its last, and lines follow each other with no dead air.
+
+
+
+
+ACCENT LOCK — each character has their own voice and they do not borrow from each other. RAPHAEL is the only person in this clip with a French accent: low, dry, precise, English with a clear French accent in all of his lines. LUCA speaks plain contemporary American English with no foreign colouring of any kind — a warm relaxed baritone, amused, unhurried; nothing French in his voice. LUCY speaks plain contemporary American English, soft and small; nothing French in her voice. REBECCA is silent.
+
+
+
+
+DELIVERY: LUCA's "Luca is here." is slow and languid, stretched out with pleasure, landing on his own name, pitch falling at the end. His "Luca." is offered quietly, not announced. His "Come with me, Lucy." is warm and completely matter-of-fact, as if it had already been agreed. LUCY's "Lucy." is half the volume of everything else in the clip and slightly unsteady.
+
+
+
+
+INTONATION: RAPHAEL's last line ends on a rising tag — "yes" lifts in pitch like a question tacked onto an instruction, warm and offhand, and he keeps walking through it.
+
+
+
+
+SFX: boots on stone, the flip phone's snap, paper against wool, glossy covers sliding against each other as the stack changes hands, a chair sliding back, RAPHAEL's shoes crossing stone, a door opening and closing at the far end of the room. Under the three slow-motion shots there is only quiet room tone and the boots. LUCY's breathing is audible under the close shots and catches when he touches her hair.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+Only four people exist in this clip. Segments 1 and 2 show LUCA only from behind; his face is first seen from the front in segment 4 as a strip across the eyes and whole in segment 5. LUCA's arms open on the move and stay open through his whole line, and both hands are empty when they do. RAPHAEL places both hands over LUCY's hands in segment 7 while she securely supports the magazines against her chest; he begins speaking before the gesture is complete. LUCY stays rooted on one spot on the open floor from the first frame until 25.2s and takes exactly one step, at the very end. LUCA never walks around her and never circles her. LUCY's face is clearly readable in every shot she appears in. REBECCA stands up and leaves during segment 6, seen only from behind, and does not appear again. RAPHAEL leaves through the far doorway at 17.5s and does not appear again. LUCY securely supports the magazines until 20.1s, transfers them to LUCA from 20.1s to 21.7s, and has empty hands from 21.7s to the end. There is exactly one table in the room and nothing stands against the walls. LUCY has no glasses on her face and none in her hands at any moment; nothing is slung or strapped to her forearms or shoulders. The stone floor is clean and clear everywhere. Every surface is blank and unbranded. Only the quoted lines are spoken. Clean picture with no on-screen text, subtitles, captions, titles or watermark. There is no music in any second of this clip.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography on fine-grain colour negative, warm-timed print: honey-caramel skin and wood, clean daylight at the windows, gently lifted blacks, glossy fashion-magazine saturation on dark fabric, chrome and lips. Light diffusion-filter glow: highlights and chrome bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a face is the subject. Real 24 fps motion blur on the real-time shots. Fully photoreal live action, mid-2000s New York: the only telephones in this world are corded landlines and slim silver flip phones.
+
+See all
+Copy prompt
+Recreate
+Scene 6: the cliffhanger
+
+Use @⁠CastingRoom for visual style only; create the dressing room described below. Keep Lucy exactly like @⁠LucyHairDown: hair down, no glasses, blue cardigan and checked skirt, no bag. Luca matches @⁠Luca.
+
+
+
+
+Make me a final scene, 10 s — Luca walks Lucy into the dressing room, sits her down in the makeup chair, puts both hands on her shoulders in front of the mirror and says 'Well then. Let's begin, muse,' then cut to black.
+
+See all
+Copy prompt
+Recreate
+0:00 / 0:12
+
+Luca brings her to the mirror, tells her they're ready to begin, and we cut to black. This is the cliffhanger, the final hook that makes you want to watch the next episode. End right before the answer everyone's waiting for: someone is about to make a decision, reveal who they really are, or walk out with a completely new look.
+
+Use @Image 1 for visual style only; create the dressing room described below. Keep Lucy exactly like @Image 2: hair down, no glasses, blue cardigan and checked skirt, no bag. Luca matches @Image 3.
+
+
+
+
+SCENE CONTEXT
+
+
+
+
+The head stylist brings the accountant into the dressing room, guides her to the makeup chair and sits her facing the mirror. Standing behind her, he rests both hands on her shoulders, looks at her face in the mirror and tells her they are about to begin. Cut to black.
+
+
+
+
+ACTIVE REFERENCES
+
+
+
+
+@Image 3 LUCA: man, early 30s, head stylist, easy and warm, carrying the magazine stack from the previous scene until he sets it on the counter at 2.0s, then hands empty; standing throughout. Face, hair and outfit 100% match the reference.
+
+
+
+
+@Image 2 LUCY: woman, 23, junior accountant, hair down and no glasses throughout; pale blue cardigan over a light tank, dark checked skirt, and the same shoes and necklace as the saved character sheet. No bag. Hands empty, resting in her lap once she sits; nervous, sitting as if at a job interview. Face, hair and outfit 100% match the reference.
+
+
+
+
+LOCATION MAP
+
+
+
+
+A small dressing room. Along one wall: a long white makeup counter with brushes, powders, hair tools and a wide mirror framed by round warm vanity bulbs; one black leather swivel makeup chair in front of it, 0.8 m from the mirror. Opposite wall: a chrome rack of black and white dresses. The door is at the far end of the room. A tall window at the side of the room lets in low late-afternoon sun. Segment 1: camera in the room's corner opposite the counter; the door screen-left, the chair and the counter screen-right. Segment 2: camera faces the pair from the mirror's side, looking straight back at them as the mirror sees them; the mirror itself is out of frame.
+
+
+
+
+FIRST FRAME AND SPATIAL BLOCKING
+
+
+
+
+Frame one already holds both: LUCA x 35%, a light hand at LUCY's elbow, LUCY half a step behind him at x 25%, both just inside the door, walking screen-right toward the chair at x 70%.
+
+
+
+
+Segment 2: LUCY seated center, x 50%, face at y 58%, square to the lens; LUCA standing directly behind her chair, x 50%, his face at y 25%, above and behind hers, leaning slightly forward; the dress rack a warm blur behind them.
+
+
+
+
+FORMAT MODE
+
+
+
+
+Controlled two-segment sequence with one HARD CUT at 3.5s, then a hard cut to black at 9.0s. Real-time motion. Dialogue clip.
+
+
+
+
+OPTICS
+
+
+
+
+Segment 1: 47° diagonal field of view, standard normal lens character, camera 3.5 m from the chair at 1.4 m height; natural proportions, the whole small room readable, the vanity bulbs glowing.
+
+
+
+
+Segment 2: 47° standard normal, camera 1.8 m in front of LUCY at her seated eye level, straight on; both faces sharp, the room behind them falling into creamy warm bokeh.
+
+
+
+
+CAMERA
+
+
+
+
+Segment 1: locked-off tripod, horizon level. Segment 2: slow dolly push-in of 20 cm across the whole segment, horizon locked, the pair centered.
+
+
+
+
+ACTION TIMING
+
+
+
+
+0.0s to 1.2s — LUCA leads LUCY from the door to the chair, a light hand at her elbow; she follows half a step behind, looking around the room.
+
+
+
+
+1.2s to 2.0s — at the chair he sets the magazines he took from her in the previous scene onto the counter, leaving both his hands free.
+
+
+
+
+2.0s to 3.0s — he draws the chair back; she sits on its front edge, knees together, hands in her lap.
+
+
+
+
+3.0s to 3.5s — he turns the chair a quarter turn to face the mirror.
+
+
+
+
+3.5s HARD CUT
+
+
+
+
+3.5s to 4.3s — LUCY looks at herself in the mirror, straight into the lens, shoulders up near her ears; LUCA stands behind her chair.
+
+
+
+
+4.3s to 5.0s — his hands come down onto her shoulders, both hands, light and steady; her shoulders drop a centimeter as she lets out a breath.
+
+
+
+
+5.2s to 7.0s — LUCA looks into the lens, at her face in the mirror, a small warm smile: "Well then. Let's begin, muse."
+
+
+
+
+7.0s to 9.0s — LUCY's eyes lift from her own reflection to his, just above the lens; a small breath; the corner of her mouth moves, almost a smile. His hands stay on her shoulders.
+
+
+
+
+9.0s HARD CUT TO BLACK
+
+
+
+
+9.0s to 10.0s — pure black frame.
+
+
+
+
+ACTING TASK — LUCA (fully invested; the work is in his eyes):
+
+
+
+
+SCENE DIRECTION (shared, unspoken): keep the machine running.
+
+
+
+
+MOTIVE: he has seen his boss find muses before; this one is simply frightened.
+
+
+
+
+GOAL: make her feel she is in safe hands before anyone touches her hair.
+
+
+
+
+OBSTACLE: she sits like a person waiting for a verdict.
+
+
+
+
+TACTIC: he settles her into the chair, then gives her something steady: the hands on her shoulders are an anchor. He borrows his boss's word "muse" with a small smile, so it becomes a joke they share rather than a title she has to live up to.
+
+
+
+
+ACTING TASK — LUCY:
+
+
+
+
+MOTIVE: she still does not know what she agreed to.
+
+
+
+
+GOAL: be good at this, because being useful is the only thing she knows how to do here.
+
+
+
+
+OBSTACLE: the girl in the mirror is still the accountant.
+
+
+
+
+TACTIC: she checks her reflection the way she checks a figure; when his hands land she lets herself be held; on "muse" she searches his eyes in the mirror for the joke, finds only kindness, and almost smiles.
+
+
+
+
+(Safety: gazes engaged, natural blink cadence, listeners' mouths closed.)
+
+
+
+
+PHYSICS
+
+
+
+
+The swivel chair turns with her weight in it and settles. The magazine stack has weight and settles on the counter. His hands settle with weight on the cardigan; the knit compresses under his fingers. Her shoulders drop as the breath leaves her; the cardigan shifts with them. Her loose hair rests naturally around her face and over her shoulders.
+
+
+
+
+LIGHTING
+
+
+
+
+Primary source: the round warm vanity bulbs around the mirror, lighting both faces softly from the front; round bulb catchlights in both pairs of eyes; her eyes clearly visible with no glasses. Secondary: low late-afternoon sun from the side window, a warm rim on her hair and on his shoulder. The room behind them in soft warm shadow. Exposed for skin.
+
+
+
+
+AUDIO
+
+
+
+
+Small-room tone, the faint hum of the vanity bulbs, the muffled bustle of the studio beyond the door. SFX: the chair casters, the magazine stack on the counter, the chair turning. LUCA: warm relaxed baritone, soft, almost private. LUCY is silent. Lips move only for the scripted line. At 9.0s all sound cuts with the picture into silence. Score is added in the edit.
+
+
+
+
+POSITIVE LOCKS
+
+
+
+
+Only LUCA and LUCY are in the room. LUCY has her hair down, no glasses and no bag throughout; her hands are empty and rest in her lap once she sits. LUCA stands behind her chair with both hands on her shoulders from 4.3s to 9.0s. In segment 2 both faces are frontal to the lens and the mirror itself stays out of frame. Only the quoted line is spoken. The clip ends on a pure black frame from 9.0s to 10.0s. Clean picture without on-screen text.
+
+
+
+
+LOOK: mid-2000s 35mm feature-film photography. Fine Kodak Vision2 negative grain, warm-timed print: honey-caramel skin and wood, clean slightly cool daylight at the windows, gently lifted blacks, glossy fashion-magazine saturation on black fabric, chrome and lips. Light diffusion-filter glow: window highlights, vanity bulbs and chrome bloom softly, skin reads smooth, gentle halation on bright edges. Rectilinear lenses, straight verticals. Shallow depth of field with creamy round bokeh wherever a face is the subject. Real 24 fps motion blur. Fully photoreal live action, mid-2000s New York: the only phones in this world are corded landlines and slim silver flip phones.
+
+See all
+Copy prompt
+Recreate
+Step 6: Turn it into a series that pays
+
+Cinematic short dramas have a huge advantage over the sloppy AI videos in this market, and even those are getting views and making money. Here are three ways creators turn short dramas into paid work:
+
+Make short dramas for clients.
+Paid brand integrations. Brands like to work with short-drama creators because people keep watching for the story and get familiar with the product along the way. That builds brand awareness and can help drive sales.
+Sell access to the next episodes. The free episodes get people curious about what happens next, and people already pay for this kind of entertainment.
+
+On a creator platform you can offer a monthly subscription and test a price like $5 or $10. 500 subscribers paying $5 would bring in $2,500 before fees and costs. The challenge is building a series people will keep paying to follow.
+
+Make your own short drama
+
+That's the whole workflow: an idea, a cast, a location, a script and six scenes, all in one ChatGPT chat with the Higgsfield plugin. Try it yourself, post your drama, tag the Higgsfield creators account and share your results 
+Want to put your skills to the test? Join the contest on our Discord: we just hit 200,000 members, so we're celebrating with a 200,000-credit prize pool. All the contest details are in the server.
+
+MAKE YOUR FIRST AI SHORT DRAMA
+Open Cinema Studio

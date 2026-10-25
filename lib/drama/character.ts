@@ -6,6 +6,7 @@ import path from "node:path";
 import sharp from "sharp";
 import sql from "@/lib/db";
 import { nanoBananaEdit } from "@/lib/fal-edit";
+import { SHEET_LAYOUT } from "@/lib/character-sheet-order";
 import { r2Copy, r2Download, r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 import { sendAdminImage, tellAdmin } from "@/lib/telegram";
 import { withShootLock } from "@/lib/worker-lock";
@@ -22,7 +23,7 @@ import { makePosterSoon } from "@/lib/drama/poster";
  *                                         → 'making' → character sheet + portrait → 'sheet_ready'
  *   'sheet_ready' → they say "this is me" → 'accepted', or ask once → 'making' again
  *
- * The sheet (front, three-quarter, profile, full body, in costume) is what every
+ * The sheet (full body front with the face erased, full body back, one portrait, in costume) is what every
  * future picture of the character is drawn from; the portrait is the one they
  * see first and can share. Both at 2K: Instagram shows 1080 px, so 4K would only
  * double the cost. Paid model runs are counted per member and capped, so a
@@ -139,15 +140,14 @@ const wardrobe = (role: DramaRole) =>
   `face, hair, skin or build, which come from the photographs; ignore any hairstyle or body shape it mentions: "${role.look}"`;
 
 function sheetPrompt(role: DramaRole, story: StoryRow): string {
+  // The same three-panel layout as the Character Sheet product (owner, 2026-10-25):
+  // full body front with the face erased, full body back, one large portrait.
   return [
     `CHARACTER SHEET for a cast member of a picture drama set in ${story.city}, Nigeria. They play ${role.name}, ${role.role}.`,
-    "LAYOUT — ONE image containing EXACTLY 4 panels side by side in a single row, equal in size, flush edge to edge, no " +
-    "borders, no gaps, in this order: (1) head and shoulders, facing the camera, eyes to the lens; (2) head and shoulders, " +
-    "turned about forty-five degrees to their left; (3) head and shoulders, full left profile; (4) the full body from head to " +
-    "feet, standing, facing the camera, arms relaxed, a small margin above the head and below the feet. Exactly four panels: " +
-    "do not repeat a view, do not add one, do not leave one empty.",
+    SHEET_LAYOUT,
     LIKENESS, wardrobe(role),
-    "BACKDROP — plain mid-grey seamless studio backdrop, the face sharp in every panel.",
+    "BACKDROP — one plain mid-grey seamless studio backdrop behind all three panels, the floor blending into the wall, a " +
+    "soft contact shadow under the shoes; the face sharp in the portrait.",
     lightingBlock(SHEET_LIGHT, false),
     PHOTO_REAL, NO_TEXT,
   ].join("\n\n");

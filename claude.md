@@ -883,6 +883,39 @@ check (30.00 s, −14 LUFS). Spent today on v2: narrator design + kit ≈ $0.20.
 auto-reload OFF — customer shoots use the same key; the owner was asked to top up.** Other 7 stories still need designed
 narrators before they start.
 
+**Update (2026-10-25): the drama becomes a PLATFORM — brain, skills, budget rule, sponsor page, sheet format (commit
+pending; server still DOWN since 2026-10-22, nothing deployed).** Owner's brief: people collaborate, create, sponsor and advertise
+through micro dramas from Instagram; publish by downloading the outputs or on a Netflix-style sister app (not built); sponsors
+fund a season after seeing the cast, the arc and the full production budget; actors/creators keep earning (continuous pay);
+carousels first, then carousels with pictures, then video; **price = cost of every paid call + 50 % retake buffer, × 5 (400 %
+profit)**; Higgsfield's workflow with ChatGPT → **DeepSeek** and Soul → **fal-ai/nano-banana-2/edit**; the character sheet in the
+tutorial's format; the game later. Everything is written up in **`tools/drama/PLATFORM.md`** (the design, the schema, the
+honest scaling note: one VPS cannot serve "50 million users"; edge caching + a second box + managed Postgres is the path, and
+the real ceiling is paid generation, which stays behind the cron sweeps' caps). Built, free, type-checked and `next build` clean:
+- `tools/drama/skills/`: the two Higgsfield skills + blog + video notes in `source/` (video cBxKZcalwkM watched with the
+  `watch` skill), and our rewrites **`alux-short-drama-screenwriter.md`** and **`alux-cinematic-prompt-writer.md`**.
+- **Brain:** `lib/deepseek.ts` + `tools/drama/brain.mjs` — model `deepseek-flash` (= DeepSeek-V4.1-Flash-1017, $0.30/$1.20 per
+  M tokens peak), base api.deepseek.com; **needs `DEEPSEEK_API_KEY` in `.env.local` (not added yet)**.
+- **Screenwriter:** `tools/drama/screenwriter.mjs --brief … --slug … --city … --genre …` writes a whole season in the story-file
+  shape, `check.mjs` referees, 3 repair rounds, ~$0.05 a season; `--check <file>` is the free referee (tested).
+- **Budget:** `lib/drama/budget.ts` (pure; `budget-rates.ts` reads app_config `drama_rate_*`, `drama_cost_buffer_pct`,
+  `drama_profit_pct`, `drama_usd_ngn`), CLI `node tools/drama/budget.mjs <slug> [--format pictures|video]`. Real prices
+  read 2026-10-25: nano-banana-2/edit **$0.08 at 1K, $0.12 at 2K, $0.16 at 4K** (fal_rate_card still says $0.039 — fixed in
+  migration 087), nano-banana-pro $0.15; Seedance per-second is a PLACEHOLDER ($0.35/s) until a clip is billed. The Silent
+  Partner: carousel season $7.10 production → ₦56,800; pictures ₦108,700; video ≈ ₦1.6M (placeholder).
+- **Sponsor page** `/d/drama/<slug>/sponsor` (cast, arc without spoilers, budget per format, "Fund season one" → partner request
+  with package `season_funder`, Telegram); linked from each story's brand section. Paying on the page needs the Paystack
+  `drama_sponsor` branch — a shared-file change, **owner OK needed**.
+- **Character sheet = the tutorial's three-panel layout** (`SHEET_LAYOUT`: full body front with the FACE ERASED, full body back,
+  one large portrait on the right, one seamless grey); `lib/drama/character.ts` sheetPrompt uses it. **Unproven on a real
+  render** (the owner's next Character Sheet order is the proof).
+- `migrations/087_drama_platform.sql` — DRAFT, not applied: rate-card fix, budget config keys, `drama_stories.created_by/
+  visibility/format/budget`, `drama_collaborators`, `drama_invites`, `drama_sponsorships`, `drama_revenue`, `drama_earnings`,
+  `drama_deliverables`, `drama_publications`.
+**Not built (needs the server and/or owner OK):** the creator studio (`/d/drama/create`, INVITE word in the IG webhook), the
+sponsor Paystack branch, the earnings split + payouts, deliverables zips, `lib/drama/pictures.ts` (phase 2 pictures), the
+sister app. **Next:** server back → deploy + psql 087; owner adds the DeepSeek key → first screenwriter run on a brief they pick.
+
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 
 ---

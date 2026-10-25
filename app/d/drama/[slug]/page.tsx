@@ -225,6 +225,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
         </ul>
         <p className={styles.p} style={{ marginTop: 14 }}>
           Want more than a product in a scene — an episode presented by your brand, or your brand written into the story? <Link href={`/d/drama/partner?story=${story.slug}`}>Talk to us about a partnership</Link>.
+          {" "}Or <Link href={`/d/drama/${story.slug}/sponsor`}>fund the whole season</Link>: see the cast, the story arc and what it costs to produce.
         </p>
       </section>
 

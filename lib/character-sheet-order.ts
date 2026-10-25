@@ -6,16 +6,19 @@ import { r2SignedDownloadUrl, r2Upload } from "@/lib/r2";
 
 /**
  * The `character_sheet` marketplace product (owner, 2026-10-22): a buyer sends
- * several photos of one person and gets back ONE character sheet — five views
- * of that person on a plain grey studio backdrop, laid out like the reference
- * the owner chose:
+ * several photos of one person and gets back ONE character sheet on a plain grey
+ * studio backdrop.
  *
- *   | medium, front | full body, front  | full body, back | close-up, 3/4    |
- *   | (hands IN)    | (head cropped)   | (head to toe)   |------------------|
- *   |               |                  |                 | close-up, profile|
+ * Layout (owner, 2026-10-25 — the format from the short-drama tutorial we learnt
+ * from, tools/drama/skills/): ONE 16:9 image, three panels on one seamless grey:
  *
- * The owner's one change to that reference: the medium shot must show both
- * hands (the original cut them off). Every sheet is on grey.
+ *   | full body, FRONT  | full body, BACK  |  head-and-shoulders PORTRAIT   |
+ *   | (face erased)     |                  |  (the only face on the sheet)  |
+ *
+ * The face on the full-body front view is left as a smooth blank oval on
+ * purpose: a video or picture model given two faces at two sizes may take one
+ * here and the other there, and the character drifts. One clear face
+ * reference — the portrait — keeps them the same person in every scene.
  *
  * Kept out of lib/generate.ts the way the GIF loop is: no identity analysis, no
  * planner, no brief — one deterministic prompt, one paid image. generate.ts
@@ -44,36 +47,38 @@ const STYLE_TAGS: Record<string, string> = {
 };
 
 export const SHEET_LAYOUT =
-  "LAYOUT — ONE single landscape image (16:9) containing EXACTLY FIVE photographs of the same person, arranged in four " +
-  "columns from left to right. Columns 1, 2 and 3 are tall panels that run the full height of the image. Column 4 is split " +
-  "into two stacked panels of equal height. Thin dark-grey gutters separate the panels; there is nothing else on the sheet.\n" +
-  "Panel 1 (column 1, full height) — MEDIUM SHOT, FRONT: from the top of the head down to mid-thigh, facing the camera, " +
-  "standing straight, arms relaxed at the sides, eyes to the lens, a calm natural expression. BOTH HANDS ARE FULLY IN THE " +
-  "FRAME: every finger visible, a little space between each hand and the panel edge — the frame never cuts through a hand, " +
-  "a wrist or a forearm.\n" +
-  "Panel 2 (column 2, full height) — FULL BODY, FRONT, THE OUTFIT VIEW: from just below the chin down to the soles of the " +
-  "shoes. The head is deliberately cropped off by the top edge of the panel, just under the chin, so the whole outfit fills " +
-  "the panel. Standing straight, arms relaxed at the sides, feet slightly apart, both hands and both feet fully in frame.\n" +
-  "Panel 3 (column 3, full height) — FULL BODY, BACK: the whole person from the top of the head to the soles of the shoes, " +
-  "seen from directly behind, standing straight, arms relaxed at the sides; the back of the hair and the back of the outfit " +
-  "fully visible, a small margin above the head and below the feet.\n" +
-  "Panel 4 (column 4, top) — CLOSE-UP, THREE-QUARTER: head and shoulders, the face turned slightly to one side, eyes to the " +
-  "lens.\n" +
-  "Panel 5 (column 4, bottom) — CLOSE-UP, PROFILE: head and shoulders in side profile, looking away from the camera; the " +
-  "ear, jawline, nose line and the side of the hair clearly visible.\n" +
-  "THE COUNT IS FIXED: five panels, no more and no fewer. Do not repeat a view, do not add a view, do not leave a panel empty.";
+  "LAYOUT — ONE single landscape image (16:9) containing EXACTLY THREE panels of the same person on ONE continuous " +
+  "seamless backdrop: no gutters, no borders, no frames, no dividing lines — the three panels share one backdrop and " +
+  "one floor. The two full-length figures stand side by side in the LEFT HALF of the image, evenly spaced, the same " +
+  "height and the same scale, both pairs of feet on exactly the same ground line, each running from a little above the " +
+  "head to a little below the shoes. The RIGHT HALF holds ONE large head-and-shoulders portrait that fills the full " +
+  "height of the image.\n" +
+  "Panel 1 (left half, first figure) — FULL BODY, FRONT: facing the camera squarely, weight even on both feet, feet " +
+  "hip-width apart, spine straight, shoulders level, arms relaxed at the sides, hands open and empty, every finger and " +
+  "both shoes fully in frame. THE FACE IS ERASED: in place of the face leave a smooth, blank, softly blurred oval in a " +
+  "muted skin tone — no eyes, no nose, no mouth, no brows. The hair, hairline and ears stay exactly as they are around " +
+  "the blank oval, so the hairstyle still reads.\n" +
+  "Panel 2 (left half, second figure) — FULL BODY, BACK: the same stance turned 180 degrees, seen from directly behind, " +
+  "the same distance and scale as panel 1; the back of the hair, the back of the outfit and the heels of the shoes fully " +
+  "visible.\n" +
+  "Panel 3 (right half) — PORTRAIT, HEAD AND SHOULDERS: facing the camera squarely, chin level, a calm neutral " +
+  "expression, lips relaxed, eyes to the lens, cropped at the upper chest so the full length of the neck shows, the " +
+  "face large and sharp in the centre of the panel, the neckline of the outfit visible. THIS IS THE ONLY FACE ON THE " +
+  "SHEET and it is the face reference for every later picture of this person.\n" +
+  "THE COUNT IS FIXED: three panels, no more and no fewer — two full-length figures on the left, one portrait on the " +
+  "right. Do not repeat a view, do not add a view, do not draw a face on the front figure.";
 
 export const SHEET_BACKDROP =
   "BACKDROP — every panel is photographed against the same plain seamless studio paper in a neutral mid-grey (about 18% " +
   "grey, like a photographer's grey card): smooth, no texture, no floor line, no props, no furniture, no other people. The " +
-  "grey is identical in all five panels.";
+  "grey is identical in all three panels, and the floor blends into the wall with only a soft contact shadow under the shoes.";
 
 // The camera and lens per panel. Long lenses from a distance keep a body's
 // proportions true — a short lens close up makes the head big and the legs
 // short, which a reference sheet must never do.
 export const SHEET_CAMERA =
   "CAMERA — a high-end studio session on a medium-format digital camera on a tripod, ISO 100, 1/160 s with studio flash, " +
-  "the camera always level. Full-length panels (2 and 3): an 85mm lens at f/8 from about five metres, the camera at hip " +
+  "the camera always level. Full-length panels (1 and 2): an 85mm lens at f/8 from about five metres, the camera at hip " +
   "height, so the proportions stay true — no wide-angle stretch, no oversized head, no shortened legs. Medium shot " +
   "(panel 1): an 85mm lens at f/8, the camera at chest height. Close-ups (panels 4 and 5): a 105mm lens at f/5.6 at eye " +
   "level, focus on the nearest eye. Everything sharp from the hair to the shoes: fabric weave, hair strands and skin pores " +
@@ -85,7 +90,7 @@ export const SHEET_LIGHT =
   "V-flat as fill on the other side, one stop under the key (about 2:1); two tall strip softboxes behind the person, one on " +
   "each side, as rim lights that outline the shoulders, arms and hair against the grey; the backdrop lit on its own by two " +
   "lights so the grey is smooth and even from edge to edge — no hotspot, no vignette, no shadow of the person on the paper; " +
-  "soft round catchlights in both eyes. The same light, exposure and white balance in all five panels.\n\n" +
+  "soft round catchlights in both eyes. The same light, exposure and white balance in all three panels.\n\n" +
   "COLOUR — 5600K daylight, white-balanced on the grey backdrop, true-to-life skin tones and undertones, a gentle contrast " +
   "curve with open shadows and clean, unclipped highlights, no stylised grade, no colour cast, no haze. A clean high-end " +
   "studio finish — even exposure and clean grey — with the skin's real texture kept, never smoothed: this sheet is the " +
@@ -94,13 +99,13 @@ export const SHEET_LIGHT =
 const LIKENESS =
   "THE SAME PERSON — all the photographs of the person attached are of one real individual. Face shape, eye shape and " +
   "spacing, nose, lips, jawline, brows, skin tone and undertone, freckles, moles and scars, hairline, hair colour and " +
-  "texture, body build and height come from those photographs and must not change. It is the same individual in all five " +
-  "panels, not a similar-looking person. Do not slim, smooth, lighten, symmetrise or beautify; keep real skin texture and " +
+  "texture, body build and height come from those photographs and must not change. It is the same individual in all three " +
+  "panels, not a similar-looking person — the front figure shows their body and hair, the portrait shows their face. Do not slim, smooth, lighten, symmetrise or beautify; keep real skin texture and " +
   "their real age.";
 
 const SAME_LOOK =
   "CONSISTENCY — the same hairstyle, the same outfit, the same shoes and the same accessories in every panel, so the front, " +
-  "the back and the close-ups clearly show one person dressed one way.";
+  "the back and the portrait clearly show one person dressed one way.";
 
 const REAL_PHOTO =
   "A real studio photograph: realistic skin texture, natural asymmetry, realistic fabric folds, physically plausible light, " +
@@ -109,7 +114,7 @@ const REAL_PHOTO =
 
 const NO_TEXT =
   "PRINT NO TEXT ANYWHERE: no panel labels, captions, names, numbers, arrows, measurement scale, colour swatches, logos or " +
-  "watermark. The sheet contains the five photographs and nothing else.";
+  "watermark. The sheet contains the three panels and nothing else — no studio equipment, no props, no other people.";
 
 /**
  * The character-sheet prompt, in the house structure (Scene / Subject /
@@ -151,8 +156,9 @@ export function characterSheetPrompt(opts: {
     `Important Details: ${outfit}\n\n${SAME_LOOK}\n\n${REAL_PHOTO}`,
     "Use Case: a character model sheet — the reference used to keep this person identical in every later picture.",
     "Constraints: preserve the person's identity exactly and the outfit exactly; change only the pose and camera angle " +
-      "each panel asks for. Never cut off the hands in panel 1. Never show the head in panel 2. Never change the outfit " +
-      `between panels. Never use any background but the plain grey. ${NO_TEXT}`,
+      "each panel asks for. Never draw a face on the full-body front figure — a smooth blank oval only. Never cut off " +
+      "hands or shoes on the full-length figures. Never change the outfit between panels. Never use any background but " +
+      `the plain grey. ${NO_TEXT}`,
   ].join("\n\n");
 }
 

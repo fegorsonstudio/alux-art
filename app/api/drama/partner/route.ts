@@ -10,7 +10,7 @@ import { tellAdmin } from "@/lib/telegram";
  */
 export const dynamic = "force-dynamic";
 
-const PACKAGES = { episode_sponsor: "Episode sponsor", story_partner: "Story partner", own_drama: "A drama of our own", other: "Something else" } as const;
+const PACKAGES = { season_funder: "Fund a season", episode_sponsor: "Episode sponsor", story_partner: "Story partner", own_drama: "A drama of our own", other: "Something else" } as const;
 const recent = new Map<string, number[]>();
 const esc = (s: string) => s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] as string);
 const fail = (status: number, error: string) => NextResponse.json({ error }, { status });

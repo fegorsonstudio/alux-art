@@ -11,6 +11,26 @@ This is a NEW engine. It is not Photo Wahala (that series keeps its own rules in
 
 ---
 
+## 0a. The workshop: brain, skills, budget (owner, 2026-10-25)
+
+The owner's 2026-10-25 update turns the drama into a platform (see `PLATFORM.md`).
+The tools that write and price a story:
+
+- **The brain is DeepSeek** (`deepseek-flash`): `tools/drama/brain.mjs` for scripts,
+  `lib/deepseek.ts` on the website. Needs `DEEPSEEK_API_KEY` in `.env.local`.
+- **Two skills** in `skills/`, learnt from Higgsfield's short-drama workflow
+  (`skills/source/`): the *Alux Short Drama Screenwriter* (how a season is built:
+  the four parts, the cast, the references, every vote road) and the *Alux Cinematic
+  Prompt Writer* (how every picture — and later every clip — is prompted).
+- **The screenwriter** `tools/drama/screenwriter.mjs` writes a whole season from a brief
+  into the story-file shape and lets `check.mjs` referee it before saving.
+- **The budget** `tools/drama/budget.mjs <slug> [--format pictures|video]`
+  (`lib/drama/budget.ts`): every paid call, +50 % for retakes, × 5 for the price.
+  Sponsors see the same figure on `/d/drama/<slug>/sponsor`.
+- **Pictures are made by `fal-ai/nano-banana-2/edit`** from character sheets in the
+  three-panel format (full body front with the face erased, full body back, one
+  portrait — `lib/character-sheet-order.ts`).
+
 ## 0. The telling: a recap narrator (owner, 2026-10-22)
 
 The owner's house style for telling every story — slides and soundtrack alike —
