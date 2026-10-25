@@ -448,7 +448,17 @@ export async function makeSound(S, opts) {
       }
     };
     const beds = {};
+    // A sponsor's own track (owner, 2026-10-25: a musician's song in the car scene): it is the
+    // scene bed, trimmed to length with a fade, and Lyria makes only the score.
+    if (opts.sceneBed) {
+      const f = path.join(dir, "scene-sponsor.wav");
+      await ff(["-i", opts.sceneBed, "-t", String(L), "-af", `afade=t=in:d=1.5,afade=t=out:st=${L - 3}:d=3`, "-ac", "2", "-ar", "48000", f]);
+      const dur = await seconds(f), vol = await meanVolume(f);
+      if (ok("sponsor track usable", dur >= L - 0.5 && vol > -45, `${dur.toFixed(1)} s, mean ${vol} dB`)) beds.scene = f;
+      report.sponsorTrack = opts.sceneBed;
+    }
     for (const [name, prompt] of [["score", scorePrompt], ["scene", scenePrompt]]) {
+      if (beds[name]) continue;
       try {
         const bytes = await lyria(prompt, name);
         const f = path.join(dir, `${name}.${ext(bytes)}`);

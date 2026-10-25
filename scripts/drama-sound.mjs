@@ -24,8 +24,10 @@
  * makes every sound with ffmpeg instead of the paid models.
  */
 import postgres from "postgres";
-import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { existsSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeSound } from "../tools/drama/sound/engine.mjs";
@@ -142,7 +144,19 @@ async function main() {
 
     // 2. Make, check, mix, and the cover video next to the episode's slides.
     const outBase = `${path.posix.dirname(coverKey)}/sound`;
-    const res = await makeSound(script, { coverKey, outBase, fake: FAKE, log: (m) => log(m) });
+    // A sponsor's track frozen into the episode (lib/drama/episodes.ts approveEpisode): the scene bed.
+    let sceneBed;
+    const music = episode.music;
+    if (music?.bucket && music?.path && !FAKE) {
+      try {
+        const obj = await s3.send(new GetObjectCommand({ Bucket: music.bucket, Key: music.path }));
+        const bytes = Buffer.from(await obj.Body.transformToByteArray());
+        sceneBed = path.join(os.tmpdir(), `sponsor-${due.episode_id}.${path.extname(music.path).slice(1) || "mp3"}`);
+        await writeFile(sceneBed, bytes);
+        log(`sponsor track: “${music.title ?? ""}” by ${music.artist ?? music.brand}`);
+      } catch (e) { log(`sponsor track could not be read: ${e.message}`); }
+    }
+    const res = await makeSound(script, { coverKey, outBase, fake: FAKE, log: (m) => log(m), sceneBed });
 
     // 3. Only a soundtrack that passed everything goes on the post.
     if (!res.ok) {

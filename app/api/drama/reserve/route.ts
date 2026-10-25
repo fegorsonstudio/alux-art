@@ -14,6 +14,8 @@ export async function POST(req: NextRequest) {
       brandName: String(b.brandName ?? ""), contactName: String(b.contactName ?? ""), phone: String(b.phone ?? ""),
       productPath: String(b.productPath ?? ""), note: String(b.note ?? ""),
       productUrl: String(b.productUrl ?? ""), keyword: String(b.keyword ?? ""), rulesOk: b.rulesOk === true,
+      kind: String(b.kind ?? "product"), assets: Array.isArray(b.assets) ? (b.assets as never[]) : [], brief: String(b.brief ?? ""),
+      musicTitle: String(b.musicTitle ?? ""), musicArtist: String(b.musicArtist ?? ""), placeName: String(b.placeName ?? ""),
       who: { id: user.id, email: user.email, admin: isAdminEmail(user.email) },
     });
     return NextResponse.json(out);

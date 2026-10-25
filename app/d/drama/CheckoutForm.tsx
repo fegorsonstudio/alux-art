@@ -37,6 +37,13 @@ export default function CheckoutForm(p: Props) {
   const [keyword, setKeyword] = useState("");
   const [rulesOk, setRulesOk] = useState(false);
   const [product, setProduct] = useState<Picked | null>(null);
+  // What a brand places (owner, 2026-10-25): a product, their place, their music, a flyer.
+  const [kind, setKind] = useState<"product" | "location" | "music" | "flyer">("product");
+  const [assets, setAssets] = useState<{ file: File; preview: string | null }[]>([]);
+  const [placeName, setPlaceName] = useState("");
+  const [musicTitle, setMusicTitle] = useState("");
+  const [musicArtist, setMusicArtist] = useState("");
+  const [brief, setBrief] = useState("");
   const [photos, setPhotos] = useState<Partial<Record<PhotoKind, Picked>>>({});
   const [agree, setAgree] = useState(false);
   // Real photos first (owner, 2026-10-25): the sheet is their own front and portrait as shot; only the back view is generated.
@@ -63,7 +70,10 @@ export default function CheckoutForm(p: Props) {
     if (p.mode === "cast") {
       const missing = PHOTO_KINDS.find((k) => !photos[k.kind]);
       if (missing) { setError(`Add the photo: ${missing.label.toLowerCase()}.`); return; }
-    } else if (!product) { setError("Add a picture of your product or logo."); return; }
+    } else if (kind === "product" && !product) { setError("Add a picture of your product or logo."); return; }
+    else if (kind === "location" && (!assets.length || !placeName.trim())) { setError("Add at least one photo of your place and its name."); return; }
+    else if (kind === "music" && (!assets.some((a) => /^(audio\/|video\/mp4)/.test(a.file.type)) || !musicTitle.trim())) { setError("Add your track and its title."); return; }
+    else if (kind === "flyer" && !assets.length) { setError("Add your flyer or design."); return; }
     if (p.mode === "brand" && brand.trim().length < 2) { setError("Add your brand name."); return; }
     if (p.mode === "brand" && !/^https:\/\/[^\s.]+\.[^\s]+$/.test(productUrl.trim())) { setError("Add the full link to your product, starting with https://"); return; }
     if (p.mode === "brand" && !/^[A-Z]{3,14}$/.test(word)) { setError("Choose a comment word of 3 to 14 letters, no spaces."); return; }
@@ -80,8 +90,21 @@ export default function CheckoutForm(p: Props) {
         }
         body = { slug: p.slug, role: p.role, displayName: name, photos: sent, sheetMode };
       } else {
+        const sentAssets: { bucket: string; path: string; type: string; name: string }[] = [];
+        for (const [i, a] of assets.entries()) {
+          setBusy(`Sending file ${i + 1} of ${assets.length}…`);
+          const fd = new FormData();
+          fd.append("file", a.file);
+          fd.append("kind", /^(audio\/|video\/mp4)/.test(a.file.type) ? "audio" : a.file.type === "application/pdf" ? "document" : "image");
+          const up = await fetch("/api/drama/asset", { method: "POST", body: fd });
+          const j = await up.json().catch(() => ({}));
+          if (!up.ok) throw new Error(j.error ?? "A file did not go through.");
+          sentAssets.push(j);
+        }
         setBusy("Sending your picture…");
-        body = { slug: p.slug, episode: p.episode, slot: p.slot, brandName: brand, contactName: name, phone, productPath: await upload(product!.file), note, productUrl: productUrl.trim(), keyword: word, rulesOk };
+        body = { slug: p.slug, episode: p.episode, slot: p.slot, brandName: brand, contactName: name, phone,
+          productPath: kind === "product" && product ? await upload(product.file) : "", note, productUrl: productUrl.trim(), keyword: word, rulesOk,
+          kind, assets: sentAssets, brief, musicTitle, musicArtist, placeName };
       }
       setBusy("Working…");
       const res = await fetch(p.mode === "cast" ? "/api/drama/join" : "/api/drama/reserve", {
@@ -170,16 +193,75 @@ export default function CheckoutForm(p: Props) {
           </div>
         </div>
       ) : (
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>Your product or logo</span>
-          <label className={styles.drop}>
-            {product
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={product.preview} alt="" className={styles.dropImg} />
-              : <span>A clean photo on a plain background works best</span>}
-            <input type="file" accept="image/*" hidden onChange={(e) => { const pk = accept(e.target.files?.[0] ?? null); if (pk) setProduct(pk); }} />
+        <>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>What are you placing?</span>
+            <div className={styles.pkgList} role="radiogroup">
+              {([["product", "A product", "A picture of it; it takes the object's place in the scene."],
+                 ["location", "My place", "Photos of your restaurant, shop or venue: the scene is set there, with your real photo as its picture."],
+                 ["music", "My music", "Your track plays in the episode's soundtrack and is credited."],
+                 ["flyer", "A flyer or design", "Your poster, menu or design appears on a phone, a wall or a table in the scene."]] as const).map(([k, title, note]) => (
+                <label key={k} className={styles.pkg}>
+                  <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => { setKind(k); setAssets([]); }} />
+                  <span><p className={styles.pkgName}>{title}</p><p className={styles.pkgNote}>{note}</p></span>
+                </label>
+              ))}
+            </div>
+          </div>
+          {kind === "product" && (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Your product or logo</span>
+              <label className={styles.drop}>
+                {product
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={product.preview} alt="" className={styles.dropImg} />
+                  : <span>A clean photo on a plain background works best</span>}
+                <input type="file" accept="image/*" hidden onChange={(e) => { const pk = accept(e.target.files?.[0] ?? null); if (pk) setProduct(pk); }} />
+              </label>
+            </div>
+          )}
+          {kind === "location" && (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>The name of your place</span>
+              <input className={styles.input} value={placeName} maxLength={100} placeholder="For example: Ìtàn Kitchen, Lekki" onChange={(e) => setPlaceName(e.target.value)} />
+            </label>
+          )}
+          {kind === "music" && (
+            <div className={styles.split}>
+              <label className={styles.field}><span className={styles.fieldLabel}>Track title</span><input className={styles.input} value={musicTitle} maxLength={100} onChange={(e) => setMusicTitle(e.target.value)} /></label>
+              <label className={styles.field}><span className={styles.fieldLabel}>Artist</span><input className={styles.input} value={musicArtist} maxLength={100} onChange={(e) => setMusicArtist(e.target.value)} /></label>
+            </div>
+          )}
+          {kind !== "product" && (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>{kind === "location" ? "Photos of your place (up to 6)" : kind === "music" ? "Your track, and cover art if you like" : "Your flyer or design (PDF or picture)"}</span>
+              <label className={styles.drop}>
+                <span>{assets.length ? `${assets.length} file${assets.length === 1 ? "" : "s"} chosen` : kind === "music" ? "MP3, M4A, WAV or OGG — the part you want heard, 30 seconds or more" : "Clear, well-lit, no filters"}</span>
+                <input type="file" multiple hidden accept={kind === "music" ? "audio/*,image/*" : kind === "flyer" ? "application/pdf,image/*" : "image/*"}
+                  onChange={(e) => {
+                    const next = Array.from(e.target.files ?? []).slice(0, 6).map((file) => ({ file, preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : null }));
+                    setAssets((cur) => [...cur, ...next].slice(0, 8)); e.target.value = "";
+                  }} />
+              </label>
+              {assets.length > 0 && (
+                <div className={styles.photoGrid}>
+                  {assets.map((a, i) => (
+                    <div key={i} className={`${styles.drop} ${styles.photoTile}`} style={{ cursor: "default" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {a.preview ? <img src={a.preview} alt="" className={styles.photoImg} /> : <span className={styles.photoEmpty}>♪</span>}
+                      <span className={styles.photoLabel}>{a.file.name.slice(0, 24)}</span>
+                      <button type="button" className={styles.chip} style={{ cursor: "pointer", font: "inherit", fontSize: 11 }} onClick={() => setAssets((cur) => cur.filter((_, j) => j !== i))}>remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>How would you like it used? (optional)</span>
+            <input className={styles.input} value={brief} maxLength={600} placeholder={kind === "music" ? "For example: playing in the car on the drive home" : kind === "location" ? "For example: the dinner scene happens in our main hall" : "Anything the writers should know"} onChange={(e) => setBrief(e.target.value)} />
           </label>
-        </div>
+        </>
       )}
       {p.mode === "brand" && (
         <>

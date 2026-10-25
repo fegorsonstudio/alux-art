@@ -152,10 +152,12 @@ export async function handleDramaComment(
     const decides = hit.content.finale ? "decides how season two begins" : `writes Episode ${hit.n + 1}`;
     if (out.kind === "counted") {
       const score = out.score.map((x) => `${x.word} ${x.n}`).join(" · ");
+      // The owner prefers the first wording (2026-10-25): an invitation to play a role, as the button.
       await answer(creds, c.commentId,
-        `Your vote is in: ${word} — ${label.toLowerCase()}.\nSo far: ${score}. Voting closes at ${closesLabel(closesAt)} (Lagos time); the word with the most votes ${decides}.`, url);
+        `Your vote is in: ${word} — ${label.toLowerCase()}.\nSo far: ${score}. Voting closes at ${closesLabel(closesAt)} (Lagos time); the word with the most votes ${decides}.
+Want to be in the story? Play a role:`, `${url}#cast`, "Play a role");
     } else if (out.kind === "closed") {
-      await answer(creds, c.commentId, `This vote has closed: ${out.winner} won. ${hit.content.finale ? "Season two is on its way." : `Episode ${hit.n + 1} is on its way.`}`, url);
+      await answer(creds, c.commentId, `This vote has closed: ${out.winner} won. ${hit.content.finale ? "Season two is on its way." : `Episode ${hit.n + 1} is on its way.`}` + " Want to be in the next one?", `${url}#cast`, "Play a role");
     } else if (out.kind === "late") {
       await answer(creds, c.commentId, `Voting on this episode closed at ${closesLabel(closesAt)}. The next episode opens a new vote — see you there.`, url);
     } else {

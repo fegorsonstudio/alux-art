@@ -6,7 +6,7 @@ import { r2Copy, r2SignedDownloadUrl } from "@/lib/r2";
 import { SITE_URL } from "@/lib/site-url";
 import { sendAdminImage, tellAdmin } from "@/lib/telegram";
 import { dramaPrices, lastMadeEpisode, roleIsOpen, storyBySlug } from "@/lib/drama/data";
-import { checkBrandWord, checkProductUrl, newLinkCode, newReportToken } from "@/lib/drama/brands";
+import { checkBrandWord, checkProductUrl, newLinkCode, newReportToken, PLACEMENT_KINDS, type PlacementKind } from "@/lib/drama/brands";
 import { emailBrand, emailSponsor } from "@/lib/drama/notify";
 import { estimateSeason, specForStory, type DramaFormat } from "@/lib/drama/budget";
 import { budgetRates } from "@/lib/drama/budget-rates";
@@ -104,9 +104,12 @@ function voteWordsFor(story: NonNullable<Awaited<ReturnType<typeof storyBySlug>>
   return all.flatMap((e) => (e.choice?.options ?? []).map((o) => o.word));
 }
 
+export type PlacementAsset = { bucket: string; path: string; type: string; name?: string };
 export async function startPlacementPayment(input: {
   slug: string; episodeN: number; slotKey: string; brandName: string; contactName: string; phone: string;
   productPath: string; note: string; productUrl: string; keyword: string; rulesOk: boolean; who: Who;
+  /** What they are placing (owner, 2026-10-25): a product picture, their place, their music, a flyer. */
+  kind?: string; assets?: PlacementAsset[]; brief?: string; musicTitle?: string; musicArtist?: string; placeName?: string;
 }) {
   const story = await storyBySlug(input.slug);
   if (!story) throw new DramaError("No such story.", 404);
@@ -130,7 +133,17 @@ export async function startPlacementPayment(input: {
   if (sold) throw new DramaError("Another brand has this spot.", 409);
   const brand = input.brandName.trim().slice(0, 60);
   if (brand.length < 2) throw new DramaError("Add your brand name.");
-  if (!input.productPath.startsWith(`${input.who.id}/`)) throw new DramaError("Upload your product picture again.");
+  const kind: PlacementKind = input.kind && input.kind in PLACEMENT_KINDS ? (input.kind as PlacementKind) : "product";
+  // Assets uploaded through /api/drama/asset: lasting storage, under this user's own folder.
+  const assets = (input.assets ?? []).filter((a) => a && a.bucket === "generated-4k" && String(a.path).startsWith(`drama/brands/uploads/${input.who.id}/`)).slice(0, 8);
+  const images = assets.filter((a) => /^image\//.test(a.type));
+  const audio = assets.filter((a) => /^(audio\/|video\/mp4)/.test(a.type));
+  if (kind === "product" && !input.productPath.startsWith(`${input.who.id}/`)) throw new DramaError("Upload your product picture again.");
+  if (kind === "location" && !images.length) throw new DramaError("Add at least one photo of your place.");
+  if (kind === "music" && !audio.length) throw new DramaError("Add your track (MP3, M4A, WAV or OGG).");
+  if (kind === "music" && !String(input.musicTitle ?? "").trim()) throw new DramaError("Add the title of the track.");
+  if (kind === "flyer" && !assets.length) throw new DramaError("Add your flyer or design.");
+  if (kind === "location" && !String(input.placeName ?? "").trim()) throw new DramaError("Add the name of the place.");
   if (!input.rulesOk) throw new DramaError("Tick the box to confirm your product is not on the list we can't place.");
   const word = checkBrandWord(input.keyword, voteWordsFor(story, input.episodeN));
   if (!word.ok) throw new DramaError(word.why);
@@ -140,12 +153,17 @@ export async function startPlacementPayment(input: {
   if (!link.ok) throw new DramaError(link.why);
   const price = (await dramaPrices()).slot;
 
+  // For a place, a track or a flyer the first picture stands in for the product picture (the card, the report).
+  const picture = kind === "product" ? { bucket: "identity-images", path: input.productPath } : images[0] ? { bucket: images[0].bucket, path: images[0].path } : null;
   const [row] = await sql<{ id: string }[]>`
     INSERT INTO drama_placements (story_id, episode_n, slot_key, brand_name, contact_name, contact_email, contact_phone,
-                                  product_bucket, product_path, note, price_ngn, status, user_id, product_url, keyword, link_code, report_token)
+                                  product_bucket, product_path, note, price_ngn, status, user_id, product_url, keyword, link_code, report_token,
+                                  kind, assets, brief, music_title, music_artist, place_name)
     VALUES (${story.id}, ${input.episodeN}, ${input.slotKey}, ${brand}, ${input.contactName.trim().slice(0, 60) || null}, ${input.who.email},
-            ${input.phone.trim().slice(0, 30) || null}, 'identity-images', ${input.productPath}, ${input.note.trim().slice(0, 500) || null},
-            ${input.who.admin ? 0 : price}, 'pending_payment', ${input.who.id}, ${link.url}, ${word.word}, ${newLinkCode()}, ${newReportToken()})
+            ${input.phone.trim().slice(0, 30) || null}, ${picture?.bucket ?? null}, ${picture?.path ?? null}, ${input.note.trim().slice(0, 500) || null},
+            ${input.who.admin ? 0 : price}, 'pending_payment', ${input.who.id}, ${link.url}, ${word.word}, ${newLinkCode()}, ${newReportToken()},
+            ${kind}, ${sql.json(assets as never)}, ${String(input.brief ?? "").trim().slice(0, 600) || null},
+            ${String(input.musicTitle ?? "").trim().slice(0, 100) || null}, ${String(input.musicArtist ?? "").trim().slice(0, 100) || null}, ${String(input.placeName ?? "").trim().slice(0, 100) || null})
     RETURNING id`;
   if (input.who.admin || price === 0) {
     await markPlacementPaid(row.id, null);
@@ -178,17 +196,18 @@ async function markPlacementPaid(id: string, reference: string | null): Promise<
     await tellAdmin(`⚠️ <b>Brand slot paid twice</b> — placement ${id} was paid but another brand already has the slot or the word. Refund it in Paystack (reference ${esc(reference ?? "?")}).`).catch(() => false);
     return false;
   }
-  const [r] = await sql<{ product_bucket: string; product_path: string; brand_name: string; title: string; episode_n: number; slot_key: string; keyword: string | null; product_url: string | null; contact_email: string | null; report_token: string | null }[]>`
-    SELECT p.product_bucket, p.product_path, p.brand_name, s.title, p.episode_n, p.slot_key, p.keyword, p.product_url, p.contact_email, p.report_token
+  const [r] = await sql<{ product_bucket: string | null; product_path: string | null; brand_name: string; title: string; episode_n: number; slot_key: string; keyword: string | null; product_url: string | null; contact_email: string | null; report_token: string | null; kind: string; music_title: string | null; place_name: string | null }[]>`
+    SELECT p.product_bucket, p.product_path, p.brand_name, s.title, p.episode_n, p.slot_key, p.keyword, p.product_url, p.contact_email, p.report_token, p.kind, p.music_title, p.place_name
     FROM drama_placements p JOIN drama_stories s ON s.id = p.story_id WHERE p.id = ${id}`;
-  if (r && r.product_bucket !== KEEP_BUCKET) {
+  if (r && r.product_bucket && r.product_path && r.product_bucket !== KEEP_BUCKET) {
     const to = `drama/brands/${id}/product.${ext(r.product_path)}`;
     await r2Copy(r.product_bucket, r.product_path, KEEP_BUCKET, to);
     await sql`UPDATE drama_placements SET product_bucket = ${KEEP_BUCKET}, product_path = ${to} WHERE id = ${id}`;
   }
   if (r) {
-    await tellAdmin(`🏷️ <b>Brand spot sold</b> — ${esc(r.brand_name)} in ${esc(r.title)}, episode ${r.episode_n}${r.slot_key === "next" ? "" : ` (${esc(r.slot_key)})`}. Comment word: ${esc(r.keyword ?? "—")} → ${esc(r.product_url ?? "—")}.\nIt goes into the episode by itself; nothing to approve.`).catch(() => false);
-    const url = await r2SignedDownloadUrl(KEEP_BUCKET, `drama/brands/${id}/product.${ext(r.product_path)}`, 3600).catch(() => null);
+    const what = r.kind === "location" ? `their place, ${r.place_name ?? "unnamed"}, as the scene` : r.kind === "music" ? `their track “${r.music_title ?? ""}” in the soundtrack` : r.kind === "flyer" ? "their flyer in the scene" : "their product in the scene";
+    await tellAdmin(`🏷️ <b>Brand spot sold</b> — ${esc(r.brand_name)} in ${esc(r.title)}, episode ${r.episode_n}${r.slot_key === "next" ? "" : ` (${esc(r.slot_key)})`}: ${esc(what)}. Comment word: ${esc(r.keyword ?? "—")} → ${esc(r.product_url ?? "—")}.\nIt goes into the episode by itself; nothing to approve.`).catch(() => false);
+    const url = r.product_path ? await r2SignedDownloadUrl(r.product_bucket === KEEP_BUCKET && r.kind !== "product" ? KEEP_BUCKET : KEEP_BUCKET, r.kind === "product" ? `drama/brands/${id}/product.${ext(r.product_path)}` : r.product_path, 3600).catch(() => null) : null;
     if (url) await sendAdminImage(url, r.brand_name).catch(() => false);
     if (r.report_token) await emailBrand({ to: r.contact_email, brand: r.brand_name, storyTitle: r.title, episode: r.episode_n, word: r.keyword ?? "", reportUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/report/${r.report_token}` });
   }

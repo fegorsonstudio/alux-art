@@ -31,6 +31,34 @@ The tools that write and price a story:
   three-panel format (full body front with the face erased, full body back, one
   portrait — `lib/character-sheet-order.ts`).
 
+## 0b. Engine 2 — stories written exactly their way (owner, 2026-10-25)
+
+The owner: "update our story writing engine to match exactly how their stories are
+written." A story with `engine: 2` is written the way Higgsfield's *Short Drama
+Screenwriter* and *Seedance 2.5 Prompt Writer* write one (both skills, verbatim, are
+the screenwriter's system prompt — `skills/source/`; their seven clip prompts are in
+`skills/source/examples/`):
+
+- **The bible:** cast with what each wants, how they behave under pressure, a voice
+  described once and repeated word for word, a look; **references** by name
+  (`@AmakaFace`, `@AmakaOutfit`, `@Amaka` sheet, `@Guests`, `@CokerDiningRoom`…) each
+  with its generation prompt; continuity; voices for the sound engine.
+- **Each episode is one short drama of one to two minutes:** 3–7 scenes, each with its
+  part (hook / context / escalation / cliffhanger), an INT./EXT. heading, the action,
+  **exact dialogue**, the camera shots, the references attached, and a **complete clip
+  prompt** in their blocks — SCENE CONTEXT, ACTIVE REFERENCES, LOCATION MAP, FIRST FRAME
+  AND SPATIAL BLOCKING, FORMAT MODE, OPTICS, CAMERA, ACTION TIMING, PHYSICS, LIGHTING,
+  AUDIO, ACTING TASKS, POSITIVE LOCKS — plus the generation and edit order.
+- **Our layer stays:** the two-word vote, the branches, the roads (branch and
+  bottleneck), the finale; brand slots and the Alux moment.
+- **The carousel is derived from the scenes:** hook, cover, 3–8 slides each cut from a
+  scene (a spoken line exactly as in the dialogue, or an action beat), the cliff, the
+  choice. The sound and the pictures read the same scenes.
+
+`tools/drama/check2.mjs` referees all of it; `tools/drama/screenwriter2.mjs` writes a
+season in two stages (bible, then every episode version). Engine-1 stories keep the
+rules below.
+
 ## 0. The telling: a recap narrator (owner, 2026-10-22)
 
 The owner's house style for telling every story — slides and soundtrack alike —

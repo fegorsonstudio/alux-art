@@ -36,7 +36,7 @@ export default async function PartnerPage({ searchParams }: { searchParams: Prom
           packages={[
             { key: "episode_sponsor", name: "Episode sponsor", note: `“Presented by” your brand on the cover and in the caption, both product spots in the episode, your logo on the last picture. ${naira(prices.sponsor)} an episode.` },
             { key: "story_partner", name: "Story partner", note: "Your brand written into the plot for a whole season — a character works there, or a scene happens at your place — your logo on every cover, and one episode built around you. From ₦500,000." },
-            { key: "own_drama", name: "A drama of our own", note: "A story made for your brand, for your own Instagram page. We quote it with you." },
+            { key: "own_drama", name: "A drama of our own", note: "A story made for your brand, for your own Instagram page. Have products but no story? Upload the pictures at /d/drama/brand-series and we write the series around them." },
             { key: "other", name: "Something else", note: "Tell us below." },
           ]}
         />

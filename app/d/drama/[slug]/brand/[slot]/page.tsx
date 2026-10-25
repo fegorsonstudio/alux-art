@@ -60,6 +60,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
             ? `Your product appears in a scene of Episode ${n} that suits it — the votes decide which road the story takes, and we place you on whichever road it is.`
             : `Your product takes this object’s place in ${story.title}, episode ${n}.`}{" "}
           The caption credits you as partner, and viewers who comment your word get a button to your product. <span className={styles.price}>{naira(prices.slot)}</span>.
+          {" "}You can place a product, your own place (its photos become the scene), your music (it plays in the soundtrack), or a flyer.
         </p>
         {!open ? (
           <div className={styles.panel}><p className={styles.p} style={{ margin: 0 }}>This spot is taken. <Link href={`/d/drama/${story.slug}#brands`}>See the other spots</Link>.</p></div>

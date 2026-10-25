@@ -58,3 +58,21 @@ export const newReportToken = () => randomBytes(18).toString("base64url");
 /** The caption line for a placed brand: subtle, the object as the story knows it, then the word. */
 export const brandLine = (brand: string, object: string, word: string) =>
   `Partner: ${brand} — ${object} in this episode. Comment ${word} to see it.`;
+
+/** What a sponsor can place in an episode (owner, 2026-10-25): the real thing, not only a product picture. */
+export const PLACEMENT_KINDS = {
+  product: { name: "A product", note: "A picture of the product; it takes the object's place in the scene." },
+  location: { name: "A place", note: "Photos of your restaurant, shop, hotel or venue: the scene is set there, with your real photo as its picture." },
+  music: { name: "Music", note: "Your track plays in the episode's soundtrack — in the car, in the bar, on the radio — and is credited." },
+  flyer: { name: "A flyer or design", note: "Your poster, menu or design appears on a phone, a wall or a table in the scene." },
+} as const;
+export type PlacementKind = keyof typeof PLACEMENT_KINDS;
+
+/** The caption line for any kind of placement. */
+export function placementLine(p: { kind?: string; brand: string; object: string; word: string | null; placeName?: string | null; musicTitle?: string | null; musicArtist?: string | null }): string {
+  const ask = p.word ? ` Comment ${p.word} to ${p.kind === "music" ? "hear it" : "see it"}.` : "";
+  if (p.kind === "location") return `Partner: ${p.brand} — this scene is set at ${p.placeName || "their place"}.${ask}`;
+  if (p.kind === "music") return `Music: “${p.musicTitle || "their track"}” by ${p.musicArtist || p.brand}.${ask}`;
+  if (p.kind === "flyer") return `Partner: ${p.brand} — their ${p.object} in this episode.${ask}`;
+  return p.word ? brandLine(p.brand, p.object, p.word) : `Partner: ${p.brand}.`;
+}

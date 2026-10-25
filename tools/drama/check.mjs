@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { checkStory2 } from "./check2.mjs";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "stories");
 export const GENRES = ["power", "thriller", "crime", "romance", "romcom", "family", "mystery", "supernatural", "period", "political"];
@@ -36,6 +37,14 @@ export function checkStory(s, file) {
   const errs = [];
   const bad = (m) => errs.push(m);
   if (!s || typeof s !== "object") return ["not an object"];
+  // Engine 2 (2026-10-25): scene scripts the way Higgsfield's screenwriter writes them; check2.mjs holds its rules.
+  if (s.engine === 2) {
+    const e2 = checkStory2(s, file);
+    const roads = walkRoads(s);
+    for (const p of roads.problems) e2.push(p);
+    s._roads = roads;
+    return e2;
+  }
   if (file && s.slug !== path.basename(file, ".mjs")) bad(`slug "${s.slug}" must match the file name`);
   for (const k of ["slug", "title", "tagline", "genre", "city", "logline"]) if (!String(s[k] ?? "").trim()) bad(`missing ${k}`);
   if (!GENRES.includes(s.genre)) bad(`genre "${s.genre}" is not one of ${GENRES.join(", ")}`);

@@ -95,3 +95,4 @@ tools/carousel/data/
 # The launcher holds the server secret. Never commit it.
 tools/carousel/start-carousel.cmd
 tools/carousel/data-review.json
+tools/drama/stories/.bible-*.json

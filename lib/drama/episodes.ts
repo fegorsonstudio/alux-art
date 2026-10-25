@@ -3,7 +3,7 @@ import sql from "@/lib/db";
 import { r2Download, r2Upload } from "@/lib/r2";
 import { renderEpisodeSlides, type DEpisode, type DStory, type SlideArt } from "@/lib/drama/slides";
 import type { StoryRow } from "@/lib/drama/data";
-import { brandLine } from "@/lib/drama/brands";
+import { placementLine } from "@/lib/drama/brands";
 import { presenterFor } from "@/lib/drama/sponsor";
 
 /**
@@ -20,12 +20,17 @@ export const localIdOf = (episodeId: string) => `drama-${episodeId}`;
 
 export type EpisodeRow = {
   id: string; story_id: string; n: number; from_word: string | null; status: string;
-  content: DEpisode & { caption: string; approvedAt: string; slides: DEpisode["slides"]; art?: ArtRef[]; partners?: PartnerRef[]; presentedBy?: string };
+  content: DEpisode & { caption: string; approvedAt: string; slides: DEpisode["slides"]; art?: ArtRef[]; partners?: PartnerRef[]; presentedBy?: string; music?: { brand: string; title: string | null; artist: string | null; bucket: string; path: string } };
   ig_media_id: string | null; posted_at: string | null; decided_word: string | null; decided_at: string | null;
 };
 
 /** A brand placed in an episode: its product picture goes on the slot's slide, its word in the caption. */
-export type PartnerRef = { id: string; brand: string; word: string | null; object: string; slide: number; bucket: string; path: string };
+export type PartnerRef = {
+  id: string; brand: string; word: string | null; object: string; slide: number; bucket: string; path: string;
+  /** product (default) | location | music | flyer, and what came with it (owner, 2026-10-25). */
+  kind?: string; placeName?: string | null; musicTitle?: string | null; musicArtist?: string | null;
+  assets?: { bucket: string; path: string; type: string }[];
+};
 
 /**
  * The brands in episode n, and where each sits. A per-slot brand takes its slot;
@@ -33,17 +38,20 @@ export type PartnerRef = { id: string; brand: string; word: string | null; objec
  * The caption and the slides both read this, so they always agree.
  */
 export async function partnersFor(s: StoryRow, ep: { n: number; slots?: { key: string; object: string; slide: number }[] }): Promise<PartnerRef[]> {
-  const rows = await sql<{ id: string; slot_key: string; brand_name: string; keyword: string | null; product_bucket: string | null; product_path: string | null }[]>`
-    SELECT id, slot_key, brand_name, keyword, product_bucket, product_path FROM drama_placements
+  const rows = await sql<{ id: string; slot_key: string; brand_name: string; keyword: string | null; product_bucket: string | null; product_path: string | null; kind: string | null; place_name: string | null; music_title: string | null; music_artist: string | null; assets: { bucket: string; path: string; type: string }[] | null }[]>`
+    SELECT id, slot_key, brand_name, keyword, product_bucket, product_path, kind, place_name, music_title, music_artist, assets FROM drama_placements
     WHERE story_id = ${s.id} AND episode_n = ${ep.n} AND status IN ('approved', 'placed') ORDER BY created_at`;
   const slots = ep.slots ?? [];
   const used = new Set(rows.filter((r) => r.slot_key !== "next").map((r) => r.slot_key));
   const out: PartnerRef[] = [];
   for (const r of rows) {
     const slot = r.slot_key === "next" ? slots.find((x) => !used.has(x.key)) : slots.find((x) => x.key === r.slot_key);
-    if (!slot || !r.product_bucket || !r.product_path) continue;
+    const kind = r.kind ?? "product";
+    // A track has no picture; everything else needs one (the product, the place, the flyer).
+    if (!slot || (kind !== "music" && (!r.product_bucket || !r.product_path))) continue;
     used.add(slot.key);
-    out.push({ id: r.id, brand: r.brand_name, word: r.keyword, object: slot.object, slide: slot.slide, bucket: r.product_bucket, path: r.product_path });
+    out.push({ id: r.id, brand: r.brand_name, word: r.keyword, object: slot.object, slide: slot.slide, bucket: r.product_bucket ?? "", path: r.product_path ?? "",
+      kind, placeName: r.place_name, musicTitle: r.music_title, musicArtist: r.music_artist, assets: r.assets ?? [] });
   }
   return out;
 }
@@ -80,7 +88,7 @@ export function writtenEpisode(s: StoryRow, n: number) {
 export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpisode>): Promise<string> {
   if (!ep) return "";
   const [a, b] = ep.choice.options;
-  const partners = (await partnersFor(s, ep)).map((p) => (p.word ? brandLine(p.brand, p.object, p.word) : `Partner: ${p.brand}.`));
+  const partners = (await partnersFor(s, ep)).map((p) => placementLine({ kind: p.kind, brand: p.brand, object: p.object, word: p.word, placeName: p.placeName, musicTitle: p.musicTitle, musicArtist: p.musicArtist }));
   const house = ep.alux?.product ? ep.alux.product.split(/[:—]/)[0].trim() : null;
   // Fans who play a character in this episode are credited by name.
   const inScene = new Set((ep.slides ?? []).map((x) => (x as { who?: string }).who).filter(Boolean));
@@ -120,6 +128,8 @@ export async function captionFor(s: StoryRow, ep: ReturnType<typeof writtenEpiso
 export async function slidesForEpisode(s: StoryRow, e: EpisodeRow): Promise<Buffer[]> {
   const cards = new Map<number, { buffer: Buffer; brand: string }>();
   for (const p of e.content.partners ?? []) {
+    // A place is the slide's picture (frozen into `art` at approval), a track is in the soundtrack: neither draws a card.
+    if (p.kind === "location" || p.kind === "music") continue;
     try { cards.set(p.slide, { buffer: (await r2Download(p.bucket, p.path)).buffer, brand: p.brand }); } catch { /* a missing picture leaves the slide as written */ }
   }
   // Image generation on (drama_stories.format = 'pictures'): the pictures become extra storyboard slides.
@@ -139,9 +149,16 @@ export async function approveEpisode(s: StoryRow, n: number, caption: string): P
     art.unshift({ slide: 1, bucket: poster.cover_bucket, path: poster.cover_path, captionAt: "bottom" });
   }
   const partners = await partnersFor(s, ep);
+  // A sponsor's real place: their photo IS the scene's picture on that slide (unless the slide already has one).
+  for (const p of partners) {
+    if (p.kind === "location" && p.bucket && p.path && !art.some((a) => a.slide === p.slide)) art.push({ slide: p.slide, bucket: p.bucket, path: p.path, captionAt: "bottom" });
+  }
+  // A sponsor's track: the soundtrack's scene bed (scripts/drama-sound.mjs), credited in the caption.
+  const track = partners.find((p) => p.kind === "music" && p.assets?.some((a) => /^(audio\/|video\/mp4)/.test(a.type)));
+  const music = track ? { brand: track.brand, title: track.musicTitle, artist: track.musicArtist, ...(track.assets!.find((a) => /^(audio\/|video\/mp4)/.test(a.type)) as { bucket: string; path: string }) } : undefined;
   // The season's sponsor is credited on the slides of every episode frozen after they paid.
   const presenter = await presenterFor(s.id);
-  const content = { ...ep, caption: caption.trim(), approvedAt: new Date().toISOString(), art, partners, presentedBy: presenter?.brand_name };
+  const content = { ...ep, caption: caption.trim(), approvedAt: new Date().toISOString(), art, partners, presentedBy: presenter?.brand_name, ...(music ? { music } : {}) };
   const [row] = await sql<EpisodeRow[]>`
     INSERT INTO drama_episodes (story_id, n, content, status)
     VALUES (${s.id}, ${n}, ${sql.json(JSON.parse(JSON.stringify(content)))}, 'ready')
