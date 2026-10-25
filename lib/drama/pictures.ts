@@ -251,7 +251,9 @@ export async function makeEpisodePictures(storyId: string, n: number, opts: { sl
     if (!ep) throw new Error(`episode ${n} is not written`);
     const cast = story.content.cast ?? [];
     const existing = await sql<{ slide: number; source: string }[]>`SELECT slide, source FROM drama_art WHERE story_id = ${story.id} AND episode_n = ${n}`;
-    const wanted = (opts.slides?.length ? opts.slides : [2, 3, 4, 5, 6, 7]).filter((s) => s >= 2 && s <= 7);
+    const PICTURE_KINDS = new Set(["time", "beat", "line", "text", "cliff"]);
+    const byKind = ep.slides.map((s, i) => (PICTURE_KINDS.has(s.kind) ? i + 1 : 0)).filter(Boolean);
+    const wanted = (opts.slides?.length ? opts.slides : byKind).filter((s) => byKind.includes(s));
     const todo = wanted.filter((s) => {
       const have = existing.find((e) => e.slide === s);
       return !have || (opts.force && have.source === "ai");

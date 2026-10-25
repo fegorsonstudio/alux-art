@@ -27,23 +27,21 @@ async function judge(b64, key) {
   try { const v = JSON.parse(c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? ""); return Array.isArray(v) ? v[0] : v; } catch { return null; }
 }
 
-export function missingVoices(slug) {
-  const spec = VOICES[slug];
+export function missingVoices(slug, spec = VOICES[slug]) {
   if (!spec) return [];
   const reg = registry();
   return Object.entries(spec).filter(([role, v]) => typeof v !== "string" && !(reg[`${slug}/${role}`]?.id && reg[`${slug}/${role}`].description === (v.nigerian ?? v.designed))).map(([role]) => role);
 }
 
-export async function designMissing(slug, { log = () => {}, only } = {}) {
+export async function designMissing(slug, { log = () => {}, only, spec = VOICES[slug] } = {}) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY is not set");
-  const spec = VOICES[slug];
   if (!spec) throw new Error(`no voices for the story "${slug}"`);
   const s3 = new S3Client({ region: "auto", endpoint: process.env.R2_ENDPOINT,
     credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY } });
   const reg = registry();
   const made = [];
-  for (const role of missingVoices(slug)) {
+  for (const role of missingVoices(slug, spec)) {
     if (only && !only.includes(role)) continue;
     const v = spec[role];
     const description = v.nigerian ?? v.designed;

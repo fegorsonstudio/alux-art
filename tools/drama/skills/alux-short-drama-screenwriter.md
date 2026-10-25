@@ -75,7 +75,7 @@ Recommend the highest total. Ideas marked ★ in the bank score high on all seve
 
 Plan the four parts before writing any slide, then check each one again when the episode is done. Every episode, every road.
 
-**1. The hook.** Open on the peak, not the beginning: an outburst, a conflict, a fall, a door opening. Slide 1 is the cover; slide 2 says where we are and what the last vote decided ("8 a.m. Her assistant carries the brass key into the bank."); slide 3 is the loudest moment the viewer does not yet understand, so they swipe to find out.
+**1. The hook.** Slide 1 IS the hook (owner, after the carousel study): 15–45 plain words that tell a stranger the story — who, what they want, what stands in the way, and, from episode 2 on, what the votes decided and where we are now. Labels, not names; never the episode's own cliff. Slide 2 is the series cover. Slide 3 says where we are ("8 a.m. Her assistant carries the brass key into the bank."); slide 4 is the loudest moment the viewer does not yet understand, so they swipe to find out.
 
 **2. The context.** Show who these people are and what they want, with an emotional swing on every slide: a starting point, hope, another hit, a chance. A flat slide of explanation is where people swipe away.
 
@@ -91,17 +91,18 @@ The Silent Partner, episode 1, as the four parts:
 
 | Part | Slides | What happens |
 |---|---|---|
-| Hook | 2–3 | 11:40 p.m. The board is standing. The finance director is not. |
-| Context | 4–5 | They vote to sell. She signs the cheques; nobody asks why she is calm. |
-| Escalation | 6 | A courier brings a brass key. Only she knows what it opens. |
-| Cliffhanger | 7 | The CEO: "Adaeze, is there something you want to tell us?" |
-| Vote | 8 | SPEAK / WAIT |
+| Hook | 1 | "The quiet finance director signs the cheques. Nobody asks why. Tonight the board votes to sell the company — and only she knows who owns the other half." Then the cover. |
+| Context | 3–5 | 11:40 p.m. The board is standing. The finance director is not. |
+
+| Escalation | 6–7 | A courier brings a brass key. Only she knows what it opens. |
+| Cliffhanger | 8 | The CEO: "Adaeze, is there something you want to tell us?" |
+| Vote | 9 | SPEAK / WAIT |
 
 ## Step 3: Cast, voices and continuity
 
 **Cast.** Five or six roles on the twelve archetypes (ENGINE.md §5), each with `key`, `name`, `age`, `role`, `archetype`, `side` (light / too much / too little), `tier` (lead / main / cameo), `open`, `look`, `want`, `secret`. The `look` is the house version of the character, written for the camera: build, hair, skin, one signature garment, one object — so the story can be made before any fan joins. Guests (`guest: true, enters: n`) let fans join a running story.
 
-**Voices.** Every speaking character gets a voice description — accent, pitch, pace, timbre — repeated word for word wherever they speak: "Lagos-born, measured, low, never hurries; English with a faint Igbo lilt." That is the stable part. How they sound at a moment (calm, cracking, flatter each time) goes next to each line. For the soundtrack (tools/drama/sound/voices.mjs) each role is a designed Nigerian voice or a standard one; the narrator is the trailer voice.
+**Voices.** The story file carries a `voices` block — the narrator (a designed trailer/recap voice) and every cast key (a designed Nigerian voice, 30–50 words: age, origin, accent, pitch, pace, manner) — so the sound job can design them by itself. Every speaking character gets a voice description — accent, pitch, pace, timbre — repeated word for word wherever they speak: "Lagos-born, measured, low, never hurries; English with a faint Igbo lilt." That is the stable part. How they sound at a moment (calm, cracking, flatter each time) goes next to each line. For the soundtrack (tools/drama/sound/voices.mjs) each role is a designed Nigerian voice or a standard one; the narrator is the trailer voice.
 
 **Names.** Check that every invented full name doesn't belong to a real public figure. Rename if it does.
 
@@ -133,13 +134,13 @@ In the picture prompts attach the character sheets, the location and the group i
 
 Episodes are written ahead, one per road (`drafts`, ENGINE.md §4). Splitting every episode in two doubles each time, so **the roads split and meet again** ("branch and bottleneck"): two versions of each middle episode, each playing out the last vote in its own first half, both ending in the same room on the same choice (shared `EPn_ENDING` slides and `EPn_VOTE`); the finale has two versions ending on one season-two hook. `node tools/drama/check.mjs <slug>` must report every road complete.
 
-Each written episode carries: `n`, `title` (≤4 words), eight `slides` (kinds cover, time, four of beat/line/text, cliff, choice), `cliff.type`, `choice` (question 3–10 words, two options with one uppercase word and a ≤4-word label), `branches` (one line per word), 1–2 `slots` (brand objects on slides 2–6 with an Alux house product as fallback), and an `alux` moment (our own product doing something the story needs; `word` LIGHT / GIF / BOOK on every second episode at most). Each slide has `kind`, `see` (the picture direction, written for the camera), `say` (the caption), optional `who`, and a `scene` line of eight words or fewer for designed slides.
+Each written episode carries: `n`, `title` (≤4 words), nine `slides` (kinds hook, cover, time, four of beat/line/text, cliff, choice), `cliff.type`, `choice` (question 3–10 words, two options with one uppercase word and a ≤4-word label), `branches` (one line per word), 1–2 `slots` (brand objects on slides 2–6 with an Alux house product as fallback), and an `alux` moment (our own product doing something the story needs; `word` LIGHT / GIF / BOOK on every second episode at most). Each slide has `kind`, `see` (the picture direction, written for the camera), `say` (the caption), optional `who`, and a `scene` line of eight words or fewer for designed slides.
 
 Product words: LIGHT where a dark photo must be relit for the plot, GIF for a moving save-the-date or a first photo together, BOOK for a portrait the story needs. Never on slides 7–8, never on a slide, never two episodes in a row.
 
 ## Step 6: Write the picture prompts (phase `pictures`)
 
-One prompt per slide 2–7, written with the **Alux Cinematic Prompt Writer** skill. Each carries: the references by name, the location map, the frame and blocking (who is where, left/right from the camera), optics (shot size, FOV in degrees, camera height), the performance (muscle-level, both reactions), the genre's light, where the caption will sit, and positive locks. The cover is the poster; the choice slide is a close-up of the object the vote turns on.
+When image generation is on, every time/beat/line/text/cliff slide gets a picture that posts as its own storyboard slide right before the designed one (up to 15 slides). One prompt per such slide, written with the **Alux Cinematic Prompt Writer** skill. Each carries: the references by name, the location map, the frame and blocking (who is where, left/right from the camera), optics (shot size, FOV in degrees, camera height), the performance (muscle-level, both reactions), the genre's light, where the caption will sit, and positive locks. The cover is the poster; the choice slide is a close-up of the object the vote turns on.
 
 Write what the camera can see, not mood words. "Her hand tightens on the folder, her eyes drop to the table" works. "She feels anxious" doesn't.
 

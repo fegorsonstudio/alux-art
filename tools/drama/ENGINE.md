@@ -72,15 +72,28 @@ on a phone.
   third of the frame quiet). Never ask for written words in the image except a
   prop the story needs (a letter, a phone screen, a signature).
 
-## 2. The episode: eight slides, always the same rhythm
+## 2. The episode: nine slides, always the same rhythm
+
+Since 2026-10-25 (owner, after the carousel study): **the hook comes first** — a few
+plain lines that tell someone who has never seen the story what it is and where it
+stands — **then the series cover**, then the episode. Stories written before keep
+their eight slides (cover first); every new story has nine.
 
 | # | Kind | Job |
 |---|------|-----|
-| 1 | `cover` | The poster frame. Title and episode name only. The thumbnail people stop for. |
-| 2 | `time` | Place and hour, felt not explained ("Asaba. Dawn. The Niger is the colour of tea."). |
-| 3–6 | `beat` / `line` / `text` | Want → pressure → a turn → the moment tightens. One idea per slide. |
-| 7 | `cliff` | The peak. Something arrives, is revealed, or runs out of time. Stop there. |
-| 8 | `choice` | One short question and two options, each a single comment word. |
+| 1 | `hook` | The story in 15–45 words, for a stranger: who, what they want, what stands in the way, where we are now. Episode 1 says "a new story"; later episodes say "the story so far". Labels, not names. |
+| 2 | `cover` | The poster frame. Title and episode name only. |
+| 3 | `time` | Place and hour, felt not explained ("Asaba. Dawn. The Niger is the colour of tea."). |
+| 4–7 | `beat` / `line` / `text` | Want → pressure → a turn → the moment tightens. One idea per slide. |
+| 8 | `cliff` | The peak. Something arrives, is revealed, or runs out of time. Stop there. |
+| 9 | `choice` | One short question and two options, each a single comment word. |
+
+**Image generation (owner, 2026-10-25):** designed slides are free; pictures cost.
+When a story's `format` is `pictures` (a sponsor bought it, or the owner switches it
+on), every `time`/`beat`/`line`/`text`/`cliff` slide gets a generated picture
+(lib/drama/pictures.ts) and that picture posts as its own **storyboard slide right
+before the designed one** — up to 15 slides, inside Instagram's 20. Carousel-only
+stories post the nine designed slides.
 
 Caption kinds: `beat` is narration in the present tense; `line` is a spoken
 line (with `who`); `text` is a message, letter or note shown as an object;

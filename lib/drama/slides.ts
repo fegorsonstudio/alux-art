@@ -212,9 +212,35 @@ async function partnerCard(card: { buffer: Buffer; brand: string }, look: Look):
     <text x="${SLIDE_W / 2}" y="${y + size + 34}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="19" font-weight="600" letter-spacing="0.24em" fill="${look.muted}">${esc(`PARTNER · ${card.brand.toUpperCase()}`)}</text>`;
 }
 
-export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map<number, SlideArt>, cards?: Map<number, { buffer: Buffer; brand: string }>): Promise<Buffer[]> {
+/** The slide kinds that get a storyboard picture when image generation is on. */
+export const PICTURE_KINDS = new Set(["time", "beat", "line", "text", "cliff"]);
+
+/**
+ * A storyboard slide (owner, 2026-10-25): the generated picture on its own,
+ * clean and cinematic, placed BEFORE the designed slide it illustrates. Only
+ * the series mark, the page count and the scene line, small, over a thin fade.
+ */
+async function storyboardSlide(look: Look, s: DSlide, page: number, total: number, picture: SlideArt): Promise<Buffer> {
+  const W = SLIDE_W, H = SLIDE_H;
+  const base = await sharp(picture.buffer).rotate().resize(W, H, { fit: "cover", position: "attention" }).toBuffer();
+  const soft = "rgba(255,255,255,0.82)";
+  const scene = s.scene ? `<text x="${W / 2}" y="${picture.captionAt === "top" ? 150 : H - 150}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="22" font-weight="600" letter-spacing="0.26em" fill="${soft}">${esc(s.scene.toUpperCase())}</text>` : "";
+  const overlay = Buffer.from(svgDoc(`
+    <defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></linearGradient></defs>
+    <rect width="${W}" height="180" fill="url(#t)"/><rect y="${H - 220}" width="${W}" height="220" fill="url(#b)"/>
+    <text x="84" y="104" font-family="${esc(OUTFIT)}" font-size="20" font-weight="600" letter-spacing="0.32em" fill="${look.accent}">ALUX MICRO DRAMA</text>
+    <text x="${W - 84}" y="104" text-anchor="end" font-family="${esc(OUTFIT)}" font-size="20" font-weight="400" letter-spacing="0.18em" fill="${soft}">${page} / ${total}</text>
+    ${scene}`));
+  return sharp(base).composite([{ input: overlay }]).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
+}
+
+export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map<number, SlideArt>, cards?: Map<number, { buffer: Buffer; brand: string }>, opts: { storyboard?: boolean } = {}): Promise<Buffer[]> {
   const look = lookOf(story.genre);
-  const total = ep.slides.length;
+  // Image generation on: every slide with a picture is preceded by that picture as its own slide (≤ 20 on Instagram).
+  const storyboard = !!opts.storyboard && !!art?.size;
+  const total = ep.slides.length + (storyboard ? ep.slides.filter((s, i) => art!.has(i + 1) && PICTURE_KINDS.has(s.kind)).length : 0);
+  let page = 0;
   const footer = `${story.title} · Episode ${ep.n}`;
   const captionFont: Font = look.titleFont === "Oswald" ? { font: "Oswald", weight: 400, track: 0.01 } : { font: "Cormorant Garamond", weight: 600, track: 0 };
   const display: Font = { font: look.titleFont, weight: look.titleWeight, track: look.titleTrack };
@@ -224,15 +250,31 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map
 
   for (let i = 0; i < ep.slides.length; i++) {
     const s = ep.slides[i];
-    const page = i + 1;
-    const picture = art?.get(page);
-    if (picture) {
+    const picture = art?.get(i + 1);
+    if (picture && storyboard && PICTURE_KINDS.has(s.kind)) {
+      page++;
+      out.push(await storyboardSlide(look, s, page, total, picture));
+    } else if (picture) {
+      page++;
       out.push(await photoSlide({ look, story, ep, s, page, total, footer, picture, captionFont, display, nameOf }));
       continue;
     }
+    page++;
     let body = "";
 
-    if (s.kind === "cover") {
+    if (s.kind === "hook") {
+      // The story in a few lines, for someone who has never seen it: large, plain, centred.
+      const t = await fit(s.say, captionFont, SLIDE_W - 220, 64, 40, 8);
+      const lh = Math.round(t.size * 1.28);
+      const blockH = lh * t.lines.length;
+      const top = Math.round((SLIDE_H - blockH) / 2) + 20;
+      const label = ep.n === 1 ? "A NEW STORY" : "THE STORY SO FAR";
+      body = `${ground(look, { page, total, footer: "Swipe to read" })}
+        <text x="${SLIDE_W / 2}" y="${top - 70}" text-anchor="middle" font-family="${esc(OUTFIT)}" font-size="22" font-weight="600" letter-spacing="0.32em" fill="${look.accent}">${label}</text>
+        <rect x="${SLIDE_W / 2 - 24}" y="${top - 42}" width="48" height="1.5" fill="${look.accent}" opacity="0.7"/>
+        ${textLines(t.lines, SLIDE_W / 2, top + lh * 0.8, lh, captionFont, t.size, look.ink)}
+        <text x="${SLIDE_W / 2}" y="${top + blockH + 80}" text-anchor="middle" font-family="${esc(fam("Cormorant Garamond"))}" font-size="36" font-weight="500" fill="${look.muted}">${esc(story.title)} · ${esc(story.city)}</text>`;
+    } else if (s.kind === "cover") {
       const title = look.titleCase === "upper" ? story.title.toUpperCase() : story.title;
       const isScript = look.titleFont === "Pinyon Script";
       const t = await fit(title, display, SLIDE_W - 220, isScript ? 220 : 150, 60, 3);
@@ -318,8 +360,8 @@ export async function renderEpisodeSlides(story: DStory, ep: DEpisode, art?: Map
       }
       body = `${ground(look, { page, total, footer })}${inner}`;
     }
-    const card = cards?.get(page);
-    if (card && s.kind !== "cover" && s.kind !== "choice") body += await partnerCard(card, look);
+    const card = cards?.get(i + 1);
+    if (card && s.kind !== "cover" && s.kind !== "choice" && s.kind !== "hook") body += await partnerCard(card, look);
     out.push(await jpeg(svgDoc(body)));
   }
   return out;

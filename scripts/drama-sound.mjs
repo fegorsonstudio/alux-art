@@ -32,6 +32,7 @@ import { makeSound } from "../tools/drama/sound/engine.mjs";
 import { writeScript, checkScript, toScript } from "../tools/drama/sound/writer.mjs";
 import { resolveVoices } from "../tools/drama/sound/cast.mjs";
 import { designMissing, missingVoices } from "../tools/drama/sound/design.mjs";
+import VOICES from "../tools/drama/sound/voices.mjs";
 
 const FAKE = process.argv.includes("--fake");
 const DAILY_MAX = 8;
@@ -106,13 +107,16 @@ async function main() {
     try {
       const fans = await sql`SELECT role_key, voice_id FROM drama_cast WHERE story_id = ${due.story_id} AND voice_id IS NOT NULL AND status IN ('sheet_ready', 'accepted', 'approved')`;
       const overrides = Object.fromEntries(fans.map((f) => [f.role_key, f.voice_id]));
-      const missing = missingVoices(due.slug).filter((r) => !overrides[r]);
+      // The voices table: voices.mjs, or the story's own (the screenwriter writes one per story).
+      const spec = VOICES[due.slug] ?? due.story_content?.voices;
+      if (!spec) throw new Error(`no voices for the story "${due.slug}" — add them to voices.mjs or the story file`);
+      const missing = missingVoices(due.slug, spec).filter((r) => !overrides[r]);
       if (missing.length && !FAKE) {
         log(`designing voices for ${due.slug}: ${missing.join(", ")}`);
-        const made = await designMissing(due.slug, { log, only: missing });
+        const made = await designMissing(due.slug, { log, only: missing, spec });
         if (made.length) await tellAdmin(`🎙 <b>${esc(due.title)}</b> — ${made.length} voice(s) designed by the sound job: ${esc(made.map((m) => `${m.role} (${m.heard?.accent ?? "accent unknown"})`).join(", "))}.`);
       }
-      voices = resolveVoices(due.slug, overrides);
+      voices = resolveVoices(due.slug, overrides, spec);
     } catch (e) {
       await finish("failed", { problems: [String(e.message)] });
       await tellAdmin(`🔇 <b>${esc(name)}</b> will post without sound — ${esc(e.message)}`);

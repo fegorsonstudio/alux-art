@@ -19,9 +19,9 @@ export function registry() {
   return existsSync(REGISTRY) ? JSON.parse(readFileSync(REGISTRY, "utf8")) : {};
 }
 
-/** `overrides` = { role: voiceId } for roles a fan plays with their own replicated voice (drama_cast.voice_id); they win. */
-export function resolveVoices(slug, overrides = {}) {
-  const spec = VOICES[slug];
+/** `overrides` = { role: voiceId } for roles a fan plays with their own replicated voice (drama_cast.voice_id); they win.
+ *  `spec` = the voices table; voices.mjs by default, else the story file's own `voices` (stories written by the screenwriter). */
+export function resolveVoices(slug, overrides = {}, spec = VOICES[slug]) {
   if (!spec) throw new Error(`no voices for the story "${slug}"`);
   const reg = registry();
   const out = {}, missing = [];

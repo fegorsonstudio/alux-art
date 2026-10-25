@@ -122,7 +122,9 @@ export async function slidesForEpisode(s: StoryRow, e: EpisodeRow): Promise<Buff
   for (const p of e.content.partners ?? []) {
     try { cards.set(p.slide, { buffer: (await r2Download(p.bucket, p.path)).buffer, brand: p.brand }); } catch { /* a missing picture leaves the slide as written */ }
   }
-  return renderEpisodeSlides({ ...storyForSlides(s), presentedBy: e.content.presentedBy }, e.content, await loadArt(e.content.art), cards);
+  // Image generation on (drama_stories.format = 'pictures'): the pictures become extra storyboard slides.
+  const [fmt] = await sql<{ format: string }[]>`SELECT format FROM drama_stories WHERE id = ${s.id}`;
+  return renderEpisodeSlides({ ...storyForSlides(s), presentedBy: e.content.presentedBy }, e.content, await loadArt(e.content.art), cards, { storyboard: fmt?.format === "pictures" });
 }
 
 /** Freeze the written episode as approved. Refused once it is on Instagram. */

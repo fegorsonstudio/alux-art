@@ -116,14 +116,24 @@ function checkEpisode(e, tag, keys, bad) {
   {
     if (!String(e.title ?? "").trim() || words(e.title) > 4) bad(`${tag}: title missing or over 4 words`);
     const sl = Array.isArray(e.slides) ? e.slides : [];
-    if (sl.length !== 8) bad(`${tag}: ${sl.length} slides (must be 8)`);
-    const want = ["cover", "time", null, null, null, null, "cliff", "choice"];
+    // Since 2026-10-25 (owner): the HOOK comes first — a few lines that tell a newcomer the
+    // story — then the series cover, then the episode. Nine slides. Stories written before
+    // keep their eight (cover first) and stay valid.
+    const hooked = sl.length === 9;
+    if (sl.length !== 8 && sl.length !== 9) bad(`${tag}: ${sl.length} slides (must be 9: hook, cover, time, four beats, cliff, choice)`);
+    const want = hooked ? ["hook", "cover", "time", null, null, null, null, "cliff", "choice"] : ["cover", "time", null, null, null, null, "cliff", "choice"];
     let total = 0;
     sl.forEach((x, j) => {
       const at = `${tag} slide ${j + 1}`;
       if (want[j] ? x.kind !== want[j] : !MIDDLE.includes(x.kind)) bad(`${at}: kind "${x.kind}" (expected ${want[j] ?? MIDDLE.join("/")})`);
       if (!String(x.see ?? "").trim()) bad(`${at}: missing the picture direction (see)`);
       const w = words(x.say);
+      if (x.kind === "hook") {
+        // The hook is the one slide that may run long: 15–45 words, plain sentences, no names (labels), no spoilers of its own cliff.
+        if (w < 15 || w > 45) bad(`${at}: the hook is ${w} words (15–45)`);
+        if (EMOJI.test(x.say) || /!/.test(x.say)) bad(`${at}: the hook takes no emoji or exclamation marks`);
+        return;
+      }
       if (x.kind === "cover" || x.kind === "choice") { if (w) bad(`${at}: the ${x.kind} slide carries no caption`); return; }
       if (!w) bad(`${at}: empty caption`);
       if (w > 12) bad(`${at}: caption ${w} words (max 12): ${x.say}`);
@@ -153,13 +163,13 @@ function checkEpisode(e, tag, keys, bad) {
     if (slots.length < 1 || slots.length > 2) bad(`${tag}: 1 or 2 brand slots`);
     for (const sl2 of slots) {
       if (!sl2.key || !String(sl2.object ?? "").trim()) bad(`${tag}: slot needs a key and an object`);
-      if (!(sl2.slide >= 1 && sl2.slide <= 8)) bad(`${tag}: slot ${sl2.key} needs a slide number 1-8`);
+      if (!(sl2.slide >= 1 && sl2.slide <= sl.length)) bad(`${tag}: slot ${sl2.key} needs a slide number 1-${sl.length}`);
       if (!HOUSE.includes(sl2.house)) bad(`${tag}: slot ${sl2.key} house product "${sl2.house}" is not an Alux product`);
     }
     if (!HOUSE.includes(e.alux?.product) || !String(e.alux?.where ?? "").trim()) bad(`${tag}: needs an Alux moment (alux.product + where)`);
     const a = e.alux ?? {};
     const onSlide = /slide (\d+)\s*$/.exec(String(a.where ?? ""));
-    if (onSlide && Number(onSlide[1]) >= 7) bad(`${tag}: the Alux moment must not be on the cliff or the vote slide`);
+    if (onSlide && Number(onSlide[1]) >= sl.length - 1) bad(`${tag}: the Alux moment must not be on the cliff or the vote slide`);
     if (a.word !== undefined) {
       const tied = Object.values(PRODUCT_WORDS).filter(Boolean).flat();
       if (!(a.word in PRODUCT_WORDS)) bad(`${tag}: alux.word "${a.word}" is not a product word (${Object.keys(PRODUCT_WORDS).join(", ")})`);

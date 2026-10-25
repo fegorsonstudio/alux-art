@@ -46,7 +46,7 @@ export async function GET() {
       const q = made ? queue.get(made.id) : undefined;
       const v = made ? votes.filter((x) => x.episode_id === made.id) : [];
       return {
-        n: w.n, title: w.title, options: w.choice.options,
+        n: w.n, title: w.title, options: w.choice.options, slideCount: ((w as unknown as { slides?: unknown[] }).slides ?? []).length || 8,
         made: made ? { id: made.id, status: made.status, decided: made.decided_word, postedAt: made.posted_at, caption: made.content.caption } : null,
         queue: q ? { status: q.status, at: q.scheduled_for, error: q.last_error } : null,
         votes: v.map((x) => ({ word: x.word, voter: x.voter, at: x.created_at })),

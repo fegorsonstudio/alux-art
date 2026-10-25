@@ -1,6 +1,8 @@
 // The New Cleaner — written by the screenwriter (tools/drama/screenwriter.mjs, deepseek-flash) on 2026-10-25
 // from the brief: The New Cleaner: the cleaner the staff humiliate on her first day at a Calabar hotel is the hotel's new owner. Feeling: being judged by how you look. Opens on a manager kicking her bucket aside in front of guests. A hotel in Calabar, carnival season approaching, rain on the Marina.
 // Check with `node tools/drama/check.mjs the-new-cleaner`, read it like an editor, then seed with scripts/drama-seed.mjs.
+// Hook slides added 2026-10-25 (tools/drama/hooks.mjs).
+// Episode 1 key beat: the doorman hands over the founder’s key (editor, 2026-10-25); voices added.
 export default {
   "slug": "the-new-cleaner",
   "title": "The New Cleaner",
@@ -95,6 +97,11 @@ export default {
       "title": "The Bucket",
       "slides": [
         {
+          "kind": "hook",
+          "see": "Designed slide: rain-streaked window with a cleaner's silhouette, text overlaid on a hotel lobby backdrop.",
+          "say": "A new cleaner starts at a Calabar hotel during carnival week. She is the owner, in disguise, to see it from inside. The manager plans to sell the hotel before carnival opens. The cleaner must decide whether to speak."
+        },
+        {
           "kind": "cover",
           "see": "The Marina Crest lobby in high-contrast black and white, one red carnival pennant dripping rain at the glass doors. A cleaner on her knees, a manager's red heel beside an overturned bucket, guests in the background stepping away. Caption space: top third, dark ceiling.",
           "say": ""
@@ -126,9 +133,10 @@ export default {
         },
         {
           "kind": "beat",
-          "see": "Nkoyo holds out a brass key on a red ribbon, pointing one finger at the lift. Ekaette's hand closes round it. In the corridor behind, a framed founder's portrait catches the light.",
-          "say": "The manager gives her the owner's penthouse key.",
-          "scene": "A brass key. A red ribbon."
+          "see": "Hotel entrance, rain beyond the glass: Papa Okon in his burgundy coat presses the old brass key on its chain into Ekaette’s wet hand without looking at her, his eyes on the lobby. In the corridor behind, the framed founder’s portrait catches the light.",
+          "say": "The old doorman slips her the founder’s brass key.",
+          "scene": "A brass key. A white glove.",
+          "who": "okon"
         },
         {
           "kind": "cliff",
@@ -166,19 +174,19 @@ export default {
         {
           "key": "key",
           "object": "the brass master key on its red ribbon",
-          "slide": 6,
+          "slide": 7,
           "house": "Luma lux"
         },
         {
           "key": "clipboard",
           "object": "the manager's clipboard",
-          "slide": 5,
+          "slide": 6,
           "house": "Noir Director Editorial"
         }
       ],
       "alux": {
         "product": "Noir Director Editorial",
-        "where": "the framed founder's portrait in the corridor as the key is handed over, slide 6"
+        "where": "the framed founder's portrait in the corridor as the key is handed over, slide 7"
       }
     }
   ],
@@ -188,6 +196,11 @@ export default {
       "after": "SPEAK",
       "title": "The Laughing Lobby",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a crowded lobby with a cleaner holding a share certificate, text overlaid.",
+          "say": "The cleaner told the lobby she owns the hotel. The board's lawyer arrives and asks for the certificate. The folder is empty. The manager is already at the door."
+        },
         {
           "kind": "cover",
           "see": "The Marina Crest lobby at eight in the morning: Ekaette standing in her grey cleaner's uniform before Nkoyo and the guests, a lawyer's briefcase at the glass doors, carnival banners red against the black-and-white room.",
@@ -261,19 +274,19 @@ export default {
         {
           "key": "briefcase",
           "object": "the board lawyer's leather briefcase",
-          "slide": 3,
+          "slide": 4,
           "house": "The Asset Extractor"
         },
         {
           "key": "safe",
           "object": "the strongroom safe",
-          "slide": 6,
+          "slide": 7,
           "house": "Luma lux"
         }
       ],
       "alux": {
         "product": "The Gear Equalizer — Pro Studio Upgrade",
-        "where": "the faded founder's portrait in the strongroom, relit on Ekaette's phone to read the brass plate, slide 4",
+        "where": "the faded founder's portrait in the strongroom, relit on Ekaette's phone to read the brass plate, slide 5",
         "word": "LIGHT",
         "line": "The founder's birth date was lost in a dark portrait. Comment LIGHT and we'll relight yours."
       }
@@ -283,6 +296,11 @@ export default {
       "after": "ENDURE",
       "title": "The Long Shift",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a cleaner mopping near a manager and consultant, text overlaid on a hotel corridor.",
+          "say": "The cleaner kept her uniform on. The manager talks softly to the consultant. The cleaner mops closer. The front-desk supervisor shows her the changed ledger. The safe is open. The certificate folder is empty."
+        },
         {
           "kind": "cover",
           "see": "Housekeeping corridor at eight in the morning: Ekaette mopping close to the wall, Nkoyo and Akanimo in low conversation by the lift, two red carnival masks hanging from a trolley.",
@@ -356,19 +374,19 @@ export default {
         {
           "key": "ledger_phone",
           "object": "the supervisor's phone showing the changed ledger",
-          "slide": 5,
+          "slide": 6,
           "house": "Instagram GIF Maker"
         },
         {
           "key": "safe",
           "object": "the strongroom safe",
-          "slide": 6,
+          "slide": 7,
           "house": "Luma lux"
         }
       ],
       "alux": {
         "product": "The Gear Equalizer — Pro Studio Upgrade",
-        "where": "the faded founder's portrait in the strongroom, relit on Ekaette's phone to read the brass plate, slide 4",
+        "where": "the faded founder's portrait in the strongroom, relit on Ekaette's phone to read the brass plate, slide 5",
         "word": "LIGHT",
         "line": "The founder's birth date was lost in a dark portrait. Comment LIGHT and we'll relight yours."
       }
@@ -378,6 +396,11 @@ export default {
       "after": "*.OPEN",
       "title": "The Second Key",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: an opened envelope with a letter, a ledger in the background, text overlaid.",
+          "say": "The cleaner opened the envelope alone. Her father's letter says the truth is in the carnival ledger. The front-desk supervisor has the ledger. She is afraid. The manager rehearses her speech on the carnival stage."
+        },
         {
           "kind": "cover",
           "see": "Strongroom in morning light: the torn envelope on the steel table, Ekaette holding an old letter and a small second key, the lawyer behind her in shadow, rain on the high window.",
@@ -451,19 +474,19 @@ export default {
         {
           "key": "ledger",
           "object": "the carnival ledger in the supervisor's hands",
-          "slide": 4,
+          "slide": 5,
           "house": "The Asset Extractor"
         },
         {
           "key": "staff_card",
           "object": "the cleaner's staff card on the table",
-          "slide": 5,
+          "slide": 6,
           "house": "Noir Director Editorial"
         }
       ],
       "alux": {
         "product": "Nursing Induction",
-        "where": "the framed nursing induction portrait of Emem's mother inside her open locker, slide 4"
+        "where": "the framed nursing induction portrait of Emem's mother inside her open locker, slide 5"
       }
     },
     {
@@ -471,6 +494,11 @@ export default {
       "after": "*.SEAL",
       "title": "The Missing Envelope",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a sealed envelope on a table, a note under a door, text overlaid.",
+          "say": "The envelope stayed sealed. Her room is open. The envelope is gone. The manager had a key to every room. A note under the door says: carnival stage, noon. The manager holds the envelope up before the staff."
+        },
         {
           "kind": "cover",
           "see": "The cleaner's small room above the laundry: an open drawer, the grey uniform on the bed, the founder's sealed envelope gone, rain on the tiny window.",
@@ -544,19 +572,19 @@ export default {
         {
           "key": "note",
           "object": "the note under the door",
-          "slide": 5,
+          "slide": 6,
           "house": "Noir Director Editorial"
         },
         {
           "key": "envelope",
           "object": "the sealed envelope in the manager's hand",
-          "slide": 6,
+          "slide": 7,
           "house": "Luma lux"
         }
       ],
       "alux": {
         "product": "Nursing Induction",
-        "where": "the framed nursing induction portrait of Emem's mother inside her open locker, slide 4"
+        "where": "the framed nursing induction portrait of Emem's mother inside her open locker, slide 5"
       }
     },
     {
@@ -564,6 +592,11 @@ export default {
       "after": "*.EXPOSE",
       "title": "The Carnival Stage",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a carnival stage with a cleaner facing a manager, phones raised, text overlaid.",
+          "say": "The cleaner named the fraud on the carnival stage. The manager calls security. The supervisor stands in front of her. Phones rise. The consultant's phone shows the signing moved to midnight. The chairman signs the sale papers without reading."
+        },
         {
           "kind": "cover",
           "see": "The carnival stage at noon, rain falling through red lights, a crowd under umbrellas, Ekaette holding the black ledger, Nkoyo with a microphone, Akanimo at the edge.",
@@ -637,19 +670,19 @@ export default {
         {
           "key": "stage_mic",
           "object": "the microphone on the carnival stage",
-          "slide": 3,
+          "slide": 4,
           "house": "Penthouse Dusk Paparazzi"
         },
         {
           "key": "consultant_phone",
           "object": "the consultant's phone",
-          "slide": 5,
+          "slide": 6,
           "house": "Instagram GIF Maker"
         }
       ],
       "alux": {
         "product": "Instagram GIF Maker",
-        "where": "the lobby screen looping the altered ledger as a moving clip, slide 4",
+        "where": "the lobby screen looping the altered ledger as a moving clip, slide 5",
         "word": "GIF",
         "line": "The ledger played on a loop nobody could edit. Comment GIF and we'll set your photo moving."
       }
@@ -659,6 +692,11 @@ export default {
       "after": "*.PROTECT",
       "title": "The Fired Supervisor",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a supervisor emptying a locker, a manager watching, text overlaid.",
+          "say": "The cleaner kept her friend's name out of it. The supervisor empties her locker. Nobody speaks. The manager says: one cleaner, one liar. The hotel stays clean. The sale papers are on the manager's desk. The chairman signs at the entrance without reading."
+        },
         {
           "kind": "cover",
           "see": "The staff locker room at noon: Emem emptying her locker into a cardboard box, Ekaette standing in the doorway, the manager's shadow long across the floor.",
@@ -732,19 +770,19 @@ export default {
         {
           "key": "locker",
           "object": "the supervisor's emptied locker",
-          "slide": 3,
+          "slide": 4,
           "house": "The Asset Extractor"
         },
         {
           "key": "sale_papers",
           "object": "the sale papers on the manager's desk",
-          "slide": 5,
+          "slide": 6,
           "house": "Noir Director Editorial"
         }
       ],
       "alux": {
         "product": "Instagram GIF Maker",
-        "where": "the lobby screen looping the altered ledger as a moving clip, slide 4",
+        "where": "the lobby screen looping the altered ledger as a moving clip, slide 5",
         "word": "GIF",
         "line": "The ledger played on a loop nobody could edit. Comment GIF and we'll set your photo moving."
       }
@@ -754,6 +792,11 @@ export default {
       "after": "*.FIGHT",
       "title": "The Pledge",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a court document and a yellowed pledge, text overlaid on a dark background.",
+          "say": "The cleaner took the sale to court. The manager reads the injunction and smiles. She says: you stopped a sale, you did not stop the debt. A yellowed pledge shows ten percent if the loan is unpaid. The chairman admits he signed without reading."
+        },
         {
           "kind": "cover",
           "see": "The carnival ball at the Marina Crest: chandeliers, black-and-white column gowns, one emerald dress, rain on the ballroom glass. Ekaette in simple black at the edge, Nkoyo at the centre.",
@@ -827,19 +870,19 @@ export default {
         {
           "key": "gown",
           "object": "the manager's emerald carnival gown",
-          "slide": 3,
+          "slide": 4,
           "house": "Emerald Empress: Beaded Column Gown with Draped Veil"
         },
         {
           "key": "pledge",
           "object": "the yellowed pledge",
-          "slide": 5,
+          "slide": 6,
           "house": "The Asset Extractor"
         }
       ],
       "alux": {
         "product": "Emerald Empress: Beaded Column Gown with Draped Veil",
-        "where": "the manager's emerald gown at the carnival ball, slide 3"
+        "where": "the manager's emerald gown at the carnival ball, slide 4"
       }
     },
     {
@@ -847,6 +890,11 @@ export default {
       "after": "*.SIGN",
       "title": "Clause Nineteen",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a contract with clause nineteen highlighted, a carnival ball in the background, text overlaid.",
+          "say": "The cleaner signed the consultant's terms. The consultant brings the contract to the carnival ball. Clause nineteen says the manager's loan is secured on shares. The manager says: you signed to save jobs, she signed to take the hotel. The chairman admits he never read."
+        },
         {
           "kind": "cover",
           "see": "The carnival ball at the Marina Crest: Ekaette in black at a small table with Akanimo's contract, Nkoyo in emerald watching from the dance floor, rain on the glass.",
@@ -920,19 +968,19 @@ export default {
         {
           "key": "contract",
           "object": "the consultant's contract",
-          "slide": 3,
+          "slide": 4,
           "house": "The Asset Extractor"
         },
         {
           "key": "gown",
           "object": "the manager's emerald carnival gown",
-          "slide": 4,
+          "slide": 5,
           "house": "Emerald Empress: Beaded Column Gown with Draped Veil"
         }
       ],
       "alux": {
         "product": "Emerald Empress: Beaded Column Gown with Draped Veil",
-        "where": "the manager's emerald gown at the carnival ball, slide 4"
+        "where": "the manager's emerald gown at the carnival ball, slide 5"
       }
     },
     {
@@ -940,6 +988,11 @@ export default {
       "after": "*.PAY",
       "title": "The Second Letter",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a torn pledge, a brass key on a desk, a photograph sliding under a door, text overlaid.",
+          "say": "The cleaner paid the manager's loan. The manager signs her resignation. The pledge is torn. The hotel stays open, every job stays. In the owner's office, the brass key is on the desk. A photograph slides under the door: her father, another woman, a child."
+        },
         {
           "kind": "cover",
           "see": "Carnival night in the Marina Crest ballroom: rain stopped, red lanterns on the terrace, Ekaette at the head table in black, a masked woman approaching with a faded photograph.",
@@ -1012,19 +1065,19 @@ export default {
         {
           "key": "key",
           "object": "the brass key on the owner's desk",
-          "slide": 5,
+          "slide": 6,
           "house": "Luma lux"
         },
         {
           "key": "photo",
           "object": "the old photograph sliding under the door",
-          "slide": 6,
+          "slide": 7,
           "house": "The Gear Equalizer — Pro Studio Upgrade"
         }
       ],
       "alux": {
         "product": "Noir Director Editorial",
-        "where": "the founder's portrait on the owner's office wall, slide 5",
+        "where": "the founder's portrait on the owner's office wall, slide 6",
         "word": "BOOK",
         "line": "The founder's portrait hangs in the owner's office. Comment BOOK and we'll make one worth a wall."
       },
@@ -1035,6 +1088,11 @@ export default {
       "after": "*.CHALLENGE",
       "title": "The Ledger Speaks",
       "slides": [
+        {
+          "kind": "hook",
+          "see": "Designed slide: a ledger open before a board, a key on a table, a photograph on the floor, text overlaid.",
+          "say": "The cleaner challenged the pledge aloud. The supervisor lays the ledger before the board. She says: you have won a hotel, you have lost a family. The board votes the manager out. The key is hers. A photograph slides under the door."
+        },
         {
           "kind": "cover",
           "see": "Carnival night in the boardroom above the ball: Ekaette in black at the head of the long table, Emem laying the black ledger down, Nkoyo standing very still.",
@@ -1107,23 +1165,54 @@ export default {
         {
           "key": "ledger",
           "object": "the ledger laid before the board",
-          "slide": 3,
+          "slide": 4,
           "house": "The Asset Extractor"
         },
         {
           "key": "photo",
           "object": "the old photograph sliding under the door",
-          "slide": 6,
+          "slide": 7,
           "house": "The Gear Equalizer — Pro Studio Upgrade"
         }
       ],
       "alux": {
         "product": "Noir Director Editorial",
-        "where": "the founder's portrait on the boardroom wall, slide 5",
+        "where": "the founder's portrait on the boardroom wall, slide 6",
         "word": "BOOK",
         "line": "The founder's portrait hangs in the boardroom. Comment BOOK and we'll make one worth a wall."
       },
       "finale": true
     }
-  ]
+  ],
+  "voices": {
+    "narrator": {
+      "gender": "male",
+      "language": "en-US",
+      "designed": "A man in his forties with the voice of a premium film-trailer and drama-recap narrator: a deep, rich, slightly gravelly baritone close to the microphone, gripping, urgent storytelling with controlled intensity and crisp consonants, so every short sentence lands. Neutral international English."
+    },
+    "ekaette": {
+      "gender": "female",
+      "nigerian": "A 34-year-old Efik woman from Calabar, educated and composed, back home to claim what is hers: a low, warm, even voice with a clear Calabar Nigerian English accent, soft consonants, unhurried, saying little and meaning all of it."
+    },
+    "nkoyo": {
+      "gender": "female",
+      "nigerian": "A 46-year-old Efik woman, general manager of a Calabar hotel: a crisp, bright, commanding voice with a polished Nigerian English accent, quick and clipped, charming to guests and cold to staff, every sentence an instruction."
+    },
+    "emem": {
+      "gender": "female",
+      "nigerian": "A 27-year-old Calabar front-desk supervisor: a light, warm, slightly tired young voice with an everyday Nigerian English accent, kind, careful, lowering to a whisper when the manager is near."
+    },
+    "asuquo": {
+      "gender": "male",
+      "nigerian": "A 68-year-old Efik chief who chairs a hotel board: a deep, slow, grave voice with an old-school Nigerian English accent, measured and weary, every word weighed, fond of a long pause."
+    },
+    "akanimo": {
+      "gender": "male",
+      "nigerian": "A 42-year-old Nigerian acquisitions consultant who studied in Lagos and London: a smooth, confident, mid-range voice with a polished Lagos Nigerian English accent and a hint of British vowels, persuasive, never raised."
+    },
+    "okon": {
+      "gender": "male",
+      "nigerian": "A 61-year-old Calabar hotel doorman: a soft, gravelly, kind older voice with a strong Efik-influenced Nigerian English accent, slow and dignified, warm with the people he has watched grow up."
+    }
+  }
 };
