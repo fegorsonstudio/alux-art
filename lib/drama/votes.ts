@@ -60,6 +60,8 @@ function wordOf(text: string, options: string[]): string | null {
  * arrives in the DMs as a button.
  */
 const LINK_WORDS = ["PLAY", "GAME", "LINK"];
+/** "Invite a friend to play": the cast page as a button, to forward (owner, 2026-10-25 — the first step of creator invites). */
+const INVITE_WORDS = ["INVITE", "CAST", "JOIN"];
 
 /** One private reply to the comment, with the story link as a button when Instagram allows it. */
 async function answer(creds: IgCreds, commentId: string, text: string, url: string, title = "Open the story") {
@@ -99,6 +101,15 @@ export async function handleDramaComment(
         await answer(creds, c.commentId,
           `Here it is — ${brand.brand_name}, from Episode ${hit.n} of ${hit.title}. Tap to see it.`,
           `${SITE_URL.replace(/\/$/, "")}/d/go/${brand.link_code}`, `See ${brand.brand_name}`.slice(0, 20));
+      }
+      return true;
+    }
+    if (INVITE_WORDS.includes(asked)) {
+      console.log(`[drama vote] ${who} asked to invite a friend on ${hit.slug} ep ${hit.n}`);
+      if (creds) {
+        await answer(creds, c.commentId,
+          `Invite a friend to play a role in ${hit.title}: forward them this link. Open roles are on the cast page — three photos and they are in the story.`,
+          `${url}#cast`, "See the open roles");
       }
       return true;
     }

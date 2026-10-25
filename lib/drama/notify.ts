@@ -73,3 +73,29 @@ export async function emailBrand(input: { to: string | null; brand: string; stor
     return false;
   }
 }
+
+export async function emailSponsor(input: { to: string | null; brand: string; storyTitle: string; priceNgn: number; storyUrl: string }): Promise<boolean> {
+  try {
+    const key = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM_EMAIL ?? "support@aluxartandframes.shop";
+    if (!key || !input.to) return false;
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `Alux Micro Drama <${from}>`, to: [input.to],
+        subject: `${input.brand} presents ${input.storyTitle} — season one`,
+        html: `<div style="font-family:Arial,sans-serif;color:#13201f;max-width:520px">
+          <p style="font-size:15px">Thank you — <strong>${esc(input.brand)}</strong> now presents season one of <em>${esc(input.storyTitle)}</em>. We received ₦${input.priceNgn.toLocaleString("en-NG")}.</p>
+          <p style="font-size:15px">Every episode's caption credits you as the presenter, your product spots are yours in every episode, and we will send you the plan for your logo on the covers and the report of every comment and tap.</p>
+          <p><a href="${input.storyUrl}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">Open the story</a></p>
+          <p style="font-size:12px;color:#5b6b69">Alux Micro Drama · aluxartandframes.shop</p></div>`,
+      }),
+    });
+    if (!res.ok) console.warn("[drama email] sponsor", res.status, (await res.text()).slice(0, 200));
+    return res.ok;
+  } catch (e) {
+    console.warn("[drama email] sponsor failed:", (e as Error).message);
+    return false;
+  }
+}

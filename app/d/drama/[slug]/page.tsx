@@ -41,7 +41,7 @@ export default async function StoryPage({ params, searchParams }: { params: Prom
   const story = await storyBySlug((await params).slug);
   if (!story) notFound();
   const sp = await searchParams;
-  const paidKind = sp.paid === "cast" || sp.paid === "brand" ? sp.paid : null;
+  const paidKind = sp.paid === "cast" || sp.paid === "brand" || sp.paid === "sponsor" ? sp.paid : null;
   const paidRef = typeof sp.reference === "string" ? sp.reference : typeof sp.trxref === "string" ? sp.trxref : "";
   const [taken, sold, prices, madeRows] = await Promise.all([
     takenRoles([story.id]), soldSlots(story.id), dramaPrices(),

@@ -912,9 +912,19 @@ the real ceiling is paid generation, which stays behind the cron sweeps' caps). 
 - `migrations/087_drama_platform.sql` — DRAFT, not applied: rate-card fix, budget config keys, `drama_stories.created_by/
   visibility/format/budget`, `drama_collaborators`, `drama_invites`, `drama_sponsorships`, `drama_revenue`, `drama_earnings`,
   `drama_deliverables`, `drama_publications`.
-**Not built (needs the server and/or owner OK):** the creator studio (`/d/drama/create`, INVITE word in the IG webhook), the
-sponsor Paystack branch, the earnings split + payouts, deliverables zips, `lib/drama/pictures.ts` (phase 2 pictures), the
-sister app. **Next:** server back → deploy + psql 087; owner adds the DeepSeek key → first screenwriter run on a brief they pick.
+**Same day, later (owner: "go ahead"; server back, key saved in both .env.local — never print it):** deployed 5a3adb5 by file
+copy + scratch build + swap; **migration 087 applied with psql**; the DeepSeek key answers (JSON mode works; the model reasons
+first, so `max_tokens` must cover reasoning + answer). Then built with the owner's OK on the shared files:
+- **Sponsors PAY on the page:** `startSponsorPayment` / `markSponsorPaid` in `lib/drama/payments.ts` (quote frozen on
+  `drama_sponsorships`, metadata.type `drama_sponsor`, one live sponsor per season, admin free), `POST /api/drama/sponsor`,
+  the webhook condition, `verifyDramaPayment`, PaidNotice kind `sponsor`, `?paid=sponsor` on the story page; on payment the
+  story's `format` is set, Telegram + `emailSponsor`. "Presented by" on covers is NOT automatic (owner adds it in captions
+  until built); pictures/video production after a sponsor pays is NOT built (Telegram says so).
+- **INVITE / CAST / JOIN** as a comment's first word on an episode → DM button to the cast page to forward to a friend
+  (`INVITE_WORDS` in `lib/drama/votes.ts`; no webhook change needed — the drama block runs first). The creator studio proper
+  (own stories, `drama_invites`, collaborator shares) is still NOT built.
+- First screenwriter run started on "The New Cleaner" (Calabar, power) → `tools/drama/stories/the-new-cleaner.mjs` when done.
+**Not built:** the creator studio, earnings split + payouts, deliverables zips, `lib/drama/pictures.ts`, the sister app.
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
 

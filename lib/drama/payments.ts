@@ -7,7 +7,9 @@ import { SITE_URL } from "@/lib/site-url";
 import { sendAdminImage, tellAdmin } from "@/lib/telegram";
 import { dramaPrices, lastMadeEpisode, roleIsOpen, storyBySlug } from "@/lib/drama/data";
 import { checkBrandWord, checkProductUrl, newLinkCode, newReportToken } from "@/lib/drama/brands";
-import { emailBrand } from "@/lib/drama/notify";
+import { emailBrand, emailSponsor } from "@/lib/drama/notify";
+import { estimateSeason, specForStory, type DramaFormat } from "@/lib/drama/budget";
+import { budgetRates } from "@/lib/drama/budget-rates";
 import { PHOTO_KINDS, keepCastPhotos, runCastSoon } from "@/lib/drama/character";
 
 /**
@@ -193,6 +195,76 @@ async function markPlacementPaid(id: string, reference: string | null): Promise<
   return true;
 }
 
+// ── A season sponsor ─────────────────────────────────────────────────────────
+/**
+ * A sponsor pays for the whole first season at the price the sponsor page
+ * showed (lib/drama/budget.ts: every paid call + the retake buffer, × 5). The
+ * quote is frozen on the row, so a rate change later never changes what they
+ * owe. One live sponsor per season (unique index); the owner tests for free.
+ */
+export async function startSponsorPayment(input: {
+  slug: string; format: string; brandName: string; contactName: string; phone: string; note: string; who: Who;
+}) {
+  const story = await storyBySlug(input.slug);
+  if (!story) throw new DramaError("No such story.", 404);
+  if (story.status === "finished") throw new DramaError("This season is already complete.");
+  const format: DramaFormat = input.format === "pictures" || input.format === "video" ? input.format : "carousel";
+  const brand = input.brandName.trim().slice(0, 80);
+  if (brand.length < 2) throw new DramaError("Add your company or brand name.");
+  const [taken] = await sql`SELECT 1 FROM drama_sponsorships WHERE story_id = ${story.id} AND season = 1 AND status IN ('paid', 'producing', 'delivered')`;
+  if (taken) throw new DramaError("This season already has a sponsor. Choose another story.", 409);
+  // A checkout opened and abandoned does not block the next sponsor.
+  await sql`UPDATE drama_sponsorships SET status = 'cancelled', updated_at = now()
+            WHERE story_id = ${story.id} AND season = 1 AND status = 'pending_payment' AND created_at < now() - make_interval(mins => ${PENDING_MINUTES})`;
+  const budget = estimateSeason(specForStory(story, format), await budgetRates());
+  const price = input.who.admin ? 0 : budget.priceNgn;
+  const [row] = await sql<{ id: string }[]>`
+    INSERT INTO drama_sponsorships (story_id, season, brand_name, contact_name, contact_email, contact_phone, user_id, format, budget, price_ngn, status)
+    VALUES (${story.id}, 1, ${brand}, ${input.contactName.trim().slice(0, 80) || brand}, ${input.who.email}, ${input.phone.trim().slice(0, 30) || null},
+            ${input.who.id}, ${format}, ${sql.json({ ...budget, note: input.note.trim().slice(0, 1200) || undefined } as never)}, ${budget.priceNgn}, 'pending_payment')
+    RETURNING id`;
+  if (input.who.admin || price === 0) {
+    await markSponsorPaid(row.id, null);
+    return { done: true as const, sponsorshipId: row.id };
+  }
+  const pay = await initializePaystackPayment({
+    email: input.who.email, amountNgn: price, currency: "NGN",
+    metadata: { type: "drama_sponsor", sponsorship_id: row.id, user_id: input.who.id, story: story.slug, format, label: `Season one of ${story.title}` },
+    callbackUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/${story.slug}?paid=sponsor`,
+  });
+  await sql`UPDATE drama_sponsorships SET payment_reference = ${pay.reference}, updated_at = now() WHERE id = ${row.id}`;
+  return { done: false as const, url: pay.authorizationUrl };
+}
+
+async function markSponsorPaid(id: string, reference: string | null): Promise<boolean> {
+  try {
+    const rows = await sql`UPDATE drama_sponsorships SET status = 'paid', paid_at = now(), payment_reference = COALESCE(${reference}, payment_reference), updated_at = now()
+                           WHERE id = ${id} AND status = 'pending_payment' RETURNING id`;
+    if (!rows.length) return false;
+  } catch (e) {
+    if ((e as { code?: string }).code !== "23505") throw e;
+    await tellAdmin(`⚠️ <b>Season sponsored twice</b> — sponsorship ${id} was paid but the season already has a sponsor. Refund it in Paystack (reference ${esc(reference ?? "?")}).`).catch(() => false);
+    return false;
+  }
+  const [r] = await sql<{ brand_name: string; contact_email: string; title: string; slug: string; format: string; price_ngn: number; season: number }[]>`
+    SELECT sp.brand_name, sp.contact_email, s.title, s.slug, sp.format, sp.price_ngn, sp.season
+    FROM drama_sponsorships sp JOIN drama_stories s ON s.id = sp.story_id WHERE sp.id = ${id}`;
+  if (!r) return true;
+  // The story is produced in the format the sponsor bought.
+  await sql`UPDATE drama_stories SET format = ${r.format}, updated_at = now() WHERE slug = ${r.slug}`;
+  const how = r.format === "carousel"
+    ? "Designed carousels post by themselves after each vote — nothing to start."
+    : r.format === "pictures"
+      ? "Carousels WITH PICTURES: the picture engine (phase 2) is not built yet — produce the pictures by hand or build lib/drama/pictures.ts before the next episode."
+      : "VIDEO episodes: phase 3 is not built yet — this needs a plan before the next episode.";
+  await tellAdmin(
+    `🎬 <b>Season sponsored</b> — ${esc(r.brand_name)} funds season ${r.season} of <b>${esc(r.title)}</b> (${esc(r.format)}) for ₦${r.price_ngn.toLocaleString("en-NG")}.\n` +
+    `${esc(how)}\n"Presented by ${esc(r.brand_name)}" on the covers is not automatic yet — add it by hand in the captions until it is built.`,
+  ).catch(() => false);
+  await emailSponsor({ to: r.contact_email, brand: r.brand_name, storyTitle: r.title, priceNgn: r.price_ngn, storyUrl: `${SITE_URL.replace(/\/$/, "")}/d/drama/${r.slug}` });
+  return true;
+}
+
 // ── Finishing a payment ──────────────────────────────────────────────────────
 /** Never throws: a problem after the money is taken goes to the owner. */
 export async function fulfilDramaPayment(opts: { reference: string; amountKobo: number; currency: string; via: string }): Promise<"done" | "nothing" | "mismatch"> {
@@ -223,6 +295,16 @@ export async function fulfilDramaPayment(opts: { reference: string; amountKobo: 
       }
       return (await markPlacementPaid(pl.id, opts.reference)) ? "done" : "nothing";
     }
+    const [sp] = await sql<{ id: string; price_ngn: number; status: string }[]>`
+      SELECT id, price_ngn, status FROM drama_sponsorships WHERE payment_reference = ${opts.reference}`;
+    if (sp) {
+      if (sp.status !== "pending_payment") return "nothing";
+      if (!paidEnough(paid, opts.currency, sp.price_ngn, "NGN")) {
+        await reportPaymentMismatch({ where: `drama sponsor (${opts.via})`, reference: opts.reference, paidMajor: paid, paidCurrency: opts.currency, expectedMajor: sp.price_ngn, expectedCurrency: "NGN", order: `drama_sponsorship ${sp.id}` });
+        return "mismatch";
+      }
+      return (await markSponsorPaid(sp.id, opts.reference)) ? "done" : "nothing";
+    }
     return "nothing";
   } catch (e) {
     console.error("[drama payment] fulfil failed:", (e as Error).message);
@@ -241,7 +323,7 @@ export async function castIdForReference(reference: string): Promise<string | nu
 /** The return page's check: ask Paystack directly, then finish if the webhook has not. */
 export async function verifyDramaPayment(reference: string): Promise<"done" | "nothing" | "mismatch" | "unpaid"> {
   if (!/^[A-Za-z0-9_.=-]{6,100}$/.test(reference)) return "nothing";
-  const mine = await sql`SELECT 1 FROM drama_cast WHERE payment_reference = ${reference} UNION ALL SELECT 1 FROM drama_placements WHERE payment_reference = ${reference}`;
+  const mine = await sql`SELECT 1 FROM drama_cast WHERE payment_reference = ${reference} UNION ALL SELECT 1 FROM drama_placements WHERE payment_reference = ${reference} UNION ALL SELECT 1 FROM drama_sponsorships WHERE payment_reference = ${reference}`;
   if (!mine.length) return "nothing";
   const v = await verifyPaystackPayment(reference).catch(() => null);
   if (!v?.status || v.data?.status !== "success") return "unpaid";

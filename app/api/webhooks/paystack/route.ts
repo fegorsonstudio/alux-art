@@ -109,10 +109,10 @@ async function handleCharge(event: ReturnType<typeof JSON.parse>, reference: str
     return NextResponse.json({ ok: true });
   }
 
-  // ── Alux Micro Drama: a role or a brand slot ─────────────────────────────
+  // ── Alux Micro Drama: a role, a brand slot or a season sponsor ───────────
   // Same shape as the licence: fulfilDramaPayment checks the amount and
   // currency against the order, finishes it once, and never throws.
-  if (metadata?.type === "drama_cast" || metadata?.type === "drama_placement") {
+  if (metadata?.type === "drama_cast" || metadata?.type === "drama_placement" || metadata?.type === "drama_sponsor") {
     await fulfilDramaPayment({ reference, amountKobo: Number(amount), currency, via: "webhook" });
     return NextResponse.json({ ok: true });
   }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import styles from "./drama.module.css";
 
 /** After Paystack sends the buyer back (?paid=cast|brand&reference=…): confirm, in plain words. */
-export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand"; reference: string }) {
+export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand" | "sponsor"; reference: string }) {
   const [state, setState] = useState<"checking" | "done" | "unpaid" | "mismatch" | "nothing">("checking");
   const [castId, setCastId] = useState<string | null>(null);
   useEffect(() => {
@@ -24,7 +24,9 @@ export default function PaidNotice({ kind, reference }: { kind: "cast" | "brand"
 
   const text = {
     checking: "Checking your payment…",
-    done: kind === "cast" ? "Payment received — you're in the cast. We're checking your photos and making your character now." : "Payment received — your slot is held. We'll check your picture and place it in the scene.",
+    done: kind === "cast" ? "Payment received — you're in the cast. We're checking your photos and making your character now."
+      : kind === "sponsor" ? "Payment received — you present season one. We'll email the plan for your credits and your report."
+      : "Payment received — your slot is held. We'll check your picture and place it in the scene.",
     unpaid: "Paystack has not confirmed this payment yet. If money left your account, it will show here within a few minutes.",
     mismatch: "The amount paid did not match the price, so nothing was released. We have been told and will sort it out with you.",
     nothing: "",

@@ -8,6 +8,9 @@ import { badgeFor, dramaPrices, storyBySlug, takenRoles } from "@/lib/drama/data
 import { estimateSeason, fmtNgn, fmtUsd, specForStory, type DramaFormat } from "@/lib/drama/budget";
 import { budgetRates } from "@/lib/drama/budget-rates";
 import { NOT_PLACED, NO_CLAIMS } from "@/lib/drama/brands";
+import { createClient } from "@/lib/supabase-server";
+import { isAdminEmail } from "@/lib/auth";
+import sql from "@/lib/db";
 
 /**
  * Fund a season (/d/drama/<slug>/sponsor): a sponsor sees the cast, the story
@@ -41,7 +44,12 @@ export default async function SponsorPage({ params, searchParams }: { params: Pr
   if (!story) notFound();
   const sp = await searchParams;
   const format: DramaFormat = sp.format === "pictures" || sp.format === "video" ? sp.format : "carousel";
-  const [rates, taken, prices] = await Promise.all([budgetRates(), takenRoles([story.id]), dramaPrices()]);
+  const [rates, taken, prices, auth, sponsored] = await Promise.all([
+    budgetRates(), takenRoles([story.id]), dramaPrices(), (await createClient()).auth.getUser(),
+    sql<{ brand_name: string }[]>`SELECT brand_name FROM drama_sponsorships WHERE story_id = ${story.id} AND season = 1 AND status IN ('paid', 'producing', 'delivered') LIMIT 1`,
+  ]);
+  const user = auth.data.user;
+  const here = `/d/drama/${story.slug}/sponsor?format=${format}`;
   const spec = specForStory(story, format);
   const budget = estimateSeason(spec, rates);
   const cast = story.content.cast ?? [];
@@ -165,9 +173,15 @@ export default async function SponsorPage({ params, searchParams }: { params: Pr
         <section className={styles.section} id="fund">
           <div className={styles.sectionHead}>
             <h2 className={styles.sectionTitle}>Fund it</h2>
-            <span className={styles.sectionNote}>We confirm and send the payment link</span>
+            <span className={styles.sectionNote}>Pay now, or ask us first</span>
           </div>
-          <SponsorForm story={story.slug} storyTitle={story.title} format={format} formatName={FORMATS.find((f) => f.key === format)?.name ?? format} priceNgn={budget.priceNgn} episodes={spec.episodes} />
+          {sponsored.length ? (
+            <div className={styles.panel}><p className={styles.p} style={{ margin: 0 }}>Season one of {story.title} is presented by <strong>{sponsored[0].brand_name}</strong>. <Link href="/d/drama">Choose another story</Link>, or <Link href={`/d/drama/partner?story=${story.slug}`}>talk to us</Link> about season two.</p></div>
+          ) : (
+            <SponsorForm story={story.slug} storyTitle={story.title} format={format} formatName={FORMATS.find((f) => f.key === format)?.name ?? format} priceNgn={budget.priceNgn} episodes={spec.episodes}
+              signedIn={!!user} admin={!!user && isAdminEmail(user.email)} loginHref={`/login?next=${encodeURIComponent(here)}`}
+              defaultName={typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : ""} />
+          )}
           <p className={styles.foot}>
             Every sponsor is credited in the caption. We don’t place {NOT_PLACED.join("; ")}. {NO_CLAIMS}
           </p>
