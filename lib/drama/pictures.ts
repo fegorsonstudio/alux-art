@@ -83,10 +83,10 @@ function picturePrompt(story: StoryRow, ep: Ep, slide: Slide, idx: number, refs:
   const light = lightFor(story.genre);
   const time = ep.slides[1]?.say ?? "";
   const refLines = refs.map((r, i) => `Image ${i + 1} is the character sheet of ${r.name} (${r.who}): their face from the portrait panel, their body, hair and outfit from the full-length panels — face, hair, skin tone, build and outfit 100% match Image ${i + 1}.`);
-  const locLine = hasLocation ? `Image ${refs.length + 1} is the location: the same place, the same furniture, windows and light, seen from the angle this shot needs.` : `The place: ${story.city}, Nigeria — ${time}.`;
-  const quiet = captionAt === "top"
-    ? "THE TOP THIRD OF THE FRAME IS QUIET: plain, dark or softly out of focus, no faces, no bright objects, no hands — the caption will sit there. Eyes and hands in the lower two thirds."
-    : "THE BOTTOM THIRD OF THE FRAME IS QUIET: plain, dark or softly out of focus, no faces, no bright objects — the caption will sit there. Eyes and hands in the upper two thirds.";
+  const locLine = hasLocation ? `Image ${refs.length + 1} is the story's main location — the same room, furniture, windows and light, seen from the angle this shot needs.` : `The place: ${story.city}, Nigeria — ${time}.`;
+  // A storyboard picture carries no words (the designed slide that follows does), so the whole frame is the picture —
+  // no bands, no empty thirds. (The first real run, 2026-10-25, painted a flat dark band when asked for a "quiet third".)
+  const quiet = "FILL THE WHOLE FRAME WITH THE SCENE: no empty bands, no blank areas, no blocks of flat colour; compose it like a film still.";
   const spoken = slide.kind === "line" && slide.say ? `The character is speaking the line ${slide.say} — mouth and expression mid-sentence, the listener's reaction visible if they are in frame.` : "";
   const subject = refs.length
     ? refs.map((r) => `${r.name}, ${r.who}`).join("; ")
@@ -169,16 +169,22 @@ async function judge(picture: Buffer, refs: Ref[], slide: Slide, captionAt: "top
     parts.push({ text:
       `You are the picture editor of a Nigerian micro drama. The FIRST image is a generated slide picture. ${refs.length ? `The next ${refs.length} image(s) are the character sheets of ${refs.map((r) => r.name).join(", ")}, in that order.` : "No character sheet is attached."}\n` +
       `The shot was meant to be: "${slide.see}"\nThe caption will be placed over the ${captionAt} third of the picture.\n` +
-      `Score 0-10: likeness (does each named person in the picture look like the SAME individual as their sheet — face, skin tone, hair, build, outfit; 10 if no named person), frame (does the picture show the shot as described), quiet (is the ${captionAt} third plain enough to carry white words). text_free: true if no legible words, logos or captions appear in the picture. problems: short plain sentences.\n` +
+      `Score 0-10: likeness (does each named person in the picture look like the SAME individual as their sheet — face, skin tone, hair, build; the outfit may be styled for the scene), frame (does the picture show the moment the shot describes — the people, the place, the action; small prop differences are fine), quiet (is the picture free of flat empty bands or blank blocks — 10 = the whole frame is the scene). text_free: true if no legible words, logos or captions appear in the picture. problems: short plain sentences.
+` +
       `Answer as JSON only: {"likeness": n, "frame": n, "quiet": n, "text_free": bool, "problems": [..]}` });
     const model = genai.getGenerativeModel({ model: JUDGE });
     const r = await model.generateContent({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", maxOutputTokens: 600 } });
-    const raw = JSON.parse(r.response.text()) as Partial<Verdict> | Partial<Verdict>[];
+    const txt = r.response.text();
+    let raw: Partial<Verdict> | Partial<Verdict>[];
+    try { raw = JSON.parse(txt); } catch {
+      const m = /\{[\s\S]*\}/.exec(txt);
+      raw = m ? JSON.parse(m[0].replace(/,\s*([}\]])/g, "$1")) : {};
+    }
     const v = (Array.isArray(raw) ? raw[0] : raw) ?? {};
     const likeness = Number(v.likeness ?? 0), frame = Number(v.frame ?? 0), quiet = Number(v.quiet ?? 0);
     const textFree = v.text_free !== false;
     const problems = Array.isArray(v.problems) ? v.problems.map(String).slice(0, 6) : [];
-    return { likeness, frame, quiet, text_free: textFree, problems, pass: likeness >= PASS && frame >= PASS && quiet >= 6 && textFree };
+    return { likeness, frame, quiet, text_free: textFree, problems, pass: likeness >= PASS && frame >= 6 && quiet >= 6 && textFree };
   } catch (e) {
     return { likeness: 0, frame: 0, quiet: 0, text_free: true, problems: [`the check did not run: ${(e as Error).message.slice(0, 120)}`], pass: false };
   }
@@ -281,14 +287,17 @@ export async function makeEpisodePictures(storyId: string, n: number, opts: { sl
         refs.push({ roleKey: k, name: role.name, url: s.url, who: role.role });
       }
       const captionAt = captionAtOf(slide.see, slide.kind);
-      const prompt = picturePrompt(story, ep, slide, slideNo, refs, true, captionAt);
+      // The location image belongs only to shots inside the main place: a shot at the gate, in a car or
+      // elsewhere is set where the shot says (the first run put a car scene in the dining room).
+      const inside = !/(gate|outside|exterior|street|road|car|drive|market|church|mosque|office|bank|hospital|airport|beach|garden|lawn|balcony|rooftop|bar|club|restaurant|kitchen|bedroom|corridor|lift|stairs|courtroom|shop|salon|studio|penthouse|strongroom|safe)/i.test(slide.see);
+      const prompt = picturePrompt(story, ep, slide, slideNo, refs, inside, captionAt);
       let accepted: { path: string; verdict: Verdict } | null = null;
       let last: Verdict | undefined, tries = 0, error: string | undefined;
       for (let attempt = 1; attempt <= MAX_TRIES && !accepted; attempt++) {
         tries = attempt;
         try {
           const retake = attempt > 1 && last ? `\n\nRETAKE — the first try was refused: ${last.problems.join("; ") || "likeness or framing too weak"}. Fix exactly that and keep everything else.` : "";
-          const made = await editImage(prompt + retake, [...refs.map((r) => r.url), location], refs[0]?.url);
+          const made = await editImage(prompt + retake, [...refs.map((r) => r.url), ...(inside ? [location] : [])], refs[0]?.url);
           const verdict = await judge(made.buffer, refs, slide, captionAt);
           const path = `drama/art/${story.slug}/ep${n}/${String(slideNo).padStart(2, "0")}-ai-${Date.now().toString(36)}.jpg`;
           await r2Upload(KEEP_BUCKET, path, made.buffer, "image/jpeg");

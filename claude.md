@@ -954,6 +954,23 @@ slide rendered with a presenter via an esbuild bundle; no real sponsor has paid 
   type `replicated`, fields `source_audio` + `consent_audio` — learnt from the API's own errors) → `drama_cast.voice_id`;
   `scripts/drama-sound.mjs` passes fan voices as overrides to `resolveVoices(slug, overrides)` and **designs any missing
   designed voice by itself** (`tools/drama/sound/design.mjs`, shared with `design-voices.mjs`). No real replication yet.
+**Hook-first rhythm + storyboard slides + new stories (owner, same day).** Every NEW episode has NINE slides: 1 `hook`
+(the story in 15–45 words for a stranger; "A new story" / "The story so far"), 2 `cover`, 3 `time`, 4–7 beats, 8 `cliff`,
+9 `choice` (`check.mjs`; 8-slide stories stay valid). **Image generation is a per-story switch** (`drama_stories.format =
+'pictures'`): each time/beat/line/text/cliff slide's picture posts as its OWN storyboard slide right before the designed
+one (`slides.ts` `storyboard`, up to 15 slides; Instagram allows 20). Carousel-only = the 9 designed slides, free. The
+screenwriter writes the hook and a `voices` block (narrator + every role, Nigerian descriptions); the sound job reads
+voices from the story file when `voices.mjs` has none and designs them itself. `tools/drama/hooks.mjs <slug>` adds hooks
+to older stories (~$0.01). **The Silent Partner is a TEST and is being HIDDEN**; two new stories on @aolivetv:
+**Fiancée for One Night** (Lagos, romance, screenwriter-written, 32 roads, `format = pictures`) and **The New Cleaner**
+(Calabar, power, carousel-only; hooks added, Ep 1 key hand-over moved to the doorman, voices added).
+**First real picture run (Fiancée for One Night Ep 1, ≈ $2.6): house sheets excellent, likeness held, but 4 of 6 slides were
+refused — the model painted a flat dark band when told to keep a "quiet third", and the location image dragged a car
+scene into the dining room. Fixed in `pictures.ts` (no quiet third for storyboard pictures, location only for inside
+shots, judge tolerant of prop differences, lenient JSON) — NOT re-run. **OWNER (mid-run): "Please don't generate any
+image via fal."** Standing: every story's `format` is back to `carousel`; no fal image call until they lift it.**
+Posted/queued on @aolivetv: Fiancée for One Night Ep 1 (9 designed slides, 14:59 Lagos) and The New Cleaner Ep 1
+(15:42 Lagos); The Silent Partner hidden and its queued Ep 3 removed. Sound previews run (Gemini/Lyria, not fal).
 **Not built:** the creator studio, earnings split + payouts, video (phase 3), the sister app.
 
 **Latest major rules update:** Advanced mode now supports layered tagged references. Prompt generation must use explicit reference roles, preserve/change blocks, and a structured Scene / Subject / Important Details / Use Case / Constraints template.
